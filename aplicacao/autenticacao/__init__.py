@@ -10,3 +10,4 @@ from .autenticacao import bp_autenticacao
 app.register_blueprint(bp_autenticacao)
 from aplicacao import create_app
 import os
+app = create_app()
