@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: erp-jsp
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python executar.py"
+    plan: starter
