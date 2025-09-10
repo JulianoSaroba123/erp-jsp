@@ -1,0 +1,57 @@
+<aside class="sidebar" id="sidebar">
+    <div class="brand">
+        <a href="{{ url_for('painel.dashboard') }}" class="d-flex align-items-center gap-2">
+            <img src="{{ url_for('static', filename='imagens/JSP (15 x 15 mm).jpg') }}" alt="JSP">
+            <span>JSP <strong>ERP</strong></span>
+        </a>
+    </div>
+
+    <nav class="nav flex-column mt-3">
+        <div class="sidebar-section-title">Principal</div>
+        <a class="nav-link {% if request.endpoint == 'painel.dashboard' %}active{% endif %}" href="{{ url_for('painel.dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+
+        <div class="sidebar-section-title mt-3">Operações Diárias</div>
+    <a class="nav-link {% if request.endpoint and request.endpoint.startswith('cliente.') %}active{% endif %}" href="{{ url_for('cliente.listar_clientes') }}" aria-label="Abrir lista de clientes" tabindex="0"><i class="fas fa-users"></i> Clientes</a>
+
+        {% if 'fornecedor' in current_app.blueprints %}
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('fornecedor.') %}active{% endif %}" href="{{ url_for('fornecedor.listar_fornecedores') }}"><i class="fas fa-truck"></i> Fornecedores</a>
+        {% endif %}
+
+        {% if 'produto' in current_app.blueprints %}
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('produto.') %}active{% endif %}" href="{{ url_for('produto.listar_produtos') }}"><i class="fas fa-boxes"></i> Produtos</a>
+        {% endif %}
+
+        {% if 'servico' in current_app.blueprints %}
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('servico.') %}active{% endif %}" href="{{ url_for('servico.listar_servicos') }}"><i class="fas fa-concierge-bell"></i> Serviços</a>
+        {% endif %}
+
+        {% if 'proposta' in current_app.blueprints %}
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('proposta.') %}active{% endif %}" href="{{ url_for('proposta.listar_propostas') }}"><i class="fas fa-file-signature"></i> Propostas</a>
+        {% endif %}
+
+        {% if 'os' in current_app.blueprints %}
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('os.') %}active{% endif %}" href="{{ url_for('os.listar_os') }}"><i class="fas fa-tools"></i> Ordens de Serviço</a>
+        {% endif %}
+
+        {% if 'financeiro' in current_app.blueprints %}
+            <a class="nav-link d-flex align-items-center" data-bs-toggle="collapse" href="#navFinanceiro" role="button" aria-expanded="false"><i class="fas fa-coins me-2"></i> Financeiro <i class="ms-auto fas fa-chevron-down small"></i></a>
+            <div class="collapse" id="navFinanceiro">
+                <a class="nav-link ps-4" href="{{ url_for('financeiro.resumo') }}">Resumo</a>
+                <a class="nav-link ps-4" href="{{ url_for('financeiro.listar') }}">Lançamentos</a>
+            </div>
+        {% endif %}
+
+        <div class="sidebar-section-title mt-4">Cadastros / Configurações</div>
+        {% if 'configuracoes' in current_app.blueprints %}
+            <a class="nav-link {% if request.endpoint and request.endpoint.startswith('configuracoes_') %}active{% endif %}" href="{{ url_for('configuracoes.sistema') }}"><i class="fas fa-sliders-h"></i> Configurações</a>
+        {% endif %}
+
+        <div class="sidebar-section-title mt-4">Relatórios</div>
+        <a class="nav-link" href="#"><i class="fas fa-chart-bar"></i> Relatórios</a>
+
+            <div class="mt-auto">
+                {# Não existe endpoint 'logout' atualmente; usar login como fallback até implementar logout #}
+                <a class="btn w-100 logout-btn mt-2" href="{{ url_for('autenticacao.login') }}"><i class="fas fa-sign-out-alt me-1"></i> Sair</a>
+            </div>
+    </nav>
+</aside>

@@ -1,0 +1,107 @@
+{% extends 'autenticacao/base.html' %}
+{% block conteudo %}
+{# tidy macro removed - use global filter: value|tidy #}
+<div class="container-fluid mt-4">
+  <!-- Título -->
+  <div class="text-center mb-4">
+    <h1 class="text-glow">Clientes <span class="titulo-erp">— JSP ERP</span></h1>
+  </div>
+
+  
+
+  <!-- Lista de Clientes -->
+  <div class="card card-jsp">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        <span class="icon-circle"><i class="fas fa-users"></i></span>
+        <div>
+          <strong>Lista de Clientes</strong>
+          <div><small class="text-muted">&nbsp;— &nbsp;{{ clientes.total if clientes is defined else total_clientes }}</small></div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <a href="{{ url_for('cliente.listar_clientes') }}" class="btn-back btn-sm me-2"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <div class="input-group lista-search">
+          <span class="input-group-text input-search-icon"><i class="fas fa-search"></i></span>
+          <input id="buscar_clientes" type="text" class="form-control lista-busca" placeholder="Buscar por nome ou código...">
+        </div>
+        <a href="{{ url_for('cliente.novo_cliente') }}" class="btn btn-brand btn-sm ms-2"><i class="fas fa-plus"></i> Novo</a>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div class="card-section">
+      <div class="table-responsive rounded">
+        <table class="table table-hover align-middle text-center table-erp">
+          <thead class="neo-thead">
+            <tr>
+              <th class="text-start">Código</th>
+              <th class="text-start">Nome</th>
+              <th>CPF/CNPJ</th>
+              <th>Telefone</th>
+              <th>E-mail</th>
+              <th>Cidade/UF</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cliente in clientes.items %}
+            <tr>
+              <td class="code-cell text-start">{{ cliente.codigo|tidy }}</td>
+              <td class="name-cell text-start"><i class="fas fa-user-circle me-2 text-muted"></i> {{ cliente.nome|tidy }}</td>
+              <td>{{ cliente.cpf_cnpj|tidy }}</td>
+              <td>{{ cliente.telefone|tidy }}</td>
+              <td>{{ cliente.email|tidy }}</td>
+              {% set cidade = cliente.cidade|tidy %}
+              <td>{{ cidade ~ (' - ' + cliente.uf if cliente.uf else '') if (cidade or cliente.uf) else '' }}</td>
+              <td>
+                <span class="chip {% if cliente.ativo %}chip-ativo{% else %}chip-inativo{% endif %}">
+                  {{ 'Ativo' if cliente.ativo else 'Inativo' }}
+                </span>
+              </td>
+              <td>
+                <a href="{{ url_for('cliente.detalhar_cliente', id=cliente.id) }}" title="Detalhar" class="btn-acao text-info" aria-label="Detalhar"><i class="fas fa-eye"></i></a>
+                <a href="{{ url_for('cliente.editar_cliente', id=cliente.id) }}" title="Editar" class="btn-acao text-warning" aria-label="Editar"><i class="fas fa-edit"></i></a>
+                <form action="{{ url_for('cliente.excluir_cliente', id=cliente.id) }}" method="post" class="delete-form" data-nome="{{ cliente.nome }}">
+                  <button type="submit" title="Excluir" class="btn-acao text-danger" aria-label="Excluir"><i class="fas fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('form.delete-form').forEach(function(f){
+    f.addEventListener('submit', function(e){
+      e.preventDefault();
+      var nome = f.dataset.nome || 'este cliente';
+      if (!confirm('Confirma exclusão do cliente: ' + nome + '?')) return false;
+      var url = f.action;
+      fetch(url, { method: 'POST', headers: { 'X-Requested-With':'XMLHttpRequest' } })
+        .then(function(res){ return res.json().catch(function(){ return { success: false, message: 'Resposta inválida do servidor' }; }); })
+        .then(function(data){
+          if (data && data.success){
+            alert(data.message || 'Cliente excluído com sucesso');
+            window.location.reload();
+          } else {
+            alert(data && data.message ? data.message : 'Não foi possível excluir o cliente');
+          }
+        })
+        .catch(function(err){
+          console.error('Erro na exclusão:', err);
+          alert('Erro ao excluir cliente. Veja o console para mais detalhes.');
+        });
+    });
+  });
+});
+</script>
+{% endblock %}

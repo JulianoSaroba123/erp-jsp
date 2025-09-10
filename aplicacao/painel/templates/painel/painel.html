@@ -1,0 +1,38 @@
+{% extends 'autenticacao/base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h1 class="text-primary mb-4">Painel de Controle</h1>
+  <div class="row">
+    <div class="col-md-3">
+      <div class="card text-white bg-primary mb-3">
+        <div class="card-header">Clientes</div>
+        <div class="card-body">
+          <h5 class="card-title">124</h5>
+          <p class="card-text">Clientes cadastrados</p>
+          <a href="{{ url_for('cliente.listar_clientes') }}" class="btn btn-light">Ver Clientes</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card text-white bg-success mb-3">
+        <div class="card-header">Ordens de Serviço</div>
+        <div class="card-body">
+          <h5 class="card-title">57</h5>
+          <p class="card-text">OS em andamento</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card text-white bg-warning mb-3">
+        <div class="card-header">Faturamento</div>
+        <div class="card-body">
+          <h5 class="card-title">R$ 42.580,00</h5>
+          <p class="card-text">Últimos 30 dias</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

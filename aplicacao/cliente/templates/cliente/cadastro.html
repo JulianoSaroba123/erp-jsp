@@ -1,0 +1,483 @@
+{% extends 'autenticacao/base.html' %}
+{% block titulo %}{{ 'Editar Cliente' if (cliente is defined and cliente) else 'Cadastro de Cliente' }} — JSP ERP{% endblock %}
+{% block conteudo %}
+{% set cliente = cliente if cliente is defined else {} %}
+{# Small helper to avoid rendering the string 'None' from the DB; returns empty string for falsy/'None' #}
+{# tidy macro removed - use global filter: value|tidy #}
+
+<style>
+/* === Layout principal === */
+.main-content {
+  margin-left: 260px;           /* ocupa o espaço da sidebar */
+  padding: 24px;
+  width: calc(100% - 260px);    /* pega toda largura restante */
+  max-width: 100%;              /* sem limite fixo */
+  box-sizing: border-box;
+}
+.card-jsp {
+  width: 100%;
+  margin: 0 auto 1.5rem auto;
+}
+
+/* === Tema JSP (azul metálico + laranja) === */
+.formulario-cadastro .card-jsp {
+  background: linear-gradient(180deg, rgba(8,24,38,0.6), rgba(8,18,28,0.6));
+  border: 1px solid rgba(255,152,0,0.12);
+  box-shadow: 0 6px 18px rgba(2,10,20,0.6);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.formulario-cadastro .card-header { background: linear-gradient(90deg, rgba(0,145,255,0.12), rgba(255,152,0,0.06)); }
+.formulario-cadastro .card-body { padding: 1.25rem; }
+
+.form-control { background-color: #081826; border: 1px solid rgba(255,152,0,0.12); color: #eaf6ff; }
+.form-control:focus { box-shadow: 0 0 0 .15rem rgba(0,208,255,0.12); border-color: #00d0ff; }
+.btn-brand { background: linear-gradient(90deg,#00bcd4,#00e5ff); color:#07202b; font-weight:700; }
+.btn-outline-light { color:#eaf6ff; border-color: rgba(234,246,255,0.06); }
+.btn-danger { background-color:#ff6b00; border-color:#ff6b00; }
+
+/* Responsividade tweaks */
+@media(max-width:768px){
+  .main-content { margin-left:0; width:100%; padding:16px; }
+}
+
+/* === Inputs e selects === */
+.form-control, .form-select {
+  background: rgba(255,255,255,.07);
+  color: #eaf3ff;
+  border-color: rgba(255,255,255,.15);
+}
+.form-control::placeholder { color:#9fb3d6; opacity:1; }
+.form-control:focus, .form-select:focus {
+  border-color: #0dcaf0;
+  box-shadow: 0 0 0 .2rem rgba(13,202,240,.15);
+}
+.form-label { font-weight:600; color:#eaf3ff; }
+
+/* Melhor contraste para textos auxiliares e labels */
+#hint_cpf_cnpj { color: #9fb3d6 !important; }
+.text-muted { color: #9fb3d6 !important; }
+.form-check-label { color: #eaf6ff !important; opacity: 0.95; }
+.form-check-input { accent-color: #00d0ff; }
+/* Quando inputs estiverem desabilitados, manter label legível */
+.form-check-input:disabled + .form-check-label,
+.form-check-input[disabled] + .form-check-label {
+  opacity: 0.9 !important;
+  color: #dfefff !important;
+}
+
+/* Tornar as opções do <select> legíveis no dropdown (texto escuro sobre fundo claro)
+   sem alterar o texto visível quando o select está fechado (tema escuro). */
+.form-select option,
+.form-select optgroup {
+  color: #07202b; /* tom escuro para legibilidade no dropdown */
+}
+.form-select option:checked {
+  /* quando a opção estiver marcada na lista, manter contraste ao ser exibida
+     em navegadores que aplicam essa regra; não garante comportamento idêntico
+     em todos os browsers, mas melhora na maioria. */
+  color: #eaf3ff;
+}
+
+/* === Cards === */
+.card-jsp .card-header {
+  font-weight:600;
+  display:flex; align-items:center; gap:.5rem;
+  background: linear-gradient(135deg, rgba(41,182,255,.18), rgba(86,212,255,.10));
+  color:#eaf6ff;
+}
+.card-jsp .card-body { padding:1.25rem; }
+
+/* Card mais compacto para Tipo de Pessoa */
+.card-jsp.tipo-pessoa .card-body {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  padding: 1rem 1.5rem;
+}
+
+/* === Botões === */
+.actions { display:flex; justify-content:space-between; gap:1rem; margin-top:1rem; }
+
+/* Mobile ajustes */
+@media(max-width:768px){
+  .main-content { margin-left:0; width:100%; padding:16px; }
+  .actions { flex-direction:column-reverse; }
+  .actions .btn { width:100%; }
+}
+</style>
+
+<div class="formulario-cadastro">
+  <div class="card card-jsp">
+  <div class="card-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fas fa-user-cog"></i>
+      <strong>{{ 'Edição de Cliente' if cliente else 'Novo Cliente' }}</strong>
+      {% if cliente %}
+        <code class="d-none d-md-inline">{{ cliente.codigo or ('CLI%05d' % cliente.id) }}</code>
+      {% endif %}
+    </div>
+    <a class="btn btn-outline-light btn-sm" href="{{ url_for('cliente.listar_clientes') }}">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card-body">
+   <form method="POST">
+    {# csrf_token removido temporariamente por incompatibilidade no Render
+      Reativar após configurar Flask-WTF com CSRFProtect() e SECRET_KEY no backend #}
+    {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+
+      <!-- Tipo de Pessoa -->
+      <div class="card card-jsp tipo-pessoa">
+        <div class="card-header"><i class="fas fa-id-card me-2"></i>Tipo de Pessoa</div>
+        <div class="card-body">
+          <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="tipo_pessoa" id="tipo_pf" value="PF"
+                      {{ 'checked' if not cliente or (cliente and cliente.cpf_cnpj and cliente.cpf_cnpj|length <= 14) else '' }}>
+                    <label class="form-check-label" for="tipo_pf"><i class="fas fa-user me-1"></i> Pessoa Física (CPF)</label>
+          </div>
+          <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="tipo_pessoa" id="tipo_pj" value="PJ"
+                      {{ 'checked' if cliente and cliente.cpf_cnpj and cliente.cpf_cnpj|length > 14 else '' }}>
+                    <label class="form-check-label" for="tipo_pj"><i class="fas fa-building me-1"></i> Pessoa Jurídica (CNPJ)</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informações Principais -->
+      <div class="card card-jsp">
+        <div class="card-header"><i class="fas fa-info-circle me-2"></i>Informações Principais</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              <label for="cpf_cnpj" class="form-label" id="label_cpf_cnpj">CPF / CNPJ *</label>
+    <input type="text" id="cpf_cnpj" name="cpf_cnpj" class="form-control" maxlength="18"
+  value="{{ cliente.cpf_cnpj|tidy }}" required>
+              <small class="text-muted" id="hint_cpf_cnpj">Digite apenas números</small>
+            </div>
+            <div class="col-md-9 mb-3">
+              <label for="nome" class="form-label" id="label_nome">Nome / Razão Social *</label>
+    <input type="text" id="nome" name="nome" class="form-control"
+  value="{{ cliente.nome|tidy }}" required>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="apelido" class="form-label">Apelido / Nome Fantasia</label>
+    <input type="text" id="apelido" name="apelido" class="form-control" maxlength="100"
+  value="{{ cliente.apelido|tidy }}">
+            </div>
+            <div class="col-md-3 mb-3">
+              <label for="telefone" class="form-label">Telefone *</label>
+    <input type="text" id="telefone" name="telefone" class="form-control"
+  value="{{ cliente.telefone|tidy }}" required>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label for="email" class="form-label">E-mail</label>
+    <input type="email" id="email" name="email" class="form-control"
+  value="{{ cliente.email|tidy }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Endereço -->
+      <div class="card card-jsp">
+        <div class="card-header"><i class="fas fa-map-marker-alt me-2"></i>Endereço</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              <label for="cep" class="form-label">CEP</label>
+              <div class="input-group">
+                <input type="text" id="cep" name="cep" class="form-control" maxlength="9"
+                         value="{{ cliente.cep|tidy }}">
+                <button type="button" id="btn_buscar_cep" class="btn btn-outline-light" title="Buscar CEP"><i class="fas fa-search"></i></button>
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label for="logradouro" class="form-label">Logradouro</label>
+              <input type="text" id="logradouro" name="logradouro" class="form-control"
+                     value="{{ cliente.logradouro|tidy }}">
+            </div>
+            <div class="col-md-3 mb-3">
+              <label for="numero" class="form-label">Número</label>
+    <input type="text" id="numero" name="numero" class="form-control"
+  value="{{ cliente.numero|tidy }}">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <label for="complemento" class="form-label">Complemento</label>
+    <input type="text" id="complemento" name="complemento" class="form-control"
+  value="{{ cliente.complemento|tidy }}">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="bairro" class="form-label">Bairro</label>
+    <input type="text" id="bairro" name="bairro" class="form-control"
+  value="{{ cliente.bairro|tidy }}">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label for="cidade" class="form-label">Cidade</label>
+    <input type="text" id="cidade" name="cidade" class="form-control"
+  value="{{ cliente.cidade|tidy }}">
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-3 mb-3">
+              <label for="uf" class="form-label">UF</label>
+              <select id="uf" name="uf" class="form-select">
+                <option value="">Selecione</option>
+                {% for uf in ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'] %}
+                  <option value="{{ uf }}" {{ 'selected' if cliente and cliente.uf == uf else '' }}>{{ uf }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3 mb-3">
+              <label for="pais" class="form-label">País</label>
+    <input type="text" id="pais" name="pais" class="form-control"
+  value="{{ cliente.pais|tidy or 'Brasil' }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Informações Adicionais -->
+      <div class="card card-jsp">
+        <div class="card-header"><i class="fas fa-clipboard me-2"></i>Informações Adicionais</div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6 mb-3" id="inscricao_estadual_group">
+              <label for="inscricao_estadual" class="form-label">Inscrição Estadual</label>
+    <input type="text" id="inscricao_estadual" name="inscricao_estadual" class="form-control"
+  value="{{ cliente.inscricao_estadual|tidy }}">
+            </div>
+            <div class="col-md-6 mb-3" id="inscricao_municipal_group">
+              <label for="inscricao_municipal" class="form-label">Inscrição Municipal</label>
+    <input type="text" id="inscricao_municipal" name="inscricao_municipal" class="form-control"
+  value="{{ cliente.inscricao_municipal|tidy }}">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="observacoes" class="form-label">Observações</label>
+            <textarea id="observacoes" name="observacoes" class="form-control" rows="3">{{ cliente.observacoes|tidy }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botões -->
+      <div class="actions">
+        <a href="{{ url_for('cliente.listar_clientes') }}" class="btn btn-outline-light">
+          <i class="fas fa-arrow-left me-1"></i> Voltar
+        </a>
+        <button type="submit" class="btn btn-brand">
+          <i class="fas fa-save me-1"></i>
+          {{ 'Atualizar Cliente' if cliente else 'Salvar Cliente' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script>
+$(function(){
+  /* ===== Máscaras ===== */
+  // Telefone (celular BR)
+  $('#telefone').mask('(00) 00000-0000');
+  
+  // CEP
+  $('#cep').mask('00000-000');
+  
+  // Aplica máscara apropriada baseado no tipo de pessoa
+  function atualizarMascaraCpfCnpj() {
+    const tipoPessoa = $('input[name="tipo_pessoa"]:checked').val();
+    const currentValue = $('#cpf_cnpj').val().replace(/\D/g, '');
+    
+    if (tipoPessoa === 'PF') {
+      $('#cpf_cnpj').unmask();
+      if (currentValue) {
+        $('#cpf_cnpj').mask('000.000.000-00');
+      }
+      $('#label_cpf_cnpj').text('CPF *');
+      $('#label_nome').text('Nome *');
+      $('#hint_cpf_cnpj').text('Digite apenas números do CPF');
+      $('#inscricao_estadual_group, #inscricao_municipal_group').hide();
+    } else {
+      $('#cpf_cnpj').unmask();
+      if (currentValue) {
+        $('#cpf_cnpj').mask('00.000.000/0000-00');
+      }
+      $('#label_cpf_cnpj').text('CNPJ *');
+      $('#label_nome').text('Razão Social *');
+      $('#hint_cpf_cnpj').text('Digite apenas números do CNPJ');
+      $('#inscricao_estadual_group, #inscricao_municipal_group').show();
+    }
+  }
+  
+  // Inicializar máscaras
+  atualizarMascaraCpfCnpj();
+  
+  // Atualizar máscara quando mudar o tipo de pessoa
+  $('input[name="tipo_pessoa"]').change(function() {
+    // Limpar o campo se necessário para evitar conflitos de formato
+    if ($('#cpf_cnpj').val()) {
+      const digits = $('#cpf_cnpj').val().replace(/\D/g, '');
+      $('#cpf_cnpj').val(digits);
+    }
+    atualizarMascaraCpfCnpj();
+  });
+  
+  /* ===== BrasilAPI (CNPJ) ===== */
+  function consultarCnpj(digits) {
+    if (!digits) return;
+    $('#hint_cpf_cnpj').html('<i class="fas fa-spinner fa-spin"></i> Buscando dados do CNPJ...');
+    $.ajax({
+      url: `https://brasilapi.com.br/api/cnpj/v1/${digits}`,
+      method: 'GET',
+      dataType: 'json',
+      timeout: 10000, // 10 segundos de timeout
+      success: function(data) {
+        if (data && !data.message) {
+          // Preencher razão social e nome fantasia apenas se campos estiverem vazios
+          if (!$('#nome').val()) $('#nome').val(data.razao_social || '');
+          if (!$('#apelido').val()) $('#apelido').val(data.nome_fantasia || '');
+          
+          // Telefone (apenas se estiver vazio)
+          if (!$('#telefone').val() && data.ddd_telefone_1) {
+            const tel = data.ddd_telefone_1.replace(/\D/g,'');
+            if (tel.length >= 10) {
+              $('#telefone').unmask().mask('(00) 00000-0000').val(tel);
+            }
+          }
+          
+          // Endereço
+          if (data.cep) {
+            const cep = data.cep.replace(/\D/g,'');
+            $('#cep').val(cep).trigger('blur'); // Aciona busca do CEP
+          } else {
+            // Preencher campos de endereço diretamente se disponíveis
+            if (data.logradouro) $('#logradouro').val(data.logradouro);
+            if (data.bairro) $('#bairro').val(data.bairro);
+            if (data.municipio) $('#cidade').val(data.municipio);
+            if (data.uf) $('#uf').val(data.uf);
+          }
+          
+          // Sucesso na busca
+          $('#hint_cpf_cnpj').html('<i class="fas fa-check-circle text-success"></i> Dados do CNPJ carregados!');
+        } else {
+          // CNPJ não encontrado ou erro na API
+          $('#hint_cpf_cnpj').html('<i class="fas fa-exclamation-circle text-warning"></i> CNPJ não encontrado na base de dados');
+        }
+      },
+      error: function(xhr, status, error) {
+        // Erro na requisição
+        $('#hint_cpf_cnpj').html('<i class="fas fa-times-circle text-danger"></i> Erro ao consultar CNPJ');
+        console.error('Erro na consulta do CNPJ:', error);
+      }
+    });
+  }
+  
+  $('#cpf_cnpj').on('blur', function(){
+    const digits = $(this).val().replace(/\D/g,'');
+    const tipoPessoa = $('input[name="tipo_pessoa"]:checked').val();
+    
+    // Limpar mensagens antigas
+    $('#hint_cpf_cnpj').text(tipoPessoa === 'PF' ? 'Digite apenas números do CPF' : 'Digite apenas números do CNPJ');
+    
+    // Apenas para pessoa jurídica com 14 dígitos
+    if (tipoPessoa === 'PJ' && digits.length === 14) {
+      $(this).unmask().mask('00.000.000/0000-00');
+      consultarCnpj(digits);
+    }
+  });
+  
+  /* ===== ViaCEP ===== */
+  function buscarCep(cep){
+    if (!cep || cep.length !== 8) return;
+    $('#cep').addClass('loading');
+    $('#hint_cep').remove();
+    // usar fetch para ter controle de erro
+    fetch(`https://viacep.com.br/ws/${cep}/json/`)
+      .then(function(res){ if (!res.ok) throw new Error('Erro na rede'); return res.json(); })
+      .then(function(d){
+        if (d.erro){
+          $('#cep').after('<small id="hint_cep" class="text-muted">CEP não encontrado</small>');
+          return;
+        }
+        $('#logradouro').val(d.logradouro || '');
+        $('#bairro').val(d.bairro || '');
+        $('#cidade').val(d.localidade || '');
+        $('#uf').val(d.uf || '');
+        $('#numero').focus();
+      })
+      .catch(function(err){
+        console.warn('Erro ViaCEP', err);
+        $('#cep').after('<small id="hint_cep" class="text-muted">Erro ao buscar CEP</small>');
+      })
+      .finally(function(){ $('#cep').removeClass('loading'); });
+  }
+
+  // Trigger on blur and on button click
+  $('#cep').on('blur', function(){
+    const cep = $(this).val().replace(/\D/g,'');
+    buscarCep(cep);
+  });
+  $('#btn_buscar_cep').on('click', function(){
+    const cep = $('#cep').val().replace(/\D/g,'');
+    buscarCep(cep);
+  });
+  
+  /* ===== Validação simples ===== */
+  $('form').on('submit', function(e){
+    const nome = $('#nome').val().trim();
+    const doc = $('#cpf_cnpj').val().trim().replace(/\D/g,'');
+    const tipoPessoa = $('input[name="tipo_pessoa"]:checked').val();
+    
+    if (!nome) {
+      alert('Nome/Razão Social é obrigatório.');
+      $('#nome').focus();
+      e.preventDefault();
+      return false;
+    }
+    
+    if (!doc) {
+      alert('CPF/CNPJ é obrigatório.');
+      $('#cpf_cnpj').focus();
+      e.preventDefault();
+      return false;
+    }
+    
+    if (tipoPessoa === 'PF' && doc.length !== 11) {
+      alert('CPF deve ter 11 dígitos.');
+      $('#cpf_cnpj').focus();
+      e.preventDefault();
+      return false;
+    }
+    
+    if (tipoPessoa === 'PJ' && doc.length !== 14) {
+      alert('CNPJ deve ter 14 dígitos.');
+      $('#cpf_cnpj').focus();
+      e.preventDefault();
+      return false;
+    }
+  });
+
+  // Trigger automatic CNPJ lookup when loading edit page if PJ and cpf_cnpj present
+  setTimeout(function(){
+    try {
+      const tipoPessoa = $('input[name="tipo_pessoa"]:checked').val();
+      const digits = $('#cpf_cnpj').val().replace(/\D/g,'');
+      if (tipoPessoa === 'PJ' && digits.length === 14) {
+        $('#cpf_cnpj').trigger('blur');
+      }
+    } catch(e) { console.warn('init trigger fail', e); }
+  }, 300);
+});
+</script>
+{% endblock %}

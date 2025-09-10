@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% block titulo %}ERP JSP - Sistema Robótico{% endblock %}{% endblock %}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo_base.css') }}">
+
+    {% block head %}{% endblock %}
+
+    <style>
+        /* Tema robótico mínimo — preferimos regras em estilo_base.css */
+        body { background: linear-gradient(135deg, #0a0f2c, #071630); color: #e0f7ff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .sidebar { background-color: #0b0d1b; min-height: 100vh; padding-top: 20px; border-right: 1px solid #1a1a40; }
+        .sidebar a{ color: #00f7ff; display:block; padding:12px 20px; text-decoration:none; transition: .3s }
+        .sidebar a:hover{ background:#072940; color:#fff }
+        .logo{ width:100%; padding:10px; text-align:center }
+        .logo img{ max-width:120px; filter:drop-shadow(0 0 8px #00f7ff) }
+        .topbar{ background:#0e1b2a; padding:10px 20px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 5px rgba(0,0,0,.3)}
+        .topbar h4{ color:#00f7ff }
+        .card-kpi{ background:#111c3a; color:#e0f7ff; border-radius:12px; padding:20px; box-shadow:0 4px 10px rgba(0,255,255,.06) }
+        .card-kpi:hover{ box-shadow:0 0 20px #00f7ff }
+        .modo-teste{ display:none; background:#ffe600; color:#000; text-align:center; padding:5px; font-weight:700 }
+        
+        /* Garantir visibilidade do conteúdo principal */
+        .container-fluid .row { display: flex !important; }
+        .col-md-10 { flex: 1; display: block !important; visibility: visible !important; min-height: 100vh; }
+        .container.py-4 { display: block !important; visibility: visible !important; position: relative; z-index: 1; }
+        
+        @media (max-width:767px){ .sidebar{ display:none } }
+    </style>
+</head>
+<body>
+    <div class="modo-teste" id="modoTeste">MODO TESTE ATIVADO</div>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- MENU LATERAL -->
+            <div class="col-md-2 sidebar" role="navigation" aria-label="Menu lateral principal">
+                <div class="logo">
+                    <img src="{{ url_for('static', filename='imagens/logo_atualizado.png') }}" alt="Logo JSP">
+                </div>
+                <a href="{{ url_for('autenticacao.login') }}"> <i class="fas fa-home"></i> Início</a>
+                <a href="{{ url_for('cliente.listar_clientes') }}"> <i class="fas fa-users"></i> Clientes</a>
+                <a href="#"> <i class="fas fa-box"></i> Produtos</a>
+                <a href="#"> <i class="fas fa-file-invoice"></i> Ordens de Serviço</a>
+                <a href="#"> <i class="fas fa-chart-line"></i> Financeiro</a>
+                <a href="#"> <i class="fas fa-cogs"></i> Configurações</a>
+            </div>
+
+            <!-- CONTEÚDO PRINCIPAL -->
+            <div class="col-md-10" style="min-height: 100vh; overflow-y: auto;">
+                <div class="topbar">
+                    <h4 id="tituloTopo">ERP JSP - Painel de Controle</h4>
+                    <span aria-hidden="true"><i class="fas fa-robot"></i></span>
+                </div>
+
+                <div class="container py-4" style="position: relative; z-index: 1; background: rgba(7, 22, 48, 0.9);">
+                    <!-- BLOCOS DE KPIs -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card-kpi text-center">
+                                <i class="fas fa-users fa-2x"></i>
+                                <h5>Clientes</h5>
+                                <p>{{ total_clientes|default(0) }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-kpi text-center">
+                                <i class="fas fa-box-open fa-2x"></i>
+                                <h5>Produtos</h5>
+                                <p>{{ total_produtos|default(0) }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-kpi text-center">
+                                <i class="fas fa-file-invoice-dollar fa-2x"></i>
+                                <h5>OS Emitidas</h5>
+                                <p>{{ total_os_emitidas|default(0) }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card-kpi text-center">
+                                <i class="fas fa-dollar-sign fa-2x"></i>
+                                <h5>Faturamento</h5>
+                                <p>{{ faturamento_total|default('R$ 0,00') }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CONTEÚDO DINÂMICO -->
+                    {% block conteudo %}{% endblock %}
+                    {% block content %}{% endblock %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Atalho secreto: CTRL+SHIFT+T ou 3 cliques no título
+        let contadorCliques = 0;
+        const tituloTopo = document.getElementById('tituloTopo');
+        if(tituloTopo){
+            tituloTopo.addEventListener('click', () => {
+                contadorCliques++;
+                if (contadorCliques >= 3) {
+                    document.getElementById('modoTeste').style.display = 'block';
+                    setTimeout(() => contadorCliques = 0, 5000);
+                }
+            });
+        }
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.shiftKey && e.code === 'KeyT') {
+                const m = document.getElementById('modoTeste'); if(m) m.style.display='block';
+            }
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
