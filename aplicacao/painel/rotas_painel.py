@@ -1,9 +1,8 @@
 from flask import Blueprint, render_template
-# from aplicacao.clientes.modelos import Cliente
-# from aplicacao.produtos.modelos import Produto
-# from aplicacao.ordem_servico.modelos import OrdemServico
 
-painel_bp = Blueprint('painel', __name__)
+# Registrar o blueprint do painel sob o prefixo /painel para evitar conflito com a raiz
+painel_bp = Blueprint('painel', __name__, url_prefix='/painel')
+
 
 @painel_bp.route('/')
 def dashboard():
