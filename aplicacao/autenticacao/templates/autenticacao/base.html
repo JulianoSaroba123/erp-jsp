@@ -102,14 +102,11 @@
 
                     <!-- CONTEÚDO DINÂMICO -->
                     {% block conteudo %}{% endblock %}
-                    {% if session.get('usuario') %}
-                    {% else %}
-                    {# No extra content for anonymous users #}
-                    {% endif %}
                     {% block content %}{% endblock %}
 
                 </div>
             </div>
+            {% endif %}
         </div>
     </div>
 
