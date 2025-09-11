@@ -26,9 +26,9 @@
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
+        {# Mostrar apenas a mensagem mais recente para evitar duplicação visual #}
+        {% set latest = messages[-1] %}
+        <div class="alert alert-{{ latest[0] }}">{{ latest[1] }}</div>
       {% endif %}
     {% endwith %}
 
