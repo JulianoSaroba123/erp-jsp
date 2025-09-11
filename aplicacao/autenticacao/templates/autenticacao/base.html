@@ -51,14 +51,15 @@
                 <a href="#"> <i class="fas fa-chart-line"></i> Financeiro</a>
                 <a href="#"> <i class="fas fa-cogs"></i> Configurações</a>
                 <!-- botão sair -->
-                <div style="position: absolute; bottom: 20px; width: 100%; left: 0; padding: 0 20px;">
+                <div class="sidebar-logout" style="position: absolute; bottom: 20px; width: 100%; left: 0; padding: 0 20px;">
                     <a href="{{ url_for('autenticacao.logout') }}" class="d-block btn btn-outline-light btn-sm text-start">
                         <i class="fas fa-sign-out-alt me-2"></i> Sair
                     </a>
                 </div>
             </div>
+            {% endif %}
 
-            <!-- CONTEÚDO PRINCIPAL -->
+            <!-- CONTEÚDO PRINCIPAL (sempre visível) -->
             <div class="col-md-10" style="min-height: 100vh; overflow-y: auto;">
                 <div class="topbar">
                     <h4 id="tituloTopo">ERP JSP - Painel de Controle</h4>
