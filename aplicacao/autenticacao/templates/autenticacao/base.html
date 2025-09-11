@@ -38,6 +38,7 @@
     <div class="modo-teste" id="modoTeste">MODO TESTE ATIVADO</div>
     <div class="container-fluid">
         <div class="row">
+            {% if session.get('usuario') %}
             <!-- MENU LATERAL -->
             <div class="col-md-2 sidebar" role="navigation" aria-label="Menu lateral principal">
                 <div class="logo">
@@ -65,6 +66,7 @@
                 </div>
 
                 <div class="container py-4" style="position: relative; z-index: 1; background: rgba(7, 22, 48, 0.9);">
+                    {% if session.get('usuario') %}
                     <!-- BLOCOS DE KPIs -->
                     <div class="row mb-4">
                         <div class="col-md-3">
@@ -96,9 +98,14 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
 
                     <!-- CONTEÚDO DINÂMICO -->
                     {% block conteudo %}{% endblock %}
+                    {% if session.get('usuario') %}
+                    {% else %}
+                    {# No extra content for anonymous users #}
+                    {% endif %}
                     {% block content %}{% endblock %}
 
                 </div>
