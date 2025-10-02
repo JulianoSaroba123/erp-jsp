@@ -7,231 +7,457 @@
 .sidebar { display: none !important; }
 .topbar { display: none !important; }
 .card-kpi { display: none !important; }
-.col-md-10 { width: 100% !important; max-width: 100% !important; }
+.col-md-10 { width: 100% !important; max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
 
-/* Estilo para página de login */
+/* Reset completo do layout para login */
+.container-fluid { padding: 0 !important; margin: 0 !important; }
+.container.py-4 { padding: 0 !important; background: transparent !important; }
+
+/* Estilo para página de login com proporções melhoradas */
 body {
     background: var(--bg-grad) !important;
     min-height: 100vh;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    overflow-x: hidden;
 }
 
-.container-fluid, .row {
-    height: 100vh !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    margin: 0 !important;
-    padding: 0 !important;
+/* Container principal de login ocupando toda a viewport */
+.login-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    background: 
+        radial-gradient(circle at 20% 25%, rgba(41, 182, 255, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 80% 75%, rgba(86, 212, 255, 0.10) 0%, transparent 50%),
+        radial-gradient(circle at 45% 60%, rgba(29, 78, 216, 0.08) 0%, transparent 60%);
 }
 
+/* Efeitos de fundo animados mais sutis */
+.login-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        linear-gradient(45deg, transparent 30%, rgba(86, 212, 255, 0.03) 50%, transparent 70%),
+        linear-gradient(-45deg, transparent 30%, rgba(41, 182, 255, 0.03) 50%, transparent 70%);
+    animation: backgroundShift 15s ease-in-out infinite;
+    z-index: 1;
+}
+
+@keyframes backgroundShift {
+    0%, 100% { 
+        opacity: 0.4;
+        transform: rotate(0deg) scale(1);
+    }
+    50% { 
+        opacity: 0.7;
+        transform: rotate(1deg) scale(1.02);
+    }
+}
+
+/* Card de login com proporções otimizadas */
 .login-card {
-    background: linear-gradient(180deg, rgba(6, 18, 32, 0.85), rgba(6, 18, 32, 0.75));
-    border: 1px solid rgba(86, 212, 255, 0.15);
-    border-radius: 20px;
-    padding: 3rem;
-    max-width: 480px;
+    background: linear-gradient(180deg, rgba(6, 18, 32, 0.92), rgba(6, 18, 32, 0.88));
+    -webkit-backdrop-filter: blur(30px);
+    backdrop-filter: blur(30px);
+    border: 2px solid rgba(86, 212, 255, 0.25);
+    border-radius: 28px;
+    padding: 3.5rem 3rem;
+    max-width: 520px;
     width: 100%;
+    min-height: 600px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
     box-shadow: 
-        0 20px 60px rgba(0, 0, 0, 0.4),
-        0 8px 32px rgba(41, 182, 255, 0.08);
+        0 25px 80px rgba(0, 0, 0, 0.5),
+        0 15px 40px rgba(41, 182, 255, 0.15),
+        inset 0 2px 0 rgba(255, 255, 255, 0.15);
     position: relative;
     z-index: 10;
+    transform: scale(1);
+    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
+.login-card:hover {
+    transform: scale(1.02) translateY(-5px);
+    box-shadow: 
+        0 35px 100px rgba(0, 0, 0, 0.6),
+        0 20px 60px rgba(41, 182, 255, 0.25);
+}
+
+/* Borda animada mais elegante */
+.login-card::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    background: linear-gradient(45deg, #29b6ff, #56d4ff, #1d4ed8, #3b82f6, #29b6ff);
+    border-radius: 31px;
+    z-index: -1;
+    opacity: 0.5;
+    animation: borderGlow 6s ease-in-out infinite;
+    background-size: 300% 300%;
+}
+
+@keyframes borderGlow {
+    0%, 100% { 
+        opacity: 0.5; 
+        background-position: 0% 50%;
+    }
+    50% { 
+        opacity: 0.8;
+        background-position: 100% 50%;
+    }
+}
+
+/* Logo com melhor proporção e animação */
 .logo-container {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
 }
 
 .logo-container img {
-    max-width: 180px;
+    max-width: 160px;
     height: auto;
-    filter: drop-shadow(0 4px 16px rgba(41, 182, 255, 0.3));
+    filter: drop-shadow(0 8px 24px rgba(41, 182, 255, 0.4));
+    animation: logoFloat 8s ease-in-out infinite;
 }
 
+@keyframes logoFloat {
+    0%, 100% { 
+        transform: translateY(0px) scale(1);
+        filter: drop-shadow(0 8px 24px rgba(41, 182, 255, 0.4));
+    }
+    50% { 
+        transform: translateY(-12px) scale(1.05);
+        filter: drop-shadow(0 12px 32px rgba(41, 182, 255, 0.6));
+    }
+}
+
+/* Título e subtítulo mais elegantes */
 .login-title {
     color: var(--jsp-text);
-    font-size: 2rem;
-    font-weight: 700;
+    font-size: 2.4rem;
+    font-weight: 800;
     text-align: center;
     margin-bottom: 0.5rem;
-    text-shadow: 0 2px 10px rgba(86, 212, 255, 0.15);
+    text-shadow: 0 4px 20px rgba(86, 212, 255, 0.3);
+    letter-spacing: 0.5px;
+    line-height: 1.1;
 }
 
 .login-subtitle {
     color: var(--jsp-muted);
     text-align: center;
-    margin-bottom: 2rem;
-    opacity: 0.8;
+    margin-bottom: 2.5rem;
+    opacity: 0.9;
+    font-size: 1.1rem;
+    font-weight: 400;
 }
 
+/* Campos de formulário aprimorados */
 .form-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
     position: relative;
 }
 
 .form-control-login {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(86, 212, 255, 0.15);
-    border-radius: 12px;
-    padding: 1rem 1.25rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(86, 212, 255, 0.25);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
     color: var(--jsp-text);
     width: 100%;
-    transition: all 0.3s ease;
+    font-size: 1.1rem;
+    font-weight: 500;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    height: auto;
 }
 
 .form-control-login:focus {
     outline: none;
     border-color: var(--jsp-cyan);
-    box-shadow: 0 0 0 3px rgba(86, 212, 255, 0.15);
-    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 4px rgba(86, 212, 255, 0.25);
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-2px);
 }
 
 .form-control-login::placeholder {
     color: var(--jsp-muted);
-    opacity: 0.7;
+    opacity: 0.8;
+    font-weight: 400;
 }
 
+/* Toggle de senha melhorado */
 .password-toggle {
     position: absolute;
-    right: 1rem;
+    right: 1.25rem;
     top: 50%;
     transform: translateY(-50%);
-    background: none;
+    background: rgba(86, 212, 255, 0.1);
     border: none;
+    border-radius: 8px;
     color: var(--jsp-cyan);
     cursor: pointer;
-    padding: 0.5rem;
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
+.password-toggle:hover {
+    background: rgba(86, 212, 255, 0.2);
+    color: #29b6ff;
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* Botão de login aprimorado */
 .btn-login {
     background: var(--btn-grad);
     border: none;
-    border-radius: 12px;
-    padding: 1rem;
+    border-radius: 16px;
+    padding: 1.25rem 2rem;
     width: 100%;
     color: #042a33;
-    font-weight: 700;
-    font-size: 1.1rem;
-    margin-top: 1rem;
-    transition: all 0.3s ease;
+    font-weight: 800;
+    font-size: 1.2rem;
+    margin-top: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-login::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s ease;
 }
 
 .btn-login:hover {
-    transform: translateY(-2px);
+    transform: translateY(-3px);
     color: #042a33;
+    box-shadow: 0 15px 50px rgba(41, 182, 255, 0.5);
 }
 
+.btn-login:hover::before {
+    left: 100%;
+}
+
+.btn-login:active {
+    transform: translateY(-1px);
+}
+
+/* Opções de login */
 .login-options {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
+    margin-top: 2rem;
+    font-size: 1rem;
 }
 
 .remember-me {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
     color: var(--jsp-text);
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.remember-me:hover {
+    color: var(--jsp-cyan);
 }
 
 .remember-me input[type="checkbox"] {
     accent-color: var(--jsp-cyan);
+    width: 18px;
+    height: 18px;
 }
 
 .forgot-password {
     color: var(--jsp-cyan);
     text-decoration: none;
+    transition: all 0.3s ease;
+    font-weight: 500;
 }
 
+.forgot-password:hover {
+    color: #29b6ff;
+    text-shadow: 0 0 10px rgba(41, 182, 255, 0.5);
+}
+
+/* Alertas melhorados */
 .alert {
-    border-radius: 10px;
+    border-radius: 14px;
     border: none;
-    margin-bottom: 1.5rem;
-    padding: 1rem;
+    margin-bottom: 2rem;
+    padding: 1.25rem 1.5rem;
+    font-weight: 500;
+    position: relative;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
 }
 
 .alert-danger {
-    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
     color: #fca5a5;
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    border: 2px solid rgba(239, 68, 68, 0.3);
 }
 
 .alert-success {
-    background: linear-gradient(135deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05));
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
     color: #86efac;
-    border: 1px solid rgba(34, 197, 94, 0.2);
+    border: 2px solid rgba(34, 197, 94, 0.3);
+}
+
+/* Responsividade aprimorada */
+@media (max-width: 576px) {
+    .login-card {
+        padding: 2.5rem 2rem;
+        margin: 15px;
+        max-width: calc(100% - 30px);
+        min-height: 500px;
+    }
+    
+    .login-title {
+        font-size: 2rem;
+    }
+    
+    .login-subtitle {
+        font-size: 1rem;
+    }
+    
+    .logo-container img {
+        max-width: 140px;
+    }
+    
+    .form-control-login {
+        padding: 1.1rem 1.25rem;
+        font-size: 1rem;
+    }
+    
+    .btn-login {
+        padding: 1.1rem 1.75rem;
+        font-size: 1.1rem;
+    }
+    
+    .login-options {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+}
+
+@media (min-width: 1200px) {
+    .login-card {
+        max-width: 560px;
+        padding: 4rem 3.5rem;
+    }
+    
+    .login-title {
+        font-size: 2.6rem;
+    }
+}
+
+/* Animação de entrada suave */
+.login-card {
+    animation: slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes slideInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 </style>
 {% endblock %}
 
 {% block conteudo %}
-<div class="login-card">
-  <div class="logo-container">
-    <img src="{{ logo_url }}" alt="JSP Elétrica Industrial & Solar" />
-  </div>
-  
-  <h1 class="login-title">Bem-vindo</h1>
-  <p class="login-subtitle">Faça login para acessar o JSP ERP</p>
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="logo-container">
+      <img src="{{ logo_url }}" alt="JSP Elétrica Industrial & Solar" />
+    </div>
+    
+    <h1 class="login-title">Bem-vindo</h1>
+    <p class="login-subtitle">Faça login para acessar o JSP ERP</p>
 
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% set latest = messages[-1] %}
-      <div class="alert alert-{{ latest[0] }}">
-        <i class="fas fa-{{ 'check-circle' if latest[0] == 'success' else 'exclamation-triangle' }} me-2"></i>
-        {{ latest[1] }}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% set latest = messages[-1] %}
+        <div class="alert alert-{{ latest[0] }}">
+          <i class="fas fa-{{ 'check-circle' if latest[0] == 'success' else 'exclamation-triangle' }} me-2"></i>
+          {{ latest[1] }}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('autenticacao.login') }}" autocomplete="off" novalidate>
+      <div class="form-group">
+        <input 
+          id="usuario" 
+          name="usuario" 
+          type="text" 
+          class="form-control-login" 
+          placeholder="Nome de usuário" 
+          required
+          autocomplete="username"
+        >
       </div>
-    {% endif %}
-  {% endwith %}
-
-  <form method="POST" action="{{ url_for('autenticacao.login') }}" autocomplete="off" novalidate>
-    <div class="form-group">
-      <input 
-        id="usuario" 
-        name="usuario" 
-        type="text" 
-        class="form-control-login" 
-        placeholder="Nome de usuário" 
-        required
-        autocomplete="username"
-      >
-    </div>
-    
-    <div class="form-group">
-      <input 
-        id="senha" 
-        name="senha" 
-        type="password" 
-        class="form-control-login" 
-        placeholder="Senha" 
-        required
-        autocomplete="current-password"
-      >
-      <button type="button" class="password-toggle" aria-label="Mostrar/ocultar senha">
-        <i class="fas fa-eye"></i>
+      
+      <div class="form-group">
+        <input 
+          id="senha" 
+          name="senha" 
+          type="password" 
+          class="form-control-login" 
+          placeholder="Senha" 
+          required
+          autocomplete="current-password"
+        >
+        <button type="button" class="password-toggle" aria-label="Mostrar/ocultar senha">
+          <i class="fas fa-eye"></i>
+        </button>
+      </div>
+      
+      <button class="btn-login" type="submit">
+        <i class="fas fa-sign-in-alt me-2"></i>
+        Entrar no Sistema
       </button>
-    </div>
-    
-    <button class="btn-login" type="submit">
-      <i class="fas fa-sign-in-alt me-2"></i>
-      Entrar no Sistema
-    </button>
-    
-    <div class="login-options">
-      <label class="remember-me">
-        <input type="checkbox" name="remember" />
-        <span>Lembrar de mim</span>
-      </label>
-      <a href="#" class="forgot-password">Esqueci minha senha</a>
-    </div>
-  </form>
+      
+      <div class="login-options">
+        <label class="remember-me">
+          <input type="checkbox" name="remember" />
+          <span>Lembrar de mim</span>
+        </label>
+        <a href="#" class="forgot-password">Esqueci minha senha</a>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}
 
