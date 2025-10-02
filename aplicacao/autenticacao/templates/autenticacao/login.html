@@ -2,6 +2,7 @@
 {% set logo_url = url_for('static', filename='imagens/logo_atualizado.png') %}
 
 {% block styles %}
+<!-- FORÇAR RELOAD - VERSAO 2.0 -->
 <style>
 /* Ocultar sidebar e elementos de dashboard na página de login */
 .sidebar { display: none !important; }
@@ -67,10 +68,10 @@ body {
     backdrop-filter: blur(30px);
     border: 2px solid rgba(86, 212, 255, 0.25);
     border-radius: 24px;
-    padding: 2.5rem 2.5rem;
-    max-width: 420px;
+    padding: 2rem 2rem; /* REDUZIDO DRASTICAMENTE */
+    max-width: 380px; /* MUITO MENOR */
     width: 100%;
-    min-height: 480px;
+    min-height: 420px; /* MUITO MENOR */
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -125,7 +126,7 @@ body {
 }
 
 .logo-container img {
-    max-width: 80px;
+    max-width: 50px !important; /* AINDA MENOR */
     height: auto;
     filter: drop-shadow(0 4px 12px rgba(41, 182, 255, 0.4));
     animation: logoFloat 8s ease-in-out infinite;
