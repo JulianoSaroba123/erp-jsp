@@ -1,64 +1,103 @@
-{% extends 'autenticacao/base.html' %}
+{% extends 'autenticacao/base_login.html' %}
 {% set logo_url = url_for('static', filename='imagens/logo_atualizado.png') %}
 
 {% block conteudo %}
-<style>
-  /* Estilos locais para a página de login (pode ser movido para estilo_base.css) */
-  .login-shell { display:flex; justify-content:center; align-items:center; min-height:70vh; }
-  .login-card { background: rgba(10,20,40,0.9); padding:2rem; border-radius:12px; box-shadow:0 8px 30px rgba(0,0,0,0.6); max-width:480px; width:100%; }
-  .login-card h1{ color:var(--brand-blue, #29b6ff); text-align:center; }
-  .login-card .sub{ color:#cbdfe9; text-align:center; margin-bottom:1rem }
-  .login-card .field + .field{ margin-top:0.75rem }
-  .login-card input{ width:100%; padding:0.75rem; border-radius:6px; border:none; background:#0f2740; color:#fff }
-  .login-card .btn{ width:100%; margin-top:1rem; padding:0.75rem; border-radius:6px; border:none; background:var(--brand-cyan,#56d4ff); color:#000; font-weight:700 }
-  .remember-checkbox{ accent-color:var(--brand-cyan,#56d4ff) }
-  .eye{ position:absolute; right:12px; top:10px; background:transparent; border:none; color:var(--brand-cyan,#56d4ff) }
-  .logo-wrap img{ max-width:160px; display:block; margin:0 auto 1rem }
-</style>
-
-<div class="login-shell">
-  <div class="login-card">
-    <div class="logo-wrap">
-      <img src="{{ logo_url }}" alt="JSP Automação">
-    </div>
-    <h1>Bem-vindo</h1>
-    <p class="sub">Faça login para continuar no JSP ERP</p>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {# Mostrar apenas a mensagem mais recente para evitar duplicação visual #}
-        {% set latest = messages[-1] %}
-        <div class="alert alert-{{ latest[0] }}">{{ latest[1] }}</div>
-      {% endif %}
-    {% endwith %}
-
-    <form method="POST" action="{{ url_for('autenticacao.login') }}" autocomplete="off" novalidate>
-      <div class="field" style="position:relative">
-        <input id="usuario" name="usuario" type="text" placeholder="Usuário" required>
-      </div>
-      <div class="field" style="position:relative; margin-top:0.75rem">
-        <input id="senha" name="senha" type="password" placeholder="Senha" required>
-        <button type="button" class="eye" aria-label="Mostrar/ocultar senha">
-          <i class="fa-solid fa-eye"></i>
-        </button>
-      </div>
-      <button class="btn" type="submit">Entrar</button>
-      <div class="d-flex justify-content-between align-items-center mt-2" style="font-size:.9rem">
-        <label class="d-flex align-items-center gap-2"><input type="checkbox" name="remember" class="remember-checkbox"> Lembrar de mim</label>
-        <a href="#" class="text-decoration-none" style="color:var(--brand-cyan,#56d4ff)">Esqueci minha senha</a>
-      </div>
-    </form>
+<div class="login-card">
+  <div class="logo-container">
+    <img src="{{ logo_url }}" alt="JSP Elétrica Industrial & Solar" />
   </div>
+  
+  <h1 class="login-title">Bem-vindo</h1>
+  <p class="login-subtitle">Faça login para acessar o JSP ERP</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {# Mostrar apenas a mensagem mais recente para evitar duplicação visual #}
+      {% set latest = messages[-1] %}
+      <div class="alert alert-{{ latest[0] }}">
+        <i class="fas fa-{{ 'check-circle' if latest[0] == 'success' else 'exclamation-triangle' }} me-2"></i>
+        {{ latest[1] }}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <form method="POST" action="{{ url_for('autenticacao.login') }}" autocomplete="off" novalidate>
+    <div class="form-group">
+      <input 
+        id="usuario" 
+        name="usuario" 
+        type="text" 
+        class="form-control-login" 
+        placeholder="Nome de usuário" 
+        required
+        autocomplete="username"
+      >
+    </div>
+    
+    <div class="form-group">
+      <input 
+        id="senha" 
+        name="senha" 
+        type="password" 
+        class="form-control-login" 
+        placeholder="Senha" 
+        required
+        autocomplete="current-password"
+      >
+      <button type="button" class="password-toggle" aria-label="Mostrar/ocultar senha">
+        <i class="fas fa-eye"></i>
+      </button>
+    </div>
+    
+    <button class="btn-login" type="submit">
+      <i class="fas fa-sign-in-alt me-2"></i>
+      Entrar no Sistema
+    </button>
+    
+    <div class="login-options">
+      <label class="remember-me">
+        <input type="checkbox" name="remember" />
+        <span>Lembrar de mim</span>
+      </label>
+      <a href="#" class="forgot-password">Esqueci minha senha</a>
+    </div>
+  </form>
 </div>
 
 <script>
-  const eyeBtn = document.querySelector('.eye');
-  const pwd = document.querySelector('#senha');
-  eyeBtn?.addEventListener('click', ()=>{
-    const isPwd = pwd.type === 'password';
-    pwd.type = isPwd ? 'text' : 'password';
-    eyeBtn.innerHTML = isPwd ? '<i class="fa-solid fa-eye-slash"></i>' : '<i class="fa-solid fa-eye"></i>';
-  });
+document.addEventListener('DOMContentLoaded', function() {
+  // Toggle de senha
+  const passwordToggle = document.querySelector('.password-toggle');
+  const passwordInput = document.querySelector('#senha');
+  
+  if (passwordToggle && passwordInput) {
+    passwordToggle.addEventListener('click', function() {
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+      
+      const icon = this.querySelector('i');
+      icon.className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+    });
+  }
+  
+  // Foco automático no primeiro campo
+  const usuarioInput = document.querySelector('#usuario');
+  if (usuarioInput) {
+    usuarioInput.focus();
+  }
+  
+  // Animação de entrada suave
+  const loginCard = document.querySelector('.login-card');
+  if (loginCard) {
+    loginCard.style.opacity = '0';
+    loginCard.style.transform = 'translateY(30px)';
+    
+    setTimeout(() => {
+      loginCard.style.transition = 'all 0.6s ease';
+      loginCard.style.opacity = '1';
+      loginCard.style.transform = 'translateY(0)';
+    }, 100);
+  }
+});
 </script>
-
 {% endblock %}

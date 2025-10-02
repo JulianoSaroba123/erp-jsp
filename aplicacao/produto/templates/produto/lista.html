@@ -1,0 +1,98 @@
+{% extends 'autenticacao/base.html' %}
+
+{% block title %}Produtos — JSP ERP{% endblock %}
+
+{% block conteudo %}
+<div class="lista-produtos lista-clientes">
+
+  <h2 class="text-center mb-4 text-info fw-bold">Produtos <span class="text-brand">JSP ERP</span></h2>
+
+  {# Support paginated or plain list #}
+  {% if produtos is defined and produtos %}
+    {% if produtos.items is defined %}
+      {% set iterable = produtos.items %}
+      {% set total = produtos.total if produtos.total is defined else iterable|length %}
+    {% else %}
+      {% set iterable = produtos %}
+      {% set total = iterable|length %}
+    {% endif %}
+  {% else %}
+    {% set iterable = [] %}
+    {% set total = 0 %}
+  {% endif %}
+
+  <div class="card bg-dark border-info shadow-lg card-jsp">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <i class="fas fa-boxes me-2"></i>
+        <div>
+          <strong>Lista de Produtos</strong>
+          <div><small class="badge-count">— {{ paginacao.total if paginacao is defined else total }}</small></div>
+          {% if ultima_alteracao is defined %}
+            <div><small class="text-muted">Última alteração: {{ ultima_alteracao }}</small></div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="d-flex align-items-center">
+        <a href="{{ url_for('produto.novo_produto') }}" class="btn-novo header-action btn btn-sm me-2"><i class="fas fa-plus"></i> Novo</a>
+        <form class="d-flex" method="get" action="{{ url_for('produto.listar_produtos') }}">
+          <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="Buscar por nome ou SKU..." value="{{ q }}">
+          <button class="btn btn-outline-info btn-sm" type="submit"><i class="fas fa-search" aria-hidden="true"></i><span class="visually-hidden">Buscar</span></button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0 table-erp">
+          <thead class="table-info text-dark neo-thead">
+            <tr>
+              <th>Código</th>
+              <th>Nome</th>
+              <th>SKU</th>
+              <th>Categoria</th>
+              <th>Fornecedor</th>
+              <th class="text-end">Preço</th>
+              <th class="text-center">Markup (%)</th>
+              <th class="text-center">Estoque</th>
+              <th class="text-center">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if produtos and produtos.items %}
+              {% for p in produtos.items %}
+                <tr>
+                  <td>{{ p.codigo or ('PRD%05d' % p.id) }}</td>
+                  <td>{{ p.nome }}</td>
+                  <td>{{ p.sku or '-' }}</td>
+                  <td>{{ p.categoria or '-' }}</td>
+                  <td>{{ p.fornecedor.nome if p.fornecedor else '-' }}</td>
+                  <td class="text-end">{{ 'R$ %.2f'|format(p.preco|float) if p.preco else '-' }}</td>
+                  <td class="text-center">{{ ('%.1f%%'|format(p.markup|float)) if p.markup else '-' }}</td>
+                  <td class="text-center">{{ p.estoque }} {{ p.unidade }}</td>
+                  <td class="text-center">
+                    <a href="{{ url_for('produto.editar_produto', id=p.id) }}" class="btn btn-sm btn-outline-primary" title="Ver produto {{ p.nome }}" aria-label="Ver produto {{ p.nome }}"><i class="fas fa-eye" aria-hidden="true"></i></a>
+                    <a href="{{ url_for('produto.editar_produto', id=p.id) }}" class="btn btn-sm btn-outline-warning" title="Editar produto {{ p.nome }}" aria-label="Editar produto {{ p.nome }}"><i class="fas fa-edit" aria-hidden="true"></i></a>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="9" class="text-center">Nenhum produto encontrado.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  // Placeholder for any produto-specific JS (delete via AJAX could be added later)
+});
+</script>
+{% endblock %}

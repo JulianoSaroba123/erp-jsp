@@ -1,0 +1,36 @@
+{% extends 'autenticacao/base.html' %}
+{% block content %}
+<div class="container mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex align-items-center gap-2">
+      <h4 class="mb-0">Contas Financeiras</h4>
+      <a href="{{ url_for('financeiro.dashboard_fin') }}" class="btn btn-outline-secondary btn-sm ms-2"><i class="fas fa-arrow-left"></i> Voltar</a>
+    </div>
+    <form method="post" class="row g-2 align-items-end">
+      {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+      <div class="col-md-3"><input name="nome" class="form-control" placeholder="Nome" required></div>
+      <div class="col-md-2"><input name="banco" class="form-control" placeholder="Banco"></div>
+      <div class="col-md-2">
+        <select name="tipo" class="form-select" required>
+          <option value="corrente">Corrente</option>
+          <option value="carteira">Carteira</option>
+          <option value="pix">Pix</option>
+          <option value="caixa">Caixa</option>
+        </select>
+      </div>
+      <div class="col-md-2"><input name="agencia" class="form-control" placeholder="Agência"></div>
+      <div class="col-md-2"><input name="numero" class="form-control" placeholder="Número"></div>
+      <div class="col-md-1"><input name="saldo_inicial" class="form-control" placeholder="Saldo Inicial" type="number" step="0.01"></div>
+      <div class="col-md-1"><button class="btn btn-success w-100">Adicionar</button></div>
+    </form>
+  </div>
+  <table class="table table-bordered table-sm mt-2">
+    <thead class="table-light"><tr><th>Nome</th><th>Banco</th><th>Tipo</th><th>Agência</th><th>Número</th><th>Saldo Inicial</th></tr></thead>
+    <tbody>
+      {% for c in itens %}
+      <tr><td>{{ c.nome }}</td><td>{{ c.banco or '-' }}</td><td>{{ c.tipo }}</td><td>{{ c.agencia or '-' }}</td><td>{{ c.numero or '-' }}</td><td>R$ {{ '%.2f'|format(c.saldo_inicial) }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

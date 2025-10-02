@@ -1,0 +1,240 @@
+{% extends "autenticacao/base.html" %}
+
+{% block titulo %}Configurações - Formação de Preço{% endblock %}
+
+{% block conteudo %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-cog"></i> Configurações - Formação de Preço
+                    </h4>
+                    <div>
+                        <a href="{{ url_for('formacao_preco.calculadora') }}" class="btn btn-info btn-sm">
+                            <i class="fas fa-calculator"></i> Calculadora
+                        </a>
+                        <a href="{{ url_for('formacao_preco.ponto_equilibrio') }}" class="btn btn-warning btn-sm">
+                            <i class="fas fa-chart-line"></i> Ponto de Equilíbrio
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <form method="POST" id="form-configuracoes">
+                        <div class="row">
+                            <!-- Custos Fixos Mensais -->
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h5><i class="fas fa-building"></i> Custos Fixos Mensais</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="custos-fixos-container">
+                                            {% for nome, valor in config.custos_fixos_mensais.items() %}
+                                            <div class="input-group mb-2" data-custo="{{ nome }}">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">{{ nome.title() }}</span>
+                                                </div>
+                                                <input type="number" class="form-control custo-fixo" 
+                                                       value="{{ valor }}" min="0" step="0.01"
+                                                       data-nome="{{ nome }}">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">R$</span>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm remove-custo">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <!-- Adicionar novo custo -->
+                                        <div class="input-group mb-3">
+                                            <input type="text" id="novo-custo-nome" class="form-control" 
+                                                   placeholder="Nome do custo">
+                                            <input type="number" id="novo-custo-valor" class="form-control" 
+                                                   placeholder="0.00" min="0" step="0.01">
+                                            <div class="input-group-append">
+                                                <button type="button" id="add-custo" class="btn btn-success">
+                                                    <i class="fas fa-plus"></i> Adicionar
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="alert alert-info">
+                                            <strong>Total Custos Fixos: R$ <span id="total-custos-fixos">{{ "%.2f"|format(config.total_custos_fixos) }}</span></strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Outros Parâmetros -->
+                            <div class="col-md-6">
+                                <div class="card mb-4">
+                                    <div class="card-header">
+                                        <h5><i class="fas fa-sliders-h"></i> Parâmetros</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            <label for="custo_variavel_hora">
+                                                <i class="fas fa-clock"></i> Custo Variável por Hora (R$)
+                                            </label>
+                                            <input type="number" class="form-control" name="custo_variavel_hora" 
+                                                   id="custo_variavel_hora" value="{{ config.custo_variavel_hora }}" 
+                                                   min="0" step="0.01" required>
+                                            <small class="form-text text-muted">Material, combustível, etc.</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="preco_medio_praticado">
+                                                <i class="fas fa-dollar-sign"></i> Preço Médio Praticado (R$/hora)
+                                            </label>
+                                            <input type="number" class="form-control" name="preco_medio_praticado" 
+                                                   id="preco_medio_praticado" value="{{ config.preco_medio_praticado }}" 
+                                                   min="0" step="0.01" required>
+                                            <small class="form-text text-muted">Seu preço atual de venda</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="margem_desejada">
+                                                <i class="fas fa-percentage"></i> Margem Desejada (%)
+                                            </label>
+                                            <input type="number" class="form-control" name="margem_desejada" 
+                                                   id="margem_desejada" value="{{ config.margem_desejada }}" 
+                                                   min="0" max="100" step="0.1" required>
+                                            <small class="form-text text-muted">Meta de margem de lucro</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="horas_trabalho_mes">
+                                                <i class="fas fa-calendar"></i> Horas de Trabalho/Mês
+                                            </label>
+                                            <input type="number" class="form-control" name="horas_trabalho_mes" 
+                                                   id="horas_trabalho_mes" value="{{ config.horas_trabalho_mes }}" 
+                                                   min="1" max="500" required>
+                                            <small class="form-text text-muted">Horas disponíveis para venda</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campo hidden para custos fixos JSON -->
+                        <input type="hidden" name="custos_fixos" id="custos-fixos-json">
+                        
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save"></i> Salvar Configurações
+                            </button>
+                            <a href="{{ url_for('formacao_preco.calculadora') }}" class="btn btn-success btn-lg ml-2">
+                                <i class="fas fa-arrow-right"></i> Ir para Calculadora
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const custosContainer = document.getElementById('custos-fixos-container');
+    const totalSpan = document.getElementById('total-custos-fixos');
+    const custosJsonInput = document.getElementById('custos-fixos-json');
+    
+    // Função para calcular total
+    function calcularTotal() {
+        let total = 0;
+        const inputs = custosContainer.querySelectorAll('.custo-fixo');
+        inputs.forEach(input => {
+            total += parseFloat(input.value) || 0;
+        });
+        totalSpan.textContent = total.toFixed(2);
+        return total;
+    }
+    
+    // Função para gerar JSON dos custos
+    function gerarCustosJson() {
+        const custos = {};
+        const inputs = custosContainer.querySelectorAll('.custo-fixo');
+        inputs.forEach(input => {
+            const nome = input.dataset.nome;
+            const valor = parseFloat(input.value) || 0;
+            custos[nome] = valor;
+        });
+        custosJsonInput.value = JSON.stringify(custos);
+        return custos;
+    }
+    
+    // Adicionar novo custo
+    document.getElementById('add-custo').addEventListener('click', function() {
+        const nome = document.getElementById('novo-custo-nome').value.trim();
+        const valor = parseFloat(document.getElementById('novo-custo-valor').value) || 0;
+        
+        if (!nome) {
+            alert('Digite o nome do custo');
+            return;
+        }
+        
+        // Verificar se já existe
+        if (custosContainer.querySelector(`[data-custo="${nome}"]`)) {
+            alert('Custo já existe');
+            return;
+        }
+        
+        // Criar novo elemento
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2';
+        div.dataset.custo = nome;
+        div.innerHTML = `
+            <div class="input-group-prepend">
+                <span class="input-group-text">${nome}</span>
+            </div>
+            <input type="number" class="form-control custo-fixo" 
+                   value="${valor}" min="0" step="0.01" data-nome="${nome}">
+            <div class="input-group-append">
+                <span class="input-group-text">R$</span>
+                <button type="button" class="btn btn-outline-danger btn-sm remove-custo">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        custosContainer.appendChild(div);
+        
+        // Limpar inputs
+        document.getElementById('novo-custo-nome').value = '';
+        document.getElementById('novo-custo-valor').value = '';
+        
+        calcularTotal();
+    });
+    
+    // Remover custo
+    custosContainer.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-custo') || e.target.parentElement.classList.contains('remove-custo')) {
+            const row = e.target.closest('.input-group');
+            row.remove();
+            calcularTotal();
+        }
+    });
+    
+    // Recalcular quando alterar valores
+    custosContainer.addEventListener('input', function(e) {
+        if (e.target.classList.contains('custo-fixo')) {
+            calcularTotal();
+        }
+    });
+    
+    // Antes de submeter o form
+    document.getElementById('form-configuracoes').addEventListener('submit', function() {
+        gerarCustosJson();
+    });
+    
+    // Calcular total inicial
+    calcularTotal();
+});
+</script>
+{% endblock %}

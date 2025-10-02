@@ -1,0 +1,28 @@
+{% extends 'autenticacao/base.html' %}
+{% block content %}
+<div class="container mt-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex align-items-center gap-2">
+      <h4 class="mb-0">Categorias Financeiras</h4>
+      <a href="{{ url_for('financeiro.dashboard_fin') }}" class="btn btn-outline-secondary btn-sm ms-2"><i class="fas fa-arrow-left"></i> Voltar</a>
+    </div>
+    <form method="post" class="d-flex gap-2">
+      {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+      <input name="nome" class="form-control" placeholder="Nome" required>
+      <select name="tipo" class="form-select" required>
+        <option value="receita">Receita</option>
+        <option value="despesa">Despesa</option>
+      </select>
+      <button class="btn btn-success">Adicionar</button>
+    </form>
+  </div>
+  <table class="table table-bordered table-sm mt-2">
+    <thead class="table-light"><tr><th>Nome</th><th>Tipo</th></tr></thead>
+    <tbody>
+      {% for c in itens %}
+      <tr><td>{{ c.nome }}</td><td>{{ c.tipo }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

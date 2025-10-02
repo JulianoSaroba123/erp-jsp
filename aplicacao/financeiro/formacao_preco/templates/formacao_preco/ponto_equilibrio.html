@@ -1,0 +1,293 @@
+{% extends "autenticacao/base.html" %}
+
+{% block titulo %}Ponto de Equilíbrio - Formação de Preço{% endblock %}
+
+{% block conteudo %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-chart-line"></i> Análise do Ponto de Equilíbrio
+                    </h4>
+                    <div>
+                        <a href="{{ url_for('formacao_preco.configuracoes') }}" class="btn btn-secondary btn-sm">
+                            <i class="fas fa-cog"></i> Configurações
+                        </a>
+                        <a href="{{ url_for('formacao_preco.calculadora') }}" class="btn btn-info btn-sm">
+                            <i class="fas fa-calculator"></i> Calculadora
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    {% if resultado.get('erro') %}
+                        <div class="alert alert-danger">
+                            <h5><i class="fas fa-exclamation-triangle"></i> Erro</h5>
+                            {{ resultado.erro }}
+                        </div>
+                    {% else %}
+                        <!-- Status Principal -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="alert alert-{{ resultado.status_classe }} text-center">
+                                    <h3><i class="fas fa-chart-bar"></i> {{ resultado.status_equilibrio }}</h3>
+                                    <p class="mb-0">
+                                        <strong>Faturamento Atual:</strong> R$ {{ "%.2f"|format(resultado.faturamento_atual_mes) }} | 
+                                        <strong>Faturamento Mínimo:</strong> R$ {{ "%.2f"|format(resultado.faturamento_minimo_mes) }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Métricas Principais -->
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <i class="fas fa-dollar-sign fa-2x text-primary mb-2"></i>
+                                        <h6>Preço Mínimo/Hora</h6>
+                                        <h4 class="text-primary">R$ {{ "%.2f"|format(resultado.preco_minimo_hora) }}</h4>
+                                        <small class="text-muted">Para cobrir custos</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <i class="fas fa-target fa-2x text-success mb-2"></i>
+                                        <h6>Preço c/ Margem</h6>
+                                        <h4 class="text-success">R$ {{ "%.2f"|format(resultado.preco_com_margem_desejada) }}</h4>
+                                        <small class="text-muted">{{ "%.1f"|format(config.margem_desejada) }}% de margem</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                                        <h6>Horas Mínimas/Mês</h6>
+                                        <h4 class="text-warning">{{ "%.0f"|format(resultado.horas_minimas_equilibrio) }}h</h4>
+                                        <small class="text-muted">{{ "%.1f"|format(resultado.dias_trabalho_equilibrio) }} dias</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-3">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <i class="fas fa-percentage fa-2x text-info mb-2"></i>
+                                        <h6>Margem Atual</h6>
+                                        <h4 class="text-info">{{ "%.1f"|format(resultado.margem_atual) }}%</h4>
+                                        <small class="text-muted">
+                                            {% if resultado.diferenca_margem >= 0 %}
+                                                <span class="text-success">+{{ "%.1f"|format(resultado.diferenca_margem) }}% da meta</span>
+                                            {% else %}
+                                                <span class="text-danger">{{ "%.1f"|format(resultado.diferenca_margem) }}% da meta</span>
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Análise Detalhada -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-info text-white">
+                                        <h5><i class="fas fa-chart-pie"></i> Composição de Custos</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <table class="table table-sm">
+                                            <tr>
+                                                <td><strong>Custos Fixos/Mês:</strong></td>
+                                                <td class="text-right">R$ {{ "%.2f"|format(resultado.total_custos_fixos) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Custo Variável/Hora:</strong></td>
+                                                <td class="text-right">R$ {{ "%.2f"|format(resultado.custo_variavel_hora) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Custo Total/Hora:</strong></td>
+                                                <td class="text-right"><strong>R$ {{ "%.2f"|format(resultado.custo_total_hora) }}</strong></td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Horas Trabalho/Mês:</strong></td>
+                                                <td class="text-right">{{ resultado.horas_trabalho_mes }}h</td>
+                                            </tr>
+                                            <tr class="table-warning">
+                                                <td><strong>% Custos Fixos/Faturamento:</strong></td>
+                                                <td class="text-right">
+                                                    <strong>{{ "%.1f"|format(resultado.percentual_custos_fixos) }}%</strong>
+                                                    {% if resultado.percentual_custos_fixos > 70 %}
+                                                        <i class="fas fa-exclamation-triangle text-danger" title="Custos fixos muito altos"></i>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h5><i class="fas fa-lightbulb"></i> Recomendações</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if resultado.recomendacoes %}
+                                            <ul class="list-unstyled">
+                                                {% for recomendacao in resultado.recomendacoes %}
+                                                <li class="mb-2">
+                                                    <i class="fas fa-arrow-right text-primary"></i>
+                                                    {{ recomendacao }}
+                                                </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <div class="alert alert-success">
+                                                <i class="fas fa-check-circle"></i>
+                                                <strong>Parabéns!</strong> Seu negócio está equilibrado.
+                                                Continue monitorando os custos e margens.
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <!-- Dicas Gerais -->
+                                        <hr>
+                                        <h6><i class="fas fa-info-circle"></i> Dicas:</h6>
+                                        <ul class="small text-muted">
+                                            <li>Monitore os custos fixos mensalmente</li>
+                                            <li>Revise preços trimestralmente</li>
+                                            <li>Considere custos de oportunidade</li>
+                                            <li>Margem ideal: 20-40% para serviços</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Simulação Rápida -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-header bg-dark text-white">
+                                        <h5><i class="fas fa-sliders-h"></i> Simulação Rápida</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="sim-preco-novo">
+                                                        <i class="fas fa-dollar-sign"></i> Novo Preço/Hora
+                                                    </label>
+                                                    <input type="number" class="form-control" id="sim-preco-novo" 
+                                                           value="{{ config.preco_medio_praticado }}" min="0" step="0.01">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label for="sim-horas-novo">
+                                                        <i class="fas fa-clock"></i> Novas Horas/Mês
+                                                    </label>
+                                                    <input type="number" class="form-control" id="sim-horas-novo" 
+                                                           value="{{ config.horas_trabalho_mes }}" min="1">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <button type="button" class="btn btn-primary mt-4" id="btn-simular-equilibrio">
+                                                    <i class="fas fa-play"></i> Simular
+                                                </button>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="mt-4">
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-info-circle"></i>
+                                                        Veja como mudanças afetam o equilíbrio
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div id="resultado-sim-equilibrio" class="mt-3" style="display: none;">
+                                            <div class="alert alert-info">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <strong>Novo Faturamento:</strong><br>
+                                                        <span class="h6" id="sim-eq-faturamento">R$ 0</span>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <strong>Nova Margem:</strong><br>
+                                                        <span class="h6" id="sim-eq-margem">0%</span>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <strong>Novo Status:</strong><br>
+                                                        <span class="h6" id="sim-eq-status">-</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('formacao_preco.calculadora') }}" class="btn btn-info btn-lg">
+                            <i class="fas fa-calculator"></i> Ver Calculadora
+                        </a>
+                        <a href="{{ url_for('formacao_preco.configuracoes') }}" class="btn btn-secondary btn-lg ml-2">
+                            <i class="fas fa-edit"></i> Alterar Configurações
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const custoFixoTotal = {{ resultado.total_custos_fixos if resultado.total_custos_fixos else 0 }};
+    const custoVariavelHora = {{ resultado.custo_variavel_hora if resultado.custo_variavel_hora else 0 }};
+    
+    document.getElementById('btn-simular-equilibrio').addEventListener('click', function() {
+        const novoPreco = parseFloat(document.getElementById('sim-preco-novo').value) || 0;
+        const novasHoras = parseInt(document.getElementById('sim-horas-novo').value) || 0;
+        
+        if (novoPreco <= 0 || novasHoras <= 0) {
+            alert('Preencha valores válidos');
+            return;
+        }
+        
+        // Cálculos
+        const novoFaturamento = novoPreco * novasHoras;
+        const custosVariaveisTotais = custoVariavelHora * novasHoras;
+        const custoTotalMes = custoFixoTotal + custosVariaveisTotais;
+        const lucro = novoFaturamento - custoTotalMes;
+        const novaMargem = novoFaturamento > 0 ? (lucro / novoFaturamento) * 100 : 0;
+        
+        // Status
+        let status = '';
+        if (lucro < 0) {
+            status = '<span class="badge badge-danger">PREJUÍZO</span>';
+        } else if (novoFaturamento < custoFixoTotal) {
+            status = '<span class="badge badge-warning">ABAIXO EQUILÍBRIO</span>';
+        } else {
+            status = '<span class="badge badge-success">ACIMA EQUILÍBRIO</span>';
+        }
+        
+        // Exibir resultado
+        document.getElementById('sim-eq-faturamento').textContent = 'R$ ' + novoFaturamento.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+        document.getElementById('sim-eq-margem').textContent = novaMargem.toFixed(1) + '%';
+        document.getElementById('sim-eq-status').innerHTML = status;
+        
+        document.getElementById('resultado-sim-equilibrio').style.display = 'block';
+    });
+});
+</script>
+{% endblock %}

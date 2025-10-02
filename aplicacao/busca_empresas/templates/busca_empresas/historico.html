@@ -1,0 +1,506 @@
+{% extends "autenticacao/base.html" %}
+
+{% block title %}Histórico de Buscas{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-info mb-0">
+                    <i class="fas fa-history me-2"></i>Histórico de Buscas
+                </h2>
+                <div>
+                    <a href="{{ url_for('busca_empresas.buscar') }}" class="btn btn-info">
+                        <i class="fas fa-search me-2"></i>Nova Busca
+                    </a>
+                    <a href="{{ url_for('busca_empresas.index') }}" class="btn btn-outline-info">
+                        <i class="fas fa-home me-2"></i>Início
+                    </a>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="card bg-dark border-info mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="filtroTermo" class="form-label text-light">Buscar por termo:</label>
+                            <input type="text" 
+                                   class="form-control bg-dark text-light border-info" 
+                                   id="filtroTermo" 
+                                   placeholder="Digite cidade ou atividade..."
+                                   onkeyup="filtrarHistorico()">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filtroPeriodo" class="form-label text-light">Período:</label>
+                            <select class="form-select bg-dark text-light border-info" 
+                                    id="filtroPeriodo" 
+                                    onchange="filtrarPorPeriodo()">
+                                <option value="">Todos os períodos</option>
+                                <option value="hoje">Hoje</option>
+                                <option value="semana">Esta semana</option>
+                                <option value="mes">Este mês</option>
+                                <option value="ano">Este ano</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filtroStatus" class="form-label text-light">Status:</label>
+                            <select class="form-select bg-dark text-light border-info" 
+                                    id="filtroStatus" 
+                                    onchange="filtrarHistorico()">
+                                <option value="">Todos</option>
+                                <option value="convertida">Com clientes convertidos</option>
+                                <option value="nao_convertida">Não convertidas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="button" class="btn btn-outline-secondary w-100" onclick="limparFiltros()">
+                                <i class="fas fa-eraser me-2"></i>Limpar Filtros
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estatísticas rápidas -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-dark border-info">
+                        <div class="card-body text-center">
+                            <i class="fas fa-search fa-2x text-info mb-2"></i>
+                            <h4 class="text-info">{{ empresas.total if empresas else 0 }}</h4>
+                            <p class="text-light mb-0">Total de Empresas</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-dark border-info">
+                        <div class="card-body text-center">
+                            <i class="fas fa-calendar fa-2x text-info mb-2"></i>
+                            <h4 class="text-info">{{ buscas_hoje or 0 }}</h4>
+                            <p class="text-light mb-0">Buscas Hoje</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-dark border-info">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user-check fa-2x text-success mb-2"></i>
+                            <h4 class="text-success">{{ empresas_convertidas or 0 }}</h4>
+                            <p class="text-light mb-0">Convertidas</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-dark border-info">
+                        <div class="card-body text-center">
+                            <i class="fas fa-percentage fa-2x text-warning mb-2"></i>
+                            <h4 class="text-warning">{{ taxa_conversao or '0' }}%</h4>
+                            <p class="text-light mb-0">Taxa de Conversão</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de empresas -->
+            {% if empresas and empresas.items %}
+            <div id="historicoEmpresas">
+                {% for empresa in empresas.items %}
+                <div class="card bg-dark border-info mb-3 historico-card" 
+                     data-termo="{{ empresa.termo_busca.lower() if empresa.termo_busca }}"
+                     data-convertida="{{ 'true' if empresa.foi_convertida_cliente else 'false' }}"
+                     data-data="{{ empresa.data_busca.strftime('%Y-%m-%d') }}">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="text-info mb-0">
+                                        <i class="fas fa-building me-2"></i>{{ empresa.razao_social }}
+                                    </h5>
+                                    <div class="d-flex gap-2">
+                                        {% if empresa.foi_convertida_cliente %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Cliente
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-clock me-1"></i>Pendente
+                                        </span>
+                                        {% endif %}
+                                        
+                                        <span class="badge bg-info">
+                                            {{ empresa.situacao or 'N/A' }}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                {% if empresa.nome_fantasia %}
+                                <p class="text-light mb-1">
+                                    <strong>Nome Fantasia:</strong> {{ empresa.nome_fantasia }}
+                                </p>
+                                {% endif %}
+                                
+                                <p class="text-light mb-1">
+                                    <strong>CNPJ:</strong> {{ empresa.cnpj }}
+                                </p>
+                                
+                                {% if empresa.termo_busca %}
+                                <p class="text-muted mb-1">
+                                    <i class="fas fa-tag me-1"></i><strong>Busca:</strong> {{ empresa.termo_busca }}
+                                </p>
+                                {% endif %}
+                                
+                                <p class="text-muted mb-1">
+                                    <i class="fas fa-calendar me-1"></i><strong>Data:</strong> 
+                                    {{ empresa.data_busca.strftime('%d/%m/%Y às %H:%M') }}
+                                </p>
+                                
+                                {% if empresa.endereco_completo %}
+                                <p class="text-light mb-1">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ empresa.endereco_completo }}
+                                </p>
+                                {% endif %}
+                                
+                                <div class="row mt-2">
+                                    {% if empresa.telefone %}
+                                    <div class="col-md-6">
+                                        <small class="text-info">
+                                            <i class="fas fa-phone me-1"></i>{{ empresa.telefone }}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if empresa.email %}
+                                    <div class="col-md-6">
+                                        <small class="text-info">
+                                            <i class="fas fa-envelope me-1"></i>{{ empresa.email }}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 text-end">
+                                <div class="btn-group-vertical d-grid gap-2">
+                                    <a href="{{ url_for('busca_empresas.detalhes_empresa', empresa_id=empresa.id) }}" 
+                                       class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-eye me-2"></i>Ver Detalhes
+                                    </a>
+                                    
+                                    {% if not empresa.foi_convertida_cliente %}
+                                    <button type="button" class="btn btn-sm btn-outline-success" 
+                                            onclick="converterCliente({{ empresa.id }})">
+                                        <i class="fas fa-user-plus me-2"></i>Converter Cliente
+                                    </button>
+                                    {% else %}
+                                    <button type="button" class="btn btn-sm btn-success" disabled>
+                                        <i class="fas fa-check me-2"></i>Já é Cliente
+                                    </button>
+                                    {% endif %}
+                                    
+                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                        onclick='repetirBusca({{ empresa.termo_busca|tojson }})'>
+                                        <i class="fas fa-redo me-2"></i>Repetir Busca
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            onclick="removerHistorico({{ empresa.id }})">
+                                        <i class="fas fa-trash me-2"></i>Remover
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Paginação -->
+            {% if empresas.pages > 1 %}
+            <nav aria-label="Navegação de páginas">
+                <ul class="pagination justify-content-center">
+                    {% if empresas.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link bg-dark text-info border-info" 
+                           href="{{ url_for('busca_empresas.historico', page=empresas.prev_num) }}">
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in empresas.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != empresas.page %}
+                        <li class="page-item">
+                            <a class="page-link bg-dark text-info border-info" 
+                               href="{{ url_for('busca_empresas.historico', page=page_num) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link bg-info text-dark border-info">
+                                {{ page_num }}
+                            </span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link bg-dark text-muted border-info">...</span>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if empresas.has_next %}
+                    <li class="page-item">
+                        <a class="page-link bg-dark text-info border-info" 
+                           href="{{ url_for('busca_empresas.historico', page=empresas.next_num) }}">
+                            Próxima <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <!-- Nenhum histórico -->
+            <div class="card bg-dark border-info">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-history fa-3x text-info mb-3"></i>
+                    <h4 class="text-info">Nenhum histórico encontrado</h4>
+                    <p class="text-light mb-4">
+                        Você ainda não realizou nenhuma busca por empresas.
+                    </p>
+                    <a href="{{ url_for('busca_empresas.buscar') }}" class="btn btn-info">
+                        <i class="fas fa-search me-2"></i>Realizar Primeira Busca
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Funções de filtro
+function filtrarHistorico() {
+    const filtroTermo = document.getElementById('filtroTermo').value.toLowerCase();
+    const filtroStatus = document.getElementById('filtroStatus').value;
+    const cards = document.querySelectorAll('.historico-card');
+    let visiveis = 0;
+    
+    cards.forEach(card => {
+        const termo = card.dataset.termo || '';
+        const convertida = card.dataset.convertida;
+        
+        const passaTermo = !filtroTermo || termo.includes(filtroTermo);
+        let passaStatus = true;
+        
+        if (filtroStatus === 'convertida') {
+            passaStatus = convertida === 'true';
+        } else if (filtroStatus === 'nao_convertida') {
+            passaStatus = convertida === 'false';
+        }
+        
+        if (passaTermo && passaStatus) {
+            card.style.display = 'block';
+            visiveis++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    atualizarContador(visiveis);
+}
+
+function filtrarPorPeriodo() {
+    const periodo = document.getElementById('filtroPeriodo').value;
+    const cards = document.querySelectorAll('.historico-card');
+    const hoje = new Date();
+    let visiveis = 0;
+    
+    cards.forEach(card => {
+        const dataCard = new Date(card.dataset.data);
+        let mostrar = true;
+        
+        if (periodo) {
+            switch(periodo) {
+                case 'hoje':
+                    mostrar = dataCard.toDateString() === hoje.toDateString();
+                    break;
+                case 'semana':
+                    const semanaAtras = new Date(hoje);
+                    semanaAtras.setDate(hoje.getDate() - 7);
+                    mostrar = dataCard >= semanaAtras;
+                    break;
+                case 'mes':
+                    mostrar = dataCard.getMonth() === hoje.getMonth() && 
+                             dataCard.getFullYear() === hoje.getFullYear();
+                    break;
+                case 'ano':
+                    mostrar = dataCard.getFullYear() === hoje.getFullYear();
+                    break;
+            }
+        }
+        
+        if (mostrar) {
+            card.style.display = 'block';
+            visiveis++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    atualizarContador(visiveis);
+}
+
+function limparFiltros() {
+    const termoEl = document.getElementById('filtroTermo');
+    const periodoEl = document.getElementById('filtroPeriodo');
+    const statusEl = document.getElementById('filtroStatus');
+    if (termoEl) termoEl.value = '';
+    if (periodoEl) periodoEl.value = '';
+    if (statusEl) statusEl.value = '';
+
+    // Mostrar todos os cards e recalcular contador
+    const cards = document.querySelectorAll('.historico-card');
+    cards.forEach(card => card.style.display = 'block');
+    atualizarContador();
+}
+
+function atualizarContador() {
+    const cards = document.querySelectorAll('.historico-card');
+    const visiveis = Array.from(cards).filter(c => c.style.display !== 'none').length;
+    // Atualiza contador se existir elemento (não obrigatório)
+    const contadorEl = document.getElementById('historicoVisiveis');
+    if (contadorEl) contadorEl.textContent = visiveis;
+    return visiveis;
+}
+
+// Funções de ação
+function converterCliente(empresaId) {
+    if (confirm('Deseja converter esta empresa em cliente?')) {
+        // Implementar conversão
+        fetch(`/api/empresas/${empresaId}/converter-cliente`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Empresa convertida em cliente com sucesso!');
+                location.reload();
+            } else {
+                alert('Erro ao converter empresa: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erro na operação: ' + error);
+        });
+    }
+}
+
+function repetirBusca(termoBusca) {
+    // termoBusca é passado como string segura via tojson
+    if (!termoBusca) return;
+    // Garantir que temos string e separar pela última ocorrência de ' - ' para suportar cidades com '-' no nome
+    const sep = ' - ';
+    let cidade = '';
+    let atividade = '';
+    if (termoBusca.indexOf(sep) !== -1) {
+        const idx = termoBusca.lastIndexOf(sep);
+        cidade = termoBusca.substring(0, idx);
+        atividade = termoBusca.substring(idx + sep.length);
+    } else {
+        // fallback: tentar split simples
+        const parts = termoBusca.split(sep);
+        cidade = parts[0] || '';
+        atividade = parts[1] || '';
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ url_for("busca_empresas.buscar") }}';
+
+    const cidadeInput = document.createElement('input');
+    cidadeInput.type = 'hidden';
+    cidadeInput.name = 'cidade';
+    cidadeInput.value = cidade || '';
+    form.appendChild(cidadeInput);
+
+    const atividadeInput = document.createElement('input');
+    atividadeInput.type = 'hidden';
+    atividadeInput.name = 'tipo_atividade';
+    atividadeInput.value = atividade || '';
+    form.appendChild(atividadeInput);
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function removerHistorico(empresaId) {
+    if (confirm('Tem certeza que deseja remover esta empresa do histórico?')) {
+        // Implementar remoção
+        fetch(`/api/empresas/${empresaId}/remover`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erro ao remover empresa: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erro na operação: ' + error);
+        });
+    }
+}
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    // Animação de entrada
+    const cards = document.querySelectorAll('.historico-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateX(-20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateX(0)';
+        }, index * 50);
+    });
+});
+</script>
+
+<style>
+.historico-card {
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 255, 255, 0.2);
+}
+
+.historico-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
+}
+
+.badge {
+    font-size: 0.85em;
+}
+
+.page-link {
+    transition: all 0.3s ease;
+}
+
+.page-link:hover {
+    box-shadow: 0 2px 10px rgba(0, 255, 255, 0.3);
+}
+
+.btn-group-vertical .btn {
+    margin-bottom: 0.25rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,340 @@
+{% extends "autenticacao/base.html" %}
+
+{% block titulo %}Ordem de Serviço {{ os.codigo }} — JSP ERP{% endblock %}
+
+{% block content %}
+<style>
+    @media print {
+        body { font-size: 12px; }
+        .d-print-none { display: none !important; }
+        .container-print { max-width: none; margin: 0; padding: 0; }
+    }
+    
+    .relatorio-os {
+        background: white;
+        padding: 20px;
+        margin: 20px auto;
+        max-width: 210mm;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    
+    .header-empresa {
+        background-color: #1e3a8a;
+        color: white;
+        padding: 15px;
+        margin: -20px -20px 20px -20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .header-left h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: bold;
+    }
+    
+    .header-left p {
+        margin: 0;
+        font-size: 12px;
+        opacity: 0.9;
+    }
+    
+    .header-right {
+        text-align: right;
+        font-size: 12px;
+    }
+    
+    .os-header {
+        background-color: #2563eb;
+        color: white;
+        padding: 10px 15px;
+        margin: 20px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 5px;
+    }
+    
+    .os-header h2 {
+        margin: 0;
+        font-size: 18px;
+    }
+    
+    .section-title {
+        background-color: #374151;
+        color: white;
+        padding: 8px 12px;
+        margin: 20px 0 0 0;
+        font-weight: bold;
+        font-size: 14px;
+    }
+    
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+    }
+    
+    .data-table th {
+        background-color: #374151;
+        color: white;
+        padding: 8px 12px;
+        text-align: left;
+        font-weight: bold;
+        border: 1px solid #d1d5db;
+        width: 150px;
+    }
+    
+    .data-table td {
+        padding: 8px 12px;
+        border: 1px solid #d1d5db;
+        background-color: #f9fafb;
+    }
+    
+    .info-row {
+        margin-bottom: 10px;
+    }
+    
+    .info-label {
+        font-weight: bold;
+        margin-bottom: 5px;
+    }
+    
+    .problema-section, .servico-section {
+        margin: 20px 0;
+    }
+    
+    .problema-section p, .servico-section p {
+        background-color: #f9fafb;
+        padding: 15px;
+        border: 1px solid #d1d5db;
+        margin: 0;
+        line-height: 1.6;
+    }
+</style>
+
+<div class="relatorio-os">
+    <!-- Botões de ação (só aparecem na tela) -->
+    <div class="d-print-none mb-3">
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('ordens.listar_ordens') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            <a href="{{ url_for('ordens.editar_ordem', ordem_id=os.id) }}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            <button onclick="window.print()" class="btn btn-success">
+                <i class="fas fa-print"></i> Imprimir
+            </button>
+            <a href="{{ url_for('ordens.gerar_pdf', os_id=os.id) }}" class="btn btn-danger" target="_blank">
+                <i class="fas fa-file-pdf"></i> PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Cabeçalho da empresa -->
+    <div class="header-empresa">
+        <div class="header-left">
+            <h1>JSP ELÉTRICA</h1>
+            <p>CNPJ 41.280.764/0001-65</p>
+            <p>Rua Indalécio Costa, 890 - Barra Funda - Tietê/SP</p>
+            <p>SP - CEP 18532-122</p>
+        </div>
+        <div class="header-right">
+            <p><strong>JSP ELÉTRICA INDUSTRIAL & SOLAR</strong></p>
+            <p>(15) 99670-2036 • (15) 99802-5861</p>
+            <p>atendimento@eletricasaroba.com</p>
+            <p>www.eletricasaroba.com.br</p>
+            <p>Resp.: Juliano Saroba Pereira</p>
+        </div>
+    </div>
+
+    <!-- Cabeçalho da OS -->
+    <div class="os-header">
+        <h2>RELATÓRIO DE ORDEM DE SERVIÇO</h2>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span style="background: white; color: #2563eb; padding: 5px 10px; border-radius: 3px; font-weight: bold;">
+                OS: {{ os.codigo }}
+            </span>
+            <span>{{ os.data_emissao.strftime('%d/%m/%Y') if os.data_emissao else '' }}</span>
+        </div>
+    </div>
+
+    <!-- [01] DADOS DO CLIENTE -->
+    <div class="section-title">[01] DADOS DO CLIENTE</div>
+    <table class="data-table">
+        <tr>
+            <th>NOME</th>
+            <td>{{ os.cliente.nome if os.cliente else 'N/A' }}</td>
+        </tr>
+        <tr>
+            <th>CPF/CNPJ</th>
+            <td>{{ os.cliente.cpf_cnpj if os.cliente else 'N/A' }}</td>
+        </tr>
+        <tr>
+            <th>TELEFONE</th>
+            <td>{{ os.cliente.telefone if os.cliente else 'N/A' }}</td>
+        </tr>
+        <tr>
+            <th>E-MAIL</th>
+            <td>{{ os.cliente.email if os.cliente else 'N/A' }}</td>
+        </tr>
+        <tr>
+            <th>ENDEREÇO</th>
+            <td>{{ os.cliente.endereco if os.cliente else 'N/A' }}</td>
+        </tr>
+    </table>
+
+    <!-- [02] DADOS BÁSICOS -->
+    <div class="section-title">[02] DADOS BÁSICOS</div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="info-row">
+                <div class="info-label">Código:</div>
+                <div>{{ os.codigo }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Data Emissão:</div>
+                <div>{{ os.data_emissao.strftime('%d/%m/%Y') if os.data_emissao else 'N/A' }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Status:</div>
+                <div>{{ os.status or 'N/A' }}</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="info-row">
+                <div class="info-label">Prioridade:</div>
+                <div>{{ os.prioridade or 'N/A' }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Solicitante:</div>
+                <div>{{ os.solicitante or 'N/A' }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Contato:</div>
+                <div>{{ os.contato or 'N/A' }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [03] EQUIPAMENTO -->
+    {% if os.equipamento_nome or os.equipamento_marca or os.equipamento_modelo %}
+    <div class="section-title">[03] EQUIPAMENTO</div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="info-row">
+                <div class="info-label">Nome:</div>
+                <div>{{ os.equipamento_nome or 'N/A' }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Marca:</div>
+                <div>{{ os.equipamento_marca or 'N/A' }}</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="info-row">
+                <div class="info-label">Modelo:</div>
+                <div>{{ os.equipamento_modelo or 'N/A' }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Nº Série:</div>
+                <div>{{ os.equipamento_numero_serie or 'N/A' }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- [04] DESCRIÇÃO DO PROBLEMA -->
+    {% if os.equipamento_problema %}
+    <div class="section-title">[04] DESCRIÇÃO DO PROBLEMA</div>
+    <div class="problema-section">
+        <p>{{ os.equipamento_problema }}</p>
+    </div>
+    {% endif %}
+
+    <!-- [05] SERVIÇO REALIZADO -->
+    {% if os.descricao_servico_realizado %}
+    <div class="section-title">[05] SERVIÇO REALIZADO</div>
+    <div class="servico-section">
+        <p>{{ os.descricao_servico_realizado }}</p>
+    </div>
+    {% endif %}
+
+    <!-- [06] DADOS DE EXECUÇÃO -->
+    <div class="section-title">[06] DADOS DE EXECUÇÃO</div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="info-row">
+                <div class="info-label">Técnico Responsável:</div>
+                <div>{{ os.tecnico_responsavel or 'N/A' }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Tipo de Serviço:</div>
+                <div>{{ os.tipo_servico or 'N/A' }}</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="info-row">
+                <div class="info-label">Data de Conclusão:</div>
+                <div>{{ os.data_conclusao.strftime('%d/%m/%Y') if os.data_conclusao else 'N/A' }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">Total de Horas:</div>
+                <div>{{ os.total_horas or '0' }}h</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [07] VALORES -->
+    {% if os.valor_total %}
+    <div class="section-title">[07] VALORES</div>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="info-row">
+                <div class="info-label">Valor Serviços:</div>
+                <div>R$ {{ '%.2f'|format(os.valor_servicos|float) if os.valor_servicos else '0,00' }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="info-row">
+                <div class="info-label">Valor Produtos:</div>
+                <div>R$ {{ '%.2f'|format(os.valor_produtos|float) if os.valor_produtos else '0,00' }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="info-row">
+                <div class="info-label">Valor Total:</div>
+                <div><strong>R$ {{ '%.2f'|format(os.valor_total|float) if os.valor_total else '0,00' }}</strong></div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Assinatura -->
+    <div style="margin-top: 50px; border-top: 1px solid #374151; padding-top: 20px;">
+        <div class="row">
+            <div class="col-6 text-center">
+                <div style="border-top: 1px solid #333; margin-top: 40px; padding-top: 5px;">
+                    Assinatura do Cliente
+                </div>
+            </div>
+            <div class="col-6 text-center">
+                <div style="border-top: 1px solid #333; margin-top: 40px; padding-top: 5px;">
+                    Assinatura do Técnico
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Aplicar máscaras nos dados do cliente se necessário
+$(document).ready(function() {
+    // Esta página é só visualização, mas podemos formatar os dados se precisar
+    console.log('Template de relatório carregado');
+});
+</script>
+
+{% endblock %}

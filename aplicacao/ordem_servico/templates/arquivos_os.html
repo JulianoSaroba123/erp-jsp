@@ -1,0 +1,372 @@
+{% extends "autenticacao/base.html" %}
+
+{% block title %}Arquivos - OS {{ os.codigo }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-folder-open"></i> Gerenciar Arquivos</h2>
+                    <p class="text-muted mb-0">OS {{ os.codigo }} - {{ os.cliente.nome }}</p>
+                </div>
+                <div>
+                    <!-- Botão Voltar removido: rota detalhar_os não existe -->
+                    <a href="{{ url_for('os.gerar_pdf', os_id=os.id) }}" class="btn btn-danger" target="_blank">
+                        <i class="fas fa-file-pdf"></i> Visualizar PDF
+                    </a>
+                    <a href="{{ url_for('os.download_pdf', os_id=os.id) }}" class="btn btn-success">
+                        <i class="fas fa-download"></i> Download PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total de Arquivos</h6>
+                            <h3 class="mb-0">{{ total_arquivos }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-alt fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Imagens</h6>
+                            <h3 class="mb-0">{{ total_imagens }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-image fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">PDFs</h6>
+                            <h3 class="mb-0">{{ total_pdfs }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-pdf fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Tamanho Total</h6>
+                            <h3 class="mb-0">{{ "%.1f"|format(tamanho_total / (1024*1024)) }} MB</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-hdd fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário de Upload -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card secao-formulario">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-cloud-upload-alt"></i> Enviar Novo Arquivo</h5>
+                </div>
+                <div class="card-body">
+                    <form id="formUpload" enctype="multipart/form-data">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="arquivo" class="form-label">Arquivo</label>
+                                    <input type="file" class="form-control" id="arquivo" name="arquivo" required
+                                           accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt">
+                                    <div class="form-text">
+                                        Formatos aceitos: JPG, PNG, PDF, DOC, XLS, TXT (máx. 10MB)
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="categoria" class="form-label">Categoria</label>
+                                    <select class="form-select" id="categoria" name="categoria" required>
+                                        <option value="documento">Documento</option>
+                                        <option value="antes">Fotos - Antes</option>
+                                        <option value="durante">Fotos - Durante</option>
+                                        <option value="depois">Fotos - Depois</option>
+                                        <option value="orcamento">Orçamento</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="descricao" class="form-label">Descrição</label>
+                                    <input type="text" class="form-control" id="descricao" name="descricao" 
+                                           placeholder="Descrição opcional">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="mb-3">
+                                    <label class="form-label">&nbsp;</label>
+                                    <button type="submit" class="btn btn-primary d-block w-100">
+                                        <i class="fas fa-upload"></i> Enviar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Progress Bar -->
+                    <div id="uploadProgress" class="progress mb-3" style="display: none;">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Arquivos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Arquivos da Ordem de Serviço</h5>
+                </div>
+                <div class="card-body">
+                    {% if arquivos %}
+                    <div class="row" id="listaArquivos">
+                        {% for arquivo in arquivos %}
+                        <div class="col-lg-4 col-md-6 mb-3" data-arquivo-id="{{ arquivo.id }}">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <span class="badge bg-{{ arquivo.cor_categoria }}">{{ arquivo.categoria.title() }}</span>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                                    data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li>
+                                                    <a class="dropdown-item" 
+                                                       href="{{ url_for('os.visualizar_arquivo', arquivo_id=arquivo.id) }}" 
+                                                       target="_blank">
+                                                        <i class="fas fa-eye"></i> Visualizar
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" 
+                                                       href="{{ url_for('os.download_arquivo', arquivo_id=arquivo.id) }}">
+                                                        <i class="fas fa-download"></i> Download
+                                                    </a>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li>
+                                                    <a class="dropdown-item text-danger btn-excluir-arquivo" 
+                                                       href="#" data-arquivo-id="{{ arquivo.id }}">
+                                                        <i class="fas fa-trash"></i> Excluir
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-center mb-3">
+                                        {% if arquivo.is_imagem %}
+                                        <img src="{{ arquivo.url_visualizacao }}" 
+                                             class="img-thumbnail" 
+                                             style="max-height: 120px; cursor: pointer;"
+                                             onclick="visualizarImagem('{{ arquivo.url_visualizacao }}', '{{ arquivo.nome_original }}')"
+                                             alt="{{ arquivo.nome_original }}">
+                                        {% else %}
+                                        <i class="fas {{ arquivo.icone }} fa-4x text-muted"></i>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <h6 class="card-title text-truncate" title="{{ arquivo.nome_original }}">
+                                        {{ arquivo.nome_original }}
+                                    </h6>
+                                    
+                                    {% if arquivo.descricao %}
+                                    <p class="card-text small text-muted">{{ arquivo.descricao }}</p>
+                                    {% endif %}
+                                    
+                                    <div class="small text-muted">
+                                        <div><i class="fas fa-clock"></i> {{ arquivo.data_upload }}</div>
+                                        <div><i class="fas fa-weight-hanging"></i> {{ arquivo.tamanho_formatado }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <h5>Nenhum arquivo enviado</h5>
+                        <p class="text-muted">Use o formulário acima para enviar arquivos relacionados a esta ordem de serviço.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para visualizar imagens -->
+<div class="modal fade" id="modalImagem" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalImagemTitulo">Visualizar Imagem</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImagemConteudo" class="img-fluid" src="" alt="">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Upload de arquivo
+document.getElementById('formUpload').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const progressBar = document.getElementById('uploadProgress');
+    const progressBarFill = progressBar.querySelector('.progress-bar');
+    
+    // Mostrar progress bar
+    progressBar.style.display = 'block';
+    
+    // Fazer upload via AJAX
+    fetch('{{ url_for("os.upload_arquivo", os_id=os.id) }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Limpar formulário
+            this.reset();
+            
+            // Mostrar mensagem de sucesso
+            mostrarAlerta('Arquivo enviado com sucesso!', 'success');
+            
+            // Recarregar página após um tempo
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            mostrarAlerta('Erro: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        mostrarAlerta('Erro ao enviar arquivo', 'danger');
+    })
+    .finally(() => {
+        // Esconder progress bar
+        progressBar.style.display = 'none';
+        progressBarFill.style.width = '0%';
+    });
+});
+
+// Visualizar imagem em modal
+function visualizarImagem(url, nome) {
+    document.getElementById('modalImagemTitulo').textContent = nome;
+    document.getElementById('modalImagemConteudo').src = url;
+    new bootstrap.Modal(document.getElementById('modalImagem')).show();
+}
+
+// Excluir arquivo
+function excluirArquivo(arquivoId) {
+    if (confirm('Tem certeza que deseja excluir este arquivo?')) {
+        fetch(`/os/arquivo/${arquivoId}/excluir`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remover o card do arquivo
+                const card = document.querySelector(`[data-arquivo-id="${arquivoId}"]`);
+                if (card) {
+                    card.remove();
+                }
+                mostrarAlerta('Arquivo excluído com sucesso!', 'success');
+                
+                // Recarregar página se não há mais arquivos
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                mostrarAlerta('Erro: ' + data.error, 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            mostrarAlerta('Erro ao excluir arquivo', 'danger');
+        });
+    }
+}
+
+// Adicionar event listener para botões de exclusão
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.btn-excluir-arquivo').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const arquivoId = this.getAttribute('data-arquivo-id');
+            excluirArquivo(arquivoId);
+        });
+    });
+});
+
+// Função para mostrar alertas
+function mostrarAlerta(mensagem, tipo) {
+    const alerta = document.createElement('div');
+    alerta.className = `alert alert-${tipo} alert-dismissible fade show`;
+    alerta.innerHTML = `
+        ${mensagem}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Inserir no topo da página
+    const container = document.querySelector('.container-fluid');
+    container.insertBefore(alerta, container.firstChild);
+    
+    // Remover após 5 segundos
+    setTimeout(() => {
+        if (alerta.parentNode) {
+            alerta.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

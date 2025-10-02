@@ -1,0 +1,394 @@
+{% extends "autenticacao/base.html" %}
+{% block titulo %}Ordens de Serviço — JSP ERP{% endblock %}
+
+{% block head %}
+{{ super() }}
+<style>
+  /* =============================
+     Estilos específicos da página de lista
+     seguindo o tema neon futurista azul/ciano
+  ============================= */
+
+  /* Card container com borda e sombra neon */
+  .card.card-jsp {
+    background: linear-gradient(180deg, rgba(8, 24, 38, 0.6), rgba(6, 12, 20, 0.6));
+    border: 1px solid rgba(86, 212, 255, 0.12);
+    box-shadow: 0 0 20px rgba(86, 212, 255, 0.12), 0 6px 18px rgba(2, 10, 20, 0.6);
+    border-radius: 12px;
+  }
+  /* Cabeçalho da lista: fundo escuro e borda inferior neon */
+  .card.card-jsp .card-header {
+    background: linear-gradient(90deg, rgba(3, 32, 54, 0.95), rgba(3, 74, 108, 0.85));
+    border-bottom: 1px solid rgba(86, 212, 255, 0.12);
+    color: var(--jsp-text);
+    box-shadow: inset 0 -2px 12px rgba(0, 0, 0, 0.4);
+  }
+  /* Ícone circular no cabeçalho */
+  .icon-circle {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(86, 212, 255, 0.12), rgba(41, 182, 255, 0.06));
+    border: 1px solid rgba(86, 212, 255, 0.3);
+    color: var(--jsp-cyan);
+    margin-right: 12px;
+    box-shadow: 0 0 8px rgba(86, 212, 255, 0.3);
+  }
+  /* Botões de ação */
+  .btn-brand {
+    background: linear-gradient(135deg, var(--jsp-blue), var(--jsp-cyan));
+    border: none;
+    color: #08162b;
+    font-weight: 600;
+    box-shadow:0 4px 12px rgba(86, 212, 255, 0.3);
+  }
+  .btn-brand:hover {
+    box-shadow: 0 6px 20px rgba(86, 212, 255, 0.5);
+  }
+  
+  /* Garantir que botões de ação sejam clicáveis */
+  .btn-action {
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 1000 !important;
+    cursor: pointer !important;
+  }
+  
+  .btn-action:hover {
+    opacity: 0.8 !important;
+  }
+  
+  /* Garantir que links na tabela funcionem */
+  .btn-group a {
+    pointer-events: auto !important;
+    z-index: 999 !important;
+    position: relative !important;
+  }
+  
+  /* Evitar sobreposição de elementos */
+  .table td {
+    position: relative !important;
+  }
+  
+  .btn-group {
+    z-index: 1000 !important;
+  }
+  /* Form controls com tema escuro */
+  .form-control, .form-select {
+    background: rgba(6, 18, 32, 0.6);
+    border: 1px solid rgba(86, 212, 255, 0.12);
+    color: var(--jsp-text);
+  }
+  .form-control::placeholder {
+    color: rgba(234, 246, 255, 0.4);
+  }
+  /* Input group styling */
+  .input-group-text {
+    background: rgba(8, 24, 38, 0.6);
+    border: 1px solid rgba(86, 212, 255, 0.12);
+    color: var(--jsp-cyan);
+  }
+  /* Estatísticas cards */
+  .card-kpi {
+    background: linear-gradient(135deg, rgba(8, 24, 38, 0.6), rgba(6, 12, 20, 0.6));
+    border: 1px solid rgba(86, 212, 255, 0.12);
+    box-shadow: 0 0 15px rgba(86, 212, 255, 0.1);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Título -->
+<div class="text-center mb-4">
+  <h1 class="text-glow">Ordens de Serviço <span class="titulo-erp">— JSP ERP</span></h1>
+</div>
+
+<!-- Estatísticas -->
+<div class="row mb-4">
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card card-kpi">
+      <div class="card-body text-center">
+        <i class="fas fa-tools fa-2x mb-2 text-info"></i>
+        <h5>{{ pagination.total if pagination else ordens|length }}</h5>
+        <small>Total de OS</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card card-kpi">
+      <div class="card-body text-center">
+        <i class="fas fa-clock fa-2x mb-2 text-warning"></i>
+        <h5>{{ ordens|selectattr('status', 'equalto', 'Aberta')|list|length }}</h5>
+        <small>Abertas</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card card-kpi">
+      <div class="card-body text-center">
+        <i class="fas fa-cogs fa-2x mb-2 text-success"></i>
+        <h5>{{ ordens|selectattr('status', 'equalto', 'Em Andamento')|list|length }}</h5>
+        <small>Em Andamento</small>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card card-kpi">
+      <div class="card-body text-center">
+        <i class="fas fa-check-circle fa-2x mb-2 text-success"></i>
+        <h5>{{ ordens|selectattr('status', 'equalto', 'Concluída')|list|length }}</h5>
+        <small>Concluídas</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card card-jsp">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center">
+      <span class="icon-circle"><i class="fas fa-tools"></i></span>
+      <div>
+        <strong>Lista de Ordens de Serviço</strong>
+        <div><small class="text-muted">&nbsp;— &nbsp;{{ pagination.total if pagination is defined else ordens|length }}</small></div>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <a href="{{ url_for('ordens.criar_ordem') }}" class="btn btn-brand btn-sm">
+        <i class="fas fa-plus me-1"></i>Nova OS
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <!-- Filtros -->
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <div class="input-group">
+          <span class="input-group-text"><i class="fas fa-search"></i></span>
+          <input type="text" class="form-control" placeholder="Buscar por código, cliente, status..." id="search-input">
+        </div>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" id="status-filter" title="Filtrar por status">
+          <option value="">Todos os status</option>
+          <option value="Aberta">Aberta</option>
+          <option value="Em Andamento">Em Andamento</option>
+          <option value="Concluída">Concluída</option>
+          <option value="Cancelada">Cancelada</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button class="btn btn-brand" onclick="filtrar()">
+          <i class="fas fa-search me-1"></i>Buscar
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabela -->
+    {% if ordens %}
+    <div class="table-responsive rounded">
+      <table class="table table-hover align-middle text-center table-erp">
+        <thead class="neo-thead">
+          <tr>
+            <th class="text-start">Código</th>
+            <th class="text-start">Cliente</th>
+            <th>Solicitante</th>
+            <th>Data Emissão</th>
+            <th>Status</th>
+            <th>Prioridade</th>
+            <th>Valor Total</th>
+            <th width="200">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ordem in ordens %}
+          <tr>
+            <td class="text-start">
+              <span class="badge bg-primary">{{ ordem.codigo }}</span>
+            </td>
+            <td class="text-start">
+              <strong>{{ ordem.cliente.nome if ordem.cliente else 'N/A' }}</strong>
+            </td>
+            <td>{{ ordem.solicitante or '-' }}</td>
+            <td>
+              {% if ordem.data_emissao %}
+                {{ ordem.data_emissao.strftime('%d/%m/%Y') }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              {% if ordem.status == 'Aberta' %}
+                <span class="badge bg-warning">{{ ordem.status }}</span>
+              {% elif ordem.status == 'Em Andamento' %}
+                <span class="badge bg-info">{{ ordem.status }}</span>
+              {% elif ordem.status == 'Concluída' %}
+                <span class="badge bg-success">{{ ordem.status }}</span>
+              {% elif ordem.status == 'Cancelada' %}
+                <span class="badge bg-danger">{{ ordem.status }}</span>
+              {% else %}
+                <span class="badge bg-secondary">{{ ordem.status }}</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if ordem.prioridade == 'Alta' %}
+                <span class="text-danger"><i class="fas fa-exclamation-triangle"></i> {{ ordem.prioridade }}</span>
+              {% elif ordem.prioridade == 'Urgente' %}
+                <span class="text-danger"><i class="fas fa-fire"></i> {{ ordem.prioridade }}</span>
+              {% else %}
+                {{ ordem.prioridade or 'Normal' }}
+              {% endif %}
+            </td>
+            <td>
+              {% if ordem.valor_total %}
+                R$ {{ "%.2f"|format(ordem.valor_total) }}
+              {% else %}
+                R$ 0,00
+              {% endif %}
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm" role="group" style="position: relative; z-index: 10;">
+                <a href="{{ url_for('ordens.visualizar_ordem', ordem_id=ordem.id) }}" 
+                   class="btn btn-outline-light btn-sm" title="Visualizar">
+                  <i class="fas fa-eye"></i>
+                </a>
+                <a href="{{ url_for('ordens.editar_ordem', ordem_id=ordem.id) }}" 
+                   class="btn btn-outline-warning btn-sm" title="Editar">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <a href="{{ url_for('ordens.gerar_pdf', os_id=ordem.id) }}" 
+                   class="btn btn-outline-info btn-sm" title="PDF" target="_blank">
+                  <i class="fas fa-file-pdf"></i>
+                </a>
+                <form action="{{ url_for('ordens.remover_ordem', ordem_id=ordem.id) }}" method="post" class="delete-form d-inline" data-codigo="{{ ordem.codigo }}">
+                  <button type="submit" title="Excluir" class="btn btn-outline-danger btn-sm" aria-label="Excluir">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginação -->
+    {% if pagination and pagination.pages > 1 %}
+    <nav aria-label="Paginação">
+      <ul class="pagination justify-content-center">
+        {% if pagination.has_prev %}
+          <li class="page-item">
+            <a class="page-link" href="{{ url_for('ordens.listar_ordens', page=pagination.prev_num) }}">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+        {% endif %}
+        
+        {% for page_num in pagination.iter_pages() %}
+          {% if page_num %}
+            {% if page_num != pagination.page %}
+              <li class="page-item">
+                <a class="page-link" href="{{ url_for('ordens.listar_ordens', page=page_num) }}">{{ page_num }}</a>
+              </li>
+            {% else %}
+              <li class="page-item active">
+                <span class="page-link">{{ page_num }}</span>
+              </li>
+            {% endif %}
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">…</span>
+            </li>
+          {% endif %}
+        {% endfor %}
+        
+        {% if pagination.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="{{ url_for('ordens.listar_ordens', page=pagination.next_num) }}">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="text-center py-5">
+      <i class="fas fa-tools fa-3x text-muted mb-3"></i>
+      <h5 class="text-muted">Nenhuma ordem de serviço encontrada</h5>
+      <p class="text-muted">Clique em "Nova OS" para criar sua primeira ordem de serviço.</p>
+      <a href="{{ url_for('ordens.criar_ordem') }}" class="btn btn-brand">
+        <i class="fas fa-plus me-1"></i>Criar primeira OS
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function filtrar() {
+  const search = document.getElementById('search-input').value;
+  const status = document.getElementById('status-filter').value;
+  
+  let url = '{{ url_for("ordens.listar_ordens") }}';
+  const params = new URLSearchParams();
+  
+  if (search) params.append('q', search);
+  if (status) params.append('status', status);
+  
+  if (params.toString()) {
+    url += '?' + params.toString();
+  }
+  
+  window.location.href = url;
+}
+
+// Busca ao pressionar Enter
+document.getElementById('search-input').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') {
+    filtrar();
+  }
+});
+
+// Confirmação de exclusão
+document.addEventListener('DOMContentLoaded', function(){
+  console.log('🚀 Lista de Ordens carregada - Versão simplificada');
+  
+  // Apenas log simples para debug
+  console.log('✅ Links HTML simples ativados');
+  
+  // Manter apenas o event listener para formulários de exclusão
+  document.querySelectorAll('form.delete-form').forEach(function(f){
+    f.addEventListener('submit', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      
+      var codigo = f.dataset.codigo || 'esta ordem de serviço';
+      if (!confirm('Confirma exclusão da OS: ' + codigo + '?')) return false;
+      var url = f.action;
+      fetch(url, { method: 'POST', headers: { 'X-Requested-With':'XMLHttpRequest' } })
+        .then(function(res){ return res.json().catch(function(){ return { success: false, message: 'Resposta inválida do servidor' }; }); })
+        .then(function(data){
+          if (data && data.success){
+            alert(data.message || 'Ordem de serviço excluída com sucesso');
+            window.location.reload();
+          } else {
+            alert(data.message || 'Erro ao excluir ordem de serviço');
+          }
+        })
+        .catch(function(err){
+          console.error('Erro:', err);
+          alert('Erro ao excluir ordem de serviço');
+        });
+    });
+  });
+  
+  console.log('Botões de ação inicializados com sucesso!');
+});
+</script>
+{% endblock %}

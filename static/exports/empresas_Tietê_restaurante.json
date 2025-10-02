@@ -1,0 +1,162 @@
+{
+  "cidade": "Tietê",
+  "tipo_atividade": "restaurante",
+  "empresas": [
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Secretaria de Educação",
+      "nome_fantasia": "Secretaria de Educação",
+      "atividade_principal": "Não informado",
+      "cidade": "Cerquilho",
+      "uf": "Não informado",
+      "telefone": "+55 15 3384 8333",
+      "email": "Não informado",
+      "endereco_completo": "Avenida Doutor Vinícius Gagliard, 1180, 18520-000",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Charme & Estilo Bazar",
+      "nome_fantasia": "Charme & Estilo Bazar",
+      "atividade_principal": "clothes",
+      "cidade": "cerquilho",
+      "uf": "Não informado",
+      "telefone": "+5515991703695",
+      "email": "Não informado",
+      "endereco_completo": "Rua José Maria Gonçalves, 469, 18528080",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Lojas CEM",
+      "nome_fantasia": "Lojas CEM",
+      "atividade_principal": "electronics",
+      "cidade": "Cerquilho",
+      "uf": "Não informado",
+      "telefone": "+55 15 3284 2902",
+      "email": "Não informado",
+      "endereco_completo": "Rua da Paineira, 15",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Agência da Previdência Social",
+      "nome_fantasia": "Agência da Previdência Social",
+      "atividade_principal": "Não informado",
+      "cidade": "Laranjal Paulista",
+      "uf": "Não informado",
+      "telefone": "+55 15 3283 6703",
+      "email": "Não informado",
+      "endereco_completo": "Rua Antônio Alves Martins, 33, 18500-000",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Unidade de Posto de Serviço do CREA",
+      "nome_fantasia": "Unidade de Posto de Serviço do CREA",
+      "atividade_principal": "Não informado",
+      "cidade": "Laranjal Paulista",
+      "uf": "Não informado",
+      "telefone": "+55 15 3283 5455",
+      "email": "Não informado",
+      "endereco_completo": "Rua Antônio Alves Martins, 45, 18500-000",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Supermercado Pague Menos",
+      "nome_fantasia": "Supermercado Pague Menos",
+      "atividade_principal": "supermarket",
+      "cidade": "Tietê",
+      "uf": "Não informado",
+      "telefone": "+55 15 3285 4830",
+      "email": "Não informado",
+      "endereco_completo": "Rua Bela Vista, 62, 18530-000",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Câmara Municipal de Tietê",
+      "nome_fantasia": "Câmara Municipal de Tietê",
+      "atividade_principal": "Não informado",
+      "cidade": "Tietê",
+      "uf": "Não informado",
+      "telefone": "+55 15 3285 9500",
+      "email": "Não informado",
+      "endereco_completo": "Praça Doutor Elias Garcia, 112, 18530-000",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Coocerqui Supermercado",
+      "nome_fantasia": "Coocerqui Supermercado",
+      "atividade_principal": "supermarket",
+      "cidade": "Tietê",
+      "uf": "Não informado",
+      "telefone": "+55 15 3282 9100",
+      "email": "coocerqui@coocerqui.com.br",
+      "endereco_completo": "Avenida Doutor Alberto San Juan, 400",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Câmara Municipal de Cerquilho - João Sanson",
+      "nome_fantasia": "Câmara Municipal de Cerquilho - João Sanson",
+      "atividade_principal": "Não informado",
+      "cidade": "Cerquilho",
+      "uf": "Não informado",
+      "telefone": "+55 15 3284 2060",
+      "email": "Não informado",
+      "endereco_completo": "Rua da Cidadania, 102, 18520-000",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Departamento de Estradas de Rodagem",
+      "nome_fantasia": "Departamento de Estradas de Rodagem",
+      "atividade_principal": "Não informado",
+      "cidade": "Tietê",
+      "uf": "Não informado",
+      "telefone": "0800 055 5510",
+      "email": "Não informado",
+      "endereco_completo": "Rua Francisco de Toledo, 1433",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Comercial Goldoni",
+      "nome_fantasia": "Comercial Goldoni",
+      "atividade_principal": "trade",
+      "cidade": "Laranjal Paulista",
+      "uf": "Não informado",
+      "telefone": "+55 15 3283 9400",
+      "email": "Não informado",
+      "endereco_completo": "Rua Governador Pedro de Toledo, 2191, 18500-000",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Delta",
+      "nome_fantasia": "Delta",
+      "atividade_principal": "supermarket",
+      "cidade": "Tietê",
+      "uf": "Não informado",
+      "telefone": "(15) 3284-2486",
+      "email": "Não informado",
+      "endereco_completo": "Avenida Doutor Vinícius Gagliard, 360",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Salvador Ortega Ohia e Outros",
+      "nome_fantasia": "Salvador Ortega Ohia e Outros",
+      "atividade_principal": "Não informado",
+      "cidade": "Tietê",
+      "uf": "Não informado",
+      "telefone": "+55 15 3282-7711",
+      "email": "Não informado",
+      "endereco_completo": "Não informado",
+      "fonte": "Overpass"
+    }
+  ]
+}

@@ -1,0 +1,527 @@
+{% extends "autenticacao/base.html" %}
+
+{% block title %}Detalhes da Empresa{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-info mb-0">
+                    <i class="fas fa-building me-2"></i>{{ empresa.razao_social }}
+                </h2>
+                <div>
+                    <a href="{{ url_for('busca_empresas.historico') }}" class="btn btn-outline-info">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar
+                    </a>
+                    <button type="button" class="btn btn-outline-warning" onclick="imprimirDetalhes()">
+                        <i class="fas fa-print me-2"></i>Imprimir
+                    </button>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Informações principais -->
+                <div class="col-md-8">
+                    <div class="card bg-dark border-info mb-4">
+                        <div class="card-header bg-dark border-info">
+                            <h5 class="text-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Informações Gerais
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">Razão Social:</label>
+                                        <p class="text-light mb-0">{{ empresa.razao_social }}</p>
+                                    </div>
+                                    
+                                    {% if empresa.nome_fantasia %}
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">Nome Fantasia:</label>
+                                        <p class="text-light mb-0">{{ empresa.nome_fantasia }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">CNPJ:</label>
+                                        <p class="text-light mb-0">
+                                            <span id="cnpjTexto">{{ empresa.cnpj }}</span>
+                                            <button type="button" class="btn btn-sm btn-outline-info ms-2" 
+                                                    onclick="copiarTexto('cnpjTexto')">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">Situação:</label>
+                                        <p class="text-light mb-0">
+                                            <span class="badge {% if empresa.situacao == 'ATIVA' %}bg-success{% else %}bg-warning{% endif %}">
+                                                {{ empresa.situacao or 'N/A' }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    {% if empresa.data_abertura %}
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">Data de Abertura:</label>
+                                        <p class="text-light mb-0">{{ empresa.data_abertura.strftime('%d/%m/%Y') if empresa.data_abertura else 'N/A' }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">Data da Busca:</label>
+                                        <p class="text-light mb-0">{{ empresa.data_busca.strftime('%d/%m/%Y às %H:%M') }}</p>
+                                    </div>
+                                    
+                                    {% if empresa.termo_busca %}
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">Termo da Busca:</label>
+                                        <p class="text-light mb-0">{{ empresa.termo_busca }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">Status Cliente:</label>
+                                        <p class="text-light mb-0">
+                                            {% if empresa.foi_convertida_cliente %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check me-1"></i>Convertida em Cliente
+                                            </span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-clock me-1"></i>Não Convertida
+                                            </span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Endereço -->
+                    {% if empresa.endereco_completo %}
+                    <div class="card bg-dark border-info mb-4">
+                        <div class="card-header bg-dark border-info">
+                            <h5 class="text-info mb-0">
+                                <i class="fas fa-map-marker-alt me-2"></i>Endereço
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {% if empresa.logradouro %}
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">Logradouro:</label>
+                                        <p class="text-light mb-0">{{ empresa.logradouro }} {% if empresa.numero %}, {{ empresa.numero }}{% endif %}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if empresa.complemento %}
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">Complemento:</label>
+                                        <p class="text-light mb-0">{{ empresa.complemento }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if empresa.bairro %}
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">Bairro:</label>
+                                        <p class="text-light mb-0">{{ empresa.bairro }}</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    {% if empresa.cidade %}
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">Cidade:</label>
+                                        <p class="text-light mb-0">{{ empresa.cidade }}{% if empresa.uf %} - {{ empresa.uf }}{% endif %}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if empresa.cep %}
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">CEP:</label>
+                                        <p class="text-light mb-0">{{ empresa.cep }}</p>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label text-info">Endereço Completo:</label>
+                                        <p class="text-light mb-0" id="enderecoCompleto">{{ empresa.endereco_completo }}</p>
+                                        <button type="button" class="btn btn-sm btn-outline-info mt-2" 
+                                                onclick="abrirMapa()">
+                                            <i class="fas fa-map me-1"></i>Ver no Mapa
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Atividades -->
+                    {% if empresa.atividade_principal %}
+                    <div class="card bg-dark border-info mb-4">
+                        <div class="card-header bg-dark border-info">
+                            <h5 class="text-info mb-0">
+                                <i class="fas fa-industry me-2"></i>Atividades
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label text-info">Atividade Principal:</label>
+                                <p class="text-light mb-0">{{ empresa.atividade_principal }}</p>
+                            </div>
+                            
+                            {% if empresa.atividades_secundarias %}
+                            <div class="mb-3">
+                                <label class="form-label text-info">Atividades Secundárias:</label>
+                                {% set atividades_sec = empresa.atividades_secundarias | from_json if empresa.atividades_secundarias else [] %}
+                                {% if atividades_sec %}
+                                <ul class="list-unstyled">
+                                    {% for atividade in atividades_sec %}
+                                    <li class="text-light mb-1">
+                                        <i class="fas fa-dot-circle me-2 text-info"></i>{{ atividade }}
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                {% else %}
+                                <p class="text-muted mb-0">Nenhuma atividade secundária informada</p>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Sidebar com ações -->
+                <div class="col-md-4">
+                    <!-- Ações rápidas -->
+                    <div class="card bg-dark border-info mb-4">
+                        <div class="card-header bg-dark border-info">
+                            <h5 class="text-info mb-0">
+                                <i class="fas fa-bolt me-2"></i>Ações Rápidas
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                {% if not empresa.foi_convertida_cliente %}
+                                <button type="button" class="btn btn-success" onclick="converterCliente()">
+                                    <i class="fas fa-user-plus me-2"></i>Converter em Cliente
+                                </button>
+                                {% else %}
+                                <button type="button" class="btn btn-success" disabled>
+                                    <i class="fas fa-check me-2"></i>Já é Cliente
+                                </button>
+                                {% endif %}
+                                
+                                <button type="button" class="btn btn-outline-info" onclick="criarProposta()">
+                                    <i class="fas fa-file-alt me-2"></i>Criar Proposta
+                                </button>
+                                
+                                <button type="button" class="btn btn-outline-warning" onclick="salvarFavorito()">
+                                    <i class="fas fa-star me-2"></i>Favoritar
+                                </button>
+                                
+                                <button type="button" class="btn btn-outline-info" onclick="exportarContato()">
+                                    <i class="fas fa-download me-2"></i>Exportar Contato
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informações de contato -->
+                    {% if empresa.telefone or empresa.email %}
+                    <div class="card bg-dark border-info mb-4">
+                        <div class="card-header bg-dark border-info">
+                            <h5 class="text-info mb-0">
+                                <i class="fas fa-address-book me-2"></i>Contato
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if empresa.telefone %}
+                            <div class="mb-3">
+                                <label class="form-label text-info">Telefone:</label>
+                                <p class="text-light mb-0">
+                                    <span id="telefoneTexto">{{ empresa.telefone }}</span>
+                                    <div class="btn-group btn-group-sm mt-1">
+                                        <button type="button" class="btn btn-outline-success" 
+                                                onclick="ligarTelefone('{{ empresa.telefone }}')">
+                                            <i class="fas fa-phone"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-info" 
+                                                onclick="copiarTexto('telefoneTexto')">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </p>
+                            </div>
+                            {% endif %}
+                            
+                            {% if empresa.email %}
+                            <div class="mb-3">
+                                <label class="form-label text-info">E-mail:</label>
+                                <p class="text-light mb-0">
+                                    <span id="emailTexto">{{ empresa.email }}</span>
+                                    <div class="btn-group btn-group-sm mt-1">
+                                        <button type="button" class="btn btn-outline-info" 
+                                                onclick="enviarEmail('{{ empresa.email }}')">
+                                            <i class="fas fa-envelope"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-info" 
+                                                onclick="copiarTexto('emailTexto')">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Histórico de ações -->
+                    <div class="card bg-dark border-info">
+                        <div class="card-header bg-dark border-info">
+                            <h5 class="text-info mb-0">
+                                <i class="fas fa-history me-2"></i>Histórico
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline">
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-info"></div>
+                                    <div class="timeline-content">
+                                        <h6 class="text-light mb-1">Empresa Encontrada</h6>
+                                        <small class="text-muted">{{ empresa.data_busca.strftime('%d/%m/%Y às %H:%M') }}</small>
+                                        <p class="text-light small mb-0">
+                                            Encontrada na busca: {{ empresa.termo_busca or 'N/A' }}
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                {% if empresa.foi_convertida_cliente %}
+                                <div class="timeline-item">
+                                    <div class="timeline-marker bg-success"></div>
+                                    <div class="timeline-content">
+                                        <h6 class="text-light mb-1">Convertida em Cliente</h6>
+                                        <small class="text-muted">Data não especificada</small>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Função para copiar texto
+function copiarTexto(elementId) {
+    const elemento = document.getElementById(elementId);
+    const texto = elemento.textContent.trim();
+    
+    navigator.clipboard.writeText(texto).then(() => {
+        // Criar toast de sucesso
+        mostrarToast('Texto copiado com sucesso!', 'success');
+    }).catch(() => {
+        // Fallback para browsers mais antigos
+        const input = document.createElement('input');
+        input.value = texto;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        mostrarToast('Texto copiado!', 'success');
+    });
+}
+
+// Função para converter cliente
+function converterCliente() {
+    if (confirm('Deseja converter esta empresa em cliente?')) {
+        fetch(`/api/empresas/{{ empresa.id }}/converter-cliente`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mostrarToast('Empresa convertida em cliente com sucesso!', 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                mostrarToast('Erro ao converter empresa: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            mostrarToast('Erro na operação: ' + error, 'error');
+        });
+    }
+}
+
+// Função para criar proposta
+function criarProposta() {
+    // Redirecionar para criação de proposta com dados da empresa
+    window.location.href = `/propostas/criar?empresa_id={{ empresa.id }}`;
+}
+
+// Função para salvar favorito
+function salvarFavorito() {
+    mostrarToast('Empresa adicionada aos favoritos!', 'success');
+}
+
+// Função para exportar contato
+function exportarContato() {
+    const vcard = `BEGIN:VCARD
+VERSION:3.0
+FN:{{ empresa.razao_social }}
+ORG:{{ empresa.razao_social }}
+{% if empresa.telefone %}TEL:{{ empresa.telefone }}{% endif %}
+{% if empresa.email %}EMAIL:{{ empresa.email }}{% endif %}
+{% if empresa.endereco_completo %}ADR:{{ empresa.endereco_completo }}{% endif %}
+END:VCARD`;
+    
+    const blob = new Blob([vcard], { type: 'text/vcard' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '{{ empresa.razao_social }}.vcf';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// Função para ligar
+function ligarTelefone(telefone) {
+    window.open(`tel:${telefone}`);
+}
+
+// Função para enviar email
+function enviarEmail(email) {
+    window.open(`mailto:${email}?subject=Contato via Sistema de Busca de Empresas`);
+}
+
+// Função para abrir mapa
+function abrirMapa() {
+    const endereco = encodeURIComponent(document.getElementById('enderecoCompleto').textContent);
+    window.open(`https://www.google.com/maps/search/?api=1&query=${endereco}`);
+}
+
+// Função para imprimir detalhes
+function imprimirDetalhes() {
+    window.print();
+}
+
+// Função para mostrar toast
+function mostrarToast(mensagem, tipo) {
+    // Implementar sistema de toast/notificação
+    alert(mensagem); // Fallback simples
+}
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    // Animação de entrada
+    const cards = document.querySelectorAll('.card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+
+<style>
+/* Timeline styles */
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #17a2b8, #20c997);
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -23px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid #343a40;
+}
+
+.timeline-content {
+    padding-left: 0;
+}
+
+/* Button animations */
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3);
+}
+
+/* Card animations */
+.card {
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 255, 255, 0.2);
+}
+
+.card:hover {
+    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
+}
+
+/* Badge styles */
+.badge {
+    font-size: 0.9em;
+    padding: 0.5em 0.8em;
+}
+
+/* Print styles */
+@media print {
+    .btn, .card-header, nav {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #333 !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .text-info, .text-light {
+        color: #000 !important;
+    }
+    
+    .bg-dark {
+        background-color: #fff !important;
+    }
+}
+</style>
+{% endblock %}

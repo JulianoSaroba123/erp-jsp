@@ -1,0 +1,94 @@
+{% extends 'autenticacao/base.html' %}
+
+{% block head %}
+{{ super() }}
+<style>
+  /* =============================
+     Estilos específicos da página de detalhes do fornecedor
+     seguindo o tema neon futurista azul/ciano
+  ============================= */
+  .detail-card {
+    background: linear-gradient(180deg, rgba(8,24,38,0.6), rgba(6,12,20,0.6));
+    border: 1px solid rgba(86,212,255,0.12);
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(86,212,255,0.12), 0 6px 18px rgba(2,10,20,0.6);
+    padding: 28px;
+  }
+  .detail-card h1 {
+    color: var(--jsp-blue);
+    margin-bottom: 24px;
+    text-shadow: 0 0 12px rgba(41,182,255,0.2);
+  }
+  .detail-label {
+    color: var(--jsp-cyan);
+    font-weight: 600;
+  }
+  .detail-value {
+    color: var(--jsp-text);
+    word-break: break-word;
+  }
+  .btn-brand {
+    background: linear-gradient(135deg, var(--jsp-blue), var(--jsp-cyan));
+    border: none;
+    color: #08162b;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(86,212,255,0.3);
+  }
+  .btn-brand:hover {
+    box-shadow: 0 6px 20px rgba(86,212,255,0.5);
+  }
+  .btn-back {
+    background: rgba(8,24,38,0.4);
+    border: 1px solid rgba(86,212,255,0.12);
+    color: var(--jsp-cyan);
+  }
+  .btn-back:hover {
+    background: linear-gradient(135deg, var(--jsp-blue), var(--jsp-cyan));
+    color: #08162b;
+  }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="detail-card">
+        <h1>Detalhes do Fornecedor</h1>
+        <div class="row mb-3">
+          <div class="col-sm-4 detail-label">Código:</div>
+          <div class="col-sm-8 detail-value">{{ fornecedor.codigo }}</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4 detail-label">Nome:</div>
+          <div class="col-sm-8 detail-value">{{ fornecedor.nome }}</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4 detail-label">CNPJ:</div>
+          <div class="col-sm-8 detail-value">{{ fornecedor.cnpj }}</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4 detail-label">Telefone:</div>
+          <div class="col-sm-8 detail-value">{{ fornecedor.telefone }}</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4 detail-label">CEP:</div>
+          <div class="col-sm-8 detail-value">{{ fornecedor.cep }}</div>
+        </div>
+        <div class="row mb-3">
+          <div class="col-sm-4 detail-label">Cidade:</div>
+          <div class="col-sm-8 detail-value">{{ fornecedor.cidade }}</div>
+        </div>
+        <div class="row mb-4">
+          <div class="col-sm-4 detail-label">Endereço:</div>
+          <div class="col-sm-8 detail-value">{{ fornecedor.endereco }}</div>
+        </div>
+        <div class="d-flex justify-content-between">
+          <a href="{{ url_for('fornecedor.listar_fornecedores') }}" class="btn-back btn">Voltar</a>
+          <a href="{{ url_for('fornecedor.editar_fornecedor', id=fornecedor.id) }}" class="btn btn-brand">Editar</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

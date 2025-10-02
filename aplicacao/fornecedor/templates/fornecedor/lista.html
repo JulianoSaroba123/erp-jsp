@@ -1,0 +1,208 @@
+{% extends 'autenticacao/base.html' %}
+
+{% block head %}
+{{ super() }}
+<style>
+  /* =============================
+     Estilos específicos da página de lista de fornecedores
+     seguindo o tema neon futurista azul/ciano
+  ============================= */
+
+  /* Card container com borda e sombra neon */
+  .card.card-jsp {
+    background: linear-gradient(180deg, rgba(8, 24, 38, 0.6), rgba(6, 12, 20, 0.6));
+    border: 1px solid rgba(86, 212, 255, 0.12);
+    box-shadow: 0 0 20px rgba(86, 212, 255, 0.12), 0 6px 18px rgba(2, 10, 20, 0.6);
+    border-radius: 12px;
+  }
+  /* Cabeçalho da lista: fundo escuro e borda inferior neon */
+  .card.card-jsp .card-header {
+    background: linear-gradient(90deg, rgba(3, 32, 54, 0.95), rgba(3, 74, 108, 0.85));
+    border-bottom: 1px solid rgba(86, 212, 255, 0.12);
+    color: var(--jsp-text);
+    box-shadow: inset 0 -2px 12px rgba(0, 0, 0, 0.4);
+  }
+  /* Ícone circular no cabeçalho */
+  .icon-circle {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(86, 212, 255, 0.12), rgba(41, 182, 255, 0.06));
+    border: 1px solid rgba(86, 212, 255, 0.3);
+    color: var(--jsp-cyan);
+    margin-right: 12px;
+    box-shadow: 0 0 8px rgba(86, 212, 255, 0.3);
+  }
+  /* Grupo de busca com visual neon */
+  .lista-search .input-group-text {
+    background: rgba(8, 24, 38, 0.6);
+    border: 1px solid rgba(86, 212, 255, 0.12);
+    color: var(--jsp-cyan);
+  }
+  .lista-search .form-control.lista-busca {
+    background: rgba(6, 18, 32, 0.6);
+    border: 1px solid rgba(86, 212, 255, 0.12);
+    color: var(--jsp-text);
+  }
+  .lista-search .form-control.lista-busca::placeholder {
+    color: rgba(234, 246, 255, 0.4);
+  }
+  /* Botões de ação: novo, voltar, ações */
+  .btn-brand {
+    background: linear-gradient(135deg, var(--jsp-blue), var(--jsp-cyan));
+    border: none;
+    color: #08162b;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(86, 212, 255, 0.3);
+  }
+  .btn-brand:hover {
+    box-shadow: 0 6px 20px rgba(86, 212, 255, 0.5);
+  }
+  .btn-back {
+    background: rgba(8, 24, 38, 0.4);
+    border: 1px solid rgba(86, 212, 255, 0.12);
+    color: var(--jsp-cyan);
+  }
+  .btn-back:hover {
+    background: linear-gradient(135deg, var(--jsp-blue), var(--jsp-cyan));
+    color: #08162b;
+  }
+  .btn-acao {
+    background: linear-gradient(135deg, rgba(4, 76, 110, 0.25), rgba(3, 32, 54, 0.18));
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(86, 212, 255, 0.1);
+    padding: 5px 8px;
+  }
+  .btn-acao i {
+    color: var(--jsp-cyan);
+  }
+  .btn-acao.text-warning i {
+    color: #f5a623;
+  }
+  .btn-acao.text-danger i {
+    color: #e53935;
+  }
+  /* Ajustar tabela para usar padding e bordas consistentes */
+  .table-erp th, .table-erp td {
+    padding: 12px 16px;
+  }
+  .table-erp td:first-child, .table-erp th:first-child {
+    padding-left: 18px;
+  }
+  .table-erp td:last-child, .table-erp th:last-child {
+    padding-right: 18px;
+  }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="container-fluid mt-4">
+  <!-- Título -->
+  <div class="text-center mb-4">
+    <h1 class="text-glow">Fornecedores <span class="titulo-erp">— JSP ERP</span></h1>
+  </div>
+
+  <!-- Lista de Fornecedores -->
+  <div class="card card-jsp">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        <span class="icon-circle"><i class="fas fa-truck"></i></span>
+        <div>
+          <strong>Lista de Fornecedores</strong>
+          <div><small class="text-muted">&nbsp;— &nbsp;{{ fornecedores|length }}</small></div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <!-- Voltar para painel ou página anterior -->
+        <a href="{{ url_for('painel.dashboard') }}" class="btn-back btn-sm me-2"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <!-- Campo de busca -->
+        <div class="input-group lista-search">
+          <span class="input-group-text input-search-icon"><i class="fas fa-search"></i></span>
+          <input id="buscar_fornecedores" type="text" class="form-control lista-busca" placeholder="Buscar por nome ou código...">
+        </div>
+        <!-- Novo Fornecedor -->
+        <a href="{{ url_for('fornecedor.novo_fornecedor') }}" class="btn btn-brand btn-sm ms-2"><i class="fas fa-plus"></i> Novo</a>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive rounded">
+        <table class="table table-hover align-middle text-center table-erp">
+          <thead class="neo-thead">
+            <tr>
+              <th class="text-start">Código</th>
+              <th class="text-start">Nome / Razão Social</th>
+              <th>CPF / CNPJ</th>
+              <th>E-mail</th>
+              <th>Telefone</th>
+              <th>Cidade</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for fornecedor in fornecedores %}
+            <tr>
+              <td class="text-start">{{ fornecedor.codigo or ('FOR%05d' % fornecedor.id) }}</td>
+              <td class="text-start">
+                <strong>{{ fornecedor.nome }}</strong>
+                {% if fornecedor.nome_fantasia %}
+                  <br><small class="text-muted">{{ fornecedor.nome_fantasia }}</small>
+                {% endif %}
+              </td>
+              <td>{{ fornecedor.cpf_cnpj or fornecedor.cnpj or '-' }}</td>
+              <td>{{ fornecedor.email or '-' }}</td>
+              <td>{{ fornecedor.telefone or '-' }}</td>
+              <td>{{ fornecedor.cidade or '-' }}</td>
+              <td>
+                {% if fornecedor.ativo %}
+                  <span class="badge bg-success">Ativo</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inativo</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ url_for('fornecedor.detalhar_fornecedor', id=fornecedor.id) }}" title="Detalhar" class="btn-acao text-info" aria-label="Detalhar"><i class="fas fa-eye"></i></a>
+                <a href="{{ url_for('fornecedor.editar_fornecedor', id=fornecedor.id) }}" title="Editar" class="btn-acao text-warning" aria-label="Editar"><i class="fas fa-edit"></i></a>
+                <form action="{{ url_for('fornecedor.excluir_fornecedor', id=fornecedor.id) }}" method="post" class="delete-form d-inline" data-nome="{{ fornecedor.nome }}">
+                  <button type="submit" title="Excluir" class="btn-acao text-danger" aria-label="Excluir"><i class="fas fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  // Confirmação de exclusão
+  document.querySelectorAll('form.delete-form').forEach(function(f){
+    f.addEventListener('submit', function(e){
+      var nome = f.dataset.nome || 'este fornecedor';
+      if (!confirm('Confirma exclusão do fornecedor: ' + nome + '?')) {
+        e.preventDefault();
+      }
+    });
+  });
+  // Filtro de busca em tempo real
+  const input = document.getElementById('buscar_fornecedores');
+  if(input){
+    input.addEventListener('input', function(){
+      const val = this.value.toLowerCase();
+      document.querySelectorAll('table.table-erp tbody tr').forEach(function(row){
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(val) ? '' : 'none';
+      });
+    });
+  }
+});
+</script>
+{% endblock %}

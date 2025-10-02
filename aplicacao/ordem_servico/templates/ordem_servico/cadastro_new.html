@@ -1,0 +1,2131 @@
+{% extends "autenticacao/base.html" %}
+{% block titulo %}{{ 'Editar Ordem de Serviço' if ordem_servico else 'Nova Ordem de Serviço' }} — JSP ERP{% endblock %}
+
+{# Macro para formatação de moeda arredondada #}
+{% macro formato_moeda(valor) -%}
+R$ {{ "{:,.0f}".format(valor|round|float).replace(',', '.') }},00
+{%- endmacro %}
+
+<!-- TESTE CACHE: ARQUIVO ATUAL {{ 'TIMESTAMP: 2025-09-26 09:05:45' }} -->
+{% block content %}
+
+<div class="page-title">
+  <div class="ico"><i class="fas fa-tools"></i></div>
+  <h3 style="margin:0;">{{ 'Editar Ordem de Serviço' if ordem_servico else 'Nova Ordem de Serviço' }}</h3>
+  {% if ordem_servico and ordem_servico.codigo %}
+    <span class="badge rounded-pill text-bg-dark ms-2">Nº {{ ordem_servico.codigo }}</span>
+  {% endif %}
+</div>
+
+<div class="card card-jsp">
+  <div class="card-header d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fas fa-file-alt"></i>
+      <strong>{{ 'Edição' if ordem_servico else 'Cadastro' }} da OS</strong>
+      {% if ordem_servico and ordem_servico.codigo %}<code>{{ ordem_servico.codigo }}</code>{% endif %}
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a href="{{ url_for('ordens.listar_ordens') }}" class="btn btn-outline-light btn-sm" style="border-color:rgba(255,255,255,.25)"><i class="fas fa-arrow-left me-1"></i> Voltar</a>
+      {% if ordem_servico %}
+        <a class="btn btn-brand btn-sm" target="_blank" href="{{ url_for('ordens.gerar_pdf', os_id=ordem_servico.id) }}"><i class="fas fa-file-pdf me-1"></i> PDF</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card-body">
+    <form id="form-os"
+          method="POST"
+          enctype="multipart/form-data"
+          action="{% if ordem_servico %}{{ url_for('ordens.editar_ordem', ordem_id=ordem_servico.id) }}{% else %}{{ url_for('ordens.criar_ordem') }}{% endif %}"
+          onsubmit="console.log('Formulário sendo enviado...'); return enviarFormularioComAnexos(event);">
+      
+      <!-- CSRF token removido temporariamente -->
+
+      <!-- 1) Cliente -->
+      <div class="card card-jsp mb-3">
+        <div class="card-header"><i class="fas fa-user me-2"></i>Dados do Cliente</div>
+        <div class="card-body">
+          <div class="row g-3 align-items-start">
+            <div class="col-lg-6">
+              <label class="form-label">Cliente *</label>
+              
+              <!-- Método 1: Select Dropdown (Sempre funciona) -->
+              <select id="cliente_select" name="cliente_select" class="form-select mb-2">
+                <option value="">Selecione um cliente...</option>
+                {% for cliente in clientes %}
+                  <option value="{{ cliente.id }}" 
+                          data-nome="{{ cliente.nome }}"
+                          data-cpf="{{ cliente.cpf_cnpj or '' }}"
+                          data-telefone="{{ cliente.telefone or '' }}"
+                          data-email="{{ cliente.email or '' }}"
+                          data-endereco="{{ cliente.endereco or '' }}"
+                          {% if ordem_servico and ordem_servico.cliente_id == cliente.id %}selected{% endif %}>
+                    {{ cliente.nome }} {% if cliente.cpf_cnpj %}({{ cliente.cpf_cnpj }}){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+              
+              <!-- Campo de busca com autocomplete -->
+              <div class="mt-2">
+                <label class="form-label text-muted small">Ou busque digitando:</label>
+                <input type="text" 
+                       id="cliente_busca" 
+                       class="form-control" 
+                       placeholder="Digite o nome do cliente..."
+                       list="clientes_datalist"
+                       autocomplete="off">
+              </div>
+              
+              <!-- Datalist para busca -->
+              <datalist id="clientes_datalist">
+                {% for cliente in clientes %}
+                  <option value="{{ cliente.nome }}" data-id="{{ cliente.id }}">
+                    {{ cliente.nome }} - {{ cliente.cpf_cnpj or 'Sem CPF/CNPJ' }}
+                  </option>
+                {% endfor %}
+              </datalist>
+              
+              <input type="hidden" id="cliente_id" name="cliente_id" value="{{ ordem_servico.cliente_id if ordem_servico else '' }}">
+              
+             
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label">Solicitante</label>
+              <input id="solicitante" name="solicitante" class="form-control"
+                     value="{{ ordem_servico.solicitante if ordem_servico else '' }}" placeholder="Nome do solicitante">
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label">Contato</label>
+              <input id="contato" name="contato" class="form-control" maxlength="15"
+                     value="{{ ordem_servico.contato if ordem_servico else '' }}" placeholder="(00) 00000-0000">
+            </div>
+          </div>
+
+          <div class="row g-3 mt-1">
+            <div class="col-md-3">
+              <label class="form-label">CPF/CNPJ</label>
+              <input id="cpf" class="form-control" readonly value="{{ ordem_servico.cliente.cpf_cnpj if ordem_servico and ordem_servico.cliente else '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Telefone</label>
+              <input id="telefone" class="form-control" readonly value="{{ ordem_servico.cliente.telefone if ordem_servico and ordem_servico.cliente else '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">E-mail</label>
+              <input id="email" class="form-control" readonly value="{{ ordem_servico.cliente.email if ordem_servico and ordem_servico.cliente else '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Endereço</label>
+              <input id="endereco" class="form-control" readonly value="{{ ordem_servico.cliente.endereco if ordem_servico and ordem_servico.cliente else '' }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2) Detalhes -->
+      <div class="card card-jsp mb-3">
+        <div class="card-header"><i class="fas fa-clipboard-list me-2"></i>Detalhes da OS</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Código</label>
+              <input id="codigo" name="codigo" class="form-control" readonly
+                     value="{{ ordem_servico.codigo if ordem_servico else codigo_gerado }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Data de Emissão</label>
+              <input type="date" id="data_emissao" name="data_emissao" class="form-control"
+                     value="{{ ordem_servico.data_emissao.strftime('%Y-%m-%d') if ordem_servico and ordem_servico.data_emissao else '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Previsão de Conclusão</label>
+              <input type="date" id="previsao_conclusao" name="previsao_conclusao" class="form-control"
+                     value="{{ ordem_servico.previsao_conclusao.strftime('%Y-%m-%d') if ordem_servico and ordem_servico.previsao_conclusao else '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Prioridade</label>
+              <select id="prioridade" name="prioridade" class="form-select">
+                {% set pr = ordem_servico.prioridade if ordem_servico else 'Média' %}
+                <option value="Baixa"  {{ 'selected' if pr=='Baixa'  else '' }}>Baixa</option>
+                <option value="Média"  {{ 'selected' if pr=='Média'  else '' }}>Média</option>
+                <option value="Alta"   {{ 'selected' if pr=='Alta'   else '' }}>Alta</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Status</label>
+              <select id="status" name="status" class="form-select">
+                {% set st = ordem_servico.status if ordem_servico else 'Aberta' %}
+                <option value="Aberta"        {{ 'selected' if st=='Aberta'        else '' }}>Aberta</option>
+                <option value="Em Andamento"  {{ 'selected' if st=='Em Andamento'  else '' }}>Em Andamento</option>
+                <option value="Concluída"     {{ 'selected' if st=='Concluída'     else '' }}>Concluída</option>
+                <option value="Cancelada"     {{ 'selected' if st=='Cancelada'     else '' }}>Cancelada</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3) Equipamento -->
+      <div class="card card-jsp mb-3">
+        <div class="card-header"><i class="fas fa-cogs me-2"></i>Dados do Equipamento</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-lg-6">
+              <label class="form-label">Nome do Equipamento</label>
+              <input id="equipamento_nome" name="equipamento_nome" class="form-control" value="{{ ordem_servico.equipamento_nome if ordem_servico else '' }}" placeholder="Ex: Computador, Impressora, Notebook...">
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label">Marca</label>
+              <input id="equipamento_marca" name="equipamento_marca" class="form-control" value="{{ ordem_servico.equipamento_marca if ordem_servico else '' }}" placeholder="Ex: Dell, HP, Lenovo...">
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label">Modelo</label>
+              <input id="equipamento_modelo" name="equipamento_modelo" class="form-control" value="{{ ordem_servico.equipamento_modelo if ordem_servico else '' }}" placeholder="Modelo do equipamento">
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label">Número de Série</label>
+              <input id="equipamento_numero_serie" name="equipamento_numero_serie" class="form-control" value="{{ ordem_servico.equipamento_numero_serie if ordem_servico else '' }}" placeholder="Número de série do equipamento">
+            </div>
+            <div class="col-lg-6">
+              <label class="form-label">Acessórios</label>
+              <input id="equipamento_acessorios" name="equipamento_acessorios" class="form-control" value="{{ ordem_servico.equipamento_acessorios if ordem_servico else '' }}" placeholder="Ex: Mouse, teclado, cabos, carregador...">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4) Problema/Solução -->
+      <div class="card card-jsp mb-3">
+        <div class="card-header"><i class="fas fa-exclamation-triangle me-2"></i>Problema e Solução</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label">Problema descrito</label>
+            <textarea id="problema_descrito" name="problema_descrito" rows="3" class="form-control" placeholder="Descreva detalhadamente o problema relatado pelo cliente...">{{ ordem_servico.problema_descrito if ordem_servico and ordem_servico.problema_descrito and ordem_servico.problema_descrito != 'None' else '' }}</textarea>
+          </div>
+          <div>
+            <label class="form-label">Serviço realizado</label>
+            <textarea id="descricao_servico_realizado" name="descricao_servico_realizado" rows="3" class="form-control" placeholder="Descreva detalhadamente os serviços executados, peças trocadas, procedimentos realizados...">{{ ordem_servico.descricao_servico_realizado if ordem_servico and ordem_servico.descricao_servico_realizado and ordem_servico.descricao_servico_realizado != 'None' else '' }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5) Responsável / Horários -->
+      <div class="card card-jsp mb-3">
+        <div class="card-header"><i class="fas fa-user-tie me-2"></i>Responsável e Execução</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-lg-4">
+              <label class="form-label">Técnico responsável</label>
+              <input id="tecnico_responsavel" name="tecnico_responsavel" class="form-control" value="{{ ordem_servico.tecnico_responsavel if ordem_servico else '' }}" placeholder="Nome do técnico responsável">
+            </div>
+            <div class="col-lg-4">
+              <label class="form-label">Tipo de serviço</label>
+              <textarea id="tipo_servico" name="tipo_servico" class="form-control" rows="2" readonly 
+                        placeholder="Descrição dos serviços será preenchida automaticamente">{{ ordem_servico.tipo_servico if ordem_servico else '' }}</textarea>
+            </div>
+            <div class="col-lg-4">
+              <label class="form-label">Data de conclusão</label>
+              <input type="date" id="data_conclusao" name="data_conclusao" class="form-control"
+                     value="{{ ordem_servico.data_conclusao.strftime('%Y-%m-%d') if ordem_servico and ordem_servico.data_conclusao else '' }}">
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label">Hora início</label>
+              <input type="time" id="hora_inicio" name="hora_inicio" class="form-control"
+                     value="{{ ordem_servico.hora_inicio.strftime('%H:%M') if ordem_servico and ordem_servico.hora_inicio else '' }}">
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label">Hora término</label>
+              <input type="time" id="hora_termino" name="hora_termino" class="form-control"
+                     value="{{ ordem_servico.hora_termino.strftime('%H:%M') if ordem_servico and ordem_servico.hora_termino else '' }}">
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label">Total horas</label>
+              <input id="total_horas" name="total_horas" class="form-control" readonly 
+                     value="{{ ordem_servico.total_horas if ordem_servico and ordem_servico.total_horas else '' }}">
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label">&nbsp;</label>
+              <button type="button" onclick="calcularHoras()" class="btn btn-outline-primary w-100">
+                <i class="fas fa-calculator me-1"></i>Calcular
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6) Deslocamento -->
+      <div class="card card-jsp mb-3">
+        <div class="card-header"><i class="fas fa-route me-2"></i>Deslocamento (cobra se &gt; 50 km)</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">KM inicial</label>
+              <input type="number" step="0.1" id="km_inicial" name="km_inicial" class="form-control"
+                     value="{{ ordem_servico.km_inicial if ordem_servico else '' }}" placeholder="0.0">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">KM final</label>
+              <input type="number" step="0.1" id="km_final" name="km_final" class="form-control"
+                     value="{{ ordem_servico.km_final if ordem_servico else '' }}" placeholder="0.0">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">KM total</label>
+              <input id="km_total" class="form-control" readonly
+                     value="{{ ordem_servico.km_total ~ ' km' if ordem_servico and ordem_servico.km_total else '' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Valor deslocamento</label>
+              <input id="valor_deslocamento_display" class="form-control" readonly
+                     value="{{ formato_moeda(ordem_servico.valor_deslocamento|float) if ordem_servico and ordem_servico.valor_deslocamento else '' }}">
+              <input type="hidden" id="valor_deslocamento" name="valor_deslocamento" value="{{ ordem_servico.valor_deslocamento if ordem_servico else '0' }}">
+              <div class="form-text">Tabela: R$ 1,15 / km quando ultrapassar 50 km.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7) Serviços -->
+      <div class="card card-jsp mb-3">
+        <div class="card-header"><i class="fas fa-wrench me-2"></i>Serviços (Valor = Horas × Valor/Hora)</div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-lg-5">
+              <label class="form-label">Adicionar serviço</label>
+              <select id="servico_select" class="form-select">
+                <option value="">Selecione...</option>
+                {% for s in servicos %}
+                  <option value="{{ s.id }}" data-valor="{{ s.preco_venda or s.valor or 0 }}" data-nome="{{ s.nome }}">
+                    {{ s.nome }} — {{ formato_moeda((s.preco_venda or s.valor or 0)|float) }}/h
+                  </option>
+                {% endfor %}
+              </select>
+              
+              <!-- Campo de busca com autocomplete para serviços -->
+              <div class="mt-2">
+                <label class="form-label text-muted small">Ou busque digitando:</label>
+                <input type="text" 
+                       id="servico_busca" 
+                       class="form-control" 
+                       placeholder="Digite o nome do serviço..."
+                       list="servicos_datalist"
+                       autocomplete="off">
+              </div>
+              
+              <!-- Datalist para busca de serviços -->
+              <datalist id="servicos_datalist">
+                {% for s in servicos %}
+                  <option value="{{ s.nome }}" data-id="{{ s.id }}" data-valor="{{ s.preco_venda or s.valor or 0 }}">
+                    {{ s.nome }} - {{ formato_moeda((s.preco_venda or s.valor or 0)|float) }}/h
+                  </option>
+                {% endfor %}
+              </datalist>
+            </div>
+            <div class="col-lg-2">
+              <label class="form-label">Qtd (horas)</label>
+              <input id="servico_quantidade" class="form-control" type="number" min="0.1" step="0.1" value="1">
+            </div>
+            <div class="col-lg-3">
+              <div class="text-light small" style="color: rgba(255,255,255,0.8) !important;">Use “Hora início / término” para calcular as horas automaticamente.</div>
+            </div>
+            <div class="col-lg-2 text-end">
+              <button type="button" class="btn btn-brand w-100" onclick="adicionarServico()"><i class="fas fa-plus"></i></button>
+            </div>
+          </div>
+          <div id="lista-servicos" class="mt-3">
+            {% if servicos_salvos and servicos_salvos|length > 0 %}
+            <div class="table-responsive">
+              <table class="table table-mini align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Serviço</th>
+                    <th>Qtd (h)</th>
+                    <th>Valor/h</th>
+                    <th>Total</th>
+                    <th style="width:80px;"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for servico in servicos_salvos %}
+                  <tr>
+                    <td>{{ servico.nome }}</td>
+                    <td>{{ servico.quantidade }}h</td>
+                    <td>{{ formato_moeda(servico.valor_hora|float) }}</td>
+                    <td class="valor-calculado">{{ formato_moeda(servico.valor_total|float) }}</td>
+                    <td>
+                      <button type="button" class="btn btn-outline-danger btn-sm" onclick="removerServicoSalvo({{ loop.index0 }})">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% endif %}
+          </div>
+          <input type="hidden" id="servicos_json" name="servicos_json" value="{{ servicos_salvos|tojson if servicos_salvos else '[]' }}">
+        </div>
+      </div>
+
+      <!-- 8) Produtos -->
+      <div class="card card-jsp mb-3">
+        <div class="card-header"><i class="fas fa-box me-2"></i>Produtos</div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-lg-5">
+              <label class="form-label">Adicionar produto</label>
+              <select id="produto_select" class="form-select">
+                <option value="">Selecione...</option>
+                {% for p in produtos %}
+                  <option value="{{ p.id }}" data-valor="{{ p.preco }}" data-nome="{{ p.nome }}">{{ p.nome }} — {{ formato_moeda(p.preco|float) }}</option>
+                {% endfor %}
+              </select>
+              
+              <!-- Campo de busca com autocomplete para produtos -->
+              <div class="mt-2">
+                <label class="form-label text-muted small">Ou busque digitando:</label>
+                <input type="text" 
+                       id="produto_busca" 
+                       class="form-control" 
+                       placeholder="Digite o nome do produto..."
+                       list="produtos_datalist"
+                       autocomplete="off">
+              </div>
+              
+              <!-- Datalist para busca de produtos -->
+              <datalist id="produtos_datalist">
+                {% for p in produtos %}
+                  <option value="{{ p.nome }}" data-id="{{ p.id }}" data-valor="{{ p.preco }}">
+                    {{ p.nome }} - {{ formato_moeda(p.preco|float) }}
+                  </option>
+                {% endfor %}
+              </datalist>
+            </div>
+            <div class="col-lg-2">
+              <label class="form-label">Qtd</label>
+              <input id="produto_quantidade" class="form-control" type="number" min="1" step="1" value="1">
+            </div>
+            <div class="col-lg-3">
+              <label class="form-label">Valor unitário</label>
+              <input id="produto_valor" class="form-control" type="number" step="0.01">
+            </div>
+            <div class="col-lg-2 text-end">
+              <button type="button" class="btn btn-brand w-100" onclick="adicionarProduto()"><i class="fas fa-plus"></i></button>
+            </div>
+          </div>
+          <div id="lista-produtos" class="mt-3">
+            {% if produtos_salvos and produtos_salvos|length > 0 %}
+            <div class="table-responsive">
+              <table class="table table-mini align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Produto</th>
+                    <th>Qtd</th>
+                    <th>Valor Unit.</th>
+                    <th>Total</th>
+                    <th style="width:80px;"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for produto in produtos_salvos %}
+                  <tr>
+                    <td>{{ produto.nome }}</td>
+                    <td>{{ produto.quantidade }}</td>
+                    <td>{{ formato_moeda(produto.valor_unitario) }}</td>
+                    <td class="valor-calculado">{{ formato_moeda(produto.valor_total) }}</td>
+                    <td>
+                      <button type="button" class="btn btn-outline-danger btn-sm" onclick="removerProdutoSalvo({{ loop.index0 }})">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% endif %}
+          </div>
+          <input type="hidden" id="produtos_json" name="produtos_json" value="{{ produtos_salvos|tojson if produtos_salvos else '[]' }}">
+        </div>
+      </div>
+
+      <!-- 9) Totais -->
+      <div class="card card-jsp mb-3">
+        <div class="card-header"><i class="fas fa-calculator me-2"></i>Totais</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Total horas</label>
+              <input id="total_horas_display" class="form-control" value="{{ ordem_servico.total_horas ~ 'h' if ordem_servico and ordem_servico.total_horas else '' }}" readonly>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Valor serviços</label>
+              <input id="valor_servicos_display" class="form-control" readonly
+                     value="{{ formato_moeda(ordem_servico.valor_servicos|float) if ordem_servico and ordem_servico.valor_servicos else '' }}">
+              <input type="hidden" id="valor_servicos" name="valor_servicos" value="{{ ordem_servico.valor_servicos if ordem_servico else '0' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Valor produtos</label>
+              <input id="valor_produtos_display" class="form-control" readonly
+                     value="{{ formato_moeda(ordem_servico.valor_produtos|float) if ordem_servico and ordem_servico.valor_produtos else '' }}">
+              <input type="hidden" id="valor_produtos" name="valor_produtos" value="{{ ordem_servico.valor_produtos if ordem_servico else '0' }}">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Valor total</label>
+              <input id="valor_total_display" class="form-control" style="font-weight:700" readonly
+                     value="{{ formato_moeda(ordem_servico.valor_total|float) if ordem_servico and ordem_servico.valor_total else '' }}">
+              <input type="hidden" id="valor_total" name="valor_total" value="{{ ordem_servico.valor_total if ordem_servico else '0' }}">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 10) Pagamento -->
+      <div id="secao-pagamento" class="card card-jsp mb-3">
+        <div class="card-header"><i class="fas fa-credit-card me-2"></i>Condições de Pagamento</div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-lg-4">
+              <label class="form-label">Condição</label>
+              {% set cp = ordem_servico.condicoes_pagamento if ordem_servico else 'À vista' %}
+              <select id="condicoes_pagamento" name="condicoes_pagamento" class="form-select">
+                <option value="À vista"  {{ 'selected' if cp=='À vista'  else '' }}>À vista</option>
+                <option value="Parcelado"{{ 'selected' if cp=='Parcelado' else '' }}>Parcelado</option>
+              </select>
+            </div>
+            <div class="col-lg-4">
+              <label class="form-label">Forma</label>
+              {% set fp = ordem_servico.forma_pagamento if ordem_servico else 'A receber' %}
+              <select id="forma_pagamento" name="forma_pagamento" class="form-select">
+                {% for f in ['A receber','Pago','À vista','Dinheiro','PIX','Cartão','Cheque','Transferência'] %}
+                  <option value="{{ f }}" {{ 'selected' if fp==f else '' }}>{{ f }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-lg-2">
+              <label class="form-label">Parcelas</label>
+              <input id="num_parcelas" class="form-control" type="number" min="1" max="12" value="1">
+              <div class="form-text">1 = à vista</div>
+            </div>
+            <div class="col-lg-2">
+              <button type="button" class="btn btn-brand w-100" onclick="gerarParcelas()"><i class="fas fa-calendar-alt me-1"></i>Gerar</button>
+            </div>
+          </div>
+          <div id="lista-parcelas" class="mt-3">
+            {% if parcelas_salvas and parcelas_salvas|length > 0 %}
+            <div class="table-responsive">
+              <table class="table table-mini align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>Parcela</th>
+                    <th>Data Vencimento</th>
+                    <th>Valor</th>
+                    <th style="width:80px;"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for parcela in parcelas_salvas %}
+                  <tr>
+                    <td>{{ parcela.numero }}</td>
+                    <td>
+                      {% if parcela.data_vencimento %}
+                        {% set data_parts = parcela.data_vencimento.split('-') %}
+                        {% if data_parts|length == 3 %}
+                          {{ data_parts[2] }}/{{ data_parts[1] }}/{{ data_parts[0] }}
+                        {% else %}
+                          {{ parcela.data_vencimento }}
+                        {% endif %}
+                      {% endif %}
+                    </td>
+                    <td class="valor-calculado">{{ formato_moeda(parcela.valor) }}</td>
+                    <td>
+                      <button type="button" class="btn btn-outline-danger btn-sm" onclick="removerParcelaSalva({{ loop.index0 }})">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% endif %}
+          </div>
+          <input type="hidden" id="parcelas_json" name="parcelas_json" value="{{ parcelas_salvas|tojson if parcelas_salvas else '[]' }}">
+        </div>
+      </div>
+
+      <!-- 11) Anexos -->
+      <div class="card card-jsp mb-3">
+        <div class="card-header"><i class="fas fa-paperclip me-2"></i>Anexos (Fotos, Documentos, Comprovantes)</div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-lg-8">
+              <label class="form-label">Selecionar arquivos</label>
+              <input type="file" id="arquivos_anexo" name="arquivos_anexo" class="form-control" 
+                     multiple accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar" 
+                     onchange="adicionarAnexos(this.files)">
+              <div class="form-text">
+                <i class="fas fa-info-circle me-1"></i>
+                Aceita: imagens, PDF, Word, TXT, ZIP. Máximo 10MB por arquivo.
+              </div>
+            </div>
+            <div class="col-lg-4 text-end">
+              <label class="form-label">&nbsp;</label>
+              <button type="button" class="btn btn-brand w-100" onclick="document.getElementById('arquivos_anexo').click()">
+                <i class="fas fa-upload me-1"></i>Escolher Arquivos
+              </button>
+            </div>
+          </div>
+          
+          <!-- Lista de anexos -->
+          <div id="lista-anexos" class="mt-3">
+            {% if anexos_salvos and anexos_salvos|length > 0 %}
+            <div class="table-responsive">
+              <table class="table table-mini align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th><i class="fas fa-file me-1"></i>Arquivo</th>
+                    <th>Tipo</th>
+                    <th>Tamanho</th>
+                    <th>Data</th>
+                    <th style="width:120px;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for anexo in anexos_salvos %}
+                  <tr>
+                    <td>
+                      <i class="fas fa-{{ 'image' if (anexo.tipo_arquivo or anexo.tipo or '').startswith('image/') else 'file-pdf' if (anexo.tipo_arquivo or anexo.tipo) == 'application/pdf' else 'file-word' if 'word' in (anexo.tipo_arquivo or anexo.tipo or '') else 'file-alt' }} me-2"></i>
+                      {{ anexo.nome_original }}
+                    </td>
+                    <td>
+                      <span class="badge bg-secondary">{{ anexo.extensao.upper() }}</span>
+                    </td>
+                    <td>{{ anexo.tamanho_formatado }}</td>
+                    <td>{{ anexo.data_upload }}</td>
+                    <td>
+                      <div class="btn-group btn-group-sm">
+                        <a href="{{ url_for('ordens.download_anexo', ordem_id=ordem_servico.id, nome_arquivo=anexo.nome_arquivo) }}" 
+                           class="btn btn-outline-primary btn-sm" title="Download">
+                          <i class="fas fa-download"></i>
+                        </a>
+                        {% if (anexo.tipo_arquivo or anexo.tipo or '').startswith('image/') %}
+                        <button type="button" class="btn btn-outline-info btn-sm" 
+                                onclick="visualizarImagemSalva('{{ url_for('ordens.download_anexo', ordem_id=ordem_servico.id, nome_arquivo=anexo.nome_arquivo) }}', '{{ anexo.nome_original }}')" 
+                                title="Visualizar">
+                          <i class="fas fa-eye"></i>
+                        </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-outline-danger btn-sm" 
+                                onclick="removerAnexoSalvo('{{ anexo.nome_arquivo }}')" title="Remover">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% endif %}
+          </div>
+          
+          <!-- Campo hidden para anexos -->
+          <input type="hidden" id="anexos_json" name="anexos_json" value="{{ anexos_salvos|tojson if anexos_salvos else '[]' }}">
+        </div>
+      </div>
+
+      <!-- 12) Observações -->
+      <div class="card card-jsp mb-3">
+        <div class="card-header"><i class="fas fa-sticky-note me-2"></i>Observações</div>
+        <div class="card-body">
+          <textarea id="outras_informacoes" name="outras_informacoes" rows="3" class="form-control" placeholder="Informações adicionais, observações gerais, recomendações...">{{ ordem_servico.outras_informacoes if ordem_servico else '' }}</textarea>
+        </div>
+      </div>
+
+      <!-- Ações -->
+      <div class="text-end">
+        <a href="{{ url_for('ordens.listar_ordens') }}" class="btn btn-outline-light btn-lg" style="border-color:rgba(255,255,255,.25)"><i class="fas fa-arrow-left me-1"></i>Voltar</a>
+        <button type="submit" class="btn btn-brand btn-lg ms-2">
+          <i class="fas fa-save me-1"></i>{{ 'Atualizar' if ordem_servico else 'Criar' }} OS
+        </button>
+        {% if ordem_servico %}
+        <a class="btn btn-outline-light btn-lg ms-2" style="border-color:rgba(255,255,255,.25)" target="_blank" href="{{ url_for('ordens.gerar_pdf', os_id=ordem_servico.id) }}">
+          <i class="fas fa-file-pdf me-1"></i>PDF
+        </a>
+        {% endif %}
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+  /* contraste/inputs no padrão do Fornecedor */
+  .card-jsp label, .card-jsp .form-label { color:#ffffff!important; }
+  .card-jsp .form-control, .card-jsp .form-select, .card-jsp textarea{
+    color:#ffffff; background:rgba(15,31,54,.55); border:1px solid rgba(255,255,255,.12);
+  }
+  .card-jsp .form-control:focus, .card-jsp .form-select:focus, .card-jsp textarea:focus{
+    border-color:rgba(86,212,255,.65); box-shadow:0 0 0 .2rem rgba(86,212,255,.12);
+  }
+  .dropdown-menu .dropdown-item{ color:#0d223d; }
+  .valor-calculado{ font-weight:700; }
+  .table-mini thead th{ 
+    background:rgba(41,182,255,.16); 
+    color:#ffffff !important; 
+    border-bottom:1px solid rgba(255,255,255,.12); 
+    font-weight: 600;
+  }
+  .table-mini td{ 
+    color:#ffffff !important; 
+    background:rgba(15,31,54,.3);
+    border-color:rgba(255,255,255,.12);
+  }
+  .table-mini tbody tr:hover td {
+    background:rgba(41,182,255,.1);
+  }
+  
+  /* Garantir que apenas uma seção de pagamento seja visível */
+  .duplicate-payment-section {
+    display: none !important;
+  }
+  
+  /* ========== MELHORAR VISIBILIDADE ========== */
+  /* Placeholders mais visíveis - GLOBAL */
+  .card-jsp .form-control::placeholder, 
+  .card-jsp .form-select::placeholder, 
+  .card-jsp textarea::placeholder,
+  input::placeholder,
+  #servico_busca::placeholder,
+  #produto_busca::placeholder {
+    color: rgba(255,255,255,0.7) !important;
+    opacity: 1 !important;
+  }
+  
+  /* FORÇA ESPECÍFICA para campos de busca */
+  input[placeholder*="Digite o nome do serviço"]::placeholder,
+  input[placeholder*="Digite o nome do produto"]::placeholder {
+    color: rgba(255,255,255,0.8) !important;
+    opacity: 1 !important;
+    font-weight: normal !important;
+  }
+  
+  /* Textos dos inputs mais claros */
+  .card-jsp .form-control, 
+  .card-jsp .form-select, 
+  .card-jsp textarea {
+    color: #ffffff !important; 
+    background: rgba(15,31,54,.55); 
+    border: 1px solid rgba(255,255,255,.12);
+  }
+  
+  /* Texto dos options do select */
+  .card-jsp .form-select option {
+    background: #1a2332 !important;
+    color: #ffffff !important;
+  }
+  
+  /* Melhorar contraste dos botões */
+  .btn-outline-primary {
+    color: #56d4ff !important;
+    border-color: #56d4ff !important;
+  }
+  .btn-outline-primary:hover {
+    background-color: #56d4ff !important;
+    color: #000 !important;
+  }
+  
+  /* Texto das labels mais visível */
+  .card-jsp label, 
+  .card-jsp .form-label,
+  .card-jsp .form-text,
+  label,
+  .form-label { 
+    color: #ffffff !important; 
+    font-weight: 500 !important;
+    opacity: 1 !important;
+  }
+  
+  /* Form-text (texto de ajuda) mais visível */
+  .form-text {
+    color: rgba(255,255,255,0.8) !important;
+    font-size: 0.875em;
+  }
+  
+  /* Headers dos cards */
+  .card-header {
+    color: #ffffff !important;
+    font-weight: 600 !important;
+  }
+</style>
+
+<script>
+/* ===================== Estado ===================== */
+let servicos = [];
+let produtos = [];
+let parcelas = [];
+let anexos = [];
+
+/* ===================== Util ===================== */
+const fmt = n => {
+  // Formata número para moeda brasileira com centavos
+  const num = parseFloat(n) || 0;
+  return 'R$ ' + num.toFixed(2).replace('.', ',');
+};
+
+// Função para converter string monetária para número
+const parseMonetary = (str) => {
+  if (typeof str === 'number') return str;
+  if (!str) return 0;
+  return parseFloat(str.toString().replace(/[R$\s,]/g, '').replace(',', '.')) || 0;
+};
+
+/* ===================== Cliente (autocomplete simples) ===================== */
+let clienteTimeout = null;
+
+// JavaScript para gerenciar seleção de clientes
+function setupClienteSelection() {
+  console.log('🚀 Configurando seleção de clientes...');
+  
+  const selectCliente = document.getElementById('cliente_select');
+  const buscaCliente = document.getElementById('cliente_busca');
+  const clienteIdField = document.getElementById('cliente_id');
+  
+  console.log('🔍 Elementos encontrados:', {
+    selectCliente: !!selectCliente,
+    buscaCliente: !!buscaCliente, 
+    clienteIdField: !!clienteIdField
+  });
+  
+  // Verificar se estamos na página correta
+  if (!selectCliente || !buscaCliente || !clienteIdField) {
+    console.log('ℹ️ Elementos de cliente não encontrados - pulando configuração');
+    return;
+  }
+  
+  // Log de quantas opções existem
+  if (selectCliente) {
+    console.log(`📊 Cliente select tem ${selectCliente.options.length} opções`);
+  }
+
+  // Função SIMPLIFICADA para preencher dados do cliente
+  function preencherDadosCliente(clienteData) {
+    console.log('🎯 Preenchendo dados do cliente:', clienteData);
+    
+    const campos = ['cpf', 'telefone', 'email', 'endereco'];
+    
+    campos.forEach(campoId => {
+      const elemento = document.getElementById(campoId);
+      if (elemento && clienteData[campoId]) {
+        elemento.value = clienteData[campoId] || '';
+        console.log(`✏️ ${campoId} preenchido: "${elemento.value}"`);
+      } else if (elemento) {
+        elemento.value = '';
+        console.log(`🧹 ${campoId} limpo`);
+      } else {
+        console.warn(`⚠️ Elemento ${campoId} não encontrado`);
+      }
+    });
+  }
+
+  // Método 1: Select dropdown (VERSÃO SIMPLIFICADA)
+  if (selectCliente) {
+    console.log('🎯 Configurando event listener para select de cliente...');
+    selectCliente.addEventListener('change', function() {
+      console.log('🔄 ===== SELECT DE CLIENTE ALTERADO! =====');
+      const selectedOption = this.options[this.selectedIndex];
+      console.log('📋 Opção selecionada:', {
+        value: selectedOption.value,
+        text: selectedOption.text,
+        index: this.selectedIndex
+      });
+      
+      if (selectedOption.value) {
+        // Extrair dados dos atributos data-*
+        const clienteData = {
+          id: selectedOption.value,
+          nome: selectedOption.getAttribute('data-nome') || selectedOption.text,
+          cpf: selectedOption.getAttribute('data-cpf') || '',
+          telefone: selectedOption.getAttribute('data-telefone') || '',
+          email: selectedOption.getAttribute('data-email') || '',
+          endereco: selectedOption.getAttribute('data-endereco') || ''
+        };
+        
+        console.log('📊 Dados extraídos:', clienteData);
+        
+        // Preencher cliente_id
+        if (clienteIdField) {
+          clienteIdField.value = clienteData.id;
+          console.log(`✅ Cliente ID definido: ${clienteData.id}`);
+        }
+        
+        // Preencher dados do cliente
+        preencherDadosCliente(clienteData);
+        
+        // Limpar campo de busca
+        if (buscaCliente) {
+          buscaCliente.value = '';
+        }
+        
+        console.log('✅ Cliente selecionado via dropdown:', clienteData.nome);
+      } else {
+        console.log('🧹 Limpando dados do cliente...');
+        if (clienteIdField) {
+          clienteIdField.value = '';
+        }
+        preencherDadosCliente({});
+      }
+      console.log('🔄 ===== FIM DO PROCESSAMENTO =====');
+    });
+    console.log('✅ Event listener do select configurado');
+  }  // Método 2: Campo de busca com datalist
+  if (buscaCliente) {
+    buscaCliente.addEventListener('input', function() {
+      const valor = this.value.trim();
+      
+      // Verificar se selecionou algo do datalist
+      const datalist = document.getElementById('clientes_datalist');
+      if (datalist) {
+        const options = datalist.querySelectorAll('option');
+        for (let option of options) {
+          if (option.value === valor) {
+            const clienteId = option.getAttribute('data-id');
+            if (clienteId && clienteIdField) {
+              clienteIdField.value = clienteId;
+              
+              // Sincronizar com o select
+              if (selectCliente) {
+                selectCliente.value = clienteId;
+                selectCliente.dispatchEvent(new Event('change'));
+              }
+              
+              console.log('✅ Cliente selecionado via busca:', valor);
+              break;
+            }
+          }
+        }
+      }
+    });
+    
+    // Botão de busca
+    const btnBuscar = document.getElementById('btn_buscar');
+    if (btnBuscar) {
+      btnBuscar.addEventListener('click', function() {
+        const valor = buscaCliente.value.trim();
+        if (valor.length >= 2) {
+          console.log('� Buscando cliente:', valor);
+          
+          // Filtrar no select
+          if (selectCliente) {
+            const options = selectCliente.querySelectorAll('option');
+            let encontrado = false;
+            
+            for (let option of options) {
+              const nome = option.getAttribute('data-nome') || option.textContent;
+              if (nome.toLowerCase().includes(valor.toLowerCase())) {
+                selectCliente.value = option.value;
+                selectCliente.dispatchEvent(new Event('change'));
+                encontrado = true;
+                break;
+              }
+            }
+            
+            if (!encontrado) {
+              alert('Cliente não encontrado: ' + valor);
+            }
+          }
+        }
+      });
+    }
+  }
+  
+  console.log('✅ Seleção de clientes configurada');
+}
+
+/* ===================== Setup Autocomplete de Serviços ===================== */
+function setupServicoSelection() {
+  console.log('🔧 Configurando seleção de serviços...');
+  
+  const selectServico = document.getElementById('servico_select');
+  const buscaServico = document.getElementById('servico_busca');
+  
+  // Verificar se estamos na página correta
+  if (!selectServico || !buscaServico) {
+    console.log('ℹ️ Elementos de serviço não encontrados - pulando configuração');
+    return;
+  }
+  
+  // Método 1: Select dropdown
+  if (selectServico) {
+    selectServico.addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex];
+      
+      if (selectedOption.value) {
+        // Limpar campo de busca
+        if (buscaServico) {
+          buscaServico.value = '';
+        }
+        console.log('✅ Serviço selecionado via dropdown:', selectedOption.getAttribute('data-nome'));
+      }
+    });
+  }
+  
+  // Método 2: Campo de busca com datalist
+  if (buscaServico) {
+    buscaServico.addEventListener('input', function() {
+      const valor = this.value.trim();
+      
+      if (valor.length >= 2) {
+        // Procurar correspondência no datalist
+        const datalist = document.getElementById('servicos_datalist');
+        const options = datalist ? datalist.querySelectorAll('option') : [];
+        
+        for (let option of options) {
+          if (option.value === valor) {
+            // Encontrou correspondência exata
+            const servicoId = option.getAttribute('data-id');
+            const servicoValor = option.getAttribute('data-valor');
+            
+            if (selectServico) {
+              selectServico.value = servicoId;
+              // Trigger change event
+              selectServico.dispatchEvent(new Event('change'));
+            }
+            
+            console.log('✅ Serviço selecionado via busca:', valor);
+            break;
+          }
+        }
+      }
+    });
+  }
+  
+  console.log('✅ Seleção de serviços configurada');
+}
+
+/* ===================== Setup Autocomplete de Produtos ===================== */
+function setupProdutoSelection() {
+  console.log('📦 Configurando seleção de produtos...');
+  
+  const selectProduto = document.getElementById('produto_select');
+  const buscaProduto = document.getElementById('produto_busca');
+  
+  // Verificar se estamos na página correta
+  if (!selectProduto || !buscaProduto) {
+    console.log('ℹ️ Elementos de produto não encontrados - pulando configuração');
+    return;
+  }
+  
+  // Método 1: Select dropdown
+  if (selectProduto) {
+    selectProduto.addEventListener('change', function() {
+      const selectedOption = this.options[this.selectedIndex];
+      
+      if (selectedOption.value) {
+        // Preencher valor automaticamente
+        const valor = selectedOption.getAttribute('data-valor');
+        const campoValor = document.getElementById('produto_valor');
+        if (campoValor && valor) {
+          campoValor.value = parseFloat(valor).toFixed(2);
+        }
+        
+        // Limpar campo de busca
+        if (buscaProduto) {
+          buscaProduto.value = '';
+        }
+        console.log('✅ Produto selecionado via dropdown:', selectedOption.getAttribute('data-nome'));
+      }
+    });
+  }
+  
+  // Método 2: Campo de busca com datalist
+  if (buscaProduto) {
+    buscaProduto.addEventListener('input', function() {
+      const valor = this.value.trim();
+      
+      if (valor.length >= 2) {
+        // Procurar correspondência no datalist
+        const datalist = document.getElementById('produtos_datalist');
+        const options = datalist ? datalist.querySelectorAll('option') : [];
+        
+        for (let option of options) {
+          if (option.value === valor) {
+            // Encontrou correspondência exata
+            const produtoId = option.getAttribute('data-id');
+            const produtoValor = option.getAttribute('data-valor');
+            
+            if (selectProduto) {
+              selectProduto.value = produtoId;
+              // Trigger change event para preencher valor
+              selectProduto.dispatchEvent(new Event('change'));
+            }
+            
+            console.log('✅ Produto selecionado via busca:', valor);
+            break;
+          }
+        }
+      }
+    });
+  }
+  
+  console.log('✅ Seleção de produtos configurada');
+}
+
+/* ===================== Validação obrigatória do cliente ===================== */
+function validarClienteSelecionado() {
+  console.log('Validando cliente selecionado...');
+  
+  // Verificar se estamos na página correta (se os elementos existem)
+  const clienteIdElement = document.getElementById('cliente_id');
+  if (!clienteIdElement) {
+    console.log('Elementos do formulário não encontrados - não é página de cadastro');
+    return true; // Permitir envio se não é página de cadastro
+  }
+  
+  const clienteId = clienteIdElement.value;
+  console.log('Cliente ID:', clienteId);
+  
+  if(!clienteId) {
+    console.log('ERRO: Nenhum cliente selecionado');
+    alert('Por favor, selecione um cliente válido antes de salvar.');
+    const clienteSelect = document.getElementById('cliente_select');
+    if (clienteSelect) {
+      clienteSelect.focus();
+    }
+    return false;
+  }
+  
+  console.log('Validação OK - enviando formulário');
+  return true;
+}
+
+/* ===================== Cálculos de Horas e KM ===================== */
+function calcularHoras() {
+  const horaInicioEl = document.getElementById('hora_inicio');
+  const horaTerminoEl = document.getElementById('hora_termino');
+  
+  if (!horaInicioEl || !horaTerminoEl) {
+    console.warn('⚠️ Elementos de hora não encontrados');
+    return;
+  }
+  
+  const inicio = horaInicioEl.value;
+  const termino = horaTerminoEl.value;
+  
+  console.log('calcularHoras() chamada:', {inicio, termino});
+  
+  if(inicio && termino) {
+    const [hi, mi] = inicio.split(':').map(Number);
+    const [ht, mt] = termino.split(':').map(Number);
+    let horas = (ht - hi) + (mt - mi) / 60;
+    if(horas < 0) horas += 24; // passou da meia-noite
+    
+    console.log('Horas calculadas:', horas.toFixed(1));
+    
+    // Atualizar campo principal (seção horários)
+    const totalHorasField = document.getElementById('total_horas');
+    if(totalHorasField) {
+      totalHorasField.value = horas.toFixed(1);
+      console.log('Campo total_horas atualizado:', totalHorasField.value);
+    } else {
+      console.warn('⚠️ Campo total_horas não encontrado (pode ser normal se não existe na página)');
+    }
+    
+    // Atualizar campo na seção TOTAIS
+    const totalHorasDisplay = document.getElementById('total_horas_display');
+    if(totalHorasDisplay) {
+      totalHorasDisplay.value = horas.toFixed(1) + 'h';
+      console.log('Campo total_horas_display atualizado:', totalHorasDisplay.value);
+    } else {
+      console.warn('⚠️ Campo total_horas_display não encontrado (pode ser normal se não existe na página)');
+    }
+    
+    // Atualizar quantidade de serviço se houver
+    const servicoQtd = document.getElementById('servico_quantidade');
+    if(servicoQtd && horas > 0) servicoQtd.value = horas.toFixed(1);
+    
+    // Forçar atualização visual
+    sincronizarHorasTotais();
+    
+    console.log('✅ Cálculo de horas concluído!');
+  } else {
+    console.log('Horários incompletos - não calculando');
+  }
+}
+
+// Função específica para sincronizar campos de horas
+function sincronizarHorasTotais() {
+  const totalHorasField = document.getElementById('total_horas');
+  const totalHorasDisplay = document.getElementById('total_horas_display');
+  
+  if(totalHorasField && totalHorasDisplay) {
+    const valor = parseFloat(totalHorasField.value) || 0;
+    totalHorasDisplay.value = valor.toFixed(1) + 'h';
+    console.log('Sincronização forçada:', valor.toFixed(1) + 'h');
+  }
+}
+
+function calcularKm() {
+  const kmInicialEl = document.getElementById('km_inicial');
+  const kmFinalEl = document.getElementById('km_final');
+  const kmTotalEl = document.getElementById('km_total');
+  const valorDeslocamentoEl = document.getElementById('valor_deslocamento');
+  const valorDeslocamentoDisplayEl = document.getElementById('valor_deslocamento_display');
+  
+  if (!kmInicialEl || !kmFinalEl) {
+    console.warn('⚠️ Elementos de KM não encontrados');
+    return;
+  }
+  
+  const inicial = parseFloat(kmInicialEl.value) || 0;
+  const final = parseFloat(kmFinalEl.value) || 0;
+  const total = final - inicial;
+  
+  if(total >= 0) {
+    if (kmTotalEl) {
+      kmTotalEl.value = total.toFixed(1) + ' km';
+    }
+    
+    // Calcular valor deslocamento (R$ 1,15/km se > 50km)
+    const valorDeslocamento = total > 50 ? (total * 1.15) : 0;
+    
+    if (valorDeslocamentoEl) {
+      valorDeslocamentoEl.value = valorDeslocamento.toFixed(2);
+    }
+    
+    if (valorDeslocamentoDisplayEl) {
+      valorDeslocamentoDisplayEl.value = fmt(valorDeslocamento);
+    }
+    
+    calcularTotais();
+    console.log('✅ Cálculo de KM concluído:', {inicial, final, total, valorDeslocamento});
+  }
+}
+
+/* ===================== Serviços ===================== */
+function adicionarServico() {
+  const select = document.getElementById('servico_select');
+  let quantidade = parseFloat(document.getElementById('servico_quantidade').value) || 0;
+  
+  // Se há horas trabalhadas calculadas, usar essas horas automaticamente
+  const totalHoras = parseFloat(document.getElementById('total_horas').value) || 0;
+  if (totalHoras > 0) {
+    quantidade = totalHoras;
+    console.log(`🕒 Usando horas trabalhadas automaticamente: ${totalHoras}h`);
+  }
+  
+  if(!select.value || quantidade <= 0) {
+    alert('Selecione um serviço e informe a quantidade de horas.');
+    return;
+  }
+  
+  const option = select.selectedOptions[0];
+  const valorHora = parseFloat(option.dataset.valor) || 0;
+  
+  // Calcular valor total com arredondamento para evitar problemas de precisão decimal
+  const valorTotalCalculado = quantidade * valorHora;
+  const valorTotalRounded = Math.round(valorTotalCalculado * 100) / 100;
+  
+  const servico = {
+    id: parseInt(select.value),
+    nome: option.dataset.nome,
+    valor_hora: valorHora,
+    quantidade: quantidade,
+    valor_total: valorTotalRounded
+  };
+  
+  console.log(`💰 Serviço adicionado: ${quantidade}h × R$ ${servico.valor_hora} = R$ ${servico.valor_total}`);
+  
+  servicos.push(servico);
+  renderServicos();
+  calcularTotais();
+  atualizarTipoServico();
+  
+  // Limpar seleção
+  select.value = '';
+  document.getElementById('servico_quantidade').value = 1;
+}
+
+function removerServico(index) {
+  servicos.splice(index, 1);
+  renderServicos();
+  calcularTotais();
+  atualizarTipoServico();
+}
+
+function renderServicos() {
+  const container = document.getElementById('lista-servicos');
+  if(!container) {
+    console.error('❌ Container lista-servicos não encontrado!');
+    return;
+  }
+  
+  if(!servicos || servicos.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  let html = '<div class="table-responsive"><table class="table table-mini align-middle mb-0">';
+  html += '<thead><tr><th>Serviço</th><th>Qtd (h)</th><th>Valor/h</th><th>Total</th><th style="width:80px;"></th></tr></thead><tbody>';
+  
+  servicos.forEach((s, i) => {
+    html += `<tr>
+      <td>${s.nome}</td>
+      <td>${s.quantidade}h</td>
+      <td>${fmt(s.valor_hora)}</td>
+      <td class="valor-calculado">${fmt(s.valor_total)}</td>
+      <td><button type="button" class="btn btn-outline-danger btn-sm" onclick="removerServico(${i})"><i class="fas fa-trash"></i></button></td>
+    </tr>`;
+  });
+  
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+  
+  // Atualizar campo hidden - verificar se existe
+  const servicosField = document.getElementById('servicos_json');
+  if (servicosField) {
+    servicosField.value = JSON.stringify(servicos);
+  } else {
+    console.warn('Campo servicos_json não encontrado!');
+  }
+}
+
+/* ===================== Produtos ===================== */
+function adicionarProduto() {
+  const select = document.getElementById('produto_select');
+  const quantidade = parseInt(document.getElementById('produto_quantidade').value) || 0;
+  const valor = parseFloat(document.getElementById('produto_valor').value) || 0;
+  
+  if(!select.value || quantidade <= 0 || valor <= 0) {
+    alert('Selecione um produto, informe quantidade e valor.');
+    return;
+  }
+  
+  const option = select.selectedOptions[0];
+  
+  // Calcular valor total com arredondamento para evitar problemas de precisão decimal
+  const valorTotalCalculado = quantidade * valor;
+  const valorTotalRounded = Math.round(valorTotalCalculado * 100) / 100;
+  
+  const produto = {
+    id: parseInt(select.value),
+    nome: option.dataset.nome,
+    valor_unitario: valor,
+    quantidade: quantidade,
+    valor_total: valorTotalRounded
+  };
+  
+  produtos.push(produto);
+  renderProdutos();
+  calcularTotais();
+  
+  // Limpar seleção
+  select.value = '';
+  document.getElementById('produto_quantidade').value = 1;
+  document.getElementById('produto_valor').value = '';
+}
+
+function removerProduto(index) {
+  produtos.splice(index, 1);
+  renderProdutos();
+  calcularTotais();
+}
+
+function renderProdutos() {
+  const container = document.getElementById('lista-produtos');
+  if(!produtos.length) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  let html = '<div class="table-responsive"><table class="table table-mini align-middle mb-0">';
+  html += '<thead><tr><th>Produto</th><th>Qtd</th><th>Valor Unit.</th><th>Total</th><th style="width:80px;"></th></tr></thead><tbody>';
+  
+  produtos.forEach((p, i) => {
+    html += `<tr>
+      <td>${p.nome}</td>
+      <td>${p.quantidade}</td>
+      <td>${fmt(p.valor_unitario)}</td>
+      <td class="valor-calculado">${fmt(p.valor_total)}</td>
+      <td><button type="button" class="btn btn-outline-danger btn-sm" onclick="removerProduto(${i})"><i class="fas fa-trash"></i></button></td>
+    </tr>`;
+  });
+  
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+  
+  // Atualizar campo hidden - verificar se existe
+  const produtosField = document.getElementById('produtos_json');
+  if (produtosField) {
+    produtosField.value = JSON.stringify(produtos);
+  } else {
+    console.warn('Campo produtos_json não encontrado!');
+  }
+}
+
+// Auto-preencher valor do produto ao selecionar
+document.getElementById('produto_select').addEventListener('change', function() {
+  const option = this.selectedOptions[0];
+  if(option && option.dataset.valor) {
+    document.getElementById('produto_valor').value = parseFloat(option.dataset.valor).toFixed(2);
+  }
+});
+
+/* ===================== Parcelas ===================== */
+function gerarParcelas() {
+  const numParcelas = parseInt(document.getElementById('num_parcelas').value) || 1;
+  const valorTotal = parseFloat(document.getElementById('valor_total').value) || 0;
+  
+  if(valorTotal <= 0) {
+    alert('Adicione serviços ou produtos antes de gerar parcelas.');
+    return;
+  }
+  
+  parcelas = [];
+  const valorParcela = valorTotal / numParcelas;
+  const dataBase = new Date();
+  
+  for(let i = 0; i < numParcelas; i++) {
+    const dataVencimento = new Date(dataBase);
+    dataVencimento.setMonth(dataBase.getMonth() + i + 1);
+    
+    parcelas.push({
+      numero: i + 1,
+      valor: valorParcela,
+      data_vencimento: dataVencimento.toISOString().split('T')[0],
+      status: 'Pendente'
+    });
+  }
+  
+  renderParcelas();
+}
+
+// Função para formatar data para o padrão brasileiro
+const formatarDataBR = (dataISO) => {
+  if (!dataISO) return '';
+  const partes = dataISO.split('-');
+  if (partes.length === 3) {
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+  }
+  return dataISO;
+};
+
+function updParData(i,v){ if(parcelas[i]) parcelas[i].data_vencimento=v; }
+function updParStatus(i,v){ if(parcelas[i]) parcelas[i].status=v; }
+function delPar(i){ parcelas.splice(i,1); parcelas.forEach((p,ix)=>p.numero=ix+1); renderParcelas(); }
+
+function renderParcelas(){
+  const box = document.getElementById('lista-parcelas');
+  if(!parcelas.length){ box.innerHTML=''; return; }
+  let html = `<div class="table-responsive"><table class="table table-mini align-middle mb-0">
+    <thead><tr><th>Parcela</th><th>Valor</th><th>Vencimento</th><th>Status</th><th style="width:80px;"></th></tr></thead><tbody>`;
+  parcelas.forEach((p,i)=>{
+    html += `<tr>
+      <td>${p.numero}/${parcelas.length}</td>
+      <td>${fmt(p.valor)}</td>
+      <td><input type="date" class="form-control form-control-sm" value="${p.data_vencimento}" onchange="updParData(${i},this.value)"></td>
+      <td>
+        <select class="form-select form-select-sm" onchange="updParStatus(${i},this.value)">
+          ${['Pendente','Paga','Vencida'].map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td><button type="button" class="btn btn-outline-danger btn-sm" onclick="delPar(${i})"><i class="fas fa-trash"></i></button></td>
+    </tr>`;
+  });
+  html += `</tbody></table></div>`;
+  box.innerHTML = html;
+  
+  // Atualizar campo hidden - verificar se existe
+  const parcelasField = document.getElementById('parcelas_json');
+  if (parcelasField) {
+    parcelasField.value = JSON.stringify(parcelas);
+  } else {
+    console.warn('Campo parcelas_json não encontrado!');
+  }
+}
+
+/* ===================== Cálculo de Totais ===================== */
+function calcularTotais() {
+  const valorServicos = servicos.reduce((sum, s) => sum + s.valor_total, 0);
+  const valorProdutos = produtos.reduce((sum, p) => sum + p.valor_total, 0);
+  const valorDeslocamento = parseFloat(document.getElementById('valor_deslocamento').value) || 0;
+  
+  // Arredondar valores para evitar problemas de precisão decimal
+  const valorServicosRounded = Math.round(valorServicos * 100) / 100;
+  const valorProdutosRounded = Math.round(valorProdutos * 100) / 100;
+  const valorDeslocamentoRounded = Math.round(valorDeslocamento * 100) / 100;
+  const valorTotal = valorServicosRounded + valorProdutosRounded + valorDeslocamentoRounded;
+  const valorTotalRounded = Math.round(valorTotal * 100) / 100;
+  
+  // Debug do cálculo
+  console.log('=== CÁLCULO DE TOTAIS ===');
+  console.log('Serviços array:', servicos);
+  console.log('Valor serviços:', valorServicosRounded);
+  console.log('Produtos array:', produtos);
+  console.log('Valor produtos:', valorProdutosRounded);
+  console.log('Valor deslocamento:', valorDeslocamentoRounded);
+  console.log('Valor total:', valorTotalRounded);
+  console.log('========================');
+  
+  // Atualizar campos hidden
+  document.getElementById('valor_servicos').value = valorServicosRounded.toFixed(2);
+  document.getElementById('valor_produtos').value = valorProdutosRounded.toFixed(2);
+  document.getElementById('valor_total').value = valorTotalRounded.toFixed(2);
+  
+  // Atualizar campos de exibição
+  document.getElementById('valor_servicos_display').value = fmt(valorServicosRounded);
+  document.getElementById('valor_produtos_display').value = fmt(valorProdutosRounded);
+  document.getElementById('valor_total_display').value = fmt(valorTotalRounded);
+}
+
+/* ===================== Anexos ===================== */
+function adicionarAnexos(files) {
+  if (!files || files.length === 0) return;
+  
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    
+    // Validar tamanho (máximo 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert(`Arquivo "${file.name}" é muito grande. Máximo permitido: 10MB`);
+      continue;
+    }
+    
+    // Validar tipo
+    const tiposPermitidos = [
+      'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp',
+      'application/pdf',
+      'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/zip', 'application/x-rar-compressed'
+    ];
+    
+    if (!tiposPermitidos.includes(file.type)) {
+      alert(`Tipo de arquivo "${file.name}" não permitido.`);
+      continue;
+    }
+    
+    const anexo = {
+      arquivo: file,
+      nome_original: file.name,
+      tipo: file.type,
+      tamanho: file.size,
+      tamanho_formatado: formatarTamanho(file.size),
+      extensao: file.name.split('.').pop().toLowerCase(),
+      data_upload: new Date().toLocaleDateString('pt-BR'),
+      preview_url: null
+    };
+    
+    // Criar preview para imagens
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        anexo.preview_url = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    anexos.push(anexo);
+  }
+  
+  renderAnexos();
+  
+  // Limpar input file
+  document.getElementById('arquivos_anexo').value = '';
+}
+
+function formatarTamanho(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+function renderAnexos() {
+  const container = document.getElementById('lista-anexos');
+  if (!anexos.length) {
+    container.innerHTML = '';
+    return;
+  }
+  
+  let html = '<div class="table-responsive"><table class="table table-mini align-middle mb-0">';
+  html += '<thead><tr><th><i class="fas fa-file me-1"></i>Arquivo</th><th>Tipo</th><th>Tamanho</th><th>Data</th><th style="width:120px;">Ações</th></tr></thead><tbody>';
+  
+  anexos.forEach((anexo, i) => {
+    const icone = getIconeArquivo(anexo.tipo_arquivo || anexo.tipo, anexo.extensao);
+    html += `<tr>
+      <td>
+        <i class="fas fa-${icone} me-2"></i>
+        ${anexo.nome_original}
+      </td>
+      <td>
+        <span class="badge bg-secondary">${anexo.extensao.toUpperCase()}</span>
+      </td>
+      <td>${anexo.tamanho_formatado}</td>
+      <td>${anexo.data_upload}</td>
+      <td>
+        <div class="btn-group btn-group-sm">
+          ${(anexo.tipo_arquivo || anexo.tipo || '').startsWith('image/') ? 
+            `<button type="button" class="btn btn-outline-info btn-sm" onclick="visualizarImagem(${i})" title="Visualizar">
+              <i class="fas fa-eye"></i>
+            </button>` : ''}
+          <button type="button" class="btn btn-outline-danger btn-sm" onclick="removerAnexo(${i})" title="Remover">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  });
+  
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+  
+  // Atualizar campo hidden (apenas metadados, os arquivos serão enviados via FormData)
+  const metadados = anexos.map(a => ({
+    nome_original: a.nome_original,
+    tipo: a.tipo,
+    tamanho: a.tamanho,
+    extensao: a.extensao
+  }));
+  document.getElementById('anexos_json').value = JSON.stringify(metadados);
+}
+
+function getIconeArquivo(tipo, extensao) {
+  if (tipo.startsWith('image/')) return 'image';
+  if (tipo === 'application/pdf') return 'file-pdf';
+  if (tipo.includes('word')) return 'file-word';
+  if (tipo.includes('zip') || tipo.includes('rar')) return 'file-archive';
+  if (tipo === 'text/plain') return 'file-alt';
+  return 'file';
+}
+
+function visualizarImagem(index) {
+  const anexo = anexos[index];
+  if (!anexo || !anexo.preview_url) return;
+  
+  // Criar modal para visualizar imagem
+  const modal = document.createElement('div');
+  modal.className = 'modal fade';
+  modal.innerHTML = `
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content bg-dark">
+        <div class="modal-header">
+          <h5 class="modal-title text-white">${anexo.nome_original}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img src="${anexo.preview_url}" class="img-fluid" alt="${anexo.nome_original}">
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  const bsModal = new bootstrap.Modal(modal);
+  bsModal.show();
+  
+  // Remover modal após fechar
+  modal.addEventListener('hidden.bs.modal', () => {
+    document.body.removeChild(modal);
+  });
+}
+
+function removerAnexo(index) {
+  if (confirm('Remover este anexo?')) {
+    anexos.splice(index, 1);
+    renderAnexos();
+  }
+}
+
+function removerAnexoSalvo(nomeArquivo) {
+  if (confirm('Remover este anexo?')) {
+    // Para anexos já salvos no servidor, fazer requisição AJAX
+    const ordemId = {{ ordem_servico.id if ordem_servico else 'null' }};
+    if (ordemId) {
+      fetch(`/ordens/anexo/${ordemId}/${nomeArquivo}/remover`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          location.reload(); // Recarregar página para atualizar lista
+        } else {
+          alert('Erro ao remover anexo: ' + data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao remover anexo');
+      });
+    }
+  }
+}
+
+function visualizarImagemSalva(url, nome) {
+  // Criar modal para visualizar imagem
+  const modal = document.createElement('div');
+  modal.className = 'modal fade';
+  modal.innerHTML = `
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content bg-dark">
+        <div class="modal-header">
+          <h5 class="modal-title text-white">${nome}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body text-center">
+          <img src="${url}" class="img-fluid" alt="${nome}">
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  const bsModal = new bootstrap.Modal(modal);
+  bsModal.show();
+  
+  // Remover modal após fechar
+  modal.addEventListener('hidden.bs.modal', () => {
+    document.body.removeChild(modal);
+  });
+}
+
+/* ===================== Remoção de itens salvos ===================== */
+function removerServicoSalvo(index) {
+  if(confirm('Remover este serviço?')) {
+    servicos.splice(index, 1);
+    renderServicos();
+    calcularTotais();
+    atualizarTipoServico();
+  }
+}
+
+function removerProdutoSalvo(index) {
+  if(confirm('Remover este produto?')) {
+    produtos.splice(index, 1);
+    renderProdutos();
+    calcularTotais();
+  }
+}
+
+function removerParcelaSalva(index) {
+  if(confirm('Remover esta parcela?')) {
+    parcelas.splice(index, 1);
+    renderParcelas();
+    calcularTotais();
+  }
+}
+
+/* ===================== Envio do formulário com anexos ===================== */
+function enviarFormularioComAnexos(event) {
+  console.log('🚀 Iniciando validação e envio do formulário...');
+  
+  try {
+    // Primeiro validar cliente selecionado
+    if (!validarClienteSelecionado()) {
+      console.log('❌ Validação de cliente falhou');
+      event.preventDefault();
+      return false;
+    }
+    
+    // Verificar se há anexos novos (com verificação de existência)
+    const temAnexosNovos = (typeof anexos !== 'undefined' && anexos && anexos.length > 0);
+    console.log('📎 Anexos novos detectados:', temAnexosNovos, typeof anexos !== 'undefined' ? anexos.length : 'variável indefinida');
+    
+    // Se há anexos novos para enviar, usar FormData
+    if (temAnexosNovos) {
+      event.preventDefault(); // Parar o envio normal
+      
+      console.log('📤 Enviando formulário com anexos usando FormData...');
+      
+      const form = event.target;
+      const formData = new FormData(form);
+      
+      // Adicionar arquivos dos anexos
+      anexos.forEach((anexo, index) => {
+        if (anexo.arquivo) {
+          formData.append('arquivos_anexo', anexo.arquivo);
+          console.log(`📎 Anexo ${index + 1} adicionado:`, anexo.nome_original);
+        }
+      });
+      
+      // Atualizar campos JSON antes do envio
+      const servicosField = document.getElementById('servicos_json');
+      const produtosField = document.getElementById('produtos_json');
+      const parcelasField = document.getElementById('parcelas_json');
+      
+      if (servicosField) {
+        servicosField.value = JSON.stringify(servicos || []);
+        formData.set('servicos_json', servicosField.value);
+      }
+      if (produtosField) {
+        produtosField.value = JSON.stringify(produtos || []);
+        formData.set('produtos_json', produtosField.value);
+      }
+      if (parcelasField) {
+        parcelasField.value = JSON.stringify(parcelas || []);
+        formData.set('parcelas_json', parcelasField.value);
+      }
+      
+      // Enviar via AJAX
+      fetch(form.action, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        console.log('📡 Resposta recebida:', response.status, response.url);
+        if (response.ok) {
+          // Verificar se houve redirecionamento
+          if (response.redirected) {
+            console.log('🔄 Redirecionando para:', response.url);
+            window.location.href = response.url;
+          } else {
+            // Se não foi redirecionado, recarregar a página atual
+            console.log('🔄 Recarregando página atual');
+            window.location.reload();
+          }
+        } else {
+          return response.text().then(text => {
+            throw new Error(`Erro ${response.status}: ${text}`);
+          });
+        }
+      })
+      .catch(error => {
+        console.error('❌ Erro ao enviar formulário:', error);
+        alert('Erro ao enviar formulário: ' + error.message);
+      });
+      
+      return false;
+    }
+    
+    // Se não há anexos novos, permitir envio normal do formulário
+    console.log('📤 Enviando formulário sem anexos novos (método padrão)...');
+    
+    // Atualizar campos JSON antes do envio normal
+    const servicosField = document.getElementById('servicos_json');
+    const produtosField = document.getElementById('produtos_json');
+    const parcelasField = document.getElementById('parcelas_json');
+    
+    if (servicosField) servicosField.value = JSON.stringify(servicos || []);
+    if (produtosField) produtosField.value = JSON.stringify(produtos || []);
+    if (parcelasField) parcelasField.value = JSON.stringify(parcelas || []);
+    
+    console.log('✅ Permitindo envio normal do formulário');
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Erro crítico na função enviarFormularioComAnexos:', error);
+    alert('Erro crítico: ' + error.message);
+    return true; // Permitir envio normal em caso de erro
+  }
+}
+        return response.text().then(text => {
+          throw new Error(`Erro ${response.status}: ${text}`);
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Erro ao enviar formulário:', error);
+      alert('Erro ao enviar formulário: ' + error.message);
+    });
+    
+    return false;
+  }
+  
+  // Se não há anexos novos, permitir envio normal do formulário
+  console.log('Enviando formulário sem anexos novos (método padrão)...');
+  return true;
+}
+
+/* ===================== Inicialização ===================== */
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🚀 Página carregada, inicializando...');
+  
+  // Configurar seleções com autocomplete
+  setupClienteSelection();
+  setupServicoSelection();
+  setupProdutoSelection();
+  
+  // Configurar event listeners para cálculos automáticos
+  const horaInicio = document.getElementById('hora_inicio');
+  const horaTermino = document.getElementById('hora_termino');
+  const kmInicial = document.getElementById('km_inicial');
+  const kmFinal = document.getElementById('km_final');
+  
+  if (horaInicio) horaInicio.addEventListener('change', calcularHoras);
+  if (horaTermino) horaTermino.addEventListener('change', calcularHoras);
+  if (kmInicial) kmInicial.addEventListener('change', calcularKm);
+  if (kmFinal) kmFinal.addEventListener('change', calcularKm);
+  
+  console.log('✅ Event listeners de cálculo configurados');
+  
+  // Carregar dados salvos dos campos hidden - FORÇAR EXECUÇÃO
+  try {
+    const servicosJson = document.getElementById('servicos_json');
+    const produtosJson = document.getElementById('produtos_json');
+    const parcelasJson = document.getElementById('parcelas_json');
+    
+    // Antes de enviar o formulário, atualizar campos JSON
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Atualizar campos JSON com dados atuais - verificar se elementos existem
+            const servicosField = document.getElementById('servicos_json');
+            const produtosField = document.getElementById('produtos_json');
+            const parcelasField = document.getElementById('parcelas_json');
+            
+            if (servicosField) servicosField.value = JSON.stringify(servicos);
+            if (produtosField) produtosField.value = JSON.stringify(produtos);
+            if (parcelasField) parcelasField.value = JSON.stringify(parcelas);
+            
+            // Debug antes do envio
+            console.log('=== DADOS ANTES DO ENVIO ===');
+            console.log('Servicos array:', servicos);
+            console.log('Servicos JSON:', servicosField ? servicosField.value : 'FIELD NOT FOUND');
+            console.log('Produtos array:', produtos);
+            console.log('Produtos JSON:', produtosField ? produtosField.value : 'FIELD NOT FOUND');
+            console.log('Parcelas array:', parcelas);
+            console.log('Parcelas JSON:', parcelasField ? parcelasField.value : 'FIELD NOT FOUND');
+            console.log('================================');
+        });
+    }
+    
+    {% if servicos_salvos and servicos_salvos|length > 0 %}
+    servicos = {{ servicos_salvos|tojson }};
+    {% endif %}
+    
+    {% if produtos_salvos and produtos_salvos|length > 0 %}
+    produtos = {{ produtos_salvos|tojson }};
+    {% endif %}
+    
+    {% if parcelas_salvas and parcelas_salvas|length > 0 %}
+    parcelas = {{ parcelas_salvas|tojson }};
+    {% endif %}
+    
+    // FORÇAR carregamento de serviços
+    if (servicosJson && servicosJson.value && servicosJson.value !== '[]') {
+      try {
+        const servicosSalvos = JSON.parse(servicosJson.value);
+        if (servicosSalvos && servicosSalvos.length > 0) {
+          servicos = servicosSalvos;
+          renderServicos();
+          console.log('✅ FORÇADO: Serviços carregados e renderizados');
+        }
+      } catch (e) {
+        console.warn('⚠️ Erro ao carregar serviços salvos:', e);
+      }
+    }
+    
+    // FORÇAR carregamento de produtos
+    if (produtosJson && produtosJson.value && produtosJson.value !== '[]') {
+      try {
+        const produtosSalvos = JSON.parse(produtosJson.value);
+        if (produtosSalvos && produtosSalvos.length > 0) {
+          produtos = produtosSalvos;
+          renderProdutos();
+          console.log('✅ FORÇADO: Produtos carregados e renderizados');
+        }
+      } catch (e) {
+        console.warn('⚠️ Erro ao carregar produtos salvos:', e);
+      }
+    }
+    
+    // FORÇAR carregamento de parcelas
+    if (parcelasJson && parcelasJson.value && parcelasJson.value !== '[]') {
+      try {
+        const parcelasSalvas = JSON.parse(parcelasJson.value);
+        if (parcelasSalvas && parcelasSalvas.length > 0) {
+          parcelas = parcelasSalvas;
+          renderParcelas();
+          console.log('✅ FORÇADO: Parcelas carregadas e renderizadas');
+        }
+      } catch (e) {
+        console.warn('⚠️ Erro ao carregar parcelas salvas:', e);
+      }
+    }
+    
+    // Verificação final - forçar após 500ms
+    setTimeout(function() {
+      // Verificar se as tabelas foram renderizadas
+      const containerServicos = document.getElementById('lista-servicos');
+      const containerProdutos = document.getElementById('lista-produtos');
+      const containerParcelas = document.getElementById('lista-parcelas');
+      
+      if (servicosJson && servicosJson.value && servicosJson.value !== '[]' && 
+          containerServicos && containerServicos.innerHTML.trim() === '') {
+        console.log('🔧 CONTINGÊNCIA: Re-renderizando serviços');
+        try {
+          const servicosSalvos = JSON.parse(servicosJson.value);
+          if (servicosSalvos && servicosSalvos.length > 0) {
+            servicos = servicosSalvos;
+            renderServicos();
+          }
+        } catch (e) {
+          console.warn('⚠️ Erro na contingência de serviços:', e);
+        }
+      }
+      
+      if (produtosJson && produtosJson.value && produtosJson.value !== '[]' && 
+          containerProdutos && containerProdutos.innerHTML.trim() === '') {
+        console.log('🔧 CONTINGÊNCIA: Re-renderizando produtos');
+        const produtosSalvos = JSON.parse(produtosJson.value);
+        if (produtosSalvos && produtosSalvos.length > 0) {
+          produtos = produtosSalvos;
+          renderProdutos();
+        }
+      }
+      
+      if (parcelasJson && parcelasJson.value && parcelasJson.value !== '[]' && 
+          containerParcelas && containerParcelas.innerHTML.trim() === '') {
+        console.log('🔧 CONTINGÊNCIA: Re-renderizando parcelas');
+        const parcelasSalvas = JSON.parse(parcelasJson.value);
+        if (parcelasSalvas && parcelasSalvas.length > 0) {
+          parcelas = parcelasSalvas;
+          renderParcelas();
+        }
+      }
+    }, 500);
+    
+    // Calcular totais
+    calcularTotais();
+    
+  } catch (e) {
+    console.error('❌ Erro no carregamento forçado:', e);
+  }
+});
+
+// Sistema completo de sincronização de horas
+$(document).ready(function() {
+  console.log('🚀 Inicializando sistema de horas...');
+  
+  // Event listeners para mudanças de horário
+  $('#hora_inicio, #hora_termino').on('change input', function() {
+    console.log('Horário alterado:', this.id, '=', this.value);
+    setTimeout(calcularHoras, 100); // Pequeno delay para garantir que o valor foi atualizado
+  });
+  
+  // Event listener para alteração manual do total de horas
+  $('#total_horas').on('input change keyup paste', function() {
+    console.log('🔄 Total horas alterado manualmente:', this.value);
+    const valorHoras = parseFloat($(this).val()) || 0;
+    const totalHorasDisplay = document.getElementById('total_horas_display');
+    if(totalHorasDisplay) {
+      totalHorasDisplay.value = valorHoras.toFixed(1) + 'h';
+      console.log('✅ Campo Totais sincronizado:', valorHoras.toFixed(1) + 'h');
+    } else {
+      console.error('❌ Campo total_horas_display não encontrado!');
+    }
+  });
+  
+  // Botão calcular horas
+  $('.btn:contains("Calcular")').on('click', function() {
+    console.log('Botão calcular clicado');
+    calcularHoras();
+  });
+  
+  // Inicialização para edição
+  setTimeout(function() {
+    if ($('#hora_inicio').val() && $('#hora_termino').val()) {
+      console.log('Recalculando horas na inicialização...');
+      calcularHoras();
+    }
+    
+    // Forçar sincronização inicial se já há um valor
+    if ($('#total_horas').val()) {
+      sincronizarHorasTotais();
+    }
+    
+    // FORÇAR RECÁLCULO DE TOTAIS após carregamento completo
+    console.log('🔄 Forçando recálculo de totais...');
+    calcularTotais();
+    
+    console.log('✅ Sistema de horas inicializado!');
+  }, 500);
+});
+
+  // Função para atualizar automaticamente o tipo de serviço
+  function atualizarTipoServico() {
+    let descricoes = [];
+    
+    // Pegar descrições dos serviços da tabela HTML
+    $('#lista-servicos tbody tr').each(function() {
+      let descricao = $(this).find('td:first').text().trim();
+      if (descricao && !descricoes.includes(descricao)) {
+        descricoes.push(descricao);
+      }
+    });
+    
+    // Pegar descrições dos serviços do JavaScript (se existir)
+    if (typeof servicosSelecionados !== 'undefined') {
+      servicosSelecionados.forEach(function(servico) {
+        if (servico.descricao && !descricoes.includes(servico.descricao)) {
+          descricoes.push(servico.descricao);
+        }
+      });
+    }
+    
+    // Atualizar campo tipo_servico
+    $('#tipo_servico').val(descricoes.join('; '));
+  }
+  
+  // Atualizar tipo de serviço sempre que houver mudanças
+  $(document).on('DOMSubtreeModified', '#lista-servicos', atualizarTipoServico);
+  
+  // Atualizar no carregamento da página
+  atualizarTipoServico();
+
+// Aplicar máscaras nos campos
+$(document).ready(function() {
+  console.log('Aplicando máscaras nos campos...');
+  
+  // Função para aplicar máscara inteligente de CPF/CNPJ
+  function aplicarMascaraCpfCnpj(elemento) {
+    if (!elemento) return;
+    
+    const valor = elemento.value.replace(/\D/g, ''); // Remove caracteres não numéricos
+    
+    if (valor.length <= 11) {
+      // CPF: 000.000.000-00
+      $(elemento).mask('000.000.000-00', {
+        placeholder: '',
+        reverse: false
+      });
+    } else {
+      // CNPJ: 00.000.000/0000-00
+      $(elemento).mask('00.000.000/0000-00', {
+        placeholder: '',
+        reverse: false
+      });
+    }
+  }
+  
+  // Máscara para campo contato (solicitante)
+  if ($('#contato').length) {
+    $('#contato').mask('(00) 00000-0000');
+    console.log('Máscara aplicada com sucesso ao campo contato');
+  }
+  
+  // Máscara inteligente para campo CPF/CNPJ
+  if ($('#cpf').length) {
+    aplicarMascaraCpfCnpj(document.getElementById('cpf'));
+    console.log('Máscara aplicada com sucesso ao campo CPF/CNPJ');
+  }
+  
+  // Máscara para campo telefone
+  if ($('#telefone').length) {
+    $('#telefone').mask('(00) 00000-0000', {
+      placeholder: ''
+    });
+    console.log('Máscara aplicada com sucesso ao campo telefone');
+  }
+  
+  console.log('Todas as máscaras foram aplicadas');
+});
+</script>
+{% endblock %}

@@ -1,0 +1,193 @@
+{% extends 'autenticacao/base.html' %}
+
+{#
+  Tela de cadastro/edição de proposta
+
+  Este template utiliza o mesmo tema neon futurista azul/ciano aplicado aos
+  formulários de clientes e fornecedores. A formatação busca dividir as
+  informações em grupos claros (dados básicos, valores, condições e
+  observações) dentro de um cartão centralizado. Os campos obrigatórios
+  possuem validação HTML5 e o valor final é calculado em tempo real
+  através de um pequeno script.
+#}
+
+{% block head %}
+{{ super() }}
+<style>
+  /* ====== Tema para formulário de propostas ====== */
+  .proposta-form {
+    background: linear-gradient(180deg, rgba(8,24,38,0.6), rgba(6,12,20,0.6));
+    border: 1px solid rgba(86,212,255,0.12);
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(86,212,255,0.12), 0 6px 18px rgba(2,10,20,0.6);
+    padding: 32px;
+  }
+  .proposta-form h1 {
+    color: var(--jsp-blue);
+    margin-bottom: 24px;
+    text-shadow: 0 0 12px rgba(41,182,255,0.2);
+  }
+  .proposta-form .form-label {
+    color: var(--jsp-cyan);
+    font-weight: 600;
+  }
+  .proposta-form .form-control,
+  .proposta-form .form-select {
+    background: rgba(6,18,32,0.6);
+    border: 1px solid rgba(86,212,255,0.12);
+    color: var(--jsp-text);
+  }
+  .proposta-form .form-control:focus,
+  .proposta-form .form-select:focus {
+    box-shadow: 0 0 0 0.2rem rgba(86,212,255,0.25);
+    border-color: var(--jsp-cyan);
+  }
+  .proposta-form .btn-brand {
+    background: linear-gradient(135deg, var(--jsp-blue), var(--jsp-cyan));
+    border: none;
+    color: #08162b;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(86,212,255,0.3);
+  }
+  .proposta-form .btn-brand:hover {
+    box-shadow: 0 6px 20px rgba(86,212,255,0.5);
+  }
+  .proposta-form .btn-back {
+    background: rgba(8,24,38,0.4);
+    border: 1px solid rgba(86,212,255,0.12);
+    color: var(--jsp-cyan);
+  }
+  .proposta-form .btn-back:hover {
+    background: linear-gradient(135deg, var(--jsp-blue), var(--jsp-cyan));
+    color: #08162b;
+  }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-xl-10 col-lg-10">
+      <div class="proposta-form">
+        <h1>{{ 'Editar Proposta' if proposta else 'Cadastrar Proposta' }}</h1>
+        <form method="post" action="{% if proposta %}{{ url_for('proposta.editar_proposta', proposta_id=proposta.id) }}{% else %}{{ url_for('proposta.nova_proposta') }}{% endif %}">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="cliente_id" class="form-label">Cliente</label>
+              <select id="cliente_id" name="cliente_id" class="form-select" required>
+                <option value="">Selecione um cliente...</option>
+                {% for c in clientes %}
+                  <option value="{{ c.id }}" {% if proposta and proposta.cliente_id == c.id %}selected{% endif %}>
+                    {{ c.nome }}{% if c.apelido %} ({{ c.apelido }}){% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="status" class="form-label">Status</label>
+              <select id="status" name="status" class="form-select">
+                <option value="Pendente" {% if not proposta or proposta.status == 'Pendente' %}selected{% endif %}>Pendente</option>
+                <option value="Aprovada" {% if proposta and proposta.status == 'Aprovada' %}selected{% endif %}>Aprovada</option>
+                <option value="Rejeitada" {% if proposta and proposta.status == 'Rejeitada' %}selected{% endif %}>Rejeitada</option>
+                <option value="Expirada" {% if proposta and proposta.status == 'Expirada' %}selected{% endif %}>Expirada</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label for="titulo" class="form-label">Título</label>
+              <input type="text" id="titulo" name="titulo" class="form-control" placeholder="Título da proposta" value="{{ proposta.titulo if proposta }}" required>
+            </div>
+            <div class="col-12">
+              <label for="descricao" class="form-label">Descrição</label>
+              <textarea id="descricao" name="descricao" class="form-control" rows="4" placeholder="Descreva a proposta...">{{ proposta.descricao if proposta }}</textarea>
+            </div>
+            <!-- Valores -->
+            <div class="col-md-4">
+              <label for="valor_total" class="form-label">Valor Total (R$)</label>
+              <input type="number" id="valor_total" name="valor_total" class="form-control" step="0.01" min="0" value="{{ proposta.valor_total if proposta else '0.00' }}" oninput="calcularValorFinal()" required>
+            </div>
+            <div class="col-md-4">
+              <label for="desconto" class="form-label">Desconto (R$)</label>
+              <input type="number" id="desconto" name="desconto" class="form-control" step="0.01" min="0" value="{{ proposta.desconto if proposta else '0.00' }}" oninput="calcularValorFinal()">
+            </div>
+            <div class="col-md-4">
+              <label for="valor_final" class="form-label">Valor Final (R$)</label>
+              <input type="text" id="valor_final" name="valor_final" class="form-control" value="{{ proposta.valor_final if proposta else '0.00' }}" readonly>
+            </div>
+            <!-- Condições comerciais -->
+            <div class="col-md-6">
+              <label for="forma_pagamento" class="form-label">Forma de Pagamento</label>
+              <select id="forma_pagamento" name="forma_pagamento" class="form-select">
+                <option value="">Selecione...</option>
+                <option value="À vista" {% if proposta and proposta.forma_pagamento == 'À vista' %}selected{% endif %}>À vista</option>
+                <option value="PIX" {% if proposta and proposta.forma_pagamento == 'PIX' %}selected{% endif %}>PIX</option>
+                <option value="Cartão de Crédito" {% if proposta and proposta.forma_pagamento == 'Cartão de Crédito' %}selected{% endif %}>Cartão de Crédito</option>
+                <option value="Cartão de Débito" {% if proposta and proposta.forma_pagamento == 'Cartão de Débito' %}selected{% endif %}>Cartão de Débito</option>
+                <option value="Boleto" {% if proposta and proposta.forma_pagamento == 'Boleto' %}selected{% endif %}>Boleto</option>
+                <option value="Parcelado" {% if proposta and proposta.forma_pagamento == 'Parcelado' %}selected{% endif %}>Parcelado</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="prazo_entrega" class="form-label">Prazo de Entrega</label>
+              <input type="text" id="prazo_entrega" name="prazo_entrega" class="form-control" value="{{ proposta.prazo_entrega if proposta }}" placeholder="Ex: 30 dias úteis">
+            </div>
+            <div class="col-12">
+              <label for="condicoes_gerais" class="form-label">Condições Gerais</label>
+              <textarea id="condicoes_gerais" name="condicoes_gerais" class="form-control" rows="3" placeholder="Garantias, observações técnicas...">{{ proposta.condicoes_gerais if proposta }}</textarea>
+            </div>
+            <!-- Datas e observações -->
+            <div class="col-md-6">
+              <label for="data_validade" class="form-label">Data de Validade</label>
+              <div class="input-group">
+                <input type="date" id="data_validade" name="data_validade" class="form-control" value="{{ proposta.data_validade.strftime('%Y-%m-%d') if proposta and proposta.data_validade }}" required>
+                <button type="button" class="btn btn-outline-info" onclick="definirDataPadrao()"><i class="fas fa-calendar-plus"></i> 7 Dias</button>
+              </div>
+              <small class="text-muted">Prazo padrão: 7 dias a partir de hoje</small>
+            </div>
+            <div class="col-12">
+              <label for="observacoes_internas" class="form-label">Observações Internas</label>
+              <textarea id="observacoes_internas" name="observacoes_internas" class="form-control" rows="4" placeholder="Observações para controle interno...">{{ proposta.observacoes_internas if proposta }}</textarea>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between mt-4">
+            <a href="{{ url_for('proposta.listar_propostas') }}" class="btn-back btn">Cancelar</a>
+            <button type="submit" class="btn btn-brand">{{ 'Atualizar Proposta' if proposta else 'Salvar Proposta' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// Calcula o valor final (valor total - desconto) e atualiza o campo correspondente
+function calcularValorFinal() {
+  const valorTotal = parseFloat(document.getElementById('valor_total').value || 0);
+  const desconto = parseFloat(document.getElementById('desconto').value || 0);
+  const final = Math.max(0, valorTotal - desconto);
+  document.getElementById('valor_final').value = final.toFixed(2);
+}
+
+// Define data de validade para 7 dias a partir de hoje
+function definirDataPadrao() {
+  const hoje = new Date();
+  hoje.setDate(hoje.getDate() + 7);
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoje.getDate()).padStart(2, '0');
+  document.getElementById('data_validade').value = `${ano}-${mes}-${dia}`;
+}
+
+// Ao carregar a página, define valor final e data inicial se for nova proposta
+document.addEventListener('DOMContentLoaded', function() {
+  calcularValorFinal();
+  // Se não existir proposta definida, define data padrão automaticamente
+  const campoData = document.getElementById('data_validade');
+  if (!campoData.value) {
+    definirDataPadrao();
+  }
+});
+</script>
+{% endblock %}

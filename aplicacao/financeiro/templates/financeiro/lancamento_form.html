@@ -1,0 +1,53 @@
+{% extends 'autenticacao/base.html' %}
+{% block content %}
+<div class="container mt-3">
+  <h4>Novo Lançamento</h4>
+  <form method="post" class="row g-2">
+    {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+    <div class="col-md-2">
+      <label class="form-label">Tipo</label>
+      <select name="tipo" class="form-select" required>
+        <option value="receita">Receita</option>
+        <option value="despesa">Despesa</option>
+        <option value="transferencia">Transferência</option>
+      </select>
+    </div>
+    <div class="col-md-2"><label class="form-label">Data</label><input type="date" name="data" class="form-control" required></div>
+    <div class="col-md-4"><label class="form-label">Descrição</label><input name="descricao" class="form-control"></div>
+    <div class="col-md-2"><label class="form-label">Conta</label>
+      <select name="conta_id" class="form-select" required>
+        {% for c in contas %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><label class="form-label">Categoria</label>
+      <select name="categoria_id" class="form-select" required>
+        {% for c in categorias %}<option value="{{ c.id }}">{{ c.tipo }} - {{ c.nome }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><label class="form-label">Centro Custo</label>
+      <select name="centro_custo_id" class="form-select">
+        <option value="">-</option>
+        {% for c in centros %}<option value="{{ c.id }}">{{ c.nome }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><label class="form-label">Valor</label><input name="valor_bruto" type="number" step="0.01" class="form-control" required></div>
+    <div class="col-md-2"><label class="form-label">Desconto</label><input name="desconto" type="number" step="0.01" class="form-control"></div>
+    <div class="col-md-2"><label class="form-label">Acréscimo</label><input name="acrescimo" type="number" step="0.01" class="form-control"></div>
+    <div class="col-md-2"><label class="form-label">Vencimento</label><input name="vencimento" type="date" class="form-control"></div>
+    <div class="col-md-2"><label class="form-label">Pago em</label><input name="pago_em" type="date" class="form-control"></div>
+    <div class="col-md-2"><label class="form-label">Status</label>
+      <select name="status" class="form-select">
+        <option value="aberto">Em aberto</option>
+        <option value="pago">Pago</option>
+        <option value="atrasado">Atrasado</option>
+      </select>
+    </div>
+    <div class="col-md-2"><label class="form-label">Parcela</label><input name="parcela_num" type="number" class="form-control" value="1"></div>
+    <div class="col-md-2"><label class="form-label">Total Parcelas</label><input name="parcelas_total" type="number" class="form-control" value="1"></div>
+    <div class="col-12 mt-2 text-end">
+      <a href="{{ url_for('financeiro.listar_lanc') }}" class="btn btn-secondary">Voltar</a>
+      <button class="btn btn-success">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

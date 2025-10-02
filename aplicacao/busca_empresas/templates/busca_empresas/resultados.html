@@ -1,0 +1,386 @@
+{% extends "autenticacao/base.html" %}
+
+{% block title %}Resultados da Busca{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-info mb-0">
+                    <i class="fas fa-search-plus me-2"></i>Resultados da Busca
+                </h2>
+                <div>
+                    <a href="{{ url_for('busca_empresas.buscar') }}" class="btn btn-outline-info">
+                        <i class="fas fa-search me-2"></i>Nova Busca
+                    </a>
+                    <a href="{{ url_for('busca_empresas.historico') }}" class="btn btn-outline-info">
+                        <i class="fas fa-history me-2"></i>Histórico
+                    </a>
+                </div>
+            </div>
+
+            <!-- Resumo da busca -->
+                <div class="card bg-dark border-info mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h5 class="text-info mb-2">
+                                <i class="fas fa-map-marker-alt me-2"></i>{{ cidade }} - {{ tipo_atividade.title() }}
+                            </h5>
+                            <p class="text-light mb-0">
+                                Encontradas <strong class="text-info">{{ empresas|length }}</strong> empresas do tipo 
+                                "<strong>{{ tipo_atividade }}</strong>" na cidade de "<strong>{{ cidade }}</strong>"
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-info" onclick="exportarCSV()">
+                                    <i class="fas fa-download me-2"></i>Exportar CSV
+                                </button>
+                                <button type="button" class="btn btn-outline-info" onclick="imprimirResultados()">
+                                    <i class="fas fa-print me-2"></i>Imprimir
+                                </button>
+                                {% if export_file_url %}
+                                <a href="{{ export_file_url }}" class="btn btn-outline-success" target="_blank">
+                                    <i class="fas fa-file-download me-2"></i>Baixar JSON
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros rápidos -->
+            <div class="card bg-dark border-info mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="filtroRazaoSocial" class="form-label text-light">Filtrar por nome:</label>
+                            <input type="text" 
+                                   class="form-control bg-dark text-light border-info" 
+                                   id="filtroRazaoSocial" 
+                                   placeholder="Digite para filtrar empresas..."
+                                   onkeyup="filtrarEmpresas()">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="filtroSituacao" class="form-label text-light">Situação:</label>
+                            <select class="form-select bg-dark text-light border-info" 
+                                    id="filtroSituacao" 
+                                    onchange="filtrarEmpresas()">
+                                <option value="">Todas</option>
+                                <option value="ATIVA">Ativa</option>
+                                <option value="INATIVA">Inativa</option>
+                                <option value="SUSPENSA">Suspensa</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="ordenacao" class="form-label text-light">Ordenar por:</label>
+                            <select class="form-select bg-dark text-light border-info" 
+                                    id="ordenacao" 
+                                    onchange="ordenarEmpresas()">
+                                <option value="razao_social">Nome (A-Z)</option>
+                                <option value="razao_social_desc">Nome (Z-A)</option>
+                                <option value="situacao">Situação</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resultados -->
+            {% if empresas %}
+            <div id="resultadosEmpresas">
+                {% for empresa in empresas %}
+                <div class="card bg-dark border-info mb-3 empresa-card" 
+                     data-razao="{{ empresa.razao_social.lower() }}" 
+                     data-situacao="{{ empresa.situacao }}">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="text-info mb-2">
+                                    <i class="fas fa-building me-2"></i>{{ empresa.razao_social }}
+                                </h5>
+                                
+                                {% if empresa.nome_fantasia %}
+                                <p class="text-light mb-1">
+                                    <strong>Nome Fantasia:</strong> {{ empresa.nome_fantasia }}
+                                </p>
+                                {% endif %}
+                                
+                                <p class="text-light mb-1">
+                                    <strong>CNPJ:</strong> {{ empresa.cnpj }}
+                                </p>
+                                
+                                {% if empresa.endereco_completo %}
+                                <p class="text-light mb-1">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ empresa.endereco_completo }}
+                                </p>
+                                {% endif %}
+                                
+                                {% if empresa.atividade_principal %}
+                                <p class="text-light mb-1">
+                                    <strong>Atividade:</strong> {{ empresa.atividade_principal }}
+                                </p>
+                                {% endif %}
+                                <div class="mt-2">
+                                    <small class="text-muted">Fonte: <strong class="text-info">{{ empresa.fonte if empresa.fonte is defined else (empresa.get('fonte') if empresa is mapping else 'N/A') }}</strong></small>
+                                    {% if (empresa.enriquecido is defined and empresa.enriquecido) or (empresa.get('enriquecido') if empresa is mapping else False) %}
+                                        <span class="badge bg-success ms-2">Enriquecido</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="row mt-2">
+                                    {% if empresa.telefone %}
+                                    <div class="col-md-6">
+                                        <small class="text-info">
+                                            <i class="fas fa-phone me-1"></i>{{ empresa.telefone }}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if empresa.email %}
+                                    <div class="col-md-6">
+                                        <small class="text-info">
+                                            <i class="fas fa-envelope me-1"></i>{{ empresa.email }}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 text-end">
+                                <div class="mb-2">
+                                    <span class="badge {% if empresa.situacao == 'ATIVA' %}bg-success{% else %}bg-warning{% endif %}">
+                                        {{ empresa.situacao or 'N/A' }}
+                                    </span>
+                                </div>
+                                
+                                <div class="btn-group-vertical d-grid gap-2">
+                                    <a href="{{ url_for('busca_empresas.detalhes_empresa', empresa_id=empresa.id) }}" 
+                                       class="btn btn-sm btn-outline-info">
+                                        <i class="fas fa-eye me-2"></i>Detalhes
+                                    </a>
+                                    
+                    <button type="button" class="btn btn-sm btn-outline-success" 
+                        onclick="converterCliente({{ empresa.id | default(0) }})">
+                                        <i class="fas fa-user-plus me-2"></i>Converter Cliente
+                                    </button>
+                                    
+                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                        onclick="salvarFavorito({{ empresa.id | default(0) }})">
+                                        <i class="fas fa-star me-2"></i>Favoritar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Contador de resultados -->
+            <div class="text-center mt-4">
+                <p class="text-light">
+                    Mostrando <span id="empresasVisiveis">{{ empresas|length }}</span> 
+                    de <span id="empresasTotal">{{ empresas|length }}</span> empresas encontradas
+                </p>
+            </div>
+            
+            {% else %}
+            <!-- Nenhum resultado -->
+            <div class="card bg-dark border-warning">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h4 class="text-warning">Nenhuma empresa encontrada</h4>
+                    <p class="text-light mb-4">
+                        Não foram encontradas empresas do tipo "{{ tipo_atividade }}" na cidade "{{ cidade }}"
+                    </p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="{{ url_for('busca_empresas.buscar') }}" class="btn btn-info">
+                            <i class="fas fa-search me-2"></i>Tentar Nova Busca
+                        </a>
+                        <a href="{{ url_for('busca_empresas.historico') }}" class="btn btn-outline-info">
+                            <i class="fas fa-history me-2"></i>Ver Histórico
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Funções de filtro e ordenação
+function filtrarEmpresas() {
+    const filtroNome = document.getElementById('filtroRazaoSocial').value.toLowerCase();
+    const filtroSituacao = document.getElementById('filtroSituacao').value;
+    const empresas = document.querySelectorAll('.empresa-card');
+    let visiveis = 0;
+    
+    empresas.forEach(card => {
+        const razaoSocial = card.dataset.razao;
+        const situacao = card.dataset.situacao;
+        
+        const passaNome = !filtroNome || razaoSocial.includes(filtroNome);
+        const passaSituacao = !filtroSituacao || situacao === filtroSituacao;
+        
+        if (passaNome && passaSituacao) {
+            card.style.display = 'block';
+            visiveis++;
+        } else {
+            card.style.display = 'none';
+        }
+    });
+    
+    document.getElementById('empresasVisiveis').textContent = visiveis;
+}
+
+function ordenarEmpresas() {
+    const ordenacao = document.getElementById('ordenacao').value;
+    const container = document.getElementById('resultadosEmpresas');
+    const empresas = Array.from(container.children);
+    
+    empresas.sort((a, b) => {
+        let valA, valB;
+        
+        switch(ordenacao) {
+            case 'razao_social_desc':
+                valA = a.dataset.razao;
+                valB = b.dataset.razao;
+                return valB.localeCompare(valA);
+            case 'situacao':
+                valA = a.dataset.situacao;
+                valB = b.dataset.situacao;
+                return valA.localeCompare(valB);
+            default: // razao_social
+                valA = a.dataset.razao;
+                valB = b.dataset.razao;
+                return valA.localeCompare(valB);
+        }
+    });
+    
+    // Reordenar elementos
+    empresas.forEach(empresa => container.appendChild(empresa));
+}
+
+// Funções de ação
+function converterCliente(empresaId) {
+    if (confirm('Deseja converter esta empresa em cliente?')) {
+        // Implementar chamada AJAX
+        fetch(`/api/empresas/${empresaId}/converter-cliente`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Empresa convertida em cliente com sucesso!');
+                location.reload();
+            } else {
+                alert('Erro ao converter empresa: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erro na operação: ' + error);
+        });
+    }
+}
+
+function salvarFavorito(empresaId) {
+    // Implementar salvamento de favorito
+    alert('Empresa adicionada aos favoritos!');
+}
+
+function exportarCSV() {
+    // Implementar exportação CSV
+    const empresas = document.querySelectorAll('.empresa-card:not([style*="display: none"])');
+    let csv = 'Razão Social,CNPJ,Endereço,Telefone,Email,Situação\n';
+    
+    empresas.forEach(card => {
+        const razao = card.querySelector('.text-info').textContent.trim();
+        // Implementar extração de dados completa
+        csv += `"${razao}","","","","",""\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `empresas_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+}
+
+function imprimirResultados() {
+    window.print();
+}
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    // Efeito de entrada das cards
+    const cards = document.querySelectorAll('.empresa-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+
+<style>
+/* Estilos específicos da página de resultados */
+.empresa-card {
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0, 255, 255, 0.2);
+}
+
+.empresa-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
+}
+
+.badge {
+    font-size: 0.9em;
+    padding: 0.5em 0.8em;
+}
+
+.btn-group-vertical .btn {
+    margin-bottom: 0.25rem;
+}
+
+.btn-sm {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+}
+
+.text-info {
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+/* Print styles */
+@media print {
+    .btn, .card-header, nav, .btn-group {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #333 !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .text-info, .text-light {
+        color: #000 !important;
+    }
+    
+    .bg-dark {
+        background-color: #fff !important;
+    }
+}
+</style>
+{% endblock %}

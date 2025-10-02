@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+
+{# Macro para formatação de moeda arredondada no PDF #}
+{% macro formato_moeda_pdf(valor) -%}
+R$ {{ "{:,.0f}".format(valor|round|float).replace(',', '.') }},00
+{%- endmacro %}
+
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OS {{ os.codigo }} • RELATÓRIO</title>
+
+<style>
+/* ===== VARS / PALETA ===== */
+:root{
+  --navy:#0f1f36;
+  --navy-2:#152946;
+  --cyan:#00e5ff;
+  --cyan-2:#6feaff;
+  --ink:#e7f4ff;
+  --muted:#8fb0cf;
+  --line:#2e466d;
+  --paper:#ffffff;
+  --accent:#ff9800;
+}
+
+/* ===== PÁGINA ===== */
+@page { 
+  size: A4 portrait; 
+  margin: 16mm 14mm 18mm 14mm; 
+  @bottom-left { content: ""; }
+  @bottom-center { content: ""; }
+  @bottom-right { content: ""; }
+  @top-left { content: ""; }
+  @top-center { content: ""; }
+  @top-right { content: ""; }
+}
+html,body{margin:0;padding:0;}
+body{
+  background:#fff!important;
+  color:#0b1728;
+  font: 10.5pt/1.45 "SFMono-Regular","Consolas","Menlo","Monaco","Courier New",monospace;
+}
+
+/* ===== HEADER ===== */
+.header{
+  display:flex; align-items:flex-start; justify-content:space-between;
+  padding:10px 0 8px 0; position:relative;
+}
+.header::after{
+  content:"";
+  position:absolute; left:0; right:0; bottom:-6px; height:3px;
+  background:
+    linear-gradient(90deg,var(--cyan),var(--cyan) 40%,transparent 40%,transparent 60%,var(--cyan) 60%),
+    linear-gradient(90deg,var(--navy),var(--navy));
+}
+.brand{display:flex; gap:12px; align-items:flex-start;}
+.brand img{
+  height:52px; 
+  width:52px;
+  border:2px solid var(--navy); 
+  padding:4px; 
+  border-radius:6px;
+  background:#fff;
+  object-fit:contain;
+  display:block;
+}
+.brand img::after {
+  content: "JSP";
+  display: block;
+  text-align: center;
+  font-weight: bold;
+  color: var(--navy);
+  font-size: 14px;
+  line-height: 40px;
+}
+.logo-fallback {
+  height:52px; 
+  width:52px;
+  border:2px solid var(--navy); 
+  padding:4px; 
+  border-radius:6px;
+  background:linear-gradient(135deg,var(--navy),var(--cyan));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:white;
+  font-weight:900;
+  font-size:18px;
+  letter-spacing:1px;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.brand-title{
+  font-weight:700; color:var(--navy); letter-spacing:.4px; font-size:12pt;
+}
+.brand-sub{color:#324f78; font-size:9.5pt;}
+.brand-title .solar{color:var(--accent);}
+
+.header-right{
+  text-align:right; min-width:240px; color:#243f63; font-size:9.5pt;
+}
+
+/* ===== CAPA/TÍTULO ===== */
+.title{
+  margin:10px 0 10px 0; position:relative; padding:8px 10px;
+  color:var(--ink);
+  border:1.5px solid var(--line);
+  background:linear-gradient(135deg,var(--navy),var(--navy-2));
+  text-transform:uppercase; letter-spacing:.6px; font-weight:800;
+}
+.title .code{
+  display:inline-block; padding:2px 8px; margin-left:8px;
+  background:rgba(0,229,255,.1); border:1px solid var(--cyan);
+  color:var(--cyan); border-radius:4px;
+}
+.title .date{ float:right; color:var(--cyan-2); font-weight:700; }
+
+/* ===== SEÇÕES ===== */
+h2{
+  margin:12px 0 6px 0; color:var(--navy); text-transform:uppercase;
+  letter-spacing:.4px; font-size:11pt;
+}
+.section{
+  position:relative; padding-top:6px; page-break-inside:avoid;
+}
+.section .tag{
+  position:absolute; top:-8px; right:0; font-size:8.5pt; color:#4c6a93;
+}
+
+/* ===== QUADROS / TABELAS ===== */
+.box{
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:6px;
+  background:
+    linear-gradient(transparent 23px, rgba(15,31,54,.06) 24px) repeat-y;
+  background-size:100% 24px;
+}
+table{ width:100%; border-collapse:collapse; background:var(--paper); }
+th,td{ border:1px solid var(--line); padding:4px 6px; vertical-align:top; }
+th{
+  background:linear-gradient(180deg,#143055,#0f1f36);
+  color:var(--ink); letter-spacing:.3px; text-align:left;
+}
+td{ color:#0b1728; }
+tr:nth-child(even) td{ background:#f5f9ff; }
+
+/* Células numéricas */
+.t-right{text-align:right;}
+.nowrap{white-space:nowrap;}
+
+/* Linha de total em tabelas */
+.total-row { border-top: 2px solid var(--navy); font-weight: bold; }
+
+/* Células com texto longo */
+.wrap-text{
+  word-wrap:break-word; 
+  white-space:normal; 
+  max-width:300px;
+}
+
+/* ===== BADGES / DECOS ===== */
+.chip{
+  display:inline-block; padding:2px 8px; border-radius:999px;
+  border:1px solid var(--line); color:#1e3c64; font-weight:700;
+  background:#e9f4ff;
+}
+
+/* ===== ASSINATURAS ===== */
+.sign{width:100%; border:none; margin-top:28px;}
+.sign td{border:none; text-align:center; padding-top:18px; font-size:11pt;}
+.sign .lane{height:24px; border-bottom:1px dashed #4a6b97;}
+
+/* ===== RESPONSIVO IMPRESSÃO ===== */
+.table-responsive table{ table-layout:fixed; }
+.table-responsive th,.table-responsive td{ word-wrap:break-word; white-space:normal; }
+
+/* ===== LAYOUT FINANCEIRO ===== */
+.row { display: flex; gap: 12px; margin-bottom: 10px; }
+.flex-1 { flex: 1; }
+.financial-table { table-layout: fixed; }
+.financial-table .col-30 { width: 30%; }
+.financial-table .col-70 { width: 70%; }
+
+/* ===== TABELA EXECUÇÃO ===== */
+.execution-table { table-layout: fixed; }
+.execution-table .col-title { width: 25%; }
+.execution-table .col-data { width: 75%; }
+
+/* ===== SEÇÕES DE TEXTO ===== */
+.text-section { margin: 8px 0; }
+.text-content { 
+  margin-top: 4px; 
+  white-space: pre-line; 
+  background: rgba(15,31,54,.03); 
+  padding: 8px; 
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+
+/* ===== OBSERVAÇÕES ===== */
+.observations { 
+  border: 2px solid var(--line); 
+  background: var(--ink); 
+  padding: 12px; 
+  margin: 16px 0;
+  border-radius: 6px;
+}
+.observations h3 { 
+  color: var(--navy); 
+  margin-bottom: 8px; 
+  font-size: 10pt;
+}
+
+/* ===== RODAPÉ ===== */
+.footer {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 2px solid var(--navy);
+  text-align: center;
+  color: var(--navy);
+  font-size: 9pt;
+}
+
+@media print{
+  .title, th{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="brand">
+    <!-- Usando a logo específica JSP (15 x 15 mm).jpg -->
+    <img src="{{ url_for('static', filename='img/JSP (15 x 15 mm).jpg', _external=True) }}" alt="JSP Eletrica Industrial and Solar" />
+    <div>
+      <div class="brand-title">JSP ELÉTRICA INDUSTRIAL &nbsp;&amp;&nbsp; <span class="solar">SOLAR</span></div>
+      <div class="brand-sub">
+        CNPJ 41.280.764/0001-65<br>
+        Rua Indalécio Costa, 890 – Barra Funda – Tietê/SP – CEP 18530-170
+      </div>
+    </div>
+  </div>
+  <div class="header-right">
+    <strong>(15) 99670-2036 • (15) 99802-5861</strong><br>
+    atendimento@eletricasaroba.com<br>
+    www.eletricasaroba.com.br<br>
+  </div>
+</div>
+
+
+<!-- ===== TÍTULO ===== -->
+<div class="title">
+  RELATÓRIO DE ORDEM DE SERVIÇO
+  <span class="code">OS: {{ os.codigo }}</span>
+  <span class="date">{% if os.data_emissao %}{{ os.data_emissao.strftime('%d/%m/%Y') }}{% else %}-{% endif %}</span>
+</div>
+
+<!-- ===== CLIENTE ===== -->
+<div class="section">
+  <h2>[01] DADOS DO CLIENTE</h2>
+  <div class="box">
+    <table class="execution-table">
+      <colgroup>
+        <col class="col-title">
+        <col class="col-data">
+      </colgroup>
+      <tr><th class="nowrap">NOME</th><td>{{ os.cliente.nome if os.cliente else 'N/A' }}</td></tr>
+      <tr><th>CPF/CNPJ</th><td>{{ os.cliente.cpf_cnpj if os.cliente else 'N/A' }}</td></tr>
+      <tr><th>TELEFONE</th><td>{{ os.cliente.telefone if os.cliente else 'N/A' }}</td></tr>
+      <tr><th>E-MAIL</th><td>{{ os.cliente.email if os.cliente else 'N/A' }}</td></tr>
+      <tr><th>ENDEREÇO</th><td class="wrap-text">{{ os.cliente.endereco if os.cliente else 'N/A' }}</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== DADOS BÁSICOS DA OS ===== -->
+<div class="section">
+  <h2>[02] DADOS BÁSICOS</h2>
+  <div class="box">
+    <table>
+      <tr>
+        <th>CÓDIGO</th><td>{{ os.codigo }}</td>
+        <th>DATA EMISSÃO</th><td>{{ os.data_emissao.strftime('%d/%m/%Y') if os.data_emissao else 'N/A' }}</td>
+      </tr>
+      <tr>
+        <th>STATUS</th><td>{{ os.status or 'N/A' }}</td>
+        <th>PRIORIDADE</th><td>{{ os.prioridade or 'N/A' }}</td>
+      </tr>
+      <tr>
+        <th>SOLICITANTE</th><td>{{ os.solicitante or 'N/A' }}</td>
+        <th>CONTATO</th><td>{{ os.contato or 'N/A' }}</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ===== SERVIÇOS ===== -->
+{% if servicos_data and servicos_data|length > 0 %}
+<div class="section">
+  <h2>[03] SERVIÇOS EXECUTADOS</h2>
+  <div class="table-responsive box">
+    <table>
+      <thead>
+        <tr>
+          <th>DESCRIÇÃO</th>
+          <th class="t-right nowrap">QTD</th>
+          <th class="t-right nowrap">VL. UNIT.</th>
+          <th class="t-right nowrap">TOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in servicos_data %}
+        <tr>
+          <td>{{ s.nome or s.descricao or 'N/A' }}</td>
+          <td class="t-right">{{ s.quantidade or '1' }}</td>
+          <td class="t-right">{{ formato_moeda_pdf(s.valor_unitario|float) if s.valor_unitario else 'R$ 0,00' }}</td>
+          <td class="t-right">{{ formato_moeda_pdf(s.valor_total|float) if s.valor_total else 'R$ 0,00' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== PRODUTOS ===== -->
+{% if produtos_data and produtos_data|length > 0 %}
+<div class="section">
+  <h2>[04] PRODUTOS UTILIZADOS</h2>
+  <div class="table-responsive box">
+    <table>
+      <thead>
+        <tr>
+          <th>DESCRIÇÃO</th>
+          <th class="t-right nowrap">QTD</th>
+          <th class="t-right nowrap">VL. UNIT.</th>
+          <th class="t-right nowrap">TOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in produtos_data %}
+        <tr>
+          <td>{{ p.nome or p.descricao or 'N/A' }}</td>
+          <td class="t-right">{{ p.quantidade or '1' }}</td>
+          <td class="t-right">R$ {{ '%.2f'|format(p.valor_unitario|float) if p.valor_unitario else '0,00' }}</td>
+          <td class="t-right">R$ {{ '%.2f'|format(p.valor_total|float) if p.valor_total else '0,00' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== EQUIPAMENTO ===== -->
+{% if os.equipamento_nome or os.equipamento_marca or os.equipamento_modelo %}
+<div class="section">
+  <h2>[05] EQUIPAMENTO</h2>
+  <div class="box">
+    <table>
+      <tr>
+        <th>EQUIPAMENTO</th><td>{{ os.equipamento_nome or 'N/A' }}</td>
+        <th>MARCA</th><td>{{ os.equipamento_marca or 'N/A' }}</td>
+      </tr>
+      <tr>
+        <th>MODELO</th><td>{{ os.equipamento_modelo or 'N/A' }}</td>
+        <th>Nº SÉRIE</th><td>{{ os.equipamento_numero_serie or 'N/A' }}</td>
+      </tr>
+      {% if os.equipamento_acessorios %}
+      <tr>
+        <th>ACESSÓRIOS</th>
+        <td colspan="3">{{ os.equipamento_acessorios }}</td>
+      </tr>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== DESCRIÇÃO DO PROBLEMA ===== -->
+{% if os.problema_descrito or os.equipamento_problema %}
+<div class="section">
+  <h2>[06] DESCRIÇÃO DO PROBLEMA</h2>
+  <div class="box">
+    <div class="text-content">{{ os.problema_descrito or os.equipamento_problema }}</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== TÉCNICO & SERVIÇO REALIZADO ===== -->
+<div class="section">
+  <h2>[07] EXECUÇÃO DO SERVIÇO</h2>
+  <div class="box">
+    <table class="execution-table">
+      <colgroup>
+        <col class="col-title">
+        <col class="col-data">
+      </colgroup>
+      <tr><th>RESPONSÁVEL<Obj></Obj></th><td>{{ os.tecnico_responsavel or 'Não informado' }}</td></tr>
+      <tr><th>TIPO DE SERVIÇO</th><td>{{ os.tipo_servico or 'Não especificado' }}</td></tr>
+      <tr><th>DATA DE CONCLUSÃO</th><td>{% if os.status in ['Concluída', 'Concluida'] %}{% if os.data_conclusao %}{{ os.data_conclusao.strftime('%d/%m/%Y') }}{% else %}Concluída{% endif %}{% else %}Em andamento{% endif %}</td></tr>
+      <tr><th>TOTAL DE HORAS</th><td>{{ os.total_horas or '0' }}h</td></tr>
+    </table>
+    
+    {% if os.descricao_servico_realizado %}
+    <div class="text-section">
+      <span class="chip">SERVIÇO REALIZADO</span>
+      <div class="text-content">{{ os.descricao_servico_realizado }}</div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ===== FINANCEIRO ===== -->
+<div class="section">
+  <h2>[08] RESUMO FINANCEIRO</h2>
+  <div class="row">
+    <div class="box flex-1">
+      <table class="financial-table">
+        <colgroup>
+          <col class="col-30">
+          <col class="col-70">
+        </colgroup>
+        <tr><th>TOTAL SERVIÇOS</th><td class="t-right">{{ formato_moeda_pdf(os.valor_servicos|float) if os.valor_servicos else formato_moeda_pdf(os.valor_total|float) if os.valor_total else 'R$ 0,00' }}</td></tr>
+        <tr><th>TOTAL PRODUTOS</th><td class="t-right">{{ formato_moeda_pdf(os.valor_produtos|float) if os.valor_produtos else 'R$ 0,00' }}</td></tr>
+        {% if os.valor_deslocamento %}
+        <tr><th>DESLOCAMENTO</th><td class="t-right">{{ formato_moeda_pdf(os.valor_deslocamento|float) }}</td></tr>
+        {% endif %}
+        <tr>
+          <th>VALOR TOTAL</th>
+          <td class="t-right"><strong>{{ formato_moeda_pdf(os.valor_total|float) if os.valor_total else 'R$ 0,00' }}</strong></td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="box flex-1">
+      <table>
+        <tr><th colspan="2">DADOS PARA TRANSFERÊNCIA</th></tr>
+        <tr><td>INSTITUIÇÃO</td><td>403 – CORA SCFI</td></tr>
+        <tr><td>AGÊNCIA</td><td>0001</td></tr>
+        <tr><td>CONTA</td><td>4633457-0</td></tr>
+        <tr><td>TITULAR</td><td>Saroba Solar</td></tr>
+        <tr><td>CNPJ</td><td>41.280.764/0001-65</td></tr>
+        <tr><td>PIX</td><td>41.280.764/0001-65</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONDIÇÕES DE PAGAMENTO ===== -->
+{% if os.forma_pagamento or os.condicoes_pagamento or os.prazo_entrega or os.garantia %}
+<div class="section">
+  <h2>[09] CONDIÇÕES DE PAGAMENTO</h2>
+  <div class="box">
+    <table class="execution-table">
+      <colgroup>
+        <col class="col-title">
+        <col class="col-data">
+      </colgroup>
+      {% if os.forma_pagamento %}
+      <tr><th>FORMA DE PAGAMENTO</th><td>{{ os.forma_pagamento }}</td></tr>
+      {% endif %}
+      {% if os.condicoes_pagamento %}
+      <tr><th>CONDIÇÕES</th><td>{{ os.condicoes_pagamento }}</td></tr>
+      {% endif %}
+      {% if os.prazo_entrega %}
+      <tr><th>PRAZO DE ENTREGA</th><td>{{ os.prazo_entrega }}</td></tr>
+      {% endif %}
+      {% if os.garantia %}
+      <tr><th>GARANTIA</th><td>{{ os.garantia }}</td></tr>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== PARCELAS ===== -->
+{% if parcelas_salvas and parcelas_salvas|length > 0 %}
+<div class="section">
+  <h2>[10] PARCELAS DO PAGAMENTO</h2>
+  <div class="box">
+    <table>
+      <tr><th>VENCIMENTO</th><th class="t-right">VALOR (R$)</th><th>SITUAÇÃO</th></tr>
+      {% for par in parcelas_salvas %}
+      <tr>
+        <td>
+          {%- set venc = par.vencimento or par.data or '' -%}
+          {%- if venc -%}
+            {%- if venc.__class__.__name__ == 'date' -%}
+              {{ venc.strftime('%d/%m/%Y') }}
+            {%- elif '-' in venc -%}
+              {{ venc.split('T')[0].split(' ')[0].split('-')|reverse|join('/') }}
+            {%- else -%}
+              {{ venc }}
+            {%- endif -%}
+          {%- else -%} — {%- endif -%}
+        </td>
+        <td class="t-right">{{ formato_moeda_pdf(par.valor|float) }}</td>
+        <td>{{ par.situacao or 'Em aberto' }}</td>
+      </tr>
+      {% endfor %}
+      <!-- Linha de total das parcelas -->
+      <tr class="total-row">
+        <td>TOTAL DAS PARCELAS</td>
+        <td class="t-right">{{ formato_moeda_pdf(parcelas_salvas|sum(attribute='valor')|float) }}</td>
+        <td>—</td>
+      </tr>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== ANEXOS ===== -->
+{% if anexos_salvos and anexos_salvos|length > 0 %}
+<div class="attachments">
+  <h3>📎 ARQUIVOS ANEXOS</h3>
+  <div class="section-content">
+    <table class="products">
+      <tr>
+        <th style="width:50%">Arquivo</th>
+        <th style="width:15%">Tipo</th>
+        <th style="width:15%">Tamanho</th>
+        <th style="width:20%">Data Upload</th>
+      </tr>
+      {% for anexo in anexos_salvos %}
+      <tr>
+        <td>
+          <strong>{{ anexo.nome_original }}</strong>
+          <br><small style="color:#666;">{{ anexo.nome_arquivo }}</small>
+        </td>
+        <td>
+          {% if (anexo.tipo_arquivo or anexo.tipo or '').startswith('image/') %}
+            📷 Imagem
+          {% elif (anexo.tipo_arquivo or anexo.tipo) == 'application/pdf' %}
+            📄 PDF
+          {% elif 'word' in (anexo.tipo_arquivo or anexo.tipo or '') %}
+            📝 Word
+          {% elif 'excel' in (anexo.tipo_arquivo or anexo.tipo or '') %}
+            📊 Excel
+          {% else %}
+            📁 Documento
+          {% endif %}
+        </td>
+        <td>{{ anexo.tamanho_formatado }}</td>
+        <td>{{ anexo.data_upload }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <p style="margin-top:8px; font-size:9pt; color:#666;">
+      <strong>📋 Para acessar os arquivos:</strong><br>
+      • Entre em contato conosco pelo telefone (15) 99670-2036<br>
+      • Ou envie um e-mail para atendimento@eletricasaroba.com<br>
+      • Informe o código da OS: <strong>{{ os.codigo }}</strong>
+    </p>
+  </div>
+</div>
+{% endif %}
+
+<!-- ===== OBSERVAÇÕES ===== -->
+{% if os.observacoes or os.observacoes_tecnico %}
+<div class="observations">
+  <h3>🔍 OBSERVAÇÕES IMPORTANTES</h3>
+  {% if os.observacoes %}
+  <p><strong>Observações Gerais:</strong><br>{{ os.observacoes }}</p>
+  {% endif %}
+  {% if os.observacoes_tecnico %}
+  <p><strong>Observações Técnicas:</strong><br>{{ os.observacoes_tecnico }}</p>
+  {% endif %}
+</div>
+{% else %}
+<div class="observations">
+  <h3>🔍 OBSERVAÇÕES</h3>
+  <p>
+    • Este relatório foi gerado automaticamente pelo sistema ERP JSP ELÉTRICA<br>
+    • Serviços executados conforme normas técnicas vigentes<br>
+    • Garantia aplicável conforme condições contratuais<br>
+    • Em caso de dúvidas, entre em contato conosco
+  </p>
+</div>
+{% endif %}
+
+<!-- ===== ASSINATURAS ===== -->
+<table class="sign">
+  <tr>
+    <td>
+      <div class="lane"></div>
+      Assinatura do Técnico<br>
+      <small>{{ os.tecnico_responsavel or 'JSP ELÉTRICA' }}</small>
+    </td>
+    <td>
+      <div class="lane"></div>
+      Assinatura do Cliente<br>
+      <small>{{ os.cliente.nome if os.cliente else 'Cliente' }}</small>
+    </td>
+  </tr>
+</table>
+
+<!-- ===== RODAPÉ ===== -->
+<div class="footer">
+  <p><strong>JSP ELÉTRICA INDUSTRIAL & SOLAR</strong></p>
+  <p>Serviços Elétricos • Energia Solar • Automação Industrial</p>
+  <p>www.eletricasaroba.com.br • atendimento@eletricasaroba.com • (15) 99670-2036</p>
+  <p><small>Documento gerado em {{ data_geracao.strftime('%d/%m/%Y') if data_geracao else now().strftime('%d/%m/%Y') }}</small></p>
+</div>
+
+</body>
+</html>

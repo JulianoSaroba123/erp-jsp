@@ -1,0 +1,189 @@
+{% extends 'autenticacao/base.html' %}
+{% block titulo %}{{ 'Editar Lançamento' if lanc else 'Novo Lançamento' }} — JSP ERP{% endblock %}
+
+{% block content %}
+<style>
+  /* === Padrão visual (Fornecedores/Financeiro) === */
+  .page-title .ico{ background: rgba(41,182,255,.16); }
+  .page-title h3{ color:#fff; margin:0; }
+  .card-jsp .form-control,
+  .card-jsp .form-select{
+    color:#eaf6ff !important;
+    background: rgba(15,31,54,.55) !important;
+    border:1px solid rgba(255,255,255,.12) !important;
+  }
+  /* Placeholder agora controlado pelo CSS global */
+  .card-jsp label{ color:#eaf6ff; font-weight:600; }
+  .input-group-text{ background: rgba(15,31,54,.55); color:#9fdcff; border-color:rgba(255,255,255,.12); }
+  .secao-formulario{
+    background: linear-gradient(135deg, rgba(15,31,54,.45), rgba(21,45,78,.55));
+    border:1px solid rgba(86,212,255,.28);
+    border-radius:8px;
+    padding:16px;
+    margin:14px 0;
+    box-shadow: 0 4px 16px rgba(25,51,90,.15);
+  }
+  .text-muted{ color:#7fcfff !important; }
+  .btn-brand{ color:#0b1a2f; } /* garante contraste do texto no gradiente do tema */
+</style>
+
+<div class="page-title">
+  <div class="ico"><i class="fas fa-coins"></i></div>
+  <h3>Financeiro • {{ 'Editar' if lanc else 'Novo' }} Lançamento</h3>
+</div>
+
+<div class="card card-jsp shadow-sm">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <strong style="color:#fff;"><i class="fas fa-receipt me-2"></i>{{ 'Editar Lançamento' if lanc else 'Novo Lançamento' }}</strong>
+    <a href="{{ url_for('financeiro.listar') if url_for else '#' }}" class="btn btn-outline-light btn-sm" style="border-color:rgba(255,255,255,.25);">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+  </div>
+
+  <div class="card-body">
+    <form method="POST" id="form-fin" class="row g-3">
+      {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+
+      <div class="secao-formulario">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label class="form-label">Tipo *</label>
+            <select name="tipo" class="form-select" required>
+              {% set _tipo = lanc.tipo if lanc else '' %}
+              <option value="">Selecione</option>
+              <option value="Receita" {{ 'selected' if _tipo=='Receita' else '' }}>Receita</option>
+              <option value="Despesa" {{ 'selected' if _tipo=='Despesa' else '' }}>Despesa</option>
+            </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Categoria *</label>
+            {% if categorias is defined and categorias %}
+              <select name="categoria_id" class="form-select" required>
+                <option value="">Selecione</option>
+                {% for c in categorias %}
+                  <option value="{{ c.id }}" {{ 'selected' if lanc and lanc.categoria_id==c.id else '' }}>
+                    {{ c.nome }}
+                  </option>
+                {% endfor %}
+              </select>
+            {% else %}
+              <input type="text" name="categoria" class="form-control" value="{{ lanc.categoria if lanc and lanc.categoria else '' }}" required placeholder="Ex.: Serviços, Materiais, Taxas">
+            {% endif %}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Data *</label>
+            <input type="date" name="data" id="data" class="form-control"
+                   value="{{ lanc.data.strftime('%Y-%m-%d') if lanc and lanc.data else '' }}" required>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Descrição *</label>
+            <input type="text" name="descricao" class="form-control" value="{{ lanc.descricao if lanc else '' }}" required placeholder="Ex.: Mão de obra instalação, Venda material X...">
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Valor *</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="text" id="valor_display" class="form-control" inputmode="decimal"
+                     value="{% if lanc and lanc.valor %}{{ ('%.2f'|format(lanc.valor)).replace('.', ',') }}{% endif %}"
+                     placeholder="0,00" required>
+              <input type="hidden" id="valor" name="valor" value="{{ '%.2f'|format(lanc.valor) if lanc and lanc.valor else '' }}">
+            </div>
+            <div class="form-text text-muted">Digite em reais. Ex.: 1.250,90</div>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Forma de Pagamento</label>
+            <select name="forma_pagamento" class="form-select">
+              {% set fp = lanc.forma_pagamento if lanc else '' %}
+              <option value="">Selecione</option>
+              <option value="À vista" {{ 'selected' if fp=='À vista' else '' }}>À vista</option>
+              <option value="Dinheiro" {{ 'selected' if fp=='Dinheiro' else '' }}>Dinheiro</option>
+              <option value="PIX" {{ 'selected' if fp=='PIX' else '' }}>PIX</option>
+              <option value="Cartão" {{ 'selected' if fp=='Cartão' else '' }}>Cartão</option>
+              <option value="Transferência" {{ 'selected' if fp=='Transferência' else '' }}>Transferência</option>
+              <option value="Cheque" {{ 'selected' if fp=='Cheque' else '' }}>Cheque</option>
+              <option value="Boleto" {{ 'selected' if fp=='Boleto' else '' }}>Boleto</option>
+            </select>
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">Status *</label>
+            {% set st = lanc.status if lanc else 'Pendente' %}
+            <select name="status" class="form-select" required>
+              <option value="Pendente" {{ 'selected' if st=='Pendente' else '' }}>Pendente</option>
+              <option value="Pago" {{ 'selected' if st=='Pago' else '' }}>Pago</option>
+              <option value="Atrasado" {{ 'selected' if st=='Atrasado' else '' }}>Atrasado</option>
+              <option value="Vencido" {{ 'selected' if st=='Vencido' else '' }}>Vencido</option>
+            </select>
+          </div>
+
+          <div class="col-12">
+            <label class="form-label">Observações</label>
+            <textarea name="observacoes" rows="3" class="form-control" placeholder="Detalhes adicionais...">{{ lanc.observacoes if lanc and lanc.observacoes else '' }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button class="btn btn-brand"><i class="fas fa-save me-1"></i> {{ 'Atualizar' if lanc else 'Salvar' }}</button>
+        <a href="{{ url_for('financeiro.listar') if url_for else '#' }}" class="btn btn-outline-light" style="border-color:rgba(255,255,255,.25);">
+          <i class="fas fa-arrow-left me-1"></i> Voltar
+        </a>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+(function(){
+  // data padrão hoje se vazio
+  const d = document.getElementById('data');
+  if(d && !d.value){
+    const hoje = new Date();
+    const yyyy = hoje.getFullYear();
+    const mm = String(hoje.getMonth()+1).padStart(2,'0');
+    const dd = String(hoje.getDate()).padStart(2,'0');
+    d.value = `${yyyy}-${mm}-${dd}`;
+  }
+
+  // máscara / normalização de valor (pt-BR)
+  const vDisp = document.getElementById('valor_display');
+  const v = document.getElementById('valor');
+  function toBR(n){ return (Number(n)||0).toLocaleString('pt-BR',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+  function sanitizeBR(txt){ return (txt||'').replace(/\./g,'').replace(',','.'); }
+
+  if(vDisp){
+    // se houver hidden setado e display vazio, sincroniza
+    if(v && v.value && !vDisp.value){ vDisp.value = toBR(v.value); }
+
+    vDisp.addEventListener('blur', ()=>{
+      const num = sanitizeBR(vDisp.value);
+      if(!isNaN(num)){
+        vDisp.value = toBR(num);
+        if(v) v.value = Number(num).toFixed(2);
+      }
+    });
+    vDisp.addEventListener('input', ()=>{
+      // não formata enquanto digita, só garante hidden numérico best-effort
+      const num = sanitizeBR(vDisp.value);
+      if(v && !isNaN(num)) v.value = Number(num).toFixed(2);
+    });
+  }
+
+  // validação simples
+  document.getElementById('form-fin').addEventListener('submit', function(e){
+    if(v && (!v.value || isNaN(v.value))){
+      e.preventDefault();
+      alert('Informe um valor válido.');
+      vDisp && vDisp.focus();
+      return false;
+    }
+  });
+})();
+</script>
+{% endblock %}

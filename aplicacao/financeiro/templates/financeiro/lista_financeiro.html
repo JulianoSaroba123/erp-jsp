@@ -1,0 +1,157 @@
+{% extends 'autenticacao/base.html' %}
+{% block titulo %}Financeiro — JSP ERP{% endblock %}
+
+{% block content %}
+
+{# Suporta lista simples ou Pagination #}
+{% set lista = registros %}
+
+<style>
+  /* === mesmo esquema de cores da lista de Fornecedores === */
+  .chip{
+    background-color:transparent;
+    color:#00bfff;
+    padding:.2rem .5rem;
+    border-radius:999px;
+    border:1px solid rgba(0,191,255,.25);
+    font-weight:700; font-size:.78rem;
+  }
+  .card-jsp .form-control,.card-jsp .form-select{
+    color:#eaf6ff; background:rgba(15,31,54,.55); border:1px solid rgba(255,255,255,.12);
+  }
+  /* Placeholder agora controlado pelo CSS global */
+  
+  /* === Garantir que a tabela use o estilo ERP padrão === */
+  .table-erp tbody td strong {
+    color: var(--jsp-cyan) !important;
+  }
+  .table-erp .chip {
+    background-color: transparent;
+  }
+</style>
+
+<div class="page-title">
+  <div class="d-flex align-items-center gap-3">
+    <a href="{{ url_for('painel.dashboard') }}" class="btn btn-outline-light btn-sm" title="Voltar ao Painel">
+      <i class="fas fa-arrow-left me-1"></i> Voltar
+    </a>
+    <div class="ico"><i class="fas fa-coins"></i></div>
+    <h3 style="margin:0; color:#ffffff;">Financeiro</h3>
+  </div>
+</div>
+
+<div class="card card-jsp mb-3">
+  <div class="card-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fas fa-database" style="color:#ffffff;"></i>
+      <strong style="color:#ffffff;">Lançamentos</strong>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <form class="d-flex" method="GET" action="{{ request.path }}">
+        <input class="form-control form-control-sm" type="search" name="q"
+               placeholder="Buscar por descrição ou categoria"
+               value="{{ request.args.get('q','') }}" style="min-width:260px">
+        <button class="btn btn-brand btn-sm ms-2" type="submit">
+          <i class="fas fa-search me-1"></i> Buscar
+        </button>
+      </form>
+      <a href="{{ url_for('financeiro.novo') }}" class="btn btn-brand btn-sm">
+        <i class="fas fa-plus me-1"></i> Novo Lançamento
+      </a>
+      <form method="POST" action="{{ url_for('financeiro.atualizar_status_os') }}" style="display: inline-block;">
+        <button type="submit" class="btn btn-outline-success btn-sm" title="Sincronizar status dos lançamentos de OS com ordens pagas">
+          <i class="fas fa-sync me-1"></i> Sincronizar Status OS
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-erp align-middle mb-0">
+        <thead>
+          <tr>
+            <th style="width:110px;">Data</th>
+            <th style="width:110px;">Tipo</th>
+            <th>Descrição</th>
+            <th style="width:250px;">Categoria</th>
+            <th style="width:140px;" class="text-end">Valor Líquido</th>
+            <th style="width:120px;">Status</th>
+            <th style="width:140px;" class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if lista and lista|length > 0 %}
+            {% for l in lista %}
+            <tr>
+              <td><strong style="color:#00bfff;">{{ l.data.strftime('%d/%m/%Y') if l.data else '-' }}</strong></td>
+              <td>
+                {% if l.tipo in ['Receita','Entrada'] %}
+                  <span class="chip" style="color:#00bfff; border:1px solid #00bfff;">Receita</span>
+                {% else %}
+                  <span class="chip" style="color:#ff1493; border:1px solid #ff1493;">Despesa</span>
+                {% endif %}
+              </td>
+              <td><strong style="color:#00bfff;">{{ l.descricao or '-' }}</strong>
+                {% if l.is_from_os and l.os_id %}
+                  <small class="d-block text-muted" style="color:#7fcfff !important;">
+                    <i class="fas fa-link me-1"></i>Vinculado à OS{{ '%04d'|format(l.os_id) }}
+                  </small>
+                {% endif %}
+              </td>
+              <td><strong style="color:#00bfff;">{{ l.categoria or '-' }}</strong></td>
+              <td class="text-end"><strong style="color:#00bfff;">R$ {{ '%.2f'|format(l.valor or 0) }}</strong></td>
+              <td>
+                {% if l.status == 'Pago' %}
+                  <span class="chip" style="color:#28a745; border:1px solid #28a745;">{{ l.status }}</span>
+                {% elif l.status == 'Pendente' %}
+                  <span class="chip" style="color:#ffc107; border:1px solid #ffc107;">{{ l.status }}</span>
+                {% else %}
+                  <span class="chip" style="color:#00bfff; border:1px solid #00bfff;">{{ l.status or '—' }}</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <div class="btn-group btn-group-sm">
+                  {% if l.is_from_os and l.os_id %}
+                    {# Lançamento de Ordem de Serviço - apenas exclusão #}
+                    <span class="btn btn-secondary btn-sm disabled" title="Edição não disponível para lançamentos de OS">
+                      <i class="fas fa-pen"></i>
+                    </span>
+                    <form method="POST" action="{{ url_for('financeiro.excluir_os', id=l.id) }}"
+                          onsubmit="return confirm('Confirma excluir este lançamento da OS? Esta ação não pode ser desfeita.');"
+                          style="display: inline-block;">
+                      <button class="btn btn-outline-danger btn-sm" title="Excluir lançamento de OS" type="submit">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  {% else %}
+                    {# Lançamento tradicional - edição e exclusão #}
+                    <a class="btn btn-brand btn-sm" href="{{ url_for('financeiro.editar', id=l.id) }}" title="Editar">
+                      <i class="fas fa-pen" style="color:#ffffff;"></i>
+                    </a>
+                    <form method="POST" action="{{ url_for('financeiro.excluir', id=l.id) }}"
+                          onsubmit="return confirm('Confirma excluir este lançamento?');"
+                          style="display: inline-block;">
+                      <button class="btn btn-outline-light btn-sm" style="border-color:rgba(255,255,255,.25); color:#ffffff;" title="Excluir" type="submit">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center text-muted py-4" style="color:#7fcfff !important;">
+                Nenhum lançamento encontrado.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

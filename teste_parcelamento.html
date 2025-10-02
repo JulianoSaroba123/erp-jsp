@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste do Sistema de Parcelamento</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body { background-color: #1a1a1a; color: #ffffff; }
+        .form-control, .form-select { background-color: rgba(15,31,54,.55); border: 1px solid rgba(255,255,255,.12); color: #ffffff; }
+        .form-control:focus, .form-select:focus { background-color: rgba(15,31,54,.65); border-color: rgba(86,212,255,.65); box-shadow: 0 0 0 .2rem rgba(86,212,255,.12); color: #ffffff; }
+        .btn-primary { background-color: #29b6ff; border-color: #29b6ff; }
+        .debug-info { background-color: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.2); border-radius: 5px; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 0.9em; }
+        .table th, .table td { color: #ffffff !important; border-color: rgba(255,255,255,.12); }
+        .table-dark th { background: rgba(41,182,255,.16); }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h2><i class="fas fa-credit-card"></i> Teste do Sistema de Parcelamento</h2>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <!-- Simulação da seção de pagamento -->
+                <div class="card bg-dark border-secondary mb-3">
+                    <div class="card-header"><i class="fas fa-credit-card me-2"></i>Condições de Pagamento</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-lg-5">
+                                <label class="form-label">Forma de Pagamento</label>
+                                <select id="forma_pagamento" name="forma_pagamento" class="form-select" onchange="alterarFormaPagamento()">
+                                    <option value="A receber">A receber</option>
+                                    <option value="Pago">Pago</option>
+                                    <option value="À vista">À vista</option>
+                                    <option value="Parcelado">Parcelado</option>
+                                    <option value="Dinheiro">Dinheiro</option>
+                                    <option value="PIX">PIX</option>
+                                    <option value="Cartão">Cartão</option>
+                                    <option value="Cheque">Cheque</option>
+                                    <option value="Transferência">Transferência</option>
+                                </select>
+                            </div>
+                            <div class="col-lg-5" id="condicoes-simples">
+                                <label class="form-label">Condições</label>
+                                <input id="condicoes_pagamento" name="condicoes_pagamento" class="form-control" placeholder="Ex: À vista, 30 dias, etc.">
+                            </div>
+                            <div class="col-lg-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-outline-success w-100" onclick="gerarFormaPagamento()" title="Sugerir forma de pagamento baseada no valor">
+                                    <i class="fas fa-magic me-1"></i>Gerar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Valor Total (simulado) -->
+                        <div class="row g-3 mt-2">
+                            <div class="col-lg-4">
+                                <label class="form-label">Valor Total (para teste)</label>
+                                <input type="number" step="0.01" id="valor_total" class="form-control" value="359.99">
+                            </div>
+                        </div>
+                        
+                        <!-- Seção de Parcelamento -->
+                        <div id="secao-parcelamento" style="display: none;" class="mt-4">
+                            <hr class="mb-3">
+                            <h6><i class="fas fa-calendar-alt me-2"></i>Configuração de Parcelamento</h6>
+                            
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Número de Parcelas</label>
+                                    <select id="num_parcelas" class="form-select" onchange="gerarParcelas()">
+                                        <option value="">Selecione...</option>
+                                        <option value="2">2x</option>
+                                        <option value="3">3x</option>
+                                        <option value="4">4x</option>
+                                        <option value="5">5x</option>
+                                        <option value="6">6x</option>
+                                        <option value="10">10x</option>
+                                        <option value="12">12x</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Data da 1ª Parcela</label>
+                                    <input type="date" id="data_primeira_parcela" class="form-control" onchange="gerarParcelas()">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Intervalo (dias)</label>
+                                    <input type="number" id="intervalo_dias" class="form-control" value="30" min="1" onchange="gerarParcelas()">
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <button type="button" class="btn btn-primary w-100" onclick="gerarParcelas()">
+                                        <i class="fas fa-sync me-1"></i>Gerar Parcelas
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Tabela de Parcelas -->
+                            <div id="tabela-parcelas" class="mt-3" style="display: none;">
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th width="15%">Parcela</th>
+                                                <th width="25%">Data de Vencimento</th>
+                                                <th width="25%">Valor</th>
+                                                <th width="25%">Status</th>
+                                                <th width="10%"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbody-parcelas">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <input type="hidden" id="parcelas_json" name="parcelas_json" value="">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="debug-info">
+                    <strong>Debug Info:</strong>
+                    <div id="debug-output"></div>
+                </div>
+                
+                <div class="mt-3">
+                    <button class="btn btn-outline-info w-100 mb-2" onclick="testarParcelamento()">
+                        <i class="fas fa-test-tube"></i> Teste Automático
+                    </button>
+                    <button class="btn btn-outline-warning w-100" onclick="limparDebug()">
+                        <i class="fas fa-broom"></i> Limpar Debug
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let parcelas = [];
+        
+        // Função de debug
+        function log(mensagem) {
+            const debugOutput = document.getElementById('debug-output');
+            const timestamp = new Date().toLocaleTimeString();
+            debugOutput.innerHTML += `<div>[${timestamp}] ${mensagem}</div>`;
+            console.log(mensagem);
+        }
+        
+        function limparDebug() {
+            document.getElementById('debug-output').innerHTML = '';
+        }
+        
+        // Função principal - alterarFormaPagamento
+        function alterarFormaPagamento() {
+            log('🔄 alterarFormaPagamento() chamada');
+            
+            const formaPagamento = document.getElementById('forma_pagamento').value;
+            const secaoParcelamento = document.getElementById('secao-parcelamento');
+            const condicoesSimples = document.getElementById('condicoes-simples');
+            
+            log(`Forma de pagamento selecionada: ${formaPagamento}`);
+            
+            if (formaPagamento === 'Parcelado') {
+                log('✅ Mostrando seção de parcelamento');
+                secaoParcelamento.style.display = 'block';
+                condicoesSimples.style.display = 'none';
+                
+                // Definir data padrão da primeira parcela (30 dias a partir de hoje)
+                const hoje = new Date();
+                hoje.setDate(hoje.getDate() + 30);
+                document.getElementById('data_primeira_parcela').value = hoje.toISOString().split('T')[0];
+                log(`Data da primeira parcela definida: ${hoje.toISOString().split('T')[0]}`);
+            } else {
+                log('❌ Ocultando seção de parcelamento');
+                secaoParcelamento.style.display = 'none';
+                condicoesSimples.style.display = 'block';
+                parcelas = [];
+                document.getElementById('tabela-parcelas').style.display = 'none';
+            }
+        }
+        
+        // Função principal - gerarParcelas
+        function gerarParcelas() {
+            log('🔧 gerarParcelas() chamada');
+            
+            const numParcelas = parseInt(document.getElementById('num_parcelas').value);
+            const dataPrimeira = document.getElementById('data_primeira_parcela').value;
+            const intervaloDias = parseInt(document.getElementById('intervalo_dias').value || 30);
+            const valorTotal = parseFloat(document.getElementById('valor_total').value || 0);
+            
+            log(`Parâmetros: ${numParcelas} parcelas, data: ${dataPrimeira}, intervalo: ${intervaloDias} dias, valor: R$ ${valorTotal}`);
+            
+            if (!numParcelas || !dataPrimeira || valorTotal <= 0) {
+                const erro = 'Preencha o número de parcelas, data da primeira parcela e certifique-se que há um valor total definido.';
+                log(`❌ Erro: ${erro}`);
+                alert(erro);
+                return;
+            }
+            
+            parcelas = [];
+            const valorParcela = valorTotal / numParcelas;
+            const primeiroPagamento = new Date(dataPrimeira);
+            
+            log(`Valor por parcela: R$ ${valorParcela.toFixed(2)}`);
+            
+            for (let i = 0; i < numParcelas; i++) {
+                const dataVencimento = new Date(primeiroPagamento);
+                dataVencimento.setDate(primeiroPagamento.getDate() + (i * intervaloDias));
+                
+                const valorParcelaFinal = i === numParcelas - 1 ? valorTotal - (valorParcela * (numParcelas - 1)) : valorParcela;
+                
+                parcelas.push({
+                    numero: i + 1,
+                    data_vencimento: dataVencimento.toISOString().split('T')[0],
+                    valor: valorParcelaFinal,
+                    status: 'Pendente'
+                });
+                
+                log(`Parcela ${i + 1}: ${dataVencimento.toISOString().split('T')[0]} - R$ ${valorParcelaFinal.toFixed(2)}`);
+            }
+            
+            log(`✅ ${parcelas.length} parcelas geradas`);
+            renderParcelas();
+            atualizarCondicoesPagamento();
+        }
+        
+        function renderParcelas() {
+            log('🎨 renderParcelas() chamada');
+            
+            const tbody = document.getElementById('tbody-parcelas');
+            const tabela = document.getElementById('tabela-parcelas');
+            
+            if (parcelas.length === 0) {
+                log('❌ Nenhuma parcela para renderizar');
+                tabela.style.display = 'none';
+                return;
+            }
+            
+            log(`Renderizando ${parcelas.length} parcelas`);
+            tabela.style.display = 'block';
+            
+            let html = '';
+            parcelas.forEach((parcela, index) => {
+                html += `
+                    <tr>
+                        <td><strong>${parcela.numero}/${parcelas.length}</strong></td>
+                        <td>
+                            <input type="date" class="form-control form-control-sm" 
+                                   value="${parcela.data_vencimento}" 
+                                   onchange="alterarDataParcela(${index}, this.value)">
+                        </td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm" 
+                                   step="0.01" value="${parcela.valor.toFixed(2)}" 
+                                   onchange="alterarValorParcela(${index}, this.value)">
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm" onchange="alterarStatusParcela(${index}, this.value)">
+                                <option value="Pendente" ${parcela.status === 'Pendente' ? 'selected' : ''}>Pendente</option>
+                                <option value="Pago" ${parcela.status === 'Pago' ? 'selected' : ''}>Pago</option>
+                                <option value="Vencido" ${parcela.status === 'Vencido' ? 'selected' : ''}>Vencido</option>
+                            </select>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="removerParcela(${index})" title="Remover">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+            log('✅ Tabela renderizada com sucesso');
+        }
+        
+        function atualizarCondicoesPagamento() {
+            if (parcelas.length > 0) {
+                const totalParcelas = parcelas.reduce((sum, p) => sum + p.valor, 0);
+                const resumo = `${parcelas.length}x - Total: R$ ${totalParcelas.toFixed(2)}`;
+                document.getElementById('condicoes_pagamento').value = resumo;
+                log(`Condições atualizadas: ${resumo}`);
+            }
+        }
+        
+        function alterarDataParcela(index, novaData) {
+            parcelas[index].data_vencimento = novaData;
+            atualizarCondicoesPagamento();
+            log(`Data da parcela ${index + 1} alterada para: ${novaData}`);
+        }
+        
+        function alterarValorParcela(index, novoValor) {
+            parcelas[index].valor = parseFloat(novoValor || 0);
+            atualizarCondicoesPagamento();
+            log(`Valor da parcela ${index + 1} alterado para: R$ ${novoValor}`);
+        }
+        
+        function alterarStatusParcela(index, novoStatus) {
+            parcelas[index].status = novoStatus;
+            log(`Status da parcela ${index + 1} alterado para: ${novoStatus}`);
+        }
+        
+        function removerParcela(index) {
+            if (confirm('Tem certeza que deseja remover esta parcela?')) {
+                const parcelaRemovida = parcelas[index];
+                parcelas.splice(index, 1);
+                
+                // Renumerar parcelas
+                parcelas.forEach((parcela, i) => {
+                    parcela.numero = i + 1;
+                });
+                
+                renderParcelas();
+                atualizarCondicoesPagamento();
+                log(`Parcela ${parcelaRemovida.numero} removida`);
+            }
+        }
+        
+        function gerarFormaPagamento() {
+            log('💰 Gerando sugestão de pagamento...');
+            const valorTotal = parseFloat(document.getElementById('valor_total').value || 0);
+            
+            if (valorTotal <= 0) {
+                alert('Defina primeiro um valor total para gerar sugestão.');
+                return;
+            }
+            
+            // Sugestão baseada no valor
+            let forma = '';
+            let condicoes = '';
+            
+            if (valorTotal <= 100) {
+                forma = 'À vista';
+                condicoes = 'Pagamento à vista';
+            } else if (valorTotal <= 500) {
+                forma = 'Parcelado';
+                condicoes = '3x sem juros';
+            } else {
+                forma = 'Parcelado';
+                condicoes = '6x sem juros';
+            }
+            
+            document.getElementById('forma_pagamento').value = forma;
+            document.getElementById('condicoes_pagamento').value = condicoes;
+            
+            if (forma === 'Parcelado') {
+                alterarFormaPagamento();
+                setTimeout(() => {
+                    const numParcelas = valorTotal <= 500 ? 3 : 6;
+                    document.getElementById('num_parcelas').value = numParcelas;
+                    gerarParcelas();
+                }, 100);
+            }
+            
+            log(`Sugestão gerada: ${forma} - ${condicoes}`);
+        }
+        
+        function testarParcelamento() {
+            log('🧪 Iniciando teste automático...');
+            
+            // 1. Definir valor
+            document.getElementById('valor_total').value = '359.99';
+            log('Valor total definido: R$ 359.99');
+            
+            // 2. Selecionar parcelado
+            document.getElementById('forma_pagamento').value = 'Parcelado';
+            alterarFormaPagamento();
+            
+            // 3. Aguardar um pouco e configurar parcelas
+            setTimeout(() => {
+                document.getElementById('num_parcelas').value = '3';
+                log('Número de parcelas definido: 3x');
+                
+                // 4. Gerar parcelas
+                setTimeout(() => {
+                    gerarParcelas();
+                    log('🎉 Teste automático concluído!');
+                }, 200);
+            }, 500);
+        }
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            log('📄 Página carregada - Sistema de parcelamento inicializado');
+            
+            // Definir data atual + 30 dias como padrão
+            const hoje = new Date();
+            hoje.setDate(hoje.getDate() + 30);
+            document.getElementById('data_primeira_parcela').value = hoje.toISOString().split('T')[0];
+        });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,470 @@
+{% extends 'autenticacao/base.html' %}
+
+{% block head %}
+{{ super() }}
+<style>
+  /* =============================
+     Estilos específicos do formulário de fornecedor
+     seguindo o tema neon futurista azul/ciano
+  ============================= */
+  .card-form {
+    background: linear-gradient(180deg, rgba(8,24,38,0.6), rgba(6,12,20,0.6));
+    border: 1px solid rgba(86,212,255,0.12);
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(86,212,255,0.12), 0 6px 18px rgba(2,10,20,0.6);
+    padding: 28px;
+  }
+  .card-jsp {
+    background: rgba(6,15,28,0.4);
+    border: 1px solid rgba(86,212,255,0.08);
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+  .card-jsp .card-header {
+    background: rgba(41,182,255,0.03);
+    color: var(--jsp-cyan);
+    border-bottom: 1px solid rgba(86,212,255,0.08);
+    font-weight: 600;
+  }
+  .form-label {
+    color: var(--jsp-cyan);
+    font-weight: 600;
+  }
+  .form-control {
+    background: rgba(6,18,32,0.6);
+    border: 1px solid rgba(86,212,255,0.12);
+    color: var(--jsp-text);
+  }
+  .form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(86,212,255,0.25);
+    border-color: var(--jsp-cyan);
+  }
+  .btn-brand {
+    background: linear-gradient(135deg, var(--jsp-blue), var(--jsp-cyan));
+    border: none;
+    color: #08162b;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(86,212,255,0.3);
+  }
+  .btn-brand:hover {
+    box-shadow: 0 6px 20px rgba(86,212,255,0.5);
+  }
+  .btn-outline-light {
+    background: rgba(8,24,38,0.4);
+    border: 1px solid rgba(86,212,255,0.12);
+    color: var(--jsp-cyan);
+  }
+  .btn-outline-light:hover {
+    background: rgba(86,212,255,0.08);
+  }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="container-fluid">
+  <div class="card card-jsp">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4><i class="fas fa-truck me-2"></i>{{ 'Editar' if fornecedor else 'Novo' }} Fornecedor</h4>
+      {% if fornecedor %}
+        <code class="d-none d-md-inline">{{ fornecedor.codigo or ('FOR%05d' % fornecedor.id) }}</code>
+      {% endif %}
+    </div>
+    <div class="d-flex justify-content-between align-items-center p-3">
+      <a class="btn btn-outline-light btn-sm" href="{{ url_for('fornecedor.listar_fornecedores') }}">
+        <i class="fas fa-arrow-left me-1"></i> Voltar
+      </a>
+    </div>
+
+    <div class="card-body">
+      <form method="POST">
+        <!-- Tipo de Pessoa -->
+        <div class="card card-jsp tipo-pessoa">
+          <div class="card-header"><i class="fas fa-id-card me-2"></i>Tipo de Pessoa</div>
+          <div class="card-body">
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="tipo_pessoa" id="tipo_pf" value="PF"
+                {{ 'checked' if not fornecedor or (fornecedor and fornecedor.cpf_cnpj and fornecedor.cpf_cnpj|length <= 14) else '' }}>
+              <label class="form-check-label" for="tipo_pf"><i class="fas fa-user me-1"></i> Pessoa Física (CPF)</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="radio" name="tipo_pessoa" id="tipo_pj" value="PJ"
+                {{ 'checked' if fornecedor and fornecedor.cpf_cnpj and fornecedor.cpf_cnpj|length > 14 else '' }}>
+              <label class="form-check-label" for="tipo_pj"><i class="fas fa-building me-1"></i> Pessoa Jurídica (CNPJ)</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informações Principais -->
+        <div class="card card-jsp">
+          <div class="card-header"><i class="fas fa-info-circle me-2"></i>Informações Principais</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-3 mb-3">
+                <label for="cpf_cnpj" class="form-label" id="label_cpf_cnpj">CPF / CNPJ *</label>
+                <input type="text" id="cpf_cnpj" name="cpf_cnpj" class="form-control" maxlength="18"
+                  value="{{ fornecedor.cpf_cnpj if fornecedor else '' }}" required>
+                <small class="text-muted" id="hint_cpf_cnpj">Digite apenas números</small>
+              </div>
+              <div class="col-md-9 mb-3">
+                <label for="nome" class="form-label" id="label_nome">Nome / Razão Social *</label>
+                <input type="text" id="nome" name="nome" class="form-control"
+                  value="{{ fornecedor.nome if fornecedor else '' }}" required>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="apelido" class="form-label">Apelido / Nome Fantasia</label>
+                <input type="text" id="apelido" name="apelido" class="form-control"
+                  value="{{ fornecedor.apelido if fornecedor else '' }}">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="nome_fantasia" class="form-label">Nome Fantasia</label>
+                <input type="text" id="nome_fantasia" name="nome_fantasia" class="form-control"
+                  value="{{ fornecedor.nome_fantasia if fornecedor else '' }}">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contato -->
+        <div class="card card-jsp">
+          <div class="card-header"><i class="fas fa-phone me-2"></i>Contato</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="telefone" class="form-label">Telefone</label>
+                <input type="text" id="telefone" name="telefone" class="form-control"
+                  value="{{ fornecedor.telefone if fornecedor else '' }}">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="email" class="form-label">E-mail</label>
+                <input type="email" id="email" name="email" class="form-control"
+                  value="{{ fornecedor.email if fornecedor else '' }}">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Endereço -->
+        <div class="card card-jsp">
+          <div class="card-header"><i class="fas fa-map-marker-alt me-2"></i>Endereço</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-3 mb-3">
+                <label for="cep" class="form-label">CEP</label>
+                <input type="text" id="cep" name="cep" class="form-control"
+                  value="{{ fornecedor.cep if fornecedor else '' }}">
+              </div>
+              <div class="col-md-9 mb-3">
+                <label for="endereco" class="form-label">Logradouro</label>
+                <input type="text" id="endereco" name="endereco" class="form-control"
+                  value="{{ fornecedor.endereco if fornecedor else '' }}">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-2 mb-3">
+                <label for="numero" class="form-label">Número</label>
+                <input type="text" id="numero" name="numero" class="form-control"
+                  value="{{ fornecedor.numero if fornecedor else '' }}">
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="complemento" class="form-label">Complemento</label>
+                <input type="text" id="complemento" name="complemento" class="form-control"
+                  value="{{ fornecedor.complemento if fornecedor else '' }}">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="bairro" class="form-label">Bairro</label>
+                <input type="text" id="bairro" name="bairro" class="form-control"
+                  value="{{ fornecedor.bairro if fornecedor else '' }}">
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="cidade" class="form-label">Cidade</label>
+                <input type="text" id="cidade" name="cidade" class="form-control"
+                  value="{{ fornecedor.cidade if fornecedor else '' }}">
+              </div>
+              <div class="col-md-2 mb-3">
+                <label for="uf" class="form-label">UF</label>
+                <select id="uf" name="uf" class="form-control">
+                  <option value="">Selecione...</option>
+                  <option value="AC" {{ 'selected' if fornecedor and fornecedor.uf == 'AC' else '' }}>AC</option>
+                  <option value="AL" {{ 'selected' if fornecedor and fornecedor.uf == 'AL' else '' }}>AL</option>
+                  <option value="AP" {{ 'selected' if fornecedor and fornecedor.uf == 'AP' else '' }}>AP</option>
+                  <option value="AM" {{ 'selected' if fornecedor and fornecedor.uf == 'AM' else '' }}>AM</option>
+                  <option value="BA" {{ 'selected' if fornecedor and fornecedor.uf == 'BA' else '' }}>BA</option>
+                  <option value="CE" {{ 'selected' if fornecedor and fornecedor.uf == 'CE' else '' }}>CE</option>
+                  <option value="DF" {{ 'selected' if fornecedor and fornecedor.uf == 'DF' else '' }}>DF</option>
+                  <option value="ES" {{ 'selected' if fornecedor and fornecedor.uf == 'ES' else '' }}>ES</option>
+                  <option value="GO" {{ 'selected' if fornecedor and fornecedor.uf == 'GO' else '' }}>GO</option>
+                  <option value="MA" {{ 'selected' if fornecedor and fornecedor.uf == 'MA' else '' }}>MA</option>
+                  <option value="MT" {{ 'selected' if fornecedor and fornecedor.uf == 'MT' else '' }}>MT</option>
+                  <option value="MS" {{ 'selected' if fornecedor and fornecedor.uf == 'MS' else '' }}>MS</option>
+                  <option value="MG" {{ 'selected' if fornecedor and fornecedor.uf == 'MG' else '' }}>MG</option>
+                  <option value="PA" {{ 'selected' if fornecedor and fornecedor.uf == 'PA' else '' }}>PA</option>
+                  <option value="PB" {{ 'selected' if fornecedor and fornecedor.uf == 'PB' else '' }}>PB</option>
+                  <option value="PR" {{ 'selected' if fornecedor and fornecedor.uf == 'PR' else '' }}>PR</option>
+                  <option value="PE" {{ 'selected' if fornecedor and fornecedor.uf == 'PE' else '' }}>PE</option>
+                  <option value="PI" {{ 'selected' if fornecedor and fornecedor.uf == 'PI' else '' }}>PI</option>
+                  <option value="RJ" {{ 'selected' if fornecedor and fornecedor.uf == 'RJ' else '' }}>RJ</option>
+                  <option value="RN" {{ 'selected' if fornecedor and fornecedor.uf == 'RN' else '' }}>RN</option>
+                  <option value="RS" {{ 'selected' if fornecedor and fornecedor.uf == 'RS' else '' }}>RS</option>
+                  <option value="RO" {{ 'selected' if fornecedor and fornecedor.uf == 'RO' else '' }}>RO</option>
+                  <option value="RR" {{ 'selected' if fornecedor and fornecedor.uf == 'RR' else '' }}>RR</option>
+                  <option value="SC" {{ 'selected' if fornecedor and fornecedor.uf == 'SC' else '' }}>SC</option>
+                  <option value="SP" {{ 'selected' if fornecedor and fornecedor.uf == 'SP' else '' }}>SP</option>
+                  <option value="SE" {{ 'selected' if fornecedor and fornecedor.uf == 'SE' else '' }}>SE</option>
+                  <option value="TO" {{ 'selected' if fornecedor and fornecedor.uf == 'TO' else '' }}>TO</option>
+                </select>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label for="pais" class="form-label">País</label>
+                <input type="text" id="pais" name="pais" class="form-control"
+                  value="{{ fornecedor.pais if fornecedor else 'Brasil' }}">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Informações Fiscais -->
+        <div class="card card-jsp">
+          <div class="card-header"><i class="fas fa-receipt me-2"></i>Informações Fiscais</div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="inscricao_estadual" class="form-label">Inscrição Estadual</label>
+                <input type="text" id="inscricao_estadual" name="inscricao_estadual" class="form-control"
+                  value="{{ fornecedor.inscricao_estadual if fornecedor else '' }}">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="inscricao_municipal" class="form-label">Inscrição Municipal</label>
+                <input type="text" id="inscricao_municipal" name="inscricao_municipal" class="form-control"
+                  value="{{ fornecedor.inscricao_municipal if fornecedor else '' }}">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Observações -->
+        <div class="card card-jsp">
+          <div class="card-header"><i class="fas fa-sticky-note me-2"></i>Observações</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label for="observacoes" class="form-label">Observações</label>
+              <textarea id="observacoes" name="observacoes" class="form-control" rows="4">{{ fornecedor.observacoes if fornecedor else '' }}</textarea>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="ativo" name="ativo"
+                {{ 'checked' if not fornecedor or (fornecedor and fornecedor.ativo) else '' }}>
+              <label class="form-check-label" for="ativo">Fornecedor ativo</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botões -->
+        <div class="d-flex justify-content-between">
+          <a href="{{ url_for('fornecedor.listar_fornecedores') }}" class="btn btn-outline-light">
+            <i class="fas fa-times me-1"></i> Cancelar
+          </a>
+          <button type="submit" class="btn btn-brand">
+            <i class="fas fa-save me-1"></i> {{ 'Atualizar' if fornecedor else 'Salvar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    // Máscaras e validações para CPF/CNPJ
+    function aplicarMascaraCpfCnpj() {
+        var tipoPessoa = $('input[name="tipo_pessoa"]:checked').val();
+        var campo = $('#cpf_cnpj');
+        
+        if (tipoPessoa === 'PF') {
+            campo.mask('000.000.000-00', {reverse: true});
+            $('#label_cpf_cnpj').text('CPF *');
+            $('#hint_cpf_cnpj').text('Digite apenas números do CPF');
+        } else {
+            campo.mask('00.000.000/0000-00', {reverse: true});
+            $('#label_cpf_cnpj').text('CNPJ *');
+            $('#hint_cpf_cnpj').text('Digite apenas números do CNPJ');
+        }
+    }
+
+    // Aplicar máscara inicial
+    aplicarMascaraCpfCnpj();
+
+    // Mudança de tipo de pessoa
+    $('input[name="tipo_pessoa"]').change(function() {
+        $('#cpf_cnpj').val('');
+        aplicarMascaraCpfCnpj();
+    });
+
+    // Máscaras gerais
+    $('#telefone').mask('(00) 00000-0000');
+    $('#cep').mask('00000-000');
+
+    // Busca automática por CEP
+    $('#cep').blur(function() {
+        var cep = $(this).val().replace(/\D/g, '');
+        
+        if (cep.length === 8) {
+            $('#endereco, #cidade, #bairro, #uf').val('Buscando...');
+            
+            $.ajax({
+                url: '/cliente/api/buscar_cep/' + cep,
+                method: 'GET',
+                success: function(data) {
+                    $('#endereco').val(data.logradouro || '');
+                    $('#cidade').val(data.localidade || '');
+                    $('#bairro').val(data.bairro || '');
+                    $('#uf').val(data.uf || '');
+                },
+                error: function() {
+                    $('#endereco, #cidade, #bairro, #uf').val('');
+                    alert('CEP não encontrado');
+                }
+            });
+        }
+    });
+
+    // Busca automática por CNPJ
+    $('#cpf_cnpj').blur(function() {
+        var documento = $(this).val().replace(/\D/g, '');
+        var tipoPessoa = $('input[name="tipo_pessoa"]:checked').val();
+        
+        if (tipoPessoa === 'PJ' && documento.length === 14) {
+            $('#nome').val('Buscando...');
+            
+            $.ajax({
+                url: '/fornecedores/api/buscar_cnpj/' + documento,
+                method: 'GET',
+                success: function(data) {
+                    if (!$('#nome').val() || $('#nome').val() === 'Buscando...') {
+                        $('#nome').val(data.nome || '');
+                    }
+                    if (!$('#nome_fantasia').val()) {
+                        $('#nome_fantasia').val(data.fantasia || '');
+                    }
+                    if (!$('#endereco').val()) {
+                        $('#endereco').val(data.endereco || '');
+                    }
+                    if (!$('#numero').val()) {
+                        $('#numero').val(data.numero || '');
+                    }
+                    if (!$('#cidade').val()) {
+                        $('#cidade').val(data.cidade || '');
+                    }
+                    if (!$('#bairro').val()) {
+                        $('#bairro').val(data.bairro || '');
+                    }
+                    if (!$('#cep').val()) {
+                        $('#cep').val(data.cep || '');
+                    }
+                    if (!$('#uf').val()) {
+                        $('#uf').val(data.uf || '');
+                    }
+                    if (!$('#telefone').val()) {
+                        $('#telefone').val(data.telefone || '');
+                    }
+                    if (!$('#email').val()) {
+                        $('#email').val(data.email || '');
+                    }
+                },
+                error: function(xhr) {
+                    $('#nome').val('');
+                    if (xhr.status === 404) {
+                        alert('CNPJ não encontrado');
+                    } else {
+                        alert('Erro ao buscar CNPJ');
+                    }
+                }
+            });
+        }
+    });
+
+    // Validações em tempo real
+    function validarCPF(cpf) {
+        cpf = cpf.replace(/\D/g, '');
+        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) return false;
+        
+        let soma = 0;
+        for (let i = 0; i < 9; i++) {
+            soma += parseInt(cpf.charAt(i)) * (10 - i);
+        }
+        let resto = 11 - (soma % 11);
+        if (resto === 10 || resto === 11) resto = 0;
+        if (resto !== parseInt(cpf.charAt(9))) return false;
+        
+        soma = 0;
+        for (let i = 0; i < 10; i++) {
+            soma += parseInt(cpf.charAt(i)) * (11 - i);
+        }
+        resto = 11 - (soma % 11);
+        if (resto === 10 || resto === 11) resto = 0;
+        if (resto !== parseInt(cpf.charAt(10))) return false;
+        
+        return true;
+    }
+
+    function validarCNPJ(cnpj) {
+        cnpj = cnpj.replace(/\D/g, '');
+        if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) return false;
+        
+        let tamanho = cnpj.length - 2;
+        let numeros = cnpj.substring(0, tamanho);
+        let digitos = cnpj.substring(tamanho);
+        let soma = 0;
+        let pos = tamanho - 7;
+        
+        for (let i = tamanho; i >= 1; i--) {
+            soma += numeros.charAt(tamanho - i) * pos--;
+            if (pos < 2) pos = 9;
+        }
+        
+        let resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
+        if (resultado != digitos.charAt(0)) return false;
+        
+        tamanho = tamanho + 1;
+        numeros = cnpj.substring(0, tamanho);
+        soma = 0;
+        pos = tamanho - 7;
+        
+        for (let i = tamanho; i >= 1; i--) {
+            soma += numeros.charAt(tamanho - i) * pos--;
+            if (pos < 2) pos = 9;
+        }
+        
+        resultado = soma % 11 < 2 ? 0 : 11 - soma % 11;
+        return resultado == digitos.charAt(1);
+    }
+
+    $('#cpf_cnpj').on('blur', function() {
+        var documento = $(this).val().replace(/\D/g, '');
+        var tipoPessoa = $('input[name="tipo_pessoa"]:checked').val();
+        var valido = false;
+        
+        if (tipoPessoa === 'PF' && documento.length === 11) {
+            valido = validarCPF(documento);
+        } else if (tipoPessoa === 'PJ' && documento.length === 14) {
+            valido = validarCNPJ(documento);
+        }
+        
+        if (documento.length > 0 && !valido) {
+            $(this).addClass('is-invalid');
+            if (!$(this).next('.invalid-feedback').length) {
+                $(this).after('<div class="invalid-feedback">' + (tipoPessoa === 'PF' ? 'CPF' : 'CNPJ') + ' inválido</div>');
+            }
+        } else {
+            $(this).removeClass('is-invalid');
+            $(this).next('.invalid-feedback').remove();
+        }
+    });
+});
+</script>
+{% endblock %}

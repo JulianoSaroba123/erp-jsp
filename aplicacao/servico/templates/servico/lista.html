@@ -1,0 +1,185 @@
+{% extends "autenticacao/base.html" %}
+{% block titulo %}Lista de Serviços — JSP ERP{% endblock %}
+{% block head %}
+{{ super() }}
+<style>
+  /* =============================
+     Estilos específicos da página de lista de serviços
+     seguindo o tema neon futurista azul/ciano - FORÇAR APLICAÇÃO
+  ============================= */
+
+  /* Card container com borda e sombra neon - FORÇA */
+  .card.card-jsp {
+    background: linear-gradient(180deg, rgba(8, 24, 38, 0.9), rgba(6, 12, 20, 0.9)) !important;
+    border: 1px solid rgba(86, 212, 255, 0.3) !important;
+    box-shadow: 0 0 20px rgba(86, 212, 255, 0.2), 0 6px 18px rgba(2, 10, 20, 0.6) !important;
+    border-radius: 12px !important;
+    color: #e0f7ff !important;
+  }
+  /* Cabeçalho da lista: fundo escuro e borda inferior neon - FORÇA */
+  .card.card-jsp .card-header {
+    background: linear-gradient(90deg, rgba(3, 32, 54, 0.95), rgba(3, 74, 108, 0.85)) !important;
+    border-bottom: 1px solid rgba(86, 212, 255, 0.3) !important;
+    color: #e0f7ff !important;
+    box-shadow: inset 0 -2px 12px rgba(0, 0, 0, 0.4) !important;
+  }
+  /* Corpo do card - FORÇA */
+  .card.card-jsp .card-body {
+    background: transparent !important;
+    color: #e0f7ff !important;
+  }
+  /* Table - FORÇA */
+  .card.card-jsp .table {
+    background: transparent !important;
+    color: #e0f7ff !important;
+  }
+  .card.card-jsp .table td,
+  .card.card-jsp .table th {
+    background: transparent !important;
+    color: #e0f7ff !important;
+    border-color: rgba(86, 212, 255, 0.2) !important;
+  }
+  .card.card-jsp .table tbody tr:hover {
+    background: rgba(86, 212, 255, 0.1) !important;
+  }
+  /* Ícone circular no cabeçalho - FORÇA */
+  .icon-circle {
+    width: 44px !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    background: linear-gradient(135deg, rgba(86, 212, 255, 0.2), rgba(41, 182, 255, 0.1)) !important;
+    border: 1px solid rgba(86, 212, 255, 0.5) !important;
+    color: #00f7ff !important;
+    margin-right: 12px !important;
+    box-shadow: 0 0 12px rgba(86, 212, 255, 0.4) !important;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-title">
+  <div class="ico"><i class="fas fa-concierge-bell"></i></div>
+  <h3 style="margin:0;">Lista de Serviços</h3>
+</div>
+
+<!-- Estatísticas -->
+<div class="row mb-4">
+  <div class="col-md-3">
+    <div class="card card-jsp text-center">
+      <div class="card-body">
+        <h5 class="card-title">Total de Serviços</h5>
+        <p class="card-text h4">{{ total_servicos }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card card-jsp text-center">
+      <div class="card-body">
+        <h5 class="card-title">Valor Total</h5>
+        <p class="card-text h4">R$ {{ "%.2f"|format(valor_total) }}</p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card card-jsp text-center">
+      <div class="card-body">
+        <h5 class="card-title">Valor Médio</h5>
+        <p class="card-text h4">R$ {{ "%.2f"|format(valor_medio) }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card card-jsp mb-3">
+  <div class="card-header d-flex flex-wrap gap-2 align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-2">
+      <div class="icon-circle">
+        <i class="fas fa-concierge-bell"></i>
+      </div>
+      <div>
+        <strong>Lista de Serviços</strong>
+        <span class="badge bg-primary ms-2">{{ servicos|length }}</span>
+      </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-success btn-sm" href="{{ url_for('servico.novo_servico') }}">
+        <i class="fas fa-plus me-1"></i> Novo Serviço
+      </a>
+    </div>
+  </div>
+
+  <div class="card-body p-0">
+    {% if servicos %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-dark">
+          <tr>
+            <th>Código</th>
+            <th>Nome</th>
+            <th>Unidade</th>
+            <th>Preço Custo</th>
+            <th>Markup (%)</th>
+            <th>Preço Venda</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for servico in servicos %}
+          <tr>
+            <td>
+              <code>{{ servico.codigo or '' }}</code>
+            </td>
+            <td>
+              <strong>{{ servico.nome }}</strong>
+              {% if servico.descricao %}
+                <br><small class="text-muted">{{ servico.descricao[:50] }}{% if servico.descricao|length > 50 %}...{% endif %}</small>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge bg-secondary">{{ servico.unidade or 'UN' }}</span>
+            </td>
+            <td>
+              <span class="text-success">R$ {{ "%.2f"|format(servico.preco_custo or 0) }}</span>
+            </td>
+            <td>
+              <span class="text-info">{{ "%.1f"|format(servico.markup_percentual or 0) }}%</span>
+            </td>
+            <td>
+              <strong class="text-primary">R$ {{ "%.2f"|format(servico.preco_venda or servico.valor or 0) }}</strong>
+            </td>
+            <td>
+              <div class="btn-group btn-group-sm">
+                <a href="{{ url_for('servico.editar_servico', id=servico.id) }}" 
+                   class="btn btn-outline-warning btn-sm" title="Editar">
+                  <i class="fas fa-edit"></i>
+                </a>
+                <form method="POST" action="{{ url_for('servico.excluir_servico', id=servico.id) }}" 
+                      style="display: inline;" 
+                      onsubmit="return confirm('Tem certeza que deseja excluir este serviço?')">
+                  <button type="submit" class="btn btn-outline-danger btn-sm" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i class="fas fa-concierge-bell fa-3x text-muted mb-3"></i>
+      <h5>Nenhum serviço cadastrado</h5>
+      <p class="text-muted">Comece cadastrando seu primeiro serviço.</p>
+      <a href="{{ url_for('servico.novo_servico') }}" class="btn btn-success">
+        <i class="fas fa-plus me-1"></i> Cadastrar Primeiro Serviço
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

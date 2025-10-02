@@ -1,0 +1,30 @@
+{
+  "cidade": "Porangaba",
+  "tipo_atividade": "autoescola",
+  "empresas": [
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Não informado",
+      "nome_fantasia": "Não informado",
+      "atividade_principal": "Não informado",
+      "cidade": "Porangaba",
+      "uf": "Não informado",
+      "telefone": "+55 15 3257 1452",
+      "email": "educacao@porangaba.sp.gov.br",
+      "endereco_completo": "Rua Professor Antônio Freire de Souza, 100, 18260-000",
+      "fonte": "Overpass"
+    },
+    {
+      "cnpj": "Não informado",
+      "razao_social": "Funerária Paraíso",
+      "nome_fantasia": "Funerária Paraíso",
+      "atividade_principal": "funeral_directors",
+      "cidade": "Porangaba",
+      "uf": "Não informado",
+      "telefone": "+55 15 3215 1767",
+      "email": "Não informado",
+      "endereco_completo": "Rua Professor Antônio Freire de Souza",
+      "fonte": "Overpass"
+    }
+  ]
+}

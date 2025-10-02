@@ -1,0 +1,288 @@
+{% extends 'autenticacao/base.html' %}
+
+{% block head %}
+{{ super() }}
+<style>
+  /* =============================
+     Estilos específicos da página de lista de propostas
+     seguindo o tema neon futurista azul/ciano
+  ============================= */
+
+  /* Card container com borda e sombra neon */
+  .card.card-jsp {
+    background: linear-gradient(180deg, rgba(8, 24, 38, 0.6), rgba(6, 12, 20, 0.6));
+    border: 1px solid rgba(86, 212, 255, 0.12);
+    box-shadow: 0 0 20px rgba(86, 212, 255, 0.12), 0 6px 18px rgba(2, 10, 20, 0.6);
+    border-radius: 12px;
+  }
+  /* Cabeçalho da lista: fundo escuro e borda inferior neon */
+  .card.card-jsp .card-header {
+    background: linear-gradient(90deg, rgba(3, 32, 54, 0.95), rgba(3, 74, 108, 0.85));
+    border-bottom: 1px solid rgba(86, 212, 255, 0.12);
+    color: var(--jsp-text);
+    box-shadow: inset 0 -2px 12px rgba(0, 0, 0, 0.4);
+  }
+  /* Ícone circular no cabeçalho */
+  .icon-circle {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(86, 212, 255, 0.12), rgba(41, 182, 255, 0.06));
+    border: 1px solid rgba(86, 212, 255, 0.3);
+    color: var(--jsp-cyan);
+    margin-right: 12px;
+    box-shadow: 0 0 8px rgba(86, 212, 255, 0.3);
+  }
+  /* Grupo de busca com visual neon */
+  .lista-search .input-group-text {
+    background: rgba(8, 24, 38, 0.6);
+    border: 1px solid rgba(86, 212, 255, 0.12);
+    color: var(--jsp-cyan);
+  }
+  .lista-search .form-control.lista-busca {
+    background: rgba(6, 18, 32, 0.6);
+    border: 1px solid rgba(86, 212, 255, 0.12);
+    color: var(--jsp-text);
+  }
+  .lista-search .form-control.lista-busca::placeholder {
+    color: rgba(234, 246, 255, 0.4);
+  }
+  /* Botões de ação: nova, voltar, ações */
+  .btn-brand {
+    background: linear-gradient(135deg, var(--jsp-blue), var(--jsp-cyan));
+    border: none;
+    color: #08162b;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(86, 212, 255, 0.3);
+  }
+  .btn-brand:hover {
+    box-shadow: 0 6px 20px rgba(86, 212, 255, 0.5);
+  }
+  .btn-back {
+    background: rgba(8, 24, 38, 0.4);
+    border: 1px solid rgba(86, 212, 255, 0.12);
+    color: var(--jsp-cyan);
+  }
+  .btn-back:hover {
+    background: linear-gradient(135deg, var(--jsp-blue), var(--jsp-cyan));
+    color: #08162b;
+  }
+  .btn-acao {
+    background: linear-gradient(135deg, rgba(4, 76, 110, 0.25), rgba(3, 32, 54, 0.18));
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(86, 212, 255, 0.1);
+    padding: 5px 8px;
+  }
+  .btn-acao i {
+    color: var(--jsp-cyan);
+  }
+  .btn-acao.text-warning i {
+    color: #f5a623;
+  }
+  .btn-acao.text-danger i {
+    color: #e53935;
+  }
+  /* Ajustar tabela para usar padding e bordas consistentes */
+  .table-erp th, .table-erp td {
+    padding: 12px 16px;
+  }
+  .table-erp td:first-child, .table-erp th:first-child {
+    padding-left: 18px;
+  }
+  .table-erp td:last-child, .table-erp th:last-child {
+    padding-right: 18px;
+  }
+  
+  /* MELHORAR VISIBILIDADE DAS LETRAS */
+  .text-muted {
+    color: rgba(234, 246, 255, 0.7) !important;
+  }
+  .card-header small.text-muted {
+    color: rgba(86, 212, 255, 0.8) !important;
+  }
+  .table-erp td, .table-erp th {
+    color: var(--jsp-text) !important;
+  }
+  .table-erp tbody tr:hover td {
+    color: #ffffff !important;
+    background: rgba(86, 212, 255, 0.05);
+  }
+  /* Títulos mais visíveis */
+  .card-header strong {
+    color: #ffffff !important;
+    text-shadow: 0 0 8px rgba(86, 212, 255, 0.6);
+  }
+  /* Labels dos cards de estatística */
+  .text-uppercase {
+    color: rgba(86, 212, 255, 0.9) !important;
+    font-weight: 600 !important;
+  }
+</style>
+{% endblock %}
+
+{% block conteudo %}
+<div class="container-fluid mt-4">
+  <!-- Título e cartões de resumo -->
+  <div class="text-center mb-4">
+    <h1 class="text-glow">Propostas <span class="titulo-erp">— JSP ERP</span></h1>
+  </div>
+  <!-- Resumo estatístico -->
+  <div class="row g-3 mb-4">
+    {# Total de propostas #}
+    <div class="col-md-3 col-sm-6">
+      <div class="card card-jsp p-3 h-100 d-flex flex-column justify-content-between">
+        <div class="d-flex align-items-center mb-2">
+          <span class="icon-circle"><i class="fas fa-file-signature"></i></span>
+          <div class="ms-2">
+            <small class="text-uppercase">Total Propostas</small>
+            <div class="h4 m-0 text-glow">{{ propostas|length }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {# Pendentes #}
+    <div class="col-md-3 col-sm-6">
+      {% set pendentes = propostas|selectattr('status', 'equalto', 'Pendente')|list %}
+      <div class="card card-jsp p-3 h-100 d-flex flex-column justify-content-between">
+        <div class="d-flex align-items-center mb-2">
+          <span class="icon-circle"><i class="fas fa-clock"></i></span>
+          <div class="ms-2">
+            <small class="text-uppercase">Pendentes</small>
+            <div class="h4 m-0 text-glow">{{ pendentes|length }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {# Aprovadas #}
+    <div class="col-md-3 col-sm-6">
+      {% set aprovadas = propostas|selectattr('status', 'equalto', 'Aprovada')|list %}
+      <div class="card card-jsp p-3 h-100 d-flex flex-column justify-content-between">
+        <div class="d-flex align-items-center mb-2">
+          <span class="icon-circle"><i class="fas fa-check-circle"></i></span>
+          <div class="ms-2">
+            <small class="text-uppercase">Aprovadas</small>
+            <div class="h4 m-0 text-glow">{{ aprovadas|length }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {# Valor total das aprovadas #}
+    <div class="col-md-3 col-sm-6">
+      {% set valor_aprovadas = aprovadas|map(attribute='valor_final')|sum %}
+      <div class="card card-jsp p-3 h-100 d-flex flex-column justify-content-between">
+        <div class="d-flex align-items-center mb-2">
+          <span class="icon-circle"><i class="fas fa-dollar-sign"></i></span>
+          <div class="ms-2">
+            <small class="text-uppercase">Valor Total (Aprovadas)</small>
+            <div class="h4 m-0 text-glow">R$ {{ "%.2f"|format(valor_aprovadas) }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Propostas -->
+  <div class="card card-jsp">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center">
+        <span class="icon-circle"><i class="fas fa-file-contract"></i></span>
+        <div>
+          <strong>Lista de Propostas</strong>
+          <div><small class="text-muted">&nbsp;— &nbsp;{{ propostas|length }}</small></div>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <!-- Voltar para o painel -->
+        <a href="{{ url_for('painel.dashboard') }}" class="btn-back btn-sm me-2"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <!-- Campo de busca -->
+        <div class="input-group lista-search">
+          <span class="input-group-text input-search-icon"><i class="fas fa-search"></i></span>
+          <input id="buscar_propostas" type="text" class="form-control lista-busca" placeholder="Buscar por número ou título...">
+        </div>
+        <!-- Nova Proposta -->
+        <a href="{{ url_for('proposta.nova_proposta') }}" class="btn btn-brand btn-sm ms-2"><i class="fas fa-plus"></i> Nova Proposta</a>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive rounded">
+        <table class="table table-hover align-middle text-center table-erp">
+          <thead class="neo-thead">
+            <tr>
+              <th class="text-start">Número</th>
+              <th class="text-start">Título</th>
+              <th>Cliente</th>
+              <th>Valor Final (R$)</th>
+              <th>Status</th>
+              <th>Validade</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for proposta in propostas %}
+            <tr>
+              <td class="text-start"><strong>{{ proposta.numero }}</strong></td>
+              <td class="text-start"><strong>{{ proposta.titulo }}</strong></td>
+              <td>{{ proposta.cliente.nome if proposta.cliente else '' }}</td>
+              <td><strong>{{ '{:,.2f}'.format(proposta.valor_final) }}</strong></td>
+              <td>
+                {# Exibe um badge com cor de acordo com o status #}
+                {% set status = proposta.status %}
+                {% if status == 'Aprovada' %}
+                  <span class="badge rounded-pill" style="background: rgba(0, 152, 70, 0.3); color: #00ff7f; font-weight: bold;">Aprovada</span>
+                {% elif status == 'Pendente' %}
+                  <span class="badge rounded-pill" style="background: rgba(255, 193, 7, 0.3); color: #ffd700; font-weight: bold;">Pendente</span>
+                {% elif status == 'Rejeitada' %}
+                  <span class="badge rounded-pill" style="background: rgba(230, 66, 56, 0.3); color: #ff6b6b; font-weight: bold;">Rejeitada</span>
+                {% elif status == 'Expirada' %}
+                  <span class="badge rounded-pill" style="background: rgba(149, 149, 149, 0.3); color: #cccccc; font-weight: bold;">Expirada</span>
+                {% else %}
+                  <span class="badge rounded-pill bg-secondary">{{ status }}</span>
+                {% endif %}
+              </td>
+              <td>{{ proposta.data_validade.strftime('%d/%m/%Y') if proposta.data_validade else '' }}</td>
+              <td>
+                <a href="{{ url_for('proposta.visualizar_proposta', proposta_id=proposta.id) }}" title="Visualizar" class="btn-acao text-info" aria-label="Visualizar"><i class="fas fa-eye"></i></a>
+                <a href="{{ url_for('proposta.editar_proposta', proposta_id=proposta.id) }}" title="Editar" class="btn-acao text-warning" aria-label="Editar"><i class="fas fa-edit"></i></a>
+                <form action="{{ url_for('proposta.excluir_proposta', proposta_id=proposta.id) }}" method="post" class="delete-form d-inline" data-numero="{{ proposta.numero }}">
+                  <button type="submit" title="Excluir" class="btn-acao text-danger" aria-label="Excluir"><i class="fas fa-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  // Confirmação de exclusão
+  document.querySelectorAll('form.delete-form').forEach(function(f){
+    f.addEventListener('submit', function(e){
+      var num = f.dataset.numero || 'esta proposta';
+      if (!confirm('Confirma exclusão da proposta: ' + num + '?')) {
+        e.preventDefault();
+      }
+    });
+  });
+  // Filtro de busca em tempo real
+  const input = document.getElementById('buscar_propostas');
+  if(input){
+    input.addEventListener('input', function(){
+      const val = this.value.toLowerCase();
+      document.querySelectorAll('table.table-erp tbody tr').forEach(function(row){
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(val) ? '' : 'none';
+      });
+    });
+  }
+});
+</script>
+{% endblock %}

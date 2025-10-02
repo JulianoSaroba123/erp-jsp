@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container my-4 relatorio-os">
+    <div class="d-print-none mb-3">
+        <a href="{{ url_for('os.listar_os') }}" class="btn btn-secondary">Voltar</a>
+        <a href="{{ url_for('os.gerar_pdf', os_id=os.id) }}" class="btn btn-success" target="_blank">Gerar PDF</a>
+    </div>
+    <div class="row align-items-center mb-3">
+        <div class="col-2 text-center">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Logo JSP" style="max-width:90px;max-height:90px;">
+        </div>
+        <div class="col-10">
+            <h3 class="mb-0">ORDEM DE SERVIÇO Nº {{ os.codigo }}</h3>
+            <div class="text-muted small">JSP ELÉTRICA INDUSTRIAL &amp; SOLAR<br>CNPJ: 41.280.764/0001-65<br>Rua Indalécio Costa, 890 - Barra Funda - Tietê/SP - CEP: 18532-122<br>Fone: (15)99670-2036 / (15)99802-5861</div>
+        </div>
+    </div>
+    <hr>
+    <h5 class="mt-3">Dados do Cliente</h5>
+    <table class="table table-bordered table-sm mb-4">
+        <tbody>
+            <tr><th>Nome</th><td>{{ os.cliente.nome }}</td></tr>
+            <tr><th>CPF/CNPJ</th><td>{{ os.cliente.cpf_cnpj }}</td></tr>
+            <tr><th>Telefone</th><td>{{ os.cliente.telefone }}</td></tr>
+            <tr><th>E-mail</th><td>{{ os.cliente.email }}</td></tr>
+            <tr><th>Endereço</th><td>{{ os.cliente.endereco }}</td></tr>
+        </tbody>
+    </table>
+    {% if os.equipamento_nome or os.equipamento_marca or os.equipamento_modelo or os.equipamento_numero_serie or os.equipamento_acessorios %}
+    <h5>Equipamento</h5>
+    <table class="table table-bordered table-sm mb-4">
+        <tbody>
+            {% if os.equipamento_nome %}<tr><th>Nome</th><td>{{ os.equipamento_nome }}</td></tr>{% endif %}
+            {% if os.equipamento_marca %}<tr><th>Marca</th><td>{{ os.equipamento_marca }}</td></tr>{% endif %}
+            {% if os.equipamento_modelo %}<tr><th>Modelo</th><td>{{ os.equipamento_modelo }}</td></tr>{% endif %}
+            {% if os.equipamento_numero_serie %}<tr><th>Nº Série</th><td>{{ os.equipamento_numero_serie }}</td></tr>{% endif %}
+            {% if os.equipamento_acessorios %}<tr><th>Acessórios</th><td>{{ os.equipamento_acessorios }}</td></tr>{% endif %}
+        </tbody>
+    </table>
+    {% endif %}
+    {% if servicos_dados and servicos_dados|length > 0 %}
+    <h5>Serviços</h5>
+    <table class="table table-bordered table-sm mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>Serviço</th>
+                <th>Total Horas</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set total_horas = 0 %}
+            {% set total_valor_servicos = 0 %}
+            {% for s in servicos_dados %}
+            <tr>
+                <td>{{ s.nome }}</td>
+                <td>{{ '%.2f'|format(s.quantidade|float) }}h</td>
+                <td>R$ {{ '%.2f'|format(s.valor_total|float) }}</td>
+            </tr>
+            {% set total_horas = total_horas + (s.quantidade|float) %}
+            {% set total_valor_servicos = total_valor_servicos + (s.valor_total|float) %}
+            {% endfor %}
+            <tr class="fw-bold">
+                <td class="text-end">Total de Horas</td>
+                <td>{{ '%.2f'|format(total_horas) }}h</td>
+                <td>R$ {{ '%.2f'|format(total_valor_servicos) }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endif %}
+    {% if produtos_dados and produtos_dados|length > 0 %}
+    <h5>Produtos</h5>
+    <table class="table table-bordered table-sm mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>Produto</th>
+                <th>Quantidade</th>
+                <th>Valor Unitário</th>
+                <th>Valor Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in produtos_dados %}
+            <tr>
+                <td>{{ p.nome }}</td>
+                <td>{{ p.quantidade }}</td>
+                <td>R$ {{ '%.2f'|format(p.valor_unitario|float) }}</td>
+                <td>R$ {{ '%.2f'|format(p.valor_total|float) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    
+    <!-- Informações de Pagamento -->
+    <h5>Informações de Pagamento</h5>
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <p><strong>Condições:</strong> {{ os.condicoes_pagamento or 'À vista' }}</p>
+        </div>
+        <div class="col-md-6">
+            <p><strong>Forma de Pagamento:</strong> {{ os.forma_pagamento or 'A definir' }}</p>
+        </div>
+    </div>
+    
+    {% if parcelas and parcelas|length > 0 %}
+    <h5>Parcelas</h5>
+    <table class="table table-bordered table-sm mb-4">
+        <thead class="table-light">
+            <tr>
+                <th>Parcela</th>
+                <th>Valor</th>
+                <th>Vencimento</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in parcelas %}
+            <tr>
+                <td>{{ p.numero }}</td>
+                <td>R$ {{ '%.2f'|format(p.valor|float) }}</td>
+                <td>{{ p.data_vencimento }}</td>
+                <td>{{ p.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h5>Resumo Financeiro</h5>
+            <table class="table table-bordered table-sm">
+                <tbody>
+                    <tr><th>Total Serviços</th><td>R$ {{ total_servicos|default(0, true)|float|round(2) }}</td></tr>
+                    <tr><th>Total Produtos</th><td>R$ {{ total_produtos|default(0, true)|float|round(2) }}</td></tr>
+                    <tr><th class="fw-bold">Total Geral</th><td class="fw-bold">R$ {{ valor_total|default(0, true)|float|round(2) }}</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-6">
+            <h5>Dados para Transferência</h5>
+            <table class="table table-bordered table-sm">
+                <tbody>
+                    <tr><th>Banco</th><td>Bradesco</td></tr>
+                    <tr><th>Agência</th><td>0367-6</td></tr>
+                    <tr><th>Conta</th><td>0082598-4</td></tr>
+                    <tr><th>CNPJ</th><td>29.256.846/0001-59</td></tr>
+                    <tr><th>PIX</th><td>29.256.846/0001-59</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h5>Técnico Responsável</h5>
+            <div>{{ os.tecnico_responsavel or 'Juliano Saroba Pereira' }}</div>
+        </div>
+        <div class="col-md-6">
+            <h5>Problema Descrito</h5>
+            <div>{{ os.problema_descrito }}</div>
+        </div>
+    </div>
+    {% if os.descricao_servico_realizado %}
+    <div class="mb-4">
+        <h5>Descrição do Serviço Realizado</h5>
+        <div>{{ os.descricao_servico_realizado }}</div>
+    </div>
+    {% endif %}
+    <div class="row mt-5">
+        <div class="col-md-6 text-center">
+            <div style="border-top:1px solid #333; margin-top:40px; padding-top:5px;">Assinatura do Cliente</div>
+        </div>
+        <div class="col-md-6 text-center">
+            <div style="border-top:1px solid #333; margin-top:40px; padding-top:5px;">Assinatura do Responsável</div>
+        </div>
+    </div>
+</div>
+<style>
+@media print {
+    .d-print-none { display: none !important; }
+    .relatorio-os { background: #fff !important; }
+    .table { font-size: 11px; }
+    h3, h5 { color: #222 !important; }
+}
+.table th, .table td { vertical-align: middle !important; }
+</style>
+{% endblock %}

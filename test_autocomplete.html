@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Autocomplete</title>
+    <style>
+        .dropdown-menu {
+            border: 1px solid #ccc;
+            background: white;
+            position: absolute;
+            z-index: 1000;
+        }
+        .dropdown-item {
+            display: block;
+            padding: 5px 10px;
+            text-decoration: none;
+            color: black;
+        }
+        .dropdown-item:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Teste de Autocomplete</h1>
+    
+    <div style="position: relative; width: 300px;">
+        <input id="cliente_input" placeholder="Digite para buscar..." style="width: 100%; padding: 5px;">
+        <div id="cliente_dropdown" class="dropdown-menu" style="display: none; width: 100%;"></div>
+    </div>
+    
+    <script>
+        const input = document.getElementById('cliente_input');
+        const dropdown = document.getElementById('cliente_dropdown');
+        
+        console.log('Elementos:', {input, dropdown});
+        
+        input.addEventListener('input', function() {
+            const query = this.value.trim();
+            console.log('Digitando:', query);
+            
+            if (query.length < 2) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            
+            fetch('http://127.0.0.1:5000/clientes/api/busca?q=' + encodeURIComponent(query))
+                .then(response => response.json())
+                .then(clientes => {
+                    console.log('Clientes:', clientes);
+                    
+                    dropdown.innerHTML = '';
+                    
+                    if (!clientes || clientes.length === 0) {
+                        dropdown.style.display = 'none';
+                        return;
+                    }
+                    
+                    clientes.forEach(cliente => {
+                        const item = document.createElement('a');
+                        item.href = '#';
+                        item.className = 'dropdown-item';
+                        item.textContent = cliente.nome + ' (' + (cliente.cpf_cnpj || 'Sem CPF/CNPJ') + ')';
+                        
+                        item.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            input.value = item.textContent;
+                            dropdown.style.display = 'none';
+                        });
+                        
+                        dropdown.appendChild(item);
+                    });
+                    
+                    dropdown.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    dropdown.style.display = 'none';
+                });
+        });
+    </script>
+</body>
+</html>

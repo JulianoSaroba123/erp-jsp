@@ -1,0 +1,19 @@
+{% extends 'autenticacao/base.html' %}
+{% block content %}
+<div class="container mt-3" style="max-width:600px;">
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <h4>Parâmetros Financeiros</h4>
+    <a href="{{ url_for('financeiro.dashboard_fin') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Voltar</a>
+  </div>
+  <form method="post" class="row g-2">
+    {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"> #}
+    <div class="col-md-6"><label class="form-label">Custos Fixos Mensais</label><input name="custos_fixos_mensais" type="number" step="0.01" class="form-control" value="{{ p.custos_fixos_mensais }}"></div>
+    <div class="col-md-6"><label class="form-label">Horas Produtivas/Mês</label><input name="horas_produtivas_mes" type="number" step="0.01" class="form-control" value="{{ p.horas_produtivas_mes }}"></div>
+    <div class="col-md-6"><label class="form-label">Custo Variável (%)</label><input name="custo_variavel_pct" type="number" step="0.01" class="form-control" value="{{ p.custo_variavel_pct }}"></div>
+    <div class="col-md-6"><label class="form-label">Margem Desejada (%)</label><input name="margem_desejada_pct" type="number" step="0.01" class="form-control" value="{{ p.margem_desejada_pct }}"></div>
+    <div class="col-12 text-end mt-2">
+      <button class="btn btn-success">Salvar</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

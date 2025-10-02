@@ -1,0 +1,344 @@
+{% extends "autenticacao/base.html" %}
+
+{% block title %}Buscar Empresas{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-info mb-0">
+                    <i class="fas fa-search me-2"></i>Buscar Empresas
+                </h2>
+                <div>
+                    <a href="{{ url_for('busca_empresas.index') }}" class="btn btn-outline-info">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar
+                    </a>
+                    <a href="{{ url_for('busca_empresas.historico') }}" class="btn btn-outline-info">
+                        <i class="fas fa-history me-2"></i>Histórico
+                    </a>
+                </div>
+            </div>
+
+            <!-- Mensagens Flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="row mb-3">
+                    <div class="col-12">
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else ('warning' if category == 'warning' else 'info') }} alert-dismissible fade show bg-dark border-{{ 'danger' if category == 'error' else ('warning' if category == 'warning' else 'info') }}" role="alert">
+                            <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else ('exclamation-circle' if category == 'warning' else 'info-circle') }} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+            {% endwith %}
+
+            <div class="row">
+                <!-- Formulário de busca -->
+                <div class="col-md-8">
+                    <div class="card bg-dark border-info">
+                        <div class="card-header bg-dark border-info">
+                            <h5 class="text-info mb-0">
+                                <i class="fas fa-search me-2"></i>Critérios de Busca
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form action="{{ url_for('busca_empresas.buscar') }}" method="POST" id="formBusca">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="cidade" class="form-label text-light">
+                                            <i class="fas fa-map-marker-alt me-1"></i>Cidade *
+                                        </label>
+                                        <input type="text" 
+                                               class="form-control bg-dark text-light border-info" 
+                                               id="cidade" 
+                                               name="cidade" 
+                                               value="{{ request.form.get('cidade', '') }}"
+                                               placeholder="Ex: Tietê, São Paulo, Rio de Janeiro"
+                                               required>
+                                        <div class="form-text text-muted">Digite o nome da cidade onde deseja buscar empresas</div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="tipo_atividade" class="form-label text-light">
+                                            <i class="fas fa-industry me-1"></i>Tipo de Atividade *
+                                        </label>
+                                        <select class="form-select bg-dark text-light border-info" 
+                                                id="tipo_atividade" 
+                                                name="tipo_atividade" 
+                                                required>
+                                            <option value="">Selecione o tipo de empresa...</option>
+                                            <optgroup label="Alimentação">
+                                                <option value="restaurante" {{ 'selected' if request.form.get('tipo_atividade') == 'restaurante' }}>Restaurante</option>
+                                                <option value="lanchonete" {{ 'selected' if request.form.get('tipo_atividade') == 'lanchonete' }}>Lanchonete</option>
+                                                <option value="padaria" {{ 'selected' if request.form.get('tipo_atividade') == 'padaria' }}>Padaria</option>
+                                                <option value="pizzaria" {{ 'selected' if request.form.get('tipo_atividade') == 'pizzaria' }}>Pizzaria</option>
+                                                <option value="sorveteria" {{ 'selected' if request.form.get('tipo_atividade') == 'sorveteria' }}>Sorveteria</option>
+                                            </optgroup>
+                                            <optgroup label="Saúde">
+                                                <option value="farmacia" {{ 'selected' if request.form.get('tipo_atividade') == 'farmacia' }}>Farmácia</option>
+                                                <option value="drogaria" {{ 'selected' if request.form.get('tipo_atividade') == 'drogaria' }}>Drogaria</option>
+                                                <option value="consultorio" {{ 'selected' if request.form.get('tipo_atividade') == 'consultorio' }}>Consultório</option>
+                                                <option value="clinica" {{ 'selected' if request.form.get('tipo_atividade') == 'clinica' }}>Clínica</option>
+                                                <option value="laboratorio" {{ 'selected' if request.form.get('tipo_atividade') == 'laboratorio' }}>Laboratório</option>
+                                            </optgroup>
+                                            <optgroup label="Comércio">
+                                                <option value="mercado" {{ 'selected' if request.form.get('tipo_atividade') == 'mercado' }}>Mercado</option>
+                                                <option value="supermercado" {{ 'selected' if request.form.get('tipo_atividade') == 'supermercado' }}>Supermercado</option>
+                                                <option value="loja" {{ 'selected' if request.form.get('tipo_atividade') == 'loja' }}>Loja</option>
+                                                <option value="pet_shop" {{ 'selected' if request.form.get('tipo_atividade') == 'pet_shop' }}>Pet Shop</option>
+                                                <option value="papelaria" {{ 'selected' if request.form.get('tipo_atividade') == 'papelaria' }}>Papelaria</option>
+                                            </optgroup>
+                                            <optgroup label="Serviços">
+                                                <option value="posto" {{ 'selected' if request.form.get('tipo_atividade') == 'posto' }}>Posto de Combustível</option>
+                                                <option value="autoescola" {{ 'selected' if request.form.get('tipo_atividade') == 'autoescola' }}>Autoescola</option>
+                                                <option value="salao" {{ 'selected' if request.form.get('tipo_atividade') == 'salao' }}>Salão de Beleza</option>
+                                                <option value="academia" {{ 'selected' if request.form.get('tipo_atividade') == 'academia' }}>Academia</option>
+                                                <option value="hotel" {{ 'selected' if request.form.get('tipo_atividade') == 'hotel' }}>Hotel</option>
+                                                <option value="industria" {{ 'selected' if request.form.get('tipo_atividade') == 'industria' }}>Indústria</option>
+                                                <option value="oficina" {{ 'selected' if request.form.get('tipo_atividade') == 'oficina' }}>Oficina</option>
+                                            </optgroup>
+                                        </select>
+                                        <div class="form-text text-muted">Selecione o segmento da empresa que deseja encontrar</div>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                            <button type="reset" class="btn btn-outline-secondary me-md-2">
+                                                <i class="fas fa-eraser me-2"></i>Limpar
+                                            </button>
+                                            <button type="submit" class="btn btn-info" id="btnBuscar">
+                                                <i class="fas fa-search me-2"></i>Buscar Empresas
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info" id="btnExportJson" title="Exportar resultado em JSON">
+                                                <i class="fas fa-file-export me-2"></i>Exportar JSON
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informações e dicas -->
+                <div class="col-md-4">
+                    <div class="card bg-dark border-info">
+                        <div class="card-header bg-dark border-info">
+                            <h5 class="text-info mb-0">
+                                <i class="fas fa-info-circle me-2"></i>Como Funciona
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-unstyled text-light">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-info me-2"></i>
+                                    Digite o nome da cidade onde quer buscar
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-info me-2"></i>
+                                    Selecione o tipo de empresa desejado
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-info me-2"></i>
+                                    Aguarde a busca ser processada
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-info me-2"></i>
+                                    Visualize os resultados encontrados
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-info me-2"></i>
+                                    Salve empresas interessantes
+                                </li>
+                            </ul>
+
+                            <div class="alert alert-info border-0 bg-dark" role="alert">
+                                <i class="fas fa-lightbulb me-2"></i>
+                                <strong>Dica:</strong> Para melhores resultados, seja específico no tipo de atividade.
+                                O sistema busca em múltiplas fontes online.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estatísticas rápidas -->
+                    <div class="card bg-dark border-info mt-3">
+                        <div class="card-header bg-dark border-info">
+                            <h6 class="text-info mb-0">
+                                <i class="fas fa-chart-bar me-2"></i>Estatísticas
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <div class="text-info h5">{{ total_empresas_hoje or 0 }}</div>
+                                    <small class="text-muted">Buscas hoje</small>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-info h5">{{ total_empresas_total or 0 }}</div>
+                                    <small class="text-muted">Total encontradas</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formBusca');
+    const btnBuscar = document.getElementById('btnBuscar');
+    const btnExportJson = document.getElementById('btnExportJson');
+    
+    // Validação em tempo real
+    form.addEventListener('submit', function(e) {
+        const cidade = document.getElementById('cidade').value.trim();
+        const tipo = document.getElementById('tipo_atividade').value;
+        
+        if (!cidade || !tipo) {
+            e.preventDefault();
+            alert('Por favor, preencha todos os campos obrigatórios.');
+            return;
+        }
+        
+        // Mostrar loading
+        btnBuscar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Buscando...';
+        btnBuscar.disabled = true;
+    });
+    
+    // Melhorar experiência do usuário
+    const cidadeInput = document.getElementById('cidade');
+    cidadeInput.addEventListener('input', function() {
+        // Capitalizar primeira letra
+        this.value = this.value.charAt(0).toUpperCase() + this.value.slice(1);
+    });
+
+    // Exportar JSON: faz POST para /buscar-empresas/json e força download do arquivo
+    if (btnExportJson) {
+        btnExportJson.addEventListener('click', function() {
+            const cidade = document.getElementById('cidade').value.trim();
+            const tipo = document.getElementById('tipo_atividade').value;
+
+            if (!cidade || !tipo) {
+                alert('Por favor, preencha todos os campos obrigatórios antes de exportar.');
+                return;
+            }
+
+            btnExportJson.disabled = true;
+            btnExportJson.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Exportando...';
+
+            const formData = new FormData();
+            formData.append('cidade', cidade);
+            formData.append('tipo_atividade', tipo);
+
+            fetch('{{ url_for("busca_empresas.buscar_json") }}', {
+                method: 'POST',
+                body: formData
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Erro: ' + data.error);
+                    return;
+                }
+
+                const jsonStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const fileName = `empresas_${cidade.replace(/\s+/g,'_')}_${tipo}.json`;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            })
+            .catch(err => {
+                alert('Erro ao exportar JSON: ' + err);
+            })
+            .finally(() => {
+                btnExportJson.disabled = false;
+                btnExportJson.innerHTML = '<i class="fas fa-file-export me-2"></i>Exportar JSON';
+            });
+        });
+    }
+});
+</script>
+
+<style>
+/* Animações e efeitos visuais */
+.card {
+    transition: all 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0, 255, 255, 0.4);
+}
+
+.btn-info {
+    background: linear-gradient(45deg, #17a2b8, #20c997);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #17a2b8;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+    background-color: #1a1a1a !important;
+}
+
+.text-info {
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.alert-info {
+    border-left: 4px solid #17a2b8;
+}
+</style>
+
+<script>
+// Auto-fechar mensagens flash após 8 segundos
+document.addEventListener('DOMContentLoaded', function() {
+    const alerts = document.querySelectorAll('.alert-dismissible');
+    alerts.forEach(function(alert) {
+        // Fechar automaticamente após 8 segundos
+        setTimeout(function() {
+            if (alert.style.display !== 'none') {
+                const closeBtn = alert.querySelector('.btn-close');
+                if (closeBtn) {
+                    closeBtn.click();
+                }
+            }
+        }, 8000);
+        
+        // Se for mensagem sobre BrasilAPI (mensagem antiga), fechar imediatamente
+        const messageText = alert.textContent || '';
+        if (messageText.includes('BrasilAPI') || messageText.includes('CNPJ')) {
+            const closeBtn = alert.querySelector('.btn-close');
+            if (closeBtn) {
+                closeBtn.click();
+            }
+        }
+    });
+});
+</script>
+
+{% endblock %}

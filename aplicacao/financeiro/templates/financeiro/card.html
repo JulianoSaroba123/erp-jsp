@@ -1,0 +1,44 @@
+{% extends 'autenticacao/base.html' %}
+{% block content %}
+<div class="container mt-4">
+  <div class="row justify-content-center mb-4">
+    <div class="col-md-4">
+      <div class="card shadow stats-card-financeiro text-center p-4">
+        <i class="fas fa-wallet fa-3x mb-3 text-info"></i>
+        <h4 class="mb-1">Financeiro</h4>
+        <div class="mb-2 text-muted">Resumo rápido do módulo financeiro</div>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div>
+            <div class="fw-bold text-success">Receitas</div>
+            <div class="fs-5">R$ {{ receitas or '0,00' }}</div>
+          </div>
+          <div>
+            <div class="fw-bold text-danger">Despesas</div>
+            <div class="fs-5">R$ {{ despesas or '0,00' }}</div>
+          </div>
+          <div>
+            <div class="fw-bold text-primary">Saldo</div>
+            <div class="fs-5">R$ {{ saldo or '0,00' }}</div>
+          </div>
+        </div>
+        <a href="{{ url_for('financeiro.dashboard_fin') }}" class="btn btn-info mt-4 text-white">Acessar Financeiro</a>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.stats-card-financeiro {
+  background: linear-gradient(135deg, #3ec6ff 0%, #005bea 100%);
+  border: 2px solid #005bea;
+  border-radius: 12px;
+  color: #fff;
+}
+/* Ajuste para ícones e textos */
+.stats-card-financeiro .text-success,
+.stats-card-financeiro .text-danger,
+.stats-card-financeiro .text-primary {
+  color: #fff !important;
+  text-shadow: 0 1px 6px #005bea33;
+}
+</style>
+{% endblock %}
