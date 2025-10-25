@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Alterar Senha{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('auth.perfil') }}">Perfil</a></li>
+<li class="breadcrumb-item active">Alterar Senha</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-key"></i>
+                        Alterar Senha
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        Por segurança, você precisa informar sua senha atual para definir uma nova.
+                    </div>
+
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="senha_atual" class="form-label">Senha Atual *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="senha_atual" 
+                                       name="senha_atual" 
+                                       required
+                                       autocomplete="current-password">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('senha_atual')">
+                                    <i class="fas fa-eye" id="senha_atual_icon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="nova_senha" class="form-label">Nova Senha *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-key"></i>
+                                </span>
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="nova_senha" 
+                                       name="nova_senha" 
+                                       required
+                                       minlength="6"
+                                       autocomplete="new-password">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('nova_senha')">
+                                    <i class="fas fa-eye" id="nova_senha_icon"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                A senha deve ter pelo menos 6 caracteres.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmar_senha" class="form-label">Confirmar Nova Senha *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-check"></i>
+                                </span>
+                                <input type="password" 
+                                       class="form-control" 
+                                       id="confirmar_senha" 
+                                       name="confirmar_senha" 
+                                       required
+                                       minlength="6"
+                                       autocomplete="new-password">
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirmar_senha')">
+                                    <i class="fas fa-eye" id="confirmar_senha_icon"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('auth.perfil') }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-arrow-left"></i>
+                                Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                Alterar Senha
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-shield-alt"></i>
+                        Dicas de Segurança
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <ul class="mb-0">
+                            <li>Use uma senha forte com pelo menos 8 caracteres</li>
+                            <li>Combine letras maiúsculas, minúsculas, números e símbolos</li>
+                            <li>Não use informações pessoais óbvias</li>
+                            <li>Não compartilhe sua senha com outras pessoas</li>
+                        </ul>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    const icon = document.getElementById(fieldId + '_icon');
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        field.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+// Validação de confirmação de senha
+document.getElementById('confirmar_senha').addEventListener('input', function() {
+    const novaSenha = document.getElementById('nova_senha').value;
+    const confirmarSenha = this.value;
+    
+    if (novaSenha !== confirmarSenha) {
+        this.setCustomValidity('As senhas não coincidem');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}

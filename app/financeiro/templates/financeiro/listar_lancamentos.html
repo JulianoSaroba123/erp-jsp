@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Lançamentos Financeiros{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1 text-neon">
+                        <i class="fas fa-list me-2"></i>
+                        Lançamentos Financeiros
+                    </h1>
+                    <p class="text-muted">Controle de receitas, despesas e contas</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('financeiro.novo_lancamento') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        Novo Lançamento
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label">Tipo</label>
+                            <select name="tipo" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="receita" {% if filtros.tipo == 'receita' %}selected{% endif %}>Receita</option>
+                                <option value="despesa" {% if filtros.tipo == 'despesa' %}selected{% endif %}>Despesa</option>
+                                <option value="conta_receber" {% if filtros.tipo == 'conta_receber' %}selected{% endif %}>Conta a Receber</option>
+                                <option value="conta_pagar" {% if filtros.tipo == 'conta_pagar' %}selected{% endif %}>Conta a Pagar</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="pendente" {% if filtros.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                                <option value="pago" {% if filtros.status == 'pago' %}selected{% endif %}>Pago</option>
+                                <option value="recebido" {% if filtros.status == 'recebido' %}selected{% endif %}>Recebido</option>
+                                <option value="cancelado" {% if filtros.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                                <option value="vencido" {% if filtros.status == 'vencido' %}selected{% endif %}>Vencido</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Categoria</label>
+                            <select name="categoria" class="form-select">
+                                <option value="">Todas</option>
+                                {% for categoria in categorias %}
+                                <option value="{{ categoria }}" {% if filtros.categoria == categoria %}selected{% endif %}>
+                                    {{ categoria }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Data Início</label>
+                            <input type="date" name="data_inicio" class="form-control" value="{{ filtros.data_inicio or '' }}">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Data Fim</label>
+                            <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim or '' }}">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Filtrar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Lançamentos -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        Lançamentos
+                    </h5>
+                    <span class="badge bg-secondary">{{ lancamentos|length }} registro(s)</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if lancamentos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Descrição</th>
+                                    <th>Tipo</th>
+                                    <th>Categoria</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Vencimento</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lancamento in lancamentos %}
+                                <tr>
+                                    <td>{{ lancamento.data_lancamento.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <strong>{{ lancamento.descricao }}</strong>
+                                        {% if lancamento.observacoes %}
+                                        <br><small class="text-muted">{{ lancamento.observacoes[:50] }}{% if lancamento.observacoes|length > 50 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ lancamento.tipo_cor }}">
+                                            {{ lancamento.tipo_formatado }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if lancamento.categoria %}
+                                            {{ lancamento.categoria }}
+                                            {% if lancamento.subcategoria %}
+                                                <br><small class="text-muted">{{ lancamento.subcategoria }}</small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="{% if lancamento.tipo in ['receita', 'conta_receber'] %}text-success{% else %}text-danger{% endif %}">
+                                        <strong>{{ lancamento.valor_formatado }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ lancamento.status_cor }}">
+                                            {{ lancamento.status_formatado }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if lancamento.data_vencimento %}
+                                            {{ lancamento.data_vencimento.strftime('%d/%m/%Y') }}
+                                            {% if lancamento.situacao_vencimento == 'vencido' %}
+                                                <br><small class="text-danger">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                    {{ lancamento.dias_vencimento|abs }} dia(s) atrasado
+                                                </small>
+                                            {% elif lancamento.situacao_vencimento == 'vence_hoje' %}
+                                                <br><small class="text-warning">
+                                                    <i class="fas fa-clock"></i>
+                                                    Vence hoje
+                                                </small>
+                                            {% elif lancamento.situacao_vencimento == 'vence_semana' %}
+                                                <br><small class="text-info">
+                                                    Em {{ lancamento.dias_vencimento }} dia(s)
+                                                </small>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('financeiro.editar_lancamento', id=lancamento.id) }}" 
+                                               class="btn btn-outline-primary" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            
+                                            {% if lancamento.status == 'pendente' %}
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="marcarComoPago({{ lancamento.id }})" title="Marcar como Pago">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            {% endif %}
+                                            
+                                            <a href="{{ url_for('financeiro.excluir_lancamento', id=lancamento.id) }}" 
+                                               class="btn btn-outline-danger" title="Excluir">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhum lançamento encontrado</h5>
+                        <p class="text-muted">Crie seu primeiro lançamento financeiro</p>
+                        <a href="{{ url_for('financeiro.novo_lancamento') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>
+                            Novo Lançamento
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Marcar como Pago -->
+<div class="modal fade" id="modalPagamento" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Marcar como Pago</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formPagamento" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Data do Pagamento</label>
+                        <input type="date" name="data_pagamento" class="form-control" 
+                               value="{{ date.today().strftime('%Y-%m-%d') }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar Pagamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function marcarComoPago(id) {
+    document.getElementById('formPagamento').action = `/financeiro/lancamentos/${id}/pagar`;
+    new bootstrap.Modal(document.getElementById('modalPagamento')).show();
+}
+</script>
+
+<style>
+.text-neon {
+    color: #00d4ff !important;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.table-dark {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+}
+</style>
+{% endblock %}

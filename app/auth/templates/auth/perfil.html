@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Perfil do Usuário{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Perfil</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-user"></i>
+                        Informações do Perfil
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nome Completo</label>
+                            <div class="form-control-plaintext">{{ usuario.nome }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <div class="form-control-plaintext">{{ usuario.email }}</div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Usuário</label>
+                            <div class="form-control-plaintext">{{ usuario.usuario }}</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de Usuário</label>
+                            <div class="form-control-plaintext">
+                                <span class="badge bg-primary">{{ usuario.tipo_usuario_formatado }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if usuario.telefone or usuario.cargo %}
+                    <div class="row mb-3">
+                        {% if usuario.telefone %}
+                        <div class="col-md-6">
+                            <label class="form-label">Telefone</label>
+                            <div class="form-control-plaintext">{{ usuario.telefone }}</div>
+                        </div>
+                        {% endif %}
+                        {% if usuario.cargo %}
+                        <div class="col-md-6">
+                            <label class="form-label">Cargo</label>
+                            <div class="form-control-plaintext">{{ usuario.cargo }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Último Login</label>
+                            <div class="form-control-plaintext">
+                                {% if usuario.ultimo_login %}
+                                    {{ usuario.ultimo_login.strftime('%d/%m/%Y às %H:%M') }}
+                                {% else %}
+                                    Primeiro acesso
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Status da Conta</label>
+                            <div class="form-control-plaintext">
+                                <span class="badge bg-{{ usuario.status_cor }}">
+                                    {{ usuario.status_conta.replace('_', ' ').title() }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cog"></i>
+                        Ações
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('auth.alterar_senha') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-key me-2"></i>Alterar Senha
+                        </a>
+                        
+                        {% if usuario.primeiro_login %}
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Primeiro Login:</strong> Recomendamos alterar sua senha padrão.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-shield-alt"></i>
+                        Segurança
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Sua conta está protegida por autenticação segura. 
+                        {% if usuario.tentativas_login > 0 %}
+                            <br><strong>Atenção:</strong> {{ usuario.tentativas_login }} tentativa(s) de login falhada(s) recente(s).
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

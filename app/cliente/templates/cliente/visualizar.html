@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}{{ cliente.nome }} - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('cliente.listar') }}">Clientes</a></li>
+        <li class="breadcrumb-item active">{{ cliente.nome }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-user me-2"></i>
+                    {{ cliente.nome_display }}
+                    <span class="badge bg-{{ 'info' if cliente.tipo == 'PF' else 'warning' }} ms-2">
+                        {{ cliente.tipo }}
+                    </span>
+                </h4>
+                <div class="btn-group">
+                    <a href="{{ url_for('cliente.editar', id=cliente.id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar
+                    </a>
+                    <button type="button" 
+                            class="btn btn-danger"
+                            onclick="confirmarExclusao('{{ cliente.nome }}', '{{ url_for('cliente.excluir', id=cliente.id) }}')">
+                        <i class="fas fa-trash me-2"></i>
+                        Excluir
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- Dados Principais -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-id-card me-2"></i>
+                            Dados Principais
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Nome Completo</label>
+                            <div class="fw-bold">{{ cliente.nome_display }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Tipo</label>
+                            <div>
+                                <span class="badge bg-{{ 'info' if cliente.tipo == 'PF' else 'warning' }}">
+                                    {{ 'Pessoa Física' if cliente.tipo == 'PF' else 'Pessoa Jurídica' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Documentos -->
+                {% if cliente.cpf_cnpj or cliente.rg_ie %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-file-alt me-2"></i>
+                            Documentos
+                        </h6>
+                    </div>
+                    
+                    {% if cliente.cpf_cnpj %}
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                {{ 'CPF' if cliente.tipo == 'PF' else 'CNPJ' }}
+                            </label>
+                            <div class="fw-bold">
+                                <code>{{ cliente.documento_formatado }}</code>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if cliente.rg_ie %}
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">
+                                {{ 'RG' if cliente.tipo == 'PF' else 'Inscrição Estadual' }}
+                            </label>
+                            <div class="fw-bold">{{ cliente.rg_ie }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Contato -->
+                {% if cliente.email or cliente.telefone or cliente.celular %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-phone me-2"></i>
+                            Contato
+                        </h6>
+                    </div>
+                    
+                    {% if cliente.email %}
+                    <div class="col-md-12 mb-3">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Email</label>
+                            <div>
+                                <a href="mailto:{{ cliente.email }}" class="text-primary fw-bold">
+                                    <i class="fas fa-envelope me-2"></i>
+                                    {{ cliente.email }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if cliente.telefone %}
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Telefone</label>
+                            <div>
+                                <a href="tel:{{ cliente.telefone }}" class="text-success fw-bold">
+                                    <i class="fas fa-phone me-2"></i>
+                                    {{ cliente.telefone }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if cliente.celular %}
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Celular</label>
+                            <div>
+                                <a href="tel:{{ cliente.celular }}" class="text-success fw-bold">
+                                    <i class="fas fa-mobile-alt me-2"></i>
+                                    {{ cliente.celular }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Endereço -->
+                {% if cliente.endereco_completo %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            Endereço
+                        </h6>
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Endereço Completo</label>
+                            <div class="fw-bold">
+                                <i class="fas fa-map-pin me-2 text-danger"></i>
+                                {{ cliente.endereco_completo }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Observações -->
+                {% if cliente.observacoes %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-sticky-note me-2"></i>
+                            Observações
+                        </h6>
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <div style="white-space: pre-wrap;">{{ cliente.observacoes }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Informações do Sistema -->
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted border-bottom pb-2 mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Informações do Sistema
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Cadastrado em</label>
+                            <div class="small">
+                                <i class="fas fa-calendar me-2"></i>
+                                {{ cliente.criado_em.strftime('%d/%m/%Y às %H:%M') }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Última atualização</label>
+                            <div class="small">
+                                <i class="fas fa-clock me-2"></i>
+                                {{ cliente.atualizado_em.strftime('%d/%m/%Y às %H:%M') }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('cliente.listar') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Voltar para Lista
+                    </a>
+                    
+                    <div class="btn-group">
+                        <a href="{{ url_for('cliente.editar', id=cliente.id) }}" class="btn btn-warning">
+                            <i class="fas fa-edit me-2"></i>
+                            Editar Cliente
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar com Ações -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>
+                    Ações Rápidas
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('cliente.editar', id=cliente.id) }}" class="btn btn-outline-warning">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar Dados
+                    </a>
+                    
+                    <button type="button" 
+                            class="btn btn-outline-danger"
+                            onclick="confirmarExclusao('{{ cliente.nome }}', '{{ url_for('cliente.excluir', id=cliente.id) }}')">
+                        <i class="fas fa-trash me-2"></i>
+                        Excluir Cliente
+                    </button>
+                    
+                    <hr>
+                    
+                    <!-- Futuras funcionalidades -->
+                    <button class="btn btn-outline-info" disabled>
+                        <i class="fas fa-file-invoice me-2"></i>
+                        Histórico de Vendas
+                        <span class="badge bg-secondary ms-2">Em breve</span>
+                    </button>
+                    
+                    <button class="btn btn-outline-success" disabled>
+                        <i class="fas fa-tools me-2"></i>
+                        Ordens de Serviço
+                        <span class="badge bg-secondary ms-2">Em breve</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estatísticas (futuro) -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Estatísticas
+                </h6>
+            </div>
+            <div class="card-body text-center">
+                <div class="text-muted">
+                    <i class="fas fa-chart-pie fa-2x mb-3"></i>
+                    <p>Estatísticas de vendas e serviços serão exibidas aqui em breve.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,539 @@
+{% extends "base.html" %}
+
+{% block title %}Resultado da Precificação - ERP JSP{% endblock %}
+
+{% block content %}
+<style>
+    /* Tema Futurista Escuro para Resultado */
+    body {
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+        color: #ffffff;
+        min-height: 100vh;
+    }
+    
+    .result-container {
+        background: rgba(0, 0, 0, 0.8);
+        border: 1px solid #00ffff;
+        border-radius: 15px;
+        box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+        backdrop-filter: blur(10px);
+        padding: 30px;
+        margin: 20px 0;
+    }
+    
+    .cyber-card {
+        background: linear-gradient(145deg, rgba(0, 20, 40, 0.9), rgba(0, 10, 30, 0.9));
+        border: 1px solid #00ffff;
+        border-radius: 10px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 5px 15px rgba(0, 255, 255, 0.2);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .cyber-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #00ffff, transparent);
+        animation: shimmer 3s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+    
+    .cyber-card:hover {
+        box-shadow: 0 8px 25px rgba(0, 255, 255, 0.4);
+        border-color: #00ccff;
+        transform: translateY(-5px);
+    }
+    
+    .valor-card {
+        text-align: center;
+        padding: 30px 20px;
+        background: linear-gradient(145deg, rgba(0, 40, 80, 0.9), rgba(0, 20, 60, 0.9));
+    }
+    
+    .valor-icon {
+        font-size: 3rem;
+        color: #00ffff;
+        margin-bottom: 15px;
+        text-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
+    }
+    
+    .valor-titulo {
+        color: #b3e5fc;
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .valor-preco {
+        color: #00ffff;
+        font-size: 2.5rem;
+        font-weight: bold;
+        text-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+        margin-bottom: 10px;
+    }
+    
+    .valor-descricao {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+        font-style: italic;
+    }
+    
+    .cyber-title {
+        color: #00ffff;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 20px;
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        display: flex;
+        align-items: center;
+    }
+    
+    .cyber-title i {
+        margin-right: 15px;
+        font-size: 1.8rem;
+    }
+    
+    .stats-row {
+        background: rgba(0, 40, 80, 0.3);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-left: 4px solid #00ffff;
+    }
+    
+    .stats-label {
+        color: #b3e5fc;
+        font-weight: 500;
+        margin-bottom: 5px;
+    }
+    
+    .stats-value {
+        color: #ffffff;
+        font-size: 1.1rem;
+        font-weight: bold;
+    }
+    
+    .btn-cyber {
+        background: linear-gradient(45deg, #00ffff, #0099cc);
+        border: none;
+        border-radius: 8px;
+        color: #000;
+        font-weight: bold;
+        padding: 15px 30px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(0, 255, 255, 0.3);
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-cyber:hover {
+        background: linear-gradient(45deg, #00ccff, #0077aa);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 255, 255, 0.5);
+        color: #000;
+        text-decoration: none;
+    }
+    
+    .cyber-divider {
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #00ffff, transparent);
+        margin: 30px 0;
+    }
+    
+    .chart-container {
+        background: rgba(0, 20, 40, 0.8);
+        border-radius: 10px;
+        padding: 20px;
+        border: 1px solid rgba(0, 255, 255, 0.3);
+    }
+    
+    .alert-cyber {
+        background: rgba(0, 255, 255, 0.1);
+        border: 1px solid rgba(0, 255, 255, 0.3);
+        border-radius: 8px;
+        color: #b3e5fc;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .info-badge {
+        background: rgba(0, 255, 255, 0.2);
+        color: #00ffff;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Cabeçalho Principal -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="result-container text-center">
+                <h1 class="cyber-title justify-content-center">
+                    <i class="fas fa-chart-line"></i>
+                    Resultado da Precificação: {{ resultado.nome_simulacao }}
+                </h1>
+                <div class="info-badge">
+                    <i class="fas fa-calendar me-2"></i>{{ resultado.data_criacao_formatada }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards dos Valores Principais -->
+    <div class="row mb-4">
+        <!-- Valor Hora Ideal -->
+        <div class="col-lg-4">
+            <div class="cyber-card valor-card">
+                <div class="valor-icon">💰</div>
+                <div class="valor-titulo">Valor Hora Ideal</div>
+                <div class="valor-preco">{{ resultado.valor_hora_ideal_formatado }}</div>
+                <div class="valor-descricao">
+                    Para cobrir todos os custos<br>
+                    com margem de {{ resultado.margem_lucro_percentual }}%
+                </div>
+            </div>
+        </div>
+        
+        <!-- Valor Dia Ideal -->
+        <div class="col-lg-4">
+            <div class="cyber-card valor-card">
+                <div class="valor-icon">🕐</div>
+                <div class="valor-titulo">Valor Dia Ideal</div>
+                <div class="valor-preco">{{ resultado.valor_dia_ideal_formatado }}</div>
+                <div class="valor-descricao">
+                    Baseado em 8 horas/dia<br>
+                    de trabalho produtivo
+                </div>
+            </div>
+        </div>
+        
+        <!-- Valor Empreita Sugerido -->
+        <div class="col-lg-4">
+            <div class="cyber-card valor-card">
+                <div class="valor-icon">💼</div>
+                <div class="valor-titulo">Valor Empreita</div>
+                <div class="valor-preco">{{ resultado.valor_empreita_formatado }}</div>
+                <div class="valor-descricao">
+                    Por projeto completo<br>
+                    (estimativa base)
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Alertas de Recomendação -->
+    {% if resultado.custo_total_mensal > 0 %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert-cyber">
+                <h5><i class="fas fa-lightbulb me-2"></i>Recomendações Inteligentes:</h5>
+                <ul class="mb-0">
+                    <li>Para garantir sustentabilidade, mantenha o valor/hora sempre acima de <strong>{{ resultado.valor_hora_ideal_formatado }}</strong></li>
+                    <li>Custos fixos representam <strong>{{ ((resultado.custo_fixo_total / resultado.custo_total_mensal) * 100)|round(1) }}%</strong> do total - monitore sempre</li>
+                    <li>Com {{ resultado.colaboradores_produtivos }} colaborador(es) produtivo(s), você precisa faturar <strong>{{ resultado.custo_total_mensal_formatado }}</strong>/mês para empatar</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="cyber-divider"></div>
+
+    <div class="row">
+        <!-- Detalhamento de Custos -->
+        <div class="col-lg-6">
+            <div class="cyber-card">
+                <h3 class="cyber-title">
+                    <i class="fas fa-calculator"></i>
+                    Detalhamento dos Custos
+                </h3>
+                
+                <div class="stats-row">
+                    <div class="stats-label">💸 Custos Fixos Mensais</div>
+                    <div class="stats-value">{{ resultado.custo_fixo_total_formatado }}</div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stats-label">📊 Custos Variáveis Mensais</div>
+                    <div class="stats-value">{{ resultado.custo_variavel_total_formatado }}</div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stats-label">👥 Custo com Mão de Obra</div>
+                    <div class="stats-value">{{ resultado.custo_mao_obra_total_formatado }}</div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stats-label">💼 Custo Total Mensal</div>
+                    <div class="stats-value text-info">{{ resultado.custo_total_mensal_formatado }}</div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stats-label">📈 Margem de Lucro Desejada</div>
+                    <div class="stats-value">{{ resultado.margem_lucro_percentual }}%</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dados Operacionais -->
+        <div class="col-lg-6">
+            <div class="cyber-card">
+                <h3 class="cyber-title">
+                    <i class="fas fa-users-cog"></i>
+                    Dados Operacionais
+                </h3>
+                
+                <div class="stats-row">
+                    <div class="stats-label">👨‍💼 Colaboradores Fixos</div>
+                    <div class="stats-value">{{ resultado.colaboradores_fixos_qtd }} (Salário médio: {{ resultado.salario_medio_fixo_formatado }})</div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stats-label">👷‍♂️ Colaboradores Diaristas</div>
+                    <div class="stats-value">{{ resultado.colaboradores_diaristas_qtd }} (Diária: {{ resultado.valor_diaria_formatado }})</div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stats-label">⏰ Horas Mensais por Colaborador</div>
+                    <div class="stats-value">{{ resultado.horas_mensais_colaborador }}h</div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stats-label">🔧 Colaboradores Produtivos</div>
+                    <div class="stats-value">{{ resultado.colaboradores_produtivos }}</div>
+                </div>
+                
+                <div class="stats-row">
+                    <div class="stats-label">📅 Dias Trabalhados/Mês (Diaristas)</div>
+                    <div class="stats-value">{{ resultado.dias_trabalhados_mes }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gráficos -->
+    <div class="row mt-4">
+        <div class="col-lg-6">
+            <div class="cyber-card">
+                <h3 class="cyber-title">
+                    <i class="fas fa-chart-pie"></i>
+                    Distribuição de Custos
+                </h3>
+                <div class="chart-container">
+                    <canvas id="custosChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="cyber-card">
+                <h3 class="cyber-title">
+                    <i class="fas fa-chart-bar"></i>
+                    Comparativo de Valores
+                </h3>
+                <div class="chart-container">
+                    <canvas id="valoresChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Observações -->
+    {% if resultado.observacoes %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="cyber-card">
+                <h3 class="cyber-title">
+                    <i class="fas fa-sticky-note"></i>
+                    Observações
+                </h3>
+                <div class="stats-row">
+                    <div class="stats-value">{{ resultado.observacoes }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="cyber-divider"></div>
+    
+    <!-- Botões de Ação -->
+    <div class="row">
+        <div class="col-12 text-center">
+            <div class="cyber-card">
+                <a href="{{ url_for('precificacao.calculadora') }}" class="btn btn-cyber me-3">
+                    <i class="fas fa-edit me-2"></i>
+                    Nova Simulação
+                </a>
+                
+                <a href="{{ url_for('precificacao.gerar_pdf', id=resultado.id) }}" class="btn btn-cyber me-3" target="_blank">
+                    <i class="fas fa-file-pdf me-2"></i>
+                    Gerar PDF
+                </a>
+                
+                <a href="{{ url_for('precificacao.historico') }}" class="btn btn-cyber">
+                    <i class="fas fa-history me-2"></i>
+                    Ver Histórico
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuração padrão dos gráficos
+    Chart.defaults.color = '#ffffff';
+    Chart.defaults.borderColor = 'rgba(0, 255, 255, 0.3)';
+    
+    // Gráfico de Pizza - Distribuição de Custos
+    const ctxCustos = document.getElementById('custosChart').getContext('2d');
+    const custosChart = new Chart(ctxCustos, {
+        type: 'doughnut',
+        data: {
+            labels: ['Custos Fixos', 'Custos Variáveis', 'Mão de Obra'],
+            datasets: [{
+                data: [
+                    {{ resultado.custo_fixo_total }},
+                    {{ resultado.custo_variavel_total }},
+                    {{ resultado.custo_mao_obra_total }}
+                ],
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(0, 255, 255, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(0, 255, 255, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#ffffff',
+                        padding: 20,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = 'R$ ' + context.parsed.toLocaleString('pt-BR', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                            const percentage = ((context.parsed / {{ resultado.custo_total_mensal }}) * 100).toFixed(1);
+                            return label + ': ' + value + ' (' + percentage + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Gráfico de Barras - Comparativo de Valores
+    const ctxValores = document.getElementById('valoresChart').getContext('2d');
+    const valoresChart = new Chart(ctxValores, {
+        type: 'bar',
+        data: {
+            labels: ['Valor/Hora', 'Valor/Dia', 'Custo/Hora'],
+            datasets: [{
+                label: 'Valores em R$',
+                data: [
+                    {{ resultado.valor_hora_ideal }},
+                    {{ resultado.valor_dia_ideal }},
+                    {{ (resultado.custo_total_mensal / (resultado.horas_mensais_colaborador * resultado.colaboradores_produtivos))|round(2) }}
+                ],
+                backgroundColor: [
+                    'rgba(0, 255, 255, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(255, 206, 86, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(0, 255, 255, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 206, 86, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: '#ffffff',
+                        callback: function(value) {
+                            return 'R$ ' + value.toLocaleString('pt-BR', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 255, 255, 0.2)'
+                    }
+                },
+                x: {
+                    ticks: {
+                        color: '#ffffff'
+                    },
+                    grid: {
+                        color: 'rgba(0, 255, 255, 0.2)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'R$ ' + context.parsed.y.toLocaleString('pt-BR', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+
+{% endblock %}

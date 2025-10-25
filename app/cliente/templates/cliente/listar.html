@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Clientes</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    Gerenciamento de Clientes
+                </h4>
+                <a href="{{ url_for('cliente.novo') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    Novo Cliente
+                </a>
+            </div>
+            
+            <div class="card-body">
+                <!-- Barra de Busca -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <form method="GET" class="d-flex">
+                            <input type="text" 
+                                   name="busca" 
+                                   class="form-control me-2" 
+                                   placeholder="Buscar por nome, CPF/CNPJ ou email..."
+                                   value="{{ busca }}"
+                                   autocomplete="off">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            {% if busca %}
+                            <a href="{{ url_for('cliente.listar') }}" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-times"></i>
+                            </a>
+                            {% endif %}
+                        </form>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <small class="text-muted">
+                            {% if busca %}
+                                {{ clientes|length }} cliente(s) encontrado(s) para "{{ busca }}"
+                            {% else %}
+                                {{ clientes|length }} cliente(s) cadastrado(s)
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Tabela de Clientes -->
+                {% if clientes %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Tipo</th>
+                                <th>CPF/CNPJ</th>
+                                <th>Email</th>
+                                <th>Telefone</th>
+                                <th>Cidade</th>
+                                <th width="180">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cliente in clientes %}
+                            <tr>
+                                <td>
+                                    <strong>{{ cliente.nome_display }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'info' if cliente.tipo == 'PF' else 'warning' }}">
+                                        {{ cliente.tipo }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <code>{{ cliente.documento_formatado or '-' }}</code>
+                                </td>
+                                <td>
+                                    {% if cliente.email %}
+                                        <a href="mailto:{{ cliente.email }}" class="text-primary">
+                                            {{ cliente.email }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if cliente.celular %}
+                                        <a href="tel:{{ cliente.celular }}" class="text-success">
+                                            {{ cliente.celular }}
+                                        </a>
+                                    {% elif cliente.telefone %}
+                                        <a href="tel:{{ cliente.telefone }}" class="text-success">
+                                            {{ cliente.telefone }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ cliente.cidade or '-' }}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ url_for('cliente.visualizar', id=cliente.id) }}" 
+                                           class="btn btn-outline-info" 
+                                           title="Visualizar">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('cliente.editar', id=cliente.id) }}" 
+                                           class="btn btn-outline-warning" 
+                                           title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('cliente.excluir', id=cliente.id) }}" 
+                                           class="btn btn-outline-danger" 
+                                           title="Excluir">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">
+                        {% if busca %}
+                            Nenhum cliente encontrado para "{{ busca }}"
+                        {% else %}
+                            Nenhum cliente cadastrado
+                        {% endif %}
+                    </h5>
+                    <p class="text-muted">
+                        {% if busca %}
+                            Tente uma busca diferente ou 
+                            <a href="{{ url_for('cliente.listar') }}">veja todos os clientes</a>
+                        {% else %}
+                            Comece criando seu primeiro cliente
+                        {% endif %}
+                    </p>
+                    {% if not busca %}
+                    <a href="{{ url_for('cliente.novo') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        Criar Primeiro Cliente
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Foco automático no campo de busca
+    document.addEventListener('DOMContentLoaded', function() {
+        const buscaInput = document.querySelector('input[name="busca"]');
+        if (buscaInput && !buscaInput.value) {
+            buscaInput.focus();
+        }
+    });
+</script>
+{% endblock %}

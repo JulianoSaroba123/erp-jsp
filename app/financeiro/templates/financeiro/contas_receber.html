@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Contas a Receber{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1 text-neon">
+                        <i class="fas fa-receipt me-2"></i>
+                        Contas a Receber
+                    </h1>
+                    <p class="text-muted">Gestão de recebimentos e faturamento</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('financeiro.novo_lancamento') }}?tipo=conta_receber" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>
+                        Nova Conta a Receber
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Pendente</h6>
+                            <h4 class="mb-0">
+                                R$ {{ "{:,.2f}".format(total_pendente).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-money-bill-wave fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <small class="opacity-75">{{ contas|length }} conta(s) cadastrada(s)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Contas Vencidas</h6>
+                            <h4 class="mb-0">{{ vencidas|length }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <small class="opacity-75">Requerem cobrança</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Próx. Vencimentos</h6>
+                            <h4 class="mb-0">
+                                {{ contas|selectattr('situacao_vencimento', 'equalto', 'vence_semana')|list|length }}
+                            </h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-calendar-week fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <small class="opacity-75">Próximos 7 dias</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Contas -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2"></i>
+                        Contas a Receber
+                    </h5>
+                    <div>
+                        <a href="{{ url_for('financeiro.listar_lancamentos') }}?tipo=conta_receber" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-filter me-1"></i>
+                            Ver Filtros
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if contas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th>Cliente</th>
+                                    <th>Valor</th>
+                                    <th>Vencimento</th>
+                                    <th>Status</th>
+                                    <th>Situação</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for conta in contas %}
+                                <tr class="{% if conta.situacao_vencimento == 'vencido' %}table-danger{% elif conta.situacao_vencimento == 'vence_hoje' %}table-warning{% endif %}">
+                                    <td>
+                                        <strong>{{ conta.descricao }}</strong>
+                                        {% if conta.numero_documento %}
+                                        <br><small class="text-muted">{{ conta.numero_documento }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if conta.cliente %}
+                                            {{ conta.cliente.nome }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-success">
+                                        <strong>{{ conta.valor_formatado }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if conta.data_vencimento %}
+                                            {{ conta.data_vencimento.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                            <span class="text-muted">Sem vencimento</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ conta.status_cor }}">
+                                            {{ conta.status_formatado }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if conta.situacao_vencimento == 'vencido' %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                {{ conta.dias_vencimento|abs }} dia(s) atrasado
+                                            </span>
+                                        {% elif conta.situacao_vencimento == 'vence_hoje' %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-clock"></i>
+                                                Vence hoje
+                                            </span>
+                                        {% elif conta.situacao_vencimento == 'vence_semana' %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-calendar"></i>
+                                                {{ conta.dias_vencimento }} dia(s)
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">
+                                                <i class="fas fa-check"></i>
+                                                Em dia
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('financeiro.editar_lancamento', id=conta.id) }}" 
+                                               class="btn btn-outline-primary" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            
+                                            {% if conta.status == 'pendente' %}
+                                            <button type="button" class="btn btn-outline-success" 
+                                                    onclick="marcarComoRecebido({{ conta.id }})" title="Marcar como Recebido">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Nenhuma conta a receber cadastrada</h5>
+                        <p class="text-muted">Cadastre suas primeiras contas a receber</p>
+                        <a href="{{ url_for('financeiro.novo_lancamento') }}?tipo=conta_receber" class="btn btn-success">
+                            <i class="fas fa-plus me-2"></i>
+                            Nova Conta a Receber
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Marcar como Recebido -->
+<div class="modal fade" id="modalRecebimento" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Marcar como Recebido</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formRecebimento" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Data do Recebimento</label>
+                        <input type="date" name="data_pagamento" class="form-control" 
+                               value="{{ date.today().strftime('%Y-%m-%d') }}" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar Recebimento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function marcarComoRecebido(id) {
+    document.getElementById('formRecebimento').action = `/financeiro/lancamentos/${id}/pagar`;
+    new bootstrap.Modal(document.getElementById('modalRecebimento')).show();
+}
+</script>
+
+<style>
+.text-neon {
+    color: #00d4ff !important;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.table-danger {
+    background-color: rgba(220, 53, 69, 0.1) !important;
+}
+
+.table-warning {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+.bg-success {
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+}
+
+.bg-warning {
+    background: linear-gradient(135deg, #ffc107, #ffeb3b) !important;
+}
+
+.bg-info {
+    background: linear-gradient(135deg, #17a2b8, #00d4ff) !important;
+}
+</style>
+{% endblock %}

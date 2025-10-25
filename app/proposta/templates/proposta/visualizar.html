@@ -1,0 +1,459 @@
+{% extends "base.html" %}
+
+{% block title %}Proposta {{ proposta.codigo }} - {{ proposta.titulo }} - ERP JSP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="h3 mb-0">
+                        <i class="fas fa-file-contract text-primary me-2"></i>
+                        Proposta {{ proposta.codigo }}
+                    </h2>
+                    <p class="text-muted mb-0">{{ proposta.titulo }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('proposta.listar_propostas') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar
+                    </a>
+                    <a href="{{ url_for('proposta.editar_proposta', id=proposta.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i>Editar
+                    </a>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-file-alt me-2"></i>Relatórios
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('proposta.gerar_pdf', id=proposta.id) }}" target="_blank">
+                                    <i class="fas fa-file-pdf me-2"></i>PDF Proposta
+                                </a>
+                            </li>
+                           
+                            
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Coluna Principal -->
+        <div class="col-lg-8">
+            
+            <!-- Informações Básicas -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle text-primary me-2"></i>
+                        Informações Básicas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <td class="fw-bold text-muted" style="width: 40%;">
+                                        <i class="fas fa-hashtag me-1"></i>Número:
+                                    </td>
+                                    <td><strong class="text-primary">{{ proposta.codigo }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-user me-1"></i>Cliente:
+                                    </td>
+                                    <td>{{ proposta.cliente.nome if proposta.cliente else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-user-tie me-1"></i>Vendedor:
+                                    </td>
+                                    <td>{{ proposta.vendedor or 'Não informado' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-flag me-1"></i>Status:
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ proposta.status_cor }}">
+                                            {{ proposta.status_formatado }}
+                                        </span>
+                                        {% if proposta.vencida %}
+                                            <span class="badge bg-danger ms-1">Vencida</span>
+                                        {% elif proposta.dias_para_vencimento and proposta.dias_para_vencimento <= 3 %}
+                                            <span class="badge bg-warning ms-1">Vencendo</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <td class="fw-bold text-muted" style="width: 40%;">
+                                        <i class="fas fa-exclamation-circle me-1"></i>Prioridade:
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ proposta.prioridade_cor }}">
+                                            {{ proposta.prioridade_formatada }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-calendar me-1"></i>Data Criação:
+                                    </td>
+                                    <td>{{ proposta.data_criacao.strftime('%d/%m/%Y %H:%M') if proposta.data_criacao else 'N/A' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-calendar-times me-1"></i>Validade:
+                                    </td>
+                                    <td>
+                                        {% if proposta.valida_ate %}
+                                            {{ proposta.valida_ate.strftime('%d/%m/%Y') }}
+                                            <small class="text-muted">({{ proposta.validade }} dias)</small>
+                                            {% if proposta.proposta_vencida %}
+                                                <span class="badge bg-danger ms-1">Vencida</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Sem prazo definido</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-shield-alt me-1"></i>Garantia:
+                                    </td>
+                                    <td>{{ proposta.garantia or 'Não informado' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-road me-1"></i>Km Estimado:
+                                    </td>
+                                    <td>
+                                        {% if proposta.km_estimado %}
+                                            {{ proposta.km_estimado|string|replace('.', ',') }} km
+                                        {% else %}
+                                            <span class="text-muted">Não informado</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-clock me-1"></i>Tempo Estimado:
+                                    </td>
+                                    <td>
+                                        {{ proposta.tempo_estimado or 'Não informado' }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {% if proposta.descricao %}
+                    <hr>
+                    <div class="mb-0">
+                        <h6 class="fw-bold text-muted mb-2">
+                            <i class="fas fa-align-left me-1"></i>Descrição:
+                        </h6>
+                        <p class="mb-0">{{ proposta.descricao }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Dados Técnicos -->
+            {% if proposta.equipamento or proposta.marca_modelo or proposta.numero_serie %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cogs text-success me-2"></i>
+                        Dados Técnicos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <td class="fw-bold text-muted" style="width: 40%;">
+                                        <i class="fas fa-desktop me-1"></i>Equipamento:
+                                    </td>
+                                    <td>{{ proposta.equipamento or 'Não informado' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-tag me-1"></i>Marca/Modelo:
+                                    </td>
+                                    <td>{{ proposta.marca_modelo or 'Não informado' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <td class="fw-bold text-muted" style="width: 40%;">
+                                        <i class="fas fa-barcode me-1"></i>Número Série:
+                                    </td>
+                                    <td>{{ proposta.numero_serie or 'Não informado' }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Diagnóstico Técnico -->
+            {% if proposta.problema_relatado or proposta.diagnostico_preliminar or proposta.solucao_proposta %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-stethoscope text-success me-2"></i>
+                        Diagnóstico Técnico
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if proposta.problema_relatado %}
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-muted mb-2">
+                                <i class="fas fa-bug me-1"></i>Problema Relatado:
+                            </h6>
+                            <div class="p-3 rounded diagnostico-view">
+                                {{ proposta.problema_relatado }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if proposta.diagnostico_preliminar %}
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-muted mb-2">
+                                <i class="fas fa-search me-1"></i>Diagnóstico Preliminar:
+                            </h6>
+                            <div class="p-3 rounded diagnostico-view">
+                                {{ proposta.diagnostico_preliminar }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if proposta.solucao_proposta %}
+                        <div class="mb-0">
+                            <h6 class="fw-bold text-muted mb-2">
+                                <i class="fas fa-wrench me-1"></i>Solução Proposta:
+                            </h6>
+                            <div class="p-3 rounded diagnostico-view">
+                                {{ proposta.solucao_proposta }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if not proposta.problema_relatado and not proposta.diagnostico_preliminar and not proposta.solucao_proposta %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-clipboard-list fa-2x mb-2"></i>
+                            <p class="mb-0">Informações técnicas não preenchidas</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Estimativas -->
+            {% if proposta.km_estimado or proposta.tempo_estimado or proposta.prazo_execucao %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calculator text-info me-2"></i>
+                        Estimativas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <i class="fas fa-road fa-2x text-info mb-2"></i>
+                                <div class="fw-bold">{{ proposta.km_estimado or 0 }} km</div>
+                                <small class="text-muted">KM Estimado</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <i class="fas fa-clock fa-2x text-warning mb-2"></i>
+                                <div class="fw-bold">{{ proposta.tempo_estimado or 'Não informado' }}</div>
+                                <small class="text-muted">Tempo Estimado</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center">
+                                <i class="fas fa-calendar-alt fa-2x text-success mb-2"></i>
+                                <div class="fw-bold">{{ proposta.prazo_execucao or 0 }} dias</div>
+                                <small class="text-muted">Prazo Execução</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Observações -->
+            {% if proposta.observacoes %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-sticky-note text-warning me-2"></i>
+                        Observações
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ proposta.observacoes }}</p>
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Coluna Lateral -->
+        <div class="col-lg-4">
+
+            <!-- Valores -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-dollar-sign text-success me-2"></i>
+                        Valores
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="fw-bold text-muted">
+                                <i class="fas fa-tools me-1"></i>Serviços:
+                            </td>
+                            <td class="text-end">
+                                <strong class="text-success">R$ {{ "%.2f"|format(proposta.valor_servicos|float) }}</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold text-muted">
+                                <i class="fas fa-box me-1"></i>Produtos:
+                            </td>
+                            <td class="text-end">
+                                <strong class="text-success">R$ {{ "%.2f"|format(proposta.valor_produtos|float) }}</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold text-muted">
+                                <i class="fas fa-percentage me-1"></i>Desconto:
+                            </td>
+                            <td class="text-end">
+                                {% set valor_desconto = (proposta.valor_produtos + proposta.valor_servicos) * (proposta.desconto or 0) / 100 %}
+                                <strong class="text-danger">- R$ {{ "%.2f"|format(valor_desconto|float) }}</strong>
+                            </td>
+                        </tr>
+                        <tr class="table-active">
+                            <td class="fw-bold">
+                                <i class="fas fa-calculator me-1"></i>TOTAL:
+                            </td>
+                            <td class="text-end">
+                                <strong class="h5 text-primary mb-0">R$ {{ "%.2f"|format(proposta.valor_total|float) }}</strong>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Condições de Pagamento -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-credit-card text-info me-2"></i>
+                        Condições de Pagamento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="fw-bold text-muted">
+                                <i class="fas fa-money-bill me-1"></i>Condição:
+                            </td>
+                            <td>
+                                {% if proposta.condicao_pagamento == 'a_vista' %}
+                                    <span class="badge bg-success">À Vista</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ proposta.numero_parcelas }}x Parcelado</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% if proposta.forma_pagamento %}
+                        <tr>
+                            <td class="fw-bold text-muted">
+                                <i class="fas fa-wallet me-1"></i>Forma:
+                            </td>
+                            <td>{{ proposta.forma_pagamento.title() }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+
+            <!-- Ações Rápidas -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bolt me-2"></i>Ações Rápidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if proposta.status == 'em_elaboracao' %}
+                            <form method="POST" action="{{ url_for('proposta.enviar', id=proposta.id) }}">
+                                <button type="submit" class="btn btn-primary w-100" 
+                                        onclick="return confirm('Confirma o envio da proposta?')">
+                                    <i class="fas fa-paper-plane me-2"></i>Enviar Proposta
+                                </button>
+                            </form>
+                        {% elif proposta.status in ['enviada', 'em_analise'] %}
+                            <form method="POST" action="{{ url_for('proposta.aprovar', id=proposta.id) }}">
+                                <button type="submit" class="btn btn-success w-100" 
+                                        onclick="return confirm('Confirma a aprovação da proposta?')">
+                                    <i class="fas fa-check me-2"></i>Aprovar Proposta
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('proposta.rejeitar', id=proposta.id) }}">
+                                <button type="submit" class="btn btn-outline-danger w-100" 
+                                        onclick="return confirm('Confirma a rejeição da proposta?')">
+                                    <i class="fas fa-times me-2"></i>Rejeitar Proposta
+                                </button>
+                            </form>
+                        {% elif proposta.status == 'aprovada' and proposta.pode_converter %}
+                            <form method="POST" action="{{ url_for('proposta.converter_os', id=proposta.id) }}">
+                                <button type="submit" class="btn btn-info w-100" 
+                                        onclick="return confirm('Confirma a conversão em Ordem de Serviço?')">
+                                    <i class="fas fa-exchange-alt me-2"></i>Converter em OS
+                                </button>
+                            </form>
+                        {% elif proposta.ordem_servico_id %}
+                            <a href="{{ url_for('ordem_servico.visualizar', id=proposta.ordem_servico_id) }}" class="btn btn-info w-100">
+                                <i class="fas fa-tools me-2"></i>Ver Ordem de Serviço
+                            </a>
+                        {% endif %}
+                        
+                        <form method="POST" action="{{ url_for('proposta.excluir_proposta', id=proposta.id) }}">>
+                            <button type="submit" class="btn btn-outline-danger w-100" 
+                                    onclick="return confirm('Tem certeza que deseja excluir esta proposta?')">
+                                <i class="fas fa-trash me-2"></i>Excluir Proposta
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

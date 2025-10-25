@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}Prospect - {{ prospect.razao_social }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('prospeccao.dashboard') }}">Prospecção</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('prospeccao.listar') }}">Lista de Prospects</a></li>
+<li class="breadcrumb-item active">{{ prospect.razao_social }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary mb-0">
+          <i class="fas fa-building me-2"></i>{{ prospect.razao_social }}
+        </h2>
+        <div>
+          {% if prospect.status == 'ativo' %}
+          <form action="{{ url_for('prospeccao.converter', id=prospect.id) }}" 
+                method="POST" 
+                class="d-inline"
+                onsubmit="return confirm('Marcar como convertido?');">
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-check me-2"></i>Marcar como Convertido
+            </button>
+          </form>
+          {% endif %}
+          <a href="{{ url_for('prospeccao.listar') }}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-2"></i>Voltar à Lista
+          </a>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Informações Principais -->
+        <div class="col-md-8">
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-info-circle me-2"></i>Informações da Empresa
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold text-muted">Razão Social</label>
+                  <div class="form-control-plaintext">{{ prospect.razao_social }}</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold text-muted">Nome Fantasia</label>
+                  <div class="form-control-plaintext">{{ prospect.nome_fantasia or '-' }}</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold text-muted">CNPJ</label>
+                  <div class="form-control-plaintext">
+                    <code>{{ prospect.cnpj }}</code>
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold text-muted">CNAE</label>
+                  <div class="form-control-plaintext">{{ prospect.cnae or '-' }}</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold text-muted">Cidade</label>
+                  <div class="form-control-plaintext">{{ prospect.cidade or '-' }}</div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold text-muted">Estado</label>
+                  <div class="form-control-plaintext">{{ prospect.estado or '-' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Contato -->
+          <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-phone me-2"></i>Informações de Contato
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold text-muted">Telefone</label>
+                  <div class="form-control-plaintext">
+                    {% if prospect.telefone %}
+                    <a href="tel:{{ prospect.telefone }}">{{ prospect.telefone }}</a>
+                    {% else %}
+                    -
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label fw-bold text-muted">E-mail</label>
+                  <div class="form-control-plaintext">
+                    {% if prospect.email %}
+                    <a href="mailto:{{ prospect.email }}">{{ prospect.email }}</a>
+                    {% else %}
+                    -
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Observações -->
+          {% if prospect.observacoes %}
+          <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-sticky-note me-2"></i>Observações
+              </h5>
+            </div>
+            <div class="card-body">
+              <div class="form-control-plaintext">
+                {{ prospect.observacoes|nl2br }}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+          <!-- Status -->
+          <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+              <h5 class="card-title mb-0">
+                <i class="fas fa-flag me-2"></i>Status
+              </h5>
+            </div>
+            <div class="card-body text-center">
+              {% if prospect.status == 'ativo' %}
+              <span class="badge bg-success fs-6 p-3">
+                <i class="fas fa-user-check me-2"></i>Ativo
+              </span>
+              {% elif prospect.status == 'convertido' %}
+              <span class="badge bg-primary fs-6 p-3">
+                <i class="fas fa-handshake me-2"></i>Convertido
+              </span>
+              {% else %}
+              <span class="badge bg-secondary fs-6 p-3">
+                <i class="fas fa-user-times me-2"></i>{{ prospect.status|title }}
+              </span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Informações do Sistema -->
+          <div class="card mb-4">
+            <div class="card-header bg-light">
+              <h6 class="card-title mb-0 text-muted">
+                <i class="fas fa-cog me-2"></i>Informações do Sistema
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-12 mb-2">
+                  <small class="text-muted">ID</small>
+                  <div><code>{{ prospect.id }}</code></div>
+                </div>
+                <div class="col-12 mb-2">
+                  <small class="text-muted">Origem</small>
+                  <div>
+                    {% if prospect.origem == 'busca_cnae' %}
+                    <span class="badge bg-info">Busca CNAE</span>
+                    {% elif prospect.origem == 'manual' %}
+                    <span class="badge bg-warning">Manual</span>
+                    {% elif prospect.origem == 'importacao' %}
+                    <span class="badge bg-primary">Importação</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ prospect.origem|title }}</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="col-12 mb-2">
+                  <small class="text-muted">Criado em</small>
+                  <div>{{ prospect.criado_em.strftime('%d/%m/%Y às %H:%M') if prospect.criado_em else '-' }}</div>
+                </div>
+                <div class="col-12">
+                  <small class="text-muted">Atualizado em</small>
+                  <div>{{ prospect.atualizado_em.strftime('%d/%m/%Y às %H:%M') if prospect.atualizado_em else '-' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ações -->
+          <div class="card">
+            <div class="card-header bg-danger text-white">
+              <h6 class="card-title mb-0">
+                <i class="fas fa-exclamation-triangle me-2"></i>Zona de Perigo
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="d-grid">
+                <form action="{{ url_for('prospeccao.excluir', id=prospect.id) }}" 
+                      method="POST" 
+                      onsubmit="return confirm('ATENÇÃO: Esta ação não pode ser desfeita. Confirma a exclusão do prospect?');">
+                  <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-trash me-2"></i>Excluir Prospect
+                  </button>
+                </form>
+              </div>
+              <div class="mt-2">
+                <small class="text-muted">
+                  <i class="fas fa-info-circle me-1"></i>
+                  Esta ação irá remover o prospect permanentemente.
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

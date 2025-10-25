@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Proposta {{ proposta.codigo or 'JSP' }} - JSP Automação Industrial & Solar</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #212529;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #004080;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+            color: #004080;
+            font-weight: bold;
+        }
+        .header .company-info {
+            font-size: 10px;
+            color: #555;
+            margin-top: 5px;
+        }
+        .header .proposal-info {
+            text-align: right;
+            font-size: 11px;
+        }
+        .proposal-code {
+            background: #004080;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .section {
+            margin-top: 25px;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px 0;
+            border-bottom: 2px solid #004080;
+        }
+        .section-number {
+            background-color: #004080;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            margin-right: 15px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #004080;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f0f8ff;
+            font-weight: bold;
+            color: #004080;
+        }
+        .client-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .client-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #004080;
+        }
+        .client-info strong {
+            color: #004080;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .value-row {
+            text-align: right;
+            font-weight: bold;
+        }
+        .total-row {
+            background: #e6f2ff;
+            font-weight: bold;
+            color: #004080;
+        }
+        .conditions-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+        .condition-item {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 3px solid #004080;
+        }
+        .observations {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #004080;
+        }
+        .signature-section {
+            margin-top: 40px;
+            page-break-inside: avoid;
+        }
+        .signature-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 30px;
+        }
+        .signature-box {
+            text-align: center;
+            min-height: 100px;
+        }
+        .signature-text {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #333;
+        }
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+        @media print {
+            body { margin: 0; padding: 15mm; }
+            .section { page-break-inside: avoid; }
+        }
+    <div class="header">
+        <div>
+            <h1>JSP Automação Industrial & Solar</h1>
+            <div class="company-info">
+                CNPJ: 41.280.764/0001-65<br>
+                Rua Indalécio Costa, 890 – Barra Funda – Tietê/SP – CEP 18532-122<br>
+                (15) 99670-2036 • (15) 99802-5861<br>
+                atendimento@eletricasaroba.com | www.jspeletrica.com.br
+            </div>
+        </div>
+        <div class="proposal-info">
+            <div class="proposal-code">PROPOSTA COMERCIAL</div>
+            <div>
+                <strong>Nº:</strong> {{ proposta.codigo or 'JSP-001' }}<br>
+                <strong>Data:</strong> {{ proposta.data_criacao_prop.strftime('%d/%m/%Y') if proposta.data_criacao_prop else 'N/A' }}<br>
+                <strong>Vendedor:</strong> {{ proposta.vendedor_responsavel or 'JSP Elétrica' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção 1: Dados do Cliente -->
+    <div class="section">
+        <div class="section-header">
+            <div class="section-number">01</div>
+            <div class="section-title">Dados do Cliente</div>
+        </div>
+        <div class="client-grid">
+            <div class="client-info">
+                <strong>Razão Social:</strong>
+                {{ proposta.cliente.razao_social if proposta and proposta.cliente else 'Cliente não informado' }}<br><br>
+                <strong>CNPJ/CPF:</strong>
+                {{ proposta.cliente.cnpj_cpf if proposta and proposta.cliente else 'N/A' }}<br><br>
+                <strong>Telefone:</strong>
+                {{ proposta.cliente.telefone if proposta and proposta.cliente else 'N/A' }}<br><br>
+                <strong>E-mail:</strong>
+                {{ proposta.cliente.email if proposta and proposta.cliente else 'N/A' }}
+            </div>
+            <div class="client-info">
+                <strong>Endereço:</strong>
+                {{ proposta.cliente.endereco if proposta and proposta.cliente else 'N/A' }}<br><br>
+                <strong>Cidade/UF:</strong>
+                {{ proposta.cliente.cidade if proposta and proposta.cliente else 'N/A' }}/{{ proposta.cliente.estado if proposta and proposta.cliente else 'N/A' }}<br><br>
+                <strong>CEP:</strong>
+                {{ proposta.cliente.cep if proposta and proposta.cliente else 'N/A' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção 2: Dados da Proposta -->
+    <div class="section">
+        <div class="section-header">
+            <div class="section-number">02</div>
+            <div class="section-title">Dados da Proposta</div>
+        </div>
+        <div class="client-grid">
+            <div class="client-info">
+                <strong>Título:</strong>
+                {{ proposta.titulo if proposta and proposta.titulo else 'Proposta JSP Elétrica' }}<br><br>
+                <strong>Status:</strong>
+                {{ proposta.status.title() if proposta and proposta.status else 'Pendente' }}<br><br>
+                <strong>Prioridade:</strong>
+                {{ proposta.prioridade.title() if proposta and proposta.prioridade else 'Normal' }}
+            </div>
+            <div class="client-info">
+                <strong>Descrição:</strong>
+                {{ proposta.descricao if proposta and proposta.descricao else 'Proposta de serviços JSP Elétrica' }}<br><br>
+                <strong>Observações:</strong>
+                {{ proposta.observacoes if proposta and proposta.observacoes else 'Proposta válida conforme condições apresentadas' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção 3: Itens da Proposta -->
+    <div class="section">
+        <div class="section-header">
+            <div class="section-number">03</div>
+            <div class="section-title">Itens da Proposta</div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 45%;">Descrição</th>
+                    <th style="width: 10%;">Qtd</th>
+                    <th style="width: 10%;">Unid</th>
+                    <th style="width: 15%;">Valor Unit.</th>
+                    <th style="width: 20%;">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if proposta and proposta.produtos %}
+                    {% for item in proposta.produtos %}
+                    <tr>
+                        <td>{{ item.descricao or 'Item não informado' }}</td>
+                        <td style="text-align: center;">{{ item.quantidade or 1 }}</td>
+                        <td style="text-align: center;">{{ item.unidade or 'UN' }}</td>
+                        <td class="value-row">R$ {{ "%.2f"|format(item.valor_unitario or 0)|replace('.', ',') }}</td>
+                        <td class="value-row">R$ {{ "%.2f"|format((item.quantidade or 1) * (item.valor_unitario or 0))|replace('.', ',') }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+                
+                {% if proposta and proposta.servicos %}
+                    {% for item in proposta.servicos %}
+                    <tr>
+                        <td>{{ item.descricao or 'Serviço não informado' }}</td>
+                        <td style="text-align: center;">{{ item.quantidade or 1 }}</td>
+                        <td style="text-align: center;">{{ item.unidade or 'HR' }}</td>
+                        <td class="value-row">R$ {{ "%.2f"|format(item.valor_unitario or 0)|replace('.', ',') }}</td>
+                        <td class="value-row">R$ {{ "%.2f"|format((item.quantidade or 1) * (item.valor_unitario or 0))|replace('.', ',') }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+                
+                {% if not (proposta and (proposta.produtos or proposta.servicos)) %}
+                <tr>
+                    <td colspan="5" style="text-align: center; color: #999; font-style: italic;">
+                        Nenhum item encontrado na proposta
+                    </td>
+                </tr>
+                {% endif %}
+                
+                <tr class="total-row">
+                    <td colspan="4" style="text-align: right; font-size: 14px;"><strong>VALOR TOTAL DA PROPOSTA:</strong></td>
+                    <td class="value-row" style="font-size: 14px;">
+                        <strong>R$ {{ "%.2f"|format(proposta.valor_total or 0)|replace('.', ',') }}</strong>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Seção 4: Condições Comerciais -->
+    <div class="section">
+        <div class="section-header">
+            <div class="section-number">04</div>
+            <div class="section-title">Condições Comerciais</div>
+        </div>
+        <div class="conditions-grid">
+            <div class="condition-item">
+                <strong>Forma de Pagamento:</strong><br>
+                {{ proposta.forma_pagamento if proposta and proposta.forma_pagamento else 'A combinar' }}
+            </div>
+            <div class="condition-item">
+                <strong>Prazo de Entrega:</strong><br>
+                {{ proposta.prazo_execucao ~ ' dias' if proposta and proposta.prazo_execucao else 'A combinar' }}
+            </div>
+            <div class="condition-item">
+                <strong>Garantia:</strong><br>
+                {{ proposta.prazo_garantia ~ ' meses' if proposta and proposta.prazo_garantia else '90 dias' }}
+            </div>
+            <div class="condition-item">
+                <strong>Condições de Pagamento:</strong><br>
+                {{ proposta.condicao_pagamento if proposta and proposta.condicao_pagamento else '30 dias' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Seção 5: Observações e Considerações -->
+    <div class="section">
+        <div class="section-header">
+            <div class="section-number">05</div>
+            <div class="section-title">Observações e Considerações Finais</div>
+        </div>
+        <div class="observations">
+            {% if proposta and proposta.observacoes %}
+                <p>{{ proposta.observacoes }}</p>
+            {% else %}
+                <ul style="line-height: 1.8;">
+                    <li>Esta proposta é válida conforme condições mencionadas acima;</li>
+                    <li>Valores não incluem impostos, que serão acrescidos conforme legislação vigente;</li>
+                    <li>Eventuais alterações no escopo dos trabalhos serão objeto de nova proposta comercial;</li>
+                    <li>Agradecemos a oportunidade de apresentar nossos serviços.</li>
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Seção 6: Assinatura -->
+    <div class="section signature-section">
+        <div class="signature-area">
+            <div class="signature-line">
+                <div class="signature-box">
+                    <br><br><br>
+                    <div class="signature-text">
+                        ___________________________________<br>
+                        <strong>JSP ELÉTRICA</strong><br>
+                        Representante Comercial
+                    </div>
+                </div>
+            </div>
+            <div class="signature-line">
+                <div class="signature-box">
+                    <br><br><br>
+                    <div class="signature-text">
+                        ___________________________________<br>
+                        <strong>{{ proposta.cliente.razao_social if proposta and proposta.cliente and proposta.cliente.razao_social else 'CLIENTE' }}</strong><br>
+                        Aceite da Proposta
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="footer-content">
+            <p><strong>JSP ELÉTRICA</strong> | www.jspeletrica.com.br | Proposta Comercial {{ proposta.codigo if proposta and proposta.codigo else 'XXX' }}</p>
+        </div>
+    </div>
+
+</body>
+</html>

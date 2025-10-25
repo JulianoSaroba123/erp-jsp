@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Editar Movimentação Financeira{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <h2>Editar Movimentação Financeira</h2>
+  <form method="post">
+    <div class="row mb-3">
+      <div class="col-md-3">
+        <label class="form-label">Valor *</label>
+        <input type="number" min="0" step="0.01" name="valor" class="form-control" required value="{{ movimento.valor }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Forma de Pagamento *</label>
+        <select name="forma_pagamento" class="form-select" required>
+          <option value="Dinheiro" {% if movimento.forma_pagamento=='Dinheiro' %}selected{% endif %}>Dinheiro</option>
+          <option value="Cartão" {% if movimento.forma_pagamento=='Cartão' %}selected{% endif %}>Cartão</option>
+          <option value="Pix" {% if movimento.forma_pagamento=='Pix' %}selected{% endif %}>Pix</option>
+          <option value="Boleto" {% if movimento.forma_pagamento=='Boleto' %}selected{% endif %}>Boleto</option>
+          <option value="Transferência" {% if movimento.forma_pagamento=='Transferência' %}selected{% endif %}>Transferência</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Data *</label>
+        <input type="date" name="data" class="form-control" required value="{{ movimento.data.strftime('%Y-%m-%d') }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Cliente *</label>
+        <input type="text" name="cliente" class="form-control" required value="{{ movimento.cliente }}">
+      </div>
+    </div>
+    <div class="row mb-3">
+      <div class="col-md-3">
+        <label class="form-label">Origem *</label>
+        <select name="origem" class="form-select" required>
+          <option value="OS" {% if movimento.origem=='OS' %}selected{% endif %}>Ordem de Serviço</option>
+          <option value="Orçamento" {% if movimento.origem=='Orçamento' %}selected{% endif %}>Orçamento</option>
+          <option value="Proposta" {% if movimento.origem=='Proposta' %}selected{% endif %}>Proposta</option>
+          <option value="Outro" {% if movimento.origem=='Outro' %}selected{% endif %}>Outro</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Tipo *</label>
+        <select name="tipo" class="form-select" required>
+          <option value="receita" {% if movimento.tipo=='receita' %}selected{% endif %}>Receita</option>
+          <option value="despesa" {% if movimento.tipo=='despesa' %}selected{% endif %}>Despesa</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Descrição</label>
+        <input type="text" name="descricao" class="form-control" value="{{ movimento.descricao }}">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-success">Salvar</button>
+    <a href="{{ url_for('financeiro.painel_financeiro') }}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

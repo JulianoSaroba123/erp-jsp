@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar Exclusão - Cliente{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card bg-dark">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirmar Exclusão
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning" role="alert">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-warning me-2"></i>
+                            Atenção!
+                        </h5>
+                        <p class="mb-0">
+                            Você está prestes a excluir o seguinte cliente:
+                        </p>
+                    </div>
+
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="text-primary">
+                                        <i class="fas fa-user me-2"></i>
+                                        {{ cliente.nome }}
+                                    </h5>
+                                    <p class="text-muted mb-2">
+                                        <strong>E-mail:</strong> {{ cliente.email or 'Não informado' }}
+                                    </p>
+                                    <p class="text-muted mb-2">
+                                        <strong>Telefone:</strong> {{ cliente.telefone or 'Não informado' }}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p class="text-muted mb-2">
+                                        <strong>Documento:</strong> {{ cliente.documento or 'Não informado' }}
+                                    </p>
+                                    <p class="text-muted mb-2">
+                                        <strong>Tipo:</strong> 
+                                        <span class="badge bg-info">{{ cliente.tipo }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger" role="alert">
+                        <p class="mb-0">
+                            <strong>Esta ação não pode ser desfeita!</strong><br>
+                            O cliente será marcado como inativo e não aparecerá mais nas listagens.
+                        </p>
+                    </div>
+
+                    <div class="d-flex gap-3 justify-content-end">
+                        <a href="{{ url_for('cliente.listar') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>
+                            Cancelar
+                        </a>
+                        
+                        <form method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>
+                                Confirmar Exclusão
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

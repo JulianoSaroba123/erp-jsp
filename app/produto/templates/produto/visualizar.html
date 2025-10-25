@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}{{ produto.nome }} - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('produto.listar') }}">Produtos</a></li>
+        <li class="breadcrumb-item active">{{ produto.nome }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-box me-2"></i>
+                    {{ produto.nome_display }}
+                    <span class="badge bg-{{ 'success' if produto.status == 'ativo' else 'danger' if produto.status == 'inativo' else 'warning' }} ms-2">
+                        {{ produto.status.title() }}
+                    </span>
+                </h4>
+                <div class="btn-group">
+                    <a href="{{ url_for('produto.editar', id=produto.id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar
+                    </a>
+                    <button type="button" 
+                            class="btn btn-danger"
+                            onclick="confirmarExclusao('{{ produto.nome }}', '{{ url_for('produto.excluir', id=produto.id) }}')">
+                        <i class="fas fa-trash me-2"></i>
+                        Excluir
+                    </button>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- Dados Principais -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Dados Principais
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Nome do Produto</label>
+                            <div class="fw-bold">{{ produto.nome_display }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Status</label>
+                            <div>
+                                <span class="badge bg-{{ 'success' if produto.status == 'ativo' else 'danger' if produto.status == 'inativo' else 'warning' }}">
+                                    {{ produto.status.title() }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if produto.descricao %}
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Descrição</label>
+                            <div class="fw-bold">{{ produto.descricao }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Códigos e Identificação -->
+                {% if produto.codigo or produto.codigo_barras %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-barcode me-2"></i>
+                            Códigos e Identificação
+                        </h6>
+                    </div>
+                    
+                    {% if produto.codigo %}
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Código do Produto</label>
+                            <div class="fw-bold">
+                                <code>{{ produto.codigo_display }}</code>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if produto.codigo_barras %}
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Código de Barras</label>
+                            <div class="fw-bold">
+                                <code>{{ produto.codigo_barras }}</code>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Categoria e Classificação -->
+                {% if produto.categoria or produto.subcategoria or produto.marca or produto.modelo %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-tags me-2"></i>
+                            Categoria e Classificação
+                        </h6>
+                    </div>
+                    
+                    {% if produto.categoria %}
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Categoria</label>
+                            <div>
+                                <span class="badge bg-info">{{ produto.categoria }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if produto.subcategoria %}
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Subcategoria</label>
+                            <div>
+                                <span class="badge bg-secondary">{{ produto.subcategoria }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if produto.marca %}
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Marca</label>
+                            <div class="fw-bold">{{ produto.marca }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if produto.modelo %}
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Modelo</label>
+                            <div class="fw-bold">{{ produto.modelo }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Medidas e Unidades -->
+                {% if produto.unidade_medida or produto.peso or produto.dimensoes %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-ruler me-2"></i>
+                            Medidas e Unidades
+                        </h6>
+                    </div>
+                    
+                    {% if produto.unidade_medida %}
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Unidade de Medida</label>
+                            <div class="fw-bold">{{ produto.unidade_medida }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if produto.peso %}
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Peso</label>
+                            <div class="fw-bold">{{ produto.peso }} kg</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if produto.dimensoes %}
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Dimensões</label>
+                            <div class="fw-bold">{{ produto.dimensoes }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <!-- Preços -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-dollar-sign me-2"></i>
+                            Preços
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Preço de Custo</label>
+                            <div class="fw-bold text-warning">{{ produto.preco_custo_formatado }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Preço de Venda</label>
+                            <div class="fw-bold text-success">{{ produto.preco_venda_formatado }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Margem de Lucro</label>
+                            <div class="fw-bold text-{{ 'success' if produto.margem_lucro_calculada > 0 else 'danger' }}">
+                                {{ produto.margem_lucro_calculada }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Estoque -->
+                {% if produto.controla_estoque %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-warehouse me-2"></i>
+                            Controle de Estoque
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Estoque Atual</label>
+                            <div class="fw-bold fs-4 text-{{ 'danger' if produto.estoque_atual <= produto.estoque_minimo else 'warning' if produto.estoque_atual <= (produto.estoque_minimo * 1.5) else 'success' }}">
+                                {{ produto.estoque_atual }}
+                                <small class="text-muted fs-6">{{ produto.unidade_medida }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Estoque Mínimo</label>
+                            <div class="fw-bold">{{ produto.estoque_minimo }} <small class="text-muted">{{ produto.unidade_medida }}</small></div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Estoque Máximo</label>
+                            <div class="fw-bold">{{ produto.estoque_maximo }} <small class="text-muted">{{ produto.unidade_medida }}</small></div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Status do Estoque</label>
+                            <div>
+                                {% if produto.estoque_atual <= produto.estoque_minimo %}
+                                    <span class="badge bg-danger">Estoque Baixo</span>
+                                {% elif produto.estoque_atual <= (produto.estoque_minimo * 1.5) %}
+                                    <span class="badge bg-warning">Atenção</span>
+                                {% else %}
+                                    <span class="badge bg-success">Normal</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-warehouse me-2"></i>
+                            Controle de Estoque
+                        </h6>
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Este produto não tem controle de estoque habilitado.
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Observações -->
+                {% if produto.observacoes %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-sticky-note me-2"></i>
+                            Observações
+                        </h6>
+                    </div>
+                    
+                    <div class="col-12">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <p class="mb-0">{{ produto.observacoes | replace('\n', '<br>') | safe }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Informações do Sistema -->
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-muted border-bottom pb-2 mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Informações do Sistema
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Data de Cadastro</label>
+                            <div>{{ produto.data_criacao.strftime('%d/%m/%Y às %H:%M') }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Última Atualização</label>
+                            <div>{{ produto.data_atualizacao.strftime('%d/%m/%Y às %H:%M') }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Card de Ações Rápidas -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Ações Rápidas</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('produto.editar', id=produto.id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar Produto
+                    </a>
+                    
+                    {% if produto.controla_estoque %}
+                    <button type="button" class="btn btn-outline-primary" onclick="ajustarEstoque()">
+                        <i class="fas fa-plus-minus me-2"></i>
+                        Ajustar Estoque
+                    </button>
+                    {% endif %}
+                    
+                    <button type="button" class="btn btn-outline-info" onclick="gerarEtiqueta()">
+                        <i class="fas fa-barcode me-2"></i>
+                        Gerar Etiqueta
+                    </button>
+                    
+                    <hr>
+                    
+                    <button type="button" 
+                            class="btn btn-danger"
+                            onclick="confirmarExclusao('{{ produto.nome }}', '{{ url_for('produto.excluir', id=produto.id) }}')">
+                        <i class="fas fa-trash me-2"></i>
+                        Excluir Produto
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Card de Estatísticas -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Resumo</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-12 mb-2">
+                        <div class="border-bottom pb-2">
+                            <strong>Valor em Estoque</strong>
+                            <div class="text-success fs-5">
+                                {% if produto.controla_estoque and produto.preco_custo %}
+                                    R$ {{ '{:,.2f}'.format((produto.estoque_atual or 0) * (produto.preco_custo or 0)|float).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <small class="text-muted">
+                    <strong>ID:</strong> {{ produto.id }}<br>
+                    <strong>Status:</strong> 
+                    <span class="badge bg-{{ 'success' if produto.ativo else 'danger' }} mt-1">
+                        {{ 'Ativo' if produto.ativo else 'Inativo' }}
+                    </span>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="modalExclusao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o produto <strong id="nomeExclusao"></strong>?</p>
+                <p class="text-muted">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a href="#" id="linkExclusao" class="btn btn-danger">
+                    <i class="fas fa-trash me-2"></i>
+                    Confirmar Exclusão
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmarExclusao(nome, url) {
+        document.getElementById('nomeExclusao').textContent = nome;
+        document.getElementById('linkExclusao').href = url;
+        
+        const modal = new bootstrap.Modal(document.getElementById('modalExclusao'));
+        modal.show();
+    }
+    
+    function ajustarEstoque() {
+        // Implementar modal para ajuste de estoque
+        alert('Funcionalidade de ajuste de estoque será implementada em breve!');
+    }
+    
+    function gerarEtiqueta() {
+        // Implementar geração de etiqueta com código de barras
+        alert('Funcionalidade de geração de etiqueta será implementada em breve!');
+    }
+</script>
+{% endblock %}

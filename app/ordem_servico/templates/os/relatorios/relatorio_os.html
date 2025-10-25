@@ -1,0 +1,280 @@
+{#
+  Template de relatório para Ordem de Serviço.
+  Este arquivo usa o padrão de seções numeradas semelhante ao modelo
+  original enviado (OS). As informações são recebidas através da
+  variável de contexto `os`.
+  Use `pdfkit` para converter este HTML em PDF se desejar.
+#}
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatório da Ordem de Serviço {{ os.numero }}</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      color: #212529;
+      margin: 0;
+      padding: 20px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #004080;
+      padding-bottom: 10px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 20px;
+      color: #004080;
+    }
+    .header .info {
+      text-align: right;
+      font-size: 10px;
+    }
+    .section {
+      margin-top: 20px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .section-number {
+      background-color: #004080;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: bold;
+      margin-right: 8px;
+    }
+    .section-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #004080;
+      text-transform: uppercase;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 6px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 5px;
+    }
+    th {
+      background-color: #f0f8ff;
+      font-weight: bold;
+    }
+    .no-border th, .no-border td {
+      border: none;
+    }
+    .summary-table {
+      width: 40%;
+      margin-left: auto;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+    }
+    .summary-table th, .summary-table td {
+      border: 1px solid #ccc;
+      padding: 5px;
+    }
+    .signature-block {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 40px;
+    }
+    .signature-line {
+      width: 45%;
+      border-top: 1px solid #000;
+      text-align: center;
+      padding-top: 4px;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>JSP Automação Industrial &amp; Solar</h1>
+      <div style="font-size:10px;">
+        CNPJ: 41.280.764/0001-65<br>
+        Rua Indalécio Costa, 890 – Barra Funda – Tietê/SP – CEP 18532-122<br>
+        (15) 99670-2036 • (15) 99802-5861<br>
+        atendimento@eletricasaroba.com | www.eletricasaroba.com.br
+      </div>
+    </div>
+    <div class="info">
+      <strong>Resp.:</strong> {{ os.responsavel }}<br>
+      <strong>Data:</strong> {{ os.data }}<br>
+      <strong>Relatório OS:</strong> {{ os.numero }}
+    </div>
+  </div>
+
+  <!-- Seção 1: Dados do Cliente -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">01</div>
+      <div class="section-title">Dados do Cliente</div>
+    </div>
+    <table>
+      <tr>
+        <th>Nome</th>
+        <th>CPF/CNPJ</th>
+        <th>Telefone</th>
+        <th>E-mail</th>
+      </tr>
+      <tr>
+        <td>{{ os.cliente.nome }}</td>
+        <td>{{ os.cliente.cpf_cnpj }}</td>
+        <td>{{ os.cliente.telefone }}</td>
+        <td>{{ os.cliente.email }}</td>
+      </tr>
+      <tr>
+        <th colspan="4">Endereço</th>
+      </tr>
+      <tr>
+        <td colspan="4">{{ os.cliente.endereco }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Seção 2: Serviços Executados -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">02</div>
+      <div class="section-title">Serviços Executados</div>
+    </div>
+    <table>
+      <tr>
+        <th>Serviço</th>
+        <th>Horas</th>
+        <th>Valor/Hora</th>
+        <th>Subtotal</th>
+      </tr>
+      {% for item in os.itens_servico %}
+      <tr>
+        <td>{{ item.descricao }}</td>
+        <td>{{ item.horas }}</td>
+        <td>{{ item.valor_hora }}</td>
+        <td>{{ item.subtotal }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <!-- Seção 3: Equipamento -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">03</div>
+      <div class="section-title">Equipamento</div>
+    </div>
+    <table>
+      <tr>
+        <th>Equipamento</th>
+        <th>Marca</th>
+        <th>Modelo</th>
+        <th>Nº Série</th>
+        <th>Acessórios</th>
+      </tr>
+      <tr>
+        <td>{{ os.equipamento.descricao }}</td>
+        <td>{{ os.equipamento.marca }}</td>
+        <td>{{ os.equipamento.modelo }}</td>
+        <td>{{ os.equipamento.numero_serie }}</td>
+        <td>{{ os.equipamento.acessorios }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Seção 4: Diagnóstico e Serviço -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">04</div>
+      <div class="section-title">Diagnóstico e Serviço</div>
+    </div>
+    <table class="no-border">
+      <tr>
+        <th style="width: 20%;">Técnico</th>
+        <td style="width: 80%;">{{ os.diagnostico.tecnico }}</td>
+      </tr>
+      <tr>
+        <th>Problema</th>
+        <td>{{ os.diagnostico.problema }}</td>
+      </tr>
+      <tr>
+        <th>Serviço</th>
+        <td>{{ os.diagnostico.servico }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Seção 5: Resumo Financeiro -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">05</div>
+      <div class="section-title">Resumo Financeiro</div>
+    </div>
+    <table class="summary-table">
+      <tr>
+        <th style="text-align:left;">Total Serviços</th>
+        <td style="text-align:right;">{{ os.financeiro.total_servicos }}</td>
+      </tr>
+      <tr>
+        <th style="text-align:left;">Total Produtos</th>
+        <td style="text-align:right;">{{ os.financeiro.total_produtos }}</td>
+      </tr>
+      <tr>
+        <th style="text-align:left;">Deslocamento</th>
+        <td style="text-align:right;">{{ os.financeiro.deslocamento }}</td>
+      </tr>
+      <tr>
+        <th style="text-align:left;">Valor Total</th>
+        <td style="text-align:right; font-weight:bold;">{{ os.financeiro.valor_total }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Seção 6: Dados Bancários -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">06</div>
+      <div class="section-title">Dados Bancários</div>
+    </div>
+    <table>
+      <tr>
+        <th>Instituição</th>
+        <th>Agência</th>
+        <th>Conta</th>
+        <th>Favorecido</th>
+        <th>CNPJ</th>
+        <th>PIX</th>
+      </tr>
+      <tr>
+        <td>{{ os.dados_bancarios.instituicao }}</td>
+        <td>{{ os.dados_bancarios.agencia }}</td>
+        <td>{{ os.dados_bancarios.conta }}</td>
+        <td>{{ os.dados_bancarios.titular }}</td>
+        <td>{{ os.dados_bancarios.cnpj }}</td>
+        <td>{{ os.dados_bancarios.pix }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Seção 7: Assinaturas -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-number">07</div>
+      <div class="section-title">Assinaturas</div>
+    </div>
+    <div class="signature-block">
+      <div class="signature-line">Assinatura do Técnico</div>
+      <div class="signature-line">Assinatura do Cliente</div>
+    </div>
+  </div>
+</body>
+</html>

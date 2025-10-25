@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ super() }}{% endblock %}
+
+{% block content %}
+<!-- Bem-vindo -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h2 class="text-primary mb-2">
+                            <i class="fas fa-rocket me-3"></i>
+                            Bem-vindo ao {{ COMPANY_NAME }}
+                        </h2>
+                        <p class="text-muted mb-0">
+                            ERP v{{ SYSTEM_VERSION }} - Sistema de Gestão Empresarial
+                        </p>
+                        <small class="text-muted">
+                            Painel de controle e estatísticas gerais do sistema
+                        </small>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="text-muted">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            <span id="data-atual"></span>
+                        </div>
+                        <div class="text-muted">
+                            <i class="fas fa-clock me-2"></i>
+                            <span id="hora-atual"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cards de Estatísticas -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="text-primary mb-0">{{ stats.total_clientes }}</h3>
+                        <small class="text-muted">Clientes</small>
+                    </div>
+                    <div class="text-primary">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('cliente.listar') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye me-1"></i>
+                        Ver todos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="text-success mb-0">{{ stats.total_fornecedores }}</h3>
+                        <small class="text-muted">Fornecedores</small>
+                    </div>
+                    <div class="text-success">
+                        <i class="fas fa-truck fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('fornecedor.listar') }}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-eye me-1"></i>
+                        Ver todos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="text-info mb-0">{{ stats.total_produtos }}</h3>
+                        <small class="text-muted">Produtos</small>
+                    </div>
+                    <div class="text-info">
+                        <i class="fas fa-box fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <a href="{{ url_for('produto.listar') }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-eye me-1"></i>
+                        Ver todos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="text-warning mb-0">{{ stats.produtos_estoque_baixo }}</h3>
+                        <small class="text-muted">Estoque Baixo</small>
+                    </div>
+                    <div class="text-warning">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    {% if stats.produtos_estoque_baixo > 0 %}
+                    <a href="{{ url_for('produto.estoque_baixo') }}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-eye me-1"></i>
+                        Ver itens
+                    </a>
+                    {% else %}
+                    <span class="text-muted small">Tudo OK!</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Valor do Estoque -->
+{% if stats.valor_estoque > 0 %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <h4 class="text-success mb-2">
+                    <i class="fas fa-coins me-2"></i>
+                    Valor Total do Estoque
+                </h4>
+                <h2 class="text-success">
+                    R$ {{ "{:,.2f}".format(stats.valor_estoque).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                </h2>
+                <small class="text-muted">Baseado no preço de custo dos produtos em estoque</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Seções Informativas -->
+<div class="row">
+    <!-- Clientes Recentes -->
+    {% if clientes_recentes %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-users me-2"></i>
+                    Clientes Recentes
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for cliente in clientes_recentes %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold">{{ cliente.nome_display }}</div>
+                            <small class="text-muted">
+                                {% if cliente.email %}{{ cliente.email }}{% else %}{{ cliente.documento_formatado }}{% endif %}
+                            </small>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('cliente.visualizar', id=cliente.id) }}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('cliente.listar') }}" class="btn btn-outline-primary">
+                        Ver todos os clientes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Produtos com Estoque Baixo -->
+    {% if produtos_estoque_baixo %}
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Produtos com Estoque Baixo
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for produto in produtos_estoque_baixo %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="fw-bold">{{ produto.nome_display }}</div>
+                            <small class="text-muted">
+                                Estoque: {{ produto.estoque_atual }} {{ produto.unidade_medida }}
+                                (Mín: {{ produto.estoque_minimo }})
+                            </small>
+                        </div>
+                        <div>
+                            <span class="badge bg-danger">Baixo</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('produto.estoque_baixo') }}" class="btn btn-outline-warning">
+                        Ver todos os produtos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Ações Rápidas -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Ações Rápidas
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('cliente.novo') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-user-plus fa-2x d-block mb-2"></i>
+                            Novo Cliente
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('fornecedor.novo') }}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-truck fa-2x d-block mb-2"></i>
+                            Novo Fornecedor
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('produto.novo') }}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-box fa-2x d-block mb-2"></i>
+                            Novo Produto
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('ordem_servico.novo') }}" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-file-invoice fa-2x d-block mb-2"></i>
+                            Nova OS
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mensagem de Erro do Banco -->
+{% if erro_banco %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-warning">
+            <h5><i class="fas fa-exclamation-triangle me-2"></i>Banco de dados não inicializado</h5>
+            <p>As tabelas do banco de dados ainda não foram criadas. Execute o script de criação:</p>
+            <code>python scripts/criar_tabelas.py</code>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Atualiza data e hora
+    function atualizarDataHora() {
+        const agora = new Date();
+        
+        const data = agora.toLocaleDateString('pt-BR', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        
+        const hora = agora.toLocaleTimeString('pt-BR');
+        
+        document.getElementById('data-atual').textContent = data;
+        document.getElementById('hora-atual').textContent = hora;
+    }
+    
+    // Atualiza a cada segundo
+    atualizarDataHora();
+    setInterval(atualizarDataHora, 1000);
+</script>
+{% endblock %}

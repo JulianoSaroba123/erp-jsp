@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+
+{% block title %}OS {{ ordem.numero }} - {{ ordem.titulo }} - ERP JSP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="h3 mb-0">
+                        <i class="fas fa-tools text-primary me-2"></i>
+                        Ordem de Serviço {{ ordem.numero }}
+                    </h2>
+                    <p class="text-muted mb-0">{{ ordem.titulo }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('ordem_servico.listar') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar
+                    </a>
+                    <a href="{{ url_for('ordem_servico.editar', id=ordem.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit me-2"></i>Editar
+                    </a>
+                    <a href="{{ url_for('ordem_servico.gerar_relatorio_pdf', id=ordem.id) }}" class="btn btn-outline-danger" target="_blank">
+                        <i class="fas fa-file-pdf me-2"></i>Relatório PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Coluna Principal -->
+        <div class="col-lg-8">
+            
+            <!-- Informações Básicas -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle text-primary me-2"></i>
+                        Informações Básicas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <td class="fw-bold text-muted" style="width: 40%;">
+                                        <i class="fas fa-hashtag me-1"></i>Número:
+                                    </td>
+                                    <td><strong class="text-primary">{{ ordem.numero }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-user me-1"></i>Cliente:
+                                    </td>
+                                    <td>
+                                        <strong>{{ ordem.cliente.nome }}</strong>
+                                        {% if ordem.cliente.telefone %}
+                                            <div class="small text-muted">{{ ordem.cliente.telefone }}</div>
+                                        {% endif %}
+                                        {% if ordem.cliente.email %}
+                                            <div class="small text-muted">{{ ordem.cliente.email }}</div>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-flag me-1"></i>Status:
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ ordem.status_cor }} fs-6">
+                                            {{ ordem.status_formatado }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Prioridade:
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ ordem.prioridade_cor }} fs-6">
+                                            {{ ordem.prioridade_formatada }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless mb-0">
+                                <tr>
+                                    <td class="fw-bold text-muted" style="width: 40%;">
+                                        <i class="fas fa-calendar me-1"></i>Abertura:
+                                    </td>
+                                    <td>
+                                        <strong>{{ ordem.data_abertura.strftime('%d/%m/%Y') }}</strong>
+                                        <div class="small text-muted">{{ ordem.dias_em_aberto }} dia(s) em aberto</div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-muted">
+                                        <i class="fas fa-clock me-1"></i>Prevista:
+                                    </td>
+                                    <td>
+                                        {% if ordem.data_prevista %}
+                                            <strong class="{{ 'text-danger' if ordem.prazo_vencido else '' }}">
+                                                {{ ordem.data_prevista.strftime('%d/%m/%Y') }}
+                                            </strong>
+                                            {% if ordem.prazo_vencido %}
+                                                <div class="small text-danger">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>Prazo vencido
+                                                </div>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Não definida</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% if ordem.data_inicio %}
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-play me-1"></i>Início:
+                                        </td>
+                                        <td>
+                                            <strong>{{ ordem.data_inicio.strftime('%d/%m/%Y %H:%M') }}</strong>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if ordem.data_conclusao %}
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-check me-1"></i>Conclusão:
+                                        </td>
+                                        <td>
+                                            <strong>{{ ordem.data_conclusao.strftime('%d/%m/%Y %H:%M') }}</strong>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                                {% if ordem.tecnico_responsavel %}
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-user-cog me-1"></i>Técnico:
+                                        </td>
+                                        <td><strong>{{ ordem.tecnico_responsavel }}</strong></td>
+                                    </tr>
+                                {% endif %}
+                            </table>
+                        </div>
+                    </div>
+                    
+                    {% if ordem.descricao %}
+                        <hr>
+                        <div>
+                            <h6 class="fw-bold text-muted mb-2">
+                                <i class="fas fa-file-alt me-1"></i>Descrição do Serviço:
+                            </h6>
+                            <p class="mb-0">{{ ordem.descricao }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Equipamento -->
+            {% if ordem.equipamento or ordem.marca_modelo or ordem.numero_serie %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs text-info me-2"></i>
+                            Equipamento
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                {% if ordem.equipamento %}
+                                    <div class="mb-3">
+                                        <label class="fw-bold text-muted">
+                                            <i class="fas fa-desktop me-1"></i>Equipamento:
+                                        </label>
+                                        <div>{{ ordem.equipamento }}</div>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if ordem.marca_modelo %}
+                                    <div class="mb-3">
+                                        <label class="fw-bold text-muted">
+                                            <i class="fas fa-tag me-1"></i>Marca/Modelo:
+                                        </label>
+                                        <div>{{ ordem.marca_modelo }}</div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {% if ordem.numero_serie %}
+                                    <div class="mb-3">
+                                        <label class="fw-bold text-muted">
+                                            <i class="fas fa-barcode me-1"></i>Número de Série:
+                                        </label>
+                                        <div><code>{{ ordem.numero_serie }}</code></div>
+                                    </div>
+                                {% endif %}
+                                
+                                {% if ordem.prazo_garantia > 0 %}
+                                    <div class="mb-3">
+                                        <label class="fw-bold text-muted">
+                                            <i class="fas fa-shield-alt me-1"></i>Garantia:
+                                        </label>
+                                        <div>{{ ordem.prazo_garantia }} dia(s)</div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Defeito e Diagnóstico -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-stethoscope text-danger me-2"></i>
+                        Diagnóstico Técnico
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if ordem.defeito_relatado %}
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-muted mb-2">
+                                <i class="fas fa-bug me-1"></i>Defeito Relatado:
+                            </h6>
+                            <div class="p-3 rounded diagnostico-view">
+                                {{ ordem.defeito_relatado }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if ordem.diagnostico %}
+                        <div class="mb-4">
+                            <h6 class="fw-bold text-muted mb-2">
+                                <i class="fas fa-search me-1"></i>Diagnóstico:
+                            </h6>
+                            <div class="p-3 rounded diagnostico-view">
+                                {{ ordem.diagnostico }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if ordem.solucao %}
+                        <div class="mb-0">
+                            <h6 class="fw-bold text-muted mb-2">
+                                <i class="fas fa-wrench me-1"></i>Solução Aplicada:
+                            </h6>
+                            <div class="p-3 rounded diagnostico-view">
+                                {{ ordem.solucao }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if not ordem.defeito_relatado and not ordem.diagnostico and not ordem.solucao %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-clipboard-list fa-2x mb-2"></i>
+                            <p class="mb-0">Informações técnicas não preenchidas</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Observações -->
+            {% if ordem.observacoes %}
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-sticky-note text-warning me-2"></i>
+                            Observações
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">{{ ordem.observacoes }}</p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            
+            <!-- Valores -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-dollar-sign text-success me-2"></i>
+                        Resumo Financeiro
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <td class="fw-bold text-muted">
+                                <i class="fas fa-tools me-1"></i>Serviço:
+                            </td>
+                            <td class="text-end">
+                                <strong>R$ {{ '{:.2f}'.format(ordem.valor_servico or 0).replace('.', ',') }}</strong>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="fw-bold text-muted">
+                                <i class="fas fa-cog me-1"></i>Peças:
+                            </td>
+                            <td class="text-end">
+                                <strong>R$ {{ '{:.2f}'.format(ordem.valor_pecas or 0).replace('.', ',') }}</strong>
+                            </td>
+                        </tr>
+                        {% if ordem.valor_desconto and ordem.valor_desconto > 0 %}
+                            <tr>
+                                <td class="fw-bold text-muted">
+                                    <i class="fas fa-percentage me-1"></i>Desconto:
+                                </td>
+                                <td class="text-end text-danger">
+                                    <strong>- R$ {{ '{:.2f}'.format(ordem.valor_desconto).replace('.', ',') }}</strong>
+                                </td>
+                            </tr>
+                        {% endif %}
+                        <tr class="border-top">
+                            <td class="fw-bold text-success fs-5">
+                                <i class="fas fa-calculator me-1"></i>Total:
+                            </td>
+                            <td class="text-end text-success fs-5">
+                                <strong>R$ {{ '{:.2f}'.format(ordem.valor_total or 0).replace('.', ',') }}</strong>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Ações -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cogs text-primary me-2"></i>
+                        Ações Rápidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        
+                        <!-- Ações baseadas no status -->
+                        {% if ordem.status == 'aberta' %}
+                            <form method="POST" action="{{ url_for('ordem_servico.iniciar_servico', id=ordem.id) }}">
+                                <button type="submit" class="btn btn-warning w-100"
+                                        onclick="return confirm('Confirma o início do serviço?')">
+                                    <i class="fas fa-play me-2"></i>Iniciar Serviço
+                                </button>
+                            </form>
+                        {% endif %}
+
+                        {% if ordem.status in ['aberta', 'em_andamento', 'aguardando_pecas', 'aguardando_cliente'] %}
+                            <form method="POST" action="{{ url_for('ordem_servico.concluir_servico', id=ordem.id) }}">
+                                <button type="submit" class="btn btn-success w-100"
+                                        onclick="return confirm('Confirma a conclusão do serviço?')">
+                                    <i class="fas fa-check me-2"></i>Concluir Serviço
+                                </button>
+                            </form>
+                        {% endif %}
+
+                        <!-- Botão Editar sempre disponível -->
+                        <a href="{{ url_for('ordem_servico.editar', id=ordem.id) }}" class="btn btn-primary w-100">
+                            <i class="fas fa-edit me-2"></i>Editar Ordem
+                        </a>
+
+                        <!-- Ações de cancelamento/exclusão -->
+                        {% if ordem.status not in ['concluida', 'cancelada'] %}
+                            <form method="POST" action="{{ url_for('ordem_servico.cancelar_servico', id=ordem.id) }}">
+                                <button type="submit" class="btn btn-outline-danger w-100"
+                                        onclick="return confirm('Confirma o cancelamento do serviço?')">
+                                    <i class="fas fa-times me-2"></i>Cancelar Serviço
+                                </button>
+                            </form>
+                        {% endif %}
+
+                        <hr>
+                        
+                        <form method="POST" action="{{ url_for('ordem_servico.excluir', id=ordem.id) }}">
+                            <button type="submit" class="btn btn-outline-danger w-100"
+                                    onclick="return confirm('Confirma a exclusão? Esta ação não pode ser desfeita!')">
+                                <i class="fas fa-trash me-2"></i>Excluir Ordem
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Histórico/Timeline -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history text-info me-2"></i>
+                        Linha do Tempo
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <!-- Abertura -->
+                        <div class="timeline-item">
+                            <div class="timeline-marker bg-primary"></div>
+                            <div class="timeline-content">
+                                <h6 class="mb-1">Ordem Aberta</h6>
+                                <p class="text-muted small mb-0">
+                                    {{ ordem.data_abertura.strftime('%d/%m/%Y') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Início -->
+                        {% if ordem.data_inicio %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-warning"></div>
+                                <div class="timeline-content">
+                                    <h6 class="mb-1">Serviço Iniciado</h6>
+                                    <p class="text-muted small mb-0">
+                                        {{ ordem.data_inicio.strftime('%d/%m/%Y %H:%M') }}
+                                    </p>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Conclusão -->
+                        {% if ordem.data_conclusao %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-success"></div>
+                                <div class="timeline-content">
+                                    <h6 class="mb-1">Serviço Concluído</h6>
+                                    <p class="text-muted small mb-0">
+                                        {{ ordem.data_conclusao.strftime('%d/%m/%Y %H:%M') }}
+                                    </p>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        <!-- Status atual se não concluído -->
+                        {% if not ordem.data_conclusao and ordem.status != 'aberta' %}
+                            <div class="timeline-item">
+                                <div class="timeline-marker bg-{{ ordem.status_cor }}"></div>
+                                <div class="timeline-content">
+                                    <h6 class="mb-1">{{ ordem.status_formatado }}</h6>
+                                    <p class="text-muted small mb-0">Status atual</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Anexos -->
+            {% if ordem.anexos %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-paperclip text-primary me-2"></i>
+                        Anexos ({{ ordem.anexos|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for anexo in ordem.anexos %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card border">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="{{ anexo.icone }} text-primary me-2 fa-lg"></i>
+                                        <div class="flex-grow-1 min-width-0">
+                                            <h6 class="mb-0 text-truncate" title="{{ anexo.nome_original }}">
+                                                {{ anexo.nome_original }}
+                                            </h6>
+                                            <small class="text-muted">{{ anexo.tamanho_formatado }}</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Preview para imagens -->
+                                    {% if anexo.tipo_arquivo.startswith('image/') %}
+                                    <div class="text-center mb-2 anexo-preview">
+                                        <img src="{{ url_for('ordem_servico.visualizar_anexo', anexo_id=anexo.id) }}" 
+                                             class="img-thumbnail"
+                                             alt="{{ anexo.nome_original }}">
+                                    </div>
+                                    {% endif %}
+                                    
+                                    <div class="d-flex justify-content-between">
+                                        <a href="{{ url_for('ordem_servico.baixar_anexo', anexo_id=anexo.id) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-download me-1"></i>Baixar
+                                        </a>
+                                        
+                                        {% if not anexo.tipo_arquivo.startswith('image/') %}
+                                        <a href="{{ url_for('ordem_servico.visualizar_anexo', anexo_id=anexo.id) }}" 
+                                           class="btn btn-sm btn-outline-info" target="_blank">
+                                            <i class="fas fa-eye me-1"></i>Ver
+                                        </a>
+                                        {% endif %}
+                                        
+                                        <form method="POST" action="{{ url_for('ordem_servico.excluir_anexo', anexo_id=anexo.id) }}" 
+                                              class="d-inline" onsubmit="return confirm('Confirma exclusão do anexo?')">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash me-1"></i>Excluir
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -24px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 10px 15px;
+    border-radius: 8px;
+    border-left: 3px solid #dee2e6;
+}
+
+/* Estilos para anexos */
+.anexo-preview img {
+    max-height: 120px;
+    max-width: 100%;
+}
+
+.min-width-0 {
+    min-width: 0;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Ordem de Serviço - {{ ordem.numero }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .company-logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        
+        .report-title {
+            font-size: 18px;
+            margin: 10px 0;
+            color: #333;
+        }
+        
+        .report-number {
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .section-header {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            font-weight: bold;
+            color: #007bff;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .section-content {
+            padding: 15px;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .info-item {
+            margin-bottom: 10px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #555;
+            display: inline-block;
+            min-width: 120px;
+        }
+        
+        .info-value {
+            color: #333;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-aberto { background-color: #fff3cd; color: #856404; }
+        .status-andamento { background-color: #d1ecf1; color: #0c5460; }
+        .status-concluido { background-color: #d4edda; color: #155724; }
+        .status-cancelado { background-color: #f8d7da; color: #721c24; }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        .table th,
+        .table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .table-striped tbody tr:nth-child(odd) {
+            background-color: #f9f9f9;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .total-row {
+            background-color: #e9ecef !important;
+            font-weight: bold;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        
+        .signature-section {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+        
+        .signature-box {
+            border-top: 1px solid #333;
+            padding-top: 10px;
+            text-align: center;
+            margin-top: 60px;
+        }
+        
+        @media print {
+            body { margin: 0; }
+            .section { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <div class="header">
+        <div class="company-logo">ERP JSP - Sistema de Gestão</div>
+        <div class="report-title">RELATÓRIO DE ORDEM DE SERVIÇO</div>
+        <div class="report-number">Nº {{ ordem.numero }} - {{ ordem.data_abertura.strftime('%d/%m/%Y') if ordem.data_abertura else 'Data não informada' }}</div>
+    </div>
+
+    <!-- Informações do Cliente -->
+    <div class="section">
+        <div class="section-header">
+            📋 Dados do Cliente
+        </div>
+        <div class="section-content">
+            <div class="info-grid">
+                <div>
+                    <div class="info-item">
+                        <span class="info-label">Nome:</span>
+                        <span class="info-value">{{ ordem.cliente.nome if ordem.cliente else 'Cliente não informado' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">E-mail:</span>
+                        <span class="info-value">{{ ordem.cliente.email if ordem.cliente and ordem.cliente.email else 'Não informado' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Cidade:</span>
+                        <span class="info-value">{{ ordem.cliente.cidade if ordem.cliente and ordem.cliente.cidade else 'Não informado' }}</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="info-item">
+                        <span class="info-label">Telefone:</span>
+                        <span class="info-value">{{ ordem.cliente.telefone if ordem.cliente and ordem.cliente.telefone else 'Não informado' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">CPF/CNPJ:</span>
+                        <span class="info-value">{{ ordem.cliente.cpf_cnpj if ordem.cliente and ordem.cliente.cpf_cnpj else 'Não informado' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Estado:</span>
+                        <span class="info-value">{{ ordem.cliente.estado if ordem.cliente and ordem.cliente.estado else 'Não informado' }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações da Ordem -->
+    <div class="section">
+        <div class="section-header">
+            🔧 Dados da Ordem de Serviço
+        </div>
+        <div class="section-content">
+            <div class="info-grid">
+                <div>
+                    <div class="info-item">
+                        <span class="info-label">Status:</span>
+                        <span class="status-badge status-{{ ordem.status }}">{{ ordem.status_formatado if ordem.status_formatado else ordem.status }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Data Abertura:</span>
+                        <span class="info-value">{{ ordem.data_abertura.strftime('%d/%m/%Y às %H:%M') if ordem.data_abertura else 'Não informado' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Previsão:</span>
+                        <span class="info-value">{{ ordem.data_previsao.strftime('%d/%m/%Y') if ordem.data_previsao else 'Não informado' }}</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="info-item">
+                        <span class="info-label">Prioridade:</span>
+                        <span class="info-value">{{ ordem.prioridade.title() if ordem.prioridade else 'Não informado' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Data Conclusão:</span>
+                        <span class="info-value">{{ ordem.data_conclusao.strftime('%d/%m/%Y às %H:%M') if ordem.data_conclusao else 'Não concluído' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Garantia:</span>
+                        <span class="info-value">{{ ordem.garantia_dias }} dias</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Descrição do Problema -->
+    {% if ordem.descricao %}
+    <div class="section">
+        <div class="section-header">
+            📝 Descrição do Problema
+        </div>
+        <div class="section-content">
+            <p>{{ ordem.descricao }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Diagnóstico Técnico -->
+    {% if ordem.diagnostico %}
+    <div class="section">
+        <div class="section-header">
+            🔍 Diagnóstico Técnico
+        </div>
+        <div class="section-content">
+            <p>{{ ordem.diagnostico }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Solução Aplicada -->
+    {% if ordem.solucao %}
+    <div class="section">
+        <div class="section-header">
+            🔧 Solução Aplicada
+        </div>
+        <div class="section-content">
+            <p>{{ ordem.solucao }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Serviços Realizados -->
+    {% if ordem.servicos %}
+    <div class="section">
+        <div class="section-header">
+            🛠️ Serviços Realizados
+        </div>
+        <div class="section-content">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Descrição</th>
+                        <th class="text-center">Quantidade</th>
+                        <th class="text-right">Valor Unit.</th>
+                        <th class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for servico in ordem.servicos %}
+                    <tr>
+                        <td>{{ servico.descricao }}</td>
+                        <td class="text-center">{{ servico.quantidade_horas or '0' }}</td>
+                        <td class="text-right">R$ {{ "%.2f"|format(servico.valor_hora or 0) }}</td>
+                        <td class="text-right">R$ {{ "%.2f"|format(servico.valor_total or 0) }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="total-row">
+                        <td colspan="3"><strong>Total dos Serviços:</strong></td>
+                        <td class="text-right"><strong>R$ {{ "%.2f"|format(ordem.servicos|sum(attribute='valor_total', start=0)) }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Produtos Utilizados -->
+    {% if ordem.produtos %}
+    <div class="section">
+        <div class="section-header">
+            📦 Produtos Utilizados
+        </div>
+        <div class="section-content">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th class="text-center">Quantidade</th>
+                        <th class="text-right">Valor Unit.</th>
+                        <th class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for produto in ordem.produtos %}
+                    <tr>
+                        <td>{{ produto.produto.nome if produto.produto else produto.descricao }}</td>
+                        <td class="text-center">{{ produto.quantidade }}</td>
+                        <td class="text-right">R$ {{ "%.2f"|format(produto.valor_unitario) }}</td>
+                        <td class="text-right">R$ {{ "%.2f"|format(produto.quantidade * produto.valor_unitario) }}</td>
+                    </tr>
+                    {% endfor %}
+                    <tr class="total-row">
+                        <td colspan="3"><strong>Total dos Produtos:</strong></td>
+                        <td class="text-right"><strong>R$ {{ "%.2f"|format(ordem.produtos|sum(attribute='valor_total', start=0)) }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Valores Totais -->
+    <div class="section">
+        <div class="section-header">
+            💰 Resumo Financeiro
+        </div>
+        <div class="section-content">
+            <div class="info-grid">
+                <div>
+                    <div class="info-item">
+                        <span class="info-label">Valor Serviços:</span>
+                        <span class="info-value">R$ {{ "%.2f"|format(ordem.valor_servico or 0) }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Valor Produtos:</span>
+                        <span class="info-value">R$ {{ "%.2f"|format(ordem.valor_pecas or 0) }}</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="info-item">
+                        <span class="info-label">Desconto:</span>
+                        <span class="info-value">R$ {{ "%.2f"|format(ordem.desconto or 0) }}</span>
+                    </div>
+                    <div class="info-item" style="font-size: 18px; font-weight: bold; color: #007bff;">
+                        <span class="info-label">VALOR TOTAL:</span>
+                        <span class="info-value">R$ {{ "%.2f"|format(ordem.valor_total or 0) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informações Técnicas Adicionais -->
+    {% if ordem.km_inicial or ordem.tempo_inicial %}
+    <div class="section">
+        <div class="section-header">
+            📊 Informações Técnicas
+        </div>
+        <div class="section-content">
+            <div class="info-grid">
+                <div>
+                    {% if ordem.km_inicial and ordem.km_final %}
+                    <div class="info-item">
+                        <span class="info-label">KM Inicial:</span>
+                        <span class="info-value">{{ ordem.km_inicial }} km</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">KM Final:</span>
+                        <span class="info-value">{{ ordem.km_final }} km</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total KM:</span>
+                        <span class="info-value">{{ ordem.km_final - ordem.km_inicial }} km</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div>
+                    {% if ordem.tempo_inicial and ordem.tempo_final %}
+                    <div class="info-item">
+                        <span class="info-label">Hora Inicial:</span>
+                        <span class="info-value">{{ ordem.tempo_inicial }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Hora Final:</span>
+                        <span class="info-value">{{ ordem.tempo_final }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Total Horas:</span>
+                        <span class="info-value">{{ ordem.tempo_total or 'Não calculado' }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Observações -->
+    {% if ordem.observacoes %}
+    <div class="section">
+        <div class="section-header">
+            📝 Observações
+        </div>
+        <div class="section-content">
+            <p>{{ ordem.observacoes }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Assinaturas -->
+    <div class="signature-section">
+        <div>
+            <div class="signature-box">
+                <div>Assinatura do Técnico</div>
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                    {{ ordem.tecnico if ordem.tecnico else 'Técnico Responsável' }}
+                </div>
+            </div>
+        </div>
+        <div>
+            <div class="signature-box">
+                <div>Assinatura do Cliente</div>
+                <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                    {{ ordem.cliente.nome if ordem.cliente else 'Cliente' }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="footer">
+        <p>Relatório gerado automaticamente pelo Sistema ERP JSP em {{ now.strftime('%d/%m/%Y às %H:%M') }}</p>
+        <p>Este documento é válido sem assinatura digital conforme legislação vigente.</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,755 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if ordem %}Editar Ordem de Serviço {{ ordem.numero }}{% else %}Nova Ordem de Serviço{% endif %}
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb bg-transparent mb-0">
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('painel.dashboard') }}" class="text-decoration-none">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('ordem_servico.listar') }}" class="text-decoration-none">
+                <i class="fas fa-tools"></i> Ordens de Serviço
+            </a>
+        </li>
+        <li class="breadcrumb-item active" aria-current="page">
+            {% if ordem %}Editar OS {{ ordem.numero }}{% else %}Nova Ordem{% endif %}
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+
+<!-- Estilos extras para organizar melhor o layout do formulário -->
+<style>
+    /* Deixa as bordas dos cards mais suaves e remove sombras pesadas */
+    .card {
+        border: 1px solid #2e3e5e;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0;
+        padding: 0.75rem 1rem;
+    }
+    .card-body {
+        padding: 1.25rem;
+    }
+    /* Ajusta inputs e selects para terem a mesma altura e margens consistentes */
+    .form-control,
+    .form-select {
+        border-radius: 0.4rem;
+        height: calc(2.5rem + 2px);
+        padding: 0.5rem 0.75rem;
+    }
+    /* Coloca um espaçamento mais uniforme entre as linhas de cada seção */
+    .row.g-3 > [class^='col-'] {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    /* Estilo para títulos de seções para melhor legibilidade */
+    .card-title {
+        font-size: 1rem;
+        margin-bottom: 0;
+    }
+    /* Ajusta a área de anexos e listas para que itens fiquem mais alinhados */
+    #servicos-container .row,
+    #produtos-container .row {
+        margin-left: -0.25rem;
+        margin-right: -0.25rem;
+    }
+    #servicos-container .col-md-5,
+    #produtos-container .col-md-4 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 0.75rem;
+    }
+    @media (min-width: 768px) {
+        #servicos-container .col-md-5 {
+            flex: 0 0 41.6667%;
+            max-width: 41.6667%;
+        }
+        #produtos-container .col-md-4 {
+            flex: 0 0 33.3333%;
+            max-width: 33.3333%;
+        }
+    }
+    /* Controla a largura das colunas dentro de serviços/produtos em breakpoints maiores */
+    #servicos-container .col-md-2,
+    #produtos-container .col-md-2 {
+        flex: 0 0 25%;
+        max-width: 25%;
+    }
+    @media (max-width: 767.98px) {
+        /* Em telas menores, cada campo ocupa 100% para evitar quebra estranha */
+        #servicos-container .col-md-2,
+        #produtos-container .col-md-2 {
+            flex: 0 0 100%;
+            max-width: 100%;
+        }
+    }
+    /* Ajusta o botão do resumo financeiro para ocupar toda a largura em mobile */
+    .btn-group .btn {
+        margin-right: 0.5rem;
+    }
+    @media (max-width: 575.98px) {
+        .btn-group {
+            width: 100%;
+        }
+        .btn-group .btn {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0 text-white">
+                        <i class="fas fa-tools me-2"></i>
+                        {% if ordem %}Editar Ordem de Serviço{% else %}Nova Ordem de Serviço{% endif %}
+                    </h1>
+                    {% if ordem %}
+                    <p class="text-muted mb-0">OS {{ ordem.numero }} - {{ ordem.status_formatado }}</p>
+                    {% endif %}
+                </div>
+                <div>
+                    <a href="{{ url_for('ordem_servico.listar') }}" class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left me-1"></i> Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <form method="POST" enctype="multipart/form-data" id="formOrdemServico">
+        <div class="row">
+            <!-- Coluna Principal -->
+            <div class="col-lg-8">
+                <!-- Dados Básicos -->
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-info-circle me-2"></i>Dados Básicos
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Cliente *</label>
+                                <select id="cliente_select" class="form-select bg-dark text-white border-secondary" name="cliente_id" required>
+                                    <option value="">Digite para buscar cliente...</option>
+                                    {% if clientes %}
+                                        {% for cliente in clientes %}
+                                        <option value="{{ cliente.id }}"
+                                                data-info="{{ cliente.tipo }} - {{ cliente.cpf_cnpj or 'Sem documento' }}"
+                                                {% if ordem and ordem.cliente_id == cliente.id %}selected{% endif %}>
+                                            {{ cliente.nome }}
+                                        </option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="">Nenhum cliente disponível</option>
+                                    {% endif %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Número da OS</label>
+                                <input type="text" class="form-control bg-dark text-white border-secondary" name="numero" value="{{ ordem.numero if ordem else numero_os }}" readonly>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-3">
+                            <div class="col-12">
+                                <label class="form-label text-white">Título do Serviço *</label>
+                                <input type="text" class="form-control bg-dark text-white border-secondary" name="titulo" value="{{ ordem.titulo if ordem else '' }}" placeholder="Ex: Manutenção preventiva" required>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-3">
+                            <div class="col-12">
+                                <label class="form-label text-white">Descrição do Serviço</label>
+                                <textarea class="form-control bg-dark text-white border-secondary" name="descricao" rows="3" placeholder="Descreva detalhadamente o serviço a ser realizado">{{ (ordem.descricao if ordem and ordem.descricao else '') }}</textarea>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Status</label>
+                                <select class="form-select bg-dark text-white border-secondary" name="status">
+                                    <option value="aberta" {% if not ordem or ordem.status == 'aberta' %}selected{% endif %}>Aberta</option>
+                                    <option value="em_andamento" {% if ordem and ordem.status == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
+                                    <option value="aguardando_pecas" {% if ordem and ordem.status == 'aguardando_pecas' %}selected{% endif %}>Aguardando Peças</option>
+                                    <option value="aguardando_cliente" {% if ordem and ordem.status == 'aguardando_cliente' %}selected{% endif %}>Aguardando Cliente</option>
+                                    <option value="concluida" {% if ordem and ordem.status == 'concluida' %}selected{% endif %}>Concluída</option>
+                                    <option value="cancelada" {% if ordem and ordem.status == 'cancelada' %}selected{% endif %}>Cancelada</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Prioridade</label>
+                                <select class="form-select bg-dark text-white border-secondary" name="prioridade">
+                                    <option value="baixa" {% if ordem and ordem.prioridade == 'baixa' %}selected{% endif %}>Baixa</option>
+                                    <option value="normal" {% if not ordem or ordem.prioridade == 'normal' %}selected{% endif %}>Normal</option>
+                                    <option value="alta" {% if ordem and ordem.prioridade == 'alta' %}selected{% endif %}>Alta</option>
+                                    <option value="urgente" {% if ordem and ordem.prioridade == 'urgente' %}selected{% endif %}>Urgente</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Solicitação -->
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-user-edit me-2"></i>Dados da Solicitação
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Solicitante</label>
+                                <input type="text" class="form-control bg-dark text-white border-secondary" name="solicitante" value="{{ ordem.solicitante if ordem else '' }}" placeholder="Nome da pessoa que solicitou o serviço">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Data da Abertura</label>
+                                <input type="date" class="form-control bg-dark text-white border-secondary" name="data_abertura" value="{{ ordem.data_abertura if ordem else today }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Equipamento -->
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-cogs me-2"></i>Dados do Equipamento
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Equipamento</label>
+                                <input type="text" id="equipamento_input" class="form-control bg-dark text-white border-secondary" name="equipamento" value="{{ (ordem.equipamento if ordem and ordem.equipamento else '') }}" placeholder="Ex: Notebook Dell, Desktop, Impressora" list="equipamentos_datalist">
+                                <datalist id="equipamentos_datalist">
+                                    <option value="Notebook Dell">
+                                    <option value="Notebook HP">
+                                    <option value="Notebook Lenovo">
+                                    <option value="Desktop Dell">
+                                    <option value="Desktop HP">
+                                    <option value="iMac">
+                                    <option value="MacBook Pro">
+                                    <option value="Impressora HP LaserJet">
+                                    <option value="Impressora Epson">
+                                    <option value="Monitor Samsung">
+                                    <option value="Monitor LG">
+                                    <option value="Smartphone iPhone">
+                                    <option value="Smartphone Samsung">
+                                    <option value="Tablet iPad">
+                                    <option value="Roteador TP-Link">
+                                </datalist>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Marca/Modelo</label>
+                                <input type="text" class="form-control bg-dark text-white border-secondary" name="marca_modelo" value="{{ (ordem.marca_modelo if ordem and ordem.marca_modelo else '') }}" placeholder="Ex: Dell Inspiron 15 3000, HP LaserJet">
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Número de Série</label>
+                                <input type="text" class="form-control bg-dark text-white border-secondary" name="numero_serie" value="{{ (ordem.numero_serie if ordem and ordem.numero_serie else '') }}" placeholder="Ex: ABC123456789, SN001234">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Técnico Responsável</label>
+                                <input type="text" id="tecnico_input" class="form-control bg-dark text-white border-secondary" name="tecnico_responsavel" value="{{ (ordem.tecnico_responsavel if ordem and ordem.tecnico_responsavel else '') }}" placeholder="Ex: João Silva, Maria Santos" list="tecnicos_datalist">
+                                <datalist id="tecnicos_datalist">
+                                    <option value="João Silva">
+                                    <option value="Maria Santos">
+                                    <option value="Pedro Oliveira">
+                                    <option value="Ana Costa">
+                                    <option value="Carlos Mendes">
+                                </datalist>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-3">
+                            <div class="col-12">
+                                <label class="form-label text-white">Defeito Relatado</label>
+                                <textarea class="form-control bg-dark text-white border-secondary" name="defeito_relatado" rows="2" placeholder="Ex: Computador não liga, tela azul, lentidão">{{ (ordem.defeito_relatado if ordem and ordem.defeito_relatado else '') }}</textarea>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Diagnóstico</label>
+                                <textarea class="form-control bg-dark text-white border-secondary" name="diagnostico" rows="2" placeholder="Ex: HD com setores ruins, memória RAM defeituosa">{{ (ordem.diagnostico if ordem and ordem.diagnostico else '') }}</textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label text-white">Solução Aplicada</label>
+                                <textarea class="form-control bg-dark text-white border-secondary" name="solucao" rows="2" placeholder="Descreva a solução">{{ ordem.solucao if ordem else '' }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controles de Execução -->
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-stopwatch me-2"></i>Controles de Execução
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label text-white">KM Inicial</label>
+                                <input type="number" class="form-control bg-dark text-white border-secondary" name="km_inicial" id="km_inicial" value="{{ ordem.km_inicial if ordem and ordem.km_inicial else '' }}" onchange="calcularKM()" placeholder="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-white">KM Final</label>
+                                <input type="number" class="form-control bg-dark text-white border-secondary" name="km_final" id="km_final" value="{{ ordem.km_final if ordem and ordem.km_final else '' }}" onchange="calcularKM()" placeholder="0">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-white">Total KM</label>
+                                <input type="text" class="form-control bg-secondary text-white" id="km_total" readonly placeholder="0 km">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-white">Prazo Garantia (dias)</label>
+                                <input type="number" class="form-control bg-dark text-white border-secondary" name="prazo_garantia" value="{{ ordem.prazo_garantia if ordem else 0 }}" min="0" placeholder="0">
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-3">
+                                <label class="form-label text-white">Hora Inicial</label>
+                                <input type="time" class="form-control bg-dark text-white border-secondary" name="hora_inicial" id="hora_inicial" value="{{ format_time(ordem.hora_inicial) if ordem else '' }}" onchange="calcularTempo()">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-white">Hora Final</label>
+                                <input type="time" class="form-control bg-dark text-white border-secondary" name="hora_final" id="hora_final" value="{{ format_time(ordem.hora_final) if ordem else '' }}" onchange="calcularTempo()">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-white">Tempo Total</label>
+                                <input type="text" class="form-control bg-secondary text-white" id="tempo_total" readonly placeholder="00:00">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-white">Data Prevista</label>
+                                <input type="date" class="form-control bg-dark text-white border-secondary" name="data_prevista" value="{{ format_date(ordem.data_prevista) if ordem else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Serviços -->
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-wrench me-2"></i>Serviços Realizados
+                        </h5>
+                        <button type="button" class="btn btn-outline-light btn-sm" onclick="adicionarServico()">
+                            <i class="fas fa-plus me-1"></i>Adicionar Serviço
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="servicos-container">
+                            {% if ordem and ordem.servicos %}
+                                {% for item in ordem.servicos %}
+                                <div class="row item-servico g-3 align-items-end mb-3" id="servico-{{ loop.index }}">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-white">Descrição do Serviço</label>
+                                        <input type="text" class="form-control bg-dark text-white border-secondary" name="servico_descricao[]" value="{{ item.descricao }}" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label text-white">Horas <small class="text-muted">(opcional)</small></label>
+                                        <input type="number" class="form-control bg-dark text-white border-secondary servico-horas" name="servico_horas[]" value="{{ item.quantidade_horas or '' }}" step="0.25" min="0" data-id="{{ loop.index }}" placeholder="0 = Serviço fechado" title="Deixe vazio ou 0 para serviço com valor fechado">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label text-white">Valor <small class="text-muted">(R$/hora ou total)</small></label>
+                                        <input type="text" class="form-control money bg-dark text-white border-secondary servico-valor" name="servico_valor[]" value="{{ '%.2f'|format((item.valor_hora or 0)|float) }}" data-id="{{ loop.index }}" placeholder="Valor por hora ou total" title="Se preencheu horas: valor por hora. Se não: valor total do serviço" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label text-white">Total</label>
+                                        <input type="text" class="form-control bg-secondary text-white servico-total" name="servico_total[]" data-id="{{ loop.index }}" value="R$ {{ '%.2f'|format((item.valor_total or 0)|float) }}" readonly>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-outline-danger d-block w-100" onclick="removerServico({{ loop.index }})" title="Remover serviço">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-9"></div>
+                            <div class="col-md-3">
+                                <label class="form-label text-white fw-bold">Total Serviços</label>
+                                <input type="text" class="form-control bg-secondary text-white fw-bold" name="total_servicos" readonly value="R$ 0,00">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Produtos -->
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-box me-2"></i>Produtos/Peças Utilizadas
+                        </h5>
+                        <button type="button" class="btn btn-outline-dark btn-sm" onclick="adicionarProduto()">
+                            <i class="fas fa-plus me-1"></i>Adicionar Produto
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="produtos-container">
+                            {% if ordem and ordem.produtos_utilizados %}
+                                {% for produto in ordem.produtos_utilizados %}
+                                <div class="row item-produto g-3 align-items-end mb-3" id="produto-{{ loop.index }}">
+                                    <div class="col-md-4">
+                                        <label class="form-label text-white">Produto/Peça</label>
+                                        <input type="text" class="form-control bg-dark text-white border-secondary" name="produto_descricao[]" value="{{ produto.descricao }}" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label text-white">Qtd.</label>
+                                        <input type="number" class="form-control bg-dark text-white border-secondary produto-quantidade" name="produto_quantidade[]" value="{{ produto.quantidade }}" step="0.001" min="0" data-id="{{ loop.index }}" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label text-white">Valor Unit.</label>
+                                        <input type="text" class="form-control bg-dark text-white border-secondary money produto-valor" name="produto_valor[]" value="{{ '%.2f'|format((produto.valor_unitario or 0)|float) }}" data-id="{{ loop.index }}" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label text-white">Total</label>
+                                        <input type="text" class="form-control bg-secondary text-white produto-total" name="produto_total[]" data-id="{{ loop.index }}" value="R$ {{ '%.2f'|format((produto.valor_total or 0)|float) }}" readonly>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" class="btn btn-outline-danger d-block w-100" onclick="removerProduto({{ loop.index }})" title="Remover produto">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-8"></div>
+                            <div class="col-md-4">
+                                <label class="form-label text-white fw-bold">Total Produtos</label>
+                                <input type="text" class="form-control bg-secondary text-white fw-bold" name="total_produtos" readonly value="R$ 0,00">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Resumo Financeiro -->
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-dollar-sign me-2"></i>Resumo Financeiro
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label text-white">Valor Serviços</label>
+                            <input type="text" class="form-control bg-secondary text-white" name="valor_servico" readonly value="R$ 0,00">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-white">Valor Produtos</label>
+                            <input type="text" class="form-control bg-secondary text-white" name="valor_pecas" readonly value="R$ 0,00">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-white">Desconto</label>
+                            <input type="text" class="form-control money bg-dark text-white border-secondary" name="valor_desconto" value="{{ '%.2f'|format((ordem.valor_desconto or 0)|float) if ordem else '0,00' }}" onchange="calcularTotal()">
+                        </div>
+                        <hr class="border-secondary">
+                        <div class="mb-3">
+                            <label class="form-label text-white fw-bold fs-5">Valor Total</label>
+                            <input type="text" class="form-control bg-primary text-white fw-bold fs-5" name="valor_total" readonly value="R$ 0,00">
+                        </div>
+                        <!-- Alinha pagamento e parcelas em colunas verticais -->
+                        <div class="mb-3">
+                            <label class="form-label text-white">Pagamento</label>
+                            <select class="form-select bg-dark text-white border-secondary" name="condicao_pagamento" onchange="toggleParcelas()">
+                                <option value="a_vista" {% if not ordem or ordem.condicao_pagamento == 'a_vista' %}selected{% endif %}>À Vista</option>
+                                <option value="parcelado" {% if ordem and ordem.condicao_pagamento == 'parcelado' %}selected{% endif %}>Parcelado</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-white">Parcelas</label>
+                            <select class="form-select bg-dark text-white border-secondary" name="numero_parcelas" id="numero_parcelas" disabled>
+                                {% for i in range(1, 13) %}
+                                <option value="{{ i }}" {% if ordem and ordem.numero_parcelas == i %}selected{% endif %}>{{ i }}x</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3 mt-3">
+                            <label class="form-label text-white">Descrição das Condições de Pagamento</label>
+                            <textarea class="form-control bg-dark text-white border-secondary" name="descricao_pagamento" rows="2" placeholder="Ex: Pagamento à vista com 5% de desconto, ou parcelado em 3x no cartão...">{{ (ordem.descricao_pagamento if ordem and ordem.descricao_pagamento else '') }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Anexos e Documentos -->
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-paperclip me-2"></i>Anexos e Documentos
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label text-white">Anexos (Imagens e Documentos)</label>
+                                <input type="file" class="form-control bg-dark text-white border-secondary" name="anexos[]" multiple accept=".jpg,.jpeg,.png,.pdf,.doc,.docx">
+                                <small class="text-muted">Selecione imagens (JPG, PNG) ou documentos (PDF, DOC). Múltiplos arquivos permitidos.</small>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-3">
+                            <div class="col-12">
+                                <label class="form-label text-white">Observações sobre Anexos</label>
+                                <textarea class="form-control bg-dark text-white border-secondary" name="observacoes_anexos" rows="3" placeholder="Ex: Fotos do equipamento danificado, orçamento de peças, autorização do cliente...">{{ (ordem.observacoes_anexos if ordem and ordem.observacoes_anexos else '') }}</textarea>
+                            </div>
+                        </div>
+                        {% if ordem and ordem.id %}
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6 class="text-white">📁 Anexos Existentes:</h6>
+                                <div id="anexos-existentes">
+                                    <!-- Aqui serão carregados os anexos via JavaScript -->
+                                    <div class="text-muted">Carregando anexos...</div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Datas -->
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-calendar me-2"></i>Datas de Controle
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label text-white">Data Abertura</label>
+                            <input type="date" class="form-control bg-secondary text-white" value="{{ format_date(ordem.data_abertura) if ordem else format_date(today) }}" readonly>
+                        </div>
+                        {% if ordem and ordem.data_inicio %}
+                        <div class="mb-3">
+                            <label class="form-label text-white">Data Início</label>
+                            <input type="datetime-local" class="form-control bg-secondary text-white" value="{{ format_datetime(ordem.data_inicio) }}" readonly>
+                        </div>
+                        {% endif %}
+                        {% if ordem and ordem.data_conclusao %}
+                        <div class="mb-3">
+                            <label class="form-label text-white">Data Conclusão</label>
+                            <input type="datetime-local" class="form-control bg-secondary text-white" value="{{ format_datetime(ordem.data_conclusao) }}" readonly>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Observações -->
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-comment me-2"></i>Observações
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <textarea class="form-control bg-dark text-white border-secondary" name="observacoes" rows="4" placeholder="Observações gerais sobre a ordem de serviço">{{ ordem.observacoes if ordem else '' }}</textarea>
+                    </div>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div class="card bg-dark border-secondary">
+                    <div class="card-body">
+                        <div class="d-grid gap-3">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="fas fa-save me-2"></i>
+                                {% if ordem %}Atualizar Ordem{% else %}Criar Ordem{% endif %}
+                            </button>
+                            {% if ordem %}
+                            <div class="btn-group" role="group">
+                                {% if ordem.status == 'aberta' %}
+                                <button type="button" class="btn btn-warning" onclick="iniciarOS()">
+                                    <i class="fas fa-play me-1"></i>Iniciar
+                                </button>
+                                {% endif %}
+                                {% if ordem.status in ['aberta', 'em_andamento'] %}
+                                <button type="button" class="btn btn-success" onclick="concluirOS()">
+                                    <i class="fas fa-check me-1"></i>Concluir
+                                </button>
+                                {% endif %}
+                                {% if ordem.status not in ['concluida', 'cancelada'] %}
+                                <button type="button" class="btn btn-danger" onclick="cancelarOS()">
+                                    <i class="fas fa-times me-1"></i>Cancelar
+                                </button>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+    {{ super() }}
+    <!-- Mask e scripts de cálculo para Ordem de Serviço -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+    <script src="{{ url_for('static', filename='js/ordem_calculos.js') }}"></script>
+    
+    <!-- ÚNICA versão das funções - limpa e funcional -->
+    <script>
+        console.log('🚀 Carregando funções de produtos/serviços...');
+        
+        var contadorServicos = 0;
+        var contadorProdutos = 0;
+        
+        function adicionarServico() {
+            console.log('🔥 adicionarServico() chamada!');
+            contadorServicos++;
+            
+            var container = document.getElementById('servicos-container');
+            if (!container) {
+                alert('Erro: Container de serviços não encontrado!');
+                return;
+            }
+            
+            var novoHTML = 
+                '<div class="row item-servico mb-3" id="servico-' + contadorServicos + '">' +
+                    '<div class="col-md-6">' +
+                        '<label class="form-label text-white">Descrição do Serviço</label>' +
+                        '<input type="text" class="form-control bg-dark text-white border-secondary" name="servico_descricao[]" placeholder="Ex: Troca de óleo" required>' +
+                    '</div>' +
+                    '<div class="col-md-2">' +
+                        '<label class="form-label text-white">Horas</label>' +
+                        '<input type="number" class="form-control bg-dark text-white border-secondary" name="servico_horas[]" value="0" step="0.25" min="0">' +
+                    '</div>' +
+                    '<div class="col-md-2">' +
+                        '<label class="form-label text-white">Valor</label>' +
+                        '<input type="text" class="form-control bg-dark text-white border-secondary" name="servico_valor[]" placeholder="0,00" required>' +
+                    '</div>' +
+                    '<div class="col-md-2">' +
+                        '<button type="button" class="btn btn-outline-danger d-block w-100" onclick="removerServico(' + contadorServicos + ')" title="Remover serviço">' +
+                            '<i class="fas fa-trash"></i>' +
+                        '</button>' +
+                    '</div>' +
+                '</div>';
+            
+            container.insertAdjacentHTML('beforeend', novoHTML);
+            console.log('✅ Serviço adicionado:', contadorServicos);
+        }
+        
+        function adicionarProduto() {
+            console.log('🔥 adicionarProduto() chamada!');
+            contadorProdutos++;
+            
+            var container = document.getElementById('produtos-container');
+            if (!container) {
+                alert('Erro: Container de produtos não encontrado!');
+                return;
+            }
+            
+            var novoHTML = 
+                '<div class="row item-produto mb-3" id="produto-' + contadorProdutos + '">' +
+                    '<div class="col-md-4">' +
+                        '<label class="form-label text-white">Produto/Peça</label>' +
+                        '<input type="text" class="form-control bg-dark text-white border-secondary" name="produto_descricao[]" placeholder="Ex: Filtro de óleo" required>' +
+                    '</div>' +
+                    '<div class="col-md-2">' +
+                        '<label class="form-label text-white">Qtd.</label>' +
+                        '<input type="number" class="form-control bg-dark text-white border-secondary" name="produto_quantidade[]" value="1" step="0.001" min="0" required>' +
+                    '</div>' +
+                    '<div class="col-md-2">' +
+                        '<label class="form-label text-white">Valor Unit.</label>' +
+                        '<input type="text" class="form-control bg-dark text-white border-secondary" name="produto_valor[]" placeholder="0,00" required>' +
+                    '</div>' +
+                    '<div class="col-md-2">' +
+                        '<label class="form-label text-white">Total</label>' +
+                        '<input type="text" class="form-control bg-secondary text-white" name="produto_total[]" value="R$ 0,00" readonly>' +
+                    '</div>' +
+                    '<div class="col-md-2">' +
+                        '<button type="button" class="btn btn-outline-danger d-block w-100" onclick="removerProduto(' + contadorProdutos + ')" title="Remover produto">' +
+                            '<i class="fas fa-trash"></i>' +
+                        '</button>' +
+                    '</div>' +
+                '</div>';
+            
+            container.insertAdjacentHTML('beforeend', novoHTML);
+            console.log('✅ Produto adicionado:', contadorProdutos);
+        }
+        
+        function removerServico(id) {
+            var elemento = document.getElementById('servico-' + id);
+            if (elemento) {
+                elemento.remove();
+                console.log('✅ Serviço removido:', id);
+            }
+        }
+        
+        function removerProduto(id) {
+            var elemento = document.getElementById('produto-' + id);
+            if (elemento) {
+                elemento.remove();
+                console.log('✅ Produto removido:', id);
+            }
+        }
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ Funções carregadas!');
+            
+            // Testa containers
+            var containerProdutos = document.getElementById('produtos-container');
+            var containerServicos = document.getElementById('servicos-container');
+            
+            console.log('Containers encontrados:');
+            console.log('- Produtos:', !!containerProdutos);
+            console.log('- Serviços:', !!containerServicos);
+            
+            // Testa botões
+            var btnProduto = document.querySelector('button[onclick="adicionarProduto()"]');
+            var btnServico = document.querySelector('button[onclick="adicionarServico()"]');
+            
+            console.log('Botões encontrados:');
+            console.log('- Botão Produto:', !!btnProduto);
+            console.log('- Botão Serviço:', !!btnServico);
+            
+            // Adiciona listeners como backup
+            if (btnProduto) {
+                btnProduto.addEventListener('click', function(e) {
+                    console.log('🎯 Click no botão produto detectado via addEventListener!');
+                    e.preventDefault();
+                    adicionarProduto();
+                }, false);
+            }
+            
+            if (btnServico) {
+                btnServico.addEventListener('click', function(e) {
+                    console.log('🎯 Click no botão serviço detectado via addEventListener!');
+                    e.preventDefault();
+                    adicionarServico();
+                }, false);
+            }
+        });
+        
+        console.log('🎉 Script finalizado!');
+    </script>
+{% endblock %}

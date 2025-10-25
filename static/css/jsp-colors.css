@@ -1,0 +1,93 @@
+/* ===========================================
+   JSP AUTOMAÇÃO - PALETA DE CORES OFICIAL
+   ===========================================
+   
+   Extraída da logo oficial JSP Automação Industrial e Solar
+   
+   Cores Principais:
+   - Azul JSP Primary: #2E86AB (azul metálico principal)
+   - Azul JSP Secondary: #1B5F7F (azul escuro confiável)  
+   - Laranja JSP Energy: #F18F01 (laranja energético)
+   - Amarelo JSP Solar: #FFB627 (amarelo solar)
+   - Cinza JSP Tech: #495057 (cinza tecnológico)
+   - Preto JSP: #212529 (preto profissional)
+   
+   Gradientes:
+   - Primary Gradient: linear-gradient(135deg, #2E86AB, #1B5F7F)
+   - Energy Gradient: linear-gradient(135deg, #F18F01, #FFB627)
+   - Tech Gradient: linear-gradient(135deg, #495057, #212529)
+   
+   =========================================== */
+
+:root {
+  /* Cores Principais JSP */
+  --jsp-primary: #2E86AB;
+  --jsp-primary-dark: #1B5F7F;
+  --jsp-secondary: #495057;
+  --jsp-energy: #F18F01;
+  --jsp-solar: #FFB627;
+  --jsp-dark: #212529;
+  
+  /* Gradientes JSP */
+  --jsp-gradient-primary: linear-gradient(135deg, #2E86AB, #1B5F7F);
+  --jsp-gradient-energy: linear-gradient(135deg, #F18F01, #FFB627);
+  --jsp-gradient-tech: linear-gradient(135deg, #495057, #212529);
+  
+  /* Cores de Estado */
+  --jsp-success: #28a745;
+  --jsp-warning: #FFB627;
+  --jsp-danger: #dc3545;
+  --jsp-info: #2E86AB;
+  
+  /* Backgrounds */
+  --jsp-bg-dark: #0a0a0a;
+  --jsp-bg-card: #1a1a1a;
+  --jsp-bg-hover: rgba(46, 134, 171, 0.1);
+  
+  /* Textos */
+  --jsp-text-primary: #ffffff;
+  --jsp-text-secondary: #cccccc;
+  --jsp-text-muted: #999999;
+}
+
+/* Classes Utilitárias JSP */
+.bg-jsp-primary { background-color: var(--jsp-primary) !important; }
+.bg-jsp-primary-dark { background-color: var(--jsp-primary-dark) !important; }
+.bg-jsp-energy { background-color: var(--jsp-energy) !important; }
+.bg-jsp-solar { background-color: var(--jsp-solar) !important; }
+.bg-jsp-gradient { background: var(--jsp-gradient-primary) !important; }
+.bg-jsp-gradient-energy { background: var(--jsp-gradient-energy) !important; }
+
+.text-jsp-primary { color: var(--jsp-primary) !important; }
+.text-jsp-energy { color: var(--jsp-energy) !important; }
+.text-jsp-solar { color: var(--jsp-solar) !important; }
+
+.border-jsp-primary { border-color: var(--jsp-primary) !important; }
+.border-jsp-energy { border-color: var(--jsp-energy) !important; }
+
+/* Botões JSP */
+.btn-jsp-primary {
+  background: var(--jsp-gradient-primary);
+  border: none;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-jsp-primary:hover {
+  background: var(--jsp-gradient-energy);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 134, 171, 0.3);
+}
+
+.btn-jsp-energy {
+  background: var(--jsp-gradient-energy);
+  border: none;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.btn-jsp-energy:hover {
+  background: var(--jsp-gradient-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(241, 143, 1, 0.3);
+}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar Exclusão - Financeiro{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card bg-dark text-light">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirmar Exclusão
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning bg-warning text-dark" role="alert">
+                        <i class="fas fa-warning me-2"></i>
+                        <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+                    </div>
+                    
+                    <h6 class="text-danger mb-3">Tem certeza que deseja excluir este lançamento?</h6>
+                    
+                    <div class="bg-secondary p-3 rounded mb-4">
+                        <div class="row">
+                            <div class="col-sm-4"><strong>Descrição:</strong></div>
+                            <div class="col-sm-8">{{ lancamento.descricao }}</div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-4"><strong>Valor:</strong></div>
+                            <div class="col-sm-8">
+                                <span class="text-{{ 'success' if lancamento.tipo == 'receita' else 'danger' }}">
+                                    {{ 'R$ {:,.2f}'.format(lancamento.valor).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-4"><strong>Tipo:</strong></div>
+                            <div class="col-sm-8">
+                                <span class="badge bg-{{ 'success' if lancamento.tipo == 'receita' else 'danger' }}">
+                                    {{ lancamento.tipo.title() }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-4"><strong>Data:</strong></div>
+                            <div class="col-sm-8">{{ lancamento.data_lancamento.strftime('%d/%m/%Y') if lancamento.data_lancamento else 'N/A' }}</div>
+                        </div>
+                        {% if lancamento.categoria %}
+                        <div class="row mt-2">
+                            <div class="col-sm-4"><strong>Categoria:</strong></div>
+                            <div class="col-sm-8">{{ lancamento.categoria }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('financeiro.listar_lancamentos') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </a>
+                        
+                        <form method="POST" action="{{ url_for('financeiro.excluir_lancamento', id=lancamento.id) }}" class="d-inline">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-trash me-2"></i>Confirmar Exclusão
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+  <h2 class="text-center mb-4 text-cyan fw-bold"><i class="fas fa-calculator me-2"></i>Precificação de Serviços</h2>
+
+  <div class="row justify-content-center">
+    <div class="col-md-8">
+      <div class="card form-card">
+        <div class="card-body">
+          <h5 class="card-title text-center mb-4 text-cyan">Informe os custos e margens</h5>
+          <form method="POST" action="">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label text-light" for="custo_fixos">Custos fixos mensais (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  class="form-control input-dark"
+                  name="custo_fixos"
+                  id="custo_fixos"
+                  placeholder="0.00"
+                  value="{{ config.custo_fixos if config else '' }}"
+                  required
+                >
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-light" for="custo_variaveis">Custos variáveis mensais (R$)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  class="form-control input-dark"
+                  name="custo_variaveis"
+                  id="custo_variaveis"
+                  placeholder="0.00"
+                  value="{{ config.custo_variaveis if config else '' }}"
+                  required
+                >
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-light" for="horas_mes">Horas produtivas no mês</label>
+                <input
+                  type="number"
+                  min="1"
+                  class="form-control input-dark"
+                  name="horas_mes"
+                  id="horas_mes"
+                  placeholder="Ex: 160"
+                  value="{{ config.horas_mes if config else '' }}"
+                  required
+                >
+              </div>
+              <div class="col-md-6">
+                <label class="form-label text-light" for="margem">Margem de lucro (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  class="form-control input-dark"
+                  name="margem"
+                  id="margem"
+                  placeholder="Ex: 30"
+                  value="{{ config.margem if config else '' }}"
+                  required
+                >
+              </div>
+              <div class="col-md-12">
+                <label class="form-label text-light" for="horas_empreita">Horas estimadas para empreitada (opcional)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  class="form-control input-dark"
+                  name="horas_empreita"
+                  id="horas_empreita"
+                  placeholder="Ex: 40"
+                >
+              </div>
+            </div>
+            <div class="d-flex justify-content-end mt-4">
+              <button type="submit" class="btn btn-cyan"><i class="fas fa-check-circle me-2"></i>Calcular</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+  .form-card {
+    background: rgba(13, 19, 38, 0.85);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 255, 255, 0.1);
+    padding: 30px;
+  }
+  .input-dark {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    color: #e0f7fa;
+    border-radius: 8px;
+  }
+  .input-dark:focus {
+    border-color: #00ffff;
+    box-shadow: 0 0 0 3px rgba(0, 255, 255, 0.3);
+  }
+  .btn-cyan {
+    background-color: #00ffff;
+    color: #0d1326;
+    font-weight: bold;
+    border-radius: 8px;
+    padding: 10px 20px;
+  }
+  .btn-cyan:hover {
+    background-color: #00e5ff;
+    color: #0d1326;
+  }
+  .text-cyan {
+    color: #00ffff;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Botões Simples</title>
+    <style>
+        body { background: #222; color: white; font-family: Arial; padding: 20px; }
+        .btn { background: #007bff; color: white; border: none; padding: 10px 20px; margin: 10px; cursor: pointer; }
+        .container { border: 1px solid #ccc; padding: 20px; margin: 10px 0; min-height: 50px; }
+        .item { background: #333; padding: 10px; margin: 5px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste Direto dos Botões</h1>
+    
+    <button class="btn" onclick="testeAdicionar()">🔥 TESTE ADICIONAR</button>
+    <button class="btn" onclick="adicionarProduto()">➕ Adicionar Produto</button>
+    <button class="btn" onclick="adicionarServico()">➕ Adicionar Serviço</button>
+    
+    <h3>Produtos:</h3>
+    <div id="produtos-container" class="container"></div>
+    
+    <h3>Serviços:</h3>
+    <div id="servicos-container" class="container"></div>
+
+    <script>
+        var contadorProdutos = 0;
+        var contadorServicos = 0;
+
+        function testeAdicionar() {
+            alert('✅ JavaScript está funcionando!');
+            console.log('✅ Função teste funcionou!');
+        }
+
+        function adicionarProduto() {
+            console.log('🔥 adicionarProduto chamada!');
+            contadorProdutos++;
+            
+            var container = document.getElementById('produtos-container');
+            if (!container) {
+                alert('Container não encontrado!');
+                return;
+            }
+
+            var html = '<div class="item">Produto ' + contadorProdutos + ' <button onclick="removerItem(this)">❌</button></div>';
+            container.innerHTML += html;
+            console.log('✅ Produto ' + contadorProdutos + ' adicionado');
+        }
+
+        function adicionarServico() {
+            console.log('🔥 adicionarServico chamada!');
+            contadorServicos++;
+            
+            var container = document.getElementById('servicos-container');
+            if (!container) {
+                alert('Container não encontrado!');
+                return;
+            }
+
+            var html = '<div class="item">Serviço ' + contadorServicos + ' <button onclick="removerItem(this)">❌</button></div>';
+            container.innerHTML += html;
+            console.log('✅ Serviço ' + contadorServicos + ' adicionado');
+        }
+
+        function removerItem(btn) {
+            btn.parentElement.remove();
+            console.log('✅ Item removido');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Página de teste carregada!');
+        });
+    </script>
+</body>
+</html>

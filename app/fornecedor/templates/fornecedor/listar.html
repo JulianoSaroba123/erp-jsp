@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Fornecedores - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Fornecedores</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-truck me-2"></i>
+                    Gerenciamento de Fornecedores
+                </h4>
+                <a href="{{ url_for('fornecedor.novo') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    Novo Fornecedor
+                </a>
+            </div>
+            
+            <div class="card-body">
+                <!-- Barra de Busca e Filtros -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <form method="GET" class="d-flex">
+                            <input type="text" 
+                                   name="busca" 
+                                   class="form-control me-2" 
+                                   placeholder="Buscar por nome, CNPJ ou email..."
+                                   value="{{ busca }}"
+                                   autocomplete="off">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            {% if busca %}
+                            <a href="{{ url_for('fornecedor.listar') }}" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-times"></i>
+                            </a>
+                            {% endif %}
+                        </form>
+                    </div>
+                    <div class="col-md-3">
+                        {% if categorias %}
+                        <select class="form-select" id="filtro-categoria" onchange="filtrarPorCategoria()">
+                            <option value="">Todas as categorias</option>
+                            {% for cat in categorias %}
+                            <option value="{{ cat }}" {% if categoria == cat %}selected{% endif %}>
+                                {{ cat }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <small class="text-muted">
+                            {{ fornecedores|length }} fornecedor(es) encontrado(s)
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- Tabela de Fornecedores -->
+                {% if fornecedores %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover">
+                        <thead>
+                            <tr>
+                                <th>Nome/Fantasia</th>
+                                <th>CNPJ/CPF</th>
+                                <th>Categoria</th>
+                                <th>Email</th>
+                                <th>Telefone</th>
+                                <th>Cidade</th>
+                                <th width="180">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fornecedor in fornecedores %}
+                            <tr>
+                                <td>
+                                    <div>
+                                        <strong>{{ fornecedor.nome_display }}</strong>
+                                        {% if fornecedor.nome_fantasia and fornecedor.nome_fantasia != fornecedor.nome %}
+                                        <br><small class="text-muted">{{ fornecedor.nome_fantasia }}</small>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <code>{{ fornecedor.documento_formatado or '-' }}</code>
+                                </td>
+                                <td>
+                                    {% if fornecedor.categoria %}
+                                        <span class="badge bg-info">{{ fornecedor.categoria }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if fornecedor.email %}
+                                        <a href="mailto:{{ fornecedor.email }}" class="text-primary">
+                                            {{ fornecedor.email }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if fornecedor.celular %}
+                                        <a href="tel:{{ fornecedor.celular }}" class="text-success">
+                                            {{ fornecedor.celular }}
+                                        </a>
+                                    {% elif fornecedor.telefone %}
+                                        <a href="tel:{{ fornecedor.telefone }}" class="text-success">
+                                            {{ fornecedor.telefone }}
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ fornecedor.cidade or '-' }}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ url_for('fornecedor.visualizar', id=fornecedor.id) }}" 
+                                           class="btn btn-outline-info" 
+                                           title="Visualizar">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('fornecedor.editar', id=fornecedor.id) }}" 
+                                           class="btn btn-outline-warning" 
+                                           title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="javascript:void(0)" 
+                                           class="btn btn-outline-danger" 
+                                           onclick="confirmarExclusao('{{ fornecedor.nome }}', '{{ url_for('fornecedor.excluir', id=fornecedor.id) }}')"
+                                           title="Excluir">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-truck fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nenhum fornecedor encontrado</h5>
+                    <p class="text-muted">Comece criando seu primeiro fornecedor</p>
+                    <a href="{{ url_for('fornecedor.novo') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        Criar Primeiro Fornecedor
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function filtrarPorCategoria() {
+        const categoria = document.getElementById('filtro-categoria').value;
+        const url = new URL(window.location);
+        
+        if (categoria) {
+            url.searchParams.set('categoria', categoria);
+        } else {
+            url.searchParams.delete('categoria');
+        }
+        
+        window.location.href = url.toString();
+    }
+</script>
+{% endblock %}

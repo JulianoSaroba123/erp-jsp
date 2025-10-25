@@ -1,0 +1,578 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if fornecedor.id %}Editar Fornecedor{% else %}Novo Fornecedor{% endif %} - {{ super() }}
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('fornecedor.listar') }}">Fornecedores</a></li>
+        <li class="breadcrumb-item active">
+            {% if fornecedor.id %}Editar{% else %}Novo{% endif %}
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-truck{% if not fornecedor.id %}-plus{% else %}-edit{% endif %} me-2"></i>
+                    {% if fornecedor.id %}
+                        Editar Fornecedor: {{ fornecedor.nome }}
+                    {% else %}
+                        Novo Fornecedor
+                    {% endif %}
+                </h4>
+            </div>
+            
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    <!-- Dados Principais -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-id-card me-2"></i>
+                                Dados Principais
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <label for="nome" class="form-label">Razão Social / Nome *</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="nome" 
+                                   name="nome" 
+                                   value="{{ fornecedor.nome or '' }}" 
+                                   required 
+                                   maxlength="100">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="tipo" class="form-label">Tipo *</label>
+                            <select class="form-select" id="tipo" name="tipo" required>
+                                <option value="PF" {% if fornecedor.tipo == 'PF' %}selected{% endif %}>
+                                    Pessoa Física
+                                </option>
+                                <option value="PJ" {% if fornecedor.tipo == 'PJ' %}selected{% endif %}>
+                                    Pessoa Jurídica
+                                </option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-12 mt-3">
+                            <label for="nome_fantasia" class="form-label">Nome Fantasia</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="nome_fantasia" 
+                                   name="nome_fantasia" 
+                                   value="{{ fornecedor.nome_fantasia or '' }}" 
+                                   maxlength="100">
+                        </div>
+                    </div>
+                    
+                    <!-- Documentos -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-file-alt me-2"></i>
+                                Documentos
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="cnpj_cpf" class="form-label">
+                                <span id="label-documento">CPF/CNPJ</span> *
+                            </label>
+                            <div class="input-group">
+                                <input type="text"
+                                       class="form-control"
+                                       id="cnpj_cpf"
+                                       name="cnpj_cpf"
+                                       value="{{ fornecedor.cnpj_cpf or '' }}"
+                                       placeholder="000.000.000-00"
+                                       required>
+                                <button type="button" 
+                                        class="btn btn-outline-primary" 
+                                        id="btn-consultar-cnpj"
+                                        title="Consultar CNPJ automaticamente">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">Para CNPJ, clique no botão para busca automática</small>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="inscricao_estadual" class="form-label">
+                                <span id="label-ie">Inscrição Estadual</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="inscricao_estadual" 
+                                   name="inscricao_estadual" 
+                                   value="{{ fornecedor.inscricao_estadual or '' }}"
+                                   maxlength="20">
+                        </div>
+                        
+                        <div class="col-md-6 mt-3">
+                            <label for="inscricao_municipal" class="form-label">Inscrição Municipal</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="inscricao_municipal" 
+                                   name="inscricao_municipal" 
+                                   value="{{ fornecedor.inscricao_municipal or '' }}"
+                                   maxlength="20">
+                        </div>
+                    </div>
+                    
+                    <!-- Contato -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-phone me-2"></i>
+                                Contato
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="email" 
+                                   name="email" 
+                                   value="{{ fornecedor.email or '' }}"
+                                   maxlength="120">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="site" class="form-label">Site</label>
+                            <input type="url" 
+                                   class="form-control" 
+                                   id="site" 
+                                   name="site" 
+                                   value="{{ fornecedor.site or '' }}"
+                                   placeholder="https://exemplo.com.br"
+                                   maxlength="200">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="telefone" class="form-label">Telefone</label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   id="telefone" 
+                                   name="telefone" 
+                                   value="{{ fornecedor.telefone or '' }}"
+                                   placeholder="(11) 1234-5678">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="celular" class="form-label">Celular</label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   id="celular" 
+                                   name="celular" 
+                                   value="{{ fornecedor.celular or '' }}"
+                                   placeholder="(11) 99999-9999">
+                        </div>
+                    </div>
+                    
+                    <!-- Contato Comercial -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-user-tie me-2"></i>
+                                Contato Comercial
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="contato_nome" class="form-label">Nome do Contato</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="contato_nome" 
+                                   name="contato_nome" 
+                                   value="{{ fornecedor.contato_nome or '' }}"
+                                   maxlength="100">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="contato_cargo" class="form-label">Cargo</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="contato_cargo" 
+                                   name="contato_cargo" 
+                                   value="{{ fornecedor.contato_cargo or '' }}"
+                                   maxlength="50">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="contato_email" class="form-label">Email do Contato</label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="contato_email" 
+                                   name="contato_email" 
+                                   value="{{ fornecedor.contato_email or '' }}"
+                                   maxlength="120">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="contato_telefone" class="form-label">Telefone do Contato</label>
+                            <input type="tel" 
+                                   class="form-control" 
+                                   id="contato_telefone" 
+                                   name="contato_telefone" 
+                                   value="{{ fornecedor.contato_telefone or '' }}"
+                                   placeholder="(11) 99999-9999">
+                        </div>
+                    </div>
+                    
+                    <!-- Endereço -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-map-marker-alt me-2"></i>
+                                Endereço
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="cep" class="form-label">CEP</label> 
+                            <div class="input-group">
+                                <input type="text"
+                                       class="form-control"
+                                       id="cep"
+                                       name="cep"
+                                       value="{{ fornecedor.cep or '' }}"
+                                       placeholder="00000-000">
+                                <button type="button" 
+                                        class="btn btn-outline-primary" 
+                                        id="btn-consultar-cep"
+                                        title="Consultar CEP automaticamente">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted">Clique no botão para busca automática</small>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="endereco" class="form-label">Endereço</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="endereco" 
+                                   name="endereco" 
+                                   value="{{ fornecedor.endereco or '' }}"
+                                   maxlength="200">
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="numero" class="form-label">Número</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="numero" 
+                                   name="numero" 
+                                   value="{{ fornecedor.numero or '' }}"
+                                   maxlength="10">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="complemento" class="form-label">Complemento</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="complemento" 
+                                   name="complemento" 
+                                   value="{{ fornecedor.complemento or '' }}"
+                                   maxlength="50">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="bairro" class="form-label">Bairro</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="bairro" 
+                                   name="bairro" 
+                                   value="{{ fornecedor.bairro or '' }}"
+                                   maxlength="100">
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label for="cidade" class="form-label">Cidade</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="cidade" 
+                                   name="cidade" 
+                                   value="{{ fornecedor.cidade or '' }}"
+                                   maxlength="100">
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label for="estado" class="form-label">Estado</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="estado" 
+                                   name="estado" 
+                                   value="{{ fornecedor.estado or '' }}"
+                                   maxlength="2"
+                                   placeholder="SP">
+                        </div>
+                    </div>
+                    
+                    <!-- Observações -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-sticky-note me-2"></i>
+                                Observações
+                            </h6>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea class="form-control" 
+                                      id="observacoes" 
+                                      name="observacoes" 
+                                      rows="3" 
+                                      maxlength="500">{{ fornecedor.observacoes or '' }}</textarea>
+                            <small class="text-muted">Máximo 500 caracteres</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Botões -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('fornecedor.listar') }}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>
+                                    Voltar
+                                </a>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    {% if fornecedor.id %}
+                                        Atualizar Fornecedor
+                                    {% else %}
+                                        Salvar Fornecedor
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipoSelect = document.getElementById('tipo');
+        const labelDocumento = document.getElementById('label-documento');
+        const labelIe = document.getElementById('label-ie');
+        const cnpjCpfInput = document.getElementById('cnpj_cpf');
+        const btnCnpj = document.getElementById('btn-consultar-cnpj');
+        
+        // Atualiza labels conforme o tipo
+        function atualizarLabels() {
+            if (tipoSelect.value === 'PF') {
+                labelDocumento.textContent = 'CPF';
+                labelIe.textContent = 'RG';
+                cnpjCpfInput.placeholder = '000.000.000-00';
+                // Esconde o botão de consulta CNPJ para pessoa física
+                btnCnpj.style.display = 'none';
+            } else {
+                labelDocumento.textContent = 'CNPJ';
+                labelIe.textContent = 'Inscrição Estadual';
+                cnpjCpfInput.placeholder = '00.000.000/0000-00';
+                // Mostra o botão de consulta CNPJ para pessoa jurídica
+                btnCnpj.style.display = 'inline-block';
+            }
+        }
+        
+        // Máscara para documento
+        function mascaraDocumento(value, tipo) {
+            value = value.replace(/\D/g, '');
+            
+            if (tipo === 'PF') {
+                // CPF: 000.000.000-00
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            } else {
+                // CNPJ: 00.000.000/0000-00
+                value = value.replace(/(\d{2})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1.$2');
+                value = value.replace(/(\d{3})(\d)/, '$1/$2');
+                value = value.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+            }
+            
+            return value;
+        }
+        
+        // Máscara para CEP
+        function mascaraCep(value) {
+            value = value.replace(/\D/g, '');
+            value = value.replace(/(\d{5})(\d)/, '$1-$2');
+            return value;
+        }
+        
+        // Máscara para telefone
+        function mascaraTelefone(value) {
+            value = value.replace(/\D/g, '');
+            if (value.length <= 10) {
+                value = value.replace(/(\d{2})(\d)/, '($1) $2');
+                value = value.replace(/(\d{4})(\d)/, '$1-$2');
+            } else {
+                value = value.replace(/(\d{2})(\d)/, '($1) $2');
+                value = value.replace(/(\d{5})(\d)/, '$1-$2');
+            }
+            return value;
+        }
+        
+        // Event listeners
+        tipoSelect.addEventListener('change', atualizarLabels);
+        
+        cnpjCpfInput.addEventListener('input', function() {
+            this.value = mascaraDocumento(this.value, tipoSelect.value);
+        });
+        
+        document.getElementById('cep').addEventListener('input', function() {
+            this.value = mascaraCep(this.value);
+        });
+        
+        document.getElementById('telefone').addEventListener('input', function() {
+            this.value = mascaraTelefone(this.value);
+        });
+        
+        document.getElementById('celular').addEventListener('input', function() {
+            this.value = mascaraTelefone(this.value);
+        });
+        
+        document.getElementById('contato_telefone').addEventListener('input', function() {
+            this.value = mascaraTelefone(this.value);
+        });
+        
+        // Estado em maiúsculo
+        document.getElementById('estado').addEventListener('input', function() {
+            this.value = this.value.toUpperCase();
+        });
+
+        // Consulta CNPJ automatica
+        document.getElementById('btn-consultar-cnpj').addEventListener('click', function() {
+            // Verifica se é pessoa jurídica
+            if (tipoSelect.value !== 'PJ') {
+                alert('A consulta automática está disponível apenas para Pessoa Jurídica (CNPJ)');
+                return;
+            }
+            
+            const cnpj = document.getElementById('cnpj_cpf').value;
+            const cnpjLimpo = cnpj.replace(/\D/g, '');
+            
+            if (cnpjLimpo.length !== 14) {
+                alert('CNPJ deve ter 14 digitos');
+                return;
+            }
+            
+            // Mostra loading
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            this.disabled = true;
+            
+            fetch(`/fornecedor/api/consultar-cnpj/${cnpjLimpo}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Preenche os campos com os dados retornados
+                        document.getElementById('nome').value = data.data.nome || '';
+                        document.getElementById('nome_fantasia').value = data.data.nome_fantasia || '';
+                        document.getElementById('email').value = data.data.email || '';
+                        document.getElementById('telefone').value = data.data.telefone || '';
+                        
+                        // Preenche endereco
+                        const endereco = data.data.endereco;
+                        if (endereco) {
+                            document.getElementById('cep').value = endereco.cep || '';
+                            document.getElementById('endereco').value = endereco.logradouro || '';
+                            document.getElementById('numero').value = endereco.numero || '';
+                            document.getElementById('complemento').value = endereco.complemento || '';
+                            document.getElementById('bairro').value = endereco.bairro || '';
+                            document.getElementById('cidade').value = endereco.cidade || '';
+                            document.getElementById('estado').value = endereco.uf || '';
+                        }
+                        
+                        // Aplica mascaras
+                        document.getElementById('cep').value = mascaraCep(document.getElementById('cep').value);
+                        document.getElementById('telefone').value = mascaraTelefone(document.getElementById('telefone').value);
+                        
+                        alert('Dados da empresa carregados com sucesso!');
+                    } else {
+                        alert('Erro: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao consultar CNPJ. Tente novamente.');
+                })
+                .finally(() => {
+                    // Remove loading
+                    this.innerHTML = '<i class="fas fa-search"></i>';
+                    this.disabled = false;
+                });
+        });
+        
+        // Consulta CEP automatica
+        document.getElementById('btn-consultar-cep').addEventListener('click', function() {
+            const cep = document.getElementById('cep').value;
+            const cepLimpo = cep.replace(/\D/g, '');
+            
+            if (cepLimpo.length !== 8) {
+                alert('CEP deve ter 8 digitos');
+                return;
+            }
+            
+            // Mostra loading
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            this.disabled = true;
+            
+            fetch(`/fornecedor/api/consultar-cep/${cepLimpo}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Preenche os campos de endereco
+                        document.getElementById('endereco').value = data.data.logradouro || '';
+                        document.getElementById('bairro').value = data.data.bairro || '';
+                        document.getElementById('cidade').value = data.data.cidade || '';
+                        document.getElementById('estado').value = data.data.uf || '';
+                        
+                        // Aplica mascara do CEP
+                        document.getElementById('cep').value = mascaraCep(data.data.cep || cep);
+                        
+                        alert('Endereco carregado com sucesso!');
+                    } else {
+                        alert('Erro: ' + data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    alert('Erro ao consultar CEP. Tente novamente.');
+                })
+                .finally(() => {
+                    // Remove loading
+                    this.innerHTML = '<i class="fas fa-search"></i>';
+                    this.disabled = false;
+                });
+        });
+
+        // Inicializa
+        atualizarLabels();
+
+        // Foco no nome
+        document.getElementById('nome').focus();
+    });
+</script>
+{% endblock %}

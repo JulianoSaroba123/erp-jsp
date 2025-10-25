@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste de Parsing</title>
+</head>
+<body>
+    <h1>Teste parseMoney</h1>
+    <div id="resultado"></div>
+    
+    <script>
+        function parseMoney(value) {
+            if (!value) return 0;
+            
+            console.log('🔍 parseMoney recebeu:', value, 'tipo:', typeof value);
+            
+            // Converte para string se necessário
+            var str = String(value);
+            console.log('🔄 Convertido para string:', str);
+            
+            // Remove todos os caracteres que não são números, vírgula ou ponto
+            var cleaned = str.replace(/[^0-9.,]/g, '');
+            console.log('🧹 Após limpeza:', cleaned);
+            
+            // Substitui vírgula por ponto para conversão decimal
+            var withDot = cleaned.replace(',', '.');
+            console.log('🔄 Vírgula por ponto:', withDot);
+            
+            // Converte para número
+            var number = parseFloat(withDot);
+            console.log('🔢 Número final:', number);
+            
+            return isNaN(number) ? 0 : number;
+        }
+        
+        // TESTES
+        console.log('=== INICIANDO TESTES ===');
+        
+        var teste1 = parseMoney("R$ 500,00");
+        var teste2 = parseMoney("500,00");
+        var teste3 = parseMoney("500");
+        var teste4 = parseMoney("");
+        var teste5 = parseMoney(null);
+        
+        var resultado = document.getElementById('resultado');
+        resultado.innerHTML = `
+            <h2>Resultados:</h2>
+            <p>parseMoney("R$ 500,00") = ${teste1}</p>
+            <p>parseMoney("500,00") = ${teste2}</p>
+            <p>parseMoney("500") = ${teste3}</p>
+            <p>parseMoney("") = ${teste4}</p>
+            <p>parseMoney(null) = ${teste5}</p>
+        `;
+        
+        console.log('=== RESULTADOS ===');
+        console.log('Teste 1:', teste1);
+        console.log('Teste 2:', teste2);
+        console.log('Teste 3:', teste3);
+        console.log('Teste 4:', teste4);
+        console.log('Teste 5:', teste5);
+    </script>
+</body>
+</html>

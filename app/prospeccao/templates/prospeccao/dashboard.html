@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+
+{% block title %}Prospecção - ERP JSP{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Prospecção</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <h2 class="text-primary mb-4">
+        <i class="fas fa-search me-2"></i>Dashboard de Prospecção
+      </h2>
+
+      <!-- Cards de Estatísticas -->
+      <div class="row mb-4">
+        <div class="col-xl-3 col-md-6">
+          <div class="card bg-primary text-white mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="text-white-50">Total de Prospects</div>
+                  <div class="h4 mb-0">{{ total_prospects or 0 }}</div>
+                </div>
+                <div class="fs-1 text-white-50">
+                  <i class="fas fa-users"></i>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+              <a class="small text-white stretched-link" href="{{ url_for('prospeccao.listar') }}">Ver Detalhes</a>
+              <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+          <div class="card bg-success text-white mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="text-white-50">Prospects Ativos</div>
+                  <div class="h4 mb-0">{{ prospects_ativos or 0 }}</div>
+                </div>
+                <div class="fs-1 text-white-50">
+                  <i class="fas fa-user-check"></i>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+              <a class="small text-white stretched-link" href="{{ url_for('prospeccao.listar', status='ativo') }}">Ver Ativos</a>
+              <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+          <div class="card bg-warning text-white mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="text-white-50">Convertidos</div>
+                  <div class="h4 mb-0">{{ prospects_convertidos or 0 }}</div>
+                </div>
+                <div class="fs-1 text-white-50">
+                  <i class="fas fa-handshake"></i>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+              <a class="small text-white stretched-link" href="{{ url_for('prospeccao.listar', status='convertido') }}">Ver Convertidos</a>
+              <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6">
+          <div class="card bg-info text-white mb-4">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="text-white-50">Taxa de Conversão</div>
+                  <div class="h4 mb-0">
+                    {% if total_prospects and total_prospects > 0 %}
+                    {{ "%.1f"|format((prospects_convertidos / total_prospects) * 100) }}%
+                    {% else %}
+                    0%
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="fs-1 text-white-50">
+                  <i class="fas fa-chart-line"></i>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer d-flex align-items-center justify-content-between">
+              <a class="small text-white stretched-link" href="{{ url_for('prospeccao.buscar') }}">Nova Busca</a>
+              <div class="small text-white"><i class="fas fa-angle-right"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Ações Rápidas -->
+        <div class="col-xl-4 col-lg-6">
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+              <i class="fas fa-bolt me-1"></i>
+              Ações Rápidas
+            </div>
+            <div class="card-body">
+              <div class="d-grid gap-2">
+                <a href="{{ url_for('prospeccao.buscar') }}" class="btn btn-primary">
+                  <i class="fas fa-search me-2"></i>Buscar Empresas
+                </a>
+                <a href="{{ url_for('prospeccao.listar') }}" class="btn btn-outline-primary">
+                  <i class="fas fa-list me-2"></i>Listar Prospects
+                </a>
+                <a href="{{ url_for('prospeccao.listar', status='ativo') }}" class="btn btn-outline-success">
+                  <i class="fas fa-user-check me-2"></i>Prospects Ativos
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Últimos Prospects -->
+        <div class="col-xl-8 col-lg-6">
+          <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+              <i class="fas fa-clock me-1"></i>
+              Últimos Prospects
+            </div>
+            <div class="card-body">
+              {% if ultimos_prospects %}
+              <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>Empresa</th>
+                      <th>CNPJ</th>
+                      <th>Localização</th>
+                      <th>Status</th>
+                      <th>Data</th>
+                      <th class="text-end">Ação</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for prospect in ultimos_prospects %}
+                    <tr>
+                      <td>
+                        <div class="fw-bold">{{ prospect.razao_social[:30] }}{% if prospect.razao_social|length > 30 %}...{% endif %}</div>
+                        {% if prospect.nome_fantasia %}
+                        <small class="text-muted">{{ prospect.nome_fantasia[:25] }}{% if prospect.nome_fantasia|length > 25 %}...{% endif %}</small>
+                        {% endif %}
+                      </td>
+                      <td><code class="small">{{ prospect.cnpj }}</code></td>
+                      <td>
+                        <small>{{ prospect.cidade or '-' }}{% if prospect.estado %}/{{ prospect.estado }}{% endif %}</small>
+                      </td>
+                      <td>
+                        {% if prospect.status == 'ativo' %}
+                        <span class="badge bg-success">Ativo</span>
+                        {% elif prospect.status == 'convertido' %}
+                        <span class="badge bg-primary">Convertido</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ prospect.status|title }}</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        <small>{{ prospect.criado_em.strftime('%d/%m') if prospect.criado_em else '-' }}</small>
+                      </td>
+                      <td class="text-end">
+                        <a href="{{ url_for('prospeccao.detalhar', id=prospect.id) }}" 
+                           class="btn btn-sm btn-outline-info"
+                           title="Ver detalhes">
+                          <i class="fas fa-eye"></i>
+                        </a>
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <div class="text-end mt-2">
+                <a href="{{ url_for('prospeccao.listar') }}" class="btn btn-sm btn-outline-primary">
+                  Ver Todos <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+              </div>
+              {% else %}
+              <div class="text-center text-muted py-4">
+                <i class="fas fa-inbox fa-3x mb-3"></i>
+                <p>Nenhum prospect cadastrado ainda.</p>
+                <a href="{{ url_for('prospeccao.buscar') }}" class="btn btn-primary">
+                  <i class="fas fa-search me-2"></i>Fazer Primeira Busca
+                </a>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dicas -->
+      <div class="row">
+        <div class="col-12">
+          <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+              <h6 class="card-title mb-0">
+                <i class="fas fa-lightbulb me-2"></i>Como Usar o Módulo de Prospecção
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-4">
+                  <h6 class="text-primary"><i class="fas fa-search me-2"></i>1. Buscar Empresas</h6>
+                  <p class="small mb-3">Use filtros como CNAE, cidade e estado para encontrar empresas do seu segmento alvo.</p>
+                </div>
+                <div class="col-md-4">
+                  <h6 class="text-success"><i class="fas fa-save me-2"></i>2. Salvar Prospects</h6>
+                  <p class="small mb-3">Salve empresas interessantes como prospects para acompanhamento posterior.</p>
+                </div>
+                <div class="col-md-4">
+                  <h6 class="text-warning"><i class="fas fa-handshake me-2"></i>3. Converter</h6>
+                  <p class="small mb-3">Marque prospects como convertidos quando se tornarem clientes efetivos.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

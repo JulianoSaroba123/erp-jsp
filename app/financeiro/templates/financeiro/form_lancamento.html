@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if lancamento %}Editar Lançamento{% else %}Novo Lançamento{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1 text-neon">
+                        <i class="fas fa-{% if lancamento %}edit{% else %}plus{% endif %} me-2"></i>
+                        {% if lancamento %}Editar Lançamento{% else %}Novo Lançamento{% endif %}
+                    </h1>
+                    <p class="text-muted">
+                        {% if lancamento %}
+                            Editando lançamento: {{ lancamento.descricao }}
+                        {% else %}
+                            Cadastro de novo lançamento financeiro
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('financeiro.listar_lancamentos') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulário -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-form me-2"></i>
+                        Dados do Lançamento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{% if lancamento %}{{ url_for('financeiro.atualizar_lancamento', id=lancamento.id) }}{% else %}{{ url_for('financeiro.criar_lancamento') }}{% endif %}" novalidate>
+                        <div class="row g-3">
+                            <!-- Descrição -->
+                            <div class="col-md-6">
+                                <label for="descricao" class="form-label">
+                                    <i class="fas fa-align-left me-1"></i>
+                                    Descrição *
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="descricao" 
+                                       name="descricao" 
+                                       value="{{ lancamento.descricao if lancamento else '' }}" 
+                                       required 
+                                       placeholder="Descrição do lançamento">
+                            </div>
+
+                            <!-- Valor -->
+                            <div class="col-md-3">
+                                <label for="valor" class="form-label">
+                                    <i class="fas fa-dollar-sign me-1"></i>
+                                    Valor *
+                                </label>
+                                <input type="text" 
+                                       class="form-control valor-monetario" 
+                                       id="valor" 
+                                       name="valor" 
+                                       value="{% if lancamento %}{{ lancamento.valor_formatado }}{% endif %}" 
+                                       required 
+                                       placeholder="R$ 0,00">
+                            </div>
+
+                            <!-- Tipo -->
+                            <div class="col-md-3">
+                                <label for="tipo" class="form-label">
+                                    <i class="fas fa-tag me-1"></i>
+                                    Tipo *
+                                </label>
+                                <select class="form-select" id="tipo" name="tipo" required>
+                                    <option value="">Selecione o tipo</option>
+                                    <option value="receita" {% if lancamento and lancamento.tipo == 'receita' %}selected{% endif %}>Receita</option>
+                                    <option value="despesa" {% if lancamento and lancamento.tipo == 'despesa' %}selected{% endif %}>Despesa</option>
+                                    <option value="conta_receber" {% if lancamento and lancamento.tipo == 'conta_receber' %}selected{% endif %}>Conta a Receber</option>
+                                    <option value="conta_pagar" {% if lancamento and lancamento.tipo == 'conta_pagar' %}selected{% endif %}>Conta a Pagar</option>
+                                </select>
+                            </div>
+
+                            <!-- Categoria -->
+                            <div class="col-md-4">
+                                <label for="categoria" class="form-label">
+                                    <i class="fas fa-folder me-1"></i>
+                                    Categoria
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="categoria" 
+                                       name="categoria" 
+                                       value="{{ lancamento.categoria if lancamento else '' }}" 
+                                       placeholder="Ex: Vendas, Aluguel, Materiais">
+                            </div>
+
+                            <!-- Subcategoria -->
+                            <div class="col-md-4">
+                                <label for="subcategoria" class="form-label">
+                                    <i class="fas fa-folder-open me-1"></i>
+                                    Subcategoria
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="subcategoria" 
+                                       name="subcategoria" 
+                                       value="{{ lancamento.subcategoria if lancamento else '' }}" 
+                                       placeholder="Subcategoria específica">
+                            </div>
+
+                            <!-- Status -->
+                            <div class="col-md-4">
+                                <label for="status" class="form-label">
+                                    <i class="fas fa-flag me-1"></i>
+                                    Status
+                                </label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="pendente" {% if not lancamento or lancamento.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                                    <option value="pago" {% if lancamento and lancamento.status == 'pago' %}selected{% endif %}>Pago</option>
+                                    <option value="recebido" {% if lancamento and lancamento.status == 'recebido' %}selected{% endif %}>Recebido</option>
+                                    <option value="cancelado" {% if lancamento and lancamento.status == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                                </select>
+                            </div>
+
+                            <!-- Data de Lançamento -->
+                            <div class="col-md-3">
+                                <label for="data_lancamento" class="form-label">
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Data do Lançamento
+                                </label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="data_lancamento" 
+                                       name="data_lancamento" 
+                                       value="{% if lancamento %}{{ lancamento.data_lancamento.strftime('%Y-%m-%d') }}{% else %}{{ date.today().strftime('%Y-%m-%d') }}{% endif %}">
+                            </div>
+
+                            <!-- Data de Vencimento -->
+                            <div class="col-md-3">
+                                <label for="data_vencimento" class="form-label">
+                                    <i class="fas fa-calendar-alt me-1"></i>
+                                    Data de Vencimento
+                                </label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="data_vencimento" 
+                                       name="data_vencimento" 
+                                       value="{% if lancamento and lancamento.data_vencimento %}{{ lancamento.data_vencimento.strftime('%Y-%m-%d') }}{% endif %}">
+                            </div>
+
+                            <!-- Número do Documento -->
+                            <div class="col-md-3">
+                                <label for="numero_documento" class="form-label">
+                                    <i class="fas fa-file-alt me-1"></i>
+                                    Nº do Documento
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="numero_documento" 
+                                       name="numero_documento" 
+                                       value="{{ lancamento.numero_documento if lancamento else '' }}" 
+                                       placeholder="Ex: NF123, Boleto456">
+                            </div>
+
+                            <!-- Forma de Pagamento -->
+                            <div class="col-md-3">
+                                <label for="forma_pagamento" class="form-label">
+                                    <i class="fas fa-credit-card me-1"></i>
+                                    Forma de Pagamento
+                                </label>
+                                <select class="form-select" id="forma_pagamento" name="forma_pagamento">
+                                    <option value="">Selecione</option>
+                                    <option value="dinheiro" {% if lancamento and lancamento.forma_pagamento == 'dinheiro' %}selected{% endif %}>Dinheiro</option>
+                                    <option value="cartao_credito" {% if lancamento and lancamento.forma_pagamento == 'cartao_credito' %}selected{% endif %}>Cartão de Crédito</option>
+                                    <option value="cartao_debito" {% if lancamento and lancamento.forma_pagamento == 'cartao_debito' %}selected{% endif %}>Cartão de Débito</option>
+                                    <option value="transferencia" {% if lancamento and lancamento.forma_pagamento == 'transferencia' %}selected{% endif %}>Transferência</option>
+                                    <option value="pix" {% if lancamento and lancamento.forma_pagamento == 'pix' %}selected{% endif %}>PIX</option>
+                                    <option value="boleto" {% if lancamento and lancamento.forma_pagamento == 'boleto' %}selected{% endif %}>Boleto</option>
+                                    <option value="cheque" {% if lancamento and lancamento.forma_pagamento == 'cheque' %}selected{% endif %}>Cheque</option>
+                                </select>
+                            </div>
+
+                            <!-- Cliente -->
+                            <div class="col-md-6">
+                                <label for="cliente_id" class="form-label">
+                                    <i class="fas fa-user me-1"></i>
+                                    Cliente
+                                </label>
+                                <select class="form-select" id="cliente_id" name="cliente_id">
+                                    <option value="">Selecione um cliente</option>
+                                    {% for cliente in clientes %}
+                                    <option value="{{ cliente.id }}" {% if lancamento and lancamento.cliente_id == cliente.id %}selected{% endif %}>
+                                        {{ cliente.nome }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Fornecedor -->
+                            <div class="col-md-6">
+                                <label for="fornecedor_id" class="form-label">
+                                    <i class="fas fa-truck me-1"></i>
+                                    Fornecedor
+                                </label>
+                                <select class="form-select" id="fornecedor_id" name="fornecedor_id">
+                                    <option value="">Selecione um fornecedor</option>
+                                    {% for fornecedor in fornecedores %}
+                                    <option value="{{ fornecedor.id }}" {% if lancamento and lancamento.fornecedor_id == fornecedor.id %}selected{% endif %}>
+                                        {{ fornecedor.nome }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Recorrência -->
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           id="recorrente" 
+                                           name="recorrente" 
+                                           {% if lancamento and lancamento.recorrente %}checked{% endif %}>
+                                    <label class="form-check-label" for="recorrente">
+                                        <i class="fas fa-repeat me-1"></i>
+                                        Lançamento Recorrente
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Frequência -->
+                            <div class="col-md-6">
+                                <label for="frequencia" class="form-label">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Frequência
+                                </label>
+                                <select class="form-select" id="frequencia" name="frequencia" disabled>
+                                    <option value="">Selecione a frequência</option>
+                                    <option value="mensal" {% if lancamento and lancamento.frequencia == 'mensal' %}selected{% endif %}>Mensal</option>
+                                    <option value="anual" {% if lancamento and lancamento.frequencia == 'anual' %}selected{% endif %}>Anual</option>
+                                    <option value="semanal" {% if lancamento and lancamento.frequencia == 'semanal' %}selected{% endif %}>Semanal</option>
+                                </select>
+                            </div>
+
+                            <!-- Observações -->
+                            <div class="col-12">
+                                <label for="observacoes" class="form-label">
+                                    <i class="fas fa-comment me-1"></i>
+                                    Observações
+                                </label>
+                                <textarea class="form-control" 
+                                          id="observacoes" 
+                                          name="observacoes" 
+                                          rows="3" 
+                                          placeholder="Observações adicionais sobre este lançamento">{{ lancamento.observacoes if lancamento else '' }}</textarea>
+                            </div>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{{ url_for('financeiro.listar_lancamentos') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>
+                                        Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>
+                                        {% if lancamento %}Atualizar{% else %}Salvar{% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Máscara para valor monetário
+document.addEventListener('DOMContentLoaded', function() {
+    const valorInput = document.getElementById('valor');
+    const recorrenteCheckbox = document.getElementById('recorrente');
+    const frequenciaSelect = document.getElementById('frequencia');
+
+    // Aplicar máscara de valor monetário
+    if (valorInput) {
+        valorInput.addEventListener('input', function(e) {
+            let value = e.target.value;
+            
+            // Remove tudo que não é dígito
+            value = value.replace(/\D/g, '');
+            
+            // Converte para centavos
+            value = (parseFloat(value) / 100).toFixed(2);
+            
+            // Formata como moeda brasileira
+            if (value !== 'NaN') {
+                e.target.value = 'R$ ' + value.replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            }
+        });
+    }
+
+    // Controlar habilitação da frequência
+    if (recorrenteCheckbox && frequenciaSelect) {
+        recorrenteCheckbox.addEventListener('change', function() {
+            frequenciaSelect.disabled = !this.checked;
+            if (!this.checked) {
+                frequenciaSelect.value = '';
+            }
+        });
+
+        // Estado inicial
+        frequenciaSelect.disabled = !recorrenteCheckbox.checked;
+    }
+});
+</script>
+
+<style>
+.text-neon {
+    color: #00d4ff !important;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.form-label {
+    font-weight: 500;
+    color: #e9ecef;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #00d4ff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 212, 255, 0.25);
+}
+
+.form-check-input:checked {
+    background-color: #00d4ff;
+    border-color: #00d4ff;
+}
+</style>
+{% endblock %}

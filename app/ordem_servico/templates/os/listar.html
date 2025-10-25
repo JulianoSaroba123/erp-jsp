@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block title %}Ordens de Serviço - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Ordens de Serviço</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>
+                    Gerenciamento de Ordens de Serviço
+                </h4>
+                <a href="{{ url_for('ordem_servico.novo') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>
+                    Nova Ordem de Serviço
+                </a>
+            </div>
+            
+            <div class="card-body">
+
+                <!-- Barra de Busca e Filtros -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <form method="GET" class="d-flex flex-column">
+                            <label class="form-label small">Status</label>
+                            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="">Todos os Status</option>
+                                <option value="aberta" {{ 'selected' if request.args.get('status') == 'aberta' else '' }}>Aberta</option>
+                                <option value="em_andamento" {{ 'selected' if request.args.get('status') == 'em_andamento' else '' }}>Em Andamento</option>
+                                <option value="aguardando_pecas" {{ 'selected' if request.args.get('status') == 'aguardando_pecas' else '' }}>Aguardando Peças</option>
+                                <option value="aguardando_cliente" {{ 'selected' if request.args.get('status') == 'aguardando_cliente' else '' }}>Aguardando Cliente</option>
+                                <option value="concluida" {{ 'selected' if request.args.get('status') == 'concluida' else '' }}>Concluída</option>
+                                <option value="cancelada" {{ 'selected' if request.args.get('status') == 'cancelada' else '' }}>Cancelada</option>
+                            </select>
+                        </form>
+                    </div>
+                    <div class="col-md-3">
+                        <form method="GET">
+                            <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
+                            <label class="form-label small">Cliente</label>
+                            <input type="text" 
+                                   name="cliente" 
+                                   class="form-control form-control-sm" 
+                                   placeholder="Nome do cliente"
+                                   value="{{ request.args.get('cliente', '') }}"
+                                   autocomplete="off">
+                        </form>
+                    </div>
+                    <div class="col-md-3">
+                        <form method="GET">
+                            <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
+                            <input type="hidden" name="cliente" value="{{ request.args.get('cliente', '') }}">
+                            <label class="form-label small">Número</label>
+                            <input type="text" 
+                                   name="numero" 
+                                   class="form-control form-control-sm" 
+                                   placeholder="Número da OS"
+                                   value="{{ request.args.get('numero', '') }}"
+                                   autocomplete="off">
+                        </form>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-primary btn-sm" onclick="filtrarOrdens()">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <a href="{{ url_for('ordem_servico.listar') }}" class="btn btn-outline-secondary btn-sm">
+                                <i class="fas fa-times"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estatísticas -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="bg-primary text-white p-3 rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="small">Total</div>
+                                    <div class="h4 mb-0">{{ stats.total or 0 }}</div>
+                                </div>
+                                <i class="fas fa-tools fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-warning text-white p-3 rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="small">Abertas</div>
+                                    <div class="h4 mb-0">{{ stats.abertas or 0 }}</div>
+                                </div>
+                                <i class="fas fa-folder-open fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-info text-white p-3 rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="small">Em Andamento</div>
+                                    <div class="h4 mb-0">{{ stats.em_andamento or 0 }}</div>
+                                </div>
+                                <i class="fas fa-cog fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="bg-success text-white p-3 rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="small">Concluídas (Mês)</div>
+                                    <div class="h4 mb-0">{{ stats.concluidas_mes or 0 }}</div>
+                                </div>
+                                <i class="fas fa-check-circle fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Resultado da busca -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <small class="text-muted">
+                        {{ ordens|length }} ordem(ns) de serviço encontrada(s)
+                    </small>
+                </div>
+                
+                <!-- Tabela de Ordens de Serviço -->
+                {% if ordens %}
+                <div class="table-responsive">
+                    <table class="table table-dark table-hover">
+                        <thead>
+                            <tr>
+                                <th>Número</th>
+                                <th>Cliente</th>
+                                <th>Título</th>
+                                <th>Status</th>
+                                <th>Prioridade</th>
+                                <th>Data Abertura</th>
+                                <th width="260">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ordem in ordens %}
+                            <tr>
+                                <td>
+                                    <strong class="text-primary">{{ ordem.numero }}</strong>
+                                    {% if ordem.prazo_vencido %}
+                                        <br><small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Vencida</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if ordem.cliente %}
+                                        {{ ordem.cliente.nome }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ ordem.titulo|truncate(50) }}</td>
+                                <td>
+                                    {% if ordem.status == 'aberta' %}
+                                        <span class="badge bg-warning">Aberta</span>
+                                    {% elif ordem.status == 'em_andamento' %}
+                                        <span class="badge bg-info">Em Andamento</span>
+                                    {% elif ordem.status == 'aguardando_pecas' %}
+                                        <span class="badge bg-secondary">Aguardando Peças</span>
+                                    {% elif ordem.status == 'aguardando_cliente' %}
+                                        <span class="badge bg-secondary">Aguardando Cliente</span>
+                                    {% elif ordem.status == 'concluida' %}
+                                        <span class="badge bg-success">Concluída</span>
+                                    {% elif ordem.status == 'cancelada' %}
+                                        <span class="badge bg-danger">Cancelada</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ ordem.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if ordem.prioridade == 'baixa' %}
+                                        <span class="badge bg-success">Baixa</span>
+                                    {% elif ordem.prioridade == 'normal' %}
+                                        <span class="badge bg-primary">Normal</span>
+                                    {% elif ordem.prioridade == 'alta' %}
+                                        <span class="badge bg-warning">Alta</span>
+                                    {% elif ordem.prioridade == 'urgente' %}
+                                        <span class="badge bg-danger">Urgente</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{{ ordem.prioridade or 'Normal' }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if ordem.data_abertura %}
+                                        {{ ordem.data_abertura.strftime('%d/%m/%Y') }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}" 
+                                           class="btn btn-outline-info" 
+                                           title="Visualizar">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('ordem_servico.editar', id=ordem.id) }}" 
+                                           class="btn btn-outline-warning" 
+                                           title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('ordem_servico.gerar_relatorio_pdf', id=ordem.id) }}" 
+                                           class="btn btn-outline-danger" 
+                                           title="Gerar PDF"
+                                           target="_blank">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                        {% if ordem.status == 'aberta' %}
+                                            <form method="POST" action="{{ url_for('ordem_servico.iniciar_servico', id=ordem.id) }}" style="display: inline;">
+                                                <button type="submit" 
+                                                        class="btn btn-outline-success btn-sm" 
+                                                        title="Iniciar Serviço"
+                                                        onclick="return confirm('Confirma o início do serviço?')">
+                                                    <i class="fas fa-play"></i>
+                                                </button>
+                                            </form>
+                                        {% elif ordem.status in ['em_andamento', 'aguardando_pecas', 'aguardando_cliente'] %}
+                                            <form method="POST" action="{{ url_for('ordem_servico.concluir_servico', id=ordem.id) }}" style="display: inline;">
+                                                <button type="submit" 
+                                                        class="btn btn-outline-success btn-sm" 
+                                                        title="Concluir Serviço"
+                                                        onclick="return confirm('Confirma a conclusão do serviço?')">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                            </form>
+                                        {% endif %}
+                                        <a href="{{ url_for('ordem_servico.excluir', id=ordem.id) }}" 
+                                           class="btn btn-outline-danger" 
+                                           title="Excluir"
+                                           onclick="return confirm('Confirma a exclusão? Esta ação não pode ser desfeita!')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <!-- Estado vazio -->
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-tools text-muted" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="text-muted">Nenhuma ordem de serviço encontrada</h5>
+                    <p class="text-muted mb-4">
+                        Não há ordens de serviço que correspondam aos filtros aplicados.
+                    </p>
+                    <a href="{{ url_for('ordem_servico.novo') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Criar primeira ordem de serviço
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filtrarOrdens() {
+    // Submete todos os formulários de filtro
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => form.submit());
+}
+
+// Auto-submit nos filtros
+document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.querySelector('select[name="status"]');
+    const clienteInput = document.querySelector('input[name="cliente"]');
+    const numeroInput = document.querySelector('input[name="numero"]');
+
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
+
+    if (clienteInput) {
+        let timeoutId;
+        clienteInput.addEventListener('input', function() {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                this.form.submit();
+            }, 500);
+        });
+    }
+
+    if (numeroInput) {
+        let timeoutId;
+        numeroInput.addEventListener('input', function() {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                this.form.submit();
+            }, 500);
+        });
+    }
+});
+</script>
+{% endblock %}

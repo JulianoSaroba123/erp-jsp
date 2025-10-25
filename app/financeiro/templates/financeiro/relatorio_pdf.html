@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatório Financeiro</title>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #333; padding: 6px 8px; font-size: 13px; }
+    th { background: #0f172a; color: #fff; }
+    h2 { color: #0f172a; }
+  </style>
+</head>
+<body>
+  <h2>Relatório Financeiro</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th><th>Data</th><th>Cliente</th><th>Origem</th><th>Tipo</th><th>Valor</th><th>Forma</th><th>Descrição</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for m in movimentos %}
+      <tr>
+        <td>{{ m.id }}</td>
+        <td>{{ m.data.strftime('%d/%m/%Y') }}</td>
+        <td>{{ m.cliente }}</td>
+        <td>{{ m.origem }}</td>
+        <td>{{ m.tipo|capitalize }}</td>
+        <td>R$ {{ m.valor|round(2) }}</td>
+        <td>{{ m.forma_pagamento }}</td>
+        <td>{{ m.descricao }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

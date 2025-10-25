@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block title %}Busca de Empresas{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('prospeccao.dashboard') }}">Prospecção</a></li>
+<li class="breadcrumb-item active">Busca de Empresas</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <h2 class="text-center text-primary mb-4">
+        <i class="fas fa-search me-2"></i>Prospecção de Clientes
+      </h2>
+
+      <!-- Formulário de Busca -->
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-filter me-2"></i>Filtros de Busca
+          </h5>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('prospeccao.buscar') }}">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label" for="cnae">
+                  <i class="fas fa-industry me-1"></i>CNAE
+                </label>
+                <input type="text" 
+                       id="cnae" 
+                       name="cnae" 
+                       class="form-control" 
+                       placeholder="Ex: 4321-5/01" 
+                       value="{{ filtros.cnae }}"
+                       title="Código CNAE da atividade econômica">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label" for="cidade">
+                  <i class="fas fa-map-marker-alt me-1"></i>Cidade
+                </label>
+                <input type="text" 
+                       id="cidade" 
+                       name="cidade" 
+                       class="form-control" 
+                       placeholder="Ex: Tietê" 
+                       value="{{ filtros.cidade }}"
+                       title="Nome da cidade">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label" for="estado">
+                  <i class="fas fa-flag me-1"></i>UF
+                </label>
+                <input type="text" 
+                       id="estado" 
+                       name="estado" 
+                       class="form-control text-uppercase" 
+                       placeholder="Ex: SP" 
+                       maxlength="2" 
+                       value="{{ filtros.estado }}"
+                       title="Sigla do estado"
+                       style="text-transform: uppercase;">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label" for="cnpj">
+                  <i class="fas fa-id-card me-1"></i>CNPJ
+                </label>
+                <input type="text" 
+                       id="cnpj" 
+                       name="cnpj" 
+                       class="form-control" 
+                       placeholder="Ex: 00.000.000/0001-00" 
+                       value="{{ filtros.cnpj }}"
+                       title="CNPJ da empresa">
+              </div>
+            </div>
+            <div class="d-flex justify-content-end mt-3">
+              <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-search me-2"></i>Buscar Empresas
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Resultados da Busca -->
+      {% if resultados %}
+      <div class="card">
+        <div class="card-header bg-success text-white">
+          <h5 class="card-title mb-0">
+            <i class="fas fa-list me-2"></i>Resultados da Busca 
+            <span class="badge bg-light text-dark ms-2">{{ resultados|length }} empresa(s)</span>
+          </h5>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-primary">
+                <tr>
+                  <th style="width: 25%;">
+                    <i class="fas fa-building me-1"></i>Razão Social
+                  </th>
+                  <th style="width: 20%;">
+                    <i class="fas fa-store me-1"></i>Nome Fantasia
+                  </th>
+                  <th style="width: 15%;">
+                    <i class="fas fa-id-card me-1"></i>CNPJ
+                  </th>
+                  <th style="width: 10%;">
+                    <i class="fas fa-industry me-1"></i>CNAE
+                  </th>
+                  <th style="width: 15%;">
+                    <i class="fas fa-map-marker-alt me-1"></i>Localização
+                  </th>
+                  <th style="width: 15%;" class="text-center">
+                    <i class="fas fa-cogs me-1"></i>Ações
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for empresa in resultados %}
+                <tr>
+                  <td>
+                    <strong>{{ empresa.razao_social }}</strong>
+                  </td>
+                  <td>
+                    <span class="text-muted">{{ empresa.nome_fantasia or '-' }}</span>
+                  </td>
+                  <td>
+                    <code>{{ empresa.cnpj }}</code>
+                  </td>
+                  <td>
+                    <small class="text-muted">{{ empresa.cnae or '-' }}</small>
+                  </td>
+                  <td>
+                    <span>{{ empresa.cidade or '-' }}</span>
+                    {% if empresa.estado %}
+                    <small class="text-muted">/{{ empresa.estado }}</small>
+                    {% endif %}
+                  </td>
+                  <td class="text-center">
+                    <!-- Formulário para salvar prospect -->
+                    <form action="{{ url_for('prospeccao.salvar', cnpj=empresa.cnpj) }}" 
+                          method="POST" 
+                          class="d-inline"
+                          onsubmit="return confirm('Confirma o salvamento deste prospect?');">
+                      
+                      <!-- Campos hidden com dados da empresa -->
+                      <input type="hidden" name="razao_social" value="{{ empresa.razao_social }}">
+                      <input type="hidden" name="nome_fantasia" value="{{ empresa.nome_fantasia or '' }}">
+                      <input type="hidden" name="cnae" value="{{ empresa.cnae or '' }}">
+                      <input type="hidden" name="cidade" value="{{ empresa.cidade or '' }}">
+                      <input type="hidden" name="estado" value="{{ empresa.estado or '' }}">
+                      <input type="hidden" name="telefone" value="{{ empresa.telefone or '' }}">
+                      <input type="hidden" name="email" value="{{ empresa.email or '' }}">
+                      
+                      <button type="submit" 
+                              class="btn btn-success btn-sm" 
+                              title="Salvar como prospect">
+                        <i class="fas fa-plus me-1"></i>Salvar
+                      </button>
+                    </form>
+                    
+                    <!-- Botão de informações -->
+                    <button type="button" 
+                            class="btn btn-info btn-sm ms-1" 
+                            data-bs-toggle="tooltip" 
+                            data-bs-placement="top" 
+                            title="Telefone: {{ empresa.telefone or 'N/A' }}, Email: {{ empresa.email or 'N/A' }}">
+                      <i class="fas fa-info-circle"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      
+      {% elif filtros.cnae or filtros.cidade or filtros.cnpj or filtros.estado %}
+      <!-- Mensagem quando não há resultados -->
+      {% if filtros.cnpj %}
+      <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <div>
+          <strong>Empresa não encontrada</strong> para o CNPJ informado. 
+          Verifique se o CNPJ está correto e ativo na Receita Federal.
+        </div>
+      </div>
+      {% else %}
+      <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="fas fa-info-circle me-2"></i>
+        <div>
+          <strong>Para usar as APIs gratuitas, informe um CNPJ específico.</strong><br>
+          Busca por CNAE, cidade ou estado requer APIs comerciais (CNPJá, ListaCNAE, etc.).
+        </div>
+      </div>
+      {% endif %}
+      {% endif %}
+
+      <!-- Card de Ajuda -->
+      <div class="card mt-4 border-info">
+        <div class="card-header bg-info text-white">
+          <h6 class="card-title mb-0">
+            <i class="fas fa-lightbulb me-2"></i>Dicas de Busca
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-info mb-3">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Importante:</strong> As APIs gratuitas (ReceitaWS/BrasilAPI) funcionam apenas com <strong>CNPJ específico</strong>. 
+            Para busca por CNAE, cidade ou estado, é necessária uma API comercial.
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <ul class="list-unstyled mb-0">
+                <li><i class="fas fa-check text-success me-2"></i>Informe um CNPJ completo para buscar dados da empresa</li>
+                <li><i class="fas fa-check text-success me-2"></i>APIs gratuitas: ReceitaWS e BrasilAPI</li>
+              </ul>
+            </div>
+            <div class="col-md-6">
+              <ul class="list-unstyled mb-0">
+                <li><i class="fas fa-check text-success me-2"></i>Para busca avançada (CNAE/cidade), considere APIs pagas</li>
+                <li><i class="fas fa-check text-success me-2"></i>Empresas salvas ficam em <a href="{{ url_for('prospeccao.listar') }}">Listar Prospects</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Formatação automática do CNPJ
+document.getElementById('cnpj').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length <= 14) {
+        value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+        value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+        value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+        value = value.replace(/(\d{4})(\d)/, '$1-$2');
+        e.target.value = value;
+    }
+});
+
+// Maiúscula automática no UF
+document.getElementById('estado').addEventListener('input', function(e) {
+    e.target.value = e.target.value.toUpperCase();
+});
+
+// Ativar tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl)
+});
+</script>
+{% endblock %}

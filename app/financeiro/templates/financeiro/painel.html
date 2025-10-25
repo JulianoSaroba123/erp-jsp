@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}Painel Financeiro{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <h2 class="mb-4">Painel Financeiro</h2>
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <div class="card text-bg-success mb-3">
+        <div class="card-header">Ponto de Equilíbrio</div>
+        <div class="card-body">
+          <h5 class="card-title">R$ {{ ponto_equilibrio|round(2) }}</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-bg-primary mb-3">
+        <div class="card-header">Lucro Líquido</div>
+        <div class="card-body">
+          <h5 class="card-title">R$ {{ lucro_liquido|round(2) }}</h5>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card text-bg-info mb-3">
+        <div class="card-header">Receitas x Despesas</div>
+        <div class="card-body">
+          <canvas id="grafico-receitas-despesas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mb-3">
+    <a href="{{ url_for('financeiro.novo_movimento') }}" class="btn btn-success">Nova Movimentação</a>
+    <a href="{{ url_for('financeiro.exportar_excel') }}" class="btn btn-outline-secondary">Exportar Excel</a>
+    <a href="{{ url_for('financeiro.exportar_pdf') }}" class="btn btn-outline-danger">Exportar PDF</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-dark table-striped table-hover">
+      <thead>
+        <tr>
+          <th>ID</th><th>Data</th><th>Cliente</th><th>Origem</th><th>Tipo</th><th>Valor</th><th>Forma</th><th>Descrição</th><th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in movimentos %}
+        <tr>
+          <td>{{ m.id }}</td>
+          <td>{{ m.data.strftime('%d/%m/%Y') }}</td>
+          <td>{{ m.cliente }}</td>
+          <td>{{ m.origem }}</td>
+          <td>{{ m.tipo|capitalize }}</td>
+          <td>R$ {{ m.valor|round(2) }}</td>
+          <td>{{ m.forma_pagamento }}</td>
+          <td>{{ m.descricao }}</td>
+          <td>
+            <a href="{{ url_for('financeiro.editar_movimento', id=m.id) }}" class="btn btn-sm btn-warning">Editar</a>
+            <form method="post" action="{{ url_for('financeiro.excluir_movimento', id=m.id) }}" style="display:inline-block" onsubmit="return confirm('Excluir?');">
+              <button class="btn btn-sm btn-danger" type="submit">Excluir</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('grafico-receitas-despesas');
+const receitas = {{ receitas|length }};
+const despesas = {{ despesas|length }};
+new Chart(ctx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Receitas', 'Despesas'],
+    datasets: [{
+      data: [
+        {{ receitas|sum(attribute='valor')|round(2) }},
+        {{ despesas|sum(attribute='valor')|round(2) }}
+      ],
+      backgroundColor: ['#198754', '#dc3545']
+    }]
+  },
+  options: {responsive:true, plugins:{legend:{position:'bottom'}}}
+});
+</script>
+{% endblock %}

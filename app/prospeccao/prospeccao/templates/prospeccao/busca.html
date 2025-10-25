@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2 class="text-center text-cyan mb-4"><i class="fas fa-search me-2"></i>Prospeção de Clientes</h2>
+
+  <form method="POST" class="card bg-dark border-secondary p-4 mb-4">
+    <h5 class="card-title text-info mb-3">Filtros de Busca</h5>
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label text-light" for="cnae">CNAE</label>
+        <input type="text" id="cnae" name="cnae" class="form-control bg-dark text-light border-info" placeholder="Ex: 4321-5/01" value="{{ filtros.cnae }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label text-light" for="cidade">Cidade</label>
+        <input type="text" id="cidade" name="cidade" class="form-control bg-dark text-light border-info" placeholder="Ex: Tietê" value="{{ filtros.cidade }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label text-light" for="estado">UF</label>
+        <input type="text" id="estado" name="estado" class="form-control bg-dark text-light border-info" placeholder="Ex: SP" maxlength="2" value="{{ filtros.estado }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label text-light" for="cnpj">CNPJ</label>
+        <input type="text" id="cnpj" name="cnpj" class="form-control bg-dark text-light border-info" placeholder="Ex: 00.000.000/0001-00" value="{{ filtros.cnpj }}">
+      </div>
+    </div>
+    <div class="d-flex justify-content-end mt-3">
+      <button type="submit" class="btn btn-info"><i class="fas fa-search me-2"></i>Buscar</button>
+    </div>
+  </form>
+
+  {% if resultados %}
+  <div class="card bg-dark border-secondary p-4">
+    <h5 class="card-title text-info">Resultados da Busca</h5>
+    <div class="table-responsive mt-3">
+      <table class="table table-dark table-hover align-middle mb-0">
+        <thead class="text-cyan">
+          <tr>
+            <th>Razão Social</th>
+            <th>Nome Fantasia</th>
+            <th>CNPJ</th>
+            <th>CNAE</th>
+            <th>Cidade/UF</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for empresa in resultados %}
+          <tr>
+            <td>{{ empresa.razao_social }}</td>
+            <td>{{ empresa.nome_fantasia }}</td>
+            <td>{{ empresa.cnpj }}</td>
+            <td>{{ empresa.cnae }}</td>
+            <td>{{ empresa.cidade }}/{{ empresa.estado }}</td>
+            <td class="text-end">
+              <!-- Botão de salvar prospecto: envia dados via POST para a rota de salvar -->
+              <form action="{{ url_for('prospeccao.salvar', cnpj=empresa.cnpj) }}" method="POST" class="d-inline">
+                <input type="hidden" name="razao_social" value="{{ empresa.razao_social }}">
+                <input type="hidden" name="nome_fantasia" value="{{ empresa.nome_fantasia }}">
+                <input type="hidden" name="cnae" value="{{ empresa.cnae }}">
+                <input type="hidden" name="cidade" value="{{ empresa.cidade }}">
+                <input type="hidden" name="estado" value="{{ empresa.estado }}">
+                <input type="hidden" name="telefone" value="{{ empresa.telefone }}">
+                <input type="hidden" name="email" value="{{ empresa.email }}">
+                <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-plus me-1"></i>Salvar</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% elif filtros.cnae or filtros.cidade or filtros.cnpj or filtros.estado %}
+    <div class="alert alert-warning mt-3">Nenhuma empresa encontrada com os filtros informados.</div>
+  {% endif %}
+</div>
+{% endblock %}

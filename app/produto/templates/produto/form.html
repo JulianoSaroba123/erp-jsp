@@ -1,0 +1,563 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if produto.id %}Editar Produto{% else %}Novo Produto{% endif %} - {{ super() }}
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('produto.listar') }}">Produtos</a></li>
+        <li class="breadcrumb-item active">
+            {% if produto.id %}Editar{% else %}Novo{% endif %}
+        </li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-box{% if not produto.id %}-plus{% else %}-edit{% endif %} me-2"></i>
+                    {% if produto.id %}
+                        Editar Produto: {{ produto.nome }}
+                    {% else %}
+                        Novo Produto
+                    {% endif %}
+                </h4>
+            </div>
+            
+            <div class="card-body">
+                <form method="POST" novalidate>
+                    <!-- Dados Principais -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Dados Principais
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <label for="nome" class="form-label">Nome do Produto *</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="nome" 
+                                   name="nome" 
+                                   value="{{ produto.nome or '' }}" 
+                                   required 
+                                   maxlength="100">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="status" class="form-label">Status *</label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="ativo" {% if produto.status == 'ativo' or not produto.id %}selected{% endif %}>
+                                    Ativo
+                                </option>
+                                <option value="inativo" {% if produto.status == 'inativo' %}selected{% endif %}>
+                                    Inativo
+                                </option>
+                                <option value="descontinuado" {% if produto.status == 'descontinuado' %}selected{% endif %}>
+                                    Descontinuado
+                                </option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-12 mt-3">
+                            <label for="descricao" class="form-label">Descrição</label>
+                            <textarea class="form-control" 
+                                      id="descricao" 
+                                      name="descricao" 
+                                      rows="3" 
+                                      maxlength="500">{{ produto.descricao or '' }}</textarea>
+                            <small class="text-muted">Máximo 500 caracteres</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Códigos e Identificação -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-barcode me-2"></i>
+                                Códigos e Identificação
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="codigo" class="form-label">Código do Produto</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="codigo" 
+                                   name="codigo" 
+                                   value="{{ produto.codigo or '' }}"
+                                   maxlength="50">
+                            <small class="text-muted">Se não informado, será gerado automaticamente</small>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="codigo_barras" class="form-label">Código de Barras</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="codigo_barras" 
+                                   name="codigo_barras" 
+                                   value="{{ produto.codigo_barras or '' }}"
+                                   maxlength="50">
+                        </div>
+                    </div>
+                    
+                    <!-- Categoria e Classificação -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-tags me-2"></i>
+                                Categoria e Classificação
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="categoria" class="form-label">Categoria</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="categoria" 
+                                   name="categoria" 
+                                   value="{{ produto.categoria or '' }}"
+                                   maxlength="50"
+                                   list="categorias-list">
+                            <datalist id="categorias-list">
+                                <option value="Eletrônicos">
+                                <option value="Roupas">
+                                <option value="Casa e Jardim">
+                                <option value="Esportes">
+                                <option value="Livros">
+                                <option value="Alimentação">
+                                <option value="Ferramentas">
+                                <option value="Automóveis">
+                            </datalist>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="subcategoria" class="form-label">Subcategoria</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="subcategoria" 
+                                   name="subcategoria" 
+                                   value="{{ produto.subcategoria or '' }}"
+                                   maxlength="50">
+                        </div>
+                        
+                        <div class="col-md-6 mt-3">
+                            <label for="marca" class="form-label">Marca</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="marca" 
+                                   name="marca" 
+                                   value="{{ produto.marca or '' }}"
+                                   maxlength="50">
+                        </div>
+                        
+                        <div class="col-md-6 mt-3">
+                            <label for="modelo" class="form-label">Modelo</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="modelo" 
+                                   name="modelo" 
+                                   value="{{ produto.modelo or '' }}"
+                                   maxlength="50">
+                        </div>
+                    </div>
+                    
+                    <!-- Medidas e Unidades -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-ruler me-2"></i>
+                                Medidas e Unidades
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="unidade_medida" class="form-label">Unidade de Medida</label>
+                            <select class="form-select" id="unidade_medida" name="unidade_medida">
+                                <option value="UN" {% if produto.unidade_medida == 'UN' or not produto.id %}selected{% endif %}>
+                                    Unidade (UN)
+                                </option>
+                                <option value="KG" {% if produto.unidade_medida == 'KG' %}selected{% endif %}>
+                                    Quilograma (KG)
+                                </option>
+                                <option value="G" {% if produto.unidade_medida == 'G' %}selected{% endif %}>
+                                    Grama (G)
+                                </option>
+                                <option value="L" {% if produto.unidade_medida == 'L' %}selected{% endif %}>
+                                    Litro (L)
+                                </option>
+                                <option value="ML" {% if produto.unidade_medida == 'ML' %}selected{% endif %}>
+                                    Mililitro (ML)
+                                </option>
+                                <option value="M" {% if produto.unidade_medida == 'M' %}selected{% endif %}>
+                                    Metro (M)
+                                </option>
+                                <option value="CM" {% if produto.unidade_medida == 'CM' %}selected{% endif %}>
+                                    Centímetro (CM)
+                                </option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="peso" class="form-label">Peso</label>
+                            <div class="input-group">
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="peso" 
+                                       name="peso" 
+                                       value="{{ produto.peso or '' }}"
+                                       step="0.001"
+                                       min="0">
+                                <span class="input-group-text">kg</span>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="dimensoes" class="form-label">Dimensões</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="dimensoes" 
+                                   name="dimensoes" 
+                                   value="{{ produto.dimensoes or '' }}"
+                                   placeholder="Ex: 10x20x30 cm"
+                                   maxlength="50">
+                        </div>
+                    </div>
+                    
+                    <!-- Preços -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-dollar-sign me-2"></i>
+                                Preços
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="preco_custo" class="form-label">Preço de Custo *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="preco_custo" 
+                                       name="preco_custo" 
+                                       value="{{ '%.2f'|format(produto.preco_custo|float) if produto.preco_custo else '' }}"
+                                       placeholder="0,00"
+                                       required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="markup" class="form-label">Markup</label>
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="markup" 
+                                       name="markup" 
+                                       value="{{ '%.2f'|format(produto.markup|float) if produto.markup else '' }}"
+                                       placeholder="0,00">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="text-muted">Percentual sobre o custo</small>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="preco_venda" class="form-label">Preço de Venda *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="preco_venda" 
+                                       name="preco_venda" 
+                                       value="{{ '%.2f'|format(produto.preco_venda|float) if produto.preco_venda else '' }}"
+                                       placeholder="0,00"
+                                       required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="margem_lucro" class="form-label">Margem de Lucro</label>
+                            <div class="input-group">
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="margem_lucro" 
+                                       name="margem_lucro" 
+                                       value="{{ '%.2f'|format(produto.margem_lucro|float) if produto.margem_lucro else '' }}"
+                                       placeholder="0,00"
+                                       readonly>
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <small class="text-muted">Calculada automaticamente</small>
+                        </div>
+                        
+                        <div class="col-12 mt-3">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-info btn-sm" id="btn-calcular-por-markup">
+                                    <i class="fas fa-calculator me-1"></i>
+                                    Calcular Preço por Markup
+                                </button>
+                                <button type="button" class="btn btn-outline-warning btn-sm" id="btn-calcular-markup">
+                                    <i class="fas fa-percent me-1"></i>
+                                    Calcular Markup por Preço
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Estoque -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-warehouse me-2"></i>
+                                Controle de Estoque
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" 
+                                       type="checkbox" 
+                                       id="controla_estoque" 
+                                       name="controla_estoque" 
+                                       value="1"
+                                       {% if produto.controla_estoque or not produto.id %}checked{% endif %}>
+                                <label class="form-check-label" for="controla_estoque">
+                                    Controlar estoque deste produto
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3" id="campos-estoque">
+                            <label for="estoque_atual" class="form-label">Estoque Atual</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="estoque_atual" 
+                                   name="estoque_atual" 
+                                   value="{{ produto.estoque_atual or 0 }}"
+                                   min="0">
+                        </div>
+                        
+                        <div class="col-md-3" id="campos-estoque-min">
+                            <label for="estoque_minimo" class="form-label">Estoque Mínimo</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="estoque_minimo" 
+                                   name="estoque_minimo" 
+                                   value="{{ produto.estoque_minimo or 0 }}"
+                                   min="0">
+                        </div>
+                        
+                        <div class="col-md-3" id="campos-estoque-max">
+                            <label for="estoque_maximo" class="form-label">Estoque Máximo</label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="estoque_maximo" 
+                                   name="estoque_maximo" 
+                                   value="{{ produto.estoque_maximo or 0 }}"
+                                   min="0">
+                        </div>
+                    </div>
+                    
+                    <!-- Observações -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-sticky-note me-2"></i>
+                                Observações
+                            </h6>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea class="form-control" 
+                                      id="observacoes" 
+                                      name="observacoes" 
+                                      rows="3" 
+                                      maxlength="500">{{ produto.observacoes or '' }}</textarea>
+                            <small class="text-muted">Máximo 500 caracteres</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Botões -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between">
+                                <a href="{{ url_for('produto.listar') }}" 
+                                   class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>
+                                    Voltar
+                                </a>
+                                
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>
+                                    {% if produto.id %}
+                                        Atualizar Produto
+                                    {% else %}
+                                        Salvar Produto
+                                    {% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const precoCustoInput = document.getElementById('preco_custo');
+        const precoVendaInput = document.getElementById('preco_venda');
+        const margemLucroInput = document.getElementById('margem_lucro');
+        const controlaEstoqueCheck = document.getElementById('controla_estoque');
+        const camposEstoque = document.querySelectorAll('#campos-estoque, #campos-estoque-min, #campos-estoque-max');
+        
+        // Formatação de preços
+        function formatarPreco(valor) {
+            // Remove caracteres não numéricos exceto vírgula e ponto
+            valor = valor.replace(/[^\d,\.]/g, '');
+            // Substitui vírgula por ponto para cálculos
+            valor = valor.replace(',', '.');
+            return valor;
+        }
+        
+        function exibirPrecoFormatado(input, valor) {
+            if (valor && !isNaN(valor)) {
+                input.value = parseFloat(valor).toFixed(2).replace('.', ',');
+            }
+        }
+        
+        function calcularMargemLucro() {
+            const custo = parseFloat(formatarPreco(precoCustoInput.value)) || 0;
+            const venda = parseFloat(formatarPreco(precoVendaInput.value)) || 0;
+            
+            if (custo > 0 && venda > 0) {
+                const margem = ((venda - custo) / custo) * 100;
+                margemLucroInput.value = margem.toFixed(2).replace('.', ',');
+            } else {
+                margemLucroInput.value = '0,00';
+            }
+        }
+        
+        function toggleEstoque() {
+            const controla = controlaEstoqueCheck.checked;
+            camposEstoque.forEach(campo => {
+                const inputs = campo.querySelectorAll('input');
+                inputs.forEach(input => {
+                    input.disabled = !controla;
+                    if (!controla) {
+                        input.value = '0';
+                    }
+                });
+            });
+        }
+        
+        // Event listeners para preços
+        precoCustoInput.addEventListener('input', function() {
+            this.value = formatarPreco(this.value);
+        });
+        
+        precoVendaInput.addEventListener('input', function() {
+            this.value = formatarPreco(this.value);
+        });
+        
+        precoCustoInput.addEventListener('blur', function() {
+            exibirPrecoFormatado(this, this.value);
+            calcularMargemLucro();
+        });
+        
+        precoVendaInput.addEventListener('blur', function() {
+            exibirPrecoFormatado(this, this.value);
+            calcularMargemLucro();
+        });
+        
+        // Event listener para controle de estoque
+        controlaEstoqueCheck.addEventListener('change', toggleEstoque);
+        
+        // Gerar código automaticamente se não foi informado
+        document.getElementById('nome').addEventListener('blur', function() {
+            const codigoInput = document.getElementById('codigo');
+            if (!codigoInput.value.trim()) {
+                const nome = this.value.trim();
+                if (nome) {
+                    // Gera código baseado no nome
+                    let codigo = nome.toUpperCase()
+                        .replace(/[ÁÀÂÃ]/g, 'A')
+                        .replace(/[ÉÈÊẼ]/g, 'E')
+                        .replace(/[ÍÌÎĨ]/g, 'I')
+                        .replace(/[ÓÒÔÕ]/g, 'O')
+                        .replace(/[ÚÙÛŨ]/g, 'U')
+                        .replace(/[^A-Z0-9]/g, '')
+                        .substring(0, 10);
+                    
+                    codigoInput.value = codigo;
+                }
+            }
+        });
+        
+        // Máscara para código de barras (apenas números)
+        document.getElementById('codigo_barras').addEventListener('input', function() {
+            this.value = this.value.replace(/\D/g, '');
+        });
+        
+        // Máscara para peso (apenas números e ponto)
+        document.getElementById('peso').addEventListener('input', function() {
+            this.value = this.value.replace(/[^\d\.]/g, '');
+        });
+        
+        // Função para calcular preço de venda por markup
+        function calcularPrecoPorMarkup() {
+            const precoCusto = parseFloat(precoCustoInput.value.replace(',', '.')) || 0;
+            const markup = parseFloat(document.getElementById('markup').value.replace(',', '.')) || 0;
+            
+            if (precoCusto > 0 && markup > 0) {
+                const precoVenda = precoCusto * (1 + markup / 100);
+                precoVendaInput.value = precoVenda.toFixed(2).replace('.', ',');
+                calcularMargemLucro();
+            }
+        }
+        
+        // Função para calcular markup por preço de venda
+        function calcularMarkupPorPreco() {
+            const precoCusto = parseFloat(precoCustoInput.value.replace(',', '.')) || 0;
+            const precoVenda = parseFloat(precoVendaInput.value.replace(',', '.')) || 0;
+            
+            if (precoCusto > 0 && precoVenda > 0) {
+                const markup = ((precoVenda - precoCusto) / precoCusto) * 100;
+                document.getElementById('markup').value = markup.toFixed(2).replace('.', ',');
+                calcularMargemLucro();
+            }
+        }
+        
+        // Event listeners para os botões de markup
+        document.getElementById('btn-calcular-markup').addEventListener('click', function(e) {
+            e.preventDefault();
+            calcularPrecoPorMarkup();
+        });
+        
+        document.getElementById('btn-calcular-por-preco').addEventListener('click', function(e) {
+            e.preventDefault();
+            calcularMarkupPorPreco();
+        });
+        
+        // Inicializa
+        toggleEstoque();
+        calcularMargemLucro();
+        
+        // Foco no nome
+        document.getElementById('nome').focus();
+    });
+</script>
+{% endblock %}

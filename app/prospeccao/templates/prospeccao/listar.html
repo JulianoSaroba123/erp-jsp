@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Prospects{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('prospeccao.dashboard') }}">Prospecção</a></li>
+<li class="breadcrumb-item active">Lista de Prospects</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary mb-0">
+          <i class="fas fa-list me-2"></i>Lista de Prospects
+        </h2>
+        <a href="{{ url_for('prospeccao.buscar') }}" class="btn btn-primary">
+          <i class="fas fa-search me-2"></i>Nova Busca
+        </a>
+      </div>
+
+      <!-- Filtros -->
+      <div class="card mb-4">
+        <div class="card-body">
+          <form method="GET" class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Status</label>
+              <select name="status" class="form-select">
+                <option value="">Todos</option>
+                <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativo</option>
+                <option value="convertido" {% if status_filtro == 'convertido' %}selected{% endif %}>Convertido</option>
+                <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativo</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Cidade</label>
+              <input type="text" name="cidade" class="form-control" value="{{ cidade_filtro }}" placeholder="Digite a cidade">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">UF</label>
+              <input type="text" name="estado" class="form-control text-uppercase" value="{{ estado_filtro }}" placeholder="UF" maxlength="2">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+              <button type="submit" class="btn btn-outline-primary me-2">
+                <i class="fas fa-filter me-1"></i>Filtrar
+              </button>
+              <a href="{{ url_for('prospeccao.listar') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-times me-1"></i>Limpar
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Lista de Prospects -->
+      {% if prospects.items %}
+      <div class="card">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-primary">
+                <tr>
+                  <th>Empresa</th>
+                  <th>CNPJ</th>
+                  <th>CNAE</th>
+                  <th>Localização</th>
+                  <th>Status</th>
+                  <th>Criado em</th>
+                  <th class="text-center">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for prospect in prospects.items %}
+                <tr>
+                  <td>
+                    <div>
+                      <strong>{{ prospect.razao_social }}</strong>
+                      {% if prospect.nome_fantasia %}
+                      <br><small class="text-muted">{{ prospect.nome_fantasia }}</small>
+                      {% endif %}
+                    </div>
+                  </td>
+                  <td><code>{{ prospect.cnpj }}</code></td>
+                  <td><small>{{ prospect.cnae or '-' }}</small></td>
+                  <td>
+                    {{ prospect.cidade or '-' }}
+                    {% if prospect.estado %}/ {{ prospect.estado }}{% endif %}
+                  </td>
+                  <td>
+                    {% if prospect.status == 'ativo' %}
+                    <span class="badge bg-success">Ativo</span>
+                    {% elif prospect.status == 'convertido' %}
+                    <span class="badge bg-primary">Convertido</span>
+                    {% else %}
+                    <span class="badge bg-secondary">{{ prospect.status|title }}</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <small>{{ prospect.criado_em.strftime('%d/%m/%Y') if prospect.criado_em else '-' }}</small>
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                      <a href="{{ url_for('prospeccao.detalhar', id=prospect.id) }}" 
+                         class="btn btn-outline-info" 
+                         title="Ver detalhes">
+                        <i class="fas fa-eye"></i>
+                      </a>
+                      {% if prospect.status == 'ativo' %}
+                      <form action="{{ url_for('prospeccao.converter', id=prospect.id) }}" 
+                            method="POST" 
+                            class="d-inline"
+                            onsubmit="return confirm('Marcar como convertido?');">
+                        <button type="submit" 
+                                class="btn btn-outline-success" 
+                                title="Marcar como convertido">
+                          <i class="fas fa-check"></i>
+                        </button>
+                      </form>
+                      {% endif %}
+                      <form action="{{ url_for('prospeccao.excluir', id=prospect.id) }}" 
+                            method="POST" 
+                            class="d-inline"
+                            onsubmit="return confirm('Confirma a exclusão?');">
+                        <button type="submit" 
+                                class="btn btn-outline-danger" 
+                                title="Excluir">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paginação -->
+      {% if prospects.pages > 1 %}
+      <nav aria-label="Paginação dos prospects" class="mt-4">
+        <ul class="pagination justify-content-center">
+          {% if prospects.has_prev %}
+          <li class="page-item">
+            <a class="page-link" href="{{ url_for('prospeccao.listar', page=prospects.prev_num) }}">Anterior</a>
+          </li>
+          {% endif %}
+          
+          {% for page_num in prospects.iter_pages() %}
+            {% if page_num %}
+              {% if page_num != prospects.page %}
+              <li class="page-item">
+                <a class="page-link" href="{{ url_for('prospeccao.listar', page=page_num) }}">{{ page_num }}</a>
+              </li>
+              {% else %}
+              <li class="page-item active">
+                <span class="page-link">{{ page_num }}</span>
+              </li>
+              {% endif %}
+            {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">…</span>
+            </li>
+            {% endif %}
+          {% endfor %}
+          
+          {% if prospects.has_next %}
+          <li class="page-item">
+            <a class="page-link" href="{{ url_for('prospeccao.listar', page=prospects.next_num) }}">Próximo</a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+      {% endif %}
+
+      {% else %}
+      <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle me-2"></i>
+        Nenhum prospect encontrado. 
+        <a href="{{ url_for('prospeccao.buscar') }}" class="alert-link">Clique aqui para fazer uma nova busca</a>.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1 @@
+from .proposta_routes import proposta_bp
