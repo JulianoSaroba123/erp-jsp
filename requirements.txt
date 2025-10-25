@@ -25,3 +25,6 @@ weasyprint==60.2
 
 # Segurança
 Werkzeug==2.3.7
+
+# Servidor de Produção
+gunicorn==21.2.0
