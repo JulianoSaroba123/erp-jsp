@@ -19,15 +19,9 @@
 
 ### 1.2 Conectar repositório local
 ```bash
-# Adicionar remote origin
-git remote add origin https://github.com/SEU_USUARIO/erp-jsp-v3.git
-
-# Verificar se foi adicionado
-git remote -v
-
-# Fazer o primeiro push
-git branch -M main
-git push -u origin main
+# ✅ JÁ CONECTADO!
+# Repositório: https://github.com/JulianoSaroba123/erp-jsp
+# ✅ Código já enviado para o GitHub!
 ```
 
 ## 🌐 2. Deploy no Render
@@ -36,7 +30,7 @@ git push -u origin main
 1. Acesse [render.com](https://render.com)
 2. Clique em "New +" → "Web Service"
 3. Conecte sua conta GitHub
-4. Selecione o repositório `erp-jsp-v3`
+4. Selecione o repositório `erp-jsp` (JulianoSaroba123/erp-jsp)
 5. Configure:
    - **Name**: `erp-jsp-v3`
    - **Environment**: `Python 3`
