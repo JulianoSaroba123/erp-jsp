@@ -55,6 +55,7 @@ class ProductionConfig(Config):
     """Configuração para produção"""
     DEBUG = False
     SESSION_COOKIE_SECURE = True
+    WTF_CSRF_ENABLED = True
     
     # Configurações específicas de produção
     SQLALCHEMY_ENGINE_OPTIONS = {
