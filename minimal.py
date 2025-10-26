@@ -109,6 +109,10 @@ def create_app():
                                     flask_env=flask_env,
                                     db_status=db_status)
     
+    @app.route('/favicon.ico')
+    def favicon():
+        return "", 204
+    
     @app.route('/test')
     def test():
         return {"status": "OK", "message": "Sistema funcionando!", "env": dict(os.environ)}
