@@ -1,1 +1,1 @@
-web: python app_runner.py
+web: python simple_erp.py
