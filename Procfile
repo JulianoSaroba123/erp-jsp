@@ -1,1 +1,1 @@
-web: python simple_erp.py
+web: python app.py
