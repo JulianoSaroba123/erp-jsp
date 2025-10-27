@@ -1,0 +1,4 @@
+# FORCE RENDER UPDATE
+# Timestamp: 2025-10-26 14:30
+# This file forces Render to detect changes
+CACHE_BREAK=TRUE
