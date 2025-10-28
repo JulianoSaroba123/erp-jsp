@@ -1,21 +1,28 @@
 #!/usr/bin/env python3
 """
-ERP JSP - FORCED UPDATE - TIMESTAMP: 2025-10-26-14:30
-=======================================
-SISTEMA FORÇADO PARA QUEBRAR CACHE DO RENDER
+ERP JSP v3.0 - Entry Point para Render
+====================================
+Sistema ERP completo com autenticação e dashboard.
 """
 
 import os
+import sys
+from datetime import datetime
 from flask import Flask, render_template_string, request, redirect, session, flash
 
-# FORÇAR NOVA VERSÃO
-VERSION = "3.0.1-FORCE-UPDATE-20251026"
-TIMESTAMP = "2025-10-26-14:30:00"
-
+# Configuração da aplicação
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'jsp-secret-key-2025-FORCED')
+app.secret_key = os.environ.get('SECRET_KEY', 'jsp-production-key-2025')
 
-# Templates inline para garantir funcionamento
+# Configuração de ambiente
+FLASK_ENV = os.environ.get('FLASK_ENV', 'production')
+VERSION = "3.0.1"
+
+print(f"🚀 Iniciando ERP JSP v{VERSION}")
+print(f"📊 Ambiente: {FLASK_ENV}")
+print(f"🕒 Timestamp: {datetime.now().isoformat()}")
+
+# Template de Login
 LOGIN_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -75,6 +82,7 @@ LOGIN_TEMPLATE = """
 </html>
 """
 
+# Template do Dashboard
 DASHBOARD_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -100,7 +108,7 @@ DASHBOARD_TEMPLATE = """
                 <div class="d-flex flex-column">
                     <div class="p-3 text-center border-bottom">
                         <h4 class="text-white">🚀 ERP JSP</h4>
-                        <small class="text-muted">v3.0 Produção</small>
+                        <small class="text-muted">v{{ version }}</small>
                     </div>
                     <nav class="nav flex-column p-3">
                         <a class="nav-link active" href="/dashboard">
@@ -135,7 +143,7 @@ DASHBOARD_TEMPLATE = """
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h1>📊 Dashboard</h1>
                         <div>
-                            <span class="badge bg-success">Online</span>
+                            <span class="badge bg-success">{{ env }}</span>
                             <span class="text-muted">Bem-vindo, {{ usuario }}!</span>
                         </div>
                     </div>
@@ -211,6 +219,7 @@ DASHBOARD_TEMPLATE = """
                                             <li>✅ Navegação sidebar</li>
                                             <li>✅ Sistema pronto para uso</li>
                                         </ul>
+                                        <p><strong>Timestamp:</strong> {{ timestamp }}</p>
                                     </div>
                                     
                                     <h6>🔗 Próximas funcionalidades:</h6>
@@ -243,22 +252,25 @@ DASHBOARD_TEMPLATE = """
 </html>
 """
 
-# Rotas simples mas funcionais
+# Rotas da aplicação
 @app.route('/')
 def home():
+    """Página inicial - redireciona para login ou dashboard"""
     if 'user' in session:
         return redirect('/dashboard')
     return redirect('/auth/login')
 
 @app.route('/auth/login', methods=['GET', 'POST'])
 def login():
+    """Página de login com autenticação"""
     if request.method == 'POST':
-        email = request.form.get('email')
-        senha = request.form.get('senha')
+        email = request.form.get('email', '').strip()
+        senha = request.form.get('senha', '').strip()
         
-        # Login simples mas funcional
+        # Autenticação simples mas funcional
         if email == 'admin@jsp.com' and senha == 'admin123':
             session['user'] = 'Administrador JSP'
+            session['user_email'] = email
             flash('Login realizado com sucesso!', 'success')
             return redirect('/dashboard')
         else:
@@ -270,10 +282,11 @@ def login():
 
 @app.route('/dashboard')
 def dashboard():
+    """Dashboard principal com estatísticas"""
     if 'user' not in session:
         return redirect('/auth/login')
     
-    # Stats de exemplo
+    # Estatísticas de exemplo
     stats = {
         'clientes': 45,
         'propostas': 23,
@@ -282,30 +295,73 @@ def dashboard():
     }
     
     return render_template_string(DASHBOARD_TEMPLATE, 
-                                usuario=session['user'], 
+                                usuario=session['user'],
+                                version=VERSION,
+                                env=FLASK_ENV,
+                                timestamp=datetime.now().strftime('%d/%m/%Y %H:%M:%S'),
                                 stats=stats)
 
 @app.route('/logout')
 def logout():
+    """Logout do usuário"""
     session.clear()
     flash('Logout realizado com sucesso!', 'info')
     return redirect('/auth/login')
 
-# Rotas modulares (básicas)
+# Rotas modulares básicas
 @app.route('/<modulo>')
 def modulo_generic(modulo):
+    """Páginas dos módulos (em desenvolvimento)"""
     if 'user' not in session:
         return redirect('/auth/login')
     
+    modulos_validos = ['clientes', 'fornecedores', 'produtos', 'propostas', 'financeiro']
+    
+    if modulo not in modulos_validos:
+        return redirect('/dashboard')
+    
     return f"""
-    <h1>📋 Módulo {modulo.title()}</h1>
-    <p>Funcionalidade em desenvolvimento...</p>
-    <a href="/dashboard">← Voltar ao Dashboard</a>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>ERP JSP - {modulo.title()}</title>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container mt-4">
+            <div class="alert alert-info">
+                <h4>📋 Módulo {modulo.title()}</h4>
+                <p>Funcionalidade em desenvolvimento...</p>
+                <p><strong>Usuário:</strong> {session['user']}</p>
+                <a href="/dashboard" class="btn btn-primary">← Voltar ao Dashboard</a>
+            </div>
+        </div>
+    </body>
+    </html>
     """
 
+# Rota de health check
+@app.route('/health')
+def health():
+    """Health check para monitoramento"""
+    return {
+        'status': 'ok',
+        'service': 'ERP JSP',
+        'version': VERSION,
+        'environment': FLASK_ENV,
+        'timestamp': datetime.now().isoformat()
+    }
+
+# Configuração para execução local
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    print("🚀 ERP JSP Sistema Simples Iniciado!")
-    print(f"🌐 Acesse: https://erp-jsp.onrender.com")
-    print("🔐 Login: admin@jsp.com / admin123")
-    app.run(host='0.0.0.0', port=port, debug=False)
+    debug = FLASK_ENV == 'development'
+    
+    print(f"🌐 Iniciando servidor na porta {port}")
+    print(f"🔧 Debug: {debug}")
+    print(f"🔐 Login: admin@jsp.com / admin123")
+    
+    app.run(host='0.0.0.0', port=port, debug=debug)
+
+# Garantir que a instância 'app' está disponível para o Gunicorn
+print(f"✅ Instância Flask 'app' criada e disponível para Gunicorn")
