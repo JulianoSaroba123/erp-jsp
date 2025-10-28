@@ -1,9 +1,6 @@
 from sqlalchemy import Column, Integer, Float, String, DateTime, Text, Boolean
-from sqlalchemy.ext.declarative import declarative_base
 from app.extensoes import db
 from datetime import datetime
-
-Base = declarative_base()
 
 class ConfigPrecificacao(db.Model):
     """Modelo para armazenar configurações e simulações de precificação."""

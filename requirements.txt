@@ -1,25 +1,25 @@
-# ERP JSP v3.0 - Dependências COMPATÍVEIS
-# Flask Core
-Flask==2.3.3
-Flask-SQLAlchemy==3.0.5
-Flask-WTF==1.1.1
-WTForms==3.0.1
+# ERP JSP v3.0 - Dependências COMPATÍVEIS Python 3.11
+# Flask Core - Versões Testadas
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+Flask-WTF==1.2.1
+WTForms==3.1.2
 Flask-Login==0.6.3
 
-# Banco de Dados - VERSÕES COMPATÍVEIS
-SQLAlchemy==2.0.21
-psycopg2-binary==2.9.7
+# Banco de Dados - VERSÕES COMPATÍVEIS Python 3.11
+SQLAlchemy==2.0.31
+psycopg2-binary==2.9.9
 
 # Validação e Formatação
-email-validator==2.0.0
-python-dotenv==1.0.0
+email-validator==2.1.1
+python-dotenv==1.0.1
 
 # Utilitários
 requests==2.31.0
 python-dateutil==2.8.2
 
 # Segurança
-Werkzeug==2.3.7
+Werkzeug==3.0.3
 
-# Servidor (opcional para local)
+# Servidor de Produção
 gunicorn==21.2.0
