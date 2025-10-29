@@ -13,6 +13,10 @@ class Config:
     if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
         # Render às vezes fornece URL antiga; corrige para SQLAlchemy
         SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
+    # Preferência pelo driver psycopg (v3) que tem wheels para Python 3.11+ e 3.13
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgresql://"):
+        # Usa o driver psycopg para compatibilidade binária moderna
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgresql://", "postgresql+psycopg://", 1)
     elif not SQLALCHEMY_DATABASE_URI:
         # Fallback para SQLite local se não houver DATABASE_URL
         basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
