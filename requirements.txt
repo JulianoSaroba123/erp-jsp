@@ -10,7 +10,8 @@ Flask-Migrate==4.0.5
 # Banco de Dados - VERSÕES COMPATÍVEIS Python 3.11
 SQLAlchemy==2.0.31
 # Use psycopg (v3) binary wheel which is compatible with newer Python ABIs
-psycopg[binary]==3.3.5
+# pin to a published version available on PyPI for Render's environment
+psycopg[binary]==3.3.2
 
 # Validação e Formatação
 email-validator==2.1.1

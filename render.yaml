@@ -2,7 +2,8 @@ services:
   - type: web
     name: erp-jsp
     env: python
-    buildCommand: pip install -r requirements.txt
+  # Upgrade pip first to ensure new resolver and wheel support, then install deps
+  buildCommand: pip install --upgrade pip && pip install -r requirements.txt
     startCommand: gunicorn app.app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
