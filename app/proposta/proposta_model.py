@@ -130,6 +130,18 @@ class Proposta(BaseModel):
             'urgente': 'danger'
         }
         return cores.get(self.prioridade or 'normal', 'primary')
+
+    @property
+    def pode_converter(self):
+        """Indica se a proposta pode ser convertida em Ordem de Serviço.
+
+        Critério atual: a proposta está aprovada e está ativa. Pode ser ampliado
+        no futuro para checar vinculações ou flags adicionais.
+        """
+        try:
+            return (self.status == 'aprovada') and bool(self.ativo)
+        except Exception:
+            return False
     
     @property
     def valor_total_produtos_calculado(self):
