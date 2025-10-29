@@ -44,8 +44,8 @@ def create_app(config_name=None):
     if config_name is None:
         config_name = os.environ.get('FLASK_ENV', 'development')
 
-    # Aplica a configuração
-    app.config.from_object(config[config_name])
+    # Aplica a configuração - usa diretamente a classe Config
+    app.config.from_object("app.config.Config")
     
     # Configurações específicas do Jinja2 para desenvolvimento
     if app.config.get('DEBUG'):

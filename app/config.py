@@ -1,26 +1,29 @@
 import os
+from dotenv import load_dotenv
 from datetime import timedelta
+
+# Carrega variáveis do arquivo .env (para ambiente local)
+load_dotenv()
 
 class Config:
     """Configuração base do aplicativo"""
     
-    # Chave secreta para sessões (MUDE EM PRODUÇÃO!)
-    SECRET_KEY = os.getenv('SECRET_KEY', 'sua-chave-secreta-super-segura-em-producao')
-    
-    # Configurações gerais
-    DEBUG = False
-    TESTING = False
-    
-    # ConfiguraÃ§Ãµes do banco de dados
-    DATABASE_URL = os.getenv('DATABASE_URL')
-    if DATABASE_URL:
-        SQLALCHEMY_DATABASE_URI = DATABASE_URL
-    else:
-        # Caminho absoluto para o banco SQLite
+    # Banco de dados PostgreSQL (Render)
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
+    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
+        # Render às vezes fornece URL antiga; corrige para SQLAlchemy
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
+    elif not SQLALCHEMY_DATABASE_URI:
+        # Fallback para SQLite local se não houver DATABASE_URL
         basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
         SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(basedir, "erp.db")}'
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SECRET_KEY = os.getenv("SECRET_KEY", "jsp_chave_secreta")
+    
+    # Configurações gerais
+    DEBUG = False
+    TESTING = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
         'pool_recycle': 300,
