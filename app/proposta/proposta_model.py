@@ -139,7 +139,9 @@ class Proposta(BaseModel):
         no futuro para checar vinculações ou flags adicionais.
         """
         try:
-            return (self.status == 'aprovada') and bool(self.ativo)
+            if not self.status:
+                return False
+            return (str(self.status).strip().lower() == 'aprovada') and bool(self.ativo)
         except Exception:
             return False
     

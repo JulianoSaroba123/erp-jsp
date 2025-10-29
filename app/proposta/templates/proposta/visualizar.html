@@ -430,7 +430,7 @@
                                     <i class="fas fa-times me-2"></i>Rejeitar Proposta
                                 </button>
                             </form>
-                        {% elif proposta.status == 'aprovada' and proposta.pode_converter %}
+                        {% elif proposta.pode_converter %}
                             <form method="POST" action="{{ url_for('proposta.criar_os_a_partir_da_proposta', id=proposta.id) }}">
                                 <button type="submit" class="btn btn-info w-100" 
                                         onclick="return confirm('Confirma a conversão em Ordem de Serviço?')">
