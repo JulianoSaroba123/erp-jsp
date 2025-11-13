@@ -92,18 +92,29 @@ class JSPLauncher:
             # Comando para iniciar o servidor
             cmd = [python_exe, script]
             
-            # Iniciar processo sem janela de console
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            startupinfo.wShowWindow = subprocess.SW_HIDE
-            
-            self.server_process = subprocess.Popen(
-                cmd,
-                env=env,
-                cwd=os.getcwd(),
-                startupinfo=startupinfo,
-                creationflags=subprocess.CREATE_NO_WINDOW
-            )
+            # Iniciar processo sem janela de console (apenas para .exe)
+            if getattr(sys, 'frozen', False):
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                startupinfo.wShowWindow = subprocess.SW_HIDE
+                
+                self.server_process = subprocess.Popen(
+                    cmd,
+                    env=env,
+                    cwd=os.getcwd(),
+                    startupinfo=startupinfo,
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    stdin=subprocess.DEVNULL
+                )
+            else:
+                # Para desenvolvimento, manter console
+                self.server_process = subprocess.Popen(
+                    cmd,
+                    env=env,
+                    cwd=os.getcwd()
+                )
             
             return True
             
@@ -121,7 +132,42 @@ class JSPLauncher:
             print(f"❌ Erro ao abrir navegador: {e}")
             return False
     
-    def cleanup(self):
+    def show_message(self, title, message, msg_type="info"):
+        """Exibe mensagem usando tkinter ou console"""
+        try:
+            import tkinter as tk
+            from tkinter import messagebox
+            
+            root = tk.Tk()
+            root.withdraw()  # Esconde a janela principal
+            
+            if msg_type == "error":
+                messagebox.showerror(title, message)
+            elif msg_type == "warning":
+                messagebox.showwarning(title, message)
+            else:
+                messagebox.showinfo(title, message)
+                
+            root.destroy()
+        except:
+            # Fallback para console se tkinter não estiver disponível
+            print(f"{title}: {message}")
+    
+    def wait_with_timeout(self, seconds):
+        """Aguarda com timeout sem usar input()"""
+        try:
+            import tkinter as tk
+            from tkinter import messagebox
+            
+            root = tk.Tk()
+            root.withdraw()
+            
+            # Auto-close após alguns segundos
+            root.after(seconds * 1000, root.destroy)
+            root.mainloop()
+        except:
+            # Fallback simples
+            time.sleep(min(seconds, 5))
         """Limpa recursos ao fechar"""
         if self.server_process:
             try:
@@ -146,37 +192,52 @@ class JSPLauncher:
             
             # Iniciar servidor Flask
             if not self.start_flask_server():
-                input("❌ Falha ao iniciar servidor. Pressione Enter para sair...")
+                self.show_message("Erro JSP Sistema", 
+                                "Falha ao iniciar servidor Flask.\nVerifique se todos os arquivos estão presentes.", 
+                                "error")
                 return
             
             # Aguardar servidor estar pronto
             if not self.wait_for_server(MAX_WAIT_TIME):
-                print("❌ Servidor não iniciou corretamente")
-                input("Pressione Enter para sair...")
+                self.show_message("Timeout JSP Sistema", 
+                                "Servidor não iniciou dentro do tempo esperado.\nTente novamente em alguns instantes.", 
+                                "warning")
                 return
             
             # Abrir navegador
             if not self.open_browser():
                 print("❌ Falha ao abrir navegador")
+                self.show_message("JSP Sistema", 
+                                f"Sistema iniciado!\n\nAcesse manualmente: {LOGIN_URL}", 
+                                "info")
+            else:
+                self.show_message("JSP Sistema", 
+                                "Sistema iniciado com sucesso!\n\nO navegador foi aberto automaticamente.\nFeche esta mensagem para continuar.", 
+                                "info")
             
             print("✅ JSP Sistema iniciado com sucesso!")
             print(f"🌐 Acesse: {LOGIN_URL}")
-            print("🔄 Pressione Ctrl+C ou feche esta janela para parar")
+            print("🔄 Sistema rodando em background...")
             
-            # Manter rodando até interrupção
+            # Manter rodando até interrupção ou erro do servidor
             try:
                 while True:
-                    time.sleep(1)
+                    time.sleep(2)
                     # Verificar se processo ainda existe
                     if self.server_process and self.server_process.poll() is not None:
                         print("❌ Servidor Flask parou inesperadamente")
+                        self.show_message("JSP Sistema", 
+                                        "O servidor parou inesperadamente.\nReinicie o sistema.", 
+                                        "error")
                         break
             except KeyboardInterrupt:
                 print("\n🛑 Encerrando JSP Sistema...")
             
         except Exception as e:
             print(f"❌ Erro geral: {e}")
-            input("Pressione Enter para sair...")
+            self.show_message("Erro JSP Sistema", 
+                            f"Erro inesperado:\n{str(e)}\n\nContate o suporte técnico.", 
+                            "error")
         finally:
             self.cleanup()
 
