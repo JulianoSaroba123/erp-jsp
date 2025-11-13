@@ -9,140 +9,344 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-     <!-- Google Fonts - Tipografia Futurista -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts - Tipografia Futurista -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --jsp-primary: #002755;
-            --jsp-secondary: #f49d16;
-            --jsp-accent: #e8f4f8;
+            /* Cores JSP Futuristas */
+            --jsp-primary: #007bff;
+            --jsp-secondary: #007bff;
+            --jsp-accent: #0056b3;
+            --jsp-success: #28a745;
+            --jsp-warning: #17a2b8;
+            --jsp-dark: #000512;
+            
+            /* Neon Effects */
+            --neon-blue: #007bff;
+            --neon-green: #28a745;
+            --neon-glow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
             
             /* Responsividade */
-            --card-max-width: min(400px, 90vw);
-            --card-padding: clamp(1rem, 4vw, 2rem);
+            --card-max-width: min(420px, 90vw);
+            --card-padding: clamp(1.5rem, 4vw, 2.5rem);
             --font-size-base: clamp(14px, 2vw, 16px);
             --font-size-small: clamp(12px, 1.8vw, 14px);
-            --font-size-title: clamp(1.1rem, 3.5vw, 1.8rem);
+            --font-size-title: clamp(1.2rem, 3.5vw, 1.8rem);
             --spacing-base: clamp(1rem, 4vw, 1.5rem);
             --input-height: clamp(48px, 8vw, 56px);
             --button-height: clamp(48px, 7vw, 54px);
         }
         
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
-            background: linear-gradient(135deg, var(--jsp-primary) 0%, #004080 100%);
+            background: linear-gradient(135deg, var(--jsp-dark) 0%, var(--jsp-primary) 50%, #001122 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Exo 2', sans-serif;
             padding: 1rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Background animado futurista */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(0, 255, 136, 0.05) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+            z-index: -1;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(1deg); }
+        }
+        
+        /* Grid pattern futurista */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            z-index: -1;
+            animation: grid-move 30s linear infinite;
+        }
+        
+        @keyframes grid-move {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(30px, 30px); }
         }
         
         .login-container {
             width: 100%;
             max-width: var(--card-max-width);
             margin: 0 auto;
+            position: relative;
         }
         
         .login-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            background: rgba(10, 25, 41, 0.95);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 20px;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.4),
+                0 0 20px rgba(0, 212, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
             overflow: hidden;
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            position: relative;
+            animation: cardSlideIn 0.8s ease-out;
+        }
+        
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+            animation: scan 3s ease-in-out infinite;
+        }
+        
+        @keyframes scan {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+        
+        @keyframes cardSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
         
         .login-header {
-            background: var(--jsp-primary);
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(255, 107, 53, 0.1) 100%);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
             color: white;
             padding: var(--card-padding);
             text-align: center;
+            position: relative;
         }
         
         .login-header h1 {
             margin: 0;
             font-size: var(--font-size-title);
-            font-weight: 600;
+            font-weight: 700;
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-blue);
+            text-shadow: var(--neon-glow);
+            letter-spacing: 1px;
         }
         
         .login-header .subtitle {
             margin-top: 0.5rem;
-            opacity: 0.9;
+            opacity: 0.8;
             font-size: var(--font-size-small);
+            color: #ccc;
+            font-weight: 300;
+            letter-spacing: 0.5px;
         }
         
         .login-body {
             padding: var(--card-padding);
+            background: rgba(0, 5, 18, 0.3);
+        }
+        
+        .form-floating {
+            margin-bottom: 1.5rem;
+            position: relative;
         }
         
         .form-floating label {
-            color: #666;
+            color: rgba(255, 255, 255, 0.6);
             font-size: var(--font-size-base);
+            font-weight: 400;
         }
         
         .form-control {
             height: var(--input-height);
             font-size: var(--font-size-base);
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: white;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.3);
         }
         
         .form-control:focus {
-            border-color: var(--jsp-secondary);
-            box-shadow: 0 0 0 0.2rem rgba(244, 157, 22, 0.25);
+            background: rgba(0, 0, 0, 0.5);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+            color: white;
+        }
+        
+        .form-control:focus + label {
+            color: var(--neon-blue);
         }
         
         .btn-login {
-            background: var(--jsp-secondary);
+            background: linear-gradient(135deg, var(--neon-blue), #0056b3);
             border: none;
             color: white;
             font-weight: 600;
-            padding: 0.75rem 2rem;
-            border-radius: 8px;
+            font-family: 'Orbitron', sans-serif;
+            padding: 0.65rem 1.8rem;
+            border-radius: 10px;
             transition: all 0.3s ease;
             height: var(--button-height);
             font-size: var(--font-size-base);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
         }
         
         .btn-login:hover {
-            background: #e88900;
+            background: linear-gradient(135deg, #0069d9, var(--neon-blue));
             color: white;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+        }
+        
+        .btn-login:hover::before {
+            left: 100%;
+        }
+        
+        .form-check-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 212, 255, 0.3);
         }
         
         .form-check-input:checked {
-            background-color: var(--jsp-secondary);
-            border-color: var(--jsp-secondary);
+            background-color: var(--neon-blue);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+        
+        .form-check-label {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: var(--font-size-small);
         }
         
         .alert {
-            border-radius: 8px;
+            border-radius: 10px;
             margin-bottom: 1rem;
             font-size: var(--font-size-small);
+            border: none;
+            background: rgba(0, 0, 0, 0.4);
+            color: white;
+        }
+        
+        .alert-danger {
+            border-left: 3px solid var(--jsp-accent);
+        }
+        
+        .alert-success {
+            border-left: 3px solid var(--neon-green);
+        }
+        
+        .alert-info {
+            border-left: 3px solid var(--neon-blue);
         }
         
         .footer-text {
             text-align: center;
-            color: #666;
+            color: rgba(255, 255, 255, 0.6);
             font-size: var(--font-size-small);
             margin-top: var(--spacing-base);
+            font-weight: 300;
+        }
+        
+        .footer-text strong {
+            color: var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        /* Efeitos nos ícones */
+        .fas {
+            color: var(--neon-blue);
+            filter: drop-shadow(0 0 3px currentColor);
         }
         
         .logo {
-            width: 60px;
-            height: 60px;
-            background: var(--jsp-secondary);
-            border-radius: 10px;
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--neon-blue), #0056b3);
+            border: 2px solid var(--neon-blue);
+            border-radius: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 1rem;
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             color: white;
             font-weight: bold;
+            font-family: 'Orbitron', sans-serif;
+            box-shadow: 
+                0 0 20px rgba(0, 212, 255, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            animation: logo-pulse 2s ease-in-out infinite;
+            position: relative;
+        }
+        
+        @keyframes logo-pulse {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 20px rgba(0, 212, 255, 0.4),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 30px rgba(0, 212, 255, 0.6),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            }
         }
         
         .logo img {
-            max-width: 60px;
-            max-height: 60px;
-            border-radius: 10px;
-            object-fit: contain;
+            width: 66px;
+            height: 66px;
+            border-radius: 12px;
+            object-fit: cover;
         }
         
         /* Media Queries */
@@ -155,17 +359,113 @@
             
             .login-header,
             .login-body {
-                padding: 1.5rem;
+                padding: 2rem 1.5rem;
             }
 
             .form-control {
                 font-size: 16px !important; /* Evita zoom no iOS */
+            }
+            
+            .logo {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+            
+            .logo img {
+                width: 56px;
+                height: 56px;
+            }
+        }
+        
+        /* Partículas Flutuantes */
+        .floating-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .particle {
+            position: absolute;
+            top: -10px;
+            width: 3px;
+            height: 3px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            animation: float 8s infinite;
+            pointer-events: none;
+        }
+        
+        .particle:nth-child(1) { left: 10%; background: var(--neon-blue); }
+        .particle:nth-child(2) { left: 30%; width: 2px; height: 2px; background: #42a5f5; animation-duration: 10s; }
+        .particle:nth-child(3) { left: 50%; width: 4px; height: 4px; background: #4dd0e1; animation-duration: 12s; }
+        .particle:nth-child(4) { left: 70%; width: 2px; height: 2px; background: var(--neon-blue); animation-duration: 9s; }
+        .particle:nth-child(5) { left: 90%; background: #29b6f6; animation-duration: 11s; }
+        
+        /* Classes específicas das partículas */
+        .particle-1 { left: 10%; animation-delay: 0s; }
+        .particle-2 { left: 20%; animation-delay: 2s; width: 2px; height: 2px; background: #0099cc; }
+        .particle-3 { left: 30%; animation-delay: 4s; }
+        .particle-4 { left: 40%; animation-delay: 1s; width: 4px; height: 4px; background: #4dd0e1; }
+        .particle-5 { left: 50%; animation-delay: 3s; }
+        .particle-6 { left: 60%; animation-delay: 5s; width: 2px; height: 2px; background: #29b6f6; }
+        .particle-7 { left: 70%; animation-delay: 2.5s; }
+        .particle-8 { left: 80%; animation-delay: 4.5s; width: 3px; height: 3px; background: #42a5f5; }
+        .particle-9 { left: 90%; animation-delay: 1.5s; }
+        
+        /* Subtítulo JSP */
+        .jsp-subtitle {
+            font-size: 0.9rem;
+            margin: 0.4rem 0 0 0;
+            color: var(--neon-blue);
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .particle {
+            position: absolute;
+            top: -10px;
+            width: 3px;
+            height: 3px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            animation: float 8s infinite;
+            pointer-events: none;
+        }
+        
+        @keyframes particle-float {
+            0% {
+                opacity: 0;
+                transform: translateY(100vh) translateX(0);
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) translateX(100px);
             }
         }
     </style>
 </head>
 
 <body>
+    <!-- Partículas flutuantes -->
+    <div class="particle particle-1"></div>
+    <div class="particle particle-2"></div>
+    <div class="particle particle-3"></div>
+    <div class="particle particle-4"></div>
+    <div class="particle particle-5"></div>
+    <div class="particle particle-6"></div>
+    <div class="particle particle-7"></div>
+    <div class="particle particle-8"></div>
+    <div class="particle particle-9"></div>
     <div class="container">
         <div class="login-container">
             <div class="login-card">
@@ -179,7 +479,8 @@
                                  alt="JSP Logo">
                         {% endif %}
                     </div>
-                    <h1>{{ config.nome_fantasia if config else 'ERP JSP' }}</h1>
+                    <h1>{{ config.nome_fantasia if config and config.nome_fantasia else 'JSP ELÉTRICA' }}</h1>
+                    <h2 class="jsp-subtitle">INDUSTRIAL & SOLAR</h2>
                     <div class="subtitle">Sistema de Gestão Empresarial</div>
                 </div>
                 
@@ -191,7 +492,7 @@
                                 <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
                                     <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'info-circle' if category == 'info' else 'check-circle' }}"></i>
                                     {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
                                 </div>
                             {% endfor %}
                         {% endif %}
@@ -204,8 +505,8 @@
                                        class="form-control" 
                                        id="identificador" 
                                        name="identificador" 
-                                       placeholder="usuário ou email"
-                                       value="{{ identificador or '' }}"
+                                       placeholder="admin"
+                                       value="{{ identificador or 'admin' }}"
                                        required
                                        autocomplete="username">
                                 <label for="identificador">
@@ -220,7 +521,7 @@
                                        class="form-control" 
                                        id="senha" 
                                        name="senha" 
-                                       placeholder="senha"
+                                       placeholder="••••••••"
                                        required
                                        autocomplete="current-password">
                                 <label for="senha">
@@ -250,7 +551,7 @@
                     
                     <div class="footer-text">
                         <strong>JSP Soluções Tecnológicas</strong><br>
-                        Sistema ERP v3.0 - {{ moment().format('YYYY') if moment else '2025' }}
+                        Sistema ERP v3.0 - 2025
                     </div>
                 </div>
             </div>
@@ -272,6 +573,9 @@
                     senhaField.focus();
                 }
             }
+            
+            // Criar partículas adicionais dinamicamente
+            createParticles();
         });
         
         // Remove alerts automaticamente após 5 segundos
@@ -282,6 +586,53 @@
                 bsAlert.close();
             });
         }, 5000);
+        
+        // Função para criar partículas flutuantes
+        function createParticles() {
+            const colors = ['#007bff', '#42a5f5', '#29b6f6'];
+            
+            setInterval(() => {
+                if (document.querySelectorAll('.particle').length < 20) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    particle.style.animationDelay = '0s';
+                    particle.style.animationDuration = (Math.random() * 10 + 8) + 's';
+                    
+                    document.body.appendChild(particle);
+                    
+                    // Remove a partícula após a animação
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 18000);
+                }
+            }, 2000);
+        }
+        
+        // Efeito de digitação no placeholder
+        function typeEffect(element, text, speed = 100) {
+            element.placeholder = '';
+            let i = 0;
+            const timer = setInterval(() => {
+                if (i < text.length) {
+                    element.placeholder += text.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(timer);
+                }
+            }, speed);
+        }
+        
+        // Aplicar efeito de digitação nos campos
+        setTimeout(() => {
+            const senhaField = document.getElementById('senha');
+            if (senhaField) {
+                typeEffect(senhaField, '••••••••', 200);
+            }
+        }, 1000);
     </script>
 </body>
 </html>
