@@ -347,6 +347,8 @@
             height: 66px;
             border-radius: 12px;
             object-fit: cover;
+            display: block;
+            background: white;
         }
         
         /* Media Queries */
@@ -471,13 +473,10 @@
             <div class="login-card">
                 <div class="login-header">
                     <div class="logo">
-                        {% if config and config.logo %}
-                            <img src="{{ url_for('uploaded_file', filename='configuracao/' + config.logo.split('/')[-1]) }}" 
-                                 alt="{{ config.nome_fantasia or 'Logo' }}">
-                        {% else %}
-                            <img src="{{ url_for('static', filename='img/JSP.jpg') }}" 
-                                 alt="JSP Logo">
-                        {% endif %}
+                        <img src="{{ url_for('static', filename='img/JSP.jpg') }}?v={{ current_time }}" 
+                             alt="JSP Elétrica Industrial & Solar"
+                             onerror="this.style.display='none'; this.parentNode.innerHTML='<div style=&quot;color: var(--neon-blue); font-weight: bold; font-size: 1.5rem; text-align: center; padding: 20px;&quot;>JSP</div>';"
+                             onload="console.log('✅ Logo JSP carregado com sucesso');">
                     </div>
                     <h1>{{ config.nome_fantasia if config and config.nome_fantasia else 'JSP ELÉTRICA' }}</h1>
                     <h2 class="jsp-subtitle">INDUSTRIAL & SOLAR</h2>

@@ -49,6 +49,10 @@ def login():
     from app.configuracao.configuracao_utils import get_config
     config = get_config()
     
+    # Adiciona timestamp para cache busting
+    import time
+    current_time = int(time.time())
+    
     # Se já está logado, redireciona para dashboard
     if current_user.is_authenticated:
         return redirect(url_for('painel.dashboard'))
@@ -61,7 +65,7 @@ def login():
         # Validações básicas
         if not identificador or not senha:
             flash('Por favor, preencha todos os campos.', 'error')
-            return render_template('auth/login.html', identificador=identificador)
+            return render_template('auth/login.html', identificador=identificador, config=config, current_time=current_time)
         
         # Busca usuário
         usuario = Usuario.buscar_para_login(identificador)
@@ -128,10 +132,10 @@ def login():
             )
         
         # Se chegou até aqui, houve falha
-        return render_template('auth/login.html', identificador=identificador, config=config)
+        return render_template('auth/login.html', identificador=identificador, config=config, current_time=current_time)
     
     # GET - exibe formulário
-    return render_template('auth/login.html', config=config)
+    return render_template('auth/login.html', config=config, current_time=current_time)
 
 
 @auth_bp.route('/logout')
