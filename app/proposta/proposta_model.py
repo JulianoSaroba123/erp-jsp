@@ -61,6 +61,7 @@ class Proposta(BaseModel):
     valor_servicos = db.Column(db.Numeric(10, 2), default=0.00)
     desconto = db.Column(db.Numeric(5, 2), default=0.00)  # percentual
     valor_total = db.Column(db.Numeric(10, 2), default=0.00)
+    entrada = db.Column(db.Numeric(5, 2), default=0.00)  # percentual de entrada
     
     # Condições
     condicoes_pagamento = db.Column(db.Text)
@@ -297,6 +298,7 @@ class PropostaServico(BaseModel):
     
     # Dados do serviço
     descricao = db.Column(db.String(500), nullable=False)
+    tipo_servico = db.Column(db.String(20), default='hora')  # hora, dia, fechado
     quantidade = db.Column(db.Numeric(10, 3), default=1.000)
     valor_unitario = db.Column(db.Numeric(10, 2), default=0.00)
     valor_total = db.Column(db.Numeric(10, 2), default=0.00)

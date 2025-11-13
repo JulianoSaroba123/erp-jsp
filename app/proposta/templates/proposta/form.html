@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}
 {% if proposta %}Editar Proposta {{ proposta.codigo }}{% else %}Nova Proposta{% endif %}
@@ -14,833 +14,554 @@
         </li>
         <li class="breadcrumb-item">
             <a href="{{ url_for('proposta.listar_propostas') }}" class="text-decoration-none">
-                <i class="fas fa-file-alt"></i> Propostas
+                <i class="fas fa-file-contract"></i> Propostas
             </a>
         </li>
         <li class="breadcrumb-item active" aria-current="page">
-            {% if proposta %}Editar Proposta{% else %}Nova Proposta{% endif %}
+            <i class="fas fa-{% if proposta %}edit{% else %}plus{% endif %}"></i>
+            {% if proposta %}Editar{% else %}Nova{% endif %}
         </li>
     </ol>
 </nav>
 {% endblock %}
 
 {% block content %}
-
-<!-- Estilos customizados para proposta -->
-<style>
-    .card {
-        transition: all 0.3s ease;
-    }
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    }
-    .btn {
-        transition: all 0.3s ease;
-    }
-    .btn:hover {
-        transform: translateY(-1px);
-    }
-    .item-produto, .item-servico {
-        transition: all 0.3s ease;
-        border: 2px solid transparent !important;
-    }
-    .item-produto:hover, .item-servico:hover {
-        border-color: #ffc107 !important;
-        background-color: rgba(255, 193, 7, 0.1) !important;
-    }
-    .alert-info {
-        background-color: rgba(13, 202, 240, 0.1);
-        border-color: rgba(13, 202, 240, 0.3);
-        color: #0dcaf0;
-    }
-    .form-control:focus, .form-select:focus {
-        border-color: #ffc107;
-        box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
-    }
-    .valor-destaque {
-        font-size: 1.2em;
-        font-weight: bold;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-    }
-    .secao-titulo {
-        background: linear-gradient(45deg, #212529, #343a40);
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-    }
-    .btn-grupo {
-        gap: 0.5rem;
-    }
-    @media (max-width: 768px) {
-        .btn-lg {
-            font-size: 0.9rem;
-            padding: 0.5rem 1rem;
-        }
-        .col-md-1 button {
-            margin-top: 0.5rem;
-        }
-    }
-</style>
-
 <div class="container-fluid">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-            
-            <!-- Header com Resumo -->
-            <div class="card bg-gradient border-secondary mb-4" style="background: linear-gradient(135deg, #212529 0%, #343a40 100%);">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h2 class="text-white mb-1">
-                                <i class="fas fa-file-alt text-warning me-2"></i>
-                                {% if proposta %}
-                                    Proposta {{ proposta.codigo }} - {{ proposta.titulo|truncate(50) }}
-                                {% else %}
-                                    Nova Proposta Comercial
-                                {% endif %}
-                            </h2>
-                            <p class="text-muted mb-0">
-                                {% if proposta %}
-                                    Cliente: {{ proposta.cliente.nome if proposta.cliente else 'N/A' }} | 
-                                    Status: <span class="badge bg-{{ proposta.status_cor }}">{{ proposta.status_formatado }}</span> | 
-                                    Prioridade: <span class="badge bg-{{ proposta.prioridade_cor }}">{{ proposta.prioridade_formatada }}</span>
-                                {% else %}
-                                    Preencha os dados abaixo para criar uma nova proposta comercial
-                                {% endif %}
-                            </p>
-                        </div>
-                        <div class="col-md-4 text-end">
-                            {% if proposta %}
-                            <div class="text-white">
-                                <h4 class="mb-1 valor-destaque">{{ "R$ %.2f"|format(proposta.valor_total|float) if proposta.valor_total else 'R$ 0,00' }}</h4>
-                                <small class="text-muted">Valor Total da Proposta</small>
-                                {% if proposta.valida_ate %}
-                                <br><small class="text-warning">
-                                    <i class="fas fa-calendar-alt me-1"></i>
-                                    Válida até {{ proposta.valida_ate.strftime('%d/%m/%Y') }}
-                                </small>
-                                {% endif %}
-                            </div>
-                            {% else %}
-                            <div class="text-center">
-                                <i class="fas fa-plus-circle fa-3x text-success opacity-50"></i>
-                                <br><small class="text-muted">Nova Proposta</small>
-                            </div>
-                            {% endif %}
-                        </div>
+    <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
+        
+        <!-- INFORMAÇÕES BÁSICAS -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informações Básicas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-white">Cliente *</label>
+                        <select class="form-select bg-dark text-white border-secondary" name="cliente_id" required>
+                            <option value="">Selecione um cliente</option>
+                            {% for cliente in clientes %}
+                            <option value="{{ cliente.id }}" 
+                                    {% if proposta and proposta.cliente_id == cliente.id %}selected{% endif %}>
+                                {{ cliente.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white">Título *</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                               name="titulo" value="{{ proposta.titulo if proposta else '' }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Vendedor</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                               name="vendedor" value="{{ proposta.vendedor if proposta else '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Data Emissão</label>
+                        <input type="date" class="form-control bg-dark text-white border-secondary" 
+                               name="data_emissao" value="{{ proposta.data_emissao if proposta else today }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Validade (dias)</label>
+                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                               name="validade" value="{{ proposta.validade if proposta else 30 }}" min="1">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Status</label>
+                        <select class="form-select bg-dark text-white border-secondary" name="status">
+                            <option value="pendente" {% if not proposta or proposta.status == 'pendente' %}selected{% endif %}>Pendente</option>
+                            <option value="aprovada" {% if proposta and proposta.status == 'aprovada' %}selected{% endif %}>Aprovada</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-white">Descrição</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" name="descricao" rows="3">{{ proposta.descricao if proposta else '' }}</textarea>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Formulário -->
-            <form method="POST" class="needs-validation" novalidate>
+        <!-- SERVIÇOS -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-wrench"></i> Serviços</h5>
+                <button type="button" class="btn btn-outline-light btn-sm" id="btnAdicionarServico">
+                    <i class="fas fa-plus me-1"></i>Adicionar
+                </button>
+            </div>
+            <div class="card-body">
+                <!-- Cabeçalho dos campos -->
+                <div class="row g-2 mb-2">
+                    <div class="col-md-4">
+                        <small class="text-muted">Descrição</small>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted">Tipo</small>
+                    </div>
+                    <div class="col-md-1">
+                        <small class="text-muted">Qtd</small>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted">Valor Unit.</small>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted">Total</small>
+                    </div>
+                    <div class="col-md-1">
+                        <small class="text-muted">Ações</small>
+                    </div>
+                </div>
                 
-                <!-- Dados Básicos -->
-                <div class="card bg-dark border-secondary mb-4">
-                    <div class="card-header bg-dark border-secondary">
-                        <h5 class="mb-0 text-white">
-                            <i class="fas fa-info-circle me-2"></i>Dados da Proposta
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label for="cliente_id" class="form-label text-white">Cliente *</label>
-                                <select class="form-select bg-dark text-white border-secondary" name="cliente_id" required>
-                                    <option value="">Selecione um cliente</option>
-                                    {% for cliente in clientes %}
-                                    <option value="{{ cliente.id }}" {% if proposta and proposta.cliente_id == cliente.id %}selected{% endif %}>
-                                        {{ cliente.nome }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="titulo" class="form-label text-white">Título *</label>
-                                <input type="text" class="form-control bg-dark text-white border-secondary" 
-                                       name="titulo" value="{{ proposta.titulo if proposta else '' }}" 
-                                       placeholder="Ex: Proposta para desenvolvimento de sistema" required>
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-4">
-                                <label for="vendedor" class="form-label text-white">Vendedor/Responsável</label>
-                                <input type="text" class="form-control bg-dark text-white border-secondary" 
-                                       name="vendedor" value="{{ proposta.vendedor if proposta else '' }}" 
-                                       placeholder="Nome do vendedor">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="status" class="form-label text-white">Status</label>
-                                <select class="form-select bg-dark text-white border-secondary" name="status">
-                                    <option value="pendente" {% if not proposta or proposta.status == 'pendente' %}selected{% endif %}>Pendente</option>
-                                    <option value="enviada" {% if proposta and proposta.status == 'enviada' %}selected{% endif %}>Enviada</option>
-                                    <option value="aprovada" {% if proposta and proposta.status == 'aprovada' %}selected{% endif %}>Aprovada</option>
-                                    <option value="rejeitada" {% if proposta and proposta.status == 'rejeitada' %}selected{% endif %}>Rejeitada</option>
-                                    <option value="cancelada" {% if proposta and proposta.status == 'cancelada' %}selected{% endif %}>Cancelada</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label for="prioridade" class="form-label text-white">Prioridade</label>
-                                <select class="form-select bg-dark text-white border-secondary" name="prioridade">
-                                    <option value="baixa" {% if proposta and proposta.prioridade == 'baixa' %}selected{% endif %}>Baixa</option>
-                                    <option value="normal" {% if not proposta or proposta.prioridade == 'normal' %}selected{% endif %}>Normal</option>
-                                    <option value="alta" {% if proposta and proposta.prioridade == 'alta' %}selected{% endif %}>Alta</option>
-                                    <option value="urgente" {% if proposta and proposta.prioridade == 'urgente' %}selected{% endif %}>Urgente</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-12">
-                                <label for="descricao" class="form-label text-white">Descrição do Projeto</label>
-                                <textarea class="form-control bg-dark text-white border-secondary" 
-                                          name="descricao" rows="4" 
-                                          placeholder="Descreva detalhadamente o projeto, objetivos e requisitos...">{{ proposta.descricao if proposta else '' }}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Prazos e Estimativas -->
-                <div class="card bg-dark border-secondary mb-4">
-                    <div class="card-header bg-dark border-secondary">
-                        <h5 class="mb-0 text-primary">
-                            <i class="fas fa-clock me-2"></i>Prazos e Estimativas
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <label for="validade" class="form-label text-white">Validade (dias)</label>
-                                <input type="number" class="form-control bg-dark text-white border-secondary" 
-                                       name="validade" value="{{ proposta.validade if proposta else '30' }}" 
-                                       min="1" max="365">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="prazo_execucao" class="form-label text-white">Prazo de Execução</label>
-                                <input type="text" class="form-control bg-dark text-white border-secondary" 
-                                       name="prazo_execucao" value="{{ proposta.prazo_execucao if proposta else '' }}" 
-                                       placeholder="Ex: 30 dias corridos">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="tempo_estimado" class="form-label text-white">Tempo Estimado</label>
-                                <input type="text" class="form-control bg-dark text-white border-secondary" 
-                                       name="tempo_estimado" value="{{ proposta.tempo_estimado if proposta else '' }}" 
-                                       placeholder="Ex: 120 horas">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="km_estimado" class="form-label text-white">KM Estimado (se aplicável)</label>
-                                <input type="number" class="form-control bg-dark text-white border-secondary" 
-                                       name="km_estimado" value="{{ proposta.km_estimado if proposta else '' }}" 
-                                       step="0.01" placeholder="0.00">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Seção Produtos -->
-                <div class="card bg-dark border-secondary mb-4">
-                    <div class="card-header bg-dark border-secondary d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 text-warning">
-                            <i class="fas fa-box me-2"></i>Produtos
-                        </h5>
-                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="adicionarProduto()">
-                            <i class="fas fa-plus me-1"></i>Adicionar Produto
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div id="produtos-container">
-                            <!-- Produtos serão adicionados aqui -->
-                        </div>
-                        <div class="mt-3 p-3 bg-secondary rounded">
-                            <h6 class="text-warning mb-0">
-                                <i class="fas fa-calculator me-1"></i>
-                                Subtotal Produtos: <span id="subtotal-produtos-display">R$ 0,00</span>
-                            </h6>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Seção Serviços -->
-                <div class="card bg-dark border-secondary mb-4">
-                    <div class="card-header bg-dark border-secondary d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 text-info">
-                            <i class="fas fa-tools me-2"></i>Serviços
-                        </h5>
-                        <button type="button" class="btn btn-outline-info btn-sm" onclick="adicionarServico()">
-                            <i class="fas fa-plus me-1"></i>Adicionar Serviço
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div id="servicos-container">
-                            <!-- Serviços serão adicionados aqui -->
-                        </div>
-                        <div class="mt-3 p-3 bg-secondary rounded">
-                            <h6 class="text-info mb-0">
-                                <i class="fas fa-calculator me-1"></i>
-                                Subtotal Serviços: <span id="subtotal-servicos-display">R$ 0,00</span>
-                            </h6>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Seção Valores -->
-                <div class="card bg-dark border-secondary mb-4">
-                    <div class="card-header bg-dark border-secondary">
-                        <h5 class="mb-0 text-success">
-                            <i class="fas fa-dollar-sign me-2"></i>Valores
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <label for="valor_servicos" class="form-label text-white">
-                                    <i class="fas fa-tools me-1"></i>Valor Serviços
-                                </label>
-                                <input type="text" class="form-control bg-dark text-white border-secondary" 
-                                       id="valor_servicos" name="valor_servicos" 
-                                       value="{{ "%.2f"|format(proposta.valor_servicos|float) if proposta and proposta.valor_servicos else '0.00' }}" 
-                                       readonly>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="valor_produtos" class="form-label text-white">
-                                    <i class="fas fa-box me-1"></i>Valor Produtos
-                                </label>
-                                <input type="text" class="form-control bg-dark text-white border-secondary" 
-                                       id="valor_produtos" name="valor_produtos" 
-                                       value="{{ "%.2f"|format(proposta.valor_produtos|float) if proposta and proposta.valor_produtos else '0.00' }}" 
-                                       readonly>
-                            </div>
-                            <div class="col-md-3">
-                                <label for="desconto" class="form-label text-white">
-                                    <i class="fas fa-percent me-1"></i>Desconto (%)
-                                </label>
-                                <input type="number" class="form-control bg-dark text-white border-secondary" 
-                                       id="desconto" name="desconto" 
-                                       value="{{ proposta.desconto if proposta else '0.00' }}" 
-                                       step="0.01" min="0" max="100">
-                            </div>
-                            <div class="col-md-3">
-                                <label for="valor_total" class="form-label text-white">
-                                    <i class="fas fa-calculator me-1"></i>Valor Total
-                                </label>
-                                <input type="text" class="form-control bg-success text-white border-success fw-bold" 
-                                       id="valor_total" name="valor_total" 
-                                       value="{{ "R$ %.2f"|format(proposta.valor_total|float) if proposta and proposta.valor_total else 'R$ 0,00' }}" 
-                                       readonly>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Condições Comerciais -->
-                <div class="card bg-dark border-secondary mb-4">
-                    <div class="card-header bg-dark border-secondary">
-                        <h5 class="mb-0 text-warning">
-                            <i class="fas fa-handshake me-2"></i>Condições Comerciais
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label for="forma_pagamento" class="form-label text-white">Forma de Pagamento</label>
-                                <select class="form-select bg-dark text-white border-secondary" name="forma_pagamento">
-                                    <option value="a_vista" {% if not proposta or proposta.forma_pagamento == 'a_vista' %}selected{% endif %}>À Vista</option>
-                                    <option value="parcelado" {% if proposta and proposta.forma_pagamento == 'parcelado' %}selected{% endif %}>Parcelado</option>
-                                    <option value="30_dias" {% if proposta and proposta.forma_pagamento == '30_dias' %}selected{% endif %}>30 Dias</option>
-                                    <option value="30_60_dias" {% if proposta and proposta.forma_pagamento == '30_60_dias' %}selected{% endif %}>30/60 Dias</option>
-                                    <option value="personalizado" {% if proposta and proposta.forma_pagamento == 'personalizado' %}selected{% endif %}>Personalizado</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="garantia" class="form-label text-white">Garantia</label>
-                                <input type="text" class="form-control bg-dark text-white border-secondary" 
-                                       name="garantia" value="{{ proposta.garantia if proposta else '' }}" 
-                                       placeholder="Ex: 12 meses contra defeitos de fabricação">
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-12">
-                                <label for="condicoes_pagamento" class="form-label text-white">Condições de Pagamento Detalhadas</label>
-                                <textarea class="form-control bg-dark text-white border-secondary" 
-                                          name="condicoes_pagamento" rows="3" 
-                                          placeholder="Descreva as condições específicas de pagamento, prazos, multas, etc...">{{ proposta.condicoes_pagamento if proposta else '' }}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Observações e Anexos -->
-                <div class="card bg-dark border-secondary mb-4">
-                    <div class="card-header bg-dark border-secondary">
-                        <h5 class="mb-0 text-info">
-                            <i class="fas fa-sticky-note me-2"></i>Observações e Informações Adicionais
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <label for="observacoes" class="form-label text-white">Observações Gerais</label>
-                                <textarea class="form-control bg-dark text-white border-secondary" 
-                                          name="observacoes" rows="4" 
-                                          placeholder="Informações importantes, restrições, requisitos especiais, etc...">{{ proposta.observacoes if proposta else '' }}</textarea>
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-md-12">
-                                <div class="alert alert-info">
-                                    <h6><i class="fas fa-info-circle me-1"></i>Informações Importantes:</h6>
-                                    <ul class="mb-0">
-                                        <li>Esta proposta é válida pelos dias especificados acima</li>
-                                        <li>Os valores apresentados incluem todos os impostos aplicáveis</li>
-                                        <li>Alterações no escopo podem impactar prazo e valor</li>
-                                        <li>O início dos trabalhos está condicionado à aprovação desta proposta</li>
-                                    </ul>
+                <div id="servicosContainer">
+                    {% if proposta and proposta.itens_servico %}
+                        {% for servico in proposta.itens_servico %}
+                        <div class="servico-item mb-3">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-md-4">
+                                    <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                                           name="servico_descricao[]" value="{{ servico.descricao }}" placeholder="Descrição do serviço" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <select class="form-select form-select-sm bg-dark text-white border-secondary" name="servico_tipo[]">
+                                        <option value="hora" {% if servico.tipo_servico == 'hora' %}selected{% endif %}>Hora</option>
+                                        <option value="dia" {% if servico.tipo_servico == 'dia' %}selected{% endif %}>Dia</option>
+                                        <option value="fechado" {% if servico.tipo_servico == 'fechado' %}selected{% endif %}>Fechado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-1">
+                                    <input type="number" class="form-control form-control-sm bg-dark text-white border-secondary servico-quantidade" 
+                                           name="servico_horas[]" value="{{ servico.quantidade or 1 }}" step="0.25" min="0">
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary servico-valor" 
+                                           name="servico_valor[]" value="{{ '{:.2f}'.format(servico.valor_unitario or 0).replace('.', ',') }}" placeholder="0,00">
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" class="form-control form-control-sm bg-secondary text-white servico-total" 
+                                           readonly value="R$ {{ '{:.2f}'.format((servico.quantidade or 0) * (servico.valor_unitario or 0)).replace('.', ',') }}">
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-outline-danger btn-sm w-100 btn-remover-servico">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        {% endfor %}
+                    {% endif %}
                 </div>
-
-                <!-- Botões de Ação -->
-                <div class="card bg-dark border-secondary mb-4">
-                    <div class="card-body text-center">
-                        <div class="row justify-content-center">
-                            <div class="col-auto">
-                                <button type="submit" class="btn btn-success btn-lg me-3">
-                                    <i class="fas fa-save me-2"></i>Salvar Proposta
-                                </button>
-                            </div>
-                            <div class="col-auto">
-                                <button type="button" class="btn btn-info btn-lg me-3" onclick="calcularTotaisGerais()">
-                                    <i class="fas fa-calculator me-2"></i>Recalcular Totais
-                                </button>
-                            </div>
-                            {% if proposta and proposta.id %}
-                            <div class="col-auto">
-                                <button type="button" class="btn btn-warning btn-lg me-3" onclick="window.open('{{ url_for('proposta.gerar_pdf', id=proposta.id) }}', '_blank')">
-                                    <i class="fas fa-file-pdf me-2"></i>Gerar PDF
-                                </button>
-                            </div>
-                            <div class="col-auto">
-                                <button type="button" class="btn btn-primary btn-lg me-3" onclick="enviarPorEmail()">
-                                    <i class="fas fa-envelope me-2"></i>Enviar por E-mail
-                                </button>
-                            </div>
-                            {% endif %}
-                            <div class="col-auto">
-                                <a href="{{ url_for('proposta.listar_propostas') }}" class="btn btn-secondary btn-lg">
-                                    <i class="fas fa-times me-2"></i>Cancelar
-                                </a>
-                            </div>
-                        </div>
-                        
-                        {% if proposta and proposta.id %}
-                        <div class="row justify-content-center mt-3">
-                            <div class="col-auto">
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Proposta criada em {{ proposta.data_criacao.strftime('%d/%m/%Y %H:%M') if proposta.data_criacao }}
-                                    {% if proposta.data_atualizacao and proposta.data_atualizacao != proposta.data_criacao %}
-                                    | Última atualização: {{ proposta.data_atualizacao.strftime('%d/%m/%Y %H:%M') }}
-                                    {% endif %}
-                                </small>
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-            </form>
+            </div>
         </div>
-    </div>
+
+        <!-- PRODUTOS -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-box"></i> Produtos</h5>
+                <button type="button" class="btn btn-outline-dark btn-sm" id="btnAdicionarProduto">
+                    <i class="fas fa-plus me-1"></i>Adicionar
+                </button>
+            </div>
+            <div class="card-body">
+                <!-- Cabeçalho dos campos -->
+                <div class="row g-2 mb-2">
+                    <div class="col-md-5">
+                        <small class="text-muted">Descrição</small>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted">Quantidade</small>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted">Valor Unit.</small>
+                    </div>
+                    <div class="col-md-2">
+                        <small class="text-muted">Total</small>
+                    </div>
+                    <div class="col-md-1">
+                        <small class="text-muted">Ações</small>
+                    </div>
+                </div>
+                
+                <div id="produtosContainer">
+                    {% if proposta and proposta.itens_produto %}
+                        {% for produto in proposta.itens_produto %}
+                        <div class="produto-item mb-3">
+                            <div class="row g-2 align-items-center">
+                                <div class="col-md-5">
+                                    <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                                           name="produto_descricao[]" value="{{ produto.descricao }}" placeholder="Descrição do produto" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="number" class="form-control form-control-sm bg-dark text-white border-secondary produto-quantidade" 
+                                           name="produto_quantidade[]" value="{{ produto.quantidade or 1 }}" step="1" min="0">
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary produto-valor" 
+                                           name="produto_valor[]" value="{{ '{:.2f}'.format(produto.valor_unitario or 0).replace('.', ',') }}" placeholder="0,00">
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="text" class="form-control form-control-sm bg-secondary text-white produto-total" 
+                                           readonly value="R$ {{ '{:.2f}'.format((produto.quantidade or 0) * (produto.valor_unitario or 0)).replace('.', ',') }}">
+                                </div>
+                                <div class="col-md-1">
+                                    <button type="button" class="btn btn-outline-danger btn-sm w-100 btn-remover-produto">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- VALORES -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-calculator"></i> Valores</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Serviços</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" id="valorServico" readonly 
+                               value="{% if proposta %}R$ {{ '{:.2f}'.format(proposta.valor_servicos or 0).replace('.', ',') }}{% else %}R$ 0,00{% endif %}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Produtos</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" id="valorProdutos" readonly 
+                               value="{% if proposta %}R$ {{ '{:.2f}'.format(proposta.valor_produtos or 0).replace('.', ',') }}{% else %}R$ 0,00{% endif %}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Desconto (%)</label>
+                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                               name="desconto" id="valorDesconto" value="{{ proposta.desconto if proposta else 0 }}" 
+                               step="0.01" min="0" max="100">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white fw-bold">Total</label>
+                        <input type="text" class="form-control bg-primary text-white fw-bold" id="valorTotal" readonly 
+                               value="{% if proposta %}R$ {{ '{:.2f}'.format(proposta.valor_total or 0).replace('.', ',') }}{% else %}R$ 0,00{% endif %}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORMAS DE PAGAMENTO -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-credit-card"></i> Formas de Pagamento</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-white">Forma de Pagamento</label>
+                        <select class="form-select bg-dark text-white border-secondary" name="forma_pagamento">
+                            <option value="">Selecione...</option>
+                            <option value="a_vista" {% if proposta and proposta.forma_pagamento == 'a_vista' %}selected{% endif %}>À vista</option>
+                            <option value="parcelado" {% if proposta and proposta.forma_pagamento == 'parcelado' %}selected{% endif %}>Parcelado</option>
+                            <option value="prazo" {% if proposta and proposta.forma_pagamento == 'prazo' %}selected{% endif %}>A prazo</option>
+                            <option value="cartao" {% if proposta and proposta.forma_pagamento == 'cartao' %}selected{% endif %}>Cartão</option>
+                            <option value="pix" {% if proposta and proposta.forma_pagamento == 'pix' %}selected{% endif %}>PIX</option>
+                            <option value="dinheiro" {% if proposta and proposta.forma_pagamento == 'dinheiro' %}selected{% endif %}>Dinheiro</option>
+                            <option value="transferencia" {% if proposta and proposta.forma_pagamento == 'transferencia' %}selected{% endif %}>Transferência</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Entrada (%)</label>
+                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                               name="entrada" value="{{ proposta.entrada if proposta else 0 }}" 
+                               step="0.01" min="0" max="100" placeholder="0,00">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Prazo de Execução</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                               name="prazo_execucao" value="{{ proposta.prazo_execucao if proposta else '' }}" 
+                               placeholder="Ex: 15 dias úteis">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-white">Condições de Pagamento</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" name="condicoes_pagamento" rows="2" 
+                                  placeholder="Descreva as condições específicas de pagamento...">{{ proposta.condicoes_pagamento if proposta else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OBSERVAÇÕES -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-sticky-note"></i> Observações e Informações Adicionais</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label text-white">Observações Gerais</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" name="observacoes" rows="4" 
+                                  placeholder="Observações gerais da proposta...">{{ proposta.observacoes if proposta else '' }}</textarea>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-white">Tempo Estimado</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                               name="tempo_estimado" value="{{ proposta.tempo_estimado if proposta else '' }}" 
+                               placeholder="Ex: 2 horas, 1 dia">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-white">KM Estimado</label>
+                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                               name="km_estimado" value="{{ proposta.km_estimado if proposta else '' }}" 
+                               step="0.01" min="0" placeholder="0.00">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-white">Garantia</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                               name="garantia" value="{{ proposta.garantia if proposta else '' }}" 
+                               placeholder="Ex: 12 meses">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white">Prioridade</label>
+                        <select class="form-select bg-dark text-white border-secondary" name="prioridade">
+                            <option value="baixa" {% if proposta and proposta.prioridade == 'baixa' %}selected{% endif %}>Baixa</option>
+                            <option value="normal" {% if not proposta or proposta.prioridade == 'normal' %}selected{% endif %}>Normal</option>
+                            <option value="alta" {% if proposta and proposta.prioridade == 'alta' %}selected{% endif %}>Alta</option>
+                            <option value="urgente" {% if proposta and proposta.prioridade == 'urgente' %}selected{% endif %}>Urgente</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTÕES -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-body">
+                <button type="submit" class="btn btn-success btn-lg w-100">
+                    <i class="fas fa-save me-2"></i>{% if proposta %}Atualizar{% else %}Criar{% endif %} Proposta
+                </button>
+            </div>
+        </div>
+    </form>
 </div>
 
-<!-- JavaScript Completo com Cálculos -->
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
 <script>
-console.log('🚀 Carregando funções COMPLETAS de produtos/serviços para PROPOSTA...');
+console.log('🚀 Sistema de Proposta inicializado!');
 
-var contadorServicos = 0;
-var contadorProdutos = 0;
-
-function adicionarServico() {
-    console.log('🔥 adicionarServico() chamada!');
-    contadorServicos++;
-    
-    var container = document.getElementById('servicos-container');
-    if (!container) {
-        alert('Erro: Container de serviços não encontrado!');
-        return;
-    }
-    
-    var novoHTML = 
-        '<div class="row item-servico mb-3 border rounded p-3 bg-secondary" id="servico-' + contadorServicos + '">' +
-            '<div class="col-md-5">' +
-                '<label class="form-label text-white">Descrição do Serviço</label>' +
-                '<input type="text" class="form-control bg-dark text-white border-secondary" name="servico_descricao[]" placeholder="Ex: Desenvolvimento de sistema" required>' +
-            '</div>' +
-            '<div class="col-md-2">' +
-                '<label class="form-label text-white">Horas/Dias</label>' +
-                '<input type="number" class="form-control bg-dark text-white border-secondary" name="servico_horas[]" value="0" step="0.25" min="0" oninput="calcularTotalServico(' + contadorServicos + ');">' +
-            '</div>' +
-            '<div class="col-md-2">' +
-                '<label class="form-label text-white">Valor/Hora</label>' +
-                '<input type="text" class="form-control bg-dark text-white border-secondary" name="servico_valor[]" placeholder="0,00" oninput="aplicarMascaraMonetaria(this); calcularTotalServico(' + contadorServicos + ');" required>' +
-            '</div>' +
-            '<div class="col-md-2">' +
-                '<label class="form-label text-white">Total</label>' +
-                '<input type="text" class="form-control bg-dark text-white border-secondary" name="servico_total[]" value="R$ 0,00" readonly>' +
-            '</div>' +
-            '<div class="col-md-1">' +
-                '<label class="form-label text-white">&nbsp;</label>' +
-                '<button type="button" class="btn btn-outline-danger d-block w-100" onclick="removerServico(' + contadorServicos + ')" title="Remover serviço">' +
-                    '<i class="fas fa-trash"></i>' +
-                '</button>' +
-            '</div>' +
-        '</div>';
-    
-    container.insertAdjacentHTML('beforeend', novoHTML);
-    console.log('✅ Serviço adicionado:', contadorServicos);
-}
-
-function adicionarProduto() {
-    console.log('🔥 adicionarProduto() chamada!');
-    contadorProdutos++;
-    
-    var container = document.getElementById('produtos-container');
-    if (!container) {
-        alert('Erro: Container de produtos não encontrado!');
-        return;
-    }
-    
-    var novoHTML = 
-        '<div class="row item-produto mb-3 border rounded p-3 bg-secondary" id="produto-' + contadorProdutos + '">' +
-            '<div class="col-md-5">' +
-                '<label class="form-label text-white">Descrição do Produto</label>' +
-                '<input type="text" class="form-control bg-dark text-white border-secondary" name="produto_descricao[]" placeholder="Ex: Licença de software" required>' +
-            '</div>' +
-            '<div class="col-md-2">' +
-                '<label class="form-label text-white">Quantidade</label>' +
-                '<input type="number" class="form-control bg-dark text-white border-secondary" name="produto_quantidade[]" value="1" min="1" step="0.01" oninput="calcularTotalProduto(' + contadorProdutos + ');" required>' +
-            '</div>' +
-            '<div class="col-md-2">' +
-                '<label class="form-label text-white">Valor Unit.</label>' +
-                '<input type="text" class="form-control bg-dark text-white border-secondary" name="produto_valor[]" placeholder="0,00" oninput="aplicarMascaraMonetaria(this); calcularTotalProduto(' + contadorProdutos + ');" required>' +
-            '</div>' +
-            '<div class="col-md-2">' +
-                '<label class="form-label text-white">Total</label>' +
-                '<input type="text" class="form-control bg-dark text-white border-secondary" name="produto_total[]" value="R$ 0,00" readonly>' +
-            '</div>' +
-            '<div class="col-md-1">' +
-                '<label class="form-label text-white">&nbsp;</label>' +
-                '<button type="button" class="btn btn-outline-danger d-block w-100" onclick="removerProduto(' + contadorProdutos + ')" title="Remover produto">' +
-                    '<i class="fas fa-trash"></i>' +
-                '</button>' +
-            '</div>' +
-        '</div>';
-    
-    container.insertAdjacentHTML('beforeend', novoHTML);
-    console.log('✅ Produto adicionado:', contadorProdutos);
-}
-
-function removerServico(id) {
-    console.log('🗑️ Removendo serviço:', id);
-    var elemento = document.getElementById('servico-' + id);
-    if (elemento) {
-        elemento.remove();
-        console.log('✅ Serviço removido:', id);
-        calcularTotaisGerais();
-    }
-}
-
-function removerProduto(id) {
-    console.log('🗑️ Removendo produto:', id);
-    var elemento = document.getElementById('produto-' + id);
-    if (elemento) {
-        elemento.remove();
-        console.log('✅ Produto removido:', id);
-        calcularTotaisGerais();
-    }
-}
-
-// FUNÇÕES DE CÁLCULO
-function calcularTotalProduto(id) {
-    console.log('🧮 Calculando total do produto:', id);
-    
-    var produto = document.getElementById('produto-' + id);
-    if (!produto) {
-        console.error('❌ Produto não encontrado:', 'produto-' + id);
-        return;
-    }
-    
-    var inputQuantidade = produto.querySelector('input[name="produto_quantidade[]"]');
-    var inputValor = produto.querySelector('input[name="produto_valor[]"]');
-    var inputTotal = produto.querySelector('input[name="produto_total[]"]');
-    
-    if (inputQuantidade && inputValor && inputTotal) {
-        var quantidade = parseFloat(inputQuantidade.value) || 0;
-        var valor = parseMoney(inputValor.value) || 0;
-        var total = quantidade * valor;
-        
-        inputTotal.value = formatMoney(total);
-        console.log('📊 Produto', id, '- Qtd:', quantidade, 'Valor:', valor, 'Total:', total);
-        
-        calcularTotaisGerais();
-    }
-}
-
-function calcularTotalServico(id) {
-    console.log('🧮 Calculando total do serviço:', id);
-    
-    var servico = document.getElementById('servico-' + id);
-    if (!servico) {
-        console.error('❌ Serviço não encontrado:', 'servico-' + id);
-        return;
-    }
-    
-    var inputHoras = servico.querySelector('input[name="servico_horas[]"]');
-    var inputValor = servico.querySelector('input[name="servico_valor[]"]');
-    var inputTotal = servico.querySelector('input[name="servico_total[]"]');
-    
-    if (inputHoras && inputValor && inputTotal) {
-        var horas = parseFloat(inputHoras.value) || 0;
-        var valor = parseMoney(inputValor.value) || 0;
-        var total = horas * valor;
-        
-        inputTotal.value = formatMoney(total);
-        console.log('📊 Serviço', id, '- Horas:', horas, 'Valor:', valor, 'Total:', total);
-        
-        calcularTotaisGerais();
-    }
-}
-
-function calcularTotaisGerais() {
-    console.log('🧮 Calculando totais gerais...');
-    
-    var totalProdutos = 0;
-    var totalServicos = 0;
-    
-    // Soma produtos
-    var produtosTotais = document.querySelectorAll('input[name="produto_total[]"]');
-    produtosTotais.forEach(function(input) {
-        var valor = parseMoney(input.value) || 0;
-        totalProdutos += valor;
-    });
-    
-    // Soma serviços  
-    var servicosTotais = document.querySelectorAll('input[name="servico_total[]"]');
-    servicosTotais.forEach(function(input) {
-        var valor = parseMoney(input.value) || 0;
-        totalServicos += valor;
-    });
-    
-    var subtotal = totalProdutos + totalServicos;
-    var desconto = parseFloat(document.getElementById('desconto').value) || 0;
-    var valorDesconto = (subtotal * desconto) / 100;
-    var total = subtotal - valorDesconto;
-    
-    console.log('💯 TOTAIS:');
-    console.log('- Produtos: R$', totalProdutos.toFixed(2));
-    console.log('- Serviços: R$', totalServicos.toFixed(2));
-    console.log('- Subtotal: R$', subtotal.toFixed(2));
-    console.log('- Desconto:', desconto + '%', '(R$', valorDesconto.toFixed(2) + ')');
-    console.log('- Total Final: R$', total.toFixed(2));
-    
-    // Atualizar campos
-    document.getElementById('valor_produtos').value = totalProdutos.toFixed(2);
-    document.getElementById('valor_servicos').value = totalServicos.toFixed(2);
-    document.getElementById('valor_total').value = 'R$ ' + total.toFixed(2).replace('.', ',');
-    
-    // Atualizar displays
-    document.getElementById('subtotal-produtos-display').textContent = formatMoney(totalProdutos);
-    document.getElementById('subtotal-servicos-display').textContent = formatMoney(totalServicos);
-}
-
-// FUNÇÕES AUXILIARES
-function parseMoney(value) {
-    if (!value) return 0;
-    var str = String(value);
-    var cleaned = str.replace(/[^0-9.,]/g, '');
-    var withDot = cleaned.replace(',', '.');
-    var number = parseFloat(withDot);
-    return isNaN(number) ? 0 : number;
-}
-
-function formatMoney(value) {
-    if (!value && value !== 0) return 'R$ 0,00';
-    var num = parseFloat(value);
-    if (isNaN(num)) return 'R$ 0,00';
-    return 'R$ ' + num.toFixed(2).replace('.', ',');
-}
-
-function aplicarMascaraMonetaria(input) {
-    var value = input.value.replace(/\D/g, '');
-    if (value === '') {
-        input.value = '';
-        return;
-    }
-    value = parseInt(value) || 0;
-    value = (value / 100).toFixed(2);
-    value = value.replace('.', ',');
-    value = value.replace(/(\d)(\d{3})(\d{3}),/g, '$1.$2.$3,');
-    value = value.replace(/(\d)(\d{3}),/g, '$1.$2,');
-    input.value = 'R$ ' + value;
-}
-
-// Evento de desconto
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ Proposta COMPLETA carregada!');
+    let servicoIndex = {{ (proposta.itens_servico|length) if proposta and proposta.itens_servico else 0 }};
+    let produtoIndex = {{ (proposta.itens_produto|length) if proposta and proposta.itens_produto else 0 }};
     
-    // Listener para desconto
-    var descontoInput = document.getElementById('desconto');
-    if (descontoInput) {
-        descontoInput.addEventListener('input', calcularTotaisGerais);
+    console.log('Índices iniciais:', { servicoIndex, produtoIndex });
+    
+    // Função para converter valor monetário para número
+    function converterParaNumero(valor) {
+        if (!valor) return 0;
+        return parseFloat(valor.toString().replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
     }
     
-    // CARREGAR DADOS EXISTENTES DA PROPOSTA
-    {% if proposta and proposta.id %}
-    console.log('📝 CARREGANDO DADOS EXISTENTES DA PROPOSTA {{ proposta.id }}');
+    // Função para formatar número para moeda brasileira
+    function formatarMoeda(valor) {
+        return 'R$ ' + parseFloat(valor).toFixed(2).replace('.', ',');
+    }
     
-    // Carregar produtos existentes
-    {% if proposta.itens_produto %}
-    console.log('📦 Carregando {{ proposta.itens_produto|length }} produto(s)...');
-    {% for item in proposta.itens_produto %}
-    setTimeout(function() {
-        adicionarProduto();
-        var ultimoProduto = document.querySelector('#produtos-container .item-produto:last-child');
-        if (ultimoProduto) {
-            var descInput = ultimoProduto.querySelector('input[name="produto_descricao[]"]');
-            var qtdInput = ultimoProduto.querySelector('input[name="produto_quantidade[]"]');
-            var valorInput = ultimoProduto.querySelector('input[name="produto_valor[]"]');
-            var totalInput = ultimoProduto.querySelector('input[name="produto_total[]"]');
-            
-            if (descInput) descInput.value = '{{ item.descricao|safe }}';
-            if (qtdInput) qtdInput.value = '{{ item.quantidade }}';
-            if (valorInput) {
-                valorInput.value = 'R$ {{ "%.2f"|format(item.valor_unitario) }}';
-            }
-            if (totalInput) totalInput.value = 'R$ {{ "%.2f"|format(item.valor_total) }}';
-            
-            console.log('✅ Produto carregado: {{ item.descricao|truncate(30) }}');
+    // Função para calcular total de um item
+    function calcularTotalItem(container) {
+        const quantidade = container.querySelector('.servico-quantidade, .produto-quantidade');
+        const valor = container.querySelector('.servico-valor, .produto-valor');
+        const total = container.querySelector('.servico-total, .produto-total');
+        
+        if (quantidade && valor && total) {
+            const qtd = converterParaNumero(quantidade.value);
+            const vlr = converterParaNumero(valor.value);
+            const totalCalculado = qtd * vlr;
+            total.value = formatarMoeda(totalCalculado);
+            console.log(`Calculado: ${qtd} x ${vlr} = ${totalCalculado}`);
         }
-    }, {{ loop.index0 * 200 }});
-    {% endfor %}
-    {% endif %}
-    
-    // Carregar serviços existentes
-    {% if proposta.itens_servico %}
-    console.log('🛠️ Carregando {{ proposta.itens_servico|length }} serviço(s)...');
-    {% for item in proposta.itens_servico %}
-    setTimeout(function() {
-        adicionarServico();
-        var ultimoServico = document.querySelector('#servicos-container .item-servico:last-child');
-        if (ultimoServico) {
-            var descInput = ultimoServico.querySelector('input[name="servico_descricao[]"]');
-            var horasInput = ultimoServico.querySelector('input[name="servico_horas[]"]');
-            var valorInput = ultimoServico.querySelector('input[name="servico_valor[]"]');
-            var totalInput = ultimoServico.querySelector('input[name="servico_total[]"]');
-            
-            if (descInput) descInput.value = '{{ item.descricao|safe }}';
-            if (horasInput) horasInput.value = '{{ item.quantidade }}';
-            if (valorInput) {
-                valorInput.value = 'R$ {{ "%.2f"|format(item.valor_unitario) }}';
-            }
-            if (totalInput) totalInput.value = 'R$ {{ "%.2f"|format(item.valor_total) }}';
-            
-            console.log('✅ Serviço carregado: {{ item.descricao|truncate(30) }}');
-        }
-    }, {{ (proposta.itens_produto|length * 200) + (loop.index0 * 200) + 500 }});
-    {% endfor %}
-    {% endif %}
-    
-    // Recalcular totais após carregar tudo
-    setTimeout(function() {
-        console.log('🔄 Recalculando totais após carregamento...');
+        
         calcularTotaisGerais();
-    }, {{ ((proposta.itens_produto|length + proposta.itens_servico|length) * 200) + 1000 }});
-    
-    {% else %}
-    console.log('📝 Nova proposta - sem dados para carregar');
-    {% endif %}
-    
-    // Adicionar eventos extras
-    adicionarEventosExtras();
-    
-    console.log('- Container produtos:', !!document.getElementById('produtos-container'));
-    console.log('- Container serviços:', !!document.getElementById('servicos-container'));
-    console.log('- Campo desconto:', !!document.getElementById('desconto'));
-});
-
-// FUNÇÕES ADICIONAIS
-function enviarPorEmail() {
-    alert('Funcionalidade de envio por e-mail será implementada em breve!');
-    // TODO: Implementar envio por e-mail
-}
-
-function validarFormulario() {
-    var cliente = document.querySelector('select[name="cliente_id"]').value;
-    var titulo = document.querySelector('input[name="titulo"]').value;
-    
-    if (!cliente) {
-        alert('Por favor, selecione um cliente!');
-        return false;
     }
     
-    if (!titulo.trim()) {
-        alert('Por favor, informe o título da proposta!');
-        return false;
-    }
-    
-    var totalProdutos = document.querySelectorAll('input[name="produto_total[]"]').length;
-    var totalServicos = document.querySelectorAll('input[name="servico_total[]"]').length;
-    
-    if (totalProdutos === 0 && totalServicos === 0) {
-        if (!confirm('Nenhum produto ou serviço foi adicionado. Deseja continuar mesmo assim?')) {
-            return false;
-        }
-    }
-    
-    return true;
-}
-
-function calcularDataValidade() {
-    var validade = parseInt(document.querySelector('input[name="validade"]').value) || 30;
-    var hoje = new Date();
-    var dataValidade = new Date(hoje.getTime() + (validade * 24 * 60 * 60 * 1000));
-    
-    console.log('📅 Proposta válida até:', dataValidade.toLocaleDateString('pt-BR'));
-}
-
-function formatarMoeda(campo) {
-    var valor = parseFloat(campo.value.replace(/[^\d]/g, '')) / 100;
-    campo.value = 'R$ ' + valor.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-}
-
-function adicionarEventosExtras() {
-    // Evento de validação no submit
-    var form = document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            if (!validarFormulario()) {
-                e.preventDefault();
-                return false;
-            }
+    // Função para calcular totais gerais
+    function calcularTotaisGerais() {
+        let totalServicos = 0;
+        let totalProdutos = 0;
+        
+        // Somar serviços
+        document.querySelectorAll('.servico-total').forEach(function(campo) {
+            totalServicos += converterParaNumero(campo.value);
         });
+        
+        // Somar produtos
+        document.querySelectorAll('.produto-total').forEach(function(campo) {
+            totalProdutos += converterParaNumero(campo.value);
+        });
+        
+        // Calcular desconto
+        const desconto = converterParaNumero(document.getElementById('valorDesconto').value);
+        const subtotal = totalServicos + totalProdutos;
+        const valorDesconto = subtotal * (desconto / 100);
+        const total = subtotal - valorDesconto;
+        
+        // Atualizar campos
+        document.getElementById('valorServico').value = formatarMoeda(totalServicos);
+        document.getElementById('valorProdutos').value = formatarMoeda(totalProdutos);
+        document.getElementById('valorTotal').value = formatarMoeda(total);
+        
+        console.log('Totais calculados:', { totalServicos, totalProdutos, desconto, total });
     }
     
-    // Evento de cálculo de data de validade
-    var validadeInput = document.querySelector('input[name="validade"]');
-    if (validadeInput) {
-        validadeInput.addEventListener('change', calcularDataValidade);
-        calcularDataValidade(); // Calcular inicialmente
-    }
+    // Adicionar Serviço
+    document.getElementById('btnAdicionarServico').addEventListener('click', function() {
+        console.log('Adicionando serviço...');
+        
+        const container = document.getElementById('servicosContainer');
+        const div = document.createElement('div');
+        div.className = 'servico-item mb-3';
+        div.innerHTML = `
+            <div class="row g-2 align-items-center">
+                <div class="col-md-4">
+                    <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                           name="servico_descricao[]" placeholder="Descrição do serviço" required>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm bg-dark text-white border-secondary" name="servico_tipo[]">
+                        <option value="hora">Hora</option>
+                        <option value="dia">Dia</option>
+                        <option value="fechado">Fechado</option>
+                    </select>
+                </div>
+                <div class="col-md-1">
+                    <input type="number" class="form-control form-control-sm bg-dark text-white border-secondary servico-quantidade" 
+                           name="servico_horas[]" value="1" step="0.25" min="0">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary servico-valor" 
+                           name="servico_valor[]" placeholder="0,00">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm bg-secondary text-white servico-total" 
+                           readonly value="R$ 0,00">
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100 btn-remover-servico">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(div);
+        servicoIndex++;
+        console.log('Serviço adicionado! Total:', servicoIndex);
+        
+        // Adicionar eventos aos novos campos
+        const novoItem = div;
+        const qtdField = novoItem.querySelector('.servico-quantidade');
+        const valorField = novoItem.querySelector('.servico-valor');
+        
+        qtdField.addEventListener('input', function() {
+            calcularTotalItem(novoItem);
+        });
+        
+        valorField.addEventListener('input', function() {
+            calcularTotalItem(novoItem);
+        });
+    });
     
-    // Auto-save draft (opcional)
-    setInterval(function() {
-        console.log('💾 Auto-save: funcionalidade disponível para implementação futura');
-    }, 60000); // A cada 1 minuto
-}
-
-console.log('🎉 Script proposta COMPLETO finalizado!');
+    // Adicionar Produto
+    document.getElementById('btnAdicionarProduto').addEventListener('click', function() {
+        console.log('Adicionando produto...');
+        
+        const container = document.getElementById('produtosContainer');
+        const div = document.createElement('div');
+        div.className = 'produto-item mb-3';
+        div.innerHTML = `
+            <div class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
+                           name="produto_descricao[]" placeholder="Descrição do produto" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control form-control-sm bg-dark text-white border-secondary produto-quantidade" 
+                           name="produto_quantidade[]" value="1" step="1" min="0">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary produto-valor" 
+                           name="produto_valor[]" placeholder="0,00">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm bg-secondary text-white produto-total" 
+                           readonly value="R$ 0,00">
+                </div>
+                <div class="col-md-1">
+                    <button type="button" class="btn btn-outline-danger btn-sm w-100 btn-remover-produto">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(div);
+        produtoIndex++;
+        console.log('Produto adicionado! Total:', produtoIndex);
+        
+        // Adicionar eventos aos novos campos
+        const novoItem = div;
+        const qtdField = novoItem.querySelector('.produto-quantidade');
+        const valorField = novoItem.querySelector('.produto-valor');
+        
+        qtdField.addEventListener('input', function() {
+            calcularTotalItem(novoItem);
+        });
+        
+        valorField.addEventListener('input', function() {
+            calcularTotalItem(novoItem);
+        });
+    });
+    
+    // Remover itens
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.btn-remover-servico')) {
+            if (confirm('Remover este serviço?')) {
+                e.target.closest('.servico-item').remove();
+                calcularTotaisGerais();
+                console.log('Serviço removido');
+            }
+        }
+        
+        if (e.target.closest('.btn-remover-produto')) {
+            if (confirm('Remover este produto?')) {
+                e.target.closest('.produto-item').remove();
+                calcularTotaisGerais();
+                console.log('Produto removido');
+            }
+        }
+    });
+    
+    // Adicionar eventos aos campos existentes
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('servico-quantidade') || 
+            e.target.classList.contains('servico-valor') ||
+            e.target.classList.contains('produto-quantidade') || 
+            e.target.classList.contains('produto-valor')) {
+            calcularTotalItem(e.target.closest('.servico-item, .produto-item'));
+        }
+        
+        if (e.target.id === 'valorDesconto') {
+            calcularTotaisGerais();
+        }
+    });
+    
+    // Calcular totais iniciais
+    setTimeout(function() {
+        calcularTotaisGerais();
+    }, 100);
+    
+    console.log('✅ Sistema completo inicializado com cálculos!');
+});
 </script>
-
 {% endblock %}

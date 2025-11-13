@@ -16,6 +16,25 @@ from decimal import Decimal
 from datetime import datetime, date
 from sqlalchemy import func
 
+# Constantes para padronização
+STATUS_CHOICES = [
+    ('aberta', 'Aberta'),
+    ('em_andamento', 'Em Andamento'),
+    ('concluida', 'Concluída'),
+    ('cancelada', 'Cancelada')
+]
+
+PRIORIDADE_CHOICES = [
+    ('baixa', 'Baixa'),
+    ('normal', 'Normal'),
+    ('alta', 'Alta'),
+    ('urgente', 'Urgente')
+]
+
+# Dicionários para mapeamento
+STATUS_MAP = dict(STATUS_CHOICES)
+PRIORIDADE_MAP = dict(PRIORIDADE_CHOICES)
+
 
 class OrdemServico(BaseModel):
     """
@@ -26,6 +45,12 @@ class OrdemServico(BaseModel):
     """
     
     __tablename__ = 'ordem_servico'
+    
+    # Constantes da classe
+    STATUS_CHOICES = STATUS_CHOICES
+    PRIORIDADE_CHOICES = PRIORIDADE_CHOICES
+    STATUS_MAP = STATUS_MAP
+    PRIORIDADE_MAP = PRIORIDADE_MAP
     
     # Campos básicos
     numero = db.Column(db.String(20), unique=True, nullable=False, index=True)
@@ -76,19 +101,25 @@ class OrdemServico(BaseModel):
     numero_serie = db.Column(db.String(100))
     defeito_relatado = db.Column(db.Text)
     diagnostico = db.Column(db.Text)
+    diagnostico_tecnico = db.Column(db.Text)
     solucao = db.Column(db.Text)
     
     # Controle de KM
     km_inicial = db.Column(db.Integer)
     km_final = db.Column(db.Integer)
+    total_km = db.Column(db.String(20))  # Formato: "15.5 km"
     
     # Controle de Tempo
     hora_inicial = db.Column(db.Time)
     hora_final = db.Column(db.Time)
+    total_horas = db.Column(db.String(20))  # Formato: "2h 30min"
     
     # Condições de Pagamento
     condicao_pagamento = db.Column(db.String(50), default='a_vista')  # a_vista, parcelado
     numero_parcelas = db.Column(db.Integer, default=1)
+    valor_entrada = db.Column(db.Numeric(10, 2), default=0.00)  # Valor da entrada
+    data_primeira_parcela = db.Column(db.Date)  # Data da primeira parcela
+    data_vencimento_pagamento = db.Column(db.Date)  # Data de vencimento do pagamento (para à vista)
     descricao_pagamento = db.Column(db.Text)  # Descrição detalhada das condições
     
     # Anexos e Documentos
@@ -106,26 +137,12 @@ class OrdemServico(BaseModel):
     @property
     def status_formatado(self):
         """Retorna status formatado para exibição."""
-        status_map = {
-            'aberta': 'Aberta',
-            'em_andamento': 'Em Andamento',
-            'aguardando_pecas': 'Aguardando Peças',
-            'aguardando_cliente': 'Aguardando Cliente',
-            'concluida': 'Concluída',
-            'cancelada': 'Cancelada'
-        }
-        return status_map.get(self.status, self.status.title())
+        return STATUS_MAP.get(self.status, self.status.title())
     
     @property
     def prioridade_formatada(self):
         """Retorna prioridade formatada para exibição."""
-        prioridade_map = {
-            'baixa': 'Baixa',
-            'normal': 'Normal',
-            'alta': 'Alta',
-            'urgente': 'Urgente'
-        }
-        return prioridade_map.get(self.prioridade, self.prioridade.title())
+        return PRIORIDADE_MAP.get(self.prioridade, self.prioridade.title())
     
     @property
     def km_total(self):
@@ -152,6 +169,28 @@ class OrdemServico(BaseModel):
             diferenca = fim - inicio
             return diferenca.total_seconds() / 3600  # converte para horas
         return 0
+    
+    @property
+    def data_vencimento_efetiva(self):
+        """
+        Retorna a data de vencimento efetiva baseada na condição de pagamento:
+        - Para parcelado: data da primeira parcela
+        - Para à vista: data de vencimento do pagamento
+        """
+        if self.condicao_pagamento == 'parcelado':
+            return self.data_primeira_parcela
+        else:
+            return self.data_vencimento_pagamento
+    
+    @property
+    def dias_para_vencimento(self):
+        """Calcula quantos dias faltam para o vencimento."""
+        data_venc = self.data_vencimento_efetiva
+        if data_venc:
+            from datetime import date
+            diferenca = data_venc - date.today()
+            return diferenca.days
+        return None
     
     @property
     def tempo_total_formatado(self):
@@ -335,13 +374,107 @@ class OrdemServico(BaseModel):
         self.valor_total = self.valor_total_calculado
         self.save()
 
+    def validar_dados(self):
+        """Valida os dados da ordem de serviço."""
+        erros = []
+        
+        if not self.cliente_id:
+            erros.append("Cliente é obrigatório")
+        
+        if not self.titulo or not self.titulo.strip():
+            erros.append("Título é obrigatório")
+        
+        if self.valor_total is not None and self.valor_total < 0:
+            erros.append("Valor total não pode ser negativo")
+        
+        if self.prazo_garantia is not None and self.prazo_garantia < 0:
+            erros.append("Prazo de garantia não pode ser negativo")
+        
+        return erros
+    
+    def pode_editar(self):
+        """Verifica se a OS pode ser editada."""
+        return self.status not in ['concluida', 'cancelada']
+    
+    def pode_iniciar(self):
+        """Verifica se a OS pode ser iniciada."""
+        return self.status == 'aberta'
+    
+    def pode_concluir(self):
+        """Verifica se a OS pode ser concluída."""
+        return self.status in ['aberta', 'em_andamento', 'aguardando_pecas', 'aguardando_cliente']
+    
+    def pode_cancelar(self):
+        """Verifica se a OS pode ser cancelada."""
+        return self.status not in ['concluida', 'cancelada']
+    
+    def atualizar_valores_automaticos(self):
+        """Atualiza valores automáticos baseados nos itens."""
+        # Calcular valor dos serviços
+        total_servicos = sum(float(item.valor_total or 0) for item in self.servicos)
+        self.valor_servico = total_servicos
+        
+        # Calcular valor dos produtos
+        total_produtos = sum(float(produto.valor_total or 0) for produto in self.produtos_utilizados)
+        self.valor_pecas = total_produtos
+        
+        # Calcular valor total
+        desconto = float(self.valor_desconto or 0)
+        self.valor_total = total_servicos + total_produtos - desconto
+        
+        return self
+
+    def delete(self):
+        """
+        Remove a ordem de serviço e todos os registros relacionados.
+        
+        Deleta primeiro os registros filhos para evitar violação de integridade:
+        - Itens de serviço (ordem_servico_itens)
+        - Produtos utilizados (ordem_servico_produtos) 
+        - Parcelas de pagamento (ordem_servico_parcelas)
+        - Anexos (ordem_servico_anexos)
+        
+        Returns:
+            bool: True se removido com sucesso
+        """
+        try:
+            # Importar as classes aqui para evitar import circular
+            from app.extensoes import db
+            
+            # 1. Deletar itens de serviço
+            for item in self.servicos:
+                db.session.delete(item)
+            
+            # 2. Deletar produtos utilizados 
+            for produto in self.produtos_utilizados:
+                db.session.delete(produto)
+            
+            # 3. Deletar parcelas de pagamento
+            for parcela in self.parcelas:
+                db.session.delete(parcela)
+            
+            # 4. Deletar anexos
+            for anexo in self.anexos:
+                db.session.delete(anexo)
+            
+            # 5. Finalmente deletar a ordem de serviço
+            db.session.delete(self)
+            db.session.commit()
+            
+            return True
+            
+        except Exception as e:
+            db.session.rollback()
+            print(f"Erro ao deletar ordem de serviço: {e}")
+            raise e
+
 
 class OrdemServicoItem(BaseModel):
     """
     Model para itens de serviço da ordem.
     
-    Representa cada serviço realizado com quantidade de horas,
-    valor unitário e total.
+    Representa cada serviço realizado com tipo (hora/dia/fechado),
+    quantidade, valor unitário e total.
     """
     
     __tablename__ = 'ordem_servico_itens'
@@ -352,19 +485,39 @@ class OrdemServicoItem(BaseModel):
     
     # Dados do serviço
     descricao = db.Column(db.String(200), nullable=False)
-    quantidade_horas = db.Column(db.Numeric(5, 2), default=0.00)
-    valor_hora = db.Column(db.Numeric(10, 2), default=0.00)
+    tipo_servico = db.Column(db.String(20), default='hora', nullable=False)  # 'hora', 'dia', 'fechado'
+    quantidade = db.Column(db.Numeric(5, 2), default=1.00)
+    valor_unitario = db.Column(db.Numeric(10, 2), default=0.00)
     valor_total = db.Column(db.Numeric(10, 2), default=0.00)
     
+    # Campos antigos mantidos para compatibilidade
+    quantidade_dias = db.Column(db.Integer, default=0)
+    quantidade_horas = db.Column(db.Numeric(5, 2), default=0.00)
+    valor_hora = db.Column(db.Numeric(10, 2), default=0.00)
+    
     def __repr__(self):
-        return f'<OrdemServicoItem {self.descricao}: {self.quantidade_horas}h>'
+        return f'<OrdemServicoItem {self.descricao}: {self.quantidade} {self.tipo_servico}>'
     
     def calcular_total(self):
-        """Calcula valor total do item."""
-        if self.quantidade_horas and self.valor_hora:
-            self.valor_total = float(Decimal(str(self.quantidade_horas)) * Decimal(str(self.valor_hora)))
+        """Calcula valor total do item baseado no tipo de serviço."""
+        if self.tipo_servico == 'fechado':
+            # Para serviço fechado, ignora quantidade
+            self.valor_total = float(Decimal(str(self.valor_unitario or 0)))
         else:
-            self.valor_total = 0.00
+            # Para hora ou dia, multiplica quantidade × valor unitário
+            quantidade = float(self.quantidade or 0)
+            valor_unit = float(self.valor_unitario or 0)
+            self.valor_total = float(Decimal(str(quantidade)) * Decimal(str(valor_unit)))
+    
+    @property
+    def tipo_servico_display(self):
+        """Retorna descrição amigável do tipo de serviço."""
+        tipos = {
+            'hora': 'Por Hora',
+            'dia': 'Por Dia', 
+            'fechado': 'Serviço Fechado'
+        }
+        return tipos.get(self.tipo_servico, 'Por Hora')
 
 
 class OrdemServicoProduto(BaseModel):

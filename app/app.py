@@ -150,6 +150,7 @@ def register_blueprints(app):
     from app.proposta.proposta_routes import proposta_bp
     app.register_blueprint(proposta_bp, url_prefix='/propostas')
 
+
 def register_auxiliary_routes(app):
     """
     Registra rotas auxiliares do sistema.

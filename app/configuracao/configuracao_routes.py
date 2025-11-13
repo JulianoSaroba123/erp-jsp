@@ -23,13 +23,13 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXT
 
 
-@bp_config.route('/configuracao')
+@bp_config.route('/')
 def visualizar():
     conf = Configuracao.get_solo()
     return render_template('configuracao/form_configuracao.html', configuracao=conf)
 
 
-@bp_config.route('/configuracao/editar', methods=['GET', 'POST'])
+@bp_config.route('/editar', methods=['GET', 'POST'])
 def editar():
     conf = Configuracao.get_solo()
 
@@ -92,38 +92,115 @@ def editar():
     return render_template('configuracao/form_configuracao.html', configuracao=conf)
 
 
-@bp_config.route('/configuracao/lookup/cnpj')
+@bp_config.route('/lookup/cnpj')
 def lookup_cnpj():
     cnpj = request.args.get('cnpj')
+    print(f"🔍 Busca CNPJ recebida: {cnpj}")
+    
     if not cnpj:
-        return {'error': 'cnpj required'}, 400
+        print("❌ CNPJ não fornecido")
+        return {'error': 'CNPJ é obrigatório'}, 400
 
-    # Limpa o CNPJ
+    # Limpa o CNPJ - remove tudo que não é dígito
     cnpj_only = ''.join(filter(str.isdigit, cnpj))
+    print(f"🧹 CNPJ limpo: {cnpj_only}")
+    
+    # Validar se tem pelo menos 11 dígitos
+    if len(cnpj_only) < 11:
+        print(f"❌ CNPJ muito curto: {len(cnpj_only)} dígitos")
+        return {'error': 'CNPJ deve ter pelo menos 11 dígitos'}, 400
+    
     try:
-        resp = requests.get(f'https://brasilapi.com.br/api/cnpj/v1/{cnpj_only}', timeout=6)
+        url = f'https://brasilapi.com.br/api/cnpj/v1/{cnpj_only}'
+        print(f"📡 Fazendo requisição para: {url}")
+        
+        resp = requests.get(url, timeout=10)
+        print(f"📊 Status da API: {resp.status_code}")
+        
         if resp.status_code == 200:
             data = resp.json()
+            print(f"✅ Dados recebidos: {data.get('razao_social', 'N/A')}")
+            
+            # Log dos campos principais
+            campos_log = ['razao_social', 'nome_fantasia', 'situacao', 'email']
+            for campo in campos_log:
+                if campo in data:
+                    print(f"   📋 {campo}: {data[campo]}")
+            
             return data
-        return {'error': 'not found'}, 404
+        elif resp.status_code == 404:
+            print("❌ CNPJ não encontrado na base de dados")
+            return {'error': 'CNPJ não encontrado'}, 404
+        else:
+            print(f"❌ Erro na API: {resp.status_code} - {resp.text}")
+            return {'error': f'Erro na consulta: {resp.status_code}'}, 500
+            
+    except requests.Timeout:
+        print("❌ Timeout na consulta")
+        return {'error': 'Timeout na consulta - tente novamente'}, 500
+    except requests.ConnectionError:
+        print("❌ Erro de conexão")
+        return {'error': 'Erro de conexão com o serviço de consulta'}, 500
     except Exception as e:
-        return {'error': str(e)}, 500
+        print(f"❌ Erro inesperado: {str(e)}")
+        return {'error': f'Erro interno: {str(e)}'}, 500
 
 
-@bp_config.route('/configuracao/lookup/cep')
+@bp_config.route('/lookup/cep')
 def lookup_cep():
     cep = request.args.get('cep')
+    print(f"🔍 Busca CEP recebida: {cep}")
+    
     if not cep:
-        return {'error': 'cep required'}, 400
+        print("❌ CEP não fornecido")
+        return {'error': 'CEP é obrigatório'}, 400
+        
+    # Limpa o CEP - remove tudo que não é dígito
     cep_only = ''.join(filter(str.isdigit, cep))
+    print(f"🧹 CEP limpo: {cep_only}")
+    
+    # Validar se tem 8 dígitos
+    if len(cep_only) != 8:
+        print(f"❌ CEP inválido: {len(cep_only)} dígitos")
+        return {'error': 'CEP deve ter exatamente 8 dígitos'}, 400
+    
     try:
-        resp = requests.get(f'https://viacep.com.br/ws/{cep_only}/json/', timeout=6)
+        url = f'https://viacep.com.br/ws/{cep_only}/json/'
+        print(f"📡 Fazendo requisição para: {url}")
+        
+        resp = requests.get(url, timeout=10)
+        print(f"📊 Status da API: {resp.status_code}")
+        
         if resp.status_code == 200:
             data = resp.json()
+            
+            # Verificar se o CEP foi encontrado
+            if 'erro' in data:
+                print("❌ CEP não encontrado")
+                return {'error': 'CEP não encontrado'}, 404
+            
+            print(f"✅ Dados recebidos: {data.get('localidade', 'N/A')} - {data.get('uf', 'N/A')}")
+            
+            # Log dos campos principais
+            campos_log = ['logradouro', 'bairro', 'localidade', 'uf']
+            for campo in campos_log:
+                if campo in data and data[campo]:
+                    print(f"   📋 {campo}: {data[campo]}")
+            
             return data
-        return {'error': 'not found'}, 404
+        else:
+            print(f"❌ Erro na API: {resp.status_code} - {resp.text}")
+            return {'error': f'Erro na consulta: {resp.status_code}'}, 500
+            
+    except requests.Timeout:
+        print("❌ Timeout na consulta")
+        return {'error': 'Timeout na consulta - tente novamente'}, 500
+    except requests.ConnectionError:
+        print("❌ Erro de conexão")
+        return {'error': 'Erro de conexão com o serviço de consulta'}, 500
     except Exception as e:
-        return {'error': str(e)}, 500
+        print(f"❌ Erro inesperado: {str(e)}")
+        return {'error': f'Erro interno: {str(e)}'}, 500
 
 
 @bp_config.route('/uploads/configuracao/<filename>')

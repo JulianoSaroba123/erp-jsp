@@ -130,117 +130,147 @@ function adicionarProduto() {
     console.log('Produto adicionado:', contadorProdutos);
 }
 
-// Função para aplicar máscaras e eventos
+// Função para aplicar máscaras e eventos (simplificada e mais robusta)
 function aplicarMascarasEEventos(container = document) {
+    console.log('🎭 Aplicando máscaras e eventos...', container);
+    
     // Aplicar máscaras money (se jquery.mask estiver disponível)
     if (window.jQuery && window.jQuery.fn && window.jQuery.fn.mask) {
         $(container).find('.money').each(function() {
-            $(this).mask('#.##0,00', {
-                reverse: true,
-                translation: {'#': {pattern: /[0-9]/}}
-            });
+            if (!$(this).data('masked')) {
+                $(this).mask('#.##0,00', {
+                    reverse: true,
+                    translation: {'#': {pattern: /[0-9]/}}
+                });
+                $(this).data('masked', true);
+                console.log('🎭 Máscara aplicada ao campo:', this);
+            }
         });
+        console.log('✅ Máscaras jQuery aplicadas');
     }
 
-    // Função utilitária para atribuir data-id a elementos renderizados pelo servidor
-    function ensureDataId(elem, prefix) {
-        if (!elem.dataset.id) {
-            const parentId = elem.closest(`.${prefix}`).id || '';
-            const m = parentId.match(new RegExp(`${prefix}-(\\d+)`));
-            if (m) elem.dataset.id = parseInt(m[1], 10);
+    // Função para garantir data-id
+    function garantirDataId(elemento) {
+        if (!elemento.dataset.id) {
+            const parent = elemento.closest('.item-servico, .item-produto');
+            if (parent && parent.id) {
+                const match = parent.id.match(/(?:servico|produto)-(\d+)/);
+                if (match) {
+                    elemento.dataset.id = match[1];
+                    console.log('🆔 Data-id adicionado:', elemento, 'ID:', match[1]);
+                }
+            }
         }
+        return elemento.dataset.id;
     }
 
-    // Registrar eventos com jQuery se disponível, caso contrário usar vanilla JS
-    if (window.jQuery) {
-        // Garantir data-id nos inputs existentes
-        $(container).find('.servico-horas, .servico-valor').each(function() {
-            ensureDataId(this, 'servico');
-        });
-        $(container).find('.produto-quantidade, .produto-valor').each(function() {
-            ensureDataId(this, 'produto');
-        });
-
-        // Eventos para serviços
-        $(container).find('.servico-horas, .servico-valor').off('input change').on('input change', function() {
-            const id = $(this).data('id');
-            if (id) calcularServicoTotal(id);
-            else {
-                const parent = $(this).closest('.item-servico');
-                const pid = parent.attr('id') ? parent.attr('id').match(/servico-(\d+)/) : null;
-                if (pid) calcularServicoTotal(parseInt(pid[1], 10));
+    // Eventos para SERVIÇOS (usando event delegation mais robusto)
+    container.querySelectorAll('.servico-horas, .servico-valor').forEach(input => {
+        // Garantir data-id
+        garantirDataId(input);
+        
+        // Remover eventos antigos
+        const oldHandler = input._osHandler;
+        if (oldHandler) {
+            input.removeEventListener('input', oldHandler);
+            input.removeEventListener('change', oldHandler);
+            input.removeEventListener('keyup', oldHandler);
+        }
+        
+        // Criar novo handler
+        const newHandler = function(e) {
+            console.log('📝 Evento SERVIÇO disparado:', e.type, input, 'Valor:', input.value);
+            const id = input.dataset.id;
+            if (id) {
+                calcularServicoTotal(parseInt(id));
+            } else {
+                console.warn('⚠️ Serviço sem data-id:', input);
             }
-        });
+        };
+        
+        // Adicionar múltiplos eventos para garantir captura
+        input.addEventListener('input', newHandler);
+        input.addEventListener('change', newHandler);
+        input.addEventListener('keyup', newHandler);
+        input._osHandler = newHandler;
+        
+        console.log('✅ Eventos serviço registrados para:', input, 'ID:', input.dataset.id);
+    });
 
-        // Eventos para produtos
-        $(container).find('.produto-quantidade, .produto-valor').off('input change').on('input change', function() {
-            const id = $(this).data('id');
-            if (id) calcularProdutoTotal(id);
-            else {
-                const parent = $(this).closest('.item-produto');
-                const pid = parent.attr('id') ? parent.attr('id').match(/produto-(\d+)/) : null;
-                if (pid) calcularProdutoTotal(parseInt(pid[1], 10));
+    // Eventos para PRODUTOS (usando event delegation mais robusto)
+    container.querySelectorAll('.produto-quantidade, .produto-valor').forEach(input => {
+        // Garantir data-id
+        garantirDataId(input);
+        
+        // Remover eventos antigos
+        const oldHandler = input._osHandler;
+        if (oldHandler) {
+            input.removeEventListener('input', oldHandler);
+            input.removeEventListener('change', oldHandler);
+            input.removeEventListener('keyup', oldHandler);
+        }
+        
+        // Criar novo handler
+        const newHandler = function(e) {
+            console.log('📝 Evento PRODUTO disparado:', e.type, input, 'Valor:', input.value);
+            const id = input.dataset.id;
+            if (id) {
+                calcularProdutoTotal(parseInt(id));
+            } else {
+                console.warn('⚠️ Produto sem data-id:', input);
             }
-        });
+        };
+        
+        // Adicionar múltiplos eventos
+        input.addEventListener('input', newHandler);
+        input.addEventListener('change', newHandler);
+        input.addEventListener('keyup', newHandler);
+        input._osHandler = newHandler;
+        
+        console.log('✅ Eventos produto registrados para:', input, 'ID:', input.dataset.id);
+    });
 
-        // Evento para desconto
-        $(container).find('input[name="valor_desconto"]').off('input change').on('input change', function() {
+    // Evento para desconto
+    const desconto = container.querySelector('input[name="valor_desconto"]');
+    if (desconto) {
+        const oldHandler = desconto._osHandler;
+        if (oldHandler) {
+            desconto.removeEventListener('input', oldHandler);
+            desconto.removeEventListener('change', oldHandler);
+        }
+        
+        const newHandler = function() {
+            console.log('📝 Evento DESCONTO disparado:', desconto.value);
             calcularTotal();
-        });
-    } else {
-        // Vanilla JS event binding
-        container.querySelectorAll('.servico-horas, .servico-valor').forEach(el => {
-            ensureDataId(el, 'servico');
-            el.removeEventListener('input', el._os_input_handler || (()=>{}));
-            const handler = function() {
-                const id = el.dataset.id;
-                if (id) calcularServicoTotal(id);
-                else {
-                    const parent = el.closest('.item-servico');
-                    const pid = parent && parent.id ? parent.id.match(/servico-(\d+)/) : null;
-                    if (pid) calcularServicoTotal(parseInt(pid[1], 10));
-                }
-            };
-            el.addEventListener('input', handler);
-            el._os_input_handler = handler;
-        });
-
-        container.querySelectorAll('.produto-quantidade, .produto-valor').forEach(el => {
-            ensureDataId(el, 'produto');
-            el.removeEventListener('input', el._os_input_handler || (()=>{}));
-            const handler = function() {
-                const id = el.dataset.id;
-                if (id) calcularProdutoTotal(id);
-                else {
-                    const parent = el.closest('.item-produto');
-                    const pid = parent && parent.id ? parent.id.match(/produto-(\d+)/) : null;
-                    if (pid) calcularProdutoTotal(parseInt(pid[1], 10));
-                }
-            };
-            el.addEventListener('input', handler);
-            el._os_input_handler = handler;
-        });
-
-        const desconto = container.querySelector('input[name="valor_desconto"]');
-        if (desconto) {
-            desconto.removeEventListener('input', desconto._os_input_handler || (()=>{}));
-            const dHandler = function() { calcularTotal(); };
-            desconto.addEventListener('input', dHandler);
-            desconto._os_input_handler = dHandler;
-        }
+        };
+        
+        desconto.addEventListener('input', newHandler);
+        desconto.addEventListener('change', newHandler);
+        desconto._osHandler = newHandler;
+        
+        console.log('✅ Eventos desconto registrados');
     }
+    
+    console.log('🎯 Eventos aplicados com sucesso!');
 }
 
 // Função para calcular total de serviço
 function calcularServicoTotal(id) {
+    console.log('🔧 Calculando serviço total para ID:', id);
     const container = document.getElementById(`servico-${id}`);
-    if (!container) return;
+    if (!container) {
+        console.error('❌ Container não encontrado para servico-' + id);
+        return;
+    }
 
     const horasInput = container.querySelector('.servico-horas');
     const valorInput = container.querySelector('.servico-valor');
     const totalInput = container.querySelector('.servico-total');
 
-    if (!horasInput || !valorInput || !totalInput) return;
+    if (!horasInput || !valorInput || !totalInput) {
+        console.error('❌ Inputs não encontrados para serviço', id, {horasInput, valorInput, totalInput});
+        return;
+    }
 
     const horas = parseFloat(horasInput.value) || 0;
     const valorStr = (valorInput.value || '').toString().replace(/\./g, '').replace(',', '.');
@@ -252,20 +282,27 @@ function calcularServicoTotal(id) {
         maximumFractionDigits: 2
     });
 
-    console.log('Serviço calculado:', { id, horas, valor, total });
+    console.log('🔧 Serviço calculado:', { id, horas, valorStr, valor, total, valorFormatado: totalInput.value });
     calcularTotal();
 }
 
 // Função para calcular total de produto
 function calcularProdutoTotal(id) {
+    console.log('📦 Calculando produto total para ID:', id);
     const container = document.getElementById(`produto-${id}`);
-    if (!container) return;
+    if (!container) {
+        console.error('❌ Container não encontrado para produto-' + id);
+        return;
+    }
 
     const quantidadeInput = container.querySelector('.produto-quantidade');
     const valorInput = container.querySelector('.produto-valor');
     const totalInput = container.querySelector('.produto-total');
 
-    if (!quantidadeInput || !valorInput || !totalInput) return;
+    if (!quantidadeInput || !valorInput || !totalInput) {
+        console.error('❌ Inputs não encontrados para produto', id, {quantidadeInput, valorInput, totalInput});
+        return;
+    }
 
     const quantidade = parseFloat(quantidadeInput.value) || 0;
     const valorStr = (valorInput.value || '').toString().replace(/\./g, '').replace(',', '.');
@@ -277,7 +314,7 @@ function calcularProdutoTotal(id) {
         maximumFractionDigits: 2
     });
 
-    console.log('Produto calculado:', { id, quantidade, valor, total });
+    console.log('📦 Produto calculado:', { id, quantidade, valorStr, valor, total, valorFormatado: totalInput.value });
     calcularTotal();
 }
 
@@ -412,5 +449,267 @@ document.addEventListener('DOMContentLoaded', function() {
     calcularTempo();
     calcularTotal();
 
+    // Inicializar estado de parcelas
+    try { toggleParcelas(); } catch (e) { console.warn('toggleParcelas não disponível ainda'); }
+
     console.log('✅ Sistema de cálculos inicializado!');
+    
+    // Função de debug disponível no console
+    window.debugOS = function() {
+        console.log('🔍 DEBUG DO SISTEMA OS:');
+        console.log('Serviços encontrados:', document.querySelectorAll('.item-servico').length);
+        console.log('Produtos encontrados:', document.querySelectorAll('.item-produto').length);
+        
+        document.querySelectorAll('.servico-horas, .servico-valor').forEach((input, index) => {
+            console.log(`Serviço input ${index}:`, {
+                elemento: input,
+                dataId: input.dataset.id,
+                valor: input.value,
+                eventos: input._osHandler ? 'SIM' : 'NÃO'
+            });
+        });
+        
+        document.querySelectorAll('.produto-quantidade, .produto-valor').forEach((input, index) => {
+            console.log(`Produto input ${index}:`, {
+                elemento: input,
+                dataId: input.dataset.id,
+                valor: input.value,
+                eventos: input._osHandler ? 'SIM' : 'NÃO'
+            });
+        });
+        
+        console.log('Para testar eventos, use: testEventos()');
+    };
+    
+    // Função para testar eventos manualmente
+    window.testEventos = function() {
+        console.log('🧪 Testando eventos...');
+        
+        const servicoValor = document.querySelector('.servico-valor');
+        if (servicoValor) {
+            console.log('Testando evento em serviço valor:', servicoValor);
+            servicoValor.value = '99,99';
+            servicoValor.dispatchEvent(new Event('input'));
+        }
+        
+        const produtoValor = document.querySelector('.produto-valor');
+        if (produtoValor) {
+            console.log('Testando evento em produto valor:', produtoValor);
+            produtoValor.value = '88,88';
+            produtoValor.dispatchEvent(new Event('input'));
+        }
+    };
+    
+    // Função para re-aplicar eventos
+    window.reapplyEvents = function() {
+        console.log('🔄 Re-aplicando eventos...');
+        aplicarMascarasEEventos();
+    };
 });
+
+// Sanitiza valores antes do envio do formulário: remove máscaras e formata números
+function sanitizeBeforeSubmit(event) {
+    // Produtos: quantidade (number) e valor (money)
+    document.querySelectorAll('.produto-quantidade').forEach(input => {
+        if (!input) return;
+        // Remover espaços e trocar vírgula por ponto
+        let v = (input.value || '').toString().trim();
+        // Se contém vírgula, assumimos formato brasileiro (pontos = milhares, vírgula = decimal)
+        if (v.indexOf(',') !== -1) {
+            v = v.replace(/\./g, ''); // remove separadores de milhares
+            v = v.replace(',', '.');
+        } else {
+            // Não contém vírgula: ponto pode ser separador decimal — NÃO remover pontos
+            // Apenas garantir que não haja espaços
+            v = v.replace(/\s+/g, '');
+        }
+        // Se for vazio, manter 0
+        if (v === '' || v === '.' ) v = '0';
+        input.value = v;
+    });
+
+    document.querySelectorAll('.produto-valor').forEach(input => {
+        if (!input) return;
+        let v = (input.value || '').toString().trim();
+        v = v.replace(/R\$\s?/g, '');
+        v = v.replace(/\./g, '');
+        v = v.replace(',', '.');
+        if (v === '' || v === '.' ) v = '0';
+        input.value = v;
+    });
+
+    // Serviços: horas e valor
+    document.querySelectorAll('.servico-horas').forEach(input => {
+        if (!input) return;
+        let v = (input.value || '').toString().trim();
+        // Manuseio igual ao de quantidade: tratar vírgula como decimal
+        if (v.indexOf(',') !== -1) {
+            v = v.replace(/\./g, '');
+            v = v.replace(',', '.');
+        } else {
+            v = v.replace(/\s+/g, '');
+        }
+        if (v === '' || v === '.' ) v = '0';
+        input.value = v;
+    });
+
+    document.querySelectorAll('.servico-valor').forEach(input => {
+        if (!input) return;
+        let v = (input.value || '').toString().trim();
+        v = v.replace(/R\$\s?/g, '');
+        v = v.replace(/\./g, '');
+        v = v.replace(',', '.');
+        if (v === '' || v === '.' ) v = '0';
+        input.value = v;
+    });
+
+    // Desconto
+    const desconto = document.querySelector('input[name="valor_desconto"]');
+    if (desconto) {
+        let v = (desconto.value || '').toString().trim();
+        v = v.replace(/R\$\s?/g, '');
+        v = v.replace(/\./g, '');
+        v = v.replace(',', '.');
+        if (v === '' || v === '.' ) v = '0';
+        desconto.value = v;
+    }
+
+    // Parcelas: sanitizar valores e datas
+    document.querySelectorAll('input[name="parcela_valor[]"]').forEach(input => {
+        if (!input) return;
+        let v = (input.value || '').toString().trim();
+        v = v.replace(/R\$\s?/g, '');
+        v = v.replace(/\./g, '');
+        v = v.replace(',', '.');
+        if (v === '' || v === '.') v = '0';
+        input.value = v;
+    });
+
+    document.querySelectorAll('input[name="parcela_data[]"]').forEach(input => {
+        if (!input) return;
+        // garante formato YYYY-MM-DD (já é o formato do input date)
+        input.value = (input.value || '').toString();
+    });
+
+    // Entrada
+    const entrada = document.getElementById('entrada');
+    if (entrada) {
+        let v = (entrada.value || '').toString().trim();
+        v = v.replace(/R\$\s?/g, '');
+        v = v.replace(/\./g, '');
+        v = v.replace(',', '.');
+        if (v === '' || v === '.') v = '0';
+        entrada.value = v;
+    }
+
+    // Nota: não prevenir submit; apenas sanitiza valores in-place
+}
+
+// Anexa sanitização ao submit do formulário, se existir
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formOrdemServico');
+    if (form) {
+        form.addEventListener('submit', sanitizeBeforeSubmit, true);
+        console.log('🔒 Sanitização antes do submit ativada');
+    }
+});
+
+// Função utilitária para parsear textos no formato 'R$ 1.234,56' ou '1.234,56' para número
+function parseMoneyString(str) {
+    if (!str) return 0;
+    let s = String(str).replace(/R\$\s?/g, '').trim();
+    s = s.replace(/\./g, '');
+    s = s.replace(',', '.');
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
+}
+
+// Habilita/desabilita controles de parcelas baseado na condição de pagamento
+function toggleParcelas() {
+    // suporta tanto ordem (condicao_pagamento) quanto proposta (forma_pagamento)
+    let cond = document.querySelector('select[name="condicao_pagamento"]');
+    if (!cond) cond = document.querySelector('select[name="forma_pagamento"]');
+    const numParcelas = document.getElementById('numero_parcelas');
+    const btnCalc = document.getElementById('btnCalcularParcelas');
+    const btnAtual = document.getElementById('btnAtualizarParcelas');
+    if (!cond || !numParcelas) return;
+    if (cond.value === 'parcelado') {
+        numParcelas.disabled = false;
+        if (btnCalc) btnCalc.disabled = false;
+        if (btnAtual) btnAtual.disabled = false;
+    } else {
+        numParcelas.disabled = true;
+        if (btnCalc) btnCalc.disabled = true;
+        if (btnAtual) btnAtual.disabled = true;
+        // limpar container de parcelas
+        const cont = document.getElementById('parcelas-container');
+        if (cont) cont.innerHTML = '';
+    }
+}
+
+// Adiciona meses a uma data (Date object)
+function addMonths(dateObj, months) {
+    const d = new Date(dateObj.valueOf());
+    const day = d.getDate();
+    d.setMonth(d.getMonth() + months);
+    // Ajuste para meses curtos
+    if (d.getDate() !== day) {
+        d.setDate(0);
+    }
+    return d;
+}
+
+// Calcula parcelas baseado no valor total, entrada e número de parcelas
+function calcularParcelas() {
+    const valorTotalField = document.querySelector('input[name="valor_total"]');
+    const entradaField = document.getElementById('entrada');
+    const numParcelasField = document.getElementById('numero_parcelas');
+    const cont = document.getElementById('parcelas-container');
+    if (!valorTotalField || !cont || !numParcelasField) return;
+
+    const total = parseMoneyString(valorTotalField.value);
+    const entrada = parseMoneyString(entradaField ? entradaField.value : 0);
+    const num = parseInt(numParcelasField.value || '1', 10) || 1;
+
+    let restante = total - entrada;
+    if (restante < 0) restante = 0;
+
+    const parcelaValor = Math.round((restante / num) * 100) / 100;
+
+    // data base para vencimento: data_prevista se existir, senão data_abertura_sidebar, senão hoje
+    let baseDate = new Date();
+    const dataPrev = document.querySelector('input[name="data_prevista"]');
+    const dataAbert = document.querySelector('input[name="data_abertura"]') || document.querySelector('input[name="data_abertura_sidebar"]');
+    if (dataPrev && dataPrev.value) baseDate = new Date(dataPrev.value + 'T00:00:00');
+    else if (dataAbert && dataAbert.value) baseDate = new Date(dataAbert.value + 'T00:00:00');
+
+    cont.innerHTML = '';
+    for (let i = 0; i < num; i++) {
+        const venc = addMonths(baseDate, i + 1); // parcelas começam 1 mês após a base
+        const vencStr = venc.toISOString().slice(0, 10);
+        const valorStr = 'R$ ' + parcelaValor.toFixed(2).replace('.', ',');
+
+        const row = document.createElement('div');
+        row.className = 'mb-2 d-flex gap-2 align-items-center';
+        row.innerHTML = `
+            <div style="flex:1">
+                <label class="form-label text-white">Vencimento</label>
+                <input type="date" class="form-control bg-dark text-white border-secondary" name="parcela_data[]" value="${vencStr}">
+            </div>
+            <div style="width:160px">
+                <label class="form-label text-white">Valor</label>
+                <input type="text" class="form-control bg-dark text-white border-secondary" name="parcela_valor[]" value="${valorStr}">
+            </div>
+            <div style="width:48px; display:flex; align-items:end">
+                <button type="button" class="btn btn-outline-danger btn-sm mt-3" onclick="this.closest('.mb-2').remove();">X</button>
+            </div>
+        `;
+        cont.appendChild(row);
+    }
+
+    console.log('Parcelas geradas:', { total, entrada, num, parcelaValor });
+}
+
+// Expõe funções globalmente para chamadas inline no template
+window.toggleParcelas = toggleParcelas;
+window.calcularParcelas = calcularParcelas;

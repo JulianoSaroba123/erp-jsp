@@ -20,7 +20,7 @@ from app.produto.produto_model import Produto
 from decimal import Decimal
 import decimal
 import os
-from datetime import datetime, time, date
+from datetime import datetime, time, date, timedelta
 from werkzeug.utils import secure_filename
 import uuid
 
@@ -86,8 +86,19 @@ def safe_decimal_convert(value, default=0):
         return Decimal(str(default))
         
     try:
-        # Remove formatação brasileira e caracteres inválidos
-        clean_value = str(value).replace('R$', '').replace(' ', '').replace('.', '').replace(',', '.')
+        s = str(value).strip()
+        # Remove currency symbol and spaces
+        s = s.replace('R$', '').replace(' ', '')
+
+        # Se contém vírgula, assumimos formato brasileiro: pontos como milhares e vírgula como decimal
+        if ',' in s:
+            # Remover pontos (separadores de milhares) e trocar vírgula por ponto
+            clean_value = s.replace('.', '').replace(',', '.')
+        else:
+            # Não há vírgula. Pode ser `1.23` (ponto decimal) ou `1.000` (milhares) dependendo do contexto.
+            # Neste caso, NÃO removemos pontos automaticamente — assumimos que ponto é separador decimal.
+            clean_value = s
+
         if clean_value == '' or clean_value == '.':
             return Decimal(str(default))
         return Decimal(clean_value)
@@ -134,23 +145,6 @@ def get_logo_base64():
         </svg>'''
         svg_base64 = base64.b64encode(svg_logo.encode('utf-8')).decode('utf-8')
         return f"data:image/svg+xml;base64,{svg_base64}"
-
-def allowed_file(filename):
-    """Verifica se o arquivo tem extensão permitida."""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def get_file_size(file):
-    """Obtém o tamanho do arquivo em bytes."""
-    file.seek(0, os.SEEK_END)
-    size = file.tell()
-    file.seek(0)
-    return size
-
-def generate_unique_filename(filename):
-    """Gera um nome único para o arquivo."""
-    name, ext = os.path.splitext(secure_filename(filename))
-    unique_name = f"{uuid.uuid4().hex}_{name}{ext}"
-    return unique_name
 
 @ordem_servico_bp.route('/')
 @ordem_servico_bp.route('/listar')
@@ -228,11 +222,18 @@ def novo():
             valor_servico = safe_decimal_convert(request.form.get('valor_servico', '0'), 0)
             valor_pecas = safe_decimal_convert(request.form.get('valor_pecas', '0'), 0)
             valor_desconto = safe_decimal_convert(request.form.get('valor_desconto', '0'), 0)
+            valor_entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
             
             # Converte datas
             data_prevista = None
+            data_primeira_parcela = None
+            data_vencimento_pagamento = None
             if request.form.get('data_prevista'):
                 data_prevista = datetime.strptime(request.form.get('data_prevista'), '%Y-%m-%d').date()
+            if request.form.get('data_primeira_parcela'):
+                data_primeira_parcela = datetime.strptime(request.form.get('data_primeira_parcela'), '%Y-%m-%d').date()
+            if request.form.get('data_vencimento_pagamento'):
+                data_vencimento_pagamento = datetime.strptime(request.form.get('data_vencimento_pagamento'), '%Y-%m-%d').date()
             
             # Converte horas
             hora_inicial = None
@@ -247,7 +248,7 @@ def novo():
             ordem = OrdemServico(
                 numero=OrdemServico.gerar_proximo_numero(),
                 cliente_id=int(request.form.get('cliente_id')),
-                titulo=request.form.get('titulo', '').strip(),
+                titulo=request.form.get('titulo', request.form.get('equipamento', 'OS sem título')).strip(),
                 descricao=request.form.get('descricao', '').strip(),
                 observacoes=request.form.get('observacoes', '').strip(),
                 # Novos campos de solicitação
@@ -256,6 +257,8 @@ def novo():
                 status=request.form.get('status', 'aberta'),
                 prioridade=request.form.get('prioridade', 'normal'),
                 data_prevista=data_prevista,
+                # Data de abertura (editável)
+                data_abertura=(datetime.strptime(request.form.get('data_abertura'), '%Y-%m-%d').date() if request.form.get('data_abertura') else date.today()),
                 tecnico_responsavel=request.form.get('tecnico_responsavel', '').strip(),
                 valor_servico=Decimal(valor_servico) if valor_servico else 0,
                 valor_pecas=Decimal(valor_pecas) if valor_pecas else 0,
@@ -266,50 +269,116 @@ def novo():
                 numero_serie=request.form.get('numero_serie', '').strip(),
                 defeito_relatado=request.form.get('defeito_relatado', '').strip(),
                 diagnostico=request.form.get('diagnostico', '').strip(),
+                diagnostico_tecnico=request.form.get('diagnostico_tecnico', '').strip(),
                 solucao=request.form.get('solucao', '').strip(),
                 # Novos campos - Tratamento seguro
                 km_inicial=safe_int_convert(request.form.get('km_inicial', '')),
                 km_final=safe_int_convert(request.form.get('km_final', '')),
+                total_km=request.form.get('total_km', '').strip(),
                 hora_inicial=hora_inicial,
                 hora_final=hora_final,
+                total_horas=request.form.get('total_horas', '').strip(),
                 condicao_pagamento=request.form.get('condicao_pagamento', 'a_vista'),
                 numero_parcelas=safe_int_convert(request.form.get('numero_parcelas', '1'), default=1),
+                valor_entrada=Decimal(valor_entrada) if valor_entrada else 0,
+                data_primeira_parcela=data_primeira_parcela,
+                data_vencimento_pagamento=data_vencimento_pagamento,
                 # Novos campos para anexos e descrição de pagamento
                 descricao_pagamento=request.form.get('descricao_pagamento', '').strip(),
                 observacoes_anexos=request.form.get('observacoes_anexos', '').strip()
             )
             
             # Validações
-            if not ordem.titulo:
-                flash('Título é obrigatório!', 'error')
-                clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
-                numero_os = OrdemServico.gerar_proximo_numero()
-                return render_template('os/form.html', ordem=None, clientes=clientes, numero_os=numero_os, today=date.today())
+            print(f"🔍 DEBUG: Validando título: '{ordem.titulo}'")
+            if not ordem.titulo or ordem.titulo == 'OS sem título':
+                # Se não há título, usar equipamento como referência
+                if request.form.get('equipamento', '').strip():
+                    ordem.titulo = f"OS - {request.form.get('equipamento', '').strip()}"
+                else:
+                    ordem.titulo = f"OS #{ordem.numero}"
             
+            print(f"🔍 DEBUG: Validando cliente_id: '{ordem.cliente_id}'")
             if not ordem.cliente_id:
                 flash('Cliente é obrigatório!', 'error')
+                print("❌ DEBUG: Cliente é obrigatório")
                 clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
                 numero_os = OrdemServico.gerar_proximo_numero()
                 return render_template('os/form.html', ordem=None, clientes=clientes, numero_os=numero_os, today=date.today())
             
-            # Salva ordem
-            ordem.save()
+            # Adiciona ordem à sessão (transação será confirmada no final)
+            db.session.add(ordem)
+            # Flush para garantir que ordem.id seja populado antes de criar os itens
+            db.session.flush()
             
             # Processa itens de serviço
-            servicos_desc = request.form.getlist('servico_descricao[]')
-            servicos_horas = request.form.getlist('servico_horas[]')
-            servicos_valor = request.form.getlist('servico_valor[]')
+            print("🔍 DEBUG: Processando itens de serviço com nova estrutura de tipos")
             
-            for i, desc in enumerate(servicos_desc):
-                if desc.strip():
-                    item = OrdemServicoItem(
-                        ordem_servico_id=ordem.id,
-                        descricao=desc.strip(),
-                        quantidade_horas=Decimal(servicos_horas[i].replace(',', '.')) if i < len(servicos_horas) and servicos_horas[i] else 0,
-                        valor_hora=Decimal(servicos_valor[i].replace(',', '.')) if i < len(servicos_valor) and servicos_valor[i] else 0
-                    )
-                    item.calcular_total()
-                    item.save()
+            # Primeiro tenta coletar dados da estrutura de arrays simples (nova)
+            servicos_desc_array = request.form.getlist('servico_descricao[]')
+            servicos_tipo_array = request.form.getlist('servico_tipo[]')
+            servicos_quantidade_array = request.form.getlist('servico_quantidade[]')
+            servicos_valor_array = request.form.getlist('servico_valor[]')
+            
+            print(f"🔍 DEBUG: Arrays simples encontrados - desc: {len(servicos_desc_array)}, tipo: {len(servicos_tipo_array)}, qtd: {len(servicos_quantidade_array)}, valor: {len(servicos_valor_array)}")
+            
+            # Se encontrou arrays simples, usa essa estrutura
+            servicos_data = []
+            if servicos_desc_array:
+                print("🔍 DEBUG: Usando estrutura de arrays simples para serviços (novo)")
+                for i, desc in enumerate(servicos_desc_array):
+                    if desc and desc.strip():
+                        tipo = servicos_tipo_array[i] if i < len(servicos_tipo_array) else 'Serviço Fechado'
+                        quantidade = servicos_quantidade_array[i] if i < len(servicos_quantidade_array) else '1'
+                        valor_unitario = servicos_valor_array[i] if i < len(servicos_valor_array) else '0'
+                        
+                        servicos_data.append({
+                            'descricao': desc.strip(),
+                            'tipo': tipo,
+                            'quantidade': float(safe_decimal_convert(quantidade, 1.0)),
+                            'valor_unitario': float(safe_decimal_convert(valor_unitario, 0.0))
+                        })
+            else:
+                # Fallback para estrutura indexada (antiga)
+                print("🔍 DEBUG: Usando estrutura indexada para serviços (fallback)")
+                index = 0
+                while True:
+                    desc_key = f'servicos[{index}][descricao]'
+                    if desc_key not in request.form:
+                        break
+                        
+                    tipo_key = f'servicos[{index}][tipo]'
+                    quantidade_key = f'servicos[{index}][quantidade]'
+                    valor_key = f'servicos[{index}][valor_unitario]'
+                    
+                    desc = request.form.get(desc_key, '').strip()
+                    if desc:
+                        tipo = request.form.get(tipo_key, 'Serviço Fechado')
+                        quantidade = request.form.get(quantidade_key, '1')
+                        valor_unitario = request.form.get(valor_key, '0')
+                        
+                        servicos_data.append({
+                            'descricao': desc,
+                            'tipo': tipo,
+                            'quantidade': float(safe_decimal_convert(quantidade, 1.0)),
+                            'valor_unitario': float(safe_decimal_convert(valor_unitario, 0.0))
+                        })
+                        
+                    index += 1
+            
+            print(f"🔍 DEBUG: Coletados {len(servicos_data)} serviços: {servicos_data}")
+            
+            # Criar itens de serviço
+            for servico_data in servicos_data:
+                item = OrdemServicoItem(
+                    ordem_servico_id=ordem.id,
+                    descricao=servico_data['descricao'],
+                    tipo_servico=servico_data['tipo'],
+                    quantidade=Decimal(str(servico_data['quantidade'])),
+                    valor_unitario=Decimal(str(servico_data['valor_unitario']))
+                )
+                item.calcular_total()
+                db.session.add(item)
+                print(f"➕ Serviço adicionado: {item.descricao} - {item.quantidade} {item.tipo_servico} = R$ {item.valor_total}")
             
             # Processa produtos utilizados
             produtos_desc = request.form.getlist('produto_descricao[]')
@@ -325,21 +394,9 @@ def novo():
                         valor_unitario=Decimal(produtos_valor[i].replace(',', '.')) if i < len(produtos_valor) and produtos_valor[i] else 0
                     )
                     produto.calcular_total()
-                    produto.save()
+                    db.session.add(produto)
             
-            # Processa parcelas se parcelado
-            if ordem.condicao_pagamento == 'parcelado' and ordem.numero_parcelas > 1:
-                valor_parcela = ordem.valor_total / ordem.numero_parcelas
-                data_primeira = date.today()
-                
-                for i in range(ordem.numero_parcelas):
-                    parcela = OrdemServicoParcela(
-                        ordem_servico_id=ordem.id,
-                        numero_parcela=i + 1,
-                        data_vencimento=data_primeira.replace(month=data_primeira.month + i) if data_primeira.month + i <= 12 else data_primeira.replace(year=data_primeira.year + 1, month=(data_primeira.month + i) - 12),
-                        valor=Decimal(str(valor_parcela))
-                    )
-                    parcela.save()
+            # NOTE: parcelas processing moved to after total calculation (see below)
             
             # Processa arquivos anexados
             if 'anexos' in request.files:
@@ -370,7 +427,7 @@ def novo():
                                 tipo_arquivo=file.content_type or 'application/octet-stream',
                                 tamanho=get_file_size(file)
                             )
-                            anexo.save()
+                            db.session.add(anexo)
                             
                         except Exception as e:
                             flash(f'Erro ao salvar arquivo {file.filename}: {str(e)}', 'warning')
@@ -379,12 +436,154 @@ def novo():
             
             # Recalcula valor total considerando itens
             ordem.valor_total = ordem.valor_total_calculado_novo
-            ordem.save()
-            
-            flash(f'Ordem de Serviço "{ordem.numero}" criada com sucesso!', 'success')
+
+            # Processa parcelas (validação + criação)
+            if ordem.condicao_pagamento == 'parcelado' and ordem.numero_parcelas and ordem.numero_parcelas > 0:
+                entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
+                parcelas_datas = request.form.getlist('parcela_data[]')
+                parcelas_valores = request.form.getlist('parcela_valor[]')
+
+                base_date = date.today()
+                # Usar data_primeira_parcela se fornecida
+                if request.form.get('data_primeira_parcela'):
+                    try:
+                        base_date = datetime.strptime(request.form.get('data_primeira_parcela'), '%Y-%m-%d').date()
+                    except Exception:
+                        base_date = date.today()
+                elif request.form.get('data_prevista'):
+                    try:
+                        base_date = datetime.strptime(request.form.get('data_prevista'), '%Y-%m-%d').date()
+                    except Exception:
+                        base_date = date.today()
+                elif request.form.get('data_abertura'):
+                    try:
+                        base_date = datetime.strptime(request.form.get('data_abertura'), '%Y-%m-%d').date()
+                    except Exception:
+                        base_date = date.today()
+
+                # Tolerância para diferenças pequenas (centavos)
+                tolerancia = Decimal('0.02')
+
+                # Se o usuário forneceu parcelas manualmente, validar soma
+                if parcelas_valores and any(v.strip() for v in parcelas_valores):
+                    soma_parcelas = Decimal('0')
+                    parsed_parcelas = []
+                    for idx, val in enumerate(parcelas_valores):
+                        try:
+                            valor_parcela = safe_decimal_convert(val, 0)
+                            soma_parcelas += valor_parcela
+                            data_venc = None
+                            if idx < len(parcelas_datas) and parcelas_datas[idx]:
+                                try:
+                                    data_venc = datetime.strptime(parcelas_datas[idx], '%Y-%m-%d').date()
+                                except Exception:
+                                    data_venc = base_date
+                            else:
+                                data_venc = base_date
+                            parsed_parcelas.append((idx + 1, data_venc, valor_parcela))
+                        except Exception:
+                            continue
+
+                    total_form = entrada + soma_parcelas
+                    if abs(total_form - Decimal(str(ordem.valor_total))) > tolerancia:
+                        # Não criar parcelas se soma não bater com o total
+                        flash('Soma das parcelas + entrada não corresponde ao valor total. Verifique os valores inseridos.', 'error')
+                        clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+                        numero_os = OrdemServico.gerar_proximo_numero()
+                        # Não persistir alterações de parcelas neste fluxo; deixa o usuário corrigir
+                        return render_template('os/form.html', ordem=ordem, clientes=clientes, numero_os=numero_os, today=date.today())
+
+                    # Apaga possíveis parcelas pré-existentes (não deveria haver em novo, mas seguro)
+                    for p in list(ordem.parcelas):
+                        # remover via sessão (evita commits intermediários)
+                        db.session.delete(p)
+
+                    # Salva parcelas conforme fornecido
+                    for numero, data_venc, valor_parcela in parsed_parcelas:
+                        parcela = OrdemServicoParcela(
+                            ordem_servico_id=ordem.id,
+                            numero_parcela=numero,
+                            data_vencimento=data_venc,
+                            valor=Decimal(str(valor_parcela)).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+                        )
+                        db.session.add(parcela)
+
+                else:
+                    # Distribuição automática:.garante soma exata distribuindo resto na última parcela
+                    restante = Decimal(str(ordem.valor_total)) - entrada
+                    if restante < 0:
+                        restante = Decimal('0')
+
+                    created = 0
+                    if entrada and entrada > 0:
+                        # cria parcela de entrada
+                        parcela = OrdemServicoParcela(
+                            ordem_servico_id=ordem.id,
+                            numero_parcela=1,
+                            data_vencimento=base_date,
+                            valor=Decimal(str(entrada)).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+                        )
+                        db.session.add(parcela)
+                        created = 1
+
+                    parcelas_a_distribuir = ordem.numero_parcelas - created
+                    if parcelas_a_distribuir <= 0:
+                        parcelas_a_distribuir = 1
+
+                    # Calcula valor por parcela com quantize e ajusta última parcela com o restante
+                    if parcelas_a_distribuir > 0:
+                        valor_por_parcela = (restante / parcelas_a_distribuir)
+                        valor_por_parcela_q = valor_por_parcela.quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+                        soma_parcels = valor_por_parcela_q * parcelas_a_distribuir
+                        diferenca = restante - soma_parcels
+
+                        for i in range(parcelas_a_distribuir):
+                            numero = created + i + 1
+                            try:
+                                mes = base_date.month + i + 1
+                                ano = base_date.year + ((mes - 1) // 12)
+                                mes = ((mes - 1) % 12) + 1
+                                dia = min(base_date.day, 28)
+                                data_venc = date(ano, mes, dia)
+                            except Exception:
+                                data_venc = base_date
+
+                            # para a última parcela, adiciona a diferença (pode ser negativa/positiva devido ao arredondamento)
+                            if i == parcelas_a_distribuir - 1:
+                                valor_final = (valor_por_parcela_q + diferenca).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+                            else:
+                                valor_final = valor_por_parcela_q
+
+                            parcela = OrdemServicoParcela(
+                                ordem_servico_id=ordem.id,
+                                numero_parcela=numero,
+                                data_vencimento=data_venc,
+                                valor=valor_final
+                            )
+                            db.session.add(parcela)
+
+            # Recalcula e atualiza valor total antes de confirmar transação
+            ordem.valor_total = ordem.valor_total_calculado_novo
+            print(f"🔍 DEBUG: Valor total calculado: R$ {ordem.valor_total}")
+
+            try:
+                print("🔍 DEBUG: Tentando fazer commit da ordem...")
+                db.session.commit()
+                print("✅ DEBUG: Commit realizado com sucesso!")
+            except Exception as commit_error:
+                print(f"❌ DEBUG: Erro no commit: {commit_error}")
+                db.session.rollback()
+                raise
+
+            flash(f'✅ Ordem de Serviço {ordem.numero} criada com sucesso! Você pode visualizar, editar ou gerar o PDF.', 'success')
             return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
             
         except Exception as e:
+            # Em caso de erro, desfaz qualquer alteração pendente na sessão
+            try:
+                db.session.rollback()
+            except Exception:
+                pass
             flash(f'Erro ao criar ordem de serviço: {str(e)}', 'error')
             clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
             numero_os = OrdemServico.gerar_proximo_numero()
@@ -451,7 +650,7 @@ def editar(id):
             
             # Atualiza dados
             ordem.cliente_id = int(request.form.get('cliente_id'))
-            ordem.titulo = request.form.get('titulo', '').strip()
+            ordem.titulo = request.form.get('titulo', request.form.get('equipamento', ordem.titulo or 'OS sem título')).strip()
             ordem.descricao = request.form.get('descricao', '').strip()
             ordem.observacoes = request.form.get('observacoes', '').strip()
             # Novos campos de solicitação
@@ -460,10 +659,27 @@ def editar(id):
             
             # Controla mudança de status
             novo_status = request.form.get('status', 'aberta')
+            # Permite sobrescrever data_abertura e data_conclusao manualmente
+            if request.form.get('data_abertura'):
+                try:
+                    ordem.data_abertura = datetime.strptime(request.form.get('data_abertura'), '%Y-%m-%d').date()
+                except Exception:
+                    pass
+
+            if request.form.get('data_conclusao'):
+                try:
+                    ordem.data_conclusao = datetime.strptime(request.form.get('data_conclusao'), '%Y-%m-%dT%H:%M').replace(tzinfo=None)
+                except Exception:
+                    # aceitar também formato YYYY-MM-DD
+                    try:
+                        ordem.data_conclusao = datetime.strptime(request.form.get('data_conclusao'), '%Y-%m-%d')
+                    except Exception:
+                        pass
+
             if novo_status != ordem.status:
                 if novo_status == 'em_andamento' and ordem.status == 'aberta':
                     ordem.data_inicio = datetime.now()
-                elif novo_status == 'concluida' and ordem.status != 'concluida':
+                elif novo_status == 'concluida' and ordem.status != 'concluida' and not ordem.data_conclusao:
                     ordem.data_conclusao = datetime.now()
             ordem.status = novo_status
             
@@ -479,11 +695,13 @@ def editar(id):
             ordem.numero_serie = request.form.get('numero_serie', '').strip()
             ordem.defeito_relatado = request.form.get('defeito_relatado', '').strip()
             ordem.diagnostico = request.form.get('diagnostico', '').strip()
+            ordem.diagnostico_tecnico = request.form.get('diagnostico_tecnico', '').strip()
             ordem.solucao = request.form.get('solucao', '').strip()
             
             # Controle de KM e Tempo - Tratamento seguro de conversão
             ordem.km_inicial = safe_int_convert(request.form.get('km_inicial', ''))
             ordem.km_final = safe_int_convert(request.form.get('km_final', ''))
+            ordem.total_km = request.form.get('total_km', '').strip()
             
             # Processa horários
             hora_inicial = None
@@ -496,65 +714,140 @@ def editar(id):
             
             ordem.hora_inicial = hora_inicial
             ordem.hora_final = hora_final
+            ordem.total_horas = request.form.get('total_horas', '').strip()
             
             # Condições de Pagamento
             ordem.condicao_pagamento = request.form.get('condicao_pagamento', 'a_vista')
             ordem.numero_parcelas = int(request.form.get('numero_parcelas', 1)) if request.form.get('numero_parcelas') else 1
+            ordem.valor_entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
+            
+            # Data da primeira parcela
+            if request.form.get('data_primeira_parcela'):
+                try:
+                    ordem.data_primeira_parcela = datetime.strptime(request.form.get('data_primeira_parcela'), '%Y-%m-%d').date()
+                except Exception:
+                    pass
+            
+            # Data de vencimento do pagamento
+            if request.form.get('data_vencimento_pagamento'):
+                try:
+                    ordem.data_vencimento_pagamento = datetime.strptime(request.form.get('data_vencimento_pagamento'), '%Y-%m-%d').date()
+                except Exception:
+                    pass
+            
             ordem.descricao_pagamento = request.form.get('descricao_pagamento', '').strip()
             ordem.observacoes_anexos = request.form.get('observacoes_anexos', '').strip()
             
             # Validações
-            if not ordem.titulo:
-                flash('Título é obrigatório!', 'error')
-                clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
-                return render_template('os/form.html', ordem=ordem, clientes=clientes, today=date.today())
+            if not ordem.titulo or ordem.titulo == 'OS sem título':
+                # Se não há título, usar equipamento como referência
+                if request.form.get('equipamento', '').strip():
+                    ordem.titulo = f"OS - {request.form.get('equipamento', '').strip()}"
+                else:
+                    ordem.titulo = f"OS #{ordem.numero}"
             
-            # Processa itens de serviço (CORRIGIDO - estava faltando!)
-            # Remove serviços existentes para recriar
-            print(f"🔍 DEBUG: Removendo {len(ordem.servicos)} serviços existentes")
-            for item_existente in ordem.servicos:
-                item_existente.delete()
+            # Processa itens de serviço - Remove antigos e adiciona novos
+            print(f"🔍 DEBUG: Removendo {len(ordem.servicos)} serviços antigos via loop delete")
+            servicos_removidos = 0
+            for item_existente in list(ordem.servicos):
+                print(f"  🗑️ Removendo serviço: {item_existente.descricao}")
+                db.session.delete(item_existente)
+                servicos_removidos += 1
+            print(f"✅ {servicos_removidos} serviços removidos")
             
-            servicos_desc = request.form.getlist('servico_descricao[]')
-            servicos_horas = request.form.getlist('servico_horas[]')
-            servicos_valor = request.form.getlist('servico_valor[]')
+            # Processa itens de serviço com nova estrutura de tipos
+            print("🔍 DEBUG: Processando itens de serviço com nova estrutura de tipos (edição)")
             
-            print(f"🔍 DEBUG: Processando {len(servicos_desc)} serviços novos")
-            for i, desc in enumerate(servicos_desc):
-                if desc.strip():
-                    horas_value = servicos_horas[i] if i < len(servicos_horas) else ''
-                    valor_value = servicos_valor[i] if i < len(servicos_valor) else ''
+            # Primeiro tenta coletar dados da estrutura de arrays simples (nova)
+            servicos_desc_array = request.form.getlist('servico_descricao[]')
+            servicos_tipo_array = request.form.getlist('servico_tipo[]')
+            servicos_quantidade_array = request.form.getlist('servico_quantidade[]')
+            servicos_valor_array = request.form.getlist('servico_valor[]')
+            
+            print(f"🔍 DEBUG: Arrays simples encontrados - desc: {len(servicos_desc_array)}, tipo: {len(servicos_tipo_array)}, qtd: {len(servicos_quantidade_array)}, valor: {len(servicos_valor_array)}")
+            
+            # Se encontrou arrays simples, usa essa estrutura
+            servicos_data = []
+            if servicos_desc_array:
+                print("🔍 DEBUG: Usando estrutura de arrays simples para serviços")
+                for i, desc in enumerate(servicos_desc_array):
+                    if desc and desc.strip():
+                        tipo = servicos_tipo_array[i] if i < len(servicos_tipo_array) else 'Serviço Fechado'
+                        quantidade = servicos_quantidade_array[i] if i < len(servicos_quantidade_array) else '1'
+                        valor_unitario = servicos_valor_array[i] if i < len(servicos_valor_array) else '0'
+                        
+                        servicos_data.append({
+                            'descricao': desc.strip(),
+                            'tipo': tipo,
+                            'quantidade': float(safe_decimal_convert(quantidade, 1.0)),
+                            'valor_unitario': float(safe_decimal_convert(valor_unitario, 0.0))
+                        })
+            else:
+                # Fallback para estrutura indexada (antiga)
+                print("🔍 DEBUG: Usando estrutura indexada para serviços (fallback)")
+                index = 0
+                while True:
+                    desc_key = f'servicos[{index}][descricao]'
+                    if desc_key not in request.form:
+                        break
+                        
+                    tipo_key = f'servicos[{index}][tipo]'
+                    quantidade_key = f'servicos[{index}][quantidade]'
+                    valor_key = f'servicos[{index}][valor_unitario]'
                     
-                    print(f"  → Serviço {i+1}: {desc} | Horas: {horas_value} | Valor: {valor_value}")
-                    
-                    item = OrdemServicoItem(
-                        ordem_servico_id=ordem.id,
-                        descricao=desc.strip(),
-                        quantidade_horas=safe_decimal_convert(horas_value, 0),
-                        valor_hora=safe_decimal_convert(valor_value, 0)
-                    )
-                    item.calcular_total()
-                    item.save()
-                    print(f"  ✅ Serviço salvo com ID: {item.id}")
+                    desc = request.form.get(desc_key, '').strip()
+                    if desc:
+                        tipo = request.form.get(tipo_key, 'Serviço Fechado')
+                        quantidade = request.form.get(quantidade_key, '1')
+                        valor_unitario = request.form.get(valor_key, '0')
+                        
+                        servicos_data.append({
+                            'descricao': desc,
+                            'tipo': tipo,
+                            'quantidade': float(safe_decimal_convert(quantidade, 1.0)),
+                            'valor_unitario': float(safe_decimal_convert(valor_unitario, 0.0))
+                        })
+                        
+                    index += 1
             
-            # Processa produtos utilizados (CORRIGIDO - estava faltando!)
-            # Remove produtos existentes para recriar
-            print(f"🔍 DEBUG: Removendo {len(ordem.produtos_utilizados)} produtos existentes")
-            for produto_existente in ordem.produtos_utilizados:
-                produto_existente.delete()
+            print(f"🔍 DEBUG: Coletados {len(servicos_data)} serviços para edição: {servicos_data}")
+
+            # Criar novos itens de serviço
+            servicos_adicionados = 0
+            for servico_data in servicos_data:
+                item = OrdemServicoItem(
+                    ordem_servico_id=ordem.id,
+                    descricao=servico_data['descricao'],
+                    tipo_servico=servico_data['tipo'],
+                    quantidade=Decimal(str(servico_data['quantidade'])),
+                    valor_unitario=Decimal(str(servico_data['valor_unitario']))
+                )
+                item.calcular_total()
+                db.session.add(item)
+                servicos_adicionados += 1
+                print(f"  ➕ Adicionado serviço: {item.descricao} - {item.quantidade} {item.tipo_servico} = R$ {item.valor_total}")
+            print(f"✅ {servicos_adicionados} serviços adicionados")
+            
+            # Processa produtos utilizados - Remove antigos e adiciona novos
+            print(f"🔍 DEBUG: Removendo {len(ordem.produtos_utilizados)} produtos antigos via loop delete")
+            produtos_removidos = 0
+            for produto_existente in list(ordem.produtos_utilizados):
+                print(f"  🗑️ Removendo produto: {produto_existente.descricao}")
+                db.session.delete(produto_existente)
+                produtos_removidos += 1
+            print(f"✅ {produtos_removidos} produtos removidos")
             
             produtos_desc = request.form.getlist('produto_descricao[]')
             produtos_qtd = request.form.getlist('produto_quantidade[]')
             produtos_valor = request.form.getlist('produto_valor[]')
-            
-            print(f"🔍 DEBUG: Processando {len(produtos_desc)} produtos novos")
+
+            print(f"🔍 DEBUG: Processando {len(produtos_desc)} produtos do formulário")
+            print(f"  📝 Descrições: {produtos_desc}")
+            produtos_adicionados = 0
             for i, desc in enumerate(produtos_desc):
-                if desc.strip():
+                if desc and desc.strip():
                     qtd_value = produtos_qtd[i] if i < len(produtos_qtd) else ''
                     valor_value = produtos_valor[i] if i < len(produtos_valor) else ''
-                    
-                    print(f"  → Produto {i+1}: {desc} | Qtd: {qtd_value} | Valor: {valor_value}")
-                    
                     produto = OrdemServicoProduto(
                         ordem_servico_id=ordem.id,
                         descricao=desc.strip(),
@@ -562,12 +855,140 @@ def editar(id):
                         valor_unitario=safe_decimal_convert(valor_value, 0)
                     )
                     produto.calcular_total()
-                    produto.save()
-                    print(f"  ✅ Produto salvo com ID: {produto.id}")
+                    db.session.add(produto)
+                    produtos_adicionados += 1
+                    print(f"  ➕ Adicionado produto: {desc.strip()}")
+            print(f"✅ {produtos_adicionados} produtos adicionados")
             
-            # Calcula valor total
-            ordem.valor_total = ordem.valor_total_calculado
-            print(f"🧮 DEBUG: Valor total calculado: R$ {ordem.valor_total}")
+            # Recalcula valores dos campos principais após adicionar todos os itens
+            ordem.valor_servico = ordem.valor_total_servicos
+            ordem.valor_pecas = ordem.valor_total_produtos
+            ordem.valor_total = ordem.valor_total_calculado_novo
+            print(f"🧮 DEBUG: Valor serviço: R$ {ordem.valor_servico} | Valor peças: R$ {ordem.valor_pecas} | Valor total: R$ {ordem.valor_total}")
+
+            # Processa parcelas da ordem: validação e recriação conforme formulário
+            try:
+                if ordem.condicao_pagamento == 'parcelado' and ordem.numero_parcelas > 0:
+                    entrada = safe_decimal_convert(request.form.get('entrada', '0'), 0)
+                    parcelas_datas = request.form.getlist('parcela_data[]')
+                    parcelas_valores = request.form.getlist('parcela_valor[]')
+
+                    base_date = date.today()
+                    if request.form.get('data_prevista'):
+                        try:
+                            base_date = datetime.strptime(request.form.get('data_prevista'), '%Y-%m-%d').date()
+                        except Exception:
+                            base_date = date.today()
+                    elif request.form.get('data_abertura'):
+                        try:
+                            base_date = datetime.strptime(request.form.get('data_abertura'), '%Y-%m-%d').date()
+                        except Exception:
+                            base_date = date.today()
+
+                    tolerancia = Decimal('0.02')
+
+                    # Se parcelas manuais foram enviadas, valida soma antes de destruir existentes
+                    if parcelas_valores and any(v.strip() for v in parcelas_valores):
+                        soma_parcelas = Decimal('0')
+                        parsed_parcelas = []
+                        for idx, val in enumerate(parcelas_valores):
+                            try:
+                                valor_parcela = safe_decimal_convert(val, 0)
+                                soma_parcelas += valor_parcela
+                                data_venc = None
+                                if idx < len(parcelas_datas) and parcelas_datas[idx]:
+                                    try:
+                                        data_venc = datetime.strptime(parcelas_datas[idx], '%Y-%m-%d').date()
+                                    except Exception:
+                                        data_venc = base_date
+                                else:
+                                    data_venc = base_date
+                                parsed_parcelas.append((idx + 1, data_venc, valor_parcela))
+                            except Exception:
+                                continue
+
+                        total_form = entrada + soma_parcelas
+                        if abs(total_form - Decimal(str(ordem.valor_total))) > tolerancia:
+                            flash('Soma das parcelas + entrada não corresponde ao valor total. Verifique os valores inseridos.', 'error')
+                            clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+                            return render_template('os/form.html', ordem=ordem, clientes=clientes, today=date.today())
+
+                        # Limpa existentes e salva as parcelas manuais
+                        for p in list(ordem.parcelas):
+                            p.delete()
+
+                        for numero, data_venc, valor_parcela in parsed_parcelas:
+                            parcela = OrdemServicoParcela(
+                                ordem_servico_id=ordem.id,
+                                numero_parcela=numero,
+                                data_vencimento=data_venc,
+                                valor=Decimal(str(valor_parcela)).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+                            )
+                            db.session.add(parcela)
+                    else:
+                        # Distribuição automática: calcula parcelas garantindo soma exata
+                        restante = Decimal(str(ordem.valor_total)) - entrada
+                        if restante < 0:
+                            restante = Decimal('0')
+
+                        created = 0
+                        parcelas_a_distribuir = ordem.numero_parcelas
+                        if entrada and entrada > 0:
+                            created = 1
+                            parcelas_a_distribuir = ordem.numero_parcelas - 1
+                            if parcelas_a_distribuir <= 0:
+                                parcelas_a_distribuir = 1
+
+                        # Calcula valores e prepara lista
+                        valores = []
+                        if parcelas_a_distribuir > 0:
+                            valor_por_parcela = (restante / parcelas_a_distribuir)
+                            valor_por_parcela_q = valor_por_parcela.quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+                            soma_parcels = valor_por_parcela_q * parcelas_a_distribuir
+                            diferenca = restante - soma_parcels
+
+                            for i in range(parcelas_a_distribuir):
+                                if i == parcelas_a_distribuir - 1:
+                                    valor_final = (valor_por_parcela_q + diferenca).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+                                else:
+                                    valor_final = valor_por_parcela_q
+                                valores.append(valor_final)
+
+                        # Limpa parcelas existentes e salva nova distribuição
+                        for p in list(ordem.parcelas):
+                            p.delete()
+
+                        idx_offset = 0
+                        if entrada and entrada > 0:
+                            parcela = OrdemServicoParcela(
+                                ordem_servico_id=ordem.id,
+                                numero_parcela=1,
+                                data_vencimento=base_date,
+                                valor=Decimal(str(entrada)).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+                            )
+                            db.session.add(parcela)
+                            idx_offset = 1
+
+                        for i, val in enumerate(valores):
+                            numero = idx_offset + i + 1
+                            try:
+                                mes = base_date.month + i + 1
+                                ano = base_date.year + ((mes - 1) // 12)
+                                mes = ((mes - 1) % 12) + 1
+                                dia = min(base_date.day, 28)
+                                data_venc = date(ano, mes, dia)
+                            except Exception:
+                                data_venc = base_date
+
+                            parcela = OrdemServicoParcela(
+                                ordem_servico_id=ordem.id,
+                                numero_parcela=numero,
+                                data_vencimento=data_venc,
+                                valor=val
+                            )
+                            db.session.add(parcela)
+            except Exception as e:
+                print('Erro ao processar parcelas:', e)
             
             # Processa arquivos anexados
             if 'anexos' in request.files:
@@ -598,18 +1019,28 @@ def editar(id):
                                 tipo_arquivo=file.content_type or 'application/octet-stream',
                                 tamanho=get_file_size(file)
                             )
-                            anexo.save()
+                            db.session.add(anexo)
                             
                         except Exception as e:
                             flash(f'Erro ao salvar arquivo {file.filename}: {str(e)}', 'warning')
                     elif file and file.filename and not allowed_file(file.filename):
                         flash(f'Tipo de arquivo não permitido: {file.filename}', 'warning')
             
-            # Salva alterações
-            ordem.save()
-            print(f"🏁 DEBUG: Ordem de Serviço salva com sucesso! Total final: R$ {ordem.valor_total}")
-            
-            flash(f'Ordem de Serviço "{ordem.numero}" atualizada com sucesso!', 'success')
+            # Recalcula valor total novamente antes do commit final
+            ordem.valor_total = ordem.valor_total_calculado
+
+            # Commit final: salva novas linhas de serviços/produtos/parcelas/anexos
+            try:
+                db.session.commit()
+                print(f"🏁 DEBUG: Ordem de Serviço salva com sucesso! Total final: R$ {ordem.valor_total}")
+            except Exception as commit_err:
+                try:
+                    db.session.rollback()
+                except Exception:
+                    pass
+                raise
+
+            flash(f'✅ Ordem de Serviço {ordem.numero} atualizada com sucesso!', 'success')
             return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
             
         except Exception as e:
@@ -927,7 +1358,8 @@ def gerar_relatorio_pdf(id):
             ordem=ordem,
             now=datetime.now,
             logo_base64=get_logo_base64(),  # Função para obter logo em base64
-            config=config  # Adicionar configurações
+            config=config,  # Adicionar configurações
+            timedelta=timedelta  # Para cálculo de garantia
         )
         
         # Configurações do WeasyPrint

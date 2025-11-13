@@ -160,7 +160,7 @@
 <body>
     <!-- Cabeçalho -->
     <div class="header">
-        <div class="company-logo">ERP JSP - Sistema de Gestão</div>
+        <div class="company-logo">{{ config.nome_fantasia if config and config.nome_fantasia else 'JSP - Sistema de Gestão' }}</div>
         <div class="report-title">RELATÓRIO DE ORDEM DE SERVIÇO</div>
         <div class="report-number">Nº {{ ordem.numero }} - {{ ordem.data_abertura.strftime('%d/%m/%Y') if ordem.data_abertura else 'Data não informada' }}</div>
     </div>
@@ -222,13 +222,13 @@
                     </div>
                     <div class="info-item">
                         <span class="info-label">Previsão:</span>
-                        <span class="info-value">{{ ordem.data_previsao.strftime('%d/%m/%Y') if ordem.data_previsao else 'Não informado' }}</span>
+                        <span class="info-value">{{ ordem.data_prevista.strftime('%d/%m/%Y') if ordem.data_prevista else 'Não informado' }}</span>
                     </div>
                 </div>
                 <div>
                     <div class="info-item">
                         <span class="info-label">Prioridade:</span>
-                        <span class="info-value">{{ ordem.prioridade.title() if ordem.prioridade else 'Não informado' }}</span>
+                        <span class="info-value">{{ ordem.prioridade.title() if ordem.prioridade else 'Normal' }}</span>
                     </div>
                     <div class="info-item">
                         <span class="info-label">Data Conclusão:</span>
@@ -236,12 +236,112 @@
                     </div>
                     <div class="info-item">
                         <span class="info-label">Garantia:</span>
-                        <span class="info-value">{{ ordem.garantia_dias }} dias</span>
+                        <span class="info-value">{{ ordem.prazo_garantia or 0 }} dias</span>
                     </div>
+                    {% if ordem.tecnico_responsavel %}
+                    <div class="info-item">
+                        <span class="info-label">Técnico:</span>
+                        <span class="info-value">{{ ordem.tecnico_responsavel }}</span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Informações do Equipamento -->
+    {% if ordem.equipamento or ordem.marca_modelo or ordem.numero_serie %}
+    <div class="section">
+        <div class="section-header">
+            🔧 Dados do Equipamento
+        </div>
+        <div class="section-content">
+            <div class="info-grid">
+                <div>
+                    {% if ordem.equipamento %}
+                    <div class="info-item">
+                        <span class="info-label">Equipamento:</span>
+                        <span class="info-value">{{ ordem.equipamento }}</span>
+                    </div>
+                    {% endif %}
+                    {% if ordem.marca_modelo %}
+                    <div class="info-item">
+                        <span class="info-label">Marca/Modelo:</span>
+                        <span class="info-value">{{ ordem.marca_modelo }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div>
+                    {% if ordem.numero_serie %}
+                    <div class="info-item">
+                        <span class="info-label">Número de Série:</span>
+                        <span class="info-value">{{ ordem.numero_serie }}</span>
+                    </div>
+                    {% endif %}
+                    {% if ordem.defeito_relatado %}
+                    <div class="info-item">
+                        <span class="info-label">Defeito Relatado:</span>
+                        <span class="info-value">{{ ordem.defeito_relatado }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Controle de Tempo -->
+    {% if ordem.hora_inicial or ordem.hora_final or ordem.km_inicial or ordem.km_final %}
+    <div class="section">
+        <div class="section-header">
+            ⏱️ Controle de Tempo
+        </div>
+        <div class="section-content">
+            <div class="info-grid">
+                <div>
+                    {% if ordem.hora_inicial %}
+                    <div class="info-item">
+                        <span class="info-label">Hora de Início:</span>
+                        <span class="info-value">{{ ordem.hora_inicial.strftime('%H:%M') if ordem.hora_inicial else 'N/A' }}</span>
+                    </div>
+                    {% endif %}
+                    {% if ordem.hora_final %}
+                    <div class="info-item">
+                        <span class="info-label">Hora de Fim:</span>
+                        <span class="info-value">{{ ordem.hora_final.strftime('%H:%M') if ordem.hora_final else 'N/A' }}</span>
+                    </div>
+                    {% endif %}
+                    {% if ordem.hora_inicial and ordem.hora_final %}
+                    <div class="info-item">
+                        <span class="info-label">Total de Horas:</span>
+                        <span class="info-value">{{ ((ordem.hora_final.hour * 60 + ordem.hora_final.minute) - (ordem.hora_inicial.hour * 60 + ordem.hora_inicial.minute)) // 60 }}h {{ ((ordem.hora_final.hour * 60 + ordem.hora_final.minute) - (ordem.hora_inicial.hour * 60 + ordem.hora_inicial.minute)) % 60 }}min</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div>
+                    {% if ordem.km_inicial %}
+                    <div class="info-item">
+                        <span class="info-label">KM Inicial:</span>
+                        <span class="info-value">{{ ordem.km_inicial }} km</span>
+                    </div>
+                    {% endif %}
+                    {% if ordem.km_final %}
+                    <div class="info-item">
+                        <span class="info-label">KM Final:</span>
+                        <span class="info-value">{{ ordem.km_final }} km</span>
+                    </div>
+                    {% endif %}
+                    {% if ordem.km_inicial and ordem.km_final %}
+                    <div class="info-item">
+                        <span class="info-label">Total Percorrido:</span>
+                        <span class="info-value">{{ ordem.km_final - ordem.km_inicial }} km</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Descrição do Problema -->
     {% if ordem.descricao %}
@@ -289,23 +389,25 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        <th>Item</th>
                         <th>Descrição</th>
-                        <th class="text-center">Quantidade</th>
+                        <th class="text-center">Quant.</th>
                         <th class="text-right">Valor Unit.</th>
-                        <th class="text-right">Total</th>
+                        <th class="text-right">Valor Total</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for servico in ordem.servicos %}
                     <tr>
+                        <td class="text-center">{{ loop.index }}</td>
                         <td>{{ servico.descricao }}</td>
-                        <td class="text-center">{{ servico.quantidade_horas or '0' }}</td>
-                        <td class="text-right">R$ {{ "%.2f"|format(servico.valor_hora or 0) }}</td>
-                        <td class="text-right">R$ {{ "%.2f"|format(servico.valor_total or 0) }}</td>
+                        <td class="text-center">{{ "{:.2f}"|format(servico.quantidade)|replace(".", ",") }}</td>
+                        <td class="text-right">R$ {{ "{:.2f}"|format(servico.valor_unitario)|replace(".", ",") }}</td>
+                        <td class="text-right">R$ {{ "{:.2f}"|format(servico.valor_total)|replace(".", ",") }}</td>
                     </tr>
                     {% endfor %}
                     <tr class="total-row">
-                        <td colspan="3"><strong>Total dos Serviços:</strong></td>
+                        <td colspan="4"><strong>Total dos Serviços:</strong></td>
                         <td class="text-right"><strong>R$ {{ "%.2f"|format(ordem.servicos|sum(attribute='valor_total', start=0)) }}</strong></td>
                     </tr>
                 </tbody>
@@ -336,7 +438,7 @@
                         <td>{{ produto.produto.nome if produto.produto else produto.descricao }}</td>
                         <td class="text-center">{{ produto.quantidade }}</td>
                         <td class="text-right">R$ {{ "%.2f"|format(produto.valor_unitario) }}</td>
-                        <td class="text-right">R$ {{ "%.2f"|format(produto.quantidade * produto.valor_unitario) }}</td>
+                        <td class="text-right">R$ {{ "%.2f"|format(produto.valor_total or (produto.quantidade * produto.valor_unitario)) }}</td>
                     </tr>
                     {% endfor %}
                     <tr class="total-row">
@@ -380,43 +482,55 @@
         </div>
     </div>
 
-    <!-- Informações Técnicas Adicionais -->
-    {% if ordem.km_inicial or ordem.tempo_inicial %}
+    <!-- Condições de Pagamento -->
+    {% if ordem.condicao_pagamento or ordem.data_vencimento_efetiva %}
     <div class="section">
         <div class="section-header">
-            📊 Informações Técnicas
+            💳 Condições de Pagamento
         </div>
         <div class="section-content">
             <div class="info-grid">
                 <div>
-                    {% if ordem.km_inicial and ordem.km_final %}
+                    {% if ordem.condicao_pagamento %}
                     <div class="info-item">
-                        <span class="info-label">KM Inicial:</span>
-                        <span class="info-value">{{ ordem.km_inicial }} km</span>
+                        <span class="info-label">Condição:</span>
+                        <span class="info-value">{{ 'À Vista' if ordem.condicao_pagamento == 'a_vista' else 'Parcelado' }}</span>
                     </div>
+                    {% endif %}
+                    
+                    {% if ordem.valor_entrada and ordem.valor_entrada > 0 %}
                     <div class="info-item">
-                        <span class="info-label">KM Final:</span>
-                        <span class="info-value">{{ ordem.km_final }} km</span>
+                        <span class="info-label">Valor de Entrada:</span>
+                        <span class="info-value">R$ {{ "%.2f"|format(ordem.valor_entrada) }}</span>
                     </div>
+                    {% endif %}
+                    
+                    {% if ordem.numero_parcelas and ordem.numero_parcelas > 1 %}
                     <div class="info-item">
-                        <span class="info-label">Total KM:</span>
-                        <span class="info-value">{{ ordem.km_final - ordem.km_inicial }} km</span>
+                        <span class="info-label">Parcelamento:</span>
+                        <span class="info-value">{{ ordem.numero_parcelas }}x de R$ {{ "%.2f"|format((ordem.valor_total - (ordem.valor_entrada or 0)) / ordem.numero_parcelas) }}</span>
                     </div>
                     {% endif %}
                 </div>
                 <div>
-                    {% if ordem.tempo_inicial and ordem.tempo_final %}
+                    {% if ordem.data_vencimento_efetiva %}
                     <div class="info-item">
-                        <span class="info-label">Hora Inicial:</span>
-                        <span class="info-value">{{ ordem.tempo_inicial }}</span>
+                        <span class="info-label">Vencimento:</span>
+                        <span class="info-value">{{ ordem.data_vencimento_efetiva.strftime('%d/%m/%Y') }}</span>
                     </div>
+                    {% endif %}
+                    
+                    {% if ordem.data_primeira_parcela and ordem.numero_parcelas and ordem.numero_parcelas > 1 %}
                     <div class="info-item">
-                        <span class="info-label">Hora Final:</span>
-                        <span class="info-value">{{ ordem.tempo_final }}</span>
+                        <span class="info-label">Primeira Parcela:</span>
+                        <span class="info-value">{{ ordem.data_primeira_parcela.strftime('%d/%m/%Y') }}</span>
                     </div>
+                    {% endif %}
+                    
+                    {% if ordem.descricao_pagamento %}
                     <div class="info-item">
-                        <span class="info-label">Total Horas:</span>
-                        <span class="info-value">{{ ordem.tempo_total or 'Não calculado' }}</span>
+                        <span class="info-label">Observações:</span>
+                        <span class="info-value">{{ ordem.descricao_pagamento }}</span>
                     </div>
                     {% endif %}
                 </div>
@@ -459,6 +573,23 @@
 
     <!-- Rodapé -->
     <div class="footer">
+        {% if config %}
+        <p style="margin-bottom: 10px;"><strong>{{ config.nome_fantasia }}</strong></p>
+        {% if config.logradouro %}
+        <p>{{ config.logradouro }}{% if config.numero %}, {{ config.numero }}{% endif %}{% if config.bairro %} - {{ config.bairro }}{% endif %}{% if config.cidade %} - {{ config.cidade }}{% endif %}{% if config.uf %}/{{ config.uf }}{% endif %}{% if config.cep %} - CEP: {{ config.cep }}{% endif %}</p>
+        {% endif %}
+        {% if config.telefone or config.email %}
+        <p>
+            {% if config.telefone %}Telefone: {{ config.telefone }}{% endif %}
+            {% if config.telefone and config.email %} | {% endif %}
+            {% if config.email %}E-mail: {{ config.email }}{% endif %}
+        </p>
+        {% endif %}
+        {% if config.cnpj %}
+        <p>CNPJ: {{ config.cnpj }}</p>
+        {% endif %}
+        <br>
+        {% endif %}
         <p>Relatório gerado automaticamente pelo Sistema ERP JSP em {{ now.strftime('%d/%m/%Y às %H:%M') }}</p>
         <p>Este documento é válido sem assinatura digital conforme legislação vigente.</p>
     </div>

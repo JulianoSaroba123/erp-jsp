@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - {{ config.nome_fantasia if config else 'ERP JSP' }}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts - Tipografia Futurista -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ============================================
+           🚀 LOGIN FUTURISTA PREMIUM
+        ============================================ */
+        :root {
+            --neon-blue: #00d4ff;
+            --neon-cyan: #39ff14;
+            --neon-purple: #8a2be2;
+            --neon-orange: #ff6b35;
+            --neon-pink: #ff0080;
+            --dark-bg: #0a0a0a;
+            --dark-surface: #1a1a1a;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --shadow-blue: 0 0 30px rgba(0, 212, 255, 0.3);
+        }
+
+        /* Background futurista animado */
+        body {
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(57, 255, 20, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 60%, rgba(138, 43, 226, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0a0a0a 100%);
+            min-height: 100vh;
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Partículas animadas no background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(2px 2px at 20px 30px, rgba(0, 212, 255, 0.3), transparent),
+                radial-gradient(2px 2px at 40px 70px, rgba(57, 255, 20, 0.2), transparent),
+                radial-gradient(1px 1px at 90px 40px, rgba(255, 107, 53, 0.3), transparent),
+                radial-gradient(1px 1px at 130px 80px, rgba(138, 43, 226, 0.2), transparent);
+            background-repeat: repeat;
+            background-size: 200px 100px;
+            animation: particlesFloat 20s linear infinite;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        @keyframes particlesFloat {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-200px, -100px); }
+        }
+
+        /* Scan lines animadas */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent 0px,
+                transparent 2px,
+                rgba(0, 212, 255, 0.03) 2px,
+                rgba(0, 212, 255, 0.03) 4px
+            );
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 10;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Card principal com efeito glass */
+        .login-card {
+            background: linear-gradient(135deg,
+                rgba(0, 212, 255, 0.1) 0%,
+                rgba(15, 52, 96, 0.2) 50%,
+                rgba(0, 212, 255, 0.1) 100%);
+            backdrop-filter: blur(25px);
+            border: 2px solid rgba(0, 212, 255, 0.3);
+            border-radius: 30px;
+            box-shadow: 
+                0 20px 60px rgba(0, 212, 255, 0.2),
+                0 0 80px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            max-width: 480px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+            animation: loginCardEntry 1s ease-out;
+        }
+
+        @keyframes loginCardEntry {
+            0% {
+                opacity: 0;
+                transform: translateY(50px) scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Efeito shimmer no card */
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(0, 212, 255, 0.1),
+                transparent);
+            animation: cardShimmer 4s ease-in-out infinite;
+        }
+
+        @keyframes cardShimmer {
+            0%, 100% { left: -100%; }
+            50% { left: 100%; }
+        }
+
+        /* Header futurista */
+        .login-header {
+            background: linear-gradient(135deg,
+                rgba(0, 212, 255, 0.2) 0%,
+                rgba(57, 255, 20, 0.1) 50%,
+                rgba(0, 212, 255, 0.2) 100%);
+            border-bottom: 2px solid rgba(0, 212, 255, 0.4);
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .logo-container {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg,
+                rgba(0, 212, 255, 0.3),
+                rgba(57, 255, 20, 0.2));
+            border: 3px solid rgba(0, 212, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 0 40px rgba(0, 212, 255, 0.4),
+                inset 0 0 30px rgba(0, 212, 255, 0.1);
+            animation: logoRotate 8s linear infinite;
+        }
+
+        @keyframes logoRotate {
+            0% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.4); }
+            33% { box-shadow: 0 0 40px rgba(57, 255, 20, 0.4); }
+            66% { box-shadow: 0 0 40px rgba(255, 107, 53, 0.4); }
+            100% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.4); }
+        }
+
+        .logo-container img {
+            max-width: 80px;
+            max-height: 80px;
+            border-radius: 50%;
+            object-fit: contain;
+        }
+
+        .logo-container i {
+            font-size: 40px;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 20px rgba(57, 255, 20, 0.8);
+        }
+
+        .login-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+            letter-spacing: 2px;
+        }
+
+        .login-subtitle {
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            color: rgba(0, 212, 255, 0.9);
+            margin-top: 10px;
+            font-weight: 300;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        /* Corpo do formulário */
+        .login-body {
+            padding: 40px 30px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Campos de entrada futuristas */
+        .form-floating {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .form-control {
+            background: rgba(0, 212, 255, 0.05) !important;
+            border: 2px solid rgba(0, 212, 255, 0.3) !important;
+            border-radius: 15px !important;
+            color: #ffffff !important;
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 16px !important;
+            padding: 20px 20px 20px 50px !important;
+            height: auto !important;
+            backdrop-filter: blur(10px) !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            box-shadow: 
+                0 0 20px rgba(0, 212, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .form-control:focus {
+            background: rgba(0, 212, 255, 0.1) !important;
+            border-color: rgba(0, 212, 255, 0.8) !important;
+            box-shadow: 
+                0 0 30px rgba(0, 212, 255, 0.4),
+                inset 0 0 20px rgba(0, 212, 255, 0.1) !important;
+            color: #ffffff !important;
+            outline: none !important;
+            transform: translateY(-2px) !important;
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.5) !important;
+        }
+
+        .form-floating > label {
+            color: rgba(0, 212, 255, 0.8) !important;
+            font-family: 'Orbitron', monospace !important;
+            font-weight: 500 !important;
+            font-size: 14px !important;
+            left: 50px !important;
+            top: 20px !important;
+            transform: scale(0.85) translateY(-1.5rem) translateX(-0.15rem) !important;
+        }
+
+        /* Ícones nos campos */
+        .input-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(0, 212, 255, 0.8);
+            font-size: 18px;
+            z-index: 5;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.6);
+        }
+
+        /* Checkbox customizado */
+        .form-check {
+            margin: 30px 0;
+        }
+
+        .form-check-input {
+            background: rgba(0, 212, 255, 0.1) !important;
+            border: 2px solid rgba(0, 212, 255, 0.4) !important;
+            border-radius: 6px !important;
+            width: 20px !important;
+            height: 20px !important;
+        }
+
+        .form-check-input:checked {
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan)) !important;
+            border-color: var(--neon-cyan) !important;
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.5) !important;
+        }
+
+        .form-check-label {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-family: 'Poppins', sans-serif !important;
+            font-size: 14px !important;
+            margin-left: 10px !important;
+        }
+
+        /* Botão de login futurista */
+        .btn-login {
+            background: linear-gradient(135deg,
+                rgba(0, 212, 255, 0.8) 0%,
+                rgba(57, 255, 20, 0.6) 100%) !important;
+            border: 2px solid rgba(0, 212, 255, 0.6) !important;
+            color: #ffffff !important;
+            font-family: 'Orbitron', monospace !important;
+            font-weight: 600 !important;
+            font-size: 16px !important;
+            padding: 18px 40px !important;
+            border-radius: 20px !important;
+            width: 100% !important;
+            position: relative !important;
+            overflow: hidden !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            text-transform: uppercase !important;
+            letter-spacing: 2px !important;
+            box-shadow: 
+                0 10px 30px rgba(0, 212, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+        }
+
+        .btn-login::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-login:hover {
+            background: linear-gradient(135deg,
+                rgba(57, 255, 20, 0.8) 0%,
+                rgba(0, 212, 255, 0.6) 100%) !important;
+            border-color: rgba(57, 255, 20, 0.8) !important;
+            box-shadow: 
+                0 15px 40px rgba(57, 255, 20, 0.4),
+                0 0 50px rgba(57, 255, 20, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+            transform: translateY(-3px) !important;
+            color: #ffffff !important;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.8) !important;
+        }
+
+        .btn-login:hover::before {
+            left: 100%;
+        }
+
+        /* Alerts futuristas */
+        .alert {
+            background: rgba(0, 212, 255, 0.1) !important;
+            border: 1px solid rgba(0, 212, 255, 0.3) !important;
+            border-radius: 15px !important;
+            color: rgba(0, 212, 255, 0.9) !important;
+            backdrop-filter: blur(10px) !important;
+            margin-bottom: 25px !important;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2) !important;
+        }
+
+        .alert-danger {
+            background: rgba(255, 107, 53, 0.1) !important;
+            border-color: rgba(255, 107, 53, 0.4) !important;
+            color: rgba(255, 107, 53, 0.9) !important;
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.2) !important;
+        }
+
+        .alert-success {
+            background: rgba(57, 255, 20, 0.1) !important;
+            border-color: rgba(57, 255, 20, 0.4) !important;
+            color: rgba(57, 255, 20, 0.9) !important;
+            box-shadow: 0 0 20px rgba(57, 255, 20, 0.2) !important;
+        }
+
+        /* Footer futurista */
+        .footer-text {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-family: 'Poppins', sans-serif;
+            font-size: 12px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .footer-text strong {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(57, 255, 20, 0.6);
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .login-card {
+                margin: 10px;
+                border-radius: 25px;
+            }
+            
+            .login-header {
+                padding: 30px 20px;
+            }
+            
+            .login-body {
+                padding: 30px 20px;
+            }
+            
+            .logo-container {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .login-title {
+                font-size: 1.6rem;
+            }
+            
+            .form-control {
+                padding: 18px 18px 18px 45px !important;
+            }
+            
+            .input-icon {
+                left: 15px;
+                font-size: 16px;
+            }
+            
+            .form-floating > label {
+                left: 45px !important;
+            }
+        }
+
+        /* Efeito de typing no título */
+        .typing-effect {
+            overflow: hidden;
+            white-space: nowrap;
+            border-right: 3px solid var(--neon-cyan);
+            animation: typing 3s steps(30, end), blink-caret 1s step-end infinite;
+        }
+
+        @keyframes typing {
+            0% { width: 0; }
+            100% { width: 100%; }
+        }
+
+        @keyframes blink-caret {
+            0%, 50% { border-color: var(--neon-cyan); }
+            51%, 100% { border-color: transparent; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo-container">
+                    {% if config and config.logo %}
+                        <img src="{{ url_for('uploaded_file', filename='configuracao/' + config.logo.split('/')[-1]) }}" 
+                             alt="{{ config.nome_fantasia or 'Logo' }}">
+                    {% else %}
+                        <i class="fas fa-rocket"></i>
+                    {% endif %}
+                </div>
+                <h1 class="login-title">{{ config.nome_fantasia if config else 'ERP JSP' }}</h1>
+                <div class="login-subtitle">Sistema de Gestão Empresarial Futurista</div>
+            </div>
+            
+            <div class="login-body">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else 'info' if category == 'info' else 'success' }} alert-dismissible fade show" role="alert">
+                                <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'info-circle' if category == 'info' else 'check-circle' }} me-2"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <form method="POST">
+                    <div class="form-floating">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" 
+                               class="form-control" 
+                               id="identificador" 
+                               name="identificador" 
+                               placeholder="usuário ou email"
+                               value="{{ identificador or '' }}"
+                               required
+                               autocomplete="username">
+                        <label for="identificador">Usuário ou Email</label>
+                    </div>
+                    
+                    <div class="form-floating">
+                        <i class="fas fa-lock input-icon"></i>
+                        <input type="password" 
+                               class="form-control" 
+                               id="senha" 
+                               name="senha" 
+                               placeholder="senha"
+                               required
+                               autocomplete="current-password">
+                        <label for="senha">Senha de Acesso</label>
+                    </div>
+                    
+                    <div class="form-check">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               id="lembrar" 
+                               name="lembrar">
+                        <label class="form-check-label" for="lembrar">
+                            Manter-me conectado neste dispositivo
+                        </label>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-login">
+                            <i class="fas fa-rocket me-2"></i>Acessar Sistema
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="footer-text">
+                    <strong>JSP Soluções Tecnológicas</strong><br>
+                    Sistema ERP v3.0 - Powered by Future Tech © 2025
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Auto-focus no primeiro campo
+        document.addEventListener('DOMContentLoaded', function() {
+            const identificadorField = document.getElementById('identificador');
+            if (identificadorField && !identificadorField.value) {
+                setTimeout(() => {
+                    identificadorField.focus();
+                }, 500);
+            } else {
+                const senhaField = document.getElementById('senha');
+                if (senhaField) {
+                    setTimeout(() => {
+                        senhaField.focus();
+                    }, 500);
+                }
+            }
+        });
+        
+        // Remove alerts automaticamente após 5 segundos
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+
+        // Efeito de typing no título
+        document.addEventListener('DOMContentLoaded', function() {
+            const title = document.querySelector('.login-title');
+            if (title) {
+                const originalText = title.textContent;
+                title.textContent = '';
+                title.classList.add('typing-effect');
+                
+                let i = 0;
+                const typeWriter = function() {
+                    if (i < originalText.length) {
+                        title.textContent += originalText.charAt(i);
+                        i++;
+                        setTimeout(typeWriter, 100);
+                    } else {
+                        // Remove o cursor piscante após terminar
+                        setTimeout(() => {
+                            title.classList.remove('typing-effect');
+                        }, 2000);
+                    }
+                };
+                
+                setTimeout(typeWriter, 1000);
+            }
+        });
+
+        // Efeito de partículas nos inputs em foco
+        document.querySelectorAll('.form-control').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.style.boxShadow = `
+                    0 0 30px rgba(0, 212, 255, 0.4),
+                    0 0 60px rgba(0, 212, 255, 0.2),
+                    inset 0 0 20px rgba(0, 212, 255, 0.1)
+                `;
+            });
+            
+            input.addEventListener('blur', function() {
+                this.style.boxShadow = `
+                    0 0 20px rgba(0, 212, 255, 0.1),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1)
+                `;
+            });
+        });
+
+        // Animação do botão ao clicar
+        document.querySelector('.btn-login').addEventListener('click', function(e) {
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.cssText = `
+                width: ${size}px;
+                height: ${size}px;
+                left: ${x}px;
+                top: ${y}px;
+                position: absolute;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.3);
+                pointer-events: none;
+                animation: rippleEffect 0.6s ease-out;
+            `;
+            
+            this.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+
+        // Adiciona animação de ripple via CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes rippleEffect {
+                0% { transform: scale(0); opacity: 1; }
+                100% { transform: scale(1); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

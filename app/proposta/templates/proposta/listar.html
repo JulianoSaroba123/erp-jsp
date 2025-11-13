@@ -118,7 +118,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <div class="small">Valor Total</div>
-                                    <div class="h4 mb-0">R$ {{ "%.2f"|format(valor_total or 0) }}</div>
+                                    <div class="h4 mb-0">R$ {{ "{:,.2f}".format(valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
                                 </div>
                                 <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
                             </div>
@@ -177,7 +177,7 @@
                                 </td>
                                 <td>
                                     {% if proposta.valor_total %}
-                                        R$ {{ "%.2f"|format(proposta.valor_total) }}
+                                        R$ {{ "{:,.2f}".format(proposta.valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}

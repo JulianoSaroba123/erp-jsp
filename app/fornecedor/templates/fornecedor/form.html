@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-    {% if fornecedor.id %}Editar Fornecedor{% else %}Novo Fornecedor{% endif %} - {{ super() }}
+    {% if fornecedor.id %}Editar Fornecedor{% else %} Novo Fornecedor{% endif %} - {{ super() }}
 {% endblock %}
 
 {% block breadcrumb %}
@@ -17,333 +17,553 @@
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">
-                    <i class="fas fa-truck{% if not fornecedor.id %}-plus{% else %}-edit{% endif %} me-2"></i>
-                    {% if fornecedor.id %}
-                        Editar Fornecedor: {{ fornecedor.nome }}
-                    {% else %}
-                        Novo Fornecedor
-                    {% endif %}
-                </h4>
-            </div>
-            
-            <div class="card-body">
-                <form method="POST" novalidate>
-                    <!-- Dados Principais -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-truck{% if not fornecedor.id %} fa-plus{% else %} fa-edit{% endif %} me-2"></i>
+                        {% if fornecedor.id %}
+                            Editar Fornecedor: {{ fornecedor.nome_completo }}
+                        {% else %}
+                            ➕ Novo Fornecedor
+                        {% endif %}
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        <!-- Dados Principais -->
+                        <div class="form-section">
+                            <h6 class="section-title">
                                 <i class="fas fa-id-card me-2"></i>
                                 Dados Principais
                             </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label for="tipo" class="form-label">Tipo *</label>
+                                    <select class="form-select" id="tipo" name="tipo" required>
+                                        <option value="">Selecione...</option>
+                                        <option value="PF" {% if fornecedor.tipo == 'PF' %}selected{% endif %}>
+                                            👤 Pessoa Física
+                                        </option>
+                                        <option value="PJ" {% if fornecedor.tipo == 'PJ' %}selected{% endif %}>
+                                            🏢 Pessoa Jurídica
+                                        </option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-9">
+                                    <label for="nome" class="form-label">Nome Completo *</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="nome" 
+                                           name="nome" 
+                                           value="{{ fornecedor.nome or '' }}" 
+                                           required 
+                                           maxlength="150"
+                                           placeholder="Nome do fornecedor">
+                                </div>
+                                
+                                <!-- Para Pessoa Jurídica -->
+                                <div id="campos-pj" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="nome_fantasia" class="form-label">Nome Fantasia *</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="nome_fantasia" 
+                                                   name="nome_fantasia" 
+                                                   value="{{ fornecedor.nome_fantasia or '' }}"
+                                                   maxlength="150"
+                                                   placeholder="Nome fantasia da empresa">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="inscricao_estadual" class="form-label">Inscrição Estadual</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="inscricao_estadual" 
+                                                   name="inscricao_estadual" 
+                                                   value="{{ fornecedor.inscricao_estadual or '' }}"
+                                                   maxlength="20"
+                                                   placeholder="Inscrição Estadual">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Campo hidden para nome principal em PJ -->
+                                    <input type="hidden" 
+                                           id="nome_hidden" 
+                                           name="nome" 
+                                           value="{{ fornecedor.nome or '' }}">
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="col-md-8">
-                            <label for="nome" class="form-label">Razão Social / Nome *</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="nome" 
-                                   name="nome" 
-                                   value="{{ fornecedor.nome or '' }}" 
-                                   required 
-                                   maxlength="100">
+                        <!-- Campos adicionais PF -->
+                        <div id="extras-pf" class="row mt-3" style="display: none;">
+                            <div class="col-md-3">
+                                <label for="data_nascimento" class="form-label">Data Nascimento</label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="data_nascimento" 
+                                       name="data_nascimento" 
+                                       value="{{ fornecedor.data_nascimento or '' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="genero" class="form-label">Gênero</label>
+                                <select class="form-select" id="genero" name="genero">
+                                    <option value="">Selecione...</option>
+                                    <option value="Masculino" {% if fornecedor.genero == 'Masculino' %}selected{% endif %}>Masculino</option>
+                                    <option value="Feminino" {% if fornecedor.genero == 'Feminino' %}selected{% endif %}>Feminino</option>
+                                    <option value="Outros" {% if fornecedor.genero == 'Outros' %}selected{% endif %}>Outros</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="estado_civil" class="form-label">Estado Civil</label>
+                                <select class="form-select" id="estado_civil" name="estado_civil">
+                                    <option value="">Selecione...</option>
+                                    <option value="Solteiro(a)" {% if fornecedor.estado_civil == 'Solteiro(a)' %}selected{% endif %}>Solteiro(a)</option>
+                                    <option value="Casado(a)" {% if fornecedor.estado_civil == 'Casado(a)' %}selected{% endif %}>Casado(a)</option>
+                                    <option value="Divorciado(a)" {% if fornecedor.estado_civil == 'Divorciado(a)' %}selected{% endif %}>Divorciado(a)</option>
+                                    <option value="Viúvo(a)" {% if fornecedor.estado_civil == 'Viúvo(a)' %}selected{% endif %}>Viúvo(a)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="profissao" class="form-label">Profissão</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="profissao" 
+                                       name="profissao" 
+                                       value="{{ fornecedor.profissao or '' }}"
+                                       maxlength="100"
+                                       placeholder="Ex: Contador, Engenheiro">
+                            </div>
                         </div>
                         
-                        <div class="col-md-4">
-                            <label for="tipo" class="form-label">Tipo *</label>
-                            <select class="form-select" id="tipo" name="tipo" required>
-                                <option value="PF" {% if fornecedor.tipo == 'PF' %}selected{% endif %}>
-                                    Pessoa Física
-                                </option>
-                                <option value="PJ" {% if fornecedor.tipo == 'PJ' %}selected{% endif %}>
-                                    Pessoa Jurídica
-                                </option>
-                            </select>
+                        <!-- Campos adicionais PJ -->
+                        <div id="extras-pj" class="row mt-3" style="display: none;">
+                            <div class="col-md-3">
+                                <label for="data_fundacao" class="form-label">Data Fundação</label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="data_fundacao" 
+                                       name="data_fundacao" 
+                                       value="{{ fornecedor.data_fundacao or '' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="porte_empresa" class="form-label">Porte</label>
+                                <select class="form-select" id="porte_empresa" name="porte_empresa">
+                                    <option value="">Selecione...</option>
+                                    <option value="MEI" {% if fornecedor.porte_empresa == 'MEI' %}selected{% endif %}>MEI</option>
+                                    <option value="Micro" {% if fornecedor.porte_empresa == 'Micro' %}selected{% endif %}>Microempresa</option>
+                                    <option value="Pequena" {% if fornecedor.porte_empresa == 'Pequena' %}selected{% endif %}>Pequena</option>
+                                    <option value="Média" {% if fornecedor.porte_empresa == 'Média' %}selected{% endif %}>Média</option>
+                                    <option value="Grande" {% if fornecedor.porte_empresa == 'Grande' %}selected{% endif %}>Grande</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="segmento" class="form-label">Segmento</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="segmento" 
+                                       name="segmento" 
+                                       value="{{ fornecedor.segmento or '' }}"
+                                       placeholder="Ex: Tecnologia, Comércio, Indústria"
+                                       maxlength="100">
+                            </div>
                         </div>
                         
-                        <div class="col-md-12 mt-3">
-                            <label for="nome_fantasia" class="form-label">Nome Fantasia</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="nome_fantasia" 
-                                   name="nome_fantasia" 
-                                   value="{{ fornecedor.nome_fantasia or '' }}" 
-                                   maxlength="100">
+                        <!-- Classificação e Status -->
+                        <div class="form-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-star me-2"></i>
+                                Classificação e Status
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label for="classificacao" class="form-label">Classificação</label>
+                                    <select class="form-select" id="classificacao" name="classificacao">
+                                        <option value="">Selecione...</option>
+                                        <option value="Classe A - Premium" {% if fornecedor.classificacao == 'Classe A - Premium' %}selected{% endif %}>🟢 Classe A - Premium</option>
+                                        <option value="Classe B - Bom" {% if fornecedor.classificacao == 'Classe B - Bom' %}selected{% endif %}>🟡 Classe B - Bom</option>
+                                        <option value="Classe C - Regular" {% if fornecedor.classificacao == 'Classe C - Regular' %}selected{% endif %}>🟠 Classe C - Regular</option>
+                                        <option value="Classe D - Atenção" {% if fornecedor.classificacao == 'Classe D - Atenção' %}selected{% endif %}>🔴 Classe D - Atenção</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="origem" class="form-label">Como nos conheceu</label>
+                                    <select class="form-select" id="origem" name="origem">
+                                        <option value="">Selecione...</option>
+                                        <option value="Indicação" {% if fornecedor.origem == 'Indicação' %}selected{% endif %}>Indicação</option>
+                                        <option value="Site/Google" {% if fornecedor.origem == 'Site/Google' %}selected{% endif %}>Site/Google</option>
+                                        <option value="Redes Sociais" {% if fornecedor.origem == 'Redes Sociais' %}selected{% endif %}>Redes Sociais</option>
+                                        <option value="Feira/Evento" {% if fornecedor.origem == 'Feira/Evento' %}selected{% endif %}>Feira/Evento</option>
+                                        <option value="Outros" {% if fornecedor.origem == 'Outros' %}selected{% endif %}>Outros</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="website" class="form-label">Website</label>
+                                    <input type="url" 
+                                           class="form-control" 
+                                           id="website" 
+                                           name="website" 
+                                           value="{{ fornecedor.website or fornecedor.site or '' }}"
+                                           placeholder="https://exemplo.com.br"
+                                           maxlength="200">
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- Documentos -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                        
+                        <!-- Documentos -->
+                        <div class="form-section">
+                            <h6 class="section-title">
                                 <i class="fas fa-file-alt me-2"></i>
                                 Documentos
                             </h6>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="cnpj_cpf" class="form-label">
-                                <span id="label-documento">CPF/CNPJ</span> *
-                            </label>
-                            <div class="input-group">
-                                <input type="text"
-                                       class="form-control"
-                                       id="cnpj_cpf"
-                                       name="cnpj_cpf"
-                                       value="{{ fornecedor.cnpj_cpf or '' }}"
-                                       placeholder="000.000.000-00"
-                                       required>
-                                <button type="button" 
-                                        class="btn btn-outline-primary" 
-                                        id="btn-consultar-cnpj"
-                                        title="Consultar CNPJ automaticamente">
-                                    <i class="fas fa-search"></i>
-                                </button>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="cpf_cnpj" class="form-label">
+                                        <span id="label-documento">CPF/CNPJ</span> *
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="text"
+                                               class="form-control"
+                                               id="cpf_cnpj"
+                                               name="cpf_cnpj"
+                                               value="{{ fornecedor.cnpj_cpf or '' }}"
+                                               placeholder="000.000.000-00"
+                                               required
+                                               maxlength="20">
+                                        <button type="button" 
+                                                class="btn btn-outline-primary" 
+                                                id="btn-consultar-cnpj"
+                                                title="Consultar CNPJ automaticamente"
+                                                style="display: none;">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Para CNPJ, clique no botão 🔍 para busca automática</small>
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="rg_ie" class="form-label">
+                                        <span id="label-rg-ie">RG/IE</span>
+                                    </label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="rg_ie" 
+                                           name="rg_ie" 
+                                           value="{{ fornecedor.rg_ie or fornecedor.inscricao_estadual or '' }}"
+                                           maxlength="20"
+                                           placeholder="Inscrição Estadual">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="im" class="form-label">Inscrição Municipal</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="im" 
+                                           name="im" 
+                                           value="{{ fornecedor.im or fornecedor.inscricao_municipal or '' }}"
+                                           maxlength="20"
+                                           placeholder="Inscrição Municipal">
+                                </div>
                             </div>
-                            <small class="text-muted">Para CNPJ, clique no botão para busca automática</small>
                         </div>
                         
-                        <div class="col-md-6">
-                            <label for="inscricao_estadual" class="form-label">
-                                <span id="label-ie">Inscrição Estadual</span>
-                            </label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="inscricao_estadual" 
-                                   name="inscricao_estadual" 
-                                   value="{{ fornecedor.inscricao_estadual or '' }}"
-                                   maxlength="20">
-                        </div>
-                        
-                        <div class="col-md-6 mt-3">
-                            <label for="inscricao_municipal" class="form-label">Inscrição Municipal</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="inscricao_municipal" 
-                                   name="inscricao_municipal" 
-                                   value="{{ fornecedor.inscricao_municipal or '' }}"
-                                   maxlength="20">
-                        </div>
-                    </div>
-                    
-                    <!-- Contato -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                        <!-- Contatos -->
+                        <div class="form-section">
+                            <h6 class="section-title">
                                 <i class="fas fa-phone me-2"></i>
-                                Contato
+                                Contatos
                             </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="email" class="form-label">Email Principal</label>
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="email" 
+                                           name="email" 
+                                           value="{{ fornecedor.email or '' }}"
+                                           maxlength="150"
+                                           placeholder="contato@empresa.com.br">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="telefone" class="form-label">Telefone</label>
+                                    <input type="tel" 
+                                           class="form-control" 
+                                           id="telefone" 
+                                           name="telefone" 
+                                           value="{{ fornecedor.telefone or '' }}"
+                                           placeholder="(11) 1234-5678">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="celular" class="form-label">Celular</label>
+                                    <input type="tel" 
+                                           class="form-control" 
+                                           id="celular" 
+                                           name="celular" 
+                                           value="{{ fornecedor.celular or '' }}"
+                                           placeholder="(11) 99999-9999">
+                                </div>
+                                
+                                <div class="col-md-4 mt-3">
+                                    <label for="whatsapp" class="form-label">WhatsApp</label>
+                                    <input type="tel" 
+                                           class="form-control" 
+                                           id="whatsapp" 
+                                           name="whatsapp" 
+                                           value="{{ fornecedor.whatsapp or '' }}"
+                                           placeholder="(11) 99999-9999">
+                                </div>
+                                
+                                <div class="col-md-8 mt-3">
+                                    <label for="email_financeiro" class="form-label">Email Financeiro</label>
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="email_financeiro" 
+                                           name="email_financeiro" 
+                                           value="{{ fornecedor.email_financeiro or '' }}"
+                                           maxlength="150"
+                                           placeholder="financeiro@empresa.com.br">
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="col-md-6 mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" 
-                                   class="form-control" 
-                                   id="email" 
-                                   name="email" 
-                                   value="{{ fornecedor.email or '' }}"
-                                   maxlength="120">
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="site" class="form-label">Site</label>
-                            <input type="url" 
-                                   class="form-control" 
-                                   id="site" 
-                                   name="site" 
-                                   value="{{ fornecedor.site or '' }}"
-                                   placeholder="https://exemplo.com.br"
-                                   maxlength="200">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="telefone" class="form-label">Telefone</label>
-                            <input type="tel" 
-                                   class="form-control" 
-                                   id="telefone" 
-                                   name="telefone" 
-                                   value="{{ fornecedor.telefone or '' }}"
-                                   placeholder="(11) 1234-5678">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="celular" class="form-label">Celular</label>
-                            <input type="tel" 
-                                   class="form-control" 
-                                   id="celular" 
-                                   name="celular" 
-                                   value="{{ fornecedor.celular or '' }}"
-                                   placeholder="(11) 99999-9999">
-                        </div>
-                    </div>
-                    
-                    <!-- Contato Comercial -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                        <!-- Contato Responsável -->
+                        <div class="form-section">
+                            <h6 class="section-title">
                                 <i class="fas fa-user-tie me-2"></i>
-                                Contato Comercial
+                                Contato Responsável
                             </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="contato_nome" class="form-label">Nome do Responsável</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="contato_nome" 
+                                           name="contato_nome" 
+                                           value="{{ fornecedor.contato_nome or '' }}"
+                                           maxlength="100"
+                                           placeholder="Nome do contato">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="contato_cargo" class="form-label">Cargo</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="contato_cargo" 
+                                           name="contato_cargo" 
+                                           value="{{ fornecedor.contato_cargo or '' }}"
+                                           placeholder="Ex: Gerente, Diretor..."
+                                           maxlength="100">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="contato_telefone" class="form-label">Telefone do Contato</label>
+                                    <input type="tel" 
+                                           class="form-control" 
+                                           id="contato_telefone" 
+                                           name="contato_telefone" 
+                                           value="{{ fornecedor.contato_telefone or '' }}"
+                                           placeholder="(11) 99999-9999">
+                                </div>
+                                
+                                <div class="col-md-12 mt-3">
+                                    <label for="contato_email" class="form-label">Email do Contato</label>
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="contato_email" 
+                                           name="contato_email" 
+                                           value="{{ fornecedor.contato_email or '' }}"
+                                           maxlength="150"
+                                           placeholder="contato@empresa.com.br">
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="col-md-6 mb-3">
-                            <label for="contato_nome" class="form-label">Nome do Contato</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="contato_nome" 
-                                   name="contato_nome" 
-                                   value="{{ fornecedor.contato_nome or '' }}"
-                                   maxlength="100">
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="contato_cargo" class="form-label">Cargo</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="contato_cargo" 
-                                   name="contato_cargo" 
-                                   value="{{ fornecedor.contato_cargo or '' }}"
-                                   maxlength="50">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="contato_email" class="form-label">Email do Contato</label>
-                            <input type="email" 
-                                   class="form-control" 
-                                   id="contato_email" 
-                                   name="contato_email" 
-                                   value="{{ fornecedor.contato_email or '' }}"
-                                   maxlength="120">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="contato_telefone" class="form-label">Telefone do Contato</label>
-                            <input type="tel" 
-                                   class="form-control" 
-                                   id="contato_telefone" 
-                                   name="contato_telefone" 
-                                   value="{{ fornecedor.contato_telefone or '' }}"
-                                   placeholder="(11) 99999-9999">
-                        </div>
-                    </div>
-                    
-                    <!-- Endereço -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                        <!-- Endereço -->
+                        <div class="form-section">
+                            <h6 class="section-title">
                                 <i class="fas fa-map-marker-alt me-2"></i>
                                 Endereço
                             </h6>
-                        </div>
-                        
-                        <div class="col-md-3 mb-3">
-                            <label for="cep" class="form-label">CEP</label> 
-                            <div class="input-group">
-                                <input type="text"
-                                       class="form-control"
-                                       id="cep"
-                                       name="cep"
-                                       value="{{ fornecedor.cep or '' }}"
-                                       placeholder="00000-000">
-                                <button type="button" 
-                                        class="btn btn-outline-primary" 
-                                        id="btn-consultar-cep"
-                                        title="Consultar CEP automaticamente">
-                                    <i class="fas fa-search"></i>
-                                </button>
+                            
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="cep" class="form-label">CEP</label> 
+                                    <div class="input-group">
+                                        <input type="text"
+                                               class="form-control"
+                                               id="cep"
+                                               name="cep"
+                                               value="{{ fornecedor.cep or '' }}"
+                                               placeholder="00000-000">
+                                        <button type="button" 
+                                                class="btn btn-outline-primary" 
+                                                id="btn-consultar-cep"
+                                                title="Consultar CEP automaticamente">
+                                            <i class="fas fa-search"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Clique no botão para busca automática</small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="endereco" class="form-label">Endereço</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="endereco" 
+                                           name="endereco" 
+                                           value="{{ fornecedor.endereco or '' }}"
+                                           maxlength="200"
+                                           placeholder="Rua, Avenida, etc.">
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <label for="numero" class="form-label">Número</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="numero" 
+                                           name="numero" 
+                                           value="{{ fornecedor.numero or '' }}"
+                                           maxlength="20"
+                                           placeholder="123">
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="complemento" class="form-label">Complemento</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="complemento" 
+                                           name="complemento" 
+                                           value="{{ fornecedor.complemento or '' }}"
+                                           maxlength="100"
+                                           placeholder="Apt, Sala, etc.">
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="bairro" class="form-label">Bairro</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="bairro" 
+                                           name="bairro" 
+                                           value="{{ fornecedor.bairro or '' }}"
+                                           maxlength="100"
+                                           placeholder="Nome do bairro">
+                                </div>
+                                
+                                <div class="col-md-3 mb-3">
+                                    <label for="cidade" class="form-label">Cidade</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="cidade" 
+                                           name="cidade" 
+                                           value="{{ fornecedor.cidade or '' }}"
+                                           maxlength="100"
+                                           placeholder="Nome da cidade">
+                                </div>
+                                
+                                <div class="col-md-1 mb-3">
+                                    <label for="estado" class="form-label">UF</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="estado" 
+                                           name="estado" 
+                                           value="{{ fornecedor.estado or '' }}"
+                                           maxlength="2"
+                                           placeholder="SP">
+                                </div>
+                                
+                                <div class="col-md-12">
+                                    <label for="pais" class="form-label">País</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="pais" 
+                                           name="pais" 
+                                           value="{{ fornecedor.pais or 'Brasil' }}"
+                                           maxlength="50"
+                                           placeholder="Brasil">
+                                </div>
                             </div>
-                            <small class="text-muted">Clique no botão para busca automática</small>
                         </div>
                         
-                        <div class="col-md-6 mb-3">
-                            <label for="endereco" class="form-label">Endereço</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="endereco" 
-                                   name="endereco" 
-                                   value="{{ fornecedor.endereco or '' }}"
-                                   maxlength="200">
+                        <!-- Informações Comerciais -->
+                        <div class="form-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-handshake me-2"></i>
+                                Informações Comerciais
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label for="categoria" class="form-label">Categoria</label>
+                                    <select class="form-select" id="categoria" name="categoria">
+                                        <option value="">Selecione...</option>
+                                        <option value="Equipamentos" {% if fornecedor.categoria == 'Equipamentos' %}selected{% endif %}>Equipamentos</option>
+                                        <option value="Serviços" {% if fornecedor.categoria == 'Serviços' %}selected{% endif %}>Serviços</option>
+                                        <option value="Matéria-prima" {% if fornecedor.categoria == 'Matéria-prima' %}selected{% endif %}>Matéria-prima</option>
+                                        <option value="Software" {% if fornecedor.categoria == 'Software' %}selected{% endif %}>Software</option>
+                                        <option value="Consultoria" {% if fornecedor.categoria == 'Consultoria' %}selected{% endif %}>Consultoria</option>
+                                        <option value="Outros" {% if fornecedor.categoria == 'Outros' %}selected{% endif %}>Outros</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="condicoes_pagamento" class="form-label">Condições Pagamento</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="condicoes_pagamento" 
+                                           name="condicoes_pagamento" 
+                                           value="{{ fornecedor.condicoes_pagamento or '' }}"
+                                           maxlength="100"
+                                           placeholder="Ex: 30/60 dias">
+                                </div>
+                                
+                                <div class="col-md-4 mb-3">
+                                    <label for="prazo_entrega" class="form-label">Prazo Entrega</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="prazo_entrega" 
+                                           name="prazo_entrega" 
+                                           value="{{ fornecedor.prazo_entrega or '' }}"
+                                           maxlength="50"
+                                           placeholder="Ex: 5-10 dias úteis">
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="col-md-3 mb-3">
-                            <label for="numero" class="form-label">Número</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="numero" 
-                                   name="numero" 
-                                   value="{{ fornecedor.numero or '' }}"
-                                   maxlength="10">
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="complemento" class="form-label">Complemento</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="complemento" 
-                                   name="complemento" 
-                                   value="{{ fornecedor.complemento or '' }}"
-                                   maxlength="50">
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="bairro" class="form-label">Bairro</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="bairro" 
-                                   name="bairro" 
-                                   value="{{ fornecedor.bairro or '' }}"
-                                   maxlength="100">
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="cidade" class="form-label">Cidade</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="cidade" 
-                                   name="cidade" 
-                                   value="{{ fornecedor.cidade or '' }}"
-                                   maxlength="100">
-                        </div>
-                        
-                        <div class="col-md-2">
-                            <label for="estado" class="form-label">Estado</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="estado" 
-                                   name="estado" 
-                                   value="{{ fornecedor.estado or '' }}"
-                                   maxlength="2"
-                                   placeholder="SP">
-                        </div>
-                    </div>
-                    
-                    <!-- Observações -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                        <!-- Observações -->
+                        <div class="form-section">
+                            <h6 class="section-title">
                                 <i class="fas fa-sticky-note me-2"></i>
                                 Observações
                             </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="observacoes" class="form-label">Observações Gerais</label>
+                                    <textarea class="form-control" 
+                                              id="observacoes" 
+                                              name="observacoes" 
+                                              rows="3" 
+                                              maxlength="500"
+                                              placeholder="Observações sobre o fornecedor...">{{ fornecedor.observacoes or '' }}</textarea>
+                                    <small class="text-muted">Máximo 500 caracteres</small>
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="col-12">
-                            <label for="observacoes" class="form-label">Observações</label>
-                            <textarea class="form-control" 
-                                      id="observacoes" 
-                                      name="observacoes" 
-                                      rows="3" 
-                                      maxlength="500">{{ fornecedor.observacoes or '' }}</textarea>
-                            <small class="text-muted">Máximo 500 caracteres</small>
-                        </div>
-                    </div>
-                    
-                    <!-- Botões -->
-                    <div class="row">
-                        <div class="col-12">
+                        <!-- Botões -->
+                        <div class="form-section">
                             <div class="d-flex justify-content-between">
                                 <a href="{{ url_for('fornecedor.listar') }}" 
                                    class="btn btn-outline-secondary">
@@ -351,7 +571,7 @@
                                     Voltar
                                 </a>
                                 
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary btn-lg">
                                     <i class="fas fa-save me-2"></i>
                                     {% if fornecedor.id %}
                                         Atualizar Fornecedor
@@ -361,12 +581,67 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        border: 1px solid #e3e6f0;
+        border-radius: 0.35rem;
+        background-color: #f8f9fc;
+    }
+    
+    .section-title {
+        color: #5a5c69;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e3e6f0;
+    }
+    
+    .form-control:focus,
+    .form-select:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+    
+    .btn-primary {
+        background-color: #4e73df;
+        border-color: #4e73df;
+    }
+    
+    .btn-primary:hover {
+        background-color: #2e59d9;
+        border-color: #2e59d9;
+    }
+    
+    .card {
+        border: 0;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    }
+    
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-bottom: 0;
+    }
+    
+    .input-group-text {
+        background-color: #f8f9fc;
+        border-color: #d1d3e2;
+    }
+    
+    .small, small {
+        color: #6c757d;
+    }
+</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -374,24 +649,60 @@
     document.addEventListener('DOMContentLoaded', function() {
         const tipoSelect = document.getElementById('tipo');
         const labelDocumento = document.getElementById('label-documento');
-        const labelIe = document.getElementById('label-ie');
-        const cnpjCpfInput = document.getElementById('cnpj_cpf');
+        const labelRgIe = document.getElementById('label-rg-ie');
+        const cpfCnpjInput = document.getElementById('cpf_cnpj');
         const btnCnpj = document.getElementById('btn-consultar-cnpj');
+        const camposPj = document.getElementById('campos-pj');
+        const extrasPf = document.getElementById('extras-pf');
+        const extrasPj = document.getElementById('extras-pj');
+        const nomeFantasia = document.getElementById('nome_fantasia');
         
-        // Atualiza labels conforme o tipo
-        function atualizarLabels() {
-            if (tipoSelect.value === 'PF') {
-                labelDocumento.textContent = 'CPF';
-                labelIe.textContent = 'RG';
-                cnpjCpfInput.placeholder = '000.000.000-00';
-                // Esconde o botão de consulta CNPJ para pessoa física
-                btnCnpj.style.display = 'none';
-            } else {
+        // Função para sincronizar nome em PJ
+        function sincronizarNomePJ() {
+            if (tipoSelect.value === 'PJ' && nomeFantasia) {
+                const nomeHidden = document.getElementById('nome_hidden');
+                if (nomeHidden && nomeFantasia.value) {
+                    nomeHidden.value = nomeFantasia.value;
+                }
+            }
+        }
+        
+        // Atualiza interface conforme o tipo
+        function atualizarInterface() {
+            const tipoPJ = tipoSelect.value === 'PJ';
+            
+            if (tipoPJ) {
+                // Pessoa Jurídica
                 labelDocumento.textContent = 'CNPJ';
-                labelIe.textContent = 'Inscrição Estadual';
-                cnpjCpfInput.placeholder = '00.000.000/0000-00';
-                // Mostra o botão de consulta CNPJ para pessoa jurídica
+                labelRgIe.textContent = 'Inscrição Estadual';
+                cpfCnpjInput.placeholder = '00.000.000/0000-00';
+                
+                // Mostra campos PJ
+                camposPj.style.display = 'block';
+                extrasPj.style.display = 'block';
+                extrasPf.style.display = 'none';
+                
+                // Mostra o botão de consulta CNPJ
                 btnCnpj.style.display = 'inline-block';
+                
+                // Torna nome fantasia obrigatório
+                document.getElementById('nome_fantasia').required = true;
+            } else {
+                // Pessoa Física
+                labelDocumento.textContent = 'CPF';
+                labelRgIe.textContent = 'RG';
+                cpfCnpjInput.placeholder = '000.000.000-00';
+                
+                // Esconde campos PJ
+                camposPj.style.display = 'none';
+                extrasPj.style.display = 'none';
+                extrasPf.style.display = 'block';
+                
+                // Esconde o botão de consulta CNPJ
+                btnCnpj.style.display = 'none';
+                
+                // Remove obrigatoriedade do nome fantasia
+                document.getElementById('nome_fantasia').required = false;
             }
         }
         
@@ -436,9 +747,9 @@
         }
         
         // Event listeners
-        tipoSelect.addEventListener('change', atualizarLabels);
+        tipoSelect.addEventListener('change', atualizarInterface);
         
-        cnpjCpfInput.addEventListener('input', function() {
+        cpfCnpjInput.addEventListener('input', function() {
             this.value = mascaraDocumento(this.value, tipoSelect.value);
         });
         
@@ -446,32 +757,33 @@
             this.value = mascaraCep(this.value);
         });
         
-        document.getElementById('telefone').addEventListener('input', function() {
-            this.value = mascaraTelefone(this.value);
-        });
-        
-        document.getElementById('celular').addEventListener('input', function() {
-            this.value = mascaraTelefone(this.value);
-        });
-        
-        document.getElementById('contato_telefone').addEventListener('input', function() {
-            this.value = mascaraTelefone(this.value);
+        ['telefone', 'celular', 'whatsapp', 'contato_telefone'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', function() {
+                    this.value = mascaraTelefone(this.value);
+                });
+            }
         });
         
         // Estado em maiúsculo
         document.getElementById('estado').addEventListener('input', function() {
             this.value = this.value.toUpperCase();
         });
+        
+        // Sincronização nome fantasia
+        if (nomeFantasia) {
+            nomeFantasia.addEventListener('input', sincronizarNomePJ);
+        }
 
-        // Consulta CNPJ automatica
+        // Consulta CNPJ automatica (usando mesmo endpoint dos clientes)
         document.getElementById('btn-consultar-cnpj').addEventListener('click', function() {
-            // Verifica se é pessoa jurídica
             if (tipoSelect.value !== 'PJ') {
                 alert('A consulta automática está disponível apenas para Pessoa Jurídica (CNPJ)');
                 return;
             }
             
-            const cnpj = document.getElementById('cnpj_cpf').value;
+            const cnpj = cpfCnpjInput.value;
             const cnpjLimpo = cnpj.replace(/\D/g, '');
             
             if (cnpjLimpo.length !== 14) {
@@ -483,35 +795,74 @@
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             this.disabled = true;
             
-            fetch(`/fornecedor/api/consultar-cnpj/${cnpjLimpo}`)
+            // Usa endpoint dos clientes (funciona igual)
+            fetch(`/cliente/api/consultar-cnpj/${cnpjLimpo}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         // Preenche os campos com os dados retornados
-                        document.getElementById('nome').value = data.data.nome || '';
-                        document.getElementById('nome_fantasia').value = data.data.nome_fantasia || '';
-                        document.getElementById('email').value = data.data.email || '';
-                        document.getElementById('telefone').value = data.data.telefone || '';
-                        
-                        // Preenche endereco
-                        const endereco = data.data.endereco;
-                        if (endereco) {
-                            document.getElementById('cep').value = endereco.cep || '';
-                            document.getElementById('endereco').value = endereco.logradouro || '';
-                            document.getElementById('numero').value = endereco.numero || '';
-                            document.getElementById('complemento').value = endereco.complemento || '';
-                            document.getElementById('bairro').value = endereco.bairro || '';
-                            document.getElementById('cidade').value = endereco.cidade || '';
-                            document.getElementById('estado').value = endereco.uf || '';
+                        if (data.data.fantasia) {
+                            document.getElementById('nome_fantasia').value = data.data.fantasia;
+                        }
+                        if (data.data.nome) {
+                            // Se não tem fantasia, usa o nome como fantasia
+                            if (!data.data.fantasia && document.getElementById('nome_fantasia').value === '') {
+                                document.getElementById('nome_fantasia').value = data.data.nome;
+                            }
                         }
                         
-                        // Aplica mascaras
-                        document.getElementById('cep').value = mascaraCep(document.getElementById('cep').value);
-                        document.getElementById('telefone').value = mascaraTelefone(document.getElementById('telefone').value);
+                        // Preenche contatos
+                        if (data.data.email) {
+                            document.getElementById('email').value = data.data.email;
+                        }
+                        if (data.data.telefone) {
+                            document.getElementById('telefone').value = data.data.telefone;
+                        }
                         
-                        alert('Dados da empresa carregados com sucesso!');
+                        // Preenche endereco completo
+                        const endereco = data.data.endereco;
+                        if (endereco) {
+                            if (endereco.cep) {
+                                document.getElementById('cep').value = mascaraCep(endereco.cep);
+                            }
+                            if (endereco.logradouro) {
+                                document.getElementById('endereco').value = endereco.logradouro;
+                            }
+                            if (endereco.numero) {
+                                document.getElementById('numero').value = endereco.numero;
+                            }
+                            if (endereco.complemento) {
+                                document.getElementById('complemento').value = endereco.complemento;
+                            }
+                            if (endereco.bairro) {
+                                document.getElementById('bairro').value = endereco.bairro;
+                            }
+                            if (endereco.cidade) {
+                                document.getElementById('cidade').value = endereco.cidade;
+                            }
+                            if (endereco.uf) {
+                                document.getElementById('estado').value = endereco.uf.toUpperCase();
+                            }
+                        }
+                        
+                        // Aplica mascaras nos campos preenchidos
+                        if (document.getElementById('telefone').value) {
+                            document.getElementById('telefone').value = mascaraTelefone(document.getElementById('telefone').value);
+                        }
+                        
+                        // Define o país como Brasil
+                        document.getElementById('pais').value = 'Brasil';
+                        
+                        // Sincroniza nome
+                        sincronizarNomePJ();
+                        
+                        alert('✅ Dados da empresa carregados com sucesso!\n\n📋 Dados preenchidos:\n' +
+                              '• Nome/Razão Social\n' +
+                              '• Nome Fantasia\n' + 
+                              '• Email e Telefone\n' +
+                              '• Endereço completo');
                     } else {
-                        alert('Erro: ' + data.error);
+                        alert('❌ Erro: ' + data.error);
                     }
                 })
                 .catch(error => {
@@ -525,7 +876,7 @@
                 });
         });
         
-        // Consulta CEP automatica
+        // Consulta CEP automatica (usando endpoint dos clientes)
         document.getElementById('btn-consultar-cep').addEventListener('click', function() {
             const cep = document.getElementById('cep').value;
             const cepLimpo = cep.replace(/\D/g, '');
@@ -539,7 +890,8 @@
             this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             this.disabled = true;
             
-            fetch(`/fornecedor/api/consultar-cep/${cepLimpo}`)
+            // Usa endpoint dos clientes
+            fetch(`/cliente/api/consultar-cep/${cepLimpo}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -552,9 +904,9 @@
                         // Aplica mascara do CEP
                         document.getElementById('cep').value = mascaraCep(data.data.cep || cep);
                         
-                        alert('Endereco carregado com sucesso!');
+                        alert('✅ Endereço carregado com sucesso!');
                     } else {
-                        alert('Erro: ' + data.error);
+                        alert('❌ Erro: ' + data.error);
                     }
                 })
                 .catch(error => {
@@ -568,11 +920,11 @@
                 });
         });
 
-        // Inicializa
-        atualizarLabels();
+        // Inicializa interface
+        atualizarInterface();
 
-        // Foco no nome
-        document.getElementById('nome').focus();
+        // Foco no tipo primeiro
+        tipoSelect.focus();
     });
 </script>
 {% endblock %}

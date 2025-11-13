@@ -2,913 +2,595 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Relatório de Ordem de Serviço {{ ordem.numero }}</title>
+    <title>Ordem de Serviço {{ ordem.numero }}</title>
     <style>
-        /* Variáveis de cor JSP - harmonizada com proposta comercial */
-        :root {
-            --primary-color: #002755;   /* azul JSP mais escuro igual fundo da logo */
-            --secondary-color: #f49d16; /* laranja de destaque */
-            --text-color: #333333;
-            --border-color: #dddddd;
-            --background-light: #f5f5f5;
-        }
-
-        /* Configurações de página e quebra */
         @page {
             size: A4;
-            margin: 2cm 1.5cm;
-            
-            @top-center {
-                content: "Ordem de Serviço {{ ordem.numero }}";
-                font-size: 10px;
-                color: #666;
-            }
-            
-            @bottom-center {
-                content: "Página " counter(page) " de " counter(pages);
-                font-size: 10px;
-                color: #666;
-            }
+            margin: 10mm;
         }
         
-        /* Controle de quebra de página */
-        .section {
-            page-break-inside: avoid; /* Evita quebra dentro da seção */
-            break-inside: avoid; /* CSS3 equivalente */
-            page-break-after: auto;
-            margin-bottom: 25px;
-            border: 2px solid var(--primary-color);
-            border-radius: 6px;
-            overflow: hidden;
-        }
-        
-        .section-header {
-            page-break-after: avoid; /* Evita quebra logo após o cabeçalho */
-            break-after: avoid;
-            background: var(--primary-color);
-            color: white;
-            padding: 12px 15px;
-            font-weight: bold;
-            font-size: 12px;
-            text-transform: uppercase;
-            border-bottom: 1px solid var(--primary-color);
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        }
-        
-        .data-table {
-            page-break-inside: avoid;
-            break-inside: avoid;
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .header {
-            page-break-after: avoid;
-            break-after: avoid;
-        }
-        
-        .report-title {
-            page-break-after: avoid;
-            break-after: avoid;
-        }
-        
-        /* Força quebra antes de seções específicas se necessário */
-        .section.large-content {
-            page-break-before: auto;
-            break-before: auto;
-        }
-        
-        /* Evita quebra em grupos relacionados */
-        .field-group {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-        
-        /* Observações e assinaturas sempre juntas */
-        .section:nth-last-child(-n+3) {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-        
-        /* Seções pequenas sempre juntas */
-        .section.compact {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            page-break-after: avoid;
-            break-after: avoid;
-        }
-        
-        /* Lista dentro das observações */
-        ul, ol {
-            page-break-inside: avoid;
-            break-inside: avoid;
-        }
-        
-        /* Orphans e widows - controla linhas sozinhas */
-        p, td, th {
-            orphans: 3;
-            widows: 3;
-        }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
             font-family: Arial, sans-serif;
-            font-size: 11px;
-            line-height: 1.4;
-            color: #333;
-            background: white;
+            font-size: 10px;
+            line-height: 1.2;
+            color: #000;
         }
-
+        
         .container {
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 15mm;
+            width: 100%;
         }
-
-        /* Cabeçalho Corporativo JSP */
+        
+        /* Cabeçalho com logo */
         .header {
-            background: var(--primary-color);
-            color: white;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 8px;
+            border: 3px solid #002755;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            margin-bottom: 15px;
             position: relative;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            border-radius: 8px;
+            overflow: hidden;
         }
-
-        .header-content {
+        
+        .header-top {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
+            padding: 10px;
         }
-
-        .company-section {
-            display: flex;
-            align-items: center;
-        }
-
-        .logo-container {
-            width: 60px;
-            height: 60px;
-            margin-right: 20px;
+        
+        .logo-section {
+            width: 80px;
+            height: 80px;
+            margin-right: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
         }
-
-        .logo-container img {
-            max-width: 60px;
-            max-height: 60px;
-            border-radius: 8px;
+        
+        .logo-section img {
+            max-width: 70px;
+            max-height: 70px;
             object-fit: contain;
         }
-
-        .company-info h1 {
-            font-size: 20px;
+        
+        .company-info {
+            flex: 1;
+        }
+        
+        .company-name {
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 5px;
-            text-transform: uppercase;
+            margin-bottom: 3px;
+            color: #000;
         }
-
-        .company-info .subtitle {
-            font-size: 12px;
-            opacity: 0.9;
-            font-weight: normal;
-        }
-
+        
         .company-details {
-            font-size: 10px;
-            line-height: 1.3;
-            margin-top: 8px;
+            font-size: 9px;
+            line-height: 1.1;
+            color: #333;
         }
-
-        .contact-info {
-            text-align: right;
-            font-size: 10px;
-            line-height: 1.4;
-        }
-
-        .contact-info div {
-            margin: 3px 0;
-        }
-
-        /* Título do Relatório */
-        .report-title {
-            background: var(--primary-color);
-            color: white;
-            text-align: left;
-            padding: 15px 180px 15px 20px;
-            margin: 20px 0;
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            position: relative;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-            border-radius: 6px;
-        }
-
-        .os-badge {
+        
+        .os-info {
             position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: var(--secondary-color);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
+            top: 10px;
+            right: 10px;
+            text-align: right;
+        }
+        
+        .os-number {
             font-size: 14px;
             font-weight: bold;
-            white-space: nowrap;
+            margin-bottom: 3px;
         }
-
-        .report-date {
-            text-align: right;
-            font-size: 10px;
+        
+        .os-date {
+            font-size: 9px;
             color: #666;
-            margin-bottom: 25px;
         }
-
-        /* Seções Numeradas - REMOVIDO - definido acima com controle de quebra */
-
-        .section-number {
-            background: var(--secondary-color);
+        
+        .os-title {
+            background: linear-gradient(135deg, #002755 0%, #1e3a8a 100%);
             color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 10px;
-            margin-right: 10px;
+            border-top: 2px solid #002755;
+            padding: 10px;
+            text-align: center;
+            font-size: 12px;
             font-weight: bold;
-        }
-
-        /* Tabelas de Dados - REMOVIDO - definido acima com controle de quebra */
-
-        .data-table tr:first-child td {
-            border-top: none;
-        }
-
-        .data-table td {
-            padding: 10px 15px;
-            border: 1px solid var(--primary-color);
-            vertical-align: top;
-            font-size: 11px;
-        }
-
-        .data-table .field-label {
-            background: var(--primary-color);
-            color: white;
-            font-weight: bold;
-            width: 25%;
-            text-transform: uppercase;
-            font-size: 10px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
         }
-
-        .data-table .field-value {
-            background: white;
-            color: #333;
-            font-size: 11px;
+        
+        /* Seções */
+        .section {
+            border: 2px solid #002755;
+            margin-bottom: 10px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            border-radius: 5px;
+            overflow: hidden;
         }
-
-        /* Layout de 2 colunas para alguns campos */
-        .two-column {
+        
+        .section-title {
+            background: linear-gradient(135deg, #002755 0%, #1e3a8a 100%);
+            color: white;
+            border-bottom: 2px solid #002755;
+            padding: 8px 12px;
+            font-weight: bold;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+        
+        .section-content {
+            padding: 8px;
+        }
+        
+        /* Grid de dados */
+        .data-grid {
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        
+        .data-row {
             display: flex;
-            gap: 0;
+            margin-bottom: 6px;
         }
-
-        .two-column .data-table {
+        
+        .data-cell {
+            flex: 1;
+            padding: 5px;
+            border: 1px solid #002755;
+            margin-right: 3px;
+            border-radius: 3px;
+            background-color: #f8fafc;
+        }
+        
+        .data-cell:last-child {
+            margin-right: 0;
+        }
+        
+        .data-cell-wide {
+            flex: 3;
+        }
+        
+        .data-cell-narrow {
             flex: 1;
         }
-
-        .two-column .data-table:first-child {
-            margin-right: 0;
-            border-right: none;
+        
+        .data-cell-full {
+            flex: 1;
         }
-
-        .two-column .data-table:last-child {
-            border-left: none;
+        
+        .data-label {
+            font-weight: bold;
+            font-size: 8px;
+            text-transform: uppercase;
+            color: #002755;
+            margin-bottom: 2px;
+            line-height: 1;
         }
-
-        /* Badges de Status */
-        .status-badge {
-            padding: 4px 10px;
-            border-radius: 15px;
+        
+        .data-value {
             font-size: 9px;
-            font-weight: bold;
-            text-transform: uppercase;
-            display: inline-block;
-        }
-
-        .status-aberta { background: #fef3c7; color: #92400e; }
-        .status-em_andamento { background: #dbeafe; color: var(--primary-color); }
-        .status-aguardando_pecas { background: #fed7aa; color: #c2410c; }
-        .status-aguardando_cliente { background: #fde68a; color: #92400e; }
-        .status-concluida { background: #d1fae5; color: #065f46; }
-        .status-cancelada { background: #fecaca; color: #991b1b; }
-
-        /* Tabelas de itens com estilo JSP profissional */
-        table.items {
-            width: 100%;
-            border-collapse: collapse;
-            border: 2px solid var(--primary-color);
-            margin: 10px 0;
+            line-height: 1.2;
         }
         
-        table.items th,
-        table.items td {
-            border: 1px solid var(--primary-color);
-            padding: 8px;
+        /* Tabelas */
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5px 0;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        
+        .table th,
+        .table td {
+            border: 1px solid #002755;
+            padding: 4px;
             text-align: left;
+            font-size: 9px;
+            break-inside: avoid;
+            page-break-inside: avoid;
         }
         
-        table.items th {
-            background: var(--primary-color);
+        .table th {
+            background: linear-gradient(135deg, #002755 0%, #1e3a8a 100%);
             color: white;
-            font-weight: bold;
-            font-size: 11px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-            text-transform: uppercase;
-        }
-        
-        table.items tbody tr:nth-child(even) {
-            background-color: #f8faff;
-        }
-        
-        /* Resumo financeiro com destaque */
-        .summary-table {
-            width: 100%;
-            border-collapse: collapse;
-            border: 2px solid var(--primary-color);
-        }
-        
-        .summary-table td {
-            padding: 8px 12px;
-            border: 1px solid var(--primary-color);
-        }
-        
-        .summary-table .highlight {
-            font-size: 16px;
-            color: white;
-            background: var(--primary-color);
-            padding: 12px;
             font-weight: bold;
             text-align: center;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-            letter-spacing: 0.5px;
-        }
-
-        /* Flexbox helpers */
-        .flex-container {
-            display: flex;
-            gap: 20px;
         }
         
-        .flex-1 {
-            flex: 1;
+        .table-item { width: 8%; }
+        .table-desc { width: 50%; }
+        .table-qty { width: 12%; }
+        .table-unit { width: 15%; }
+        .table-total { width: 15%; }
+        
+        .text-center {
+            text-align: center;
         }
         
-        /* Padding helpers */
-        .padding-15 {
-            padding: 15px;
+        .text-right {
+            text-align: right;
         }
         
-        /* Section titles */
-        .section-title {
-            margin: 10px 15px 5px;
-            color: var(--primary-color);
+        .text-bold {
             font-weight: bold;
+        }
+        
+        /* Área de texto */
+        .text-area {
+            min-height: 40px;
+            padding: 5px;
+            border: 1px solid #002755;
+            background-color: #f8fafc;
+            font-size: 9px;
+            white-space: pre-wrap;
+            line-height: 1.3;
+            border-radius: 3px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        
+        /* Controles de quebra de página */
+        .no-break {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        
+        .header {
+            break-after: avoid;
+            page-break-after: avoid;
+        }
+        
+        .section-title {
+            break-after: avoid;
+            page-break-after: avoid;
+        }
+        
+        .data-grid {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        
+        /* Resumo financeiro */
+        .financial-section {
+            border: 2px solid #002755;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+        
+        .financial-title {
+            background: linear-gradient(135deg, #002755 0%, #1e3a8a 100%);
+            color: white;
+            border-bottom: 2px solid #002755;
+            padding: 8px 12px;
+            font-weight: bold;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+        
+        .financial-content {
+            padding: 8px;
+        }
+        
+        .financial-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 9px;
+        }
+        
+        .financial-row:last-child {
+            border-bottom: none;
+            border-top: 2px solid #002755;
+            margin-top: 5px;
+            padding-top: 5px;
+            font-weight: bold;
+            font-size: 10px;
+            background-color: #f0f7ff;
+        }
+        
+        /* Status */
+        .status {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-size: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-aberta {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .status-em_andamento {
+            background-color: #cce5ff;
+            color: #004085;
+            border: 1px solid #99d3ff;
+        }
+        
+        .status-concluida {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #a3d977;
+        }
+        
+        .status-cancelada {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f1aeb5;
+        }
+        
+        /* Assinaturas */
+        .signatures {
+            display: flex;
+            gap: 30px;
+            margin-top: 30px;
+            page-break-inside: avoid;
+        }
+        
+        .signature-box {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .signature-line {
+            border-top: 2px solid #002755;
+            margin-top: 50px;
+            padding-top: 5px;
+            font-size: 9px;
+            font-weight: bold;
+            color: #002755;
+        }
+        
+        .signature-info {
+            font-size: 8px;
+            color: #666;
+            margin-top: 3px;
+        }
+        
+        /* Rodapé */
+        .footer {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 8px;
+            color: #666;
+            border-top: 2px solid #002755;
+            padding-top: 8px;
+            background-color: #f8fafc;
+        }
+        
+        /* Quebras de página */
+        .page-break {
+            page-break-before: always;
         }
         
         /* Logo placeholder */
         .logo-placeholder {
-            width: 60px;
-            height: 60px;
-            background: white;
-            border-radius: 8px;
+            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+                        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+                        linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+                        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 10px 10px;
+            background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
+            font-size: 8px;
+            color: #999;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            color: var(--primary-color);
-            font-size: 16px;
-        }
-
-        /* Observações styling */
-        .observacoes-content {
-            padding: 15px;
-            background: #f8f9fa;
-            border: 1px solid #ddd;
-            min-height: 80px;
-        }
-        
-        .observacoes-list {
-            margin: 0;
-            padding-left: 20px;
-            line-height: 1.6;
-        }
-        
-        .observacoes-footer {
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px dotted #ccc;
-        }
-
-        .prioridade-baixa { background: #d1fae5; color: #065f46; }
-        .prioridade-normal { background: #dbeafe; color: var(--primary-color); }
-        .prioridade-alta { background: #fed7aa; color: #c2410c; }
-        .prioridade-urgente { background: #fecaca; color: #991b1b; }
-
-        /* Tabelas de Produtos/Serviços */
-        .items-section {
-            margin-top: 15px;
-        }
-
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 5px;
-            border: 1px solid #ddd;
-        }
-
-        .items-table th {
-            background: var(--primary-color);
-            color: white;
-            padding: 10px 8px;
-            text-align: left;
-            font-weight: bold;
-            font-size: 10px;
-            border: 1px solid var(--primary-color);
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        }
-
-        .items-table td {
-            padding: 8px;
-            border: 1px solid #ddd;
-            font-size: 10px;
-            vertical-align: top;
-        }
-
-        .items-table tbody tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-
-        .items-table .text-right {
-            text-align: right;
-        }
-
-        .items-table .text-center {
             text-align: center;
-        }
-
-        /* Totais */
-        .totals-section {
-            margin-top: 20px;
-            border: 2px solid var(--primary-color);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .totals-header {
-            background: var(--primary-color);
-            color: white;
-            padding: 10px 15px;
-            font-weight: bold;
-            text-align: center;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-        }
-
-        .totals-content {
-            padding: 15px;
-            background: #f8f9fa;
-        }
-
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            margin: 8px 0;
-            padding: 5px 0;
-            border-bottom: 1px dotted #ccc;
-        }
-
-        .total-row:last-child {
-            border-bottom: 2px solid var(--primary-color);
-            font-weight: bold;
-            font-size: 12px;
-            margin-top: 10px;
-            padding-top: 10px;
-        }
-
-        .total-label {
-            font-weight: bold;
-        }
-
-        .total-value {
-            font-weight: bold;
-            color: var(--primary-color);
-        }
-
-        /* Seção de Assinaturas */
-        .signatures-section {
-            margin-top: 40px;
-            display: flex;
-            justify-content: space-between;
-            gap: 40px;
-        }
-
-        .signature-box {
-            flex: 1;
-            text-align: center;
-            border-top: 2px solid #333;
-            padding-top: 10px;
-        }
-
-        .signature-title {
-            font-weight: bold;
-            font-size: 10px;
-            text-transform: uppercase;
-            color: var(--primary-color);
-        }
-
-        .signature-info {
-            font-size: 9px;
-            color: #666;
-            margin-top: 5px;
-        }
-
-        /* Observações */
-        .observations-section {
-            margin-top: 25px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-
-        .observations-header {
-            background: #f8f9fa;
-            padding: 10px 15px;
-            border-bottom: 1px solid #ddd;
-            font-weight: bold;
-            color: #0f172a;
-        }
-
-        .observations-content {
-            padding: 15px;
-            min-height: 80px;
-            line-height: 1.6;
-        }
-
-        /* Utilidades */
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .text-bold { font-weight: bold; }
-        .mb-10 { margin-bottom: 10px; }
-        .mb-15 { margin-bottom: 15px; }
-        .mb-20 { margin-bottom: 20px; }
-
-        /* Separador visual */
-        .section-divider {
-            border-top: 3px solid #0f172a;
-            margin: 30px 0;
-            position: relative;
-        }
-
-        .section-divider::after {
-            content: '';
-            position: absolute;
-            top: -2px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 4px;
-            background: #0f172a;
-        }
-
-        @media print {
-            .container { 
-                padding: 10mm; 
-            }
-            .page-break { 
-                page-break-before: always; 
-            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Cabeçalho Corporativo -->
+        <!-- CABEÇALHO -->
         <div class="header">
-            <div class="header-content">
-                <div class="company-section">
-                    <div class="logo-container">
-                        {% if logo_base64 %}
-                        <img src="{{ logo_base64 }}" alt="JSP Logo">
-                        {% else %}
-                        <div style="width: 60px; height: 60px; background: white; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--primary-color); font-size: 16px;">JSP</div>
-                        {% endif %}
-                    </div>
-                    <div class="company-info">
-                        <h1>{{ config.nome_fantasia if config else 'JSP ELÉTRICA INDUSTRIAL & SOLAR' }}</h1>
-                        <div class="subtitle">{{ config.frase_assinatura if config else 'Soluções em Energia e Automação' }}</div>
-                        <div class="company-details">
-                            CNPJ: {{ config.cnpj if config else '41.280.764/0001-65' }}<br>
-                            {% if config and config.logradouro %}
-                            {{ config.logradouro }}{% if config.numero %}, {{ config.numero }}{% endif %}{% if config.bairro %} - {{ config.bairro }}{% endif %}{% if config.cidade %} - {{ config.cidade }}{% endif %}{% if config.uf %}/{{ config.uf }}{% endif %}<br>
-                            {% if config.cep %}CEP: {{ config.cep }}{% endif %}
-                            {% else %}
-                            Rua Indalécio Costa, 890 - Barra Funda - Tietê/SP<br>
-                            CEP: 18530-170
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                <div class="contact-info">
-                    <div><strong>{{ config.telefone if config else '(15) 99670-2036' }}</strong>{% if config and config.telefone2 %} • <strong>{{ config.telefone2 }}</strong>{% endif %}</div>
-                    <div>{{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
-                    {% if config and config.site %}
-                    <div>{{ config.site }}</div>
+            <div class="header-top">
+                <div class="logo-section">
+                    {% if logo_base64 %}
+                    <img src="{{ logo_base64 }}" alt="JSP Logo">
                     {% else %}
-                    <div>www.jspeletricaerenovaveis.com.br</div>
+                    <div class="logo-placeholder">
+                        JSP<br>LOGO
+                    </div>
                     {% endif %}
-                    <div><strong>Resp.: Juliano Saroba Pereira</strong></div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Título do Relatório -->
-        <div class="report-title">
-            RELATÓRIO DE ORDEM DE SERVIÇO
-            <div class="os-badge">OS: {{ ordem.numero }}</div>
-        </div>
-
-        <!-- Data do Relatório -->
-        <div class="report-date">
-            19/10/2025
-        </div>
-
-        <!-- SEÇÃO 01: DADOS DO CLIENTE -->
-        <div class="section">
-            <div class="section-header">
-                <span class="section-number">[01]</span>
-                DADOS DO CLIENTE
-            </div>
-            <div style="padding: 15px; background: white;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">NOME</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.cliente.nome if ordem.cliente else 'N/A' }}</div>
-                    </div>
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">CPF/CNPJ</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.cliente.cpf_cnpj if ordem.cliente and ordem.cliente.cpf_cnpj else 'N/A' }}</div>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">TELEFONE</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.cliente.telefone if ordem.cliente and ordem.cliente.telefone else 'N/A' }}</div>
-                    </div>
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">E-MAIL</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.cliente.email if ordem.cliente and ordem.cliente.email else 'N/A' }}</div>
-                    </div>
-                </div>
-                <div>
-                    <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">ENDEREÇO</div>
-                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">
-                        {% if ordem.cliente and (ordem.cliente.endereco or ordem.cliente.cep) %}
-                            {{ ordem.cliente.endereco or '' }}{% if ordem.cliente.numero %}, nº {{ ordem.cliente.numero }}{% endif %}{% if ordem.cliente.complemento %}, {{ ordem.cliente.complemento }}{% endif %}, {{ ordem.cliente.bairro or 'N/A' }}, {{ ordem.cliente.cidade or 'N/A' }}/{{ ordem.cliente.estado or 'N/A' }}, CEP: {{ ordem.cliente.cep or 'N/A' }}
+                <div class="company-info">
+                    <div class="company-name">{{ config.nome_fantasia if config and config.nome_fantasia else 'JSP ELÉTRICA INDUSTRIAL & SOLAR' }}</div>
+                    <div class="company-details">
+                        {% if config and config.logradouro %}
+                        {{ config.logradouro }}{% if config.numero %}, {{ config.numero }}{% endif %}{% if config.bairro %} - {{ config.bairro }}{% endif %}{% if config.cidade %} - {{ config.cidade }}{% endif %}{% if config.uf %}/{{ config.uf }}{% endif %}{% if config.cep %} - CEP: {{ config.cep }}{% endif %}<br>
                         {% else %}
-                            N/A
+                        Rua Indalécio Costa, 890 - Barra Funda - Tietê/SP - CEP: 18530-170<br>
                         {% endif %}
+                        {% if config and config.telefone %}Telefone: {{ config.telefone }}{% else %}Telefone: (15) 99670-2036{% endif %}{% if config and config.email %} | Email: {{ config.email }}{% else %} | Email: atendimento@eletricasaroba.com.br{% endif %}<br>
+                        CNPJ: {% if config and config.cnpj %}{{ config.cnpj }}{% else %}41.280.764/0001-65{% endif %}
                     </div>
                 </div>
+                <div class="os-info">
+                    <div class="os-number">{{ ordem.numero }}</div>
+                    <div class="os-date">{{ now().strftime('%d/%m/%Y') }}</div>
+                </div>
             </div>
+            <div class="os-title">ORDEM DE SERVIÇO</div>
         </div>
 
-        <!-- SEÇÃO 02: DADOS BÁSICOS -->
+        <!-- DADOS DO CLIENTE -->
         <div class="section">
-            <div class="section-header">
-                <span class="section-number">[02]</span>
-                DADOS BÁSICOS
-            </div>
-            <div style="padding: 15px; background: white;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">CÓDIGO</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.numero }}</div>
+            <div class="section-title">Dados do Cliente</div>
+            <div class="section-content">
+                <div class="data-row">
+                    <div class="data-cell data-cell-wide">
+                        <div class="data-label">Nome/Razão Social</div>
+                        <div class="data-value">{{ ordem.cliente.nome if ordem.cliente else 'Cliente não informado' }}</div>
                     </div>
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">STATUS</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">
-                            <span class="status-badge status-{{ ordem.status }}">
-                                {% if ordem.status == 'aberta' %}ABERTA
-                                {% elif ordem.status == 'em_andamento' %}EM ANDAMENTO
-                                {% elif ordem.status == 'aguardando_pecas' %}AGUARDANDO PEÇAS
-                                {% elif ordem.status == 'aguardando_cliente' %}AGUARDANDO CLIENTE
-                                {% elif ordem.status == 'concluida' %}CONCLUÍDA
-                                {% elif ordem.status == 'cancelada' %}CANCELADA
-                                {% else %}{{ ordem.status|upper }}
-                                {% endif %}
-                            </span>
-                        </div>
-                    </div>
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">SOLICITANTE</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.solicitante or 'N/A' }}</div>
+                    <div class="data-cell data-cell-narrow">
+                        <div class="data-label">Data Abertura</div>
+                        <div class="data-value">{{ ordem.data_abertura.strftime('%d/%m/%Y') if ordem.data_abertura else 'N/A' }}</div>
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">DATA EMISSÃO</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.data_criacao.strftime('%d/%m/%Y') if ordem.data_criacao else 'N/A' }}</div>
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">CPF/CNPJ</div>
+                        <div class="data-value">{{ ordem.cliente.cpf_cnpj if ordem.cliente and ordem.cliente.cpf_cnpj else 'N/A' }}</div>
                     </div>
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">PRIORIDADE</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">
-                            <span class="status-badge prioridade-{{ ordem.prioridade or 'normal' }}">
-                                {% if ordem.prioridade == 'baixa' %}BAIXA
-                                {% elif ordem.prioridade == 'normal' %}NORMAL
-                                {% elif ordem.prioridade == 'alta' %}ALTA
-                                {% elif ordem.prioridade == 'urgente' %}URGENTE
-                                {% else %}NORMAL
-                                {% endif %}
-                            </span>
-                        </div>
+                    <div class="data-cell">
+                        <div class="data-label">Telefone</div>
+                        <div class="data-value">{{ ordem.cliente.telefone if ordem.cliente and ordem.cliente.telefone else 'N/A' }}</div>
                     </div>
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">CONTATO</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.cliente.celular if ordem.cliente and ordem.cliente.celular else (ordem.cliente.telefone if ordem.cliente and ordem.cliente.telefone else 'N/A') }}</div>
+                    <div class="data-cell">
+                        <div class="data-label">Email</div>
+                        <div class="data-value">{{ ordem.cliente.email if ordem.cliente and ordem.cliente.email else 'N/A' }}</div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- SEÇÃO 03: DESCRIÇÃO DO PROBLEMA -->
-        {% if ordem.descricao_problema %}
-        <div class="section">
-            <div class="section-header">
-                <span class="section-number">[03]</span>
-                DESCRIÇÃO DO PROBLEMA
-            </div>
-            <div style="padding: 15px; background: white;">
-                <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; line-height: 1.6; white-space: pre-wrap;">
-                    {{ ordem.descricao_problema|replace('\n', '<br>')|safe }}
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- SEÇÃO 03: DESCRIÇÃO DO SERVIÇO -->
-        <div class="section">
-            <div class="section-header">
-                <span class="section-number">[04]</span>
-                DESCRIÇÃO DO SERVIÇO
-            </div>
-            <div style="padding: 15px; background: white;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">TIPO DE SERVIÇO</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.titulo or 'N/A' }}</div>
+                {% if ordem.cliente and ordem.cliente.endereco %}
+                <div class="data-row">
+                    <div class="data-cell data-cell-full">
+                        <div class="data-label">Endereço</div>
+                        <div class="data-value">{{ ordem.cliente.endereco }}</div>
                     </div>
-                   
-                </div>
-                {% if ordem.descricao %}
-                <div>
-                    <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">DETALHES</div>
-                    <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; line-height: 1.6; white-space: pre-wrap;">{{ ordem.descricao|replace('\n', '<br>')|safe }}</div>
                 </div>
                 {% endif %}
             </div>
         </div>
 
-        <!-- SEÇÃO 05: EQUIPAMENTO -->
+        <!-- DADOS DA SOLICITAÇÃO -->
         <div class="section">
-            <div class="section-header">
-                <span class="section-number">[05]</span>
-                EQUIPAMENTO
-            </div>
-            <div style="padding: 15px; background: white;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">EQUIPAMENTO</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.equipamento or 'N/A' }}</div>
+            <div class="section-title">Dados da Solicitação</div>
+            <div class="section-content">
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">Solicitante</div>
+                        <div class="data-value">{{ ordem.solicitante if ordem.solicitante else 'N/A' }}</div>
                     </div>
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">MARCA / MODELO</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.marca_modelo or 'N/A' }}</div>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">Nº SÉRIE</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.numero_serie or 'N/A' }}</div>
-                    </div>
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">MARCA</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.marca or 'N/A' }}</div>
-                    </div>
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">NOVO</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ 'Sim' if ordem.equipamento_novo else 'Não' }}</div>
-                    </div>
-                </div>
-                <div>
-                    <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">ACESSÓRIOS</div>
-                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.acessorios or 'N/A' }}</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SEÇÃO 06: CONTROLE DE TEMPO -->
-        <div class="section">
-            <div class="section-header">
-                <span class="section-number">[06]</span>
-                CONTROLE DE TEMPO
-            </div>
-            <div style="padding: 15px; background: white;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">HORA DE INÍCIO</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.hora_inicial.strftime('%H:%M') if ordem.hora_inicial else 'N/A' }}</div>
-                    </div>
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">HORA DE FIM</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ ordem.hora_final.strftime('%H:%M') if ordem.hora_final else 'N/A' }}</div>
-                    </div>
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">TOTAL DE HORAS</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">
-                            {% if ordem.hora_inicial and ordem.hora_final %}
-                                {{ ordem.tempo_total_decimal }}h
-                            {% else %}
-                                N/A
-                            {% endif %}
+                    <div class="data-cell">
+                        <div class="data-label">Status</div>
+                        <div class="data-value">
+                            <span class="status status-{{ ordem.status }}">{{ ordem.status.upper() }}</span>
                         </div>
                     </div>
+                    <div class="data-cell">
+                        <div class="data-label">Prioridade</div>
+                        <div class="data-value">{{ ordem.prioridade if ordem.prioridade else 'Normal' }}</div>
+                    </div>
+                </div>
+                {% if ordem.equipamento or ordem.marca_modelo %}
+                <div class="data-row">
+                    {% if ordem.equipamento %}
+                    <div class="data-cell">
+                        <div class="data-label">Equipamento</div>
+                        <div class="data-value">{{ ordem.equipamento }}</div>
+                    </div>
+                    {% endif %}
+                    {% if ordem.marca_modelo %}
+                    <div class="data-cell">
+                        <div class="data-label">Marca/Modelo</div>
+                        <div class="data-value">{{ ordem.marca_modelo }}</div>
+                    </div>
+                    {% endif %}
+                    {% if ordem.numero_serie %}
+                    <div class="data-cell">
+                        <div class="data-label">Número de Série</div>
+                        <div class="data-value">{{ ordem.numero_serie }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <div class="data-row">
+                    <div class="data-cell data-cell-full">
+                        <div class="data-label">Defeito Relatado</div>
+                        <div class="text-area">{{ ordem.defeito_relatado if ordem.defeito_relatado else 'Não informado' }}</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Separador Visual -->
-        
-
-        <!-- SEÇÃO 07: PRODUTOS E SERVIÇOS -->
-        {% if ordem.produtos_utilizados or ordem.servicos %}
+        <!-- DESCRIÇÃO DOS SERVIÇOS REALIZADOS -->
         <div class="section">
-            <div class="section-header">
-                <span class="section-number">[07]</span>
-                PRODUTOS E SERVIÇOS
+            <div class="section-title">Descrição dos Serviços Realizados</div>
+            <div class="section-content">
+                <div class="data-row">
+                    <div class="data-cell data-cell-full">
+                        <div class="data-label">Descrição Geral do Serviço</div>
+                        <div class="text-area">{{ ordem.descricao if ordem.descricao else 'Não informado' }}</div>
+                    </div>
+                </div>
+                
+                <div class="data-row">
+                    <div class="data-cell data-cell-full">
+                        <div class="data-label">Diagnóstico Técnico</div>
+                        <div class="text-area">{{ ordem.diagnostico_tecnico if ordem.diagnostico_tecnico else 'Não informado' }}</div>
+                    </div>
+                </div>
+                
+                {% if ordem.solucao %}
+                <div class="data-row">
+                    <div class="data-cell data-cell-full">
+                        <div class="data-label">Solução Aplicada</div>
+                        <div class="text-area">{{ ordem.solucao }}</div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if ordem.tecnico_responsavel %}
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">Técnico Responsável</div>
+                        <div class="data-value">{{ ordem.tecnico_responsavel }}</div>
+                    </div>
+                    {% if ordem.data_inicio %}
+                    <div class="data-cell">
+                        <div class="data-label">Data de Início</div>
+                        <div class="data-value">{{ ordem.data_inicio.strftime('%d/%m/%Y às %H:%M') if ordem.data_inicio else 'Não informado' }}</div>
+                    </div>
+                    {% endif %}
+                    {% if ordem.data_conclusao %}
+                    <div class="data-cell">
+                        <div class="data-label">Data de Conclusão</div>
+                        <div class="data-value">{{ ordem.data_conclusao.strftime('%d/%m/%Y às %H:%M') if ordem.data_conclusao else 'Não informado' }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                {% if not ordem.descricao and not ordem.diagnostico and not ordem.solucao and not ordem.defeito_relatado %}
+                <div class="data-row">
+                    <div class="data-cell data-cell-full">
+                        <div class="data-label">Serviços Realizados</div>
+                        <div class="text-area" style="font-style: italic; color: #666;">Descrição dos serviços realizados não informada.</div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
-            
-            {% if ordem.produtos_utilizados %}
-            <div class="items-section">
-                <h4 style="margin: 10px 15px 5px; color: var(--primary-color);">PRODUTOS UTILIZADOS</h4>
-                <table class="items-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 8%;">ITEM</th>
-                            <th style="width: 40%;">DESCRIÇÃO</th>
-                            <th style="width: 10%;">QTD</th>
-                            <th style="width: 12%;">UNIDADE</th>
-                            <th style="width: 15%;">VALOR UNIT.</th>
-                            <th style="width: 15%;">VALOR TOTAL</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for produto in ordem.produtos_utilizados %}
-                        <tr>
-                            <td class="text-center">{{ loop.index }}</td>
-                            <td>{{ produto.descricao }}</td>
-                            <td class="text-center">{{ produto.quantidade }}</td>
-                            <td class="text-center">{{ produto.unidade or 'UN' }}</td>
-                            <td class="text-right">R$ {{ "%.2f"|format(produto.valor_unitario) }}</td>
-                            <td class="text-right">R$ {{ "%.2f"|format(produto.valor_total) }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% endif %}
+        </div>
 
-            {% if ordem.servicos %}
-            <div class="items-section">
-                <h4 style="margin: 15px 15px 5px; color: var(--primary-color);">SERVIÇOS EXECUTADOS</h4>
-                <table class="items-table">
+        <!-- SERVIÇOS EXECUTADOS -->
+        {% if ordem.servicos %}
+        <div class="section">
+            <div class="section-title">Serviços Executados</div>
+            <div class="section-content">
+                <table class="table">
                     <thead>
                         <tr>
-                            <th style="width: 8%;">ITEM</th>
-                            <th style="width: 40%;">DESCRIÇÃO</th>
-                            <th style="width: 10%;">QTD</th>
-                            <th style="width: 12%;">UNIDADE</th>
-                            <th style="width: 15%;">VALOR UNIT.</th>
-                            <th style="width: 15%;">VALOR TOTAL</th>
+                            <th class="table-item">Item</th>
+                            <th class="table-desc">Descrição</th>
+                            <th class="table-qty">Qtd</th>
+                            <th class="table-unit">Valor Unit.</th>
+                            <th class="table-total">Total</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -916,138 +598,262 @@
                         <tr>
                             <td class="text-center">{{ loop.index }}</td>
                             <td>{{ servico.descricao }}</td>
-                            <td class="text-center">{{ servico.quantidade_horas or '0' }}</td>
-                            <td class="text-center">HR</td>
-                            <td class="text-right">R$ {{ "%.2f"|format(servico.valor_hora or 0) }}</td>
-                            <td class="text-right">R$ {{ "%.2f"|format(servico.valor_total or 0) }}</td>
+                            <td class="text-center">{{ "{:.2f}".format(servico.quantidade|float).replace('.', ',') }}</td>
+                            <td class="text-right">R$ {{ "{:.2f}".format(servico.valor_unitario|float).replace('.', ',') }}</td>
+                            <td class="text-right text-bold">R$ {{ "{:.2f}".format(servico.valor_total|float).replace('.', ',') }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-            {% endif %}
         </div>
         {% endif %}
 
-        <!-- Separador Visual -->
-       
-
-        <!-- SEÇÃO 08: RESUMO FINANCEIRO -->
+        <!-- PRODUTOS UTILIZADOS -->
+        {% if ordem.produtos %}
         <div class="section">
-            <div class="section-header">
-                <span class="section-number">[08]</span>
-                RESUMO FINANCEIRO
+            <div class="section-title">Produtos Utilizados</div>
+            <div class="section-content">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="table-item">Item</th>
+                            <th class="table-desc">Descrição do Produto</th>
+                            <th class="table-qty">Qtd</th>
+                            <th class="table-unit">Valor Unit.</th>
+                            <th class="table-total">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for produto in ordem.produtos %}
+                        <tr>
+                            <td class="text-center">{{ loop.index }}</td>
+                            <td>{{ produto.descricao }}</td>
+                            <td class="text-center">{{ "{:.3f}".format(produto.quantidade|float).replace('.', ',') }}</td>
+                            <td class="text-right">R$ {{ "{:.2f}".format(produto.valor_unitario|float).replace('.', ',') }}</td>
+                            <td class="text-right text-bold">R$ {{ "{:.2f}".format(produto.valor_total|float).replace('.', ',') }}</td>
+                        </tr>
+                        {% endfor %}
+                        <!-- Linha de subtotal -->
+                        <tr style="border-top: 2px solid #002755; background-color: #f8f9fa;">
+                            <td colspan="4" class="text-right text-bold" style="padding: 8px;">
+                                <strong>SUBTOTAL PRODUTOS:</strong>
+                            </td>
+                            <td class="text-right text-bold" style="padding: 8px; background-color: #e3f2fd; border: 1px solid #002755;">
+                                <strong>R$ {{ "{:.2f}".format(ordem.valor_pecas|float if ordem.valor_pecas else 0).replace('.', ',') }}</strong>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <!-- Informações complementares dos produtos -->
+                <div class="data-row" style="margin-top: 10px; font-size: 9px; color: #666;">
+                    <div class="data-cell data-cell-full">
+                        <div class="data-label">Observações sobre Produtos</div>
+                        <div class="text-area">
+                            • Todos os produtos utilizados são novos e possuem garantia do fabricante
+                            • Produtos instalados conforme especificações técnicas e normas vigentes
+                            • Garantia de instalação: {{ ordem.prazo_garantia if ordem.prazo_garantia else '90' }} dias
+                            • Produtos não utilizados foram devolvidos ao estoque
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div style="display: flex; gap: 15px; padding: 15px;">
-                <!-- Coluna Esquerda - Valores -->
-                <div style="flex: 1; background: white; border: 1px solid var(--primary-color); padding: 15px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #ddd;">
-                        <span style="font-weight: bold; color: #333;">TOTAL SERVIÇOS</span>
-                        <span style="font-weight: bold; color: #333;">R$ {{ "%.2f"|format(ordem.valor_servico or 0) }}</span>
+        </div>
+        {% endif %}
+
+        <!-- CONDIÇÕES DE PAGAMENTO -->
+        <div class="section">
+            <div class="section-title">Condições de Pagamento</div>
+            <div class="section-content">
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">Forma de Pagamento</div>
+                        <div class="data-value">{{ ordem.condicao_pagamento if ordem.condicao_pagamento else 'À vista' }}</div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #ddd;">
-                        <span style="font-weight: bold; color: #333;">TOTAL PRODUTOS</span>
-                        <span style="font-weight: bold; color: #333;">R$ {{ "%.2f"|format(ordem.valor_pecas or 0) }}</span>
+                    {% if ordem.numero_parcelas %}
+                    <div class="data-cell">
+                        <div class="data-label">Parcelas</div>
+                        <div class="data-value">{{ ordem.numero_parcelas }}x</div>
                     </div>
-                    <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid var(--primary-color);">
-                        <span style="font-weight: bold; font-size: 16px; color: var(--primary-color);">VALOR TOTAL</span>
-                        <span style="font-weight: bold; font-size: 16px; color: var(--primary-color);">R$ {{ "%.2f"|format(ordem.valor_total or 0) }}</span>
+                    {% endif %}
+                    {% if ordem.data_vencimento_pagamento %}
+                    <div class="data-cell">
+                        <div class="data-label">Vencimento</div>
+                        <div class="data-value">{{ ordem.data_vencimento_pagamento.strftime('%d/%m/%Y') }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if ordem.observacoes_pagamento %}
+                <div class="data-row">
+                    <div class="data-cell data-cell-full">
+                        <div class="data-label">Observações de Pagamento</div>
+                        <div class="text-area">{{ ordem.observacoes_pagamento }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- DADOS BANCÁRIOS -->
+        <div class="section">
+            <div class="section-title">Dados Bancários - {{ config.nome_fantasia if config else 'JSP Elétrica' }}</div>
+            <div class="section-content">
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">Banco</div>
+                        <div class="data-value">{{ config.banco if config and config.banco else '403 – CORA SCFI' }}</div>
+                    </div>
+                    <div class="data-cell">
+                        <div class="data-label">Agência</div>
+                        <div class="data-value">{{ config.agencia if config and config.agencia else '0001' }}</div>
+                    </div>
+                    <div class="data-cell">
+                        <div class="data-label">Conta Corrente</div>
+                        <div class="data-value">{{ config.conta if config and config.conta else '4633457-0' }}</div>
+                    </div>
+                </div>
+                <div class="data-row">
+                    <div class="data-cell data-cell-wide">
+                        <div class="data-label">PIX</div>
+                        <div class="data-value">{{ config.pix if config and config.pix else '41.280.764/0001-65' }}</div>
+                    </div>
+                    <div class="data-cell data-cell-narrow">
+                        <div class="data-label">Favorecido</div>
+                        <div class="data-value">{{ config.razao_social if config and config.razao_social else 'JSP ELÉTRICA INDUSTRIAL & SOLAR LTDA' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESUMO FINANCEIRO -->
+        <div class="financial-section">
+            <div class="financial-title">Resumo Financeiro</div>
+            <div class="financial-content">
+                <div class="financial-row">
+                    <span>Valor dos Serviços:</span>
+                    <span>R$ {{ "{:.2f}".format(ordem.valor_servico|float if ordem.valor_servico else 0).replace('.', ',') }}</span>
+                </div>
+                <div class="financial-row">
+                    <span>Valor das Peças:</span>
+                    <span>R$ {{ "{:.2f}".format(ordem.valor_pecas|float if ordem.valor_pecas else 0).replace('.', ',') }}</span>
+                </div>
+                {% if ordem.valor_desconto and ordem.valor_desconto > 0 %}
+                <div class="financial-row">
+                    <span>Desconto:</span>
+                    <span>- R$ {{ "{:.2f}".format(ordem.valor_desconto|float).replace('.', ',') }}</span>
+                </div>
+                {% endif %}
+                <div class="financial-row">
+                    <span>SUBTOTAL:</span>
+                    <span>R$ {{ "{:.2f}".format((ordem.valor_total|float if ordem.valor_total else 0)).replace('.', ',') }}</span>
+                </div>
+                {% if ordem.valor_entrada and ordem.valor_entrada > 0 %}
+                <div class="financial-row">
+                    <span>Valor de Entrada (Pago):</span>
+                    <span>- R$ {{ "{:.2f}".format(ordem.valor_entrada|float).replace('.', ',') }}</span>
+                </div>
+                <div class="financial-row">
+                    <span>TOTAL A PAGAR:</span>
+                    <span>R$ {{ "{:.2f}".format((ordem.valor_total|float if ordem.valor_total else 0) - (ordem.valor_entrada|float if ordem.valor_entrada else 0)).replace('.', ',') }}</span>
+                </div>
+                {% else %}
+                <div class="financial-row">
+                    <span>TOTAL A PAGAR:</span>
+                    <span>R$ {{ "{:.2f}".format(ordem.valor_total|float if ordem.valor_total else 0).replace('.', ',') }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- GARANTIA DOS SERVIÇOS -->
+        <div class="section">
+            <div class="section-title">Garantia dos Serviços</div>
+            <div class="section-content">
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">Prazo de Garantia</div>
+                        <div class="data-value">
+                            {% if ordem.prazo_garantia and ordem.prazo_garantia > 0 %}
+                                {{ ordem.prazo_garantia }} dias
+                            {% else %}
+                                90 dias (padrão)
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if ordem.data_conclusao and ordem.prazo_garantia %}
+                    <div class="data-cell">
+                        <div class="data-label">Válida até</div>
+                        <div class="data-value">
+                            {% set prazo = ordem.prazo_garantia if ordem.prazo_garantia else 90 %}
+                            {% set data_garantia = ordem.data_conclusao + timedelta(days=prazo) %}
+                            {{ data_garantia.strftime('%d/%m/%Y') }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="data-cell">
+                        <div class="data-label">Cobertura</div>
+                        <div class="data-value">Serviços executados e peças utilizadas</div>
                     </div>
                 </div>
                 
-                <!-- Coluna Direita - Dados para Transferência -->
-                <div style="flex: 1;">
-                    <div style="background: var(--primary-color); color: white; padding: 8px 12px; font-size: 11px; font-weight: bold; text-align: center; margin-bottom: 0;">
-                        DADOS PARA TRANSFERÊNCIA
-                    </div>
-                    <div style="background: white; border: 1px solid var(--primary-color); border-top: none;">
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <tr>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; width: 30%; font-size: 9px;">INSTITUIÇÃO</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.banco if config else '341 - ITAÚ UNIBANCO S/A' }}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; font-size: 9px;">AGÊNCIA</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.agencia if config else '0001' }}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; font-size: 9px;">CONTA</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.conta if config else '4613457-0' }}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; font-size: 9px;">TITULAR</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.nome_fantasia if config else 'JSP ELÉTRICA INDUSTRIAL & SOLAR' }}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; font-size: 9px;">CNPJ</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.cnpj if config else '41.280.764/0001-65' }}</td>
-                            </tr>
-                            <tr>
-                                <td style="padding: 6px 10px; font-weight: bold; background: #f8f9fa; font-size: 9px;">PIX</td>
-                                <td style="padding: 6px 10px; font-size: 9px;">{{ config.pix if config else '41.280.764/0001-65' }}</td>
-                            </tr>
-                        </table>
+                <div class="data-row">
+                    <div class="data-cell data-cell-full">
+                        <div class="data-label">Condições da Garantia</div>
+                        <div class="text-area" style="font-size: 9px;">
+                           
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- SEÇÃO 09: CONDIÇÕES DE PAGAMENTO -->
-        <div class="section field-group">
-            <div class="section-header">
-                <span class="section-number">[09]</span>
-                CONDIÇÕES DE PAGAMENTO
-            </div>
-            <div style="padding: 15px; background: white;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">FORMA DE PAGAMENTO</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">PIX</div>
-                    </div>
-                    <div>
-                        <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">CONDIÇÕES</div>
-                        <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">À vista</div>
-                    </div>
+        <!-- OBSERVAÇÕES -->
+        <div class="section">
+            <div class="section-title">Observações</div>
+            <div class="section-content">
+                <div class="text-area">
+                    {{ ordem.observacoes if ordem.observacoes else 'Nenhuma observação adicional.' }}
                 </div>
             </div>
         </div>
 
-        <!-- SEÇÃO 10: OBSERVAÇÕES -->
-        <div class="section field-group">
-            <div class="section-header">
-                <span class="section-number">[10]</span>
-                OBSERVAÇÕES
-            </div>
-            <div style="padding: 15px; background: white;">
-                <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; min-height: 80px;">
-                    <ul style="margin: 0; padding-left: 20px; line-height: 1.6;">
-                        <li>Este relatório foi gerado automaticamente pelo sistema ERP JSP 3.0 ELÉTRICA</li>
-                        <li>Valores incluem mão de obra especializada e materiais</li>
-                        <li>Garantia aplicável conforme condições contratuais</li>
-                        <li>Em caso de dúvidas, entre em contato conosco</li>
-                    </ul>
-                    {% if ordem.observacoes %}
-                    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px dotted #ccc;">
-                        <strong>Observações Técnicas:</strong><br>
-                        <div style="white-space: pre-wrap; margin-top: 5px;">{{ ordem.observacoes|replace('\n', '<br>')|safe }}</div>
-                    </div>
-                    {% endif %}
+        <!-- TERMOS E CONDIÇÕES -->
+        <div class="section">
+            <div class="section-title">Termos e Condições</div>
+            <div class="section-content">
+                <div class="text-area" style="font-size: 8px; line-height: 1.2;">
+
                 </div>
             </div>
         </div>
 
         <!-- ASSINATURAS -->
-        <div class="signatures-section">
+        <div class="signatures">
             <div class="signature-box">
-                <div class="signature-title">Técnico Responsável</div>
-                <div class="signature-info">{{ ordem.tecnico_responsavel or '_________________________' }}</div>
-                <div class="signature-info">Data: ___/___/______</div>
+                <div class="signature-line">
+                    TÉCNICO RESPONSÁVEL
+                </div>
+                <div class="signature-info">
+                    {{ ordem.tecnico_responsavel if ordem.tecnico_responsavel else 'Nome do Técnico' }}<br>
+                    Data: ___/___/______
+                </div>
             </div>
             <div class="signature-box">
-                <div class="signature-title">Cliente</div>
-                <div class="signature-info">{{ ordem.cliente.nome if ordem.cliente else '_________________________' }}</div>
-                <div class="signature-info">Data: ___/___/______</div>
+                <div class="signature-line">
+                    CLIENTE
+                </div>
+                <div class="signature-info">
+                    {{ ordem.cliente.nome if ordem.cliente else 'Nome do Cliente' }}<br>
+                    Data: ___/___/______
+                </div>
             </div>
+        </div>
+
+        <!-- RODAPÉ -->
+        <div class="footer">
+            <p>Documento gerado automaticamente pelo sistema {{ config.nome_fantasia if config and config.nome_fantasia else 'JSP' }} ERP em {{ now().strftime('%d/%m/%Y às %H:%M') }}</p>
+            <p>Ordem de Serviço válida somente com assinatura e carimbo da empresa</p>
         </div>
     </div>
 </body>

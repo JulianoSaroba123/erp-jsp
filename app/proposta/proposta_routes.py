@@ -9,6 +9,9 @@ import logging
 from app.cliente.cliente_model import Cliente
 from app.proposta.proposta_model import Proposta, PropostaProduto, PropostaServico
 from app.extensoes import db
+from app.ordem_servico.ordem_servico_model import (
+    OrdemServico, OrdemServicoItem, OrdemServicoProduto
+)
 
 # Configurar logging
 logging.basicConfig(level=logging.DEBUG)
@@ -39,6 +42,18 @@ def converter_valor_monetario(valor_str):
     except (ValueError, TypeError):
         logger.warning(f"Erro ao converter valor monetário: {valor_str}")
         return 0.0
+
+def converter_quantidade(quantidade_str):
+    """Converte string de quantidade para float - NÃO trata formatação monetária."""
+    if not quantidade_str:
+        return 1.0
+    
+    try:
+        # Converte diretamente para float, sem tratar formatação monetária
+        return float(str(quantidade_str).strip())
+    except (ValueError, TypeError):
+        logger.warning(f"Erro ao converter quantidade: {quantidade_str}")
+        return 1.0
 
 proposta_bp = Blueprint('proposta', __name__, template_folder='templates')
 
@@ -115,10 +130,15 @@ def nova_proposta():
             
             if not titulo or not cliente_id:
                 flash('Título e cliente são obrigatórios', 'error')
-                clientes = Cliente.query.order_by(Cliente.nome).all()
+                clientes = Cliente.query.filter(
+                    Cliente.ativo == True,
+                    Cliente.nome.isnot(None),
+                    Cliente.nome != ''
+                ).order_by(Cliente.nome).all()
                 return render_template('proposta/form.html', 
                                      proposta=None, 
-                                     clientes=clientes)
+                                     clientes=clientes,
+                                     today=date.today())
             
             # Criar nova proposta
             nova_prop = Proposta(
@@ -136,6 +156,7 @@ def nova_proposta():
                 observacoes=request.form.get('observacoes', ''),
                 condicoes_pagamento=request.form.get('condicoes_pagamento', ''),
                 desconto=converter_valor_monetario(request.form.get('desconto', 0)),
+                entrada=converter_valor_monetario(request.form.get('entrada', 0)),
                 valor_total=0  # Será calculado depois
             )
             
@@ -157,18 +178,158 @@ def nova_proposta():
             
             db.session.add(nova_prop)
             db.session.commit()
-            
+
+            # CORREÇÃO: Processar produtos e serviços na criação inicial
+            try:
+                from app.proposta.proposta_model import PropostaProduto, PropostaServico
+                
+                # Processar produtos
+                produtos_descricoes = request.form.getlist('produto_descricao[]')
+                produtos_qtds = request.form.getlist('produto_quantidade[]')
+                produtos_valores = request.form.getlist('produto_valor[]')
+                
+                logger.debug(f"📦 Produtos recebidos na criação: desc={produtos_descricoes}, qtd={produtos_qtds}, valor={produtos_valores}")
+                
+                valor_total_produtos = 0
+                produtos_validos = []
+                
+                # Validar e preparar produtos
+                for i in range(len(produtos_descricoes)):
+                    descricao = produtos_descricoes[i].strip()
+                    if descricao:  # Só processa se tiver descrição
+                        qtd_str = produtos_qtds[i] if i < len(produtos_qtds) else '1'
+                        valor_str = produtos_valores[i] if i < len(produtos_valores) else '0'
+                        
+                        qtd = converter_quantidade(qtd_str)
+                        valor = converter_valor_monetario(valor_str) or 0.0
+                        valor_item = qtd * valor
+                        
+                        produtos_validos.append({
+                            'descricao': descricao,
+                            'quantidade': qtd,
+                            'valor_unitario': valor,
+                            'valor_total': valor_item
+                        })
+                        valor_total_produtos += valor_item
+                
+                # Processar serviços
+                servicos_descricoes = request.form.getlist('servico_descricao[]')
+                servicos_qtds = request.form.getlist('servico_horas[]')  # Usando servico_horas[]
+                servicos_valores = request.form.getlist('servico_valor[]')
+                
+                logger.debug(f"🔧 Serviços recebidos na criação: desc={servicos_descricoes}, horas={servicos_qtds}, valor={servicos_valores}")
+                
+                valor_total_servicos = 0
+                servicos_validos = []
+                
+                # Validar e preparar serviços
+                for i in range(len(servicos_descricoes)):
+                    descricao = servicos_descricoes[i].strip()
+                    if descricao:  # Só processa se tiver descrição
+                        qtd_str = servicos_qtds[i] if i < len(servicos_qtds) else '1'
+                        valor_str = servicos_valores[i] if i < len(servicos_valores) else '0'
+                        
+                        qtd = converter_quantidade(qtd_str)
+                        valor = converter_valor_monetario(valor_str) or 0.0
+                        valor_item = qtd * valor
+                        
+                        servicos_validos.append({
+                            'descricao': descricao,
+                            'quantidade': qtd,
+                            'valor_unitario': valor,
+                            'valor_total': valor_item
+                        })
+                        valor_total_servicos += valor_item
+                
+                # Inserir produtos válidos
+                for produto in produtos_validos:
+                    novo_produto = PropostaProduto(
+                        proposta_id=nova_prop.id,
+                        descricao=produto['descricao'],
+                        quantidade=produto['quantidade'],
+                        valor_unitario=produto['valor_unitario'],
+                        valor_total=produto['valor_total'],
+                        ativo=True
+                    )
+                    db.session.add(novo_produto)
+                
+                # Inserir serviços válidos
+                for servico in servicos_validos:
+                    novo_servico = PropostaServico(
+                        proposta_id=nova_prop.id,
+                        descricao=servico['descricao'],
+                        quantidade=servico['quantidade'],
+                        valor_unitario=servico['valor_unitario'],
+                        valor_total=servico['valor_total'],
+                        ativo=True
+                    )
+                    db.session.add(novo_servico)
+                
+                # Calcular valor total e atualizar proposta
+                desconto_valor = (valor_total_produtos + valor_total_servicos) * (nova_prop.desconto / 100) if nova_prop.desconto else 0
+                valor_final = (valor_total_produtos + valor_total_servicos) - desconto_valor
+                
+                nova_prop.valor_produtos = valor_total_produtos
+                nova_prop.valor_servicos = valor_total_servicos 
+                nova_prop.valor_total = valor_final
+                
+                db.session.commit()
+                logger.debug(f"✅ Produtos e serviços adicionados na criação: {len(produtos_validos)} produtos, {len(servicos_validos)} serviços")
+                
+            except Exception as e:
+                logger.error(f"Erro ao processar produtos/serviços na criação: {str(e)}")
+                db.session.rollback()
+
+            # Processar parcelas (se informado) - após commit para termos o ID
+            try:
+                from app.proposta.proposta_model import PropostaParcela
+                entrada = converter_valor_monetario(request.form.get('entrada', 0))
+                parcelas_datas = request.form.getlist('parcela_data[]')
+                parcelas_valores = request.form.getlist('parcela_valor[]')
+
+                base_date = date.today()
+
+                if parcelas_valores and len(parcelas_valores) > 0:
+                    for idx, val in enumerate(parcelas_valores):
+                        try:
+                            valor_parcela = converter_valor_monetario(val)
+                            data_venc = None
+                            if idx < len(parcelas_datas) and parcelas_datas[idx]:
+                                try:
+                                    data_venc = datetime.strptime(parcelas_datas[idx], '%Y-%m-%d').date()
+                                except Exception:
+                                    data_venc = base_date
+                            else:
+                                data_venc = base_date
+                            parcela = PropostaParcela(
+                                proposta_id=nova_prop.id,
+                                numero_parcela=idx + 1,
+                                data_vencimento=data_venc,
+                                valor=valor_parcela
+                            )
+                            db.session.add(parcela)
+                        except Exception:
+                            continue
+                    db.session.commit()
+            except Exception:
+                db.session.rollback()
+
             logger.debug(f"Nova proposta criada com ID: {nova_prop.id}")
             flash('Proposta criada com sucesso!', 'success')
-            return redirect(url_for('proposta.editar_proposta', id=nova_prop.id))
+            return redirect(url_for('proposta.listar_propostas'))
         
         # GET - Mostrar formulário
-        clientes = Cliente.query.order_by(Cliente.nome).all()
-        logger.debug(f"Encontrados {len(clientes)} clientes")
+        clientes = Cliente.query.filter(
+            Cliente.ativo == True,
+            Cliente.nome.isnot(None),
+            Cliente.nome != ''
+        ).order_by(Cliente.nome).all()
+        logger.debug(f"Encontrados {len(clientes)} clientes ativos")
         
         return render_template('proposta/form.html', 
                              proposta=None, 
-                             clientes=clientes)
+                             clientes=clientes,
+                             today=date.today())
         
     except Exception as e:
         db.session.rollback()
@@ -178,10 +339,15 @@ def nova_proposta():
         flash(f'Erro ao processar proposta: {str(e)}', 'error')
         
         # Retornar formulário com erro
-        clientes = Cliente.query.order_by(Cliente.nome).all()
+        clientes = Cliente.query.filter(
+            Cliente.ativo == True,
+            Cliente.nome.isnot(None),
+            Cliente.nome != ''
+        ).order_by(Cliente.nome).all()
         return render_template('proposta/form.html', 
                              proposta=None, 
-                             clientes=clientes)
+                             clientes=clientes,
+                             today=date.today())
 
 @proposta_bp.route('/<int:id>')
 def visualizar_proposta(id):
@@ -246,11 +412,16 @@ def editar_proposta(id):
             proposta.observacoes = request.form.get('observacoes', '')
             proposta.condicoes_pagamento = request.form.get('condicoes_pagamento', '')
             proposta.desconto = converter_valor_monetario(request.form.get('desconto', 0))
+            proposta.entrada = converter_valor_monetario(request.form.get('entrada', 0))
             
             # Processar data de emissão
             data_emissao = request.form.get('data_emissao')
             if data_emissao:
                 proposta.data_emissao = datetime.strptime(data_emissao, '%Y-%m-%d').date()
+
+            # Se status for aprovada, registrar data de aprovação se ainda não existir
+            if proposta.status == 'aprovada' and not proposta.data_aprovacao:
+                proposta.data_aprovacao = datetime.now()
             
             # Processar produtos
             produtos_descricoes = request.form.getlist('produto_descricao[]')
@@ -269,7 +440,7 @@ def editar_proposta(id):
                     qtd_str = produtos_qtds[i] if i < len(produtos_qtds) else '1'
                     valor_str = produtos_valores[i] if i < len(produtos_valores) else '0'
                     
-                    qtd = converter_valor_monetario(qtd_str) or 1.0
+                    qtd = converter_quantidade(qtd_str)  # CORRIGIDO: usar função específica para quantidade
                     valor = converter_valor_monetario(valor_str) or 0.0
                     valor_item = qtd * valor
                     
@@ -283,10 +454,11 @@ def editar_proposta(id):
             
             # Processar serviços
             servicos_descricoes = request.form.getlist('servico_descricao[]')
+            servicos_tipos = request.form.getlist('servico_tipo[]')  # NOVO: tipos de serviço
             servicos_qtds = request.form.getlist('servico_horas[]')  # Corrigido: usar servico_horas[]
             servicos_valores = request.form.getlist('servico_valor[]')
             
-            logger.debug(f"🔧 Serviços recebidos: desc={servicos_descricoes}, horas={servicos_qtds}, valor={servicos_valores}")
+            logger.debug(f"🔧 Serviços recebidos: desc={servicos_descricoes}, tipos={servicos_tipos}, horas={servicos_qtds}, valor={servicos_valores}")
             
             valor_total_servicos = 0
             servicos_validos = []
@@ -295,28 +467,30 @@ def editar_proposta(id):
             for i in range(len(servicos_descricoes)):
                 descricao = servicos_descricoes[i].strip()
                 if descricao:  # Só processa se tiver descrição
+                    tipo = servicos_tipos[i] if i < len(servicos_tipos) else 'hora'
                     qtd_str = servicos_qtds[i] if i < len(servicos_qtds) else '1'
                     valor_str = servicos_valores[i] if i < len(servicos_valores) else '0'
                     
-                    qtd = converter_valor_monetario(qtd_str) or 1.0
+                    qtd = converter_quantidade(qtd_str)  # CORRIGIDO: usar função específica para quantidade
                     valor = converter_valor_monetario(valor_str) or 0.0
                     valor_item = qtd * valor
                     
                     servicos_validos.append({
                         'descricao': descricao,
+                        'tipo_servico': tipo,  # NOVO: incluir tipo
                         'quantidade': qtd,
                         'valor_unitario': valor,
                         'valor_total': valor_item
                     })
                     valor_total_servicos += valor_item
             
-            # Desativar produtos e serviços existentes
+            # Deletar produtos e serviços existentes (não apenas desativar)
             db.session.execute(
-                text("UPDATE proposta_produto SET ativo = 0 WHERE proposta_id = :id"),
+                text("DELETE FROM proposta_produto WHERE proposta_id = :id"),
                 {"id": id}
             )
             db.session.execute(
-                text("UPDATE proposta_servico SET ativo = 0 WHERE proposta_id = :id"),
+                text("DELETE FROM proposta_servico WHERE proposta_id = :id"),
                 {"id": id}
             )
             
@@ -339,6 +513,7 @@ def editar_proposta(id):
                 novo_servico = PropostaServico(
                     proposta_id=id,
                     descricao=servico['descricao'],
+                    tipo_servico=servico['tipo_servico'],  # NOVO: incluir tipo
                     quantidade=servico['quantidade'],
                     valor_unitario=servico['valor_unitario'],
                     valor_total=servico['valor_total'],
@@ -358,7 +533,83 @@ def editar_proposta(id):
             
             logger.debug(f"💰 Valores calculados: produtos={valor_total_produtos}, servicos={valor_total_servicos}, total={valor_final}")
             logger.debug(f"📊 Produtos válidos: {len(produtos_validos)}, Serviços válidos: {len(servicos_validos)}")
-            
+
+            # Processar parcelas: remover existentes e recriar conforme formulário
+            try:
+                from app.proposta.proposta_model import PropostaParcela
+                # Remover existentes
+                db.session.execute(text("UPDATE proposta_parcela SET ativo = 0 WHERE proposta_id = :id"), {"id": id})
+
+                entrada = converter_valor_monetario(request.form.get('entrada', 0))
+                parcelas_datas = request.form.getlist('parcela_data[]')
+                parcelas_valores = request.form.getlist('parcela_valor[]')
+
+                base_date = date.today()
+                if parcelas_valores and len(parcelas_valores) > 0:
+                    for idx, val in enumerate(parcelas_valores):
+                        try:
+                            valor_parcela = converter_valor_monetario(val)
+                            data_venc = None
+                            if idx < len(parcelas_datas) and parcelas_datas[idx]:
+                                try:
+                                    data_venc = datetime.strptime(parcelas_datas[idx], '%Y-%m-%d').date()
+                                except Exception:
+                                    data_venc = base_date
+                            else:
+                                data_venc = base_date
+                            parcela = PropostaParcela(
+                                proposta_id=id,
+                                numero_parcela=idx + 1,
+                                data_vencimento=data_venc,
+                                valor=valor_parcela
+                            )
+                            db.session.add(parcela)
+                        except Exception:
+                            continue
+                else:
+                    # Distribuição automática se não vier parcelas individuais
+                    try:
+                        num_parcelas = int(request.form.get('numero_parcelas', 1))
+                    except Exception:
+                        num_parcelas = 1
+
+                    restante = proposta.valor_total - entrada
+                    if restante < 0:
+                        restante = 0
+
+                    created = 0
+                    if entrada and entrada > 0:
+                        parcela = PropostaParcela(
+                            proposta_id=id,
+                            numero_parcela=1,
+                            data_vencimento=base_date,
+                            valor=entrada
+                        )
+                        db.session.add(parcela)
+                        created = 1
+
+                    parcelas_a_distribuir = max(1, num_parcelas - created)
+                    valor_por_parcela = (restante / parcelas_a_distribuir) if parcelas_a_distribuir else restante
+                    for i in range(parcelas_a_distribuir):
+                        numero = created + i + 1
+                        try:
+                            mes = base_date.month + i + 1
+                            ano = base_date.year + ((mes - 1) // 12)
+                            mes = ((mes - 1) % 12) + 1
+                            dia = min(base_date.day, 28)
+                            data_venc = date(ano, mes, dia)
+                        except Exception:
+                            data_venc = base_date
+                        parcela = PropostaParcela(
+                            proposta_id=id,
+                            numero_parcela=numero,
+                            data_vencimento=data_venc,
+                            valor=valor_por_parcela
+                        )
+                        db.session.add(parcela)
+            except Exception as e:
+                logger.error(f"Erro ao processar parcelas da proposta {id}: {e}")
+
             db.session.commit()
             
             logger.debug(f"✅ Proposta {id} atualizada com sucesso!")
@@ -371,8 +622,12 @@ def editar_proposta(id):
             flash(f'Erro ao atualizar proposta: {str(e)}', 'error')
     
     # GET - mostrar formulário
-    clientes = Cliente.query.order_by(Cliente.nome).all()
-    return render_template('proposta/form.html', proposta=proposta, clientes=clientes)
+    clientes = Cliente.query.filter(
+        Cliente.ativo == True,
+        Cliente.nome.isnot(None),
+        Cliente.nome != ''
+    ).order_by(Cliente.nome).all()
+    return render_template('proposta/form.html', proposta=proposta, clientes=clientes, today=date.today())
 
 @proposta_bp.route('/<int:id>/excluir', methods=['GET', 'POST'])
 def excluir_proposta(id):
@@ -479,9 +734,10 @@ def gerar_pdf(id):
             response = make_response(pdf)
             response.headers['Content-Type'] = 'application/pdf'
             response.headers['Content-Disposition'] = f'inline; filename=proposta_{proposta.codigo}.pdf'
-            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
             response.headers['Pragma'] = 'no-cache'
             response.headers['Expires'] = '0'
+            response.headers['Last-Modified'] = 'Wed, 11 Jan 1984 05:00:00 GMT'
             
             return response
             
@@ -498,9 +754,10 @@ def gerar_pdf(id):
             html_response = make_response(render_template('proposta/pdf_proposta.html', 
                                                         proposta=proposta,
                                                         config=config))
-            html_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            html_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
             html_response.headers['Pragma'] = 'no-cache'
             html_response.headers['Expires'] = '0'
+            html_response.headers['Last-Modified'] = 'Wed, 11 Jan 1984 05:00:00 GMT'
             
             return html_response
             
@@ -551,6 +808,9 @@ def api_clientes():
     try:
         termo = request.args.get('q', '')
         clientes = Cliente.query.filter(
+            Cliente.ativo == True,
+            Cliente.nome.isnot(None),
+            Cliente.nome != '',
             Cliente.nome.ilike(f'%{termo}%')
         ).limit(10).all()
         
@@ -725,3 +985,81 @@ def relatorio_os(id):
         logger.error(f"Erro ao gerar relatório de OS da proposta {id}: {str(e)}")
         flash(f'Erro ao gerar relatório de OS: {str(e)}', 'error')
         return redirect(url_for('proposta.listar_propostas'))
+
+
+@proposta_bp.route('/<int:id>/criar-os', methods=['POST'])
+def criar_os_a_partir_da_proposta(id):
+    """Cria uma Ordem de Serviço a partir de uma Proposta aprovada ou selecionada.
+
+    Copia cliente, título, descrição, itens de serviços e produtos, valores e condições.
+    Retorna: redireciona para a visualização da OS criada.
+    """
+    try:
+        proposta = Proposta.query.options(
+            joinedload(Proposta.itens_produto),
+            joinedload(Proposta.itens_servico)
+        ).filter_by(id=id, ativo=True).first_or_404()
+
+        # Gera nova OS baseada na proposta
+        ordem = OrdemServico(
+            numero=OrdemServico.gerar_proximo_numero(),
+            cliente_id=proposta.cliente_id,
+            titulo=proposta.titulo or f'OS a partir de {proposta.codigo}',
+            descricao=proposta.descricao or proposta.observacoes or '',
+            observacoes=f'Criada a partir da proposta {proposta.codigo}',
+            status='aberta',
+            prioridade=proposta.prioridade or 'normal',
+            condicao_pagamento=proposta.forma_pagamento or 'a_vista',
+            valor_servico=proposta.valor_servicos or 0,
+            valor_pecas=proposta.valor_produtos or 0,
+            valor_desconto=0,
+            valor_total=proposta.valor_total or 0
+        )
+
+        # Salva ordem para obter ID
+        db.session.add(ordem)
+        db.session.flush()
+
+        # Copiar serviços da proposta para itens de OS
+        servicos = PropostaServico.query.filter_by(proposta_id=proposta.id, ativo=True).all()
+        for s in servicos:
+            item = OrdemServicoItem(
+                ordem_servico_id=ordem.id,
+                descricao=s.descricao,
+                quantidade_horas=s.quantidade or 0,
+                valor_hora=s.valor_unitario or 0
+            )
+            item.calcular_total()
+            db.session.add(item)
+
+        # Copiar produtos da proposta para produtos da OS
+        produtos = PropostaProduto.query.filter_by(proposta_id=proposta.id, ativo=True).all()
+        for p in produtos:
+            prod = OrdemServicoProduto(
+                ordem_servico_id=ordem.id,
+                descricao=p.descricao,
+                quantidade=p.quantidade or 1,
+                valor_unitario=p.valor_unitario or 0
+            )
+            prod.calcular_total()
+            db.session.add(prod)
+
+        # Recalcular valores da OS e salvar
+        db.session.flush()
+        ordem.valor_servico = sum([it.valor_total for it in ordem.servicos]) if hasattr(ordem, 'servicos') and ordem.servicos else ordem.valor_servico
+        ordem.valor_pecas = sum([pr.valor_total for pr in ordem.produtos_utilizados]) if hasattr(ordem, 'produtos_utilizados') and ordem.produtos_utilizados else ordem.valor_pecas
+        ordem.valor_total = ordem.valor_total_calculado_novo
+
+        # Opcional: marca proposta como aprovada/convertida
+        proposta.status = 'aprovada'
+
+        db.session.commit()
+
+        flash(f'Ordem de Serviço "{ordem.numero}" criada a partir da proposta {proposta.codigo}!', 'success')
+        return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Erro ao criar OS a partir da proposta {id}: {str(e)}')
+        flash(f'Erro ao criar Ordem de Serviço: {str(e)}', 'error')
+        return redirect(url_for('proposta.visualizar_proposta', id=id))

@@ -18,7 +18,7 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-8">
+    <div class="col-12 col-lg-10 col-xl-11">
         <div class="card">
             <div class="card-header">
                 <h4 class="mb-0">
@@ -34,241 +34,587 @@
             <div class="card-body">
                 <form method="POST" novalidate>
                     <!-- Dados Principais -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="fas fa-id-card me-2"></i>
-                                Dados Principais
-                            </h6>
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="fas fa-id-card me-2"></i>
+                            Dados Principais
+                        </h6>
+                        
+                        <div class="row">
+                            <div class="col-md-2">
+                                <label for="tipo" class="form-label">Tipo *</label>
+                                <select class="form-select" id="tipo" name="tipo" required>
+                                    <option value="PF" {% if cliente.tipo == 'PF' %}selected{% endif %}>
+                                        Pessoa Física
+                                    </option>
+                                    <option value="PJ" {% if cliente.tipo == 'PJ' %}selected{% endif %}>
+                                        Pessoa Jurídica
+                                    </option>
+                                </select>
+                            </div>
+                            
+                            <!-- Campos que mudam conforme o tipo -->
+                            <div class="col-md-10">
+                                <!-- Para Pessoa Física -->
+                                <div id="campos-pf" style="display: none;">
+                                    <label for="nome" class="form-label">Nome Completo *</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="nome" 
+                                           name="nome" 
+                                           value="{{ cliente.nome or '' }}" 
+                                           maxlength="150">
+                                </div>
+                                
+                                <!-- Para Pessoa Jurídica -->
+                                <div id="campos-pj" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="nome_fantasia" class="form-label">Nome Fantasia *</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="nome_fantasia" 
+                                                   name="nome_fantasia" 
+                                                   value="{{ cliente.nome_fantasia or '' }}"
+                                                   maxlength="150">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="razao_social" class="form-label">Razão Social</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="razao_social" 
+                                                   name="razao_social" 
+                                                   value="{{ cliente.razao_social or '' }}"
+                                                   maxlength="200">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Campo hidden para nome principal em PJ -->
+                                    <input type="hidden" 
+                                           id="nome_hidden" 
+                                           name="nome" 
+                                           value="{{ cliente.nome or '' }}">
+                                </div>
+                            </div>
                         </div>
                         
-                        <div class="col-md-8">
-                            <label for="nome" class="form-label">Nome Completo *</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="nome" 
-                                   name="nome" 
-                                   value="{{ cliente.nome or '' }}" 
-                                   required 
-                                   maxlength="100">
+                        <!-- Campos adicionais PF -->
+                        <div id="extras-pf" class="row mt-3" style="display: none;">
+                            <div class="col-md-3">
+                                <label for="data_nascimento" class="form-label">Data Nascimento</label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="data_nascimento" 
+                                       name="data_nascimento" 
+                                       value="{{ cliente.data_nascimento or '' }}">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="genero" class="form-label">Gênero</label>
+                                <select class="form-select" id="genero" name="genero">
+                                    <option value="">Selecione...</option>
+                                    <option value="Masculino" {% if cliente.genero == 'Masculino' %}selected{% endif %}>Masculino</option>
+                                    <option value="Feminino" {% if cliente.genero == 'Feminino' %}selected{% endif %}>Feminino</option>
+                                    <option value="Outro" {% if cliente.genero == 'Outro' %}selected{% endif %}>Outro</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="estado_civil" class="form-label">Estado Civil</label>
+                                <select class="form-select" id="estado_civil" name="estado_civil">
+                                    <option value="">Selecione...</option>
+                                    <option value="Solteiro" {% if cliente.estado_civil == 'Solteiro' %}selected{% endif %}>Solteiro(a)</option>
+                                    <option value="Casado" {% if cliente.estado_civil == 'Casado' %}selected{% endif %}>Casado(a)</option>
+                                    <option value="Divorciado" {% if cliente.estado_civil == 'Divorciado' %}selected{% endif %}>Divorciado(a)</option>
+                                    <option value="Viuvo" {% if cliente.estado_civil == 'Viuvo' %}selected{% endif %}>Viúvo(a)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="profissao" class="form-label">Profissão</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="profissao" 
+                                       name="profissao" 
+                                       value="{{ cliente.profissao or '' }}"
+                                       maxlength="100">
+                            </div>
                         </div>
                         
-                        <div class="col-md-4">
-                            <label for="tipo" class="form-label">Tipo *</label>
-                            <select class="form-select" id="tipo" name="tipo" required>
-                                <option value="PF" {% if cliente.tipo == 'PF' %}selected{% endif %}>
-                                    Pessoa Física
-                                </option>
-                                <option value="PJ" {% if cliente.tipo == 'PJ' %}selected{% endif %}>
-                                    Pessoa Jurídica
-                                </option>
-                            </select>
+                        <!-- Campos adicionais PJ -->
+                        <div id="extras-pj" class="row mt-3" style="display: none;">
+                            <div class="col-md-6">
+                                <label for="data_fundacao" class="form-label">Data Fundação</label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       id="data_fundacao" 
+                                       name="data_fundacao" 
+                                       value="{{ cliente.data_fundacao or '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="porte_empresa" class="form-label">Porte</label>
+                                <select class="form-select" id="porte_empresa" name="porte_empresa">
+                                    <option value="">Selecione...</option>
+                                    <option value="MEI" {% if cliente.porte_empresa == 'MEI' %}selected{% endif %}>MEI</option>
+                                    <option value="ME" {% if cliente.porte_empresa == 'ME' %}selected{% endif %}>Microempresa</option>
+                                    <option value="EPP" {% if cliente.porte_empresa == 'EPP' %}selected{% endif %}>Pequeno Porte</option>
+                                    <option value="Medio" {% if cliente.porte_empresa == 'Medio' %}selected{% endif %}>Médio Porte</option>
+                                    <option value="Grande" {% if cliente.porte_empresa == 'Grande' %}selected{% endif %}>Grande</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mt-3">
+                                <label for="segmento" class="form-label">Segmento</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="segmento" 
+                                       name="segmento" 
+                                       value="{{ cliente.segmento or '' }}"
+                                       placeholder="Ex: Tecnologia, Comércio..."
+                                       maxlength="100">
+                            </div>
+                            <div class="col-md-6 mt-3">
+                                <label for="site" class="form-label">Website</label>
+                                <input type="url" 
+                                       class="form-control" 
+                                       id="site" 
+                                       name="site" 
+                                       value="{{ cliente.site or '' }}"
+                                       placeholder="https://..."
+                                       maxlength="200">
+                            </div>
+                        </div>
+                        
+                        <!-- Classificação e Origem -->
+                        <div class="row mt-3">
+                            <div class="col-md-4">
+                                <label for="classificacao" class="form-label">Classificação</label>
+                                <select class="form-select" id="classificacao" name="classificacao">
+                                    <option value="A" {% if cliente.classificacao == 'A' %}selected{% endif %}>
+                                        🟢 Classe A - Premium
+                                    </option>
+                                    <option value="B" {% if cliente.classificacao == 'B' %}selected{% endif %}>
+                                        🟡 Classe B - Padrão
+                                    </option>
+                                    <option value="C" {% if cliente.classificacao == 'C' %}selected{% endif %}>
+                                        🔴 Classe C - Básico
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="origem" class="form-label">Como nos conheceu</label>
+                                <select class="form-select" id="origem" name="origem">
+                                    <option value="">Selecione...</option>
+                                    <option value="Indicacao" {% if cliente.origem == 'Indicacao' %}selected{% endif %}>Indicação</option>
+                                    <option value="Google" {% if cliente.origem == 'Google' %}selected{% endif %}>Google</option>
+                                    <option value="Facebook" {% if cliente.origem == 'Facebook' %}selected{% endif %}>Facebook</option>
+                                    <option value="Instagram" {% if cliente.origem == 'Instagram' %}selected{% endif %}>Instagram</option>
+                                    <option value="Site" {% if cliente.origem == 'Site' %}selected{% endif %}>Site</option>
+                                    <option value="Telemarketing" {% if cliente.origem == 'Telemarketing' %}selected{% endif %}>Telemarketing</option>
+                                    <option value="Outros" {% if cliente.origem == 'Outros' %}selected{% endif %}>Outros</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="ativo" {% if cliente.status == 'ativo' %}selected{% endif %}>✅ Ativo</option>
+                                    <option value="inativo" {% if cliente.status == 'inativo' %}selected{% endif %}>⏸️ Inativo</option>
+                                    <option value="bloqueado" {% if cliente.status == 'bloqueado' %}selected{% endif %}>🚫 Bloqueado</option>
+                                    <option value="suspenso" {% if cliente.status == 'suspenso' %}selected{% endif %}>⏳ Suspenso</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Documentos -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="fas fa-file-alt me-2"></i>
-                                Documentos
-                            </h6>
-                        </div>
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="fas fa-file-alt me-2"></i>
+                            Documentos
+                        </h6>
                         
-                        <div class="col-md-6">
-                            <label for="cpf_cnpj" class="form-label">
-                                <span id="label-documento">CPF/CNPJ</span> *
-                            </label>
-                            <div class="input-group">
-                                <input type="text"
-                                       class="form-control"
-                                       id="cpf_cnpj"
-                                       name="cpf_cnpj"
-                                       value="{{ cliente.cpf_cnpj or '' }}"
-                                       placeholder="000.000.000-00"
-                                       required>
-                                <button type="button" 
-                                        class="btn btn-outline-primary" 
-                                        id="btn-consultar-cnpj"
-                                        title="Consultar CNPJ automaticamente">
-                                    <i class="fas fa-search"></i>
-                                </button>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="cpf_cnpj" class="form-label">
+                                    <span id="label-documento">CPF/CNPJ</span> *
+                                </label>
+                                <div class="input-group">
+                                    <input type="text"
+                                           class="form-control"
+                                           id="cpf_cnpj"
+                                           name="cpf_cnpj"
+                                           value="{{ cliente.cpf_cnpj or '' }}"
+                                           placeholder="000.000.000-00"
+                                           required>
+                                    <button type="button" 
+                                            class="btn btn-outline-primary" 
+                                            id="btn-consultar-cnpj"
+                                            title="Consultar CNPJ automaticamente">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">Para CNPJ, clique no botão para busca automática</small>
                             </div>
-                            <small class="text-muted">Para CNPJ, clique no botão para busca automática</small>
+                            
+                            <div class="col-md-6">
+                                <label for="rg_ie" class="form-label">
+                                    <span id="label-rg">RG/IE</span>
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="rg_ie" 
+                                       name="rg_ie" 
+                                       value="{{ cliente.rg_ie or '' }}"
+                                       maxlength="20">
+                            </div>
                         </div>
                         
-                        <div class="col-md-6">
-                            <label for="rg_ie" class="form-label">
-                                <span id="label-rg">RG/IE</span>
-                            </label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="rg_ie" 
-                                   name="rg_ie" 
-                                   value="{{ cliente.rg_ie or '' }}"
-                                   maxlength="20">
+                        <!-- Inscrição Municipal (apenas para PJ) -->
+                        <div class="row mt-3">
+                            <div class="col-md-6" id="campo-im" style="display: none;">
+                                <label for="im" class="form-label">Inscrição Municipal</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="im" 
+                                       name="im" 
+                                       value="{{ cliente.im or '' }}"
+                                       maxlength="20">
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Contato -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="fas fa-phone me-2"></i>
-                                Contato
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="fas fa-phone me-2"></i>
+                            Contato Principal
+                        </h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email Principal</label>
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email" 
+                                       name="email" 
+                                       value="{{ cliente.email or '' }}"
+                                       maxlength="150">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="email_financeiro" class="form-label">Email Financeiro</label>
+                                <input type="email" 
+                                       class="form-control" 
+                                       id="email_financeiro" 
+                                       name="email_financeiro" 
+                                       value="{{ cliente.email_financeiro or '' }}"
+                                       placeholder="Email para cobranças"
+                                       maxlength="150">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="telefone" class="form-label">Telefone</label>
+                                <input type="tel" 
+                                       class="form-control" 
+                                       id="telefone" 
+                                       name="telefone" 
+                                       value="{{ cliente.telefone or '' }}"
+                                       placeholder="(11) 1234-5678">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="celular" class="form-label">Celular</label>
+                                <input type="tel" 
+                                       class="form-control" 
+                                       id="celular" 
+                                       name="celular" 
+                                       value="{{ cliente.celular or '' }}"
+                                       placeholder="(11) 99999-9999">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label for="whatsapp" class="form-label">
+                                    <i class="fab fa-whatsapp text-success"></i> WhatsApp
+                                </label>
+                                <input type="tel" 
+                                       class="form-control" 
+                                       id="whatsapp" 
+                                       name="whatsapp" 
+                                       value="{{ cliente.whatsapp or '' }}"
+                                       placeholder="(11) 99999-9999">
+                            </div>
+                        </div>
+                        
+                        <!-- Contato Comercial -->
+                        <div class="mt-4">
+                            <h6 class="text-muted border-bottom pb-2">
+                                <i class="fas fa-handshake me-2"></i>
+                                Contato Comercial
                             </h6>
-                        </div>
-                        
-                        <div class="col-md-12 mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" 
-                                   class="form-control" 
-                                   id="email" 
-                                   name="email" 
-                                   value="{{ cliente.email or '' }}"
-                                   maxlength="120">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="telefone" class="form-label">Telefone</label>
-                            <input type="tel" 
-                                   class="form-control" 
-                                   id="telefone" 
-                                   name="telefone" 
-                                   value="{{ cliente.telefone or '' }}"
-                                   placeholder="(11) 1234-5678">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="celular" class="form-label">Celular</label>
-                            <input type="tel" 
-                                   class="form-control" 
-                                   id="celular" 
-                                   name="celular" 
-                                   value="{{ cliente.celular or '' }}"
-                                   placeholder="(11) 99999-9999">
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="contato_nome" class="form-label">Nome do Responsável</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="contato_nome" 
+                                           name="contato_nome" 
+                                           value="{{ cliente.contato_nome or '' }}"
+                                           maxlength="100">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="contato_cargo" class="form-label">Cargo</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="contato_cargo" 
+                                           name="contato_cargo" 
+                                           value="{{ cliente.contato_cargo or '' }}"
+                                           placeholder="Ex: Gerente, Diretor..."
+                                           maxlength="100">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="contato_telefone" class="form-label">Telefone do Contato</label>
+                                    <input type="tel" 
+                                           class="form-control" 
+                                           id="contato_telefone" 
+                                           name="contato_telefone" 
+                                           value="{{ cliente.contato_telefone or '' }}"
+                                           placeholder="(11) 99999-9999">
+                                </div>
+                                
+                                <div class="col-md-12 mt-3">
+                                    <label for="contato_email" class="form-label">Email do Contato</label>
+                                    <input type="email" 
+                                           class="form-control" 
+                                           id="contato_email" 
+                                           name="contato_email" 
+                                           value="{{ cliente.contato_email or '' }}"
+                                           maxlength="150">
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Endereço -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="fas fa-map-marker-alt me-2"></i>
-                                Endereço
-                            </h6>
-                        </div>
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            Endereço
+                        </h6>
                         
-                        <div class="col-md-3 mb-3">
-                            <label for="cep" class="form-label">CEP</label> 
-                            <div class="input-group">
-                                <input type="text"
-                                       class="form-control"
-                                       id="cep"
-                                       name="cep"
-                                       value="{{ cliente.cep or '' }}"
-                                       placeholder="00000-000">
-                                <button type="button" 
-                                        class="btn btn-outline-primary" 
-                                        id="btn-consultar-cep"
-                                        title="Consultar CEP automaticamente">
-                                    <i class="fas fa-search"></i>
-                                </button>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="cep" class="form-label">CEP</label> 
+                                <div class="input-group">
+                                    <input type="text"
+                                           class="form-control"
+                                           id="cep"
+                                           name="cep"
+                                           value="{{ cliente.cep or '' }}"
+                                           placeholder="00000-000">
+                                    <button type="button" 
+                                            class="btn btn-outline-primary" 
+                                            id="btn-consultar-cep"
+                                            title="Consultar CEP automaticamente">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">Clique no botão para busca automática</small>
                             </div>
-                            <small class="text-muted">Clique no botão para busca automática</small>
-                        </div>                        <div class="col-md-6 mb-3">
-                            <label for="endereco" class="form-label">Endereço</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="endereco" 
-                                   name="endereco" 
-                                   value="{{ cliente.endereco or '' }}"
-                                   maxlength="200">
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="endereco" class="form-label">Endereço</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="endereco" 
+                                       name="endereco" 
+                                       value="{{ cliente.endereco or '' }}"
+                                       maxlength="200">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="numero" class="form-label">Número</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="numero" 
+                                       name="numero" 
+                                       value="{{ cliente.numero or '' }}"
+                                       maxlength="10">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="complemento" class="form-label">Complemento</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="complemento" 
+                                       name="complemento" 
+                                       value="{{ cliente.complemento or '' }}"
+                                       maxlength="50">
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <label for="bairro" class="form-label">Bairro</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="bairro" 
+                                       name="bairro" 
+                                       value="{{ cliente.bairro or '' }}"
+                                       maxlength="50">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="cidade" class="form-label">Cidade</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="cidade" 
+                                       name="cidade" 
+                                       value="{{ cliente.cidade or '' }}"
+                                       maxlength="50">
+                            </div>
+                            
+                            <div class="col-md-2 mb-3">
+                                <label for="estado" class="form-label">UF</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="estado" 
+                                       name="estado" 
+                                       value="{{ cliente.estado or '' }}"
+                                       maxlength="2"
+                                       style="text-transform: uppercase;">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label for="pais" class="form-label">País</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="pais" 
+                                       name="pais" 
+                                       value="{{ cliente.pais or 'Brasil' }}"
+                                       maxlength="50">
+                            </div>
                         </div>
+                    </div>
+                    
+                    <!-- Configurações Financeiras -->
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="fas fa-money-bill me-2"></i>
+                            Configurações Financeiras
+                        </h6>
                         
-                        <div class="col-md-3 mb-3">
-                            <label for="numero" class="form-label">Número</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="numero" 
-                                   name="numero" 
-                                   value="{{ cliente.numero or '' }}"
-                                   maxlength="10">
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="complemento" class="form-label">Complemento</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="complemento" 
-                                   name="complemento" 
-                                   value="{{ cliente.complemento or '' }}"
-                                   maxlength="50">
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label for="bairro" class="form-label">Bairro</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="bairro" 
-                                   name="bairro" 
-                                   value="{{ cliente.bairro or '' }}"
-                                   maxlength="50">
-                        </div>
-                        
-                        <div class="col-md-3 mb-3">
-                            <label for="cidade" class="form-label">Cidade</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="cidade" 
-                                   name="cidade" 
-                                   value="{{ cliente.cidade or '' }}"
-                                   maxlength="50">
-                        </div>
-                        
-                        <div class="col-md-1 mb-3">
-                            <label for="estado" class="form-label">UF</label>
-                            <input type="text" 
-                                   class="form-control" 
-                                   id="estado" 
-                                   name="estado" 
-                                   value="{{ cliente.estado or '' }}"
-                                   maxlength="2"
-                                   style="text-transform: uppercase;">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="limite_credito" class="form-label">Limite de Crédito</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="limite_credito" 
+                                           name="limite_credito" 
+                                           value="{{ cliente.limite_credito or 0 }}"
+                                           min="0"
+                                           step="0.01">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="forma_pagamento_padrao" class="form-label">Forma Pagamento Padrão</label>
+                                <select class="form-select" id="forma_pagamento_padrao" name="forma_pagamento_padrao">
+                                    <option value="">Selecione...</option>
+                                    <option value="Dinheiro" {% if cliente.forma_pagamento_padrao == 'Dinheiro' %}selected{% endif %}>Dinheiro</option>
+                                    <option value="PIX" {% if cliente.forma_pagamento_padrao == 'PIX' %}selected{% endif %}>PIX</option>
+                                    <option value="Cartao_Debito" {% if cliente.forma_pagamento_padrao == 'Cartao_Debito' %}selected{% endif %}>Cartão Débito</option>
+                                    <option value="Cartao_Credito" {% if cliente.forma_pagamento_padrao == 'Cartao_Credito' %}selected{% endif %}>Cartão Crédito</option>
+                                    <option value="Boleto" {% if cliente.forma_pagamento_padrao == 'Boleto' %}selected{% endif %}>Boleto</option>
+                                    <option value="Transferencia" {% if cliente.forma_pagamento_padrao == 'Transferencia' %}selected{% endif %}>Transferência</option>
+                                    <option value="Cheque" {% if cliente.forma_pagamento_padrao == 'Cheque' %}selected{% endif %}>Cheque</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-6 mt-3">
+                                <label for="prazo_pagamento_padrao" class="form-label">Prazo Pagamento (dias)</label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="prazo_pagamento_padrao" 
+                                       name="prazo_pagamento_padrao" 
+                                       value="{{ cliente.prazo_pagamento_padrao or 30 }}"
+                                       min="0"
+                                       max="365">
+                            </div>
+                            
+                            <div class="col-md-6 mt-3">
+                                <label for="desconto_padrao" class="form-label">Desconto Padrão (%)</label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="desconto_padrao" 
+                                       name="desconto_padrao" 
+                                       value="{{ cliente.desconto_padrao or 0 }}"
+                                       min="0"
+                                       max="100"
+                                       step="0.01">
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Observações -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">
-                                <i class="fas fa-sticky-note me-2"></i>
-                                Observações
-                            </h6>
-                        </div>
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="fas fa-sticky-note me-2"></i>
+                            Observações
+                        </h6>
                         
-                        <div class="col-12">
-                            <label for="observacoes" class="form-label">Observações</label>
-                            <textarea class="form-control" 
-                                      id="observacoes" 
-                                      name="observacoes" 
-                                      rows="3"
-                                      placeholder="Informações adicionais sobre o cliente...">{{ cliente.observacoes or '' }}</textarea>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="observacoes" class="form-label">Observações Gerais</label>
+                                <textarea class="form-control" 
+                                          id="observacoes" 
+                                          name="observacoes" 
+                                          rows="4"
+                                          placeholder="Informações adicionais sobre o cliente...">{{ cliente.observacoes or '' }}</textarea>
+                                <small class="text-muted">Visível em relatórios e documentos</small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label for="observacoes_internas" class="form-label">
+                                    <i class="fas fa-lock me-1"></i>
+                                    Observações Internas
+                                </label>
+                                <textarea class="form-control" 
+                                          id="observacoes_internas" 
+                                          name="observacoes_internas" 
+                                          rows="4"
+                                          placeholder="Anotações internas sobre o cliente...">{{ cliente.observacoes_internas or '' }}</textarea>
+                                <small class="text-muted">Apenas para uso interno - não aparece em relatórios</small>
+                            </div>
+                            
+                            <!-- Motivo de bloqueio (só aparece se status = bloqueado) -->
+                            <div class="col-12 mt-3" id="campo-motivo-bloqueio" style="display: none;">
+                                <label for="motivo_bloqueio" class="form-label text-danger">
+                                    <i class="fas fa-ban me-1"></i>
+                                    Motivo do Bloqueio
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="motivo_bloqueio" 
+                                       name="motivo_bloqueio" 
+                                       value="{{ cliente.motivo_bloqueio or '' }}"
+                                       placeholder="Explique o motivo do bloqueio..."
+                                       maxlength="200">
+                            </div>
                         </div>
                     </div>
                     
                     <!-- Botões -->
-                    <div class="row">
+                    <div class="row mt-4">
                         <div class="col-12">
-                            <div class="d-flex justify-content-between">
-                                <a href="{{ url_for('cliente.listar') }}" class="btn btn-outline-secondary">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <a href="{{ url_for('cliente.listar') }}" class="btn btn-outline-secondary btn-lg">
                                     <i class="fas fa-arrow-left me-2"></i>
                                     Voltar
                                 </a>
                                 
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary btn-lg px-5">
                                     <i class="fas fa-save me-2"></i>
-                                    {% if cliente.id %}Atualizar{% else %}Salvar{% endif %}
+                                    {% if cliente.id %}Atualizar Cliente{% else %}Salvar Cliente{% endif %}
                                 </button>
                             </div>
                         </div>
@@ -291,19 +637,83 @@
         // Atualiza labels baseado no tipo
         function atualizarLabels() {
             const btnCnpj = document.getElementById('btn-consultar-cnpj');
+            const camposPF = document.getElementById('campos-pf');
+            const camposPJ = document.getElementById('campos-pj');
+            const extrasPF = document.getElementById('extras-pf');
+            const extrasPJ = document.getElementById('extras-pj');
+            const campoIM = document.getElementById('campo-im');
             
             if (tipoSelect.value === 'PF') {
                 labelDocumento.textContent = 'CPF';
                 labelRg.textContent = 'RG';
                 cpfCnpjInput.placeholder = '000.000.000-00';
+                
+                // Mostra campos PF, esconde PJ
+                camposPF.style.display = 'block';
+                camposPJ.style.display = 'none';
+                extrasPF.style.display = 'flex';
+                extrasPJ.style.display = 'none';
+                campoIM.style.display = 'none';
+                
                 // Esconde o botão de consulta CNPJ para pessoa física
                 btnCnpj.style.display = 'none';
+                
+                // Campo nome é obrigatório para PF
+                document.getElementById('nome').required = true;
+                document.getElementById('nome_fantasia').required = false;
+                
             } else {
                 labelDocumento.textContent = 'CNPJ';
                 labelRg.textContent = 'Inscrição Estadual';
                 cpfCnpjInput.placeholder = '00.000.000/0000-00';
+                
+                // Mostra campos PJ, esconde PF
+                camposPF.style.display = 'none';
+                camposPJ.style.display = 'block';
+                extrasPF.style.display = 'none';
+                extrasPJ.style.display = 'flex';
+                campoIM.style.display = 'block';
+                
                 // Mostra o botão de consulta CNPJ para pessoa jurídica
                 btnCnpj.style.display = 'inline-block';
+                
+                // Nome fantasia é obrigatório para PJ
+                document.getElementById('nome').required = false;
+                document.getElementById('nome_fantasia').required = true;
+                
+                // Sincroniza nome fantasia com campo nome hidden
+                sincronizarNomePJ();
+            }
+        }
+        
+        // Sincroniza nome fantasia com campo nome para PJ
+        function sincronizarNomePJ() {
+            const nomeFantasia = document.getElementById('nome_fantasia');
+            const nomeHidden = document.getElementById('nome_hidden');
+            
+            // Atualiza o nome hidden quando nome fantasia mudar
+            nomeFantasia.addEventListener('input', function() {
+                nomeHidden.value = this.value;
+            });
+            
+            // Se já tem valor, sincroniza
+            if (nomeFantasia.value && !nomeHidden.value) {
+                nomeHidden.value = nomeFantasia.value;
+            }
+        }
+        
+        // Controla exibição do motivo de bloqueio
+        function controleMotivoBoqueio() {
+            const status = document.getElementById('status').value;
+            const campoMotivo = document.getElementById('campo-motivo-bloqueio');
+            
+            if (status === 'bloqueado') {
+                campoMotivo.style.display = 'block';
+                document.getElementById('motivo_bloqueio').required = true;
+            } else {
+                campoMotivo.style.display = 'none';
+                document.getElementById('motivo_bloqueio').required = false;
+                document.getElementById('motivo_bloqueio').value = '';
             }
         }
         
@@ -349,6 +759,7 @@
         
         // Event listeners
         tipoSelect.addEventListener('change', atualizarLabels);
+        document.getElementById('status').addEventListener('change', controleMotivoBoqueio);
         
         cpfCnpjInput.addEventListener('input', function() {
             this.value = mascaraDocumento(this.value, tipoSelect.value);
@@ -363,6 +774,14 @@
         });
         
         document.getElementById('celular').addEventListener('input', function() {
+            this.value = mascaraTelefone(this.value);
+        });
+        
+        document.getElementById('whatsapp').addEventListener('input', function() {
+            this.value = mascaraTelefone(this.value);
+        });
+        
+        document.getElementById('contato_telefone').addEventListener('input', function() {
             this.value = mascaraTelefone(this.value);
         });
         
@@ -396,29 +815,66 @@
                 .then(data => {
                     if (data.success) {
                         // Preenche os campos com os dados retornados
-                        document.getElementById('nome').value = data.data.nome || '';
-                        document.getElementById('email').value = data.data.email || '';
-                        document.getElementById('telefone').value = data.data.telefone || '';
-                        
-                        // Preenche endereco
-                        const endereco = data.data.endereco;
-                        if (endereco) {
-                            document.getElementById('cep').value = endereco.cep || '';
-                            document.getElementById('endereco').value = endereco.logradouro || '';
-                            document.getElementById('numero').value = endereco.numero || '';
-                            document.getElementById('complemento').value = endereco.complemento || '';
-                            document.getElementById('bairro').value = endereco.bairro || '';
-                            document.getElementById('cidade').value = endereco.cidade || '';
-                            document.getElementById('estado').value = endereco.uf || '';
+                        if (data.data.fantasia) {
+                            document.getElementById('nome_fantasia').value = data.data.fantasia;
+                        }
+                        if (data.data.nome) {
+                            // Se não tem fantasia, usa o nome como fantasia
+                            if (!data.data.fantasia && document.getElementById('nome_fantasia').value === '') {
+                                document.getElementById('nome_fantasia').value = data.data.nome;
+                            }
+                            document.getElementById('razao_social').value = data.data.nome;
                         }
                         
-                        // Aplica mascaras
-                        document.getElementById('cep').value = mascaraCep(document.getElementById('cep').value);
-                        document.getElementById('telefone').value = mascaraTelefone(document.getElementById('telefone').value);
+                        // Preenche contatos
+                        if (data.data.email) {
+                            document.getElementById('email').value = data.data.email;
+                        }
+                        if (data.data.telefone) {
+                            document.getElementById('telefone').value = data.data.telefone;
+                        }
                         
-                        alert('Dados da empresa carregados com sucesso!');
+                        // Preenche endereco completo
+                        const endereco = data.data.endereco;
+                        if (endereco) {
+                            if (endereco.cep) {
+                                document.getElementById('cep').value = mascaraCep(endereco.cep);
+                            }
+                            if (endereco.logradouro) {
+                                document.getElementById('endereco').value = endereco.logradouro;
+                            }
+                            if (endereco.numero) {
+                                document.getElementById('numero').value = endereco.numero;
+                            }
+                            if (endereco.complemento) {
+                                document.getElementById('complemento').value = endereco.complemento;
+                            }
+                            if (endereco.bairro) {
+                                document.getElementById('bairro').value = endereco.bairro;
+                            }
+                            if (endereco.cidade) {
+                                document.getElementById('cidade').value = endereco.cidade;
+                            }
+                            if (endereco.uf) {
+                                document.getElementById('estado').value = endereco.uf.toUpperCase();
+                            }
+                        }
+                        
+                        // Aplica mascaras nos campos preenchidos
+                        if (document.getElementById('telefone').value) {
+                            document.getElementById('telefone').value = mascaraTelefone(document.getElementById('telefone').value);
+                        }
+                        
+                        // Define o país como Brasil
+                        document.getElementById('pais').value = 'Brasil';
+                        
+                        alert('✅ Dados da empresa carregados com sucesso!\n\n📋 Dados preenchidos:\n' +
+                              '• Nome/Razão Social\n' +
+                              '• Nome Fantasia\n' + 
+                              '• Email e Telefone\n' +
+                              '• Endereço completo');
                     } else {
-                        alert('Erro: ' + data.error);
+                        alert('❌ Erro: ' + data.error);
                     }
                 })
                 .catch(error => {
@@ -477,9 +933,14 @@
 
         // Inicializa
         atualizarLabels();
+        controleMotivoBoqueio();
 
-        // Foco no nome
-        document.getElementById('nome').focus();
+        // Foco no campo correto baseado no tipo
+        if (tipoSelect.value === 'PF') {
+            document.getElementById('nome').focus();
+        } else {
+            document.getElementById('nome_fantasia').focus();
+        }
     });
 </script>
 {% endblock %}

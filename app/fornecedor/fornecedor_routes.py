@@ -17,6 +17,34 @@ from app.fornecedor.fornecedor_model import Fornecedor
 # Cria o blueprint
 fornecedor_bp = Blueprint('fornecedor', __name__, template_folder='templates')
 
+def _parse_decimal(value):
+    """Converte string para decimal."""
+    if not value or value.strip() == '':
+        return None
+    try:
+        return float(value.replace(',', '.'))
+    except (ValueError, AttributeError):
+        return None
+
+def _parse_int(value):
+    """Converte string para inteiro."""
+    if not value or value.strip() == '':
+        return None
+    try:
+        return int(value)
+    except (ValueError, AttributeError):
+        return None
+
+def _parse_date(value):
+    """Converte string para date."""
+    if not value or value.strip() == '':
+        return None
+    try:
+        from datetime import datetime
+        return datetime.strptime(value, '%Y-%m-%d').date()
+    except (ValueError, AttributeError):
+        return None
+
 @fornecedor_bp.route('/')
 @fornecedor_bp.route('/listar')
 def listar():
@@ -73,18 +101,23 @@ def novo():
     """
     if request.method == 'POST':
         try:
-            # Coleta dados do formulário
+            # Coleta TODOS os dados profissionais do formulário
             fornecedor = Fornecedor(
                 nome=request.form.get('nome', '').strip(),
                 nome_fantasia=request.form.get('nome_fantasia', '').strip(),
                 tipo=request.form.get('tipo', 'PJ'),
-                cnpj_cpf=''.join(filter(str.isdigit, request.form.get('cnpj_cpf', ''))),
-                inscricao_estadual=request.form.get('inscricao_estadual', '').strip(),
+                cnpj_cpf=''.join(filter(str.isdigit, request.form.get('cpf_cnpj', ''))),
+                rg_ie=request.form.get('rg_ie', '').strip(),
+                inscricao_estadual=request.form.get('rg_ie', '').strip(),
                 inscricao_municipal=request.form.get('inscricao_municipal', '').strip(),
+                im=request.form.get('im', '').strip(),
                 email=request.form.get('email', '').strip(),
+                email_financeiro=request.form.get('email_financeiro', '').strip(),
                 telefone=request.form.get('telefone', '').strip(),
                 celular=request.form.get('celular', '').strip(),
+                whatsapp=request.form.get('whatsapp', '').strip(),
                 site=request.form.get('site', '').strip(),
+                website=request.form.get('website', '').strip(),
                 contato_nome=request.form.get('contato_nome', '').strip(),
                 contato_cargo=request.form.get('contato_cargo', '').strip(),
                 contato_email=request.form.get('contato_email', '').strip(),
@@ -96,10 +129,24 @@ def novo():
                 bairro=request.form.get('bairro', '').strip(),
                 cidade=request.form.get('cidade', '').strip(),
                 estado=request.form.get('estado', '').strip(),
+                pais=request.form.get('pais', '').strip() or 'Brasil',
+                segmento=request.form.get('segmento', '').strip(),
+                porte_empresa=request.form.get('porte_empresa', '').strip(),
+                origem=request.form.get('origem', '').strip(),
+                classificacao=request.form.get('classificacao', '').strip(),
                 categoria=request.form.get('categoria', '').strip(),
                 condicoes_pagamento=request.form.get('condicoes_pagamento', '').strip(),
                 prazo_entrega=request.form.get('prazo_entrega', '').strip(),
-                observacoes=request.form.get('observacoes', '').strip()
+                limite_credito=_parse_decimal(request.form.get('limite_credito')),
+                prazo_pagamento_padrao=_parse_int(request.form.get('prazo_pagamento_padrao')),
+                desconto_padrao=_parse_decimal(request.form.get('desconto_padrao')),
+                data_nascimento=_parse_date(request.form.get('data_nascimento')),
+                data_fundacao=_parse_date(request.form.get('data_fundacao')),
+                genero=request.form.get('genero', '').strip(),
+                estado_civil=request.form.get('estado_civil', '').strip(),
+                profissao=request.form.get('profissao', '').strip(),
+                observacoes=request.form.get('observacoes', '').strip(),
+                observacoes_internas=request.form.get('observacoes_internas', '').strip()
             )
             
             # Validações
@@ -107,9 +154,10 @@ def novo():
                 flash('Nome é obrigatório!', 'error')
                 return render_template('fornecedor/form.html', fornecedor=fornecedor)
             
-            if fornecedor.cnpj_cpf:
+            documento = fornecedor.cnpj_cpf
+            if documento:
                 # Verifica se documento já existe
-                existe = Fornecedor.buscar_por_documento(fornecedor.cnpj_cpf)
+                existe = Fornecedor.buscar_por_documento(documento)
                 if existe:
                     flash('CNPJ/CPF já cadastrado!', 'error')
                     return render_template('fornecedor/form.html', fornecedor=fornecedor)

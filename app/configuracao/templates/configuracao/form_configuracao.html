@@ -210,34 +210,207 @@
 </div>
 
 <script>
-// Funções simples para lookup CEP/CNPJ
+// Funções aprimoradas para lookup CEP/CNPJ com melhor tratamento de erros
 async function buscarCNPJ() {
-    const cnpj = document.getElementById('cnpj_input').value;
-    if (!cnpj) return alert('Informe o CNPJ');
-    const res = await fetch(`/configuracao/lookup/cnpj?cnpj=${encodeURIComponent(cnpj)}`);
-    if (!res.ok) return alert('Erro ao consultar CNPJ');
-    const data = await res.json();
-    // Mapear campos básicos quando disponíveis
-    if (data.razao_social) document.querySelector('input[name="razao_social"]').value = data.razao_social;
-    if (data.telefone) document.querySelector('input[name="telefone"]').value = data.telefone;
-    if (data.email) document.querySelector('input[name="email"]').value = data.email;
+    const cnpjInput = document.getElementById('cnpj_input');
+    const cnpj = cnpjInput.value.trim();
+    
+    console.log('🔍 Buscando CNPJ:', cnpj);
+    
+    if (!cnpj) {
+        alert('Informe o CNPJ');
+        return;
+    }
+    
+    // Validar se tem pelo menos 11 dígitos
+    const cnpjLimpo = cnpj.replace(/\D/g, '');
+    if (cnpjLimpo.length < 11) {
+        alert('CNPJ deve ter pelo menos 11 dígitos');
+        return;
+    }
+    
+    try {
+        // Mostrar loading
+        const btn = document.getElementById('btn_lookup_cnpj');
+        const originalText = btn.textContent;
+        btn.textContent = '⏳';
+        btn.disabled = true;
+        
+        const url = `/configuracao/lookup/cnpj?cnpj=${encodeURIComponent(cnpj)}`;
+        console.log('📡 URL da requisição:', url);
+        
+        const res = await fetch(url);
+        console.log('📊 Status da resposta:', res.status);
+        
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error('❌ Erro na resposta:', errorText);
+            throw new Error(`Erro ${res.status}: ${res.statusText}`);
+        }
+        
+        const data = await res.json();
+        console.log('📄 Dados recebidos:', data);
+        
+        // Mapear campos básicos quando disponíveis
+        if (data.razao_social) {
+            document.querySelector('input[name="razao_social"]').value = data.razao_social;
+            console.log('✅ Razão Social preenchida:', data.razao_social);
+        }
+        
+        if (data.nome_fantasia) {
+            document.querySelector('input[name="nome_fantasia"]').value = data.nome_fantasia;
+            console.log('✅ Nome Fantasia preenchido:', data.nome_fantasia);
+        }
+        
+        if (data.ddd_telefone_1) {
+            const telefone = `(${data.ddd_telefone_1}) ${data.telefone_1}`;
+            document.querySelector('input[name="telefone"]').value = telefone;
+            console.log('✅ Telefone preenchido:', telefone);
+        }
+        
+        if (data.email) {
+            document.querySelector('input[name="email"]').value = data.email;
+            console.log('✅ Email preenchido:', data.email);
+        }
+        
+        // Preencher endereço se disponível
+        if (data.logradouro) {
+            document.querySelector('input[name="logradouro"]').value = data.logradouro;
+            console.log('✅ Logradouro preenchido:', data.logradouro);
+        }
+        
+        if (data.bairro) {
+            document.querySelector('input[name="bairro"]').value = data.bairro;
+            console.log('✅ Bairro preenchido:', data.bairro);
+        }
+        
+        if (data.municipio) {
+            document.querySelector('input[name="cidade"]').value = data.municipio;
+            console.log('✅ Cidade preenchida:', data.municipio);
+        }
+        
+        if (data.uf) {
+            document.querySelector('input[name="uf"]').value = data.uf;
+            console.log('✅ UF preenchida:', data.uf);
+        }
+        
+        if (data.cep) {
+            document.querySelector('input[name="cep"]').value = data.cep;
+            console.log('✅ CEP preenchido:', data.cep);
+        }
+        
+        alert('✅ Dados da empresa preenchidos com sucesso!');
+        
+    } catch (error) {
+        console.error('❌ Erro ao buscar CNPJ:', error);
+        alert(`Erro ao consultar CNPJ: ${error.message}`);
+    } finally {
+        // Restaurar botão
+        const btn = document.getElementById('btn_lookup_cnpj');
+        btn.textContent = 'Buscar';
+        btn.disabled = false;
+    }
 }
-
-document.getElementById('btn_lookup_cnpj').addEventListener('click', buscarCNPJ);
 
 async function buscarCEP() {
-    const cep = document.getElementById('cep_input').value;
-    if (!cep) return alert('Informe o CEP');
-    const res = await fetch(`/configuracao/lookup/cep?cep=${encodeURIComponent(cep)}`);
-    if (!res.ok) return alert('Erro ao consultar CEP');
-    const data = await res.json();
-    if (data.erro) return alert('CEP não encontrado');
-    document.getElementById('logradouro').value = data.logradouro || '';
-    document.getElementById('bairro').value = data.bairro || '';
-    document.getElementById('cidade').value = data.localidade || '';
-    document.getElementById('uf').value = data.uf || '';
+    const cepInput = document.getElementById('cep_input');
+    const cep = cepInput.value.trim();
+    
+    console.log('🔍 Buscando CEP:', cep);
+    
+    if (!cep) {
+        alert('Informe o CEP');
+        return;
+    }
+    
+    // Validar se tem pelo menos 8 dígitos
+    const cepLimpo = cep.replace(/\D/g, '');
+    if (cepLimpo.length !== 8) {
+        alert('CEP deve ter 8 dígitos');
+        return;
+    }
+    
+    try {
+        // Mostrar loading
+        const btn = document.getElementById('btn_lookup_cep');
+        const originalText = btn.textContent;
+        btn.textContent = '⏳';
+        btn.disabled = true;
+        
+        const url = `/configuracao/lookup/cep?cep=${encodeURIComponent(cep)}`;
+        console.log('📡 URL da requisição:', url);
+        
+        const res = await fetch(url);
+        console.log('📊 Status da resposta:', res.status);
+        
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error('❌ Erro na resposta:', errorText);
+            throw new Error(`Erro ${res.status}: ${res.statusText}`);
+        }
+        
+        const data = await res.json();
+        console.log('📄 Dados recebidos:', data);
+        
+        if (data.erro) {
+            alert('CEP não encontrado');
+            return;
+        }
+        
+        // Preencher campos de endereço
+        if (data.logradouro) {
+            document.getElementById('logradouro').value = data.logradouro;
+            console.log('✅ Logradouro preenchido:', data.logradouro);
+        }
+        
+        if (data.bairro) {
+            document.getElementById('bairro').value = data.bairro;
+            console.log('✅ Bairro preenchido:', data.bairro);
+        }
+        
+        if (data.localidade) {
+            document.getElementById('cidade').value = data.localidade;
+            console.log('✅ Cidade preenchida:', data.localidade);
+        }
+        
+        if (data.uf) {
+            document.getElementById('uf').value = data.uf;
+            console.log('✅ UF preenchida:', data.uf);
+        }
+        
+        alert('✅ Endereço preenchido com sucesso!');
+        
+    } catch (error) {
+        console.error('❌ Erro ao buscar CEP:', error);
+        alert(`Erro ao consultar CEP: ${error.message}`);
+    } finally {
+        // Restaurar botão
+        const btn = document.getElementById('btn_lookup_cep');
+        btn.textContent = 'Buscar';
+        btn.disabled = false;
+    }
 }
 
-document.getElementById('btn_lookup_cep').addEventListener('click', buscarCEP);
+// Registrar eventos quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Sistema de busca CNPJ/CEP carregado');
+    
+    const btnCNPJ = document.getElementById('btn_lookup_cnpj');
+    const btnCEP = document.getElementById('btn_lookup_cep');
+    
+    if (btnCNPJ) {
+        btnCNPJ.addEventListener('click', buscarCNPJ);
+        console.log('✅ Event listener CNPJ registrado');
+    } else {
+        console.error('❌ Botão CNPJ não encontrado');
+    }
+    
+    if (btnCEP) {
+        btnCEP.addEventListener('click', buscarCEP);
+        console.log('✅ Event listener CEP registrado');
+    } else {
+        console.error('❌ Botão CEP não encontrado');
+    }
+});
 </script>
 {% endblock %}

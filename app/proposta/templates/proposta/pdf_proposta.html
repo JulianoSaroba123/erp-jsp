@@ -254,16 +254,16 @@
             {% endif %}
         </div>
         <div class="header-info">
-            <h1>{{ config.nome_fantasia if config else 'JSP ELÉTRICA INDUSTRIAL &amp; SOLAR' }}</h1>
+            <h1>{{ config.nome_fantasia if config else 'JSP Soluções' }}</h1>
             <div class="details">
-                CNPJ: {{ config.cnpj if config else '41.280.764/0001-65' }}<br>
+                CNPJ: {{ config.cnpj if config else '12.345.678/0001-90' }}<br>
                 {% if config and config.logradouro %}
                 {{ config.logradouro }}{% if config.numero %}, {{ config.numero }}{% endif %}{% if config.bairro %} – {{ config.bairro }}{% endif %}{% if config.cidade %} – {{ config.cidade }}{% endif %}{% if config.uf %}/{{ config.uf }}{% endif %}{% if config.cep %} – CEP {{ config.cep }}{% endif %}<br>
                 {% else %}
-                Rua Indalécio Costa, 890 – Barra Funda – Tietê/SP – CEP 18532-122<br>
+                Av. Paulista, 1000 – Bela Vista – São Paulo/SP – CEP 01310-100<br>
                 {% endif %}
-                Tel: {{ config.telefone if config else '(15) 99670-2036' }}{% if config and config.telefone2 %} • {{ config.telefone2 }}{% endif %}<br>
-                E-mail: {{ config.email if config else 'atendimento@eletricasaroba.com' }}
+                Tel: {{ config.telefone if config else '(11) 99999-0000' }}{% if config and config.telefone2 %} • {{ config.telefone2 }}{% endif %}<br>
+                E-mail: {{ config.email if config else 'contato@jsp.com.br' }}{% if config and config.site %} • Site: {{ config.site }}{% endif %}{% if config and config.inscricao_estadual %}<br>Inscrição Estadual: {{ config.inscricao_estadual }}{% endif %}
             </div>
         </div>
     </div>
@@ -301,7 +301,7 @@
             {% if proposta.cliente and proposta.cliente.endereco %}
             <div>
                 <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">ENDEREÇO</div>
-                <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ proposta.cliente.endereco }}</div>
+                <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ proposta.cliente.endereco_completo }}</div>
             </div>
             {% endif %}
         </div>
@@ -329,8 +329,8 @@
                     <td style="text-align:center;">{{ loop.index }}</td>
                     <td>{{ item.descricao }}</td>
                     <td style="text-align:center;">{{ item.quantidade }}</td>
-                    <td style="text-align:right;">R$ {{ "%.2f"|format(item.valor_unitario or 0)|replace('.', ',') }}</td>
-                    <td style="text-align:right;">R$ {{ "%.2f"|format(item.valor_total or 0)|replace('.', ',') }}</td>
+                    <td style="text-align:right; white-space: nowrap;">R$ {{ "{:,.2f}".format(item.valor_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                    <td style="text-align:right; white-space: nowrap;">R$ {{ "{:,.2f}".format(item.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                 </tr>
                 {% endfor %}
             </table>
@@ -354,8 +354,8 @@
                     <td style="text-align:center;">{{ loop.index + (proposta.produtos|length if proposta.produtos else 0) }}</td>
                     <td>{{ item.descricao }}</td>
                     <td style="text-align:center;">{{ item.quantidade }}</td>
-                    <td style="text-align:right;">R$ {{ "%.2f"|format(item.valor_unitario or 0)|replace('.', ',') }}</td>
-                    <td style="text-align:right;">R$ {{ "%.2f"|format(item.valor_total or 0)|replace('.', ',') }}</td>
+                    <td style="text-align:right; white-space: nowrap;">R$ {{ "{:,.2f}".format(item.valor_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                    <td style="text-align:right; white-space: nowrap;">R$ {{ "{:,.2f}".format(item.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                 </tr>
                 {% endfor %}
             </table>
@@ -404,19 +404,19 @@
                 <div style="flex: 1; background: white; border: 1px solid var(--primary-color); padding: 15px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #ddd;">
                         <span style="font-weight: bold; color: #333;">SUBTOTAL PRODUTOS</span>
-                        <span style="font-weight: bold; color: #333;">R$ {{ "%.2f"|format(subtotal_produtos)|replace('.', ',')|replace(',', '.', 1) }}</span>
+                        <span style="font-weight: bold; color: #333; white-space: nowrap;">R$ {{ "{:,.2f}".format(subtotal_produtos).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #ddd;">
                         <span style="font-weight: bold; color: #333;">SUBTOTAL SERVIÇOS</span>
-                        <span style="font-weight: bold; color: #333;">R$ {{ "%.2f"|format(subtotal_servicos)|replace('.', ',')|replace(',', '.', 1) }}</span>
+                        <span style="font-weight: bold; color: #333; white-space: nowrap;">R$ {{ "{:,.2f}".format(subtotal_servicos).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #ddd;">
-                        <span style="font-weight: bold; color: #c0392b;">DESCONTO ({{ "%.2f"|format(desconto) }}%)</span>
-                        <span style="font-weight: bold; color: #c0392b;">- R$ {{ "%.2f"|format(valor_desconto)|replace('.', ',')|replace(',', '.', 1) }}</span>
+                        <span style="font-weight: bold; color: #c0392b;">DESCONTO ({{ "{:.2f}".format(desconto).replace('.', ',') }}%)</span>
+                        <span style="font-weight: bold; color: #c0392b; white-space: nowrap;">- R$ {{ "{:,.2f}".format(valor_desconto).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid var(--primary-color);">
                         <span style="font-weight: bold; font-size: 16px; color: var(--primary-color);">VALOR TOTAL</span>
-                        <span style="font-weight: bold; font-size: 16px; color: var(--primary-color);">R$ {{ "%.2f"|format(valor_final)|replace('.', ',')|replace(',', '.', 1) }}</span>
+                        <span style="font-weight: bold; font-size: 16px; color: var(--primary-color); white-space: nowrap;">R$ {{ "{:,.2f}".format(valor_final).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
                     </div>
                 </div>
                 
@@ -429,27 +429,27 @@
                         <table style="width: 100%; border-collapse: collapse;">
                             <tr>
                                 <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; width: 30%; font-size: 9px;">BANCO</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.banco if config else '341 - ITAÚ UNIBANCO S/A' }}</td>
+                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.banco if (config and config.banco) else 'CORA SCFI - 403' }}</td>
                             </tr>
                             <tr>
                                 <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; font-size: 9px;">AGÊNCIA</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.agencia if config else '0001' }}</td>
+                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.agencia if (config and config.agencia) else '0001' }}</td>
                             </tr>
                             <tr>
                                 <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; font-size: 9px;">CONTA</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.conta if config else '4613457-0' }}</td>
+                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.conta if (config and config.conta) else '4633457-0' }}</td>
                             </tr>
                             <tr>
                                 <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; font-size: 9px;">TITULAR</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.nome_fantasia if config else 'JSP ELÉTRICA INDUSTRIAL & SOLAR' }}</td>
+                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.nome_fantasia if (config and config.nome_fantasia) else 'JSP Soluções' }}</td>
                             </tr>
                             <tr>
                                 <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; font-size: 9px;">CNPJ</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.cnpj if config else '41.280.764/0001-65' }}</td>
+                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.cnpj if (config and config.cnpj) else '12.345.678/0001-90' }}</td>
                             </tr>
                             <tr>
                                 <td style="padding: 6px 10px; font-weight: bold; background: #f8f9fa; font-size: 9px;">PIX</td>
-                                <td style="padding: 6px 10px; font-size: 9px;">{{ config.pix if config else '41.280.764/0001-65' }}</td>
+                                <td style="padding: 6px 10px; font-size: 9px;">{{ config.pix if (config and config.pix) else 'contato@jsp.com.br' }}</td>
                             </tr>
                         </table>
                     </div>
@@ -500,9 +500,72 @@
         </div>
     </div>
     {% endif %}
-    <!-- 07 Assinaturas -->
+    
+    <!-- 07 Missão, Visão e Valores -->
+    {% if config and (config.missao or config.visao or config.valores) %}
+    <div class="section page-break-before">
+        <div class="section-header"><span class="number">07</span>Nossos Valores Institucionais</div>
+        <div class="section-body" style="background: white;">
+            
+            <!-- Missão - Layout Horizontal -->
+            {% if config.missao %}
+            <div style="margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                <div style="background: var(--primary-color); color: white; padding: 10px 20px; font-weight: bold; font-size: 14px; display: flex; align-items: center;">
+                    <span style="font-size: 18px; margin-right: 10px;">🎯</span>
+                    <span>MISSÃO</span>
+                </div>
+                <div style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); font-size: 12px; line-height: 1.7; color: #333; text-align: justify;">
+                    {{ config.missao|replace('\n', '<br>')|safe }}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Visão - Layout Horizontal -->
+            {% if config.visao %}
+            <div style="margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                <div style="background: var(--primary-color); color: white; padding: 10px 20px; font-weight: bold; font-size: 14px; display: flex; align-items: center;">
+                    <span style="font-size: 18px; margin-right: 10px;">🔮</span>
+                    <span>VISÃO</span>
+                </div>
+                <div style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); font-size: 12px; line-height: 1.7; color: #333; text-align: justify;">
+                    {{ config.visao|replace('\n', '<br>')|safe }}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Valores - Layout Horizontal -->
+            {% if config.valores %}
+            <div style="margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
+                <div style="background: var(--primary-color); color: white; padding: 10px 20px; font-weight: bold; font-size: 14px; display: flex; align-items: center;">
+                    <span style="font-size: 18px; margin-right: 10px;">⭐</span>
+                    <span>VALORES</span>
+                </div>
+                <div style="padding: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); font-size: 12px; line-height: 1.7; color: #333; text-align: justify;">
+                    {{ config.valores|replace('\n', '<br>')|safe }}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Frase de Assinatura -->
+            {% if config.frase_assinatura %}
+            <div style="text-align: center; padding: 20px; background: linear-gradient(45deg, var(--primary-color), #0056b3); color: white; border-radius: 8px; margin-top: 25px;">
+                <div style="font-style: italic; font-size: 14px; line-height: 1.5; margin-bottom: 8px;">
+                    "{{ config.frase_assinatura }}"
+                </div>
+                <div style="font-size: 11px; opacity: 0.9; font-weight: 500;">
+                    - {{ config.nome_fantasia if config.nome_fantasia else 'JSP Soluções' }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+   
+    
+    <!-- 09 Assinaturas -->
     <div class="section">
-        <div class="section-header"><span class="number">07</span>Assinaturas</div>
+        <div class="section-header"><span class="number">08</span>Assinaturas</div>
         <div class="section-body">
             <table class="signature-table">
                 <tr>
@@ -514,7 +577,7 @@
                     <td></td>
                     <td>
                         <div class="signature-line"></div>
-                        <strong>{{ config.nome_fantasia if config else 'JSP ELÉTRICA INDUSTRIAL &amp; SOLAR' }}</strong><br>
+                        <strong>{{ config.nome_fantasia if config else 'JSP Soluções' }}</strong><br>
                         <span style="font-size: 11px;">Responsável Técnico</span>
                     </td>
                 </tr>
