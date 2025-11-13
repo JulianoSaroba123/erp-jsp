@@ -1,0 +1,1303 @@
+/* 
+🚀 ERP JSP - TEMA FUTURISTA DARK NEON
+====================================
+Tema visual cyberpunk com cores neon, gradientes e efeitos glow
+*/
+
+/* Google Fonts - Tipografia Futurista */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* ====================================
+   🎨 VARIÁVEIS DE CORES NEON
+==================================== */
+:root {
+  /* Cores Primárias Neon */
+  --neon-blue: #00d4ff;
+  --neon-cyan: #00ffff;
+  --neon-orange: #ff6b35;
+  --neon-pink: #ff006e;
+  --neon-green: #39ff14;
+  
+  /* Backgrounds Escuros */
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #16213e;
+  --bg-card: #0f3460;
+  --bg-glass: rgba(15, 52, 96, 0.1);
+  
+  /* Gradientes Neon */
+  --gradient-primary: linear-gradient(135deg, var(--neon-blue) 0%, var(--neon-cyan) 100%);
+  --gradient-secondary: linear-gradient(135deg, var(--neon-orange) 0%, var(--neon-pink) 100%);
+  --gradient-bg: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #16213e 100%);
+  
+  /* Sombras Neon */
+  --shadow-blue: 0 0 20px rgba(0, 212, 255, 0.3);
+  --shadow-orange: 0 0 20px rgba(255, 107, 53, 0.3);
+  --shadow-glow: 0 0 30px rgba(0, 212, 255, 0.5);
+  
+  /* Textos */
+  --text-primary: #ffffff;
+  --text-secondary: #b8c5d1;
+  --text-muted: #6b7688;
+  --text-neon: var(--neon-cyan);
+  
+  /* Sidebar */
+  --sidebar-width: 280px;
+  --sidebar-collapsed: 80px;
+}
+
+/* ====================================
+   🌌 RESET E BASE
+==================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Poppins', sans-serif;
+  background: var(--gradient-bg);
+  color: var(--text-primary);
+  overflow-x: hidden;
+}
+
+/* Scrollbar Neon */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gradient-primary);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  box-shadow: var(--shadow-blue);
+}
+
+/* ====================================
+   🎯 SIDEBAR FUTURISTA
+==================================== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: rgba(15, 52, 96, 0.05);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--neon-blue);
+  box-shadow: var(--shadow-blue);
+  z-index: 1000;
+  transition: all 0.3s ease;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--neon-blue);
+  background: rgba(0, 212, 255, 0.05);
+}
+
+.sidebar-brand h1 {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.8rem;
+  font-weight: 900;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 30px rgba(0, 212, 255, 0.8);
+  margin: 0;
+}
+
+.sidebar-nav {
+  padding: 20px 0;
+  height: calc(100vh - 80px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.nav-item {
+  margin: 0 15px 10px 15px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 15px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-primary);
+  transition: left 0.5s ease;
+  z-index: -1;
+  opacity: 0.1;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+  transform: translateX(10px);
+  box-shadow: var(--shadow-blue);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.nav-link:hover::before {
+  left: 0;
+}
+
+.nav-link.active {
+  color: var(--neon-cyan);
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid var(--neon-blue);
+  box-shadow: var(--shadow-glow);
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 10px var(--neon-cyan);
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+  width: 24px;
+  margin-right: 15px;
+  text-align: center;
+}
+
+.nav-text {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* ====================================
+   📱 CONTENT AREA
+==================================== */
+.main-content {
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  padding: 0;
+  transition: margin-left 0.3s ease;
+}
+
+.topbar {
+  background: rgba(15, 52, 96, 0.05);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 20px rgba(0, 212, 255, 0.1);
+}
+
+.content-wrapper {
+  padding: 30px;
+}
+
+/* ====================================
+   🎴 CARDS E CONTAINERS
+==================================== */
+.neon-card, .card {
+  background: rgba(15, 52, 96, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 
+    var(--shadow-blue),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.neon-card:hover, .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 
+    0 0 40px rgba(0, 212, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-color: var(--neon-cyan);
+}
+
+.card-header {
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  background: rgba(0, 212, 255, 0.05);
+  padding: 20px 25px;
+  margin: -25px -25px 20px -25px;
+  border-radius: 20px 20px 0 0;
+  color: var(--neon-cyan);
+}
+
+.card-title, h1, h2, h3, h4 {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  margin: 0;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+/* ====================================
+   📝 FORMULÁRIOS FUTURISTAS
+==================================== */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-control {
+  background: rgba(15, 52, 96, 0.2) !important;
+  border: 2px solid rgba(0, 212, 255, 0.3) !important;
+  border-radius: 12px !important;
+  padding: 12px 20px !important;
+  color: var(--text-primary) !important;
+  font-size: 0.95rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.form-control:focus {
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 
+    0 0 0 0.2rem rgba(0, 212, 255, 0.25) !important,
+    0 0 20px rgba(0, 212, 255, 0.4) !important;
+  background: rgba(15, 52, 96, 0.3) !important;
+}
+
+.form-control::placeholder {
+  color: var(--text-muted) !important;
+}
+
+.form-select {
+  background: rgba(15, 52, 96, 0.2) !important;
+  border: 2px solid rgba(0, 212, 255, 0.3) !important;
+  border-radius: 12px !important;
+  padding: 12px 45px 12px 20px !important;
+  color: var(--text-primary) !important;
+  font-size: 0.95rem !important;
+  transition: all 0.3s ease !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2300d4ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 16px 12px !important;
+}
+
+.form-select:focus {
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 
+    0 0 0 0.2rem rgba(0, 212, 255, 0.25) !important,
+    0 0 20px rgba(0, 212, 255, 0.4) !important;
+  background: rgba(15, 52, 96, 0.3) !important;
+  outline: none !important;
+}
+
+/* ====================================
+   🔘 BOTÕES NEON
+==================================== */
+.btn-neon-primary, .btn-primary {
+  background: var(--gradient-primary);
+  border: 2px solid var(--neon-blue);
+  border-radius: 12px;
+  padding: 12px 25px;
+  font-weight: 600;
+  color: white !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-blue);
+  text-decoration: none;
+}
+
+.btn-neon-primary:hover, .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-glow);
+  color: white !important;
+  background: var(--neon-cyan);
+}
+
+.btn-neon-secondary {
+  background: var(--gradient-secondary);
+  border: 2px solid var(--neon-orange);
+  border-radius: 12px;
+  padding: 12px 25px;
+  font-weight: 600;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-orange);
+}
+
+.btn-outline-neon {
+  background: transparent;
+  border: 2px solid var(--neon-blue);
+  border-radius: 12px;
+  padding: 12px 25px;
+  color: var(--neon-cyan);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+}
+
+/* ====================================
+   🎯 BREADCRUMB FUTURISTA
+==================================== */
+.breadcrumb-neon, .breadcrumb {
+  background: rgba(15, 52, 96, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 25px;
+  padding: 10px 20px;
+  margin-bottom: 20px;
+}
+
+.breadcrumb-neon .breadcrumb-item, .breadcrumb .breadcrumb-item {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.breadcrumb-neon .breadcrumb-item.active, .breadcrumb .breadcrumb-item.active {
+  color: var(--neon-cyan);
+  font-weight: 600;
+}
+
+/* ====================================
+   📱 RESPONSIVIDADE
+==================================== */
+@media (max-width: 768px) {
+  .sidebar {
+    width: var(--sidebar-collapsed);
+  }
+  
+  .sidebar-brand h1 {
+    display: none;
+  }
+  
+  .nav-text {
+    display: none;
+  }
+  
+  .nav-link {
+    justify-content: center;
+    padding: 15px 10px;
+  }
+  
+  .main-content {
+    margin-left: var(--sidebar-collapsed);
+  }
+  
+  .content-wrapper {
+    padding: 15px;
+  }
+}
+
+@media (max-width: 576px) {
+  .sidebar {
+    width: 0;
+    overflow: hidden;
+  }
+  
+  .main-content {
+    margin-left: 0;
+  }
+  
+  .topbar {
+    padding: 10px 15px;
+  }
+}
+
+/* ====================================
+   ✨ ANIMAÇÕES E EFEITOS
+==================================== */
+@keyframes neonGlow {
+  0%, 100% {
+    text-shadow: 
+      0 0 5px var(--neon-cyan),
+      0 0 10px var(--neon-cyan),
+      0 0 15px var(--neon-cyan);
+  }
+  50% {
+    text-shadow: 
+      0 0 10px var(--neon-cyan),
+      0 0 20px var(--neon-cyan),
+      0 0 30px var(--neon-cyan);
+  }
+}
+
+@keyframes pulseBlue {
+  0% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+}
+
+.glow-text {
+  animation: neonGlow 2s ease-in-out infinite;
+}
+
+.pulse-border {
+  animation: pulseBlue 2s ease-in-out infinite;
+}
+
+/* ====================================
+   🔧 CORREÇÕES ESPECÍFICAS
+==================================== */
+/* Remove setas extras dos selects */
+select::-ms-expand {
+  display: none;
+}
+
+select[multiple] {
+  background-image: none !important;
+}
+
+input.form-control,
+textarea.form-control {
+  background-image: none !important;
+  padding-right: 20px !important;
+}
+  overflow-x: hidden;
+/* Scrollbar Neon */
+::-webkit-scrollbar {
+  width: 8px;
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+::-webkit-scrollbar-thumb {
+  background: var(--gradient-primary);
+  border-radius: 10px;
+::-webkit-scrollbar-thumb:hover {
+  box-shadow: var(--shadow-blue);
+   🎯 SIDEBAR FUTURISTA
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: rgba(15, 52, 96, 0.05);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--neon-blue);
+  z-index: 1000;
+  transition: all 0.3s ease;
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--neon-blue);
+  background: rgba(0, 212, 255, 0.05);
+.sidebar-brand h1 {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.8rem;
+  font-weight: 900;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 30px rgba(0, 212, 255, 0.8);
+.sidebar-nav {
+  padding: 20px 0;
+.nav-item {
+  margin: 0 15px 10px 15px;
+.nav-link {
+  padding: 15px 20px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 15px;
+  position: relative;
+  overflow: hidden;
+.nav-link::before {
+  content: '';
+  position: absolute;
+  left: -100%;
+  width: 100%;
+  transition: left 0.5s ease;
+  z-index: -1;
+  opacity: 0.1;
+.nav-link:hover {
+  transform: translateX(10px);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+.nav-link:hover::before {
+.nav-link.active {
+  color: var(--neon-cyan);
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid var(--neon-blue);
+  box-shadow: var(--shadow-glow);
+.nav-link.active::after {
+  width: 4px;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 10px var(--neon-cyan);
+.nav-icon {
+  font-size: 1.2rem;
+  width: 24px;
+  margin-right: 15px;
+  text-align: center;
+.nav-text {
+  font-weight: 500;
+  font-size: 0.9rem;
+   📱 CONTENT AREA
+.main-content {
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  transition: margin-left 0.3s ease;
+.topbar {
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+  padding: 15px 30px;
+  justify-content: space-between;
+  box-shadow: 0 2px 20px rgba(0, 212, 255, 0.1);
+.content-wrapper {
+  padding: 30px;
+   🎴 CARDS E CONTAINERS
+.neon-card {
+  background: rgba(15, 52, 96, 0.1);
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 
+    var(--shadow-blue),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+.neon-card:hover {
+  transform: translateY(-5px);
+    0 0 40px rgba(0, 212, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-color: var(--neon-cyan);
+.card-header {
+  background: transparent;
+  padding: 20px 25px;
+  margin: -25px -25px 20px -25px;
+  border-radius: 20px 20px 0 0;
+.card-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+   📝 FORMULÁRIOS FUTURISTAS
+.form-group {
+  margin-bottom: 20px;
+.form-label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+.form-control {
+  background: rgba(15, 52, 96, 0.2) !important;
+  border: 2px solid rgba(0, 212, 255, 0.3) !important;
+  border-radius: 12px !important;
+  padding: 12px 20px !important;
+  color: var(--text-primary) !important;
+  font-size: 0.95rem !important;
+  transition: all 0.3s ease !important;
+.form-control:focus {
+  border-color: var(--neon-cyan) !important;
+    0 0 0 0.2rem rgba(0, 212, 255, 0.25) !important,
+    0 0 20px rgba(0, 212, 255, 0.4) !important;
+  background: rgba(15, 52, 96, 0.3) !important;
+.form-control::placeholder {
+  color: var(--text-muted) !important;
+.form-select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2300d4ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 16px 12px !important;
+  padding-right: 40px !important;
+.form-select:focus {
+  outline: none !important;
+.form-select option {
+  background: var(--bg-secondary) !important;
+   🔘 BOTÕES NEON
+.btn-neon-primary {
+  border: 2px solid var(--neon-blue);
+  border-radius: 12px;
+  padding: 12px 25px;
+  color: white;
+  font-size: 0.85rem;
+.btn-neon-primary:hover {
+  transform: translateY(-2px);
+.btn-neon-secondary {
+  background: var(--gradient-secondary);
+  border: 2px solid var(--neon-orange);
+  box-shadow: var(--shadow-orange);
+.btn-neon-secondary:hover {
+  box-shadow: 0 0 30px rgba(255, 107, 53, 0.5);
+.btn-outline-neon {
+.btn-outline-neon:hover {
+  background: var(--neon-blue);
+   📊 TABELAS FUTURISTAS
+.table-neon {
+  border: 1px solid rgba(0, 212, 255, 0.2);
+.table-neon thead th {
+  border: none;
+  padding: 15px;
+.table-neon tbody td {
+  border: 1px solid rgba(0, 212, 255, 0.1);
+  vertical-align: middle;
+.table-neon tbody tr:hover {
+  transform: scale(1.02);
+  box-shadow: 0 5px 15px rgba(0, 212, 255, 0.2);
+   🏷️ BADGES E INDICATORS
+.badge-neon-success {
+  background: var(--neon-green);
+  color: var(--bg-primary);
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  box-shadow: 0 0 10px rgba(57, 255, 20, 0.4);
+.badge-neon-warning {
+  background: var(--neon-orange);
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.4);
+.badge-neon-info {
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+   📱 RESPONSIVIDADE
+@media (max-width: 768px) {
+    width: var(--sidebar-collapsed);
+    display: none;
+    padding: 15px 10px;
+    margin-left: var(--sidebar-collapsed);
+@media (max-width: 576px) {
+    width: 0;
+    margin-left: 0;
+    padding: 10px 15px;
+   ✨ ANIMAÇÕES E EFEITOS
+@keyframes neonGlow {
+  0%, 100% {
+    text-shadow: 
+      0 0 5px var(--neon-cyan),
+      0 0 10px var(--neon-cyan),
+      0 0 15px var(--neon-cyan);
+  50% {
+      0 0 20px var(--neon-cyan),
+      0 0 30px var(--neon-cyan);
+@keyframes pulseBlue {
+  0% {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.6);
+  100% {
+.glow-text {
+  animation: neonGlow 2s ease-in-out infinite;
+.pulse-border {
+  animation: pulseBlue 2s ease-in-out infinite;
+   🎯 BREADCRUMB FUTURISTA
+.breadcrumb-neon {
+  border-radius: 25px;
+  padding: 10px 20px;
+.breadcrumb-neon .breadcrumb-item {
+.breadcrumb-neon .breadcrumb-item.active {
+.breadcrumb-neon .breadcrumb-item + .breadcrumb-item::before {
+  content: "→";
+  color: var(--neon-blue);
+   🔔 ALERTS NEON
+.alert-neon-success {
+  background: rgba(57, 255, 20, 0.1);
+  border: 1px solid var(--neon-green);
+  color: var(--neon-green);
+  box-shadow: 0 0 15px rgba(57, 255, 20, 0.2);
+.alert-neon-warning {
+  background: rgba(255, 107, 53, 0.1);
+  border: 1px solid var(--neon-orange);
+  color: var(--neon-orange);
+  box-shadow: 0 0 15px rgba(255, 107, 53, 0.2);
+.alert-neon-info {
+  border: 1px solid var(--neon-cyan);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+   🔧 CORREÇÕES ESPECÍFICAS
+/* Remove setas extras dos selects */
+select::-ms-expand {
+select[multiple] {
+  background-image: none !important;
+/* Força remoção de estilos conflitantes */
+.form-select:not([multiple]):not([size]) {
+/* Remove qualquer background-image conflitante do Bootstrap */
+.form-control,
+/* Estilos específicos para campos de input */
+input.form-control,
+textarea.form-control {
+  padding-right: 20px !important;
+/* Garantia para selects */
+select.form-select,
+select.form-control {
+/* ===========================================
+   🎯 CORREÇÃO ESPECÍFICA: SETAS DOS SELECTS
+=========================================== */
+/* Remove TODAS as setas padrão do browser */
+select {
+  display: none !important;
+/* Aplica APENAS uma seta customizada */
+  padding: 12px 40px 12px 20px !important;
+  /* ÚNICA seta personalizada */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300d4ff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-size: 16px 16px !important;
+/* Remove qualquer seta de outros elementos */
+.form-control:not(textarea):not(input[type="text"]):not(input[type="email"]):not(input[type="number"]):not(input[type="password"]):not(input[type="date"]) {
+/* Força inputs normais sem seta */
+input.form-control {
+/* Campos de data específicos */
+input[type="date"].form-control {
+/* Override qualquer CSS do Bootstrap ou outros frameworks */
+.form-select.form-select {
+/* Previne outras bibliotecas de adicionar setas */
+.form-select *,
+.form-select::before,
+.form-select::after {
+
+/* ===============================================
+   🎯 CORREÇÃO FINAL E DEFINITIVA - SELECTS
+=============================================== */
+
+/* Reset completo para todos os selects */
+select,
+.form-select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+  background-image: none !important;
+}
+
+/* Remove expandir do Internet Explorer */
+select::-ms-expand {
+  display: none !important;
+}
+
+/* Estilo único e definitivo para form-select */
+.form-select {
+  background: rgba(15, 52, 96, 0.2) !important;
+  border: 2px solid rgba(0, 212, 255, 0.3) !important;
+  border-radius: 12px !important;
+  padding: 12px 45px 12px 20px !important;
+  color: #ffffff !important;
+  font-size: 0.95rem !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+  
+  /* ÚNICA seta - SVG otimizado */
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2300d4ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='m1 6 6 6 6-6'/%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 15px center !important;
+  background-size: 12px 8px !important;
+}
+
+.form-select:focus {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 0 0.25rem rgba(0, 212, 255, 0.25), 0 0 20px rgba(0, 212, 255, 0.4) !important;
+  background-color: rgba(15, 52, 96, 0.3) !important;
+  outline: none !important;
+}
+
+.form-select:hover {
+  border-color: rgba(0, 212, 255, 0.6) !important;
+}
+
+/* Options com tema escuro */
+.form-select option {
+  background: #1a1a2e !important;
+  color: #ffffff !important;
+  padding: 10px !important;
+}
+
+/* Garante que inputs normais não tenham setas */
+input.form-control,
+textarea.form-control,
+input[type="text"],
+input[type="email"],
+input[type="date"],
+input[type="number"] {
+  background-image: none !important;
+  padding: 12px 20px !important;
+}
+
+/* Override qualquer CSS conflitante */
+.form-select.form-select.form-select {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2300d4ff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='m1 6 6 6 6-6'/%3e%3c/svg%3e") !important;
+}
+
+/* ====================================
+   🔧 SCROLL DA SIDEBAR CORRIGIDO - FINAL
+==================================== */
+
+/* Forçar scroll na sidebar */
+.sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: var(--sidebar-width) !important;
+  height: 100vh !important;
+  background: rgba(15, 52, 96, 0.05) !important;
+  backdrop-filter: blur(20px) !important;
+  border-right: 1px solid var(--neon-blue) !important;
+  box-shadow: var(--shadow-blue) !important;
+  z-index: 1000 !important;
+  transition: all 0.3s ease !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.sidebar-nav {
+  padding: 20px 0 !important;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: calc(100vh - 80px) !important;
+  max-height: calc(100vh - 80px) !important;
+}
+
+/* Scrollbar customizada para sidebar */
+.sidebar::-webkit-scrollbar,
+.sidebar-nav::-webkit-scrollbar {
+  width: 8px !important;
+  background: transparent !important;
+}
+
+.sidebar::-webkit-scrollbar-track,
+.sidebar-nav::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1) !important;
+  border-radius: 10px !important;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--gradient-primary) !important;
+  border-radius: 10px !important;
+  border: 1px solid var(--neon-blue) !important;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  box-shadow: var(--shadow-blue) !important;
+  background: var(--neon-cyan) !important;
+}
+
+/* Garantir scroll em todas as resoluções */
+@media (max-width: 768px) {
+  .sidebar {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  
+  .sidebar-nav {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: calc(100vh - 80px) !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .sidebar {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+}
+
+/* CSS final para forçar scroll */
+body .sidebar {
+  overflow-y: scroll !important;
+}
+
+body .sidebar-nav {
+  overflow-y: scroll !important;
+}
+
+/* ====================================
+   🔧 CORREÇÃO FORMULÁRIOS - TEMA PADRÃO
+==================================== */
+
+/* Garantir que TODOS os formulários tenham o tema futurista */
+.form-control, 
+.form-select,
+input,
+textarea,
+select,
+input[type="text"],
+input[type="email"], 
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="tel"],
+input[type="url"] {
+  background: rgba(15, 52, 96, 0.1) !important;
+  border: 1px solid var(--neon-blue) !important;
+  color: var(--text-primary) !important;
+  border-radius: 15px !important;
+  padding: 15px 20px !important;
+  font-size: 1rem !important;
+  transition: all 0.3s ease !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.form-control:focus,
+.form-select:focus,
+input:focus,
+textarea:focus,
+select:focus {
+  background: rgba(0, 212, 255, 0.1) !important;
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3) !important;
+  outline: none !important;
+}
+
+/* Especificamente para formulário de cliente */
+.card-body .form-control,
+.card .form-control,
+.card-body input,
+.card input,
+.card-body textarea,
+.card textarea,
+.card-body select,
+.card select {
+  background: rgba(15, 52, 96, 0.1) !important;
+  border: 1px solid var(--neon-blue) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Labels dos formulários */
+label, 
+.form-label {
+  color: var(--text-primary) !important;
+  font-weight: 500 !important;
+  margin-bottom: 8px !important;
+}
+
+/* Placeholders */
+::placeholder {
+  color: var(--text-muted) !important;
+  opacity: 0.7 !important;
+}
+
+/* Cards dos formulários */
+.card {
+  background: rgba(15, 52, 96, 0.05) !important;
+  border: 1px solid var(--neon-blue) !important;
+  border-radius: 20px !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: var(--shadow-blue) !important;
+}
+
+.card-header {
+  background: rgba(0, 212, 255, 0.1) !important;
+  border-bottom: 1px solid var(--neon-blue) !important;
+  border-radius: 20px 20px 0 0 !important;
+}
+
+.card-body {
+  background: transparent !important;
+  padding: 30px !important;
+}
+
+/* Forcing form styling for client forms */
+body .container .card .form-control,
+body .container .card input,
+body .container .card textarea,
+body .container .card select {
+  background: rgba(15, 52, 96, 0.1) !important;
+  border: 1px solid var(--neon-blue) !important;
+  color: var(--text-primary) !important;
+  border-radius: 15px !important;
+}
+
+
+/* ====================================
+   🔧 SCROLL DA SIDEBAR CORRIGIDO
+==================================== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: rgba(15, 52, 96, 0.05);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--neon-blue);
+  box-shadow: var(--shadow-blue);
+  z-index: 1000;
+  transition: all 0.3s ease;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-nav {
+  padding: 20px 0;
+  flex: 1;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: calc(100vh - 80px) !important;
+  max-height: calc(100vh - 80px) !important;
+}
+
+/* Melhorar scrollbar da sidebar */
+.sidebar::-webkit-scrollbar,
+.sidebar-nav::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track,
+.sidebar-nav::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--gradient-primary);
+  border-radius: 10px;
+  border: 1px solid var(--neon-blue);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  box-shadow: var(--shadow-blue);
+  background: var(--neon-cyan);
+}
+
+/* Garantir que a sidebar seja scrollável em dispositivos móveis */
+@media (max-width: 768px) {
+  .sidebar {
+    overflow-y: auto !important;
+  }
+  
+  .sidebar-nav {
+    overflow-y: auto !important;
+    height: calc(100vh - 80px) !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .sidebar {
+    overflow-y: auto !important;
+  }
+}
+
+/* Força scroll em qualquer situação */
+.sidebar-forced-scroll {
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+}
+
+.sidebar-nav-forced-scroll {
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  height: calc(100vh - 80px) !important;
+  max-height: calc(100vh - 80px) !important;
+}
+
+
+/* ====================================
+   🔧 SCROLL DA SIDEBAR CORRIGIDO
+==================================== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background: rgba(15, 52, 96, 0.05);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--neon-blue);
+  box-shadow: var(--shadow-blue);
+  z-index: 1000;
+  transition: all 0.3s ease;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-nav {
+  padding: 20px 0;
+  flex: 1;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: calc(100vh - 80px) !important;
+  max-height: calc(100vh - 80px) !important;
+}
+
+/* Melhorar scrollbar da sidebar */
+.sidebar::-webkit-scrollbar,
+.sidebar-nav::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track,
+.sidebar-nav::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: var(--gradient-primary);
+  border-radius: 10px;
+  border: 1px solid var(--neon-blue);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover,
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  box-shadow: var(--shadow-blue);
+  background: var(--neon-cyan);
+}
+
+/* Garantir que a sidebar seja scrollável em dispositivos móveis */
+@media (max-width: 768px) {
+  .sidebar {
+    overflow-y: auto !important;
+  }
+  
+  .sidebar-nav {
+    overflow-y: auto !important;
+    height: calc(100vh - 80px) !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .sidebar {
+    overflow-y: auto !important;
+  }
+}
+
+/* Força scroll em qualquer situação */
+.sidebar-forced-scroll {
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+}
+
+.sidebar-nav-forced-scroll {
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+  height: calc(100vh - 80px) !important;
+  max-height: calc(100vh - 80px) !important;
+}
+
+
+/* ====================================
+   🎯 CORREÇÃO ESPECÍFICA FORMULÁRIO CLIENTE
+==================================== */
+
+/* Override Bootstrap com máxima especificidade */
+.container .row .col .card .card-body .form-control,
+.container .row .col .card .card-body input[class*="form"],
+.container .row .col .card .card-body textarea[class*="form"],
+.container .row .col .card .card-body select[class*="form"],
+body .container .card-body input,
+body .container .card-body textarea,
+body .container .card-body select,
+body input[class*="form-control"],
+body textarea[class*="form-control"],
+body select[class*="form-control"],
+body select[class*="form-select"] {
+  background: rgba(15, 52, 96, 0.1) !important;
+  border: 1px solid var(--neon-blue) !important;
+  color: var(--text-primary) !important;
+  border-radius: 15px !important;
+  padding: 15px 20px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Focus states com especificidade máxima */
+.container .row .col .card .card-body .form-control:focus,
+.container .row .col .card .card-body input:focus,
+.container .row .col .card .card-body textarea:focus,
+.container .row .col .card .card-body select:focus,
+body input[class*="form-control"]:focus,
+body textarea[class*="form-control"]:focus,
+body select[class*="form-control"]:focus,
+body select[class*="form-select"]:focus {
+  background: rgba(0, 212, 255, 0.15) !important;
+  border-color: var(--neon-cyan) !important;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3) !important;
+  outline: none !important;
+}
+
+/* Garantir que dropdowns também tenham o tema */
+.form-select option {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Forcing styles for any missed elements */
+form input,
+form textarea, 
+form select {
+  background: rgba(15, 52, 96, 0.1) !important;
+  border: 1px solid var(--neon-blue) !important;
+  color: var(--text-primary) !important;
+  border-radius: 15px !important;
+}
+
+/* Cliente form specific override */
+[action*="cliente"] input,
+[action*="cliente"] textarea,
+[action*="cliente"] select,
+.card[class*="cliente"] input,
+.card[class*="cliente"] textarea,
+.card[class*="cliente"] select {
+  background: rgba(15, 52, 96, 0.1) !important;
+  border: 1px solid var(--neon-blue) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Last resort - nuclear option */
+* input {
+  background: rgba(15, 52, 96, 0.1) !important;
+  border: 1px solid var(--neon-blue) !important;
+  color: var(--text-primary) !important;
+}
+
+* textarea {
+  background: rgba(15, 52, 96, 0.1) !important;
+  border: 1px solid var(--neon-blue) !important;
+  color: var(--text-primary) !important;
+}
+
+* select {
+  background: rgba(15, 52, 96, 0.1) !important;
+  border: 1px solid var(--neon-blue) !important;
+  color: var(--text-primary) !important;
+}

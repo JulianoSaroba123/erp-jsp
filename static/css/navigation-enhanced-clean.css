@@ -1,0 +1,507 @@
+/* ============================================
+   🚀 NAVEGAÇÃO APRIMORADA - BOTÕES PREMIUM
+============================================ */
+
+/* ====================================
+   📱 SIDEBAR LAYOUT OTIMIZADO
+==================================== */
+
+/* Sidebar simples sem menu de usuário */
+.sidebar {
+  position: relative !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 20px !important;
+}
+
+/* ====================================
+   🚀 BOTÕES E NAVEGAÇÃO PREMIUM
+==================================== */
+
+/* Navegação principal limpa */
+.sidebar-nav {
+  position: relative;
+  z-index: 2;
+}
+
+/* ====================================
+   🚪 BOTÃO DE LOGOUT NA SIDEBAR
+==================================== */
+
+.logout-item {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+.logout-link {
+  background: rgba(255, 59, 92, 0.1) !important;
+  border: 1px solid rgba(255, 59, 92, 0.3) !important;
+  border-radius: 12px !important;
+  margin: 0 10px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.logout-link:hover {
+  background: rgba(255, 59, 92, 0.2) !important;
+  border-color: rgba(255, 59, 92, 0.6) !important;
+  color: #ff6b7d !important;
+  transform: translateX(5px) !important;
+}
+
+.logout-link .nav-icon {
+  color: rgba(255, 59, 92, 0.8) !important;
+}
+
+.logout-link .nav-text {
+  color: rgba(255, 59, 92, 0.9) !important;
+  font-weight: 600 !important;
+}
+
+/* ====================================
+   ⚡ BOTÕES PREMIUM - ENERGIA SOLAR
+==================================== */
+
+.btn-neon-primary {
+  background: linear-gradient(135deg,
+    rgba(0, 212, 255, 0.9) 0%,
+    rgba(0, 168, 204, 1) 50%,
+    rgba(0, 123, 153, 1) 100%) !important;
+  border: 2px solid rgba(0, 212, 255, 0.8) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.2px !important;
+  padding: 12px 25px !important;
+  border-radius: 25px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 8px 25px rgba(0, 212, 255, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.btn-neon-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent);
+  transition: left 0.6s ease;
+}
+
+.btn-neon-primary:hover::before {
+  left: 100%;
+}
+
+.btn-neon-primary:hover {
+  background: linear-gradient(135deg,
+    rgba(0, 212, 255, 1) 0%,
+    rgba(57, 255, 20, 0.8) 50%,
+    rgba(0, 255, 127, 0.9) 100%) !important;
+  border-color: rgba(57, 255, 20, 0.9) !important;
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 
+    0 15px 35px rgba(0, 212, 255, 0.5),
+    0 8px 20px rgba(57, 255, 20, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.btn-neon-primary:active {
+  transform: translateY(-1px) scale(0.98) !important;
+}
+
+/* ====================================
+   🔥 BOTÕES SECUNDÁRIOS - ENERGIA TÉRMICA
+==================================== */
+
+.btn-neon-secondary {
+  background: linear-gradient(135deg,
+    rgba(255, 177, 39, 0.9) 0%,
+    rgba(241, 143, 1, 1) 50%,
+    rgba(204, 119, 0, 1) 100%) !important;
+  border: 2px solid rgba(255, 177, 39, 0.8) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  padding: 10px 20px !important;
+  border-radius: 20px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(25px) !important;
+  box-shadow: 
+    0 6px 20px rgba(255, 177, 39, 0.4),
+    0 3px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.btn-neon-secondary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-neon-secondary:hover::before {
+  left: 100%;
+}
+
+.btn-neon-secondary:hover {
+  background: linear-gradient(135deg,
+    rgba(255, 177, 39, 1) 0%,
+    rgba(255, 218, 125, 0.9) 50%,
+    rgba(255, 235, 59, 0.8) 100%) !important;
+  border-color: rgba(255, 235, 59, 0.9) !important;
+  transform: translateY(-2px) scale(1.01) !important;
+  box-shadow: 
+    0 12px 30px rgba(255, 177, 39, 0.5),
+    0 6px 15px rgba(255, 235, 59, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.btn-neon-secondary:active {
+  transform: translateY(-1px) scale(0.99) !important;
+}
+
+/* ====================================
+   ⚡ BOTÕES DE SUCESSO - ENERGIA RENOVÁVEL
+==================================== */
+
+.btn-neon-success {
+  background: linear-gradient(135deg,
+    rgba(57, 255, 20, 0.9) 0%,
+    rgba(46, 204, 16, 1) 50%,
+    rgba(35, 153, 12, 1) 100%) !important;
+  border: 2px solid rgba(57, 255, 20, 0.8) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  padding: 10px 20px !important;
+  border-radius: 18px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 
+    0 6px 18px rgba(57, 255, 20, 0.4),
+    0 3px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+.btn-neon-success::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-neon-success:hover::before {
+  left: 100%;
+}
+
+.btn-neon-success:hover {
+  background: linear-gradient(135deg,
+    rgba(57, 255, 20, 1) 0%,
+    rgba(129, 255, 110, 0.9) 50%,
+    rgba(185, 255, 172, 0.8) 100%) !important;
+  border-color: rgba(185, 255, 172, 0.9) !important;
+  transform: translateY(-2px) scale(1.01) !important;
+  box-shadow: 
+    0 12px 28px rgba(57, 255, 20, 0.5),
+    0 6px 14px rgba(185, 255, 172, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+}
+
+.btn-neon-success:active {
+  transform: translateY(-1px) scale(0.99) !important;
+}
+
+/* ====================================
+   🚨 BOTÕES DE PERIGO - ALERTA CRÍTICO
+==================================== */
+
+.btn-neon-danger {
+  background: linear-gradient(135deg,
+    rgba(255, 59, 92, 0.9) 0%,
+    rgba(220, 53, 69, 1) 50%,
+    rgba(185, 44, 58, 1) 100%) !important;
+  border: 2px solid rgba(255, 59, 92, 0.8) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  padding: 10px 20px !important;
+  border-radius: 18px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(15px) !important;
+  box-shadow: 
+    0 6px 18px rgba(255, 59, 92, 0.4),
+    0 3px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.btn-neon-danger::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-neon-danger:hover::before {
+  left: 100%;
+}
+
+.btn-neon-danger:hover {
+  background: linear-gradient(135deg,
+    rgba(255, 59, 92, 1) 0%,
+    rgba(255, 129, 149, 0.9) 50%,
+    rgba(255, 182, 193, 0.8) 100%) !important;
+  border-color: rgba(255, 182, 193, 0.9) !important;
+  transform: translateY(-2px) scale(1.01) !important;
+  box-shadow: 
+    0 12px 28px rgba(255, 59, 92, 0.5),
+    0 6px 14px rgba(255, 182, 193, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.btn-neon-danger:active {
+  transform: translateY(-1px) scale(0.99) !important;
+}
+
+/* ====================================
+   ℹ️ BOTÕES DE INFORMAÇÃO
+==================================== */
+
+.btn-neon-info {
+  background: linear-gradient(135deg,
+    rgba(0, 212, 255, 0.9) 0%,
+    rgba(13, 202, 240, 1) 50%,
+    rgba(11, 172, 204, 1) 100%) !important;
+  border: 2px solid rgba(0, 212, 255, 0.8) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.8px !important;
+  padding: 10px 20px !important;
+  border-radius: 18px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(15px) !important;
+  box-shadow: 
+    0 6px 18px rgba(0, 212, 255, 0.4),
+    0 3px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+.btn-neon-info::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent);
+  transition: left 0.5s ease;
+}
+
+.btn-neon-info:hover::before {
+  left: 100%;
+}
+
+.btn-neon-info:hover {
+  background: linear-gradient(135deg,
+    rgba(0, 212, 255, 1) 0%,
+    rgba(125, 232, 255, 0.9) 50%,
+    rgba(179, 245, 255, 0.8) 100%) !important;
+  border-color: rgba(179, 245, 255, 0.9) !important;
+  transform: translateY(-2px) scale(1.01) !important;
+  box-shadow: 
+    0 12px 28px rgba(0, 212, 255, 0.5),
+    0 6px 14px rgba(179, 245, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.btn-neon-info:active {
+  transform: translateY(-1px) scale(0.99) !important;
+}
+
+/* ====================================
+   🎨 ESTILOS ADICIONAIS PARA INTERFACE
+==================================== */
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-info .dropdown-toggle {
+  border: 2px solid rgba(0, 212, 255, 0.4);
+  border-radius: 25px;
+  padding: 8px 16px;
+  background: rgba(0, 212, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.user-info .dropdown-toggle:hover {
+  border-color: rgba(0, 212, 255, 0.7);
+  background: rgba(0, 212, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+/* ====================================
+   📱 RESPONSIVIDADE
+==================================== */
+@media (max-width: 768px) {
+  .btn-neon-primary,
+  .btn-neon-secondary,
+  .btn-neon-success,
+  .btn-neon-danger,
+  .btn-neon-info {
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+    letter-spacing: 0.5px !important;
+  }
+}
+
+/* ====================================
+   🔄 ANIMAÇÕES GLOBAIS
+==================================== */
+@keyframes neonPulse {
+  0%, 100% {
+    box-shadow: 
+      0 0 10px rgba(0, 212, 255, 0.4),
+      0 0 20px rgba(0, 212, 255, 0.3),
+      0 0 30px rgba(0, 212, 255, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 0 15px rgba(0, 212, 255, 0.6),
+      0 0 30px rgba(0, 212, 255, 0.5),
+      0 0 45px rgba(0, 212, 255, 0.4);
+  }
+}
+
+.btn-neon-primary:focus,
+.btn-neon-secondary:focus,
+.btn-neon-success:focus,
+.btn-neon-danger:focus,
+.btn-neon-info:focus {
+  animation: neonPulse 2s infinite;
+  outline: none;
+}
+
+/* ====================================
+   🎯 HOVER EFFECTS MELHORADOS
+==================================== */
+
+.sidebar .nav-link:hover {
+  background: rgba(0, 212, 255, 0.15) !important;
+  transform: translateX(5px) !important;
+  border-left: 4px solid rgba(0, 212, 255, 0.8) !important;
+  padding-left: 16px !important;
+}
+
+.sidebar .nav-link {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-left: 4px solid transparent !important;
+}
+
+.sidebar .nav-link.active {
+  background: rgba(57, 255, 20, 0.15) !important;
+  border-left: 4px solid rgba(57, 255, 20, 0.8) !important;
+  color: rgba(57, 255, 20, 0.9) !important;
+}
+
+/* ====================================
+   💫 EFEITOS ESPECIAIS DE CARREGAMENTO
+==================================== */
+
+.loading-shimmer {
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent);
+  background-size: 200% 100%;
+  animation: shimmerMove 1.5s infinite;
+}
+
+@keyframes shimmerMove {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ====================================
+   🎪 CARDS COM EFEITOS PREMIUM
+==================================== */
+
+.card-premium {
+  background: linear-gradient(135deg,
+    rgba(0, 212, 255, 0.05) 0%,
+    rgba(15, 52, 96, 0.1) 50%,
+    rgba(57, 255, 20, 0.05) 100%) !important;
+  border: 1px solid rgba(0, 212, 255, 0.3) !important;
+  border-radius: 20px !important;
+  backdrop-filter: blur(25px) !important;
+  box-shadow: 
+    0 8px 25px rgba(0, 212, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.card-premium:hover {
+  transform: translateY(-5px) !important;
+  box-shadow: 
+    0 15px 35px rgba(0, 212, 255, 0.2),
+    0 8px 20px rgba(57, 255, 20, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(57, 255, 20, 0.5) !important;
+}

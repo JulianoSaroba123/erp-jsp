@@ -1,0 +1,134 @@
+/* ============================================
+   🔧 CORREÇÕES CRÍTICAS PARA SIDEBAR
+============================================ */
+
+/* Garantir que a sidebar seja clicável */
+.sidebar {
+    pointer-events: auto !important;
+    z-index: 1000 !important;
+    position: fixed !important;
+    user-select: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100vh !important;
+}
+
+.sidebar * {
+    pointer-events: auto !important;
+}
+
+/* Garantir que os links sejam clicáveis */
+.sidebar .nav-link {
+    pointer-events: auto !important;
+    z-index: 1001 !important;
+    position: relative !important;
+    display: block !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+}
+
+/* Correção específica para o layout da sidebar */
+.sidebar-nav {
+    flex: 1 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-bottom: 20px !important;
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(0, 212, 255, 0.15) !important;
+    transform: translateX(5px) !important;
+}
+
+/* Garantir que os ícones não bloqueiem cliques */
+.sidebar .nav-icon {
+    pointer-events: none !important;
+}
+
+.sidebar .nav-text {
+    pointer-events: none !important;
+}
+
+/* Remover qualquer sobreposição que possa bloquear */
+.sidebar .nav-item {
+    position: relative !important;
+    z-index: 1001 !important;
+}
+
+/* Garantir que elementos decorativos não interfiram */
+.sidebar .nav-link::before,
+.sidebar .nav-link::after {
+    pointer-events: none !important;
+    z-index: -1 !important;
+}
+
+/* Correção específica para o menu de usuário */
+.sidebar-user-menu {
+    pointer-events: auto !important;
+    z-index: 1002 !important;
+}
+
+.user-profile-card {
+    pointer-events: auto !important;
+    z-index: 1002 !important;
+}
+
+.user-action-btn {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    z-index: 1003 !important;
+}
+
+/* Garantir que overlays não bloqueiem a sidebar */
+.modal-backdrop,
+.overlay {
+    z-index: 1050 !important;
+}
+
+/* Correção para mobile */
+@media (max-width: 768px) {
+    .sidebar {
+        z-index: 1040 !important;
+    }
+    
+    .sidebar.show {
+        pointer-events: auto !important;
+    }
+    
+    .mobile-toggle {
+        z-index: 1041 !important;
+        pointer-events: auto !important;
+    }
+}
+
+/* Debug visual para identificar problemas */
+.sidebar-debug .nav-link {
+    border: 1px solid lime !important;
+    background: rgba(255, 0, 0, 0.1) !important;
+}
+
+.sidebar-debug .nav-link:hover {
+    background: rgba(0, 255, 0, 0.2) !important;
+}
+
+/* Forçar reset de estilos que podem interferir */
+.sidebar .nav-link {
+    text-decoration: none !important;
+    color: inherit !important;
+    outline: none !important;
+    border: none !important;
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 15px 20px !important;
+}
+
+/* Garantir que pseudo-elementos não bloqueiem */
+.sidebar .nav-link > * {
+    pointer-events: none !important;
+}
+
+/* Elementos com position absolute podem bloquear, garantir z-index correto */
+.sidebar [style*="position: absolute"],
+.sidebar [style*="position: fixed"] {
+    z-index: 999 !important;
+}
