@@ -62,6 +62,33 @@ class JSPLauncher:
         print("❌ Timeout: Servidor não respondeu")
         return False
     
+    def start_flask_server_direct(self):
+        """Inicia o servidor Flask diretamente (sem subprocess)"""
+        try:
+            print("🚀 Iniciando servidor Flask integrado...")
+            
+            # Importar e iniciar Flask diretamente
+            sys.path.insert(0, os.getcwd())
+            from app.app import create_app
+            
+            app = create_app()
+            
+            # Iniciar em thread separada
+            import threading
+            
+            def run_flask():
+                app.run(host='127.0.0.1', port=5001, debug=False, use_reloader=False)
+            
+            flask_thread = threading.Thread(target=run_flask, daemon=True)
+            flask_thread.start()
+            
+            print("✅ Servidor Flask iniciado em thread separada")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Erro ao iniciar servidor Flask: {e}")
+            return False
+    
     def start_flask_server(self):
         """Inicia o servidor Flask"""
         try:
@@ -124,12 +151,14 @@ class JSPLauncher:
     
     def cleanup(self):
         """Limpa recursos ao fechar"""
-        if self.server_process:
-            try:
+        try:
+            if hasattr(self, 'server_process') and self.server_process:
                 self.server_process.terminate()
-                print("🛑 Servidor Flask encerrado")
-            except:
-                pass
+                print("🛑 Servidor Flask (subprocess) encerrado")
+            else:
+                print("🛑 Servidor Flask (thread) será encerrado automaticamente")
+        except Exception as e:
+            print(f"⚠️ Erro na limpeza: {e}")
     
     def open_browser(self):
         """Abre o navegador na URL de login"""
@@ -200,11 +229,20 @@ class JSPLauncher:
                 return
             
             # Iniciar servidor Flask
-            if not self.start_flask_server():
-                self.show_message("Erro JSP Sistema", 
-                                "Falha ao iniciar servidor Flask.\nVerifique se todos os arquivos estão presentes.", 
-                                "error")
-                return
+            if getattr(sys, 'frozen', False):
+                # Se for executável, usar servidor direto
+                if not self.start_flask_server_direct():
+                    self.show_message("Erro JSP Sistema", 
+                                    "Falha ao iniciar servidor Flask.\nVerifique se todos os arquivos estão presentes.", 
+                                    "error")
+                    return
+            else:
+                # Se for desenvolvimento, usar subprocess  
+                if not self.start_flask_server():
+                    self.show_message("Erro JSP Sistema", 
+                                    "Falha ao iniciar servidor Flask.\nVerifique se todos os arquivos estão presentes.", 
+                                    "error")
+                    return
             
             # Aguardar servidor estar pronto
             if not self.wait_for_server(MAX_WAIT_TIME):
@@ -232,8 +270,8 @@ class JSPLauncher:
             try:
                 while True:
                     time.sleep(2)
-                    # Verificar se processo ainda existe
-                    if self.server_process and self.server_process.poll() is not None:
+                    # Verificar se processo ainda existe (apenas para subprocess)
+                    if hasattr(self, 'server_process') and self.server_process and self.server_process.poll() is not None:
                         print("❌ Servidor Flask parou inesperadamente")
                         self.show_message("JSP Sistema", 
                                         "O servidor parou inesperadamente.\nReinicie o sistema.", 
