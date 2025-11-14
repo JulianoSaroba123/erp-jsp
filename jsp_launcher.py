@@ -65,12 +65,31 @@ class JSPLauncher:
         return False
     
     def start_flask_server_direct(self):
-        """Inicia o servidor Flask diretamente (versão simplificada)"""
+        """Inicia o servidor Flask diretamente integrado (solução para PyInstaller)"""
         try:
             print("🚀 Iniciando servidor Flask integrado...")
             
-            # Configurar ambiente simplificado
-            sys.path.insert(0, os.getcwd())
+            # Configurar paths para PyInstaller
+            if getattr(sys, 'frozen', False):
+                # Executando como .exe
+                base_path = sys._MEIPASS
+                app_path = os.path.join(base_path, 'app')
+            else:
+                # Executando como script
+                base_path = os.getcwd()
+                app_path = os.path.join(base_path, 'app')
+            
+            # Adicionar paths ao sys.path
+            if base_path not in sys.path:
+                sys.path.insert(0, base_path)
+            if app_path not in sys.path:
+                sys.path.insert(0, app_path)
+            
+            print(f"📁 Base path: {base_path}")
+            print(f"📦 App path: {app_path}")
+            
+            # Configurar variáveis de ambiente Flask
+            os.environ['FLASK_ENV'] = 'production'
             
             print("📦 Importando aplicação Flask...")
             from app.app import create_app
@@ -79,10 +98,14 @@ class JSPLauncher:
             app = create_app()
             
             print("🧵 Iniciando servidor em thread...")
-            import threading
             
             def run_flask():
                 try:
+                    # Configurações para execução silenciosa
+                    import logging
+                    log = logging.getLogger('werkzeug')
+                    log.setLevel(logging.WARNING)
+                    
                     app.run(
                         host='127.0.0.1', 
                         port=5001, 
@@ -91,24 +114,22 @@ class JSPLauncher:
                         threaded=True
                     )
                 except Exception as e:
-                    print(f"❌ Erro no servidor: {e}")
+                    print(f"❌ Erro no servidor Flask: {e}")
+                    import traceback
+                    traceback.print_exc()
             
             flask_thread = threading.Thread(target=run_flask, daemon=True)
             flask_thread.start()
             
             # Aguardar inicialização
             time.sleep(3)
-            print("✅ Servidor Flask iniciado")
+            print("✅ Servidor Flask integrado iniciado")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao iniciar Flask: {e}")
+            print(f"❌ Erro ao iniciar Flask integrado: {e}")
             import traceback
             traceback.print_exc()
-            return False
-            
-        except Exception as e:
-            print(f"❌ Erro ao iniciar servidor Flask: {e}")
             return False
     
     def start_flask_server(self):
@@ -250,10 +271,11 @@ class JSPLauncher:
                 self.open_browser()
                 return
             
-            # Iniciar servidor Flask
-            if not self.start_flask_server():
+            # Iniciar servidor Flask integrado (melhor para PyInstaller)
+            print("🚀 Iniciando servidor Flask integrado...")
+            if not self.start_flask_server_direct():
                 self.show_message("Erro JSP Sistema", 
-                                "Falha ao iniciar servidor Flask.\nVerifique se todos os arquivos estão presentes.", 
+                                "Falha ao iniciar servidor Flask integrado.\nVerifique se todos os arquivos estão presentes.", 
                                 "error")
                 return
             

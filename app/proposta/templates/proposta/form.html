@@ -38,15 +38,24 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label text-white">Cliente *</label>
-                        <select class="form-select bg-dark text-white border-secondary" name="cliente_id" required>
-                            <option value="">Selecione um cliente</option>
-                            {% for cliente in clientes %}
-                            <option value="{{ cliente.id }}" 
-                                    {% if proposta and proposta.cliente_id == cliente.id %}selected{% endif %}>
-                                {{ cliente.nome }}
-                            </option>
-                            {% endfor %}
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select bg-dark text-white border-secondary" name="cliente_id" id="cliente_select" required>
+                                <option value="">Selecione um cliente</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente.id }}" 
+                                        {% if proposta and proposta.cliente_id == cliente.id %}selected{% endif %}>
+                                    {{ cliente.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-outline-info" type="button" id="btnAtualizarClientes" title="Atualizar lista de clientes">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <a href="{{ url_for('cliente.novo') }}" class="btn btn-outline-success" title="Cadastrar novo cliente" target="_blank">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                        </div>
+                        <small class="text-muted">💡 Cadastrou um cliente novo? Clique no botão ↻ para atualizar a lista</small>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label text-white">Título *</label>
@@ -562,6 +571,105 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 100);
     
     console.log('✅ Sistema completo inicializado com cálculos!');
+    
+    // ===== FUNCIONALIDADE ATUALIZAR CLIENTES =====
+    
+    async function atualizarListaClientes() {
+        const btnAtualizar = document.getElementById('btnAtualizarClientes');
+        const selectCliente = document.getElementById('cliente_select');
+        const clienteSelecionadoId = selectCliente.value;
+        
+        try {
+            // Mostrar loading
+            btnAtualizar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btnAtualizar.disabled = true;
+            
+            // Buscar clientes atualizados
+            const response = await fetch('/proposta/api/clientes');
+            const data = await response.json();
+            
+            if (data.success) {
+                // Limpar select
+                selectCliente.innerHTML = '<option value="">Selecione um cliente</option>';
+                
+                // Adicionar clientes atualizados
+                data.clientes.forEach(cliente => {
+                    const option = document.createElement('option');
+                    option.value = cliente.id;
+                    option.textContent = cliente.nome;
+                    
+                    // Manter seleção anterior se ainda existir
+                    if (clienteSelecionadoId && cliente.id == clienteSelecionadoId) {
+                        option.selected = true;
+                    }
+                    
+                    selectCliente.appendChild(option);
+                });
+                
+                // Feedback visual
+                btnAtualizar.classList.add('btn-outline-success');
+                btnAtualizar.classList.remove('btn-outline-info');
+                setTimeout(() => {
+                    btnAtualizar.classList.remove('btn-outline-success');
+                    btnAtualizar.classList.add('btn-outline-info');
+                }, 2000);
+                
+                console.log(`✅ Lista atualizada: ${data.total} clientes encontrados`);
+                
+                // Mostrar notificação
+                if (data.total > 0) {
+                    showToast(`Lista atualizada! ${data.total} clientes disponíveis`, 'success');
+                } else {
+                    showToast('Nenhum cliente ativo encontrado', 'warning');
+                }
+                
+            } else {
+                throw new Error(data.error || 'Erro desconhecido');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro ao atualizar clientes:', error);
+            showToast('Erro ao atualizar lista de clientes', 'error');
+            
+            btnAtualizar.classList.add('btn-outline-danger');
+            btnAtualizar.classList.remove('btn-outline-info');
+            setTimeout(() => {
+                btnAtualizar.classList.remove('btn-outline-danger');
+                btnAtualizar.classList.add('btn-outline-info');
+            }, 3000);
+            
+        } finally {
+            // Restaurar botão
+            btnAtualizar.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            btnAtualizar.disabled = false;
+        }
+    }
+    
+    function showToast(message, type = 'info') {
+        // Criar toast simples
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'warning'} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+            ${message}
+            <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto remover após 5 segundos
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+    
+    // Event listener para o botão atualizar
+    document.getElementById('btnAtualizarClientes').addEventListener('click', atualizarListaClientes);
+    
+    console.log('✅ Funcionalidade de atualização de clientes carregada!');
 });
 </script>
 {% endblock %}

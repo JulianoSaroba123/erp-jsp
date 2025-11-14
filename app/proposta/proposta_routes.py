@@ -1063,3 +1063,76 @@ def criar_os_a_partir_da_proposta(id):
         logger.error(f'Erro ao criar OS a partir da proposta {id}: {str(e)}')
         flash(f'Erro ao criar Ordem de Serviço: {str(e)}', 'error')
         return redirect(url_for('proposta.visualizar_proposta', id=id))
+
+@proposta_bp.route('/api/clientes', methods=['GET'])
+def listar_clientes_api():
+    """API para buscar lista atualizada de clientes."""
+    try:
+        clientes = Cliente.query.filter(
+            Cliente.ativo == True,
+            Cliente.nome.isnot(None),
+            Cliente.nome != ''
+        ).order_by(Cliente.nome).all()
+        
+        clientes_data = []
+        for cliente in clientes:
+            clientes_data.append({
+                'id': cliente.id,
+                'nome': cliente.nome,
+                'cnpj': cliente.cnpj or '',
+                'cidade': cliente.cidade or ''
+            })
+        
+        return jsonify({
+            'success': True,
+            'clientes': clientes_data,
+            'total': len(clientes_data)
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar clientes: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@proposta_bp.route('/api/clientes/debug')
+def debug_clientes():
+    """Debug para verificar problemas na listagem de clientes"""
+    try:
+        # Contar todos os clientes
+        total_clientes = Cliente.query.count()
+        
+        # Contar clientes ativos
+        clientes_ativos = Cliente.query.filter(Cliente.ativo == True).count()
+        
+        # Contar clientes com nome válido
+        clientes_nome_valido = Cliente.query.filter(
+            Cliente.ativo == True,
+            Cliente.nome.isnot(None),
+            Cliente.nome != ''
+        ).count()
+        
+        # Listar últimos 10 clientes criados
+        ultimos_clientes = Cliente.query.filter(
+            Cliente.ativo == True,
+            Cliente.nome.isnot(None),
+            Cliente.nome != ''
+        ).order_by(Cliente.criado_em.desc()).limit(10).all()
+        
+        clientes_recentes = []
+        for cliente in ultimos_clientes:
+            clientes_recentes.append({
+                'id': cliente.id,
+                'nome': cliente.nome,
+                'criado_em': cliente.criado_em.strftime('%d/%m/%Y %H:%M') if cliente.criado_em else 'N/A'
+            })
+        
+        return jsonify({
+            'total_clientes': total_clientes,
+            'clientes_ativos': clientes_ativos,
+            'clientes_nome_valido': clientes_nome_valido,
+            'ultimos_clientes': clientes_recentes
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
