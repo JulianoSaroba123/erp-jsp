@@ -122,6 +122,15 @@ class JSPLauncher:
             print(f"❌ Erro ao iniciar servidor: {e}")
             return False
     
+    def cleanup(self):
+        """Limpa recursos ao fechar"""
+        if self.server_process:
+            try:
+                self.server_process.terminate()
+                print("🛑 Servidor Flask encerrado")
+            except:
+                pass
+    
     def open_browser(self):
         """Abre o navegador na URL de login"""
         try:
