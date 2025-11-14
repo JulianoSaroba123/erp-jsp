@@ -27,7 +27,7 @@ from pathlib import Path
 SERVER_HOST = '127.0.0.1'
 SERVER_PORT = 5001
 LOGIN_URL = f'http://{SERVER_HOST}:{SERVER_PORT}/auth/login'
-MAX_WAIT_TIME = 30  # segundos
+MAX_WAIT_TIME = 60  # segundos
 
 class JSPLauncher:
     def __init__(self):
@@ -44,19 +44,21 @@ class JSPLauncher:
         except:
             return True
     
-    def wait_for_server(self, max_wait=30):
+    def wait_for_server(self, max_wait=60):
         """Aguarda o servidor estar pronto"""
         print("⏳ Aguardando servidor Flask iniciar...")
         
         for i in range(max_wait):
             try:
                 import urllib.request
-                urllib.request.urlopen(f'http://{SERVER_HOST}:{SERVER_PORT}', timeout=1)
+                urllib.request.urlopen(f'http://{SERVER_HOST}:{SERVER_PORT}', timeout=2)
                 print("✅ Servidor Flask está pronto!")
                 return True
-            except:
-                if i < 3:
-                    print(f"🔄 Aguardando... ({i+1}/3)")
+            except Exception as e:
+                if i < 5:
+                    print(f"🔄 Aguardando servidor... ({i+1}/5)")
+                elif i % 10 == 0:  # A cada 10 segundos
+                    print(f"🕒 Ainda inicializando... ({i}s/{max_wait}s)")
                 time.sleep(1)
         
         print("❌ Timeout: Servidor não respondeu")
@@ -66,28 +68,76 @@ class JSPLauncher:
         """Inicia o servidor Flask diretamente (sem subprocess)"""
         try:
             print("🚀 Iniciando servidor Flask integrado...")
+            print("📦 Configurando ambiente...")
             
             # Importar e iniciar Flask diretamente
             sys.path.insert(0, os.getcwd())
+            print("📁 Carregando aplicação Flask...")
+            
+            # Garantir que o banco existe antes de criar o app
+            print("🗄️ Verificando banco de dados...")
+            self.setup_database()
+            
             from app.app import create_app
+            print("⚙️ Criando instância da aplicação...")
             
             app = create_app()
+            print("🔧 Configurando servidor...")
             
             # Iniciar em thread separada
             import threading
             
             def run_flask():
-                app.run(host='127.0.0.1', port=5001, debug=False, use_reloader=False)
+                try:
+                    print("🌐 Iniciando servidor HTTP...")
+                    app.run(host='127.0.0.1', port=5001, debug=False, use_reloader=False, threaded=True)
+                except Exception as e:
+                    print(f"❌ Erro no servidor Flask: {e}")
             
             flask_thread = threading.Thread(target=run_flask, daemon=True)
             flask_thread.start()
+            print("🧵 Servidor Flask iniciado em thread separada")
             
-            print("✅ Servidor Flask iniciado em thread separada")
+            # Aguardar um pouco para o servidor subir
+            print("⏱️ Aguardando inicialização...")
+            time.sleep(5)
+            
+            print("✅ Servidor Flask configurado")
             return True
             
         except Exception as e:
             print(f"❌ Erro ao iniciar servidor Flask: {e}")
             return False
+    
+    def setup_database(self):
+        """Configura o banco de dados se necessário"""
+        try:
+            print("📊 Verificando banco de dados...")
+            
+            # Criar diretório de database se não existir
+            db_dir = os.path.join(os.getcwd(), 'database')
+            if not os.path.exists(db_dir):
+                os.makedirs(db_dir)
+                print(f"📁 Diretório database criado: {db_dir}")
+            
+            # Verificar se banco existe
+            db_path = os.path.join(db_dir, 'database.db')
+            if not os.path.exists(db_path):
+                print("🔧 Banco de dados não encontrado, criando...")
+                
+                # Criar banco básico
+                import sqlite3
+                conn = sqlite3.connect(db_path)
+                conn.execute("CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY)")
+                conn.commit()
+                conn.close()
+                
+                print("✅ Banco de dados criado")
+            else:
+                print("✅ Banco de dados verificado")
+                
+        except Exception as e:
+            print(f"⚠️ Erro na configuração do banco: {e}")
     
     def start_flask_server(self):
         """Inicia o servidor Flask"""
