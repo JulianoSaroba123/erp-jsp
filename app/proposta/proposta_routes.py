@@ -804,25 +804,48 @@ def duplicar_proposta(id):
 
 @proposta_bp.route('/api/clientes')
 def api_clientes():
-    """API para buscar clientes (autocomplete)."""
+    """API para buscar clientes (autocomplete e lista completa)."""
     try:
         termo = request.args.get('q', '')
-        clientes = Cliente.query.filter(
-            Cliente.ativo == True,
-            Cliente.nome.isnot(None),
-            Cliente.nome != '',
-            Cliente.nome.ilike(f'%{termo}%')
-        ).limit(10).all()
         
-        return jsonify([{
-            'id': c.id,
-            'nome': c.nome,
-            'email': c.email or ''
-        } for c in clientes])
+        # Se não há termo de busca, retornar todos os clientes para o select
+        if not termo:
+            clientes = Cliente.query.filter(
+                Cliente.ativo == True,
+                Cliente.nome.isnot(None),
+                Cliente.nome != ''
+            ).order_by(Cliente.nome).all()
+            
+            # Formato para atualização do select
+            return jsonify({
+                'success': True,
+                'clientes': [{
+                    'id': c.id,
+                    'nome': c.nome,
+                    'cpf_cnpj': c.cpf_cnpj or '',
+                    'cidade': c.cidade or ''
+                } for c in clientes],
+                'total': len(clientes)
+            })
+        else:
+            # Busca com termo para autocomplete
+            clientes = Cliente.query.filter(
+                Cliente.ativo == True,
+                Cliente.nome.isnot(None),
+                Cliente.nome != '',
+                Cliente.nome.ilike(f'%{termo}%')
+            ).limit(10).all()
+            
+            # Formato para autocomplete
+            return jsonify([{
+                'id': c.id,
+                'nome': c.nome,
+                'email': c.email or ''
+            } for c in clientes])
         
     except Exception as e:
         logger.error(f"Erro na API de clientes: {str(e)}")
-        return jsonify([]), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @proposta_bp.route('/api/<int:id>/status', methods=['PUT'])
 def atualizar_status(id):
@@ -1063,38 +1086,6 @@ def criar_os_a_partir_da_proposta(id):
         logger.error(f'Erro ao criar OS a partir da proposta {id}: {str(e)}')
         flash(f'Erro ao criar Ordem de Serviço: {str(e)}', 'error')
         return redirect(url_for('proposta.visualizar_proposta', id=id))
-
-@proposta_bp.route('/api/clientes', methods=['GET'])
-def listar_clientes_api():
-    """API para buscar lista atualizada de clientes."""
-    try:
-        clientes = Cliente.query.filter(
-            Cliente.ativo == True,
-            Cliente.nome.isnot(None),
-            Cliente.nome != ''
-        ).order_by(Cliente.nome).all()
-        
-        clientes_data = []
-        for cliente in clientes:
-            clientes_data.append({
-                'id': cliente.id,
-                'nome': cliente.nome,
-                'cnpj': cliente.cnpj or '',
-                'cidade': cliente.cidade or ''
-            })
-        
-        return jsonify({
-            'success': True,
-            'clientes': clientes_data,
-            'total': len(clientes_data)
-        })
-        
-    except Exception as e:
-        logger.error(f"Erro ao buscar clientes: {str(e)}")
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
 
 @proposta_bp.route('/api/clientes/debug')
 def debug_clientes():

@@ -585,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btnAtualizar.disabled = true;
             
             // Buscar clientes atualizados
-            const response = await fetch('/proposta/api/clientes');
+            const response = await fetch('/propostas/api/clientes');
             const data = await response.json();
             
             if (data.success) {
