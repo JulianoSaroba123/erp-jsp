@@ -65,79 +65,51 @@ class JSPLauncher:
         return False
     
     def start_flask_server_direct(self):
-        """Inicia o servidor Flask diretamente (sem subprocess)"""
+        """Inicia o servidor Flask diretamente (versão simplificada)"""
         try:
             print("🚀 Iniciando servidor Flask integrado...")
-            print("📦 Configurando ambiente...")
             
-            # Importar e iniciar Flask diretamente
+            # Configurar ambiente simplificado
             sys.path.insert(0, os.getcwd())
-            print("📁 Carregando aplicação Flask...")
             
-            # Garantir que o banco existe antes de criar o app
-            print("🗄️ Verificando banco de dados...")
-            self.setup_database()
-            
+            print("📦 Importando aplicação Flask...")
             from app.app import create_app
-            print("⚙️ Criando instância da aplicação...")
             
+            print("⚙️ Criando aplicação...")
             app = create_app()
-            print("🔧 Configurando servidor...")
             
-            # Iniciar em thread separada
+            print("🧵 Iniciando servidor em thread...")
             import threading
             
             def run_flask():
                 try:
-                    print("🌐 Iniciando servidor HTTP...")
-                    app.run(host='127.0.0.1', port=5001, debug=False, use_reloader=False, threaded=True)
+                    app.run(
+                        host='127.0.0.1', 
+                        port=5001, 
+                        debug=False, 
+                        use_reloader=False, 
+                        threaded=True
+                    )
                 except Exception as e:
-                    print(f"❌ Erro no servidor Flask: {e}")
+                    print(f"❌ Erro no servidor: {e}")
             
             flask_thread = threading.Thread(target=run_flask, daemon=True)
             flask_thread.start()
-            print("🧵 Servidor Flask iniciado em thread separada")
             
-            # Aguardar um pouco para o servidor subir
-            print("⏱️ Aguardando inicialização...")
-            time.sleep(5)
-            
-            print("✅ Servidor Flask configurado")
+            # Aguardar inicialização
+            time.sleep(3)
+            print("✅ Servidor Flask iniciado")
             return True
+            
+        except Exception as e:
+            print(f"❌ Erro ao iniciar Flask: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
             
         except Exception as e:
             print(f"❌ Erro ao iniciar servidor Flask: {e}")
             return False
-    
-    def setup_database(self):
-        """Configura o banco de dados se necessário"""
-        try:
-            print("📊 Verificando banco de dados...")
-            
-            # Criar diretório de database se não existir
-            db_dir = os.path.join(os.getcwd(), 'database')
-            if not os.path.exists(db_dir):
-                os.makedirs(db_dir)
-                print(f"📁 Diretório database criado: {db_dir}")
-            
-            # Verificar se banco existe
-            db_path = os.path.join(db_dir, 'database.db')
-            if not os.path.exists(db_path):
-                print("🔧 Banco de dados não encontrado, criando...")
-                
-                # Criar banco básico
-                import sqlite3
-                conn = sqlite3.connect(db_path)
-                conn.execute("CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY)")
-                conn.commit()
-                conn.close()
-                
-                print("✅ Banco de dados criado")
-            else:
-                print("✅ Banco de dados verificado")
-                
-        except Exception as e:
-            print(f"⚠️ Erro na configuração do banco: {e}")
     
     def start_flask_server(self):
         """Inicia o servidor Flask"""
