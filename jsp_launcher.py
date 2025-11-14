@@ -251,20 +251,11 @@ class JSPLauncher:
                 return
             
             # Iniciar servidor Flask
-            if getattr(sys, 'frozen', False):
-                # Se for executável, usar servidor direto
-                if not self.start_flask_server_direct():
-                    self.show_message("Erro JSP Sistema", 
-                                    "Falha ao iniciar servidor Flask.\nVerifique se todos os arquivos estão presentes.", 
-                                    "error")
-                    return
-            else:
-                # Se for desenvolvimento, usar subprocess  
-                if not self.start_flask_server():
-                    self.show_message("Erro JSP Sistema", 
-                                    "Falha ao iniciar servidor Flask.\nVerifique se todos os arquivos estão presentes.", 
-                                    "error")
-                    return
+            if not self.start_flask_server():
+                self.show_message("Erro JSP Sistema", 
+                                "Falha ao iniciar servidor Flask.\nVerifique se todos os arquivos estão presentes.", 
+                                "error")
+                return
             
             # Aguardar servidor estar pronto
             if not self.wait_for_server(MAX_WAIT_TIME):

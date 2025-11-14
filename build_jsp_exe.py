@@ -98,6 +98,9 @@ def build_executable():
         '--clean',                      # Limpar cache
         f'--name={exe_name}',          # Nome do executável
         '--add-data', 'app;app',       # Incluir pasta app
+        '--add-data', 'static;static', # Incluir pasta static
+        '--add-data', 'database;database', # Incluir pasta database se existir
+        '--add-data', 'run.py;.',       # Incluir run.py na raiz
     ]
     
     # Adicionar ícone se disponível
