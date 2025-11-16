@@ -130,11 +130,7 @@ def nova_proposta():
             
             if not titulo or not cliente_id:
                 flash('Título e cliente são obrigatórios', 'error')
-                clientes = Cliente.query.filter(
-                    Cliente.ativo == True,
-                    Cliente.nome.isnot(None),
-                    Cliente.nome != ''
-                ).order_by(Cliente.nome).all()
+                clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
                 return render_template('proposta/form.html', 
                                      proposta=None, 
                                      clientes=clientes,
@@ -319,11 +315,7 @@ def nova_proposta():
             return redirect(url_for('proposta.listar_propostas'))
         
         # GET - Mostrar formulário
-        clientes = Cliente.query.filter(
-            Cliente.ativo == True,
-            Cliente.nome.isnot(None),
-            Cliente.nome != ''
-        ).order_by(Cliente.nome).all()
+        clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
         logger.debug(f"Encontrados {len(clientes)} clientes ativos")
         
         return render_template('proposta/form.html', 
@@ -339,11 +331,7 @@ def nova_proposta():
         flash(f'Erro ao processar proposta: {str(e)}', 'error')
         
         # Retornar formulário com erro
-        clientes = Cliente.query.filter(
-            Cliente.ativo == True,
-            Cliente.nome.isnot(None),
-            Cliente.nome != ''
-        ).order_by(Cliente.nome).all()
+        clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
         return render_template('proposta/form.html', 
                              proposta=None, 
                              clientes=clientes,
@@ -622,11 +610,7 @@ def editar_proposta(id):
             flash(f'Erro ao atualizar proposta: {str(e)}', 'error')
     
     # GET - mostrar formulário
-    clientes = Cliente.query.filter(
-        Cliente.ativo == True,
-        Cliente.nome.isnot(None),
-        Cliente.nome != ''
-    ).order_by(Cliente.nome).all()
+    clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
     return render_template('proposta/form.html', proposta=proposta, clientes=clientes, today=date.today())
 
 @proposta_bp.route('/<int:id>/excluir', methods=['GET', 'POST'])
@@ -808,31 +792,25 @@ def api_clientes():
     try:
         termo = request.args.get('q', '')
         
-        # Se não há termo de busca, retornar todos os clientes para o select
+        # Se não há termo de busca, retornar TODOS os clientes ativos
         if not termo:
-            clientes = Cliente.query.filter(
-                Cliente.ativo == True,
-                Cliente.nome.isnot(None),
-                Cliente.nome != ''
-            ).order_by(Cliente.nome).all()
+            clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
             
             # Formato para atualização do select
             return jsonify({
                 'success': True,
                 'clientes': [{
                     'id': c.id,
-                    'nome': c.nome,
+                    'nome': c.nome or f'Cliente {c.id}',  # Fallback se nome for None
                     'cpf_cnpj': c.cpf_cnpj or '',
                     'cidade': c.cidade or ''
-                } for c in clientes],
-                'total': len(clientes)
+                } for c in clientes if c.nome],  # Só incluir se tiver nome
+                'total': len([c for c in clientes if c.nome])
             })
         else:
             # Busca com termo para autocomplete
             clientes = Cliente.query.filter(
                 Cliente.ativo == True,
-                Cliente.nome.isnot(None),
-                Cliente.nome != '',
                 Cliente.nome.ilike(f'%{termo}%')
             ).limit(10).all()
             
@@ -841,7 +819,7 @@ def api_clientes():
                 'id': c.id,
                 'nome': c.nome,
                 'email': c.email or ''
-            } for c in clientes])
+            } for c in clientes if c.nome])
         
     except Exception as e:
         logger.error(f"Erro na API de clientes: {str(e)}")
