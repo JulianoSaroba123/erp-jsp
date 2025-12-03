@@ -623,12 +623,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Função para converter valor monetário para número
     function converterParaNumero(valor) {
         if (!valor) return 0;
-        return parseFloat(valor.toString().replace(',', '.').replace(/[^\d.-]/g, '')) || 0;
+        // Remove R$, espaços e pontos de milhar, depois troca vírgula por ponto
+        let limpo = valor.toString()
+            .replace('R$', '')
+            .replace(/\s/g, '')
+            .replace(/\./g, '')  // Remove pontos de milhar
+            .replace(',', '.');   // Troca vírgula decimal por ponto
+        return parseFloat(limpo) || 0;
     }
     
     // Função para formatar número para moeda brasileira
     function formatarMoeda(valor) {
-        return 'R$ ' + parseFloat(valor).toFixed(2).replace('.', ',');
+        return 'R$ ' + parseFloat(valor).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
     
     // Função para calcular total de um item
