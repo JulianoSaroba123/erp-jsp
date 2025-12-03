@@ -311,11 +311,9 @@ def importar_dados():
 @login_required
 def importar_auto():
     """
-    Importa dados automaticamente do arquivo JSON no repositório.
+    Importa dados automaticamente - dados embutidos no código.
     Apenas admin pode usar.
     """
-    import json
-    import os
     from flask import flash
     
     # Apenas admin
@@ -324,97 +322,41 @@ def importar_auto():
         return redirect(url_for('painel.dashboard'))
     
     try:
-        # Caminho do arquivo JSON
-        json_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'dados_para_render.json')
-        
-        if not os.path.exists(json_path):
-            flash('❌ Arquivo dados_para_render.json não encontrado!', 'error')
-            return redirect(url_for('painel.dashboard'))
-        
-        with open(json_path, 'r', encoding='utf-8') as f:
-            dados = json.load(f)
-        
         resultados = []
         
         # Importa models
         from app.cliente.cliente_model import Cliente
-        from app.fornecedor.fornecedor_model import Fornecedor
-        from app.produto.produto_model import Produto
-        from app.ordem_servico.ordem_servico_model import OrdemServico
-        from app.proposta.proposta_model import Proposta
+        
+        # Dados dos clientes embutidos
+        clientes_data = [
+            {"nome": "CONDOMINIO EDIFICIO CLOVIS DOS SANTOS", "tipo": "PJ", "cpf_cnpj": "57.052.300/0001-31", "email": "uniolivia@hotmail.com", "telefone": "(15) 3316-6352", "celular": "(15) 99796-2849", "endereco": "PRAC MARTINHO GUEDES", "numero": "86", "bairro": "CENTRO", "cidade": "TATUI", "estado": "SP", "cep": "18270-370"},
+            {"nome": "Sergio Yoshio Fujiwara", "tipo": "PF", "cpf_cnpj": "077.142.788-38", "email": "sfujivara@uol.com.br", "telefone": "(15) 3542-1442", "endereco": "Rua dos Expedicionários", "numero": "458", "bairro": "Centro", "cidade": "Capão Bonito", "estado": "SP", "cep": "18300-060"},
+            {"nome": "Proninho Associação dos Amigos do Ninho Verde II Eco Residence", "tipo": "PJ", "cpf_cnpj": "47.686.555/0015-06", "email": "paulohenrique@ninhoverde-2.com.br", "telefone": "(14) 99697-6537", "endereco": "ROD CASTELLO BRANCO", "numero": "KM 196", "bairro": "NVIIER-LOT.NINHO V.II E. RESID", "cidade": "PARDINHO", "estado": "SP", "cep": "18640-000"},
+            {"nome": "Ultramix Tintas Industriais", "tipo": "PJ", "cpf_cnpj": "05.536.213/0001-56", "email": "ultramix@tintasultramix.com.br", "telefone": "(15) 3286-8060", "endereco": "ROD MARECHAL RONDON", "bairro": "IPIRANGA", "cidade": "JUMIRIM", "estado": "SP", "cep": "18535-000"},
+            {"nome": "Pedro Do Indio Botucatu", "tipo": "PJ", "cpf_cnpj": "20.287.770/0001-74", "email": "pedradoindiobotucatu@gmail.com", "telefone": "(14) 38861-3761438136181", "endereco": "AREA RURAL", "numero": "S/N", "bairro": "AREA RURAL DE BOTUCATU", "cidade": "Botucatu", "estado": "SP", "cep": "18619-899"},
+            {"nome": "Mr Jacky", "tipo": "PJ", "cpf_cnpj": "20.631.771/0001-07", "email": "mrjackyfincanceiro@gmail.com", "telefone": "(15) 98478-7891", "cidade": "TIETE"},
+            {"nome": "Rodrigo Quartarolo", "tipo": "PF", "cpf_cnpj": "000.272.278-00"},
+            {"nome": "Ricardo Cury", "tipo": "PJ", "cpf_cnpj": "08.143.688/0001-70", "email": "arcyagropecuaria@uol.com.br", "telefone": "(11) 30514-20611130514206", "endereco": "SÍTIO SAO JOAO", "numero": "S/N", "bairro": "SAO JOAO", "cidade": "TIETE", "estado": "SP", "cep": "18530-000"},
+            {"nome": "Teste Cliente Válido", "tipo": "PF", "cpf_cnpj": "98765432101", "email": "valido@teste.com"},
+            {"nome": "Sander", "tipo": "PF", "cpf_cnpj": "000.000.000-00"}
+        ]
         
         # Importa clientes
-        if 'clientes' in dados:
-            count = 0
-            for row in dados['clientes']['rows']:
-                exists = Cliente.query.filter_by(cpf_cnpj=row.get('cpf_cnpj')).first() if row.get('cpf_cnpj') else None
-                if not exists:
-                    cliente = Cliente()
-                    for col, val in row.items():
-                        if hasattr(cliente, col) and col != 'id':
-                            setattr(cliente, col, val)
-                    db.session.add(cliente)
-                    count += 1
-            db.session.commit()
-            resultados.append(f"✅ Clientes: {count}")
-        
-        # Importa fornecedores
-        if 'fornecedores' in dados:
-            count = 0
-            for row in dados['fornecedores']['rows']:
-                exists = Fornecedor.query.filter_by(cnpj=row.get('cnpj')).first() if row.get('cnpj') else None
-                if not exists:
-                    obj = Fornecedor()
-                    for col, val in row.items():
-                        if hasattr(obj, col) and col != 'id':
-                            setattr(obj, col, val)
-                    db.session.add(obj)
-                    count += 1
-            db.session.commit()
-            resultados.append(f"✅ Fornecedores: {count}")
-        
-        # Importa produtos
-        if 'produtos' in dados:
-            count = 0
-            for row in dados['produtos']['rows']:
-                exists = Produto.query.filter_by(nome=row.get('nome')).first() if row.get('nome') else None
-                if not exists:
-                    obj = Produto()
-                    for col, val in row.items():
-                        if hasattr(obj, col) and col != 'id':
-                            setattr(obj, col, val)
-                    db.session.add(obj)
-                    count += 1
-            db.session.commit()
-            resultados.append(f"✅ Produtos: {count}")
-        
-        # Importa ordens de serviço
-        if 'ordem_servico' in dados:
-            count = 0
-            for row in dados['ordem_servico']['rows']:
-                obj = OrdemServico()
+        count = 0
+        for row in clientes_data:
+            exists = Cliente.query.filter_by(cpf_cnpj=row.get('cpf_cnpj')).first() if row.get('cpf_cnpj') else None
+            if not exists:
+                cliente = Cliente()
                 for col, val in row.items():
-                    if hasattr(obj, col) and col != 'id':
-                        setattr(obj, col, val)
-                db.session.add(obj)
+                    if hasattr(cliente, col):
+                        setattr(cliente, col, val)
+                cliente.ativo = True
+                db.session.add(cliente)
                 count += 1
-            db.session.commit()
-            resultados.append(f"✅ Ordens de Serviço: {count}")
+        db.session.commit()
+        resultados.append(f"✅ Clientes: {count}")
         
-        # Importa propostas
-        if 'propostas' in dados:
-            count = 0
-            for row in dados['propostas']['rows']:
-                obj = Proposta()
-                for col, val in row.items():
-                    if hasattr(obj, col) and col != 'id':
-                        setattr(obj, col, val)
-                db.session.add(obj)
-                count += 1
-            db.session.commit()
-            resultados.append(f"✅ Propostas: {count}")
-        
-        flash('🎉 Importação automática concluída! ' + ' | '.join(resultados), 'success')
+        flash('🎉 Importação concluída! ' + ' | '.join(resultados), 'success')
         return redirect(url_for('painel.dashboard'))
         
     except Exception as e:
