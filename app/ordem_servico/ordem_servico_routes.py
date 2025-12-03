@@ -155,7 +155,11 @@ def get_logo_base64():
         # Busca a configuração do sistema
         config = Configuracao.get_solo()
         
-        # Se há logo configurado, usa ele
+        # Se há logo em base64 armazenado no banco (para cloud/Render), usa ele primeiro
+        if config and config.logo_base64:
+            return config.logo_base64
+        
+        # Se há logo configurado como arquivo, usa ele
         if config and config.logo:
             # Verifica se é caminho absoluto ou relativo
             if os.path.isabs(config.logo):

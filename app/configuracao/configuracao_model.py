@@ -25,6 +25,7 @@ class Configuracao(BaseModel):
     email = db.Column(db.String(150))
     site = db.Column(db.String(150))
     logo = db.Column(db.String(255))  # caminho/URL para a imagem
+    logo_base64 = db.Column(db.Text)  # Logo em base64 para ambientes cloud
 
     # Endereço
     cep = db.Column(db.String(20))
