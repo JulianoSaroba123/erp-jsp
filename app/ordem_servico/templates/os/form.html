@@ -632,9 +632,28 @@ document.addEventListener('DOMContentLoaded', function() {
         return parseFloat(limpo) || 0;
     }
     
-    // Função para formatar número para moeda brasileira
+    // Função para formatar número para moeda brasileira (não depende de locale)
     function formatarMoeda(valor) {
-        return 'R$ ' + parseFloat(valor).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        // Garante que seja um número válido
+        let num = parseFloat(valor) || 0;
+        
+        // Formata com 2 casas decimais
+        let partes = num.toFixed(2).split('.');
+        let inteiro = partes[0];
+        let decimal = partes[1];
+        
+        // Adiciona pontos de milhar
+        let formatado = '';
+        let contador = 0;
+        for (let i = inteiro.length - 1; i >= 0; i--) {
+            if (contador > 0 && contador % 3 === 0) {
+                formatado = '.' + formatado;
+            }
+            formatado = inteiro[i] + formatado;
+            contador++;
+        }
+        
+        return 'R$ ' + formatado + ',' + decimal;
     }
     
     // Função para calcular total de um item
@@ -660,13 +679,22 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Somar serviços
         document.querySelectorAll('.servico-total').forEach(function(campo) {
-            totalServicos += converterParaNumero(campo.value);
+            const valorOriginal = campo.value;
+            const valorConvertido = converterParaNumero(valorOriginal);
+            console.log('🔍 Serviço total - Original:', valorOriginal, '→ Convertido:', valorConvertido);
+            totalServicos += valorConvertido;
         });
         
         // Somar produtos
         document.querySelectorAll('.produto-total').forEach(function(campo) {
-            totalProdutos += converterParaNumero(campo.value);
+            const valorOriginal = campo.value;
+            const valorConvertido = converterParaNumero(valorOriginal);
+            console.log('🔍 Produto total - Original:', valorOriginal, '→ Convertido:', valorConvertido);
+            totalProdutos += valorConvertido;
         });
+        
+        console.log('📊 Total Serviços calculado:', totalServicos);
+        console.log('📊 Total Produtos calculado:', totalProdutos);
         
         // Se não há itens, manter os valores originais do formulário
         const servicosExistentes = document.querySelectorAll('.servico-total').length;
