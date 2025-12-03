@@ -668,11 +668,34 @@ document.addEventListener('DOMContentLoaded', function() {
             totalProdutos += converterParaNumero(campo.value);
         });
         
-        const desconto = converterParaNumero(document.getElementById('desconto').value);
-        const total = totalServicos + totalProdutos - desconto;
+        // Se não há itens, manter os valores originais do formulário
+        const servicosExistentes = document.querySelectorAll('.servico-total').length;
+        const produtosExistentes = document.querySelectorAll('.produto-total').length;
         
-        document.getElementById('valorServicos').value = formatarMoeda(totalServicos);
-        document.getElementById('valorProdutos').value = formatarMoeda(totalProdutos);
+        if (servicosExistentes > 0) {
+            document.getElementById('valorServicos').value = formatarMoeda(totalServicos);
+        }
+        
+        if (produtosExistentes > 0) {
+            document.getElementById('valorProdutos').value = formatarMoeda(totalProdutos);
+        }
+        
+        // Recalcula total apenas se há itens ou se o desconto mudou
+        if (servicosExistentes > 0 || produtosExistentes > 0) {
+            const desconto = converterParaNumero(document.getElementById('desconto').value);
+            const valorServicoAtual = converterParaNumero(document.getElementById('valorServicos').value);
+            const valorProdutoAtual = converterParaNumero(document.getElementById('valorProdutos').value);
+            const total = valorServicoAtual + valorProdutoAtual - desconto;
+            document.getElementById('valorTotal').value = formatarMoeda(total);
+        }
+    }
+    
+    // Função para recalcular total quando desconto muda
+    function recalcularTotal() {
+        const valorServico = converterParaNumero(document.getElementById('valorServicos').value);
+        const valorProduto = converterParaNumero(document.getElementById('valorProdutos').value);
+        const desconto = converterParaNumero(document.getElementById('desconto').value);
+        const total = valorServico + valorProduto - desconto;
         document.getElementById('valorTotal').value = formatarMoeda(total);
     }
     
@@ -818,14 +841,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listener específico para o campo desconto
     const descontoField = document.getElementById('desconto');
     if (descontoField) {
-        descontoField.addEventListener('input', calcularTotaisGerais);
+        descontoField.addEventListener('input', recalcularTotal);
     }
     
-    // Calcular totais iniciais após carregar a página
-    setTimeout(() => {
-        calcularTotaisGerais();
-        console.log('💰 Totais calculados automaticamente');
-    }, 100);
+    // Não recalcular totais automaticamente ao carregar - manter valores do banco
+    // Os valores já vêm corretos do servidor
+    console.log('💰 Valores carregados do servidor mantidos');
     
     // ===== FUNCIONALIDADE ATUALIZAR CLIENTES =====
     
