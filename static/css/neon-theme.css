@@ -407,43 +407,75 @@ html, body {
 ==================================== */
 @media (max-width: 768px) {
   .sidebar {
-    width: var(--sidebar-collapsed);
+    width: var(--sidebar-width);
+    left: -300px; /* Esconde a sidebar por padrão no mobile */
+    transition: left 0.3s ease;
+  }
+  
+  .sidebar.show {
+    left: 0; /* Mostra quando tem a classe show */
   }
   
   .sidebar-brand h1 {
-    display: none;
+    display: block;
   }
   
   .nav-text {
-    display: none;
+    display: inline;
   }
   
   .nav-link {
-    justify-content: center;
-    padding: 15px 10px;
-  }
-  
-  .main-content {
-    margin-left: var(--sidebar-collapsed);
-  }
-  
-  .content-wrapper {
-    padding: 15px;
-  }
-}
-
-@media (max-width: 576px) {
-  .sidebar {
-    width: 0;
-    overflow: hidden;
+    justify-content: flex-start;
+    padding: 15px 20px;
   }
   
   .main-content {
     margin-left: 0;
   }
   
+  .content-wrapper {
+    padding: 15px;
+  }
+  
+  /* Botão toggle mobile */
+  .mobile-toggle {
+    display: flex !important;
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1050;
+    width: 45px;
+    height: 45px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.9), rgba(0, 168, 204, 1));
+    border: 2px solid rgba(0, 212, 255, 0.8);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+  }
+  
+  /* Overlay escuro quando sidebar está aberta */
+  .sidebar.show::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: -1;
+  }
+}
+
+@media (max-width: 576px) {
+  .main-content {
+    margin-left: 0;
+  }
+  
   .topbar {
     padding: 10px 15px;
+    padding-left: 70px; /* Espaço para o botão toggle */
   }
 }
 

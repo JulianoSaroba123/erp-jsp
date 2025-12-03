@@ -31,7 +31,7 @@
 
 <body>
     <!-- Mobile Toggle Button -->
-    <button class="btn btn-neon-primary mobile-toggle d-md-none" onclick="toggleSidebar()" style="position: fixed; top: 20px; left: 20px; z-index: 1001;">
+    <button class="mobile-toggle d-md-none" onclick="toggleSidebar()" aria-label="Abrir menu">
         <i class="fas fa-bars"></i>
     </button>
 
@@ -252,6 +252,7 @@
                 // Also check for partial matches (for modules)
                 if(currentLocation.includes(item.getAttribute('href')) && item.getAttribute('href').length > 1) {
                     item.classList.add('active');
+                }
             });
         });
         
