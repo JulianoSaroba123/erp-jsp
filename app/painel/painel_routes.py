@@ -326,6 +326,8 @@ def importar_auto():
         
         # Importa models
         from app.cliente.cliente_model import Cliente
+        from app.fornecedor.fornecedor_model import Fornecedor
+        from app.produto.produto_model import Produto
         
         # Dados dos clientes embutidos
         clientes_data = [
@@ -354,7 +356,91 @@ def importar_auto():
                 db.session.add(cliente)
                 count += 1
         db.session.commit()
-        resultados.append(f"✅ Clientes: {count}")
+        resultados.append(f"Clientes: {count}")
+        
+        # Dados dos fornecedores
+        fornecedores_data = [
+            {"nome": "Distribuidora de Peças Diesel", "email": "vendas@distpecasdiesel.com.br", "telefone": "(11) 3333-4444", "endereco": "Rua das Peças, 100", "cidade": "São Paulo", "estado": "SP"},
+            {"nome": "Lubrificantes Premium", "cnpj_cpf": "33.444.555/0001-66", "email": "comercial@lubripremium.com.br", "telefone": "(11) 5555-6666", "endereco": "Av. dos Óleos, 200", "cidade": "São Caetano do Sul", "estado": "SP"}
+        ]
+        
+        # Importa fornecedores
+        count = 0
+        for row in fornecedores_data:
+            exists = Fornecedor.query.filter_by(nome=row.get('nome')).first()
+            if not exists:
+                obj = Fornecedor()
+                for col, val in row.items():
+                    if hasattr(obj, col):
+                        setattr(obj, col, val)
+                obj.ativo = True
+                db.session.add(obj)
+                count += 1
+        db.session.commit()
+        resultados.append(f"Fornecedores: {count}")
+        
+        # Dados dos produtos
+        produtos_data = [
+            {"nome": "Óleo Lubrificante SAE 15W40", "preco_venda": 35, "unidade_medida": "Litro", "estoque_atual": 50, "preco_custo": 25},
+            {"nome": "Filtro de Óleo", "preco_venda": 45, "unidade_medida": "UN", "estoque_atual": 30, "preco_custo": 30},
+            {"nome": "Filtro de Ar", "preco_venda": 25, "unidade_medida": "UN", "estoque_atual": 20, "preco_custo": 15},
+            {"nome": "Correias em V", "preco_venda": 85, "unidade_medida": "Conjunto", "estoque_atual": 15, "preco_custo": 55},
+            {"nome": "Pedaleira LLJFS14", "codigo": "5012", "preco_venda": 147.47, "unidade_medida": "UN", "estoque_atual": 1, "preco_custo": 109.24}
+        ]
+        
+        # Importa produtos
+        count = 0
+        for row in produtos_data:
+            exists = Produto.query.filter_by(nome=row.get('nome')).first()
+            if not exists:
+                obj = Produto()
+                for col, val in row.items():
+                    if hasattr(obj, col):
+                        setattr(obj, col, val)
+                obj.ativo = True
+                db.session.add(obj)
+                count += 1
+        db.session.commit()
+        resultados.append(f"Produtos: {count}")
+        
+        # Dados das ordens de serviço (cliente_nome para buscar o ID correto)
+        from app.ordem_servico.ordem_servico_model import OrdemServico
+        
+        ordens_data = [
+            {"numero": "OS-2025-002", "cliente_nome": "Ricardo Cury", "titulo": "Bomba Poço Artesiano", "status": "concluida", "prioridade": "alta", "data_abertura": "2025-11-18", "valor_servico": 360, "valor_total": 360, "tecnico_responsavel": "Juliano", "equipamento": "Bomba Poço artesiano", "marca_modelo": "NT"},
+            {"numero": "OS-2025-003", "cliente_nome": "CONDOMINIO EDIFICIO CLOVIS DOS SANTOS", "titulo": "Gerador Diesel MWM 81 kVA", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-11-11", "valor_pecas": 1100, "valor_total": 1100, "tecnico_responsavel": "Juliano", "equipamento": "Gerador Diesel MWM 81 kVA", "marca_modelo": "MWM-0229-6 / WEG- GTA 81/78KVA"},
+            {"numero": "OS20250007", "cliente_nome": "Mr Jacky", "titulo": "Máquina M5", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-11-18", "valor_servico": 720, "valor_total": 720, "tecnico_responsavel": "Juliano", "equipamento": "Calandra Termotransferidora M5", "marca_modelo": "TF-601"},
+            {"numero": "OS20250008", "cliente_nome": "Rodrigo Quartarolo", "titulo": "Bomba de Desinfecção", "status": "concluida", "prioridade": "alta", "data_abertura": "2025-11-18", "valor_servico": 200, "valor_total": 200, "tecnico_responsavel": "Juliano", "equipamento": "Bomba de produto", "marca_modelo": "Sem Marca"},
+            {"numero": "OS20250009", "cliente_nome": "Sergio Yoshio Fujiwara", "titulo": "Atendimento Emergencial", "status": "concluida", "prioridade": "alta", "data_abertura": "2025-11-21", "valor_servico": 1240, "valor_pecas": 510, "valor_total": 1750, "tecnico_responsavel": "Juliano", "equipamento": "Grupo Gerador / Pivô", "marca_modelo": "BTA225-MI 09"},
+            {"numero": "OS20250010", "cliente_nome": "Mr Jacky", "titulo": "Revisadora 01", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-11-21", "valor_servico": 180, "valor_pecas": 181.45, "valor_total": 361.45, "tecnico_responsavel": "Juliano", "equipamento": "Revisadora 01", "marca_modelo": "S/marca"},
+            {"numero": "OS20250011", "cliente_nome": "Sander", "titulo": "Grupos Geradores", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-11-27", "valor_servico": 800, "valor_total": 800, "tecnico_responsavel": "Juliano", "equipamento": "Grupos Geradores 1 e 2", "marca_modelo": "MWM"},
+            {"numero": "OS20250016", "cliente_nome": "CONDOMINIO EDIFICIO CLOVIS DOS SANTOS", "titulo": "Grupo Gerador", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-12-02", "valor_servico": 360, "valor_total": 360, "tecnico_responsavel": "Juliano", "equipamento": "Grupo-Gerador", "marca_modelo": "MWM-0229-6 / WEG- GTA 81/78KVA"},
+            {"numero": "OS20250017", "cliente_nome": "Mr Jacky", "titulo": "Maquina M5/ Revisora 01", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-12-01", "valor_servico": 760, "valor_total": 760, "tecnico_responsavel": "Juliano", "equipamento": "Calandra Termo transferidora /Revisadora", "marca_modelo": "TF 601/ OMATEC"}
+        ]
+        
+        # Importa ordens de serviço
+        from datetime import datetime
+        count = 0
+        for row in ordens_data:
+            exists = OrdemServico.query.filter_by(numero=row.get('numero')).first()
+            if not exists:
+                # Busca cliente pelo nome
+                cliente = Cliente.query.filter_by(nome=row.get('cliente_nome')).first()
+                if cliente:
+                    obj = OrdemServico()
+                    obj.cliente_id = cliente.id
+                    for col, val in row.items():
+                        if col == 'cliente_nome':
+                            continue  # Pula, já processamos
+                        if col == 'data_abertura' and val:
+                            val = datetime.strptime(val, '%Y-%m-%d').date()
+                        if hasattr(obj, col):
+                            setattr(obj, col, val)
+                    obj.ativo = True
+                    db.session.add(obj)
+                    count += 1
+        db.session.commit()
+        resultados.append(f"Ordens: {count}")
         
         flash('🎉 Importação concluída! ' + ' | '.join(resultados), 'success')
         return redirect(url_for('painel.dashboard'))
