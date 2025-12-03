@@ -220,6 +220,100 @@ html, body {
   box-shadow: 0 2px 20px rgba(0, 212, 255, 0.1);
 }
 
+/* ====================================
+   🧭 BREADCRUMB MODERNO
+==================================== */
+.topbar-modern {
+  background: linear-gradient(135deg, rgba(10, 25, 41, 0.95) 0%, rgba(15, 52, 96, 0.9) 100%);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+  padding: 12px 25px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.breadcrumb-modern {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.breadcrumb-home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(0, 212, 255, 0.1));
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  border-radius: 10px;
+  color: var(--neon-cyan);
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.breadcrumb-home:hover {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.4), rgba(0, 212, 255, 0.2));
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+  color: #fff;
+}
+
+.breadcrumb-home i {
+  font-size: 14px;
+}
+
+.breadcrumb-separator {
+  color: rgba(0, 212, 255, 0.5);
+  font-size: 10px;
+}
+
+.breadcrumb-modern a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.breadcrumb-modern a:hover {
+  color: var(--neon-cyan);
+  background: rgba(0, 212, 255, 0.1);
+}
+
+.breadcrumb-modern .current-page {
+  color: var(--neon-cyan);
+  font-weight: 600;
+  padding: 6px 12px;
+  background: rgba(0, 212, 255, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+@media (max-width: 768px) {
+  .topbar-modern {
+    padding: 10px 15px;
+    padding-left: 65px; /* Espaço para botão toggle */
+  }
+  
+  .breadcrumb-home {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .breadcrumb-modern a,
+  .breadcrumb-modern .current-page {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+
 .content-wrapper {
   padding: 30px;
 }

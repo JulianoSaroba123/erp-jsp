@@ -124,8 +124,22 @@
                 </a>
             </div>
             
-            <!-- Logout na sidebar -->
+            <!-- Usuário -->
             {% if current_user.is_authenticated %}
+            <div class="nav-item">
+                <a href="{{ url_for('auth.perfil') }}" class="nav-link">
+                    <i class="nav-icon fas fa-user-circle"></i>
+                    <span class="nav-text">Meu Perfil</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('auth.alterar_senha') }}" class="nav-link">
+                    <i class="nav-icon fas fa-key"></i>
+                    <span class="nav-text">Alterar Senha</span>
+                </a>
+            </div>
+            
+            <!-- Logout na sidebar -->
             <div class="nav-item logout-item">
                 <a href="{{ url_for('auth.logout') }}" class="nav-link logout-link">
                     <i class="nav-icon fas fa-sign-out-alt"></i>
@@ -138,35 +152,15 @@
 
     <!-- Main Content -->
     <div class="main-content">
-        <!-- Top Header -->
-        <div class="topbar">
-            <nav class="breadcrumb-neon" aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Home</a></li>
-                    {% block breadcrumb %}{% endblock %}
-                </ol>
+        <!-- Top Header - Breadcrumb Moderno -->
+        <div class="topbar-modern">
+            <nav class="breadcrumb-modern" aria-label="breadcrumb">
+                <a href="{{ url_for('painel.dashboard') }}" class="breadcrumb-home">
+                    <i class="fas fa-home"></i>
+                </a>
+                <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+                {% block breadcrumb %}{% endblock %}
             </nav>
-            <div class="user-info">
-                {% if current_user.is_authenticated %}
-                    <div class="dropdown">
-                        <a class="dropdown-toggle text-decoration-none text-white" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle"></i>
-                            {{ current_user.nome }}
-                        </a>
-                        <ul class="dropdown-menu dropdown-menu-end bg-dark border-primary">
-                            <li><a class="dropdown-item text-light" href="{{ url_for('auth.perfil') }}"><i class="fas fa-user me-2 text-primary"></i>Perfil</a></li>
-                            <li><a class="dropdown-item text-light" href="{{ url_for('auth.alterar_senha') }}"><i class="fas fa-key me-2 text-primary"></i>Alterar Senha</a></li>
-                            <li><hr class="dropdown-divider border-secondary"></li>
-                            <li><a class="dropdown-item text-light" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2 text-danger"></i>Sair</a></li>
-                        </ul>
-                    </div>
-                {% else %}
-                    <a href="{{ url_for('auth.login') }}" class="text-decoration-none text-white">
-                        <i class="fas fa-sign-in-alt text-primary"></i>
-                        Login
-                    </a>
-                {% endif %}
-            </div>
         </div>
 
         <!-- Content Container -->

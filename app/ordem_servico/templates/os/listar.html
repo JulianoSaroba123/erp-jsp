@@ -3,12 +3,9 @@
 {% block title %}Ordens de Serviço - {{ super() }}{% endblock %}
 
 {% block breadcrumb %}
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item active">Ordens de Serviço</li>
-    </ol>
-</nav>
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Ordens de Serviço</span>
 {% endblock %}
 
 {% block content %}

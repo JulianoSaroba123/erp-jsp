@@ -3,12 +3,9 @@
 {% block title %}Clientes - {{ super() }}{% endblock %}
 
 {% block breadcrumb %}
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item active">Clientes</li>
-    </ol>
-</nav>
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Clientes</span>
 {% endblock %}
 
 {% block content %}
