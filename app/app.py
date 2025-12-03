@@ -92,6 +92,15 @@ def create_app(config_name=None):
     # Configura context processors
     register_context_processors(app)
 
+    # Cria as tabelas do banco de dados se não existirem (necessário para Render/Gunicorn)
+    with app.app_context():
+        try:
+            from app.extensoes import db
+            db.create_all()
+            print(" ✓ Tabelas do banco de dados verificadas/criadas!")
+        except Exception as e:
+            print(f" ⚠ Aviso na criação de tabelas: {e}")
+
     return app
 
 def register_blueprints(app):
@@ -301,3 +310,8 @@ def register_context_processors(app):
                 # If endpoint is not available, return a harmless anchor
                 return '#'
         return {'safe_url_for': safe_url_for}
+
+
+# Cria a instância da aplicação para Gunicorn/WSGI
+# Gunicorn importa: app.app:app
+app = create_app()

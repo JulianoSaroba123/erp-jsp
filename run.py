@@ -14,19 +14,8 @@ Para rodar:
 """
 
 import os
-from app.app import create_app
-
-# Cria a aplicação
-app = create_app()
-
-# Inicializa o banco se necessário
-with app.app_context():
-    try:
-        from app.extensoes import db
-        db.create_all()
-        print(" Banco de dados verificado/criado com sucesso!")
-    except Exception as e:
-        print(f" Erro na inicialização do banco: {e}")
+# Importa a aplicação já criada (também usada pelo Gunicorn)
+from app.app import app
 
 if __name__ == '__main__':
     """
