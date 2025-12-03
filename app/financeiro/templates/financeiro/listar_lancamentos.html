@@ -244,6 +244,60 @@ function marcarComoPago(id) {
     document.getElementById('formPagamento').action = `/financeiro/lancamentos/${id}/pagar`;
     new bootstrap.Modal(document.getElementById('modalPagamento')).show();
 }
+
+// Filtrar status baseado no tipo selecionado
+document.addEventListener('DOMContentLoaded', function() {
+    const tipoSelect = document.querySelector('select[name="tipo"]');
+    const statusSelect = document.querySelector('select[name="status"]');
+    
+    if (tipoSelect && statusSelect) {
+        function filtrarStatusFiltro() {
+            const tipo = tipoSelect.value;
+            const statusAtual = statusSelect.value;
+            
+            // Salvar todas as opções originais
+            if (!statusSelect.dataset.opcoesOriginais) {
+                statusSelect.dataset.opcoesOriginais = statusSelect.innerHTML;
+            }
+            
+            // Se não há tipo selecionado, mostrar todas as opções
+            if (!tipo) {
+                statusSelect.innerHTML = statusSelect.dataset.opcoesOriginais;
+                statusSelect.value = statusAtual;
+                return;
+            }
+            
+            // Limpar opções e adicionar "Todos"
+            statusSelect.innerHTML = '<option value="">Todos</option>';
+            
+            // Adicionar opções comuns
+            statusSelect.innerHTML += '<option value="pendente">Pendente</option>';
+            statusSelect.innerHTML += '<option value="cancelado">Cancelado</option>';
+            statusSelect.innerHTML += '<option value="vencido">Vencido</option>';
+            
+            // Adicionar opções específicas baseadas no tipo
+            if (tipo === 'receita' || tipo === 'conta_receber') {
+                statusSelect.innerHTML += '<option value="recebido">Recebido</option>';
+            } else if (tipo === 'despesa' || tipo === 'conta_pagar') {
+                statusSelect.innerHTML += '<option value="pago">Pago</option>';
+            }
+            
+            // Tentar manter o status atual se for válido
+            const opcoes = Array.from(statusSelect.options).map(opt => opt.value);
+            if (opcoes.includes(statusAtual)) {
+                statusSelect.value = statusAtual;
+            }
+        }
+        
+        // Aplicar filtro quando mudar o tipo
+        tipoSelect.addEventListener('change', filtrarStatusFiltro);
+        
+        // Aplicar filtro inicial se já há um tipo selecionado
+        if (tipoSelect.value) {
+            filtrarStatusFiltro();
+        }
+    }
+});
 </script>
 
 <style>

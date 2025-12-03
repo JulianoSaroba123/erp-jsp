@@ -2,9 +2,20 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <!-- Cache Buster: {{ timestamp if timestamp else '' }} -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Relatório de Ordem de Serviço - {{ ordem.numero }}</title>
     <style>
+        .mega-debug {
+            background: #ff0000 !important;
+            color: #ffffff !important;
+            font-size: 24px !important;
+            text-align: center !important;
+            padding: 20px !important;
+            margin: 10px !important;
+            border: 5px solid #ff0000 !important;
+            font-weight: bold !important;
+        }
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
@@ -155,9 +166,16 @@
             body { margin: 0; }
             .section { break-inside: avoid; }
         }
+        
+        /* ANTI-CACHE TIMESTAMP: {{ timestamp if timestamp else '' }} */
     </style>
 </head>
 <body>
+    <!-- 🚨🚨🚨 MEGA DEBUG: TEMPLATE RELATORIO_PDF.HTML ATIVO 🚨🚨🚨 -->
+    <div class="mega-debug">
+        🚨 ESTE É O TEMPLATE RELATORIO_PDF.HTML - SEM OBSERVAÇÕES - {{ timestamp if timestamp else '' }} 🚨
+    </div>
+    
     <!-- Cabeçalho -->
     <div class="header">
         <div class="company-logo">{{ config.nome_fantasia if config and config.nome_fantasia else 'JSP - Sistema de Gestão' }}</div>
@@ -165,6 +183,11 @@
         <div class="report-number">Nº {{ ordem.numero }} - {{ ordem.data_abertura.strftime('%d/%m/%Y') if ordem.data_abertura else 'Data não informada' }}</div>
     </div>
 
+    <!-- TEMPLATE LIMPO - SEM OBSERVAÇÕES -->
+    <!-- Timestamp: {{ timestamp if timestamp else '' }} -->
+    
+    <!-- TODAS AS SEÇÕES DE OBSERVAÇÕES FORAM REMOVIDAS -->
+    
     <!-- Informações do Cliente -->
     <div class="section">
         <div class="section-header">
@@ -249,209 +272,7 @@
         </div>
     </div>
 
-    <!-- Informações do Equipamento -->
-    {% if ordem.equipamento or ordem.marca_modelo or ordem.numero_serie %}
-    <div class="section">
-        <div class="section-header">
-            🔧 Dados do Equipamento
-        </div>
-        <div class="section-content">
-            <div class="info-grid">
-                <div>
-                    {% if ordem.equipamento %}
-                    <div class="info-item">
-                        <span class="info-label">Equipamento:</span>
-                        <span class="info-value">{{ ordem.equipamento }}</span>
-                    </div>
-                    {% endif %}
-                    {% if ordem.marca_modelo %}
-                    <div class="info-item">
-                        <span class="info-label">Marca/Modelo:</span>
-                        <span class="info-value">{{ ordem.marca_modelo }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-                <div>
-                    {% if ordem.numero_serie %}
-                    <div class="info-item">
-                        <span class="info-label">Número de Série:</span>
-                        <span class="info-value">{{ ordem.numero_serie }}</span>
-                    </div>
-                    {% endif %}
-                    {% if ordem.defeito_relatado %}
-                    <div class="info-item">
-                        <span class="info-label">Defeito Relatado:</span>
-                        <span class="info-value">{{ ordem.defeito_relatado }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Controle de Tempo -->
-    {% if ordem.hora_inicial or ordem.hora_final or ordem.km_inicial or ordem.km_final %}
-    <div class="section">
-        <div class="section-header">
-            ⏱️ Controle de Tempo
-        </div>
-        <div class="section-content">
-            <div class="info-grid">
-                <div>
-                    {% if ordem.hora_inicial %}
-                    <div class="info-item">
-                        <span class="info-label">Hora de Início:</span>
-                        <span class="info-value">{{ ordem.hora_inicial.strftime('%H:%M') if ordem.hora_inicial else 'N/A' }}</span>
-                    </div>
-                    {% endif %}
-                    {% if ordem.hora_final %}
-                    <div class="info-item">
-                        <span class="info-label">Hora de Fim:</span>
-                        <span class="info-value">{{ ordem.hora_final.strftime('%H:%M') if ordem.hora_final else 'N/A' }}</span>
-                    </div>
-                    {% endif %}
-                    {% if ordem.hora_inicial and ordem.hora_final %}
-                    <div class="info-item">
-                        <span class="info-label">Total de Horas:</span>
-                        <span class="info-value">{{ ((ordem.hora_final.hour * 60 + ordem.hora_final.minute) - (ordem.hora_inicial.hour * 60 + ordem.hora_inicial.minute)) // 60 }}h {{ ((ordem.hora_final.hour * 60 + ordem.hora_final.minute) - (ordem.hora_inicial.hour * 60 + ordem.hora_inicial.minute)) % 60 }}min</span>
-                    </div>
-                    {% endif %}
-                </div>
-                <div>
-                    {% if ordem.km_inicial %}
-                    <div class="info-item">
-                        <span class="info-label">KM Inicial:</span>
-                        <span class="info-value">{{ ordem.km_inicial }} km</span>
-                    </div>
-                    {% endif %}
-                    {% if ordem.km_final %}
-                    <div class="info-item">
-                        <span class="info-label">KM Final:</span>
-                        <span class="info-value">{{ ordem.km_final }} km</span>
-                    </div>
-                    {% endif %}
-                    {% if ordem.km_inicial and ordem.km_final %}
-                    <div class="info-item">
-                        <span class="info-label">Total Percorrido:</span>
-                        <span class="info-value">{{ ordem.km_final - ordem.km_inicial }} km</span>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Descrição do Problema -->
-    {% if ordem.descricao %}
-    <div class="section">
-        <div class="section-header">
-            📝 Descrição do Problema
-        </div>
-        <div class="section-content">
-            <p>{{ ordem.descricao }}</p>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Diagnóstico Técnico -->
-    {% if ordem.diagnostico %}
-    <div class="section">
-        <div class="section-header">
-            🔍 Diagnóstico Técnico
-        </div>
-        <div class="section-content">
-            <p>{{ ordem.diagnostico }}</p>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Solução Aplicada -->
-    {% if ordem.solucao %}
-    <div class="section">
-        <div class="section-header">
-            🔧 Solução Aplicada
-        </div>
-        <div class="section-content">
-            <p>{{ ordem.solucao }}</p>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Serviços Realizados -->
-    {% if ordem.servicos %}
-    <div class="section">
-        <div class="section-header">
-            🛠️ Serviços Realizados
-        </div>
-        <div class="section-content">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Item</th>
-                        <th>Descrição</th>
-                        <th class="text-center">Quant.</th>
-                        <th class="text-right">Valor Unit.</th>
-                        <th class="text-right">Valor Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for servico in ordem.servicos %}
-                    <tr>
-                        <td class="text-center">{{ loop.index }}</td>
-                        <td>{{ servico.descricao }}</td>
-                        <td class="text-center">{{ "{:.2f}"|format(servico.quantidade)|replace(".", ",") }}</td>
-                        <td class="text-right">R$ {{ "{:.2f}"|format(servico.valor_unitario)|replace(".", ",") }}</td>
-                        <td class="text-right">R$ {{ "{:.2f}"|format(servico.valor_total)|replace(".", ",") }}</td>
-                    </tr>
-                    {% endfor %}
-                    <tr class="total-row">
-                        <td colspan="4"><strong>Total dos Serviços:</strong></td>
-                        <td class="text-right"><strong>R$ {{ "%.2f"|format(ordem.servicos|sum(attribute='valor_total', start=0)) }}</strong></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Produtos Utilizados -->
-    {% if ordem.produtos %}
-    <div class="section">
-        <div class="section-header">
-            📦 Produtos Utilizados
-        </div>
-        <div class="section-content">
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Produto</th>
-                        <th class="text-center">Quantidade</th>
-                        <th class="text-right">Valor Unit.</th>
-                        <th class="text-right">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for produto in ordem.produtos %}
-                    <tr>
-                        <td>{{ produto.produto.nome if produto.produto else produto.descricao }}</td>
-                        <td class="text-center">{{ produto.quantidade }}</td>
-                        <td class="text-right">R$ {{ "%.2f"|format(produto.valor_unitario) }}</td>
-                        <td class="text-right">R$ {{ "%.2f"|format(produto.valor_total or (produto.quantidade * produto.valor_unitario)) }}</td>
-                    </tr>
-                    {% endfor %}
-                    <tr class="total-row">
-                        <td colspan="3"><strong>Total dos Produtos:</strong></td>
-                        <td class="text-right"><strong>R$ {{ "%.2f"|format(ordem.produtos|sum(attribute='valor_total', start=0)) }}</strong></td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Valores Totais -->
+    <!-- Resumo Financeiro -->
     <div class="section">
         <div class="section-header">
             💰 Resumo Financeiro
@@ -481,75 +302,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Condições de Pagamento -->
-    {% if ordem.condicao_pagamento or ordem.data_vencimento_efetiva %}
-    <div class="section">
-        <div class="section-header">
-            💳 Condições de Pagamento
-        </div>
-        <div class="section-content">
-            <div class="info-grid">
-                <div>
-                    {% if ordem.condicao_pagamento %}
-                    <div class="info-item">
-                        <span class="info-label">Condição:</span>
-                        <span class="info-value">{{ 'À Vista' if ordem.condicao_pagamento == 'a_vista' else 'Parcelado' }}</span>
-                    </div>
-                    {% endif %}
-                    
-                    {% if ordem.valor_entrada and ordem.valor_entrada > 0 %}
-                    <div class="info-item">
-                        <span class="info-label">Valor de Entrada:</span>
-                        <span class="info-value">R$ {{ "%.2f"|format(ordem.valor_entrada) }}</span>
-                    </div>
-                    {% endif %}
-                    
-                    {% if ordem.numero_parcelas and ordem.numero_parcelas > 1 %}
-                    <div class="info-item">
-                        <span class="info-label">Parcelamento:</span>
-                        <span class="info-value">{{ ordem.numero_parcelas }}x de R$ {{ "%.2f"|format((ordem.valor_total - (ordem.valor_entrada or 0)) / ordem.numero_parcelas) }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-                <div>
-                    {% if ordem.data_vencimento_efetiva %}
-                    <div class="info-item">
-                        <span class="info-label">Vencimento:</span>
-                        <span class="info-value">{{ ordem.data_vencimento_efetiva.strftime('%d/%m/%Y') }}</span>
-                    </div>
-                    {% endif %}
-                    
-                    {% if ordem.data_primeira_parcela and ordem.numero_parcelas and ordem.numero_parcelas > 1 %}
-                    <div class="info-item">
-                        <span class="info-label">Primeira Parcela:</span>
-                        <span class="info-value">{{ ordem.data_primeira_parcela.strftime('%d/%m/%Y') }}</span>
-                    </div>
-                    {% endif %}
-                    
-                    {% if ordem.descricao_pagamento %}
-                    <div class="info-item">
-                        <span class="info-label">Observações:</span>
-                        <span class="info-value">{{ ordem.descricao_pagamento }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Observações -->
-    {% if ordem.observacoes %}
-    <div class="section">
-        <div class="section-header">
-            📝 Observações
-        </div>
-        <div class="section-content">
-            <p>{{ ordem.observacoes }}</p>
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Assinaturas -->
     <div class="signature-section">
@@ -592,6 +344,8 @@
         {% endif %}
         <p>Relatório gerado automaticamente pelo Sistema ERP JSP em {{ now.strftime('%d/%m/%Y às %H:%M') }}</p>
         <p>Este documento é válido sem assinatura digital conforme legislação vigente.</p>
+        
+        <!-- CONFIRMAÇÃO: TEMPLATE LIMPO SEM OBSERVAÇÕES - {{ timestamp if timestamp else '' }} -->
     </div>
 </body>
 </html>

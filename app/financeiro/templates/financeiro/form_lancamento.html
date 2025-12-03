@@ -325,6 +325,45 @@ document.addEventListener('DOMContentLoaded', function() {
         // Estado inicial
         frequenciaSelect.disabled = !recorrenteCheckbox.checked;
     }
+
+    // Filtrar status baseado no tipo de lançamento
+    const tipoSelect = document.getElementById('tipo');
+    const statusSelect = document.getElementById('status');
+    
+    if (tipoSelect && statusSelect) {
+        function filtrarStatus() {
+            const tipo = tipoSelect.value;
+            const statusAtual = statusSelect.value;
+            
+            // Limpar todas as opções
+            statusSelect.innerHTML = '';
+            
+            // Adicionar opções comuns
+            statusSelect.innerHTML += '<option value="pendente">Pendente</option>';
+            statusSelect.innerHTML += '<option value="cancelado">Cancelado</option>';
+            
+            // Adicionar opções específicas baseadas no tipo
+            if (tipo === 'receita' || tipo === 'conta_receber') {
+                statusSelect.innerHTML += '<option value="recebido">Recebido</option>';
+            } else if (tipo === 'despesa' || tipo === 'conta_pagar') {
+                statusSelect.innerHTML += '<option value="pago">Pago</option>';
+            }
+            
+            // Tentar manter o status atual se for válido para o novo tipo
+            const opcoes = Array.from(statusSelect.options).map(opt => opt.value);
+            if (opcoes.includes(statusAtual)) {
+                statusSelect.value = statusAtual;
+            } else {
+                statusSelect.value = 'pendente';
+            }
+        }
+        
+        // Aplicar filtro quando mudar o tipo
+        tipoSelect.addEventListener('change', filtrarStatus);
+        
+        // Aplicar filtro inicial
+        filtrarStatus();
+    }
 });
 </script>
 

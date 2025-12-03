@@ -18,9 +18,9 @@ from sqlalchemy import func
 
 # Constantes para padronização
 STATUS_CHOICES = [
-    ('aberta', 'Aberta'),
-    ('em_andamento', 'Em Andamento'),
-    ('concluida', 'Concluída'),
+    ('pendente', 'Pendente'),
+    ('em_execucao', 'Em Execução'),
+    ('finalizada', 'Finalizada'),
     ('cancelada', 'Cancelada')
 ]
 
@@ -55,6 +55,13 @@ class OrdemServico(BaseModel):
     # Campos básicos
     numero = db.Column(db.String(20), unique=True, nullable=False, index=True)
     
+    # Preferência de relatório: incluir imagens anexadas no PDF
+    incluir_imagens_relatorio = db.Column(db.Boolean, default=False)
+    
+    # Relacionamento com proposta (opcional)
+    proposta_id = db.Column(db.Integer, db.ForeignKey('propostas.id'), nullable=True)
+    proposta = db.relationship('Proposta', backref='ordens_servico')
+    
     # Cliente
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
     cliente = db.relationship('Cliente', backref='ordens_servico')
@@ -70,8 +77,8 @@ class OrdemServico(BaseModel):
     tipo_servico = db.Column(db.String(100))  # Tipo/categoria do serviço
     
     # Status do serviço
-    status = db.Column(db.String(20), default='aberta', nullable=False)
-    # Possíveis status: aberta, em_andamento, aguardando_pecas, aguardando_cliente, concluida, cancelada
+    status = db.Column(db.String(20), default='pendente', nullable=False)
+    # Possíveis status: pendente, em_execucao, finalizada, cancelada
     
     prioridade = db.Column(db.String(20), default='normal', nullable=False)
     # Possíveis prioridades: baixa, normal, alta, urgente
@@ -121,6 +128,7 @@ class OrdemServico(BaseModel):
     data_primeira_parcela = db.Column(db.Date)  # Data da primeira parcela
     data_vencimento_pagamento = db.Column(db.Date)  # Data de vencimento do pagamento (para à vista)
     descricao_pagamento = db.Column(db.Text)  # Descrição detalhada das condições
+    status_pagamento = db.Column(db.String(20), default='pendente')  # pendente, parcial, pago, vencido
     
     # Anexos e Documentos
     observacoes_anexos = db.Column(db.Text)  # Observações sobre anexos
@@ -224,11 +232,9 @@ class OrdemServico(BaseModel):
     def status_cor(self):
         """Retorna cor do status para exibição."""
         cores = {
-            'aberta': 'primary',
-            'em_andamento': 'warning',
-            'aguardando_pecas': 'info',
-            'aguardando_cliente': 'secondary',
-            'concluida': 'success',
+            'pendente': 'warning',
+            'em_execucao': 'primary',
+            'finalizada': 'success',
             'cancelada': 'danger'
         }
         return cores.get(self.status, 'secondary')
@@ -250,19 +256,19 @@ class OrdemServico(BaseModel):
         servico = Decimal(str(self.valor_servico or 0))
         pecas = Decimal(str(self.valor_pecas or 0))
         desconto = Decimal(str(self.valor_desconto or 0))
-        return float(servico + pecas - desconto)
+        return servico + pecas - desconto
     
     @property
     def prazo_vencido(self):
         """Verifica se o prazo está vencido."""
-        if not self.data_prevista or self.status in ['concluida', 'cancelada']:
+        if not self.data_prevista or self.status in ['finalizada', 'cancelada', 'concluida']:
             return False
         return date.today() > self.data_prevista
     
     @property
     def dias_em_aberto(self):
         """Calcula quantos dias a OS está em aberto."""
-        if self.status in ['concluida', 'cancelada']:
+        if self.status in ['finalizada', 'cancelada']:
             return 0
         return (date.today() - self.data_abertura).days
     
@@ -333,10 +339,19 @@ class OrdemServico(BaseModel):
     def estatisticas_dashboard(cls):
         """Retorna estatísticas para o dashboard."""
         total = cls.query.filter_by(ativo=True).count()
+        
+        # Abertas (novo status)
         abertas = cls.query.filter_by(status='aberta', ativo=True).count()
-        em_andamento = cls.query.filter_by(status='em_andamento', ativo=True).count()
+        
+        # Em andamento (incluindo em_execucao para compatibilidade)
+        em_andamento = cls.query.filter(
+            cls.ativo == True,
+            cls.status.in_(['em_andamento', 'em_execucao', 'iniciada'])
+        ).count()
+        
+        # Concluídas este mês
         concluidas_mes = cls.query.filter(
-            cls.status == 'concluida',
+            cls.status.in_(['concluida', 'finalizada']),
             cls.ativo == True,
             func.extract('month', cls.data_conclusao) == date.today().month,
             func.extract('year', cls.data_conclusao) == date.today().year
@@ -351,21 +366,73 @@ class OrdemServico(BaseModel):
     
     def iniciar_servico(self):
         """Marca o início do serviço."""
-        if self.status == 'aberta':
-            self.status = 'em_andamento'
+        if self.status == 'pendente':
+            self.status = 'em_execucao'
             self.data_inicio = datetime.now()
             self.save()
     
     def concluir_servico(self):
-        """Marca a conclusão do serviço."""
-        if self.status in ['aberta', 'em_andamento', 'aguardando_pecas', 'aguardando_cliente']:
-            self.status = 'concluida'
+        """Marca a conclusão do serviço e gera lançamento financeiro."""
+        if self.status in ['pendente', 'em_execucao']:
+            self.status = 'finalizada'
             self.data_conclusao = datetime.now()
             self.save()
+            
+            # Gerar lançamento financeiro automaticamente
+            self.gerar_lancamento_financeiro()
+    
+    def gerar_lancamento_financeiro(self):
+        """
+        Gera um lançamento financeiro (conta a receber) quando a OS é finalizada.
+        
+        Returns:
+            LancamentoFinanceiro: Novo lançamento criado ou None se não foi possível
+        """
+        if self.status != 'finalizada':
+            return None
+        
+        # Verificar se já existe lançamento para esta OS
+        from app.financeiro.financeiro_model import LancamentoFinanceiro
+        lancamento_existente = LancamentoFinanceiro.query.filter_by(
+            ordem_servico_id=self.id,
+            ativo=True
+        ).first()
+        
+        if lancamento_existente:
+            return lancamento_existente
+        
+        from datetime import timedelta
+        
+        # Calcular valor final (total - desconto)
+        valor_final = float(self.valor_total or 0)
+        if valor_final <= 0:
+            return None
+        
+        # Determinar data de vencimento (hoje + 7 dias padrão)
+        data_vencimento = date.today() + timedelta(days=7)
+        
+        # Criar lançamento
+        novo_lancamento = LancamentoFinanceiro(
+            descricao=f"Serviço Ref. OS #{self.numero}",
+            valor=valor_final,
+            tipo='conta_receber',
+            status='pendente',
+            categoria='Serviços',
+            subcategoria='Prestação de Serviços',
+            data_lancamento=date.today(),
+            data_vencimento=data_vencimento,
+            cliente_id=self.cliente_id,
+            ordem_servico_id=self.id,
+            forma_pagamento=getattr(self, 'condicao_pagamento', 'a_vista') or 'a_vista',
+            observacoes=f"Lançamento automático gerado pela finalização da OS {self.numero}"
+        )
+        
+        novo_lancamento.save()
+        return novo_lancamento
     
     def cancelar_servico(self):
         """Cancela o serviço."""
-        if self.status != 'concluida':
+        if self.status != 'finalizada':
             self.status = 'cancelada'
             self.save()
     
@@ -394,32 +461,32 @@ class OrdemServico(BaseModel):
     
     def pode_editar(self):
         """Verifica se a OS pode ser editada."""
-        return self.status not in ['concluida', 'cancelada']
+        return self.status not in ['finalizada', 'cancelada']
     
     def pode_iniciar(self):
         """Verifica se a OS pode ser iniciada."""
-        return self.status == 'aberta'
+        return self.status == 'pendente'
     
     def pode_concluir(self):
         """Verifica se a OS pode ser concluída."""
-        return self.status in ['aberta', 'em_andamento', 'aguardando_pecas', 'aguardando_cliente']
+        return self.status in ['pendente', 'em_execucao']
     
     def pode_cancelar(self):
         """Verifica se a OS pode ser cancelada."""
-        return self.status not in ['concluida', 'cancelada']
+        return self.status not in ['finalizada', 'cancelada']
     
     def atualizar_valores_automaticos(self):
         """Atualiza valores automáticos baseados nos itens."""
         # Calcular valor dos serviços
-        total_servicos = sum(float(item.valor_total or 0) for item in self.servicos)
+        total_servicos = sum(Decimal(str(item.valor_total or 0)) for item in self.servicos)
         self.valor_servico = total_servicos
         
         # Calcular valor dos produtos
-        total_produtos = sum(float(produto.valor_total or 0) for produto in self.produtos_utilizados)
+        total_produtos = sum(Decimal(str(produto.valor_total or 0)) for produto in self.produtos_utilizados)
         self.valor_pecas = total_produtos
         
         # Calcular valor total
-        desconto = float(self.valor_desconto or 0)
+        desconto = Decimal(str(self.valor_desconto or 0))
         self.valor_total = total_servicos + total_produtos - desconto
         
         return self
@@ -549,7 +616,7 @@ class OrdemServicoProduto(BaseModel):
     def calcular_total(self):
         """Calcula valor total do produto."""
         if self.quantidade and self.valor_unitario:
-            self.valor_total = float(Decimal(str(self.quantidade)) * Decimal(str(self.valor_unitario)))
+            self.valor_total = Decimal(str(self.quantidade)) * Decimal(str(self.valor_unitario))
         else:
             self.valor_total = 0.00
 
@@ -611,7 +678,9 @@ class OrdemServicoAnexo(BaseModel):
     
     # Relacionamento com ordem de serviço
     ordem_servico_id = db.Column(db.Integer, db.ForeignKey('ordem_servico.id'), nullable=False)
-    ordem_servico = db.relationship('OrdemServico', backref='anexos')
+    ordem_servico = db.relationship('OrdemServico', 
+                                     backref=db.backref('anexos', 
+                                                        order_by='OrdemServicoAnexo.criado_em, OrdemServicoAnexo.id'))
     
     # Dados do arquivo
     nome_original = db.Column(db.String(255), nullable=False)

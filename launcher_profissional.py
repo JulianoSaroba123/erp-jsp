@@ -118,7 +118,7 @@ class ERPJSPLauncher:
         button_frame.pack(fill='x', pady=20)
         
         self.start_button = tk.Button(button_frame,
-                                     text="🚀 INICIAR SISTEMA",
+                                     text=" INICIAR SISTEMA",
                                      font=('Arial', 14, 'bold'),
                                      bg='#00aaff',
                                      fg='#ffffff',
@@ -134,18 +134,18 @@ class ERPJSPLauncher:
         info_frame.pack(fill='x', pady=20)
         
         info_title = tk.Label(info_frame,
-                             text="📋 Informações do Sistema",
+                             text=" Informações do Sistema",
                              font=('Arial', 12, 'bold'),
                              fg='#00aaff',
                              bg='#1a1a1a')
         info_title.pack(pady=(10, 5))
         
         info_items = [
-            "🌐 URL: http://127.0.0.1:5001",
+            " URL: http://127.0.0.1:5001",
             "👤 Login: admin",
             "🔒 Senha: (configurável)",
-            "📱 Responsivo e moderno",
-            "⚡ Interface futurística"
+            " Responsivo e moderno",
+            " Interface futurística"
         ]
         
         for item in info_items:
@@ -176,7 +176,7 @@ class ERPJSPLauncher:
         self.stop_button.pack(side='left', fill='x', expand=True, padx=(0, 5))
         
         exit_button = tk.Button(bottom_frame,
-                               text="❌ Sair",
+                               text=" Sair",
                                font=('Arial', 10),
                                bg='#666666',
                                fg='#ffffff',
@@ -217,12 +217,12 @@ class ERPJSPLauncher:
             if not os.path.exists('run.py'):
                 raise Exception("Arquivo 'run.py' não encontrado")
             
-            self.update_status("✅ Arquivos verificados")
+            self.update_status(" Arquivos verificados")
             self.update_progress(30)
             time.sleep(0.5)
             
             # Iniciar Flask
-            self.update_status("🚀 Iniciando servidor Flask...")
+            self.update_status(" Iniciando servidor Flask...")
             self.update_progress(50)
             
             # Verificar se estamos no executável ou script
@@ -252,10 +252,10 @@ sys.path.insert(0, os.getcwd())
 try:
     from app.app import create_app
     app = create_app()
-    print("✅ Flask app criado com sucesso")
+    print(" Flask app criado com sucesso")
     app.run(host="0.0.0.0", port=5001, debug=False, use_reloader=False, threaded=True)
 except Exception as e:
-    print(f"❌ Erro Flask: {e}")
+    print(f" Erro Flask: {e}")
     import traceback
     traceback.print_exc()
 '''
@@ -273,7 +273,7 @@ except Exception as e:
             time.sleep(1)
             
             # Aguardar servidor ficar disponível
-            self.update_status("⏳ Aguardando servidor...")
+            self.update_status(" Aguardando servidor...")
             self.update_progress(80)
             
             for i in range(45):  # 45 tentativas (45 segundos)
@@ -288,7 +288,7 @@ except Exception as e:
                     for url in urls_to_try:
                         try:
                             urllib.request.urlopen(url, timeout=2)
-                            self.update_status(f"✅ Servidor online! ({url})")
+                            self.update_status(f" Servidor online! ({url})")
                             break
                         except:
                             continue
@@ -304,18 +304,18 @@ except Exception as e:
                     progress = 80 + (i * 15 // 45)  # Progresso de 80% a 95%
                     self.update_progress(progress)
                     if i % 5 == 0:  # Atualizar status a cada 5 segundos
-                        self.update_status(f"⏳ Aguardando servidor... ({i+1}/45s)")
+                        self.update_status(f" Aguardando servidor... ({i+1}/45s)")
             else:
                 raise Exception("Servidor não respondeu em 45 segundos. Verifique se o Python está funcionando.")
             
-            self.update_status("🌐 Abrindo navegador...")
+            self.update_status(" Abrindo navegador...")
             self.update_progress(95)
             
             # Abrir navegador
             webbrowser.open('http://127.0.0.1:5001/auth/login')
             
             self.update_progress(100)
-            self.update_status("✅ Sistema iniciado com sucesso!")
+            self.update_status(" Sistema iniciado com sucesso!")
             
             # Habilitar botão parar
             self.stop_button.config(state='normal')
@@ -324,7 +324,7 @@ except Exception as e:
             self.root.after(3000, self.minimize_window)
             
         except Exception as e:
-            self.update_status(f"❌ Erro: {str(e)}")
+            self.update_status(f" Erro: {str(e)}")
             self.update_progress(0)
             self.start_button.config(state='normal')
             
@@ -359,7 +359,7 @@ except Exception as e:
     def minimize_window(self):
         """Minimiza a janela"""
         self.root.iconify()
-        self.update_status("🔄 Sistema rodando... (janela minimizada)")
+        self.update_status(" Sistema rodando... (janela minimizada)")
     
     def stop_system(self):
         """Para o sistema Flask"""

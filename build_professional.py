@@ -10,8 +10,8 @@ import sys
 def build_professional_launcher():
     """Constrói o launcher profissional"""
     
-    print("🔧 Construindo ERP JSP Professional Launcher...")
-    print("📦 Incluindo dependências e recursos...")
+    print(" Construindo ERP JSP Professional Launcher...")
+    print(" Incluindo dependências e recursos...")
     
     args = [
         'launcher_professional.py',
@@ -39,12 +39,12 @@ def build_professional_launcher():
     
     try:
         PyInstaller.__main__.run(args)
-        print("✅ Build concluído com sucesso!")
-        print("📁 Arquivo criado: ERP_JSP_Professional.exe")
-        print("🚀 Execute o arquivo para iniciar o sistema!")
+        print(" Build concluído com sucesso!")
+        print(" Arquivo criado: ERP_JSP_Professional.exe")
+        print(" Execute o arquivo para iniciar o sistema!")
         
     except Exception as e:
-        print(f"❌ Erro durante o build: {e}")
+        print(f" Erro durante o build: {e}")
         return False
         
     return True
@@ -52,6 +52,6 @@ def build_professional_launcher():
 if __name__ == "__main__":
     success = build_professional_launcher()
     if success:
-        input("\n✅ Pressione Enter para continuar...")
+        input("\n Pressione Enter para continuar...")
     else:
-        input("\n❌ Pressione Enter para sair...")
+        input("\n Pressione Enter para sair...")

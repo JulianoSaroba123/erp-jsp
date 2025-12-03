@@ -1,7 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ordem de Serviço {{ ordem.numero }}</title>
     <style>
         @page {
@@ -17,381 +18,279 @@
         
         body {
             font-family: Arial, sans-serif;
-            font-size: 10px;
-            line-height: 1.2;
-            color: #000;
+            margin: 20px;
+            color: #333;
         }
         
         .container {
-            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
         }
         
-        /* Cabeçalho com logo */
         .header {
-            border: 3px solid #002755;
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-            margin-bottom: 15px;
-            position: relative;
-            border-radius: 8px;
-            overflow: hidden;
+            margin-bottom: 30px;
         }
         
         .header-top {
             display: flex;
-            align-items: flex-start;
-            padding: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 20px;
+            border: 2px solid #1a365d;
+            border-radius: 10px;
+            background: linear-gradient(45deg, #f8f9fa, #ffffff);
         }
         
         .logo-section {
             width: 80px;
             height: 80px;
-            margin-right: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 1px solid #ccc;
-            background-color: #f9f9f9;
+            border: 1px solid #1a365d;
+            border-radius: 5px;
+            background: #f8f9fa;
         }
         
         .logo-section img {
             max-width: 70px;
             max-height: 70px;
-            object-fit: contain;
+        }
+        
+        .logo-placeholder {
+            text-align: center;
+            font-size: 10px;
+            color: #1a365d;
+            font-weight: bold;
         }
         
         .company-info {
             flex: 1;
+            margin-left: 20px;
         }
         
         .company-name {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
-            margin-bottom: 3px;
-            color: #000;
+            color: #1a365d;
+            margin-bottom: 5px;
         }
         
         .company-details {
-            font-size: 9px;
-            line-height: 1.1;
-            color: #333;
+            font-size: 11px;
+            color: #666;
+            line-height: 1.4;
         }
         
         .os-info {
-            position: absolute;
-            top: 10px;
-            right: 10px;
             text-align: right;
         }
         
         .os-number {
-            font-size: 14px;
+            font-size: 24px;
             font-weight: bold;
-            margin-bottom: 3px;
+            color: #1a365d;
+            margin-bottom: 5px;
         }
         
         .os-date {
-            font-size: 9px;
+            font-size: 12px;
             color: #666;
         }
         
         .os-title {
-            background: linear-gradient(135deg, #002755 0%, #1e3a8a 100%);
+            background: #1a365d;
             color: white;
-            border-top: 2px solid #002755;
-            padding: 10px;
             text-align: center;
-            font-size: 12px;
+            font-size: 16px;
             font-weight: bold;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            padding: 10px;
+            margin: 10px 0;
         }
         
-        /* Seções */
         .section {
-            border: 2px solid #002755;
-            margin-bottom: 10px;
-            break-inside: avoid;
-            page-break-inside: avoid;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
             border-radius: 5px;
-            overflow: hidden;
         }
         
         .section-title {
-            background: linear-gradient(135deg, #002755 0%, #1e3a8a 100%);
+            background: #1a365d;
             color: white;
-            border-bottom: 2px solid #002755;
-            padding: 8px 12px;
             font-weight: bold;
-            font-size: 10px;
-            text-transform: uppercase;
+            padding: 8px 15px;
+            font-size: 12px;
         }
         
         .section-content {
-            padding: 8px;
-        }
-        
-        /* Grid de dados */
-        .data-grid {
-            width: 100%;
-            margin-bottom: 8px;
+            padding: 15px;
         }
         
         .data-row {
             display: flex;
-            margin-bottom: 6px;
+            margin-bottom: 10px;
+            gap: 15px;
         }
         
         .data-cell {
             flex: 1;
-            padding: 5px;
-            border: 1px solid #002755;
-            margin-right: 3px;
-            border-radius: 3px;
-            background-color: #f8fafc;
-        }
-        
-        .data-cell:last-child {
-            margin-right: 0;
         }
         
         .data-cell-wide {
-            flex: 3;
+            flex: 2;
         }
         
         .data-cell-narrow {
-            flex: 1;
-        }
-        
-        .data-cell-full {
-            flex: 1;
+            flex: 0.8;
         }
         
         .data-label {
+            font-size: 10px;
             font-weight: bold;
-            font-size: 8px;
+            color: #1a365d;
             text-transform: uppercase;
-            color: #002755;
-            margin-bottom: 2px;
-            line-height: 1;
+            margin-bottom: 3px;
         }
         
         .data-value {
-            font-size: 9px;
-            line-height: 1.2;
-        }
-        
-        /* Tabelas */
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 5px 0;
-            break-inside: avoid;
-            page-break-inside: avoid;
-        }
-        
-        .table th,
-        .table td {
-            border: 1px solid #002755;
-            padding: 4px;
-            text-align: left;
-            font-size: 9px;
-            break-inside: avoid;
-            page-break-inside: avoid;
-        }
-        
-        .table th {
-            background: linear-gradient(135deg, #002755 0%, #1e3a8a 100%);
-            color: white;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        .table-item { width: 8%; }
-        .table-desc { width: 50%; }
-        .table-qty { width: 12%; }
-        .table-unit { width: 15%; }
-        .table-total { width: 15%; }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .text-right {
-            text-align: right;
-        }
-        
-        .text-bold {
-            font-weight: bold;
-        }
-        
-        /* Área de texto */
-        .text-area {
-            min-height: 40px;
-            padding: 5px;
-            border: 1px solid #002755;
-            background-color: #f8fafc;
-            font-size: 9px;
-            white-space: pre-wrap;
-            line-height: 1.3;
-            border-radius: 3px;
-            break-inside: avoid;
-            page-break-inside: avoid;
-        }
-        
-        /* Controles de quebra de página */
-        .no-break {
-            break-inside: avoid;
-            page-break-inside: avoid;
-        }
-        
-        .header {
-            break-after: avoid;
-            page-break-after: avoid;
-        }
-        
-        .section-title {
-            break-after: avoid;
-            page-break-after: avoid;
-        }
-        
-        .data-grid {
-            break-inside: avoid;
-            page-break-inside: avoid;
-        }
-        
-        /* Resumo financeiro */
-        .financial-section {
-            border: 2px solid #002755;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            overflow: hidden;
-            break-inside: avoid;
-            page-break-inside: avoid;
-        }
-        
-        .financial-title {
-            background: linear-gradient(135deg, #002755 0%, #1e3a8a 100%);
-            color: white;
-            border-bottom: 2px solid #002755;
-            padding: 8px 12px;
-            font-weight: bold;
-            font-size: 10px;
-            text-transform: uppercase;
-        }
-        
-        .financial-content {
+            border: 1px solid #ccc;
             padding: 8px;
+            background: #f9f9f9;
+            font-size: 11px;
+            min-height: 24px;
+            line-height: 1.3;
+            word-wrap: break-word;
+        }
+        
+        .data-value-large {
+            min-height: 60px;
+            white-space: pre-wrap;
+            line-height: 1.4;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        
+        .financial-summary {
+            margin: 15px 0;
         }
         
         .financial-row {
             display: flex;
             justify-content: space-between;
-            padding: 3px 0;
+            padding: 5px 10px;
             border-bottom: 1px solid #eee;
-            font-size: 9px;
         }
         
         .financial-row:last-child {
-            border-bottom: none;
-            border-top: 2px solid #002755;
-            margin-top: 5px;
-            padding-top: 5px;
+            border-bottom: 2px solid #1a365d;
             font-weight: bold;
-            font-size: 10px;
-            background-color: #f0f7ff;
+            background: #f8f9fa;
         }
         
-        /* Status */
-        .status {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 2px;
-            font-size: 8px;
+        .financial-label {
             font-weight: bold;
-            text-transform: uppercase;
         }
         
-        .status-aberta {
-            background-color: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
+        .financial-value {
+            font-weight: bold;
+            color: #1a365d;
         }
         
-        .status-em_andamento {
-            background-color: #cce5ff;
-            color: #004085;
-            border: 1px solid #99d3ff;
-        }
-        
-        .status-concluida {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #a3d977;
-        }
-        
-        .status-cancelada {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f1aeb5;
-        }
-        
-        /* Assinaturas */
         .signatures {
             display: flex;
-            gap: 30px;
-            margin-top: 30px;
-            page-break-inside: avoid;
+            justify-content: space-between;
+            margin-top: 40px;
         }
         
         .signature-box {
-            flex: 1;
             text-align: center;
+            width: 45%;
         }
         
         .signature-line {
-            border-top: 2px solid #002755;
-            margin-top: 50px;
+            border-top: 1px solid #333;
             padding-top: 5px;
-            font-size: 9px;
+            margin-top: 60px;
+        }
+        
+        .signature-title {
             font-weight: bold;
-            color: #002755;
+            margin-bottom: 3px;
         }
         
-        .signature-info {
-            font-size: 8px;
+        .signature-name {
+            font-size: 10px;
             color: #666;
-            margin-top: 3px;
         }
         
-        /* Rodapé */
-        .footer {
-            margin-top: 15px;
-            text-align: center;
-            font-size: 8px;
-            color: #666;
-            border-top: 2px solid #002755;
-            padding-top: 8px;
-            background-color: #f8fafc;
+        .print-friendly {
+            color: black !important;
+            background: white !important;
         }
         
-        /* Quebras de página */
-        .page-break {
-            page-break-before: always;
+        /* Garantir que tudo seja visível na impressão */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            
+            .section-title, .os-title {
+                background: #1a365d !important;
+                color: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .header-top {
+                border: 2px solid #1a365d !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
         
-        /* Logo placeholder */
-        .logo-placeholder {
-            background: linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
-                        linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
-                        linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
-                        linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
-            background-size: 10px 10px;
-            background-position: 0 0, 0 5px, 5px -5px, -5px 0px;
-            font-size: 8px;
-            color: #999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
+        /* Melhorar quebras de página */
+        .section {
+            page-break-inside: avoid;
+        }
+        
+        /* Classe para texto bem formatado */
+        .formatted-text {
+            white-space: pre-line;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .signatures {
+            page-break-inside: avoid;
+        }
+        
+        /* Estilos para status com cores */
+        .status-concluida {
+            color: #28a745 !important;
+            font-weight: bold;
+        }
+        
+        .status-em-andamento, .status-em_andamento, .status-em_execucao {
+            color: #ffc107 !important;
+            font-weight: bold;
+        }
+        
+        .status-aberta {
+            color: #17a2b8 !important;
+            font-weight: bold;
+        }
+        
+        .status-cancelada {
+            color: #dc3545 !important;
+            font-weight: bold;
+        }
+        
+        .status-aguardando_pecas, .status-aguardando_cliente {
+            color: #6c757d !important;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -402,7 +301,7 @@
             <div class="header-top">
                 <div class="logo-section">
                     {% if logo_base64 %}
-                    <img src="{{ logo_base64 }}" alt="JSP Logo">
+                    <img src="data:image/png;base64,{{ logo_base64 }}" alt="JSP Logo">
                     {% else %}
                     <div class="logo-placeholder">
                         JSP<br>LOGO
@@ -415,9 +314,9 @@
                         {% if config and config.logradouro %}
                         {{ config.logradouro }}{% if config.numero %}, {{ config.numero }}{% endif %}{% if config.bairro %} - {{ config.bairro }}{% endif %}{% if config.cidade %} - {{ config.cidade }}{% endif %}{% if config.uf %}/{{ config.uf }}{% endif %}{% if config.cep %} - CEP: {{ config.cep }}{% endif %}<br>
                         {% else %}
-                        Rua Indalécio Costa, 890 - Barra Funda - Tietê/SP - CEP: 18530-170<br>
+                        INDALECIO COSTA, 900 - CECAP - TIETÊ/SP - CEP: 18530170<br>
                         {% endif %}
-                        {% if config and config.telefone %}Telefone: {{ config.telefone }}{% else %}Telefone: (15) 99670-2036{% endif %}{% if config and config.email %} | Email: {{ config.email }}{% else %} | Email: atendimento@eletricasaroba.com.br{% endif %}<br>
+                        {% if config and config.telefone %}Telefone: {{ config.telefone }}{% else %}Telefone: (15) 99670-2038{% endif %}{% if config and config.email %} | Email: {{ config.email }}{% else %} | Email: atendimento@jspeletricaindustrial.com.br{% endif %}<br>
                         CNPJ: {% if config and config.cnpj %}{{ config.cnpj }}{% else %}41.280.764/0001-65{% endif %}
                     </div>
                 </div>
@@ -431,7 +330,7 @@
 
         <!-- DADOS DO CLIENTE -->
         <div class="section">
-            <div class="section-title">Dados do Cliente</div>
+            <div class="section-title">DADOS DO CLIENTE</div>
             <div class="section-content">
                 <div class="data-row">
                     <div class="data-cell data-cell-wide">
@@ -457,20 +356,18 @@
                         <div class="data-value">{{ ordem.cliente.email if ordem.cliente and ordem.cliente.email else 'N/A' }}</div>
                     </div>
                 </div>
-                {% if ordem.cliente and ordem.cliente.endereco %}
                 <div class="data-row">
-                    <div class="data-cell data-cell-full">
+                    <div class="data-cell">
                         <div class="data-label">Endereço</div>
-                        <div class="data-value">{{ ordem.cliente.endereco }}</div>
+                        <div class="data-value">{{ ordem.cliente.endereco if ordem.cliente and ordem.cliente.endereco else 'N/A' }}</div>
                     </div>
                 </div>
-                {% endif %}
             </div>
         </div>
 
         <!-- DADOS DA SOLICITAÇÃO -->
         <div class="section">
-            <div class="section-title">Dados da Solicitação</div>
+            <div class="section-title">DADOS DA SOLICITAÇÃO</div>
             <div class="section-content">
                 <div class="data-row">
                     <div class="data-cell">
@@ -479,8 +376,22 @@
                     </div>
                     <div class="data-cell">
                         <div class="data-label">Status</div>
-                        <div class="data-value">
-                            <span class="status status-{{ ordem.status }}">{{ ordem.status.upper() }}</span>
+                        <div class="data-value status-{{ ordem.status if ordem.status else 'default' }}">
+                            {% if ordem.status == 'em_andamento' or ordem.status == 'em_execucao' %}
+                                🟡 Em Andamento
+                            {% elif ordem.status == 'concluida' %}
+                                🟢 Concluída
+                            {% elif ordem.status == 'aberta' %}
+                                🔵 Aberta
+                            {% elif ordem.status == 'cancelada' %}
+                                🔴 Cancelada
+                            {% elif ordem.status == 'aguardando_pecas' %}
+                                ⚫ Aguardando Peças
+                            {% elif ordem.status == 'aguardando_cliente' %}
+                                ⚫ Aguardando Cliente
+                            {% else %}
+                                ⭐ {{ ordem.status|title if ordem.status else 'N/A' }}
+                            {% endif %}
                         </div>
                     </div>
                     <div class="data-cell">
@@ -488,32 +399,18 @@
                         <div class="data-value">{{ ordem.prioridade if ordem.prioridade else 'Normal' }}</div>
                     </div>
                 </div>
-                {% if ordem.equipamento or ordem.marca_modelo %}
                 <div class="data-row">
-                    {% if ordem.equipamento %}
                     <div class="data-cell">
                         <div class="data-label">Equipamento</div>
-                        <div class="data-value">{{ ordem.equipamento }}</div>
+                        <div class="data-value">{{ ordem.equipamento if ordem.equipamento else 'N/A' }}</div>
                     </div>
-                    {% endif %}
-                    {% if ordem.marca_modelo %}
                     <div class="data-cell">
                         <div class="data-label">Marca/Modelo</div>
-                        <div class="data-value">{{ ordem.marca_modelo }}</div>
+                        <div class="data-value">{{ ordem.marca_modelo if ordem.marca_modelo else 'N/A' }}</div>
                     </div>
-                    {% endif %}
-                    {% if ordem.numero_serie %}
                     <div class="data-cell">
                         <div class="data-label">Número de Série</div>
-                        <div class="data-value">{{ ordem.numero_serie }}</div>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endif %}
-                <div class="data-row">
-                    <div class="data-cell data-cell-full">
-                        <div class="data-label">Defeito Relatado</div>
-                        <div class="text-area">{{ ordem.defeito_relatado if ordem.defeito_relatado else 'Não informado' }}</div>
+                        <div class="data-value">{{ ordem.numero_serie if ordem.numero_serie else 'N/A' }}</div>
                     </div>
                 </div>
             </div>
@@ -521,309 +418,271 @@
 
         <!-- DESCRIÇÃO DOS SERVIÇOS REALIZADOS -->
         <div class="section">
-            <div class="section-title">Descrição dos Serviços Realizados</div>
+            <div class="section-title">DESCRIÇÃO DOS SERVIÇOS REALIZADOS</div>
             <div class="section-content">
                 <div class="data-row">
-                    <div class="data-cell data-cell-full">
-                        <div class="data-label">Descrição Geral do Serviço</div>
-                        <div class="text-area">{{ ordem.descricao if ordem.descricao else 'Não informado' }}</div>
+                    <div class="data-cell">
+                        <div class="data-label">Problema Relatado pelo Cliente</div>
+                        <div class="data-value data-value-large formatted-text">{{ ordem.descricao_problema if ordem.descricao_problema else (ordem.defeito_relatado if ordem.defeito_relatado else (ordem.descricao if ordem.descricao else (ordem.titulo if ordem.titulo else ''))) }}</div>
                     </div>
                 </div>
-                
                 <div class="data-row">
-                    <div class="data-cell data-cell-full">
+                    <div class="data-cell">
                         <div class="data-label">Diagnóstico Técnico</div>
-                        <div class="text-area">{{ ordem.diagnostico_tecnico if ordem.diagnostico_tecnico else 'Não informado' }}</div>
+                        <div class="data-value data-value-large formatted-text">{{ ordem.diagnostico_tecnico if ordem.diagnostico_tecnico else '' }}</div>
                     </div>
                 </div>
-                
-                {% if ordem.solucao %}
                 <div class="data-row">
-                    <div class="data-cell data-cell-full">
+                    <div class="data-cell">
                         <div class="data-label">Solução Aplicada</div>
-                        <div class="text-area">{{ ordem.solucao }}</div>
+                        <div class="data-value data-value-large formatted-text">{{ ordem.solucao if ordem.solucao else '' }}</div>
                     </div>
                 </div>
-                {% endif %}
-                
-                {% if ordem.tecnico_responsavel %}
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">Observações Gerais</div>
+                        <div class="data-value data-value-large formatted-text">{{ ordem.observacoes if ordem.observacoes else '' }}</div>
+                    </div>
+                </div>
                 <div class="data-row">
                     <div class="data-cell">
                         <div class="data-label">Técnico Responsável</div>
-                        <div class="data-value">{{ ordem.tecnico_responsavel }}</div>
+                        <div class="data-value">{{ ordem.tecnico_responsavel if ordem.tecnico_responsavel else 'N/A' }}</div>
                     </div>
-                    {% if ordem.data_inicio %}
                     <div class="data-cell">
                         <div class="data-label">Data de Início</div>
-                        <div class="data-value">{{ ordem.data_inicio.strftime('%d/%m/%Y às %H:%M') if ordem.data_inicio else 'Não informado' }}</div>
+                        <div class="data-value">{{ ordem.data_inicio.strftime('%d/%m/%Y às %H:%M') if ordem.data_inicio else 'N/A' }}</div>
                     </div>
-                    {% endif %}
-                    {% if ordem.data_conclusao %}
                     <div class="data-cell">
                         <div class="data-label">Data de Conclusão</div>
-                        <div class="data-value">{{ ordem.data_conclusao.strftime('%d/%m/%Y às %H:%M') if ordem.data_conclusao else 'Não informado' }}</div>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endif %}
-                
-                {% if not ordem.descricao and not ordem.diagnostico and not ordem.solucao and not ordem.defeito_relatado %}
-                <div class="data-row">
-                    <div class="data-cell data-cell-full">
-                        <div class="data-label">Serviços Realizados</div>
-                        <div class="text-area" style="font-style: italic; color: #666;">Descrição dos serviços realizados não informada.</div>
+                        <div class="data-value">{{ ordem.data_conclusao.strftime('%d/%m/%Y às %H:%M') if ordem.data_conclusao else 'N/A' }}</div>
                     </div>
                 </div>
-                {% endif %}
             </div>
         </div>
+
+        {% if ordem.incluir_imagens_relatorio and ordem.anexos and ordem.anexos|length > 0 %}
+        <!-- IMAGENS ANEXADAS -->
+        <div class="section">
+            <div class="section-title">IMAGENS ANEXADAS</div>
+            <div class="section-content">
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    {% for anexo in ordem.anexos %}
+                        {% if anexo.tipo_arquivo == 'image' or (anexo.mime_type and 'image' in anexo.mime_type) %}
+                            <div style="flex: 1 1 45%; border: 1px solid #ddd; border-radius: 6px; padding: 8px; background: #fff;">
+                                <div style="font-size: 10px; font-weight: bold; margin-bottom: 6px; color: #333;">{{ anexo.nome_original }}</div>
+                                {# WeasyPrint precisa de caminho absoluto com prefixo file:/// e barras #}
+                                <img src="file:///{{ anexo.caminho | replace('\\', '/') }}" alt="{{ anexo.nome_original }}" style="width: 100%; height: auto; max-height: 360px; object-fit: contain;"/>
+                                <div style="font-size: 9px; color: #666; margin-top: 4px;">{{ anexo.tamanho_formatado }}</div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- SERVIÇOS EXECUTADOS -->
-        {% if ordem.servicos %}
         <div class="section">
-            <div class="section-title">Serviços Executados</div>
+            <div class="section-title">SERVIÇOS EXECUTADOS</div>
             <div class="section-content">
-                <table class="table">
+                <table style="width: 100%; border-collapse: collapse;">
                     <thead>
-                        <tr>
-                            <th class="table-item">Item</th>
-                            <th class="table-desc">Descrição</th>
-                            <th class="table-qty">Qtd</th>
-                            <th class="table-unit">Valor Unit.</th>
-                            <th class="table-total">Total</th>
+                        <tr style="background: #1a365d; color: white;">
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Item</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Descrição</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Qtd</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Vl Unit.</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Vl Total</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for servico in ordem.servicos %}
-                        <tr>
-                            <td class="text-center">{{ loop.index }}</td>
-                            <td>{{ servico.descricao }}</td>
-                            <td class="text-center">{{ "{:.2f}".format(servico.quantidade|float).replace('.', ',') }}</td>
-                            <td class="text-right">R$ {{ "{:.2f}".format(servico.valor_unitario|float).replace('.', ',') }}</td>
-                            <td class="text-right text-bold">R$ {{ "{:.2f}".format(servico.valor_total|float).replace('.', ',') }}</td>
-                        </tr>
-                        {% endfor %}
+                        {% if ordem.servicos and ordem.servicos|length > 0 %}
+                            {% for servico in ordem.servicos %}
+                            <tr>
+                                <td style="border: 1px solid #ddd; padding: 8px;">{{ loop.index }}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">{{ servico.descricao }}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{{ servico.quantidade }}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">R$ {{ "%.2f"|format(servico.valor_unitario) }}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">R$ {{ "%.2f"|format(servico.valor_total) }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center;">Nenhum serviço cadastrado</td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
         </div>
-        {% endif %}
 
-        <!-- PRODUTOS UTILIZADOS -->
-        {% if ordem.produtos %}
+        <!-- RESUMO FINANCEIRO -->
         <div class="section">
-            <div class="section-title">Produtos Utilizados</div>
+            <div class="section-title">RESUMO FINANCEIRO</div>
             <div class="section-content">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th class="table-item">Item</th>
-                            <th class="table-desc">Descrição do Produto</th>
-                            <th class="table-qty">Qtd</th>
-                            <th class="table-unit">Valor Unit.</th>
-                            <th class="table-total">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for produto in ordem.produtos %}
-                        <tr>
-                            <td class="text-center">{{ loop.index }}</td>
-                            <td>{{ produto.descricao }}</td>
-                            <td class="text-center">{{ "{:.3f}".format(produto.quantidade|float).replace('.', ',') }}</td>
-                            <td class="text-right">R$ {{ "{:.2f}".format(produto.valor_unitario|float).replace('.', ',') }}</td>
-                            <td class="text-right text-bold">R$ {{ "{:.2f}".format(produto.valor_total|float).replace('.', ',') }}</td>
-                        </tr>
-                        {% endfor %}
-                        <!-- Linha de subtotal -->
-                        <tr style="border-top: 2px solid #002755; background-color: #f8f9fa;">
-                            <td colspan="4" class="text-right text-bold" style="padding: 8px;">
-                                <strong>SUBTOTAL PRODUTOS:</strong>
-                            </td>
-                            <td class="text-right text-bold" style="padding: 8px; background-color: #e3f2fd; border: 1px solid #002755;">
-                                <strong>R$ {{ "{:.2f}".format(ordem.valor_pecas|float if ordem.valor_pecas else 0).replace('.', ',') }}</strong>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                
-                <!-- Informações complementares dos produtos -->
-                <div class="data-row" style="margin-top: 10px; font-size: 9px; color: #666;">
-                    <div class="data-cell data-cell-full">
-                        <div class="data-label">Observações sobre Produtos</div>
-                        <div class="text-area">
-                            • Todos os produtos utilizados são novos e possuem garantia do fabricante
-                            • Produtos instalados conforme especificações técnicas e normas vigentes
-                            • Garantia de instalação: {{ ordem.prazo_garantia if ordem.prazo_garantia else '90' }} dias
-                            • Produtos não utilizados foram devolvidos ao estoque
-                        </div>
+                <div class="financial-summary">
+                    <div class="financial-row">
+                        <span class="financial-label">Valor dos Serviços:</span>
+                        <span class="financial-value">R$ {{ "%.2f"|format(ordem.valor_servico|float) if ordem.valor_servico else "0,00" }}</span>
+                    </div>
+                    <div class="financial-row">
+                        <span class="financial-label">Valor das Peças:</span>
+                        <span class="financial-value">R$ {{ "%.2f"|format(ordem.valor_pecas|float) if ordem.valor_pecas else "0,00" }}</span>
+                    </div>
+                    <div class="financial-row">
+                        <span class="financial-label">SUBTOTAL:</span>
+                        <span class="financial-value">R$ {{ "%.2f"|format((ordem.valor_servico|float + ordem.valor_pecas|float) if (ordem.valor_servico and ordem.valor_pecas) else 0) }}</span>
+                    </div>
+                    <div class="financial-row">
+                        <span class="financial-label">TOTAL A PAGAR:</span>
+                        <span class="financial-value">R$ {{ "%.2f"|format(ordem.valor_total|float) if ordem.valor_total else "0,00" }}</span>
                     </div>
                 </div>
             </div>
         </div>
-        {% endif %}
+
+        <!-- DADOS BANCÁRIOS -->
+        <div class="section">
+            <div class="section-title">DADOS BANCÁRIOS</div>
+            <div class="section-content">
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">Banco</div>
+                        <div class="data-value">{{ config.banco if config and config.banco else 'Banco do Brasil' }}</div>
+                    </div>
+                    <div class="data-cell">
+                        <div class="data-label">Agência</div>
+                        <div class="data-value">{{ config.agencia if config and config.agencia else '0001-9' }}</div>
+                    </div>
+                    <div class="data-cell">
+                        <div class="data-label">Conta Corrente</div>
+                        <div class="data-value">{{ config.conta if config and config.conta else '12345-6' }}</div>
+                    </div>
+                </div>
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">Favorecido</div>
+                        <div class="data-value data-value-large">{{ config.razao_social if config and config.razao_social else 'JSP ELÉTRICA INDUSTRIAL LTDA' }}</div>
+                    </div>
+                </div>
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">CNPJ</div>
+                        <div class="data-value">{{ config.cnpj if config and config.cnpj else '00.000.000/0001-00' }}</div>
+                    </div>
+                    <div class="data-cell">
+                        <div class="data-label">PIX</div>
+                        <div class="data-value">{{ config.pix if config and config.pix else (config.cnpj if config and config.cnpj else 'CNPJ') }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- CONDIÇÕES DE PAGAMENTO -->
         <div class="section">
-            <div class="section-title">Condições de Pagamento</div>
+            <div class="section-title">CONDIÇÕES DE PAGAMENTO</div>
             <div class="section-content">
                 <div class="data-row">
                     <div class="data-cell">
                         <div class="data-label">Forma de Pagamento</div>
                         <div class="data-value">{{ ordem.condicao_pagamento if ordem.condicao_pagamento else 'À vista' }}</div>
                     </div>
-                    {% if ordem.numero_parcelas %}
                     <div class="data-cell">
                         <div class="data-label">Parcelas</div>
-                        <div class="data-value">{{ ordem.numero_parcelas }}x</div>
+                        <div class="data-value">{{ ordem.numero_parcelas if ordem.numero_parcelas else '1x' }}</div>
                     </div>
-                    {% endif %}
-                    {% if ordem.data_vencimento_pagamento %}
                     <div class="data-cell">
                         <div class="data-label">Vencimento</div>
-                        <div class="data-value">{{ ordem.data_vencimento_pagamento.strftime('%d/%m/%Y') }}</div>
+                        <div class="data-value">{{ ordem.data_vencimento_pagamento.strftime('%d/%m/%Y') if ordem.data_vencimento_pagamento else 'À vista' }}</div>
                     </div>
-                    {% endif %}
                 </div>
-                {% if ordem.observacoes_pagamento %}
                 <div class="data-row">
-                    <div class="data-cell data-cell-full">
+                    <div class="data-cell">
                         <div class="data-label">Observações de Pagamento</div>
-                        <div class="text-area">{{ ordem.observacoes_pagamento }}</div>
+                        <div class="data-value data-value-large formatted-text">{{ ordem.descricao_pagamento if ordem.descricao_pagamento else 'Pagamento à vista na entrega do serviço' }}</div>
                     </div>
                 </div>
-                {% endif %}
             </div>
         </div>
 
         <!-- DADOS BANCÁRIOS -->
         <div class="section">
-            <div class="section-title">Dados Bancários - {{ config.nome_fantasia if config else 'JSP Elétrica' }}</div>
+            <div class="section-title">🏦 DADOS BANCÁRIOS 🏦</div>
             <div class="section-content">
                 <div class="data-row">
                     <div class="data-cell">
                         <div class="data-label">Banco</div>
-                        <div class="data-value">{{ config.banco if config and config.banco else '403 – CORA SCFI' }}</div>
+                        <div class="data-value">{{ config.banco if config and config.banco else 'Banco do Brasil' }}</div>
                     </div>
                     <div class="data-cell">
                         <div class="data-label">Agência</div>
-                        <div class="data-value">{{ config.agencia if config and config.agencia else '0001' }}</div>
+                        <div class="data-value">{{ config.agencia if config and config.agencia else '0001-9' }}</div>
                     </div>
                     <div class="data-cell">
                         <div class="data-label">Conta Corrente</div>
-                        <div class="data-value">{{ config.conta if config and config.conta else '4633457-0' }}</div>
+                        <div class="data-value">{{ config.conta if config and config.conta else '12345-6' }}</div>
                     </div>
                 </div>
                 <div class="data-row">
-                    <div class="data-cell data-cell-wide">
-                        <div class="data-label">PIX</div>
-                        <div class="data-value">{{ config.pix if config and config.pix else '41.280.764/0001-65' }}</div>
-                    </div>
-                    <div class="data-cell data-cell-narrow">
+                    <div class="data-cell">
                         <div class="data-label">Favorecido</div>
-                        <div class="data-value">{{ config.razao_social if config and config.razao_social else 'JSP ELÉTRICA INDUSTRIAL & SOLAR LTDA' }}</div>
+                        <div class="data-value data-value-large">{{ config.razao_social if config and config.razao_social else 'JSP ELÉTRICA INDUSTRIAL LTDA' }}</div>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- RESUMO FINANCEIRO -->
-        <div class="financial-section">
-            <div class="financial-title">Resumo Financeiro</div>
-            <div class="financial-content">
-                <div class="financial-row">
-                    <span>Valor dos Serviços:</span>
-                    <span>R$ {{ "{:.2f}".format(ordem.valor_servico|float if ordem.valor_servico else 0).replace('.', ',') }}</span>
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">CNPJ</div>
+                        <div class="data-value">{{ config.cnpj if config and config.cnpj else '00.000.000/0001-00' }}</div>
+                    </div>
+                    <div class="data-cell">
+                        <div class="data-label">PIX</div>
+                        <div class="data-value">{{ config.pix if config and config.pix else (config.cnpj if config and config.cnpj else 'CNPJ') }}</div>
+                    </div>
                 </div>
-                <div class="financial-row">
-                    <span>Valor das Peças:</span>
-                    <span>R$ {{ "{:.2f}".format(ordem.valor_pecas|float if ordem.valor_pecas else 0).replace('.', ',') }}</span>
-                </div>
-                {% if ordem.valor_desconto and ordem.valor_desconto > 0 %}
-                <div class="financial-row">
-                    <span>Desconto:</span>
-                    <span>- R$ {{ "{:.2f}".format(ordem.valor_desconto|float).replace('.', ',') }}</span>
-                </div>
-                {% endif %}
-                <div class="financial-row">
-                    <span>SUBTOTAL:</span>
-                    <span>R$ {{ "{:.2f}".format((ordem.valor_total|float if ordem.valor_total else 0)).replace('.', ',') }}</span>
-                </div>
-                {% if ordem.valor_entrada and ordem.valor_entrada > 0 %}
-                <div class="financial-row">
-                    <span>Valor de Entrada (Pago):</span>
-                    <span>- R$ {{ "{:.2f}".format(ordem.valor_entrada|float).replace('.', ',') }}</span>
-                </div>
-                <div class="financial-row">
-                    <span>TOTAL A PAGAR:</span>
-                    <span>R$ {{ "{:.2f}".format((ordem.valor_total|float if ordem.valor_total else 0) - (ordem.valor_entrada|float if ordem.valor_entrada else 0)).replace('.', ',') }}</span>
-                </div>
-                {% else %}
-                <div class="financial-row">
-                    <span>TOTAL A PAGAR:</span>
-                    <span>R$ {{ "{:.2f}".format(ordem.valor_total|float if ordem.valor_total else 0).replace('.', ',') }}</span>
-                </div>
-                {% endif %}
             </div>
         </div>
 
         <!-- GARANTIA DOS SERVIÇOS -->
         <div class="section">
-            <div class="section-title">Garantia dos Serviços</div>
+            <div class="section-title">GARANTIA DOS SERVIÇOS</div>
             <div class="section-content">
                 <div class="data-row">
                     <div class="data-cell">
                         <div class="data-label">Prazo de Garantia</div>
-                        <div class="data-value">
-                            {% if ordem.prazo_garantia and ordem.prazo_garantia > 0 %}
-                                {{ ordem.prazo_garantia }} dias
-                            {% else %}
-                                90 dias (padrão)
-                            {% endif %}
-                        </div>
+                        <div class="data-value">{{ ordem.prazo_garantia if ordem.prazo_garantia else '90 dias (padrão)' }}</div>
                     </div>
-                    {% if ordem.data_conclusao and ordem.prazo_garantia %}
-                    <div class="data-cell">
-                        <div class="data-label">Válida até</div>
-                        <div class="data-value">
-                            {% set prazo = ordem.prazo_garantia if ordem.prazo_garantia else 90 %}
-                            {% set data_garantia = ordem.data_conclusao + timedelta(days=prazo) %}
-                            {{ data_garantia.strftime('%d/%m/%Y') }}
-                        </div>
-                    </div>
-                    {% endif %}
                     <div class="data-cell">
                         <div class="data-label">Cobertura</div>
                         <div class="data-value">Serviços executados e peças utilizadas</div>
                     </div>
                 </div>
-                
                 <div class="data-row">
-                    <div class="data-cell data-cell-full">
+                    <div class="data-cell">
                         <div class="data-label">Condições da Garantia</div>
-                        <div class="text-area" style="font-size: 9px;">
-                           
-                        </div>
+                        <div class="data-value data-value-large formatted-text">{{ ordem.condicoes_garantia if ordem.condicoes_garantia else '' }}</div>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- OBSERVAÇÕES -->
-        <div class="section">
-            <div class="section-title">Observações</div>
-            <div class="section-content">
-                <div class="text-area">
-                    {{ ordem.observacoes if ordem.observacoes else 'Nenhuma observação adicional.' }}
                 </div>
             </div>
         </div>
 
         <!-- TERMOS E CONDIÇÕES -->
         <div class="section">
-            <div class="section-title">Termos e Condições</div>
+            <div class="section-title">TERMOS E CONDIÇÕES</div>
             <div class="section-content">
-                <div class="text-area" style="font-size: 8px; line-height: 1.2;">
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">Condições Gerais</div>
+                        <div class="data-value data-value-large formatted-text">
+1. Este documento é válido como comprovante de serviço executado.
 
+2. A garantia é válida apenas para defeitos relacionados ao serviço executado.
+
+3. Não cobre danos causados por mau uso, acidentes ou desgaste natural.
+
+4. Cliente declara estar ciente das condições do serviço.
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -832,29 +691,18 @@
         <div class="signatures">
             <div class="signature-box">
                 <div class="signature-line">
-                    TÉCNICO RESPONSÁVEL
-                </div>
-                <div class="signature-info">
-                    {{ ordem.tecnico_responsavel if ordem.tecnico_responsavel else 'Nome do Técnico' }}<br>
-                    Data: ___/___/______
+                    <div class="signature-title">Assinatura do Técnico</div>
+                    <div class="signature-name">{{ ordem.responsavel if ordem.responsavel else 'JSP ELÉTRICA INDUSTRIAL' }}</div>
                 </div>
             </div>
             <div class="signature-box">
                 <div class="signature-line">
-                    CLIENTE
-                </div>
-                <div class="signature-info">
-                    {{ ordem.cliente.nome if ordem.cliente else 'Nome do Cliente' }}<br>
-                    Data: ___/___/______
+                    <div class="signature-title">Assinatura do Cliente</div>
+                    <div class="signature-name">{{ ordem.cliente.nome if ordem.cliente else '' }}</div>
                 </div>
             </div>
         </div>
-
-        <!-- RODAPÉ -->
-        <div class="footer">
-            <p>Documento gerado automaticamente pelo sistema {{ config.nome_fantasia if config and config.nome_fantasia else 'JSP' }} ERP em {{ now().strftime('%d/%m/%Y às %H:%M') }}</p>
-            <p>Ordem de Serviço válida somente com assinatura e carimbo da empresa</p>
-        </div>
     </div>
+
 </body>
 </html>

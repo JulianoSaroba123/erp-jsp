@@ -22,6 +22,14 @@
                     <a href="{{ url_for('proposta.editar_proposta', id=proposta.id) }}" class="btn btn-outline-primary">
                         <i class="fas fa-edit me-2"></i>Editar
                     </a>
+                    
+                    <!-- Botão Gerar OS -->
+                    {% if proposta.pode_converter %}
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGerarOS">
+                        <i class="fas fa-cogs me-2"></i>Gerar OS
+                    </button>
+                    {% endif %}
+                    
                     <div class="btn-group" role="group">
                         <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-file-alt me-2"></i>Relatórios
@@ -108,7 +116,7 @@
                                     <td class="fw-bold text-muted">
                                         <i class="fas fa-calendar me-1"></i>Data Criação:
                                     </td>
-                                    <td>{{ proposta.data_criacao.strftime('%d/%m/%Y %H:%M') if proposta.data_criacao else 'N/A' }}</td>
+                                    <td>{{ proposta.criado_em.strftime('%d/%m/%Y %H:%M') if proposta.criado_em else 'N/A' }}</td>
                                 </tr>
                                 <tr>
                                     <td class="fw-bold text-muted">
@@ -462,4 +470,49 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para Gerar OS -->
+<div class="modal fade" id="modalGerarOS" tabindex="-1" aria-labelledby="modalGerarOSLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalGerarOSLabel">
+                    <i class="fas fa-cogs text-success me-2"></i>
+                    Gerar Ordem de Serviço
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Atenção:</strong> Uma nova Ordem de Serviço será criada a partir desta proposta aprovada.
+                </div>
+                
+                <h6><strong>Dados que serão transferidos:</strong></h6>
+                <ul class="list-unstyled ms-3">
+                    <li><i class="fas fa-check text-success me-2"></i>Cliente: {{ proposta.cliente.nome if proposta.cliente else 'N/A' }}</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Título: {{ proposta.titulo }}</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Produtos: {{ proposta.itens_produto|length if proposta.itens_produto else 0 }} itens</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Serviços: {{ proposta.itens_servico|length if proposta.itens_servico else 0 }} itens</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Valor Total: R$ {{ '{:,.2f}'.format(proposta.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</li>
+                </ul>
+                
+                <p class="text-muted">
+                    A OS será criada com status "Pendente" e você será redirecionado para visualizá-la após a criação.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <form method="POST" action="{{ url_for('proposta.gerar_os_de_proposta', id=proposta.id) }}" class="d-inline">
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-cogs me-2"></i>Confirmar e Gerar OS
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

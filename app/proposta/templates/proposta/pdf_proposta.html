@@ -32,27 +32,46 @@
             padding: 20px;
         }
 
-        /* Quebra de página para evitar corte das condições */
+        /* Controles avançados de quebra de página */
         .page-break-before {
             page-break-before: always;
+            break-before: page;
         }
         
         /* Evitar quebras de página dentro dos cards */
         .section {
             page-break-inside: avoid;
             break-inside: avoid;
+            margin-bottom: 15px;
+        }
+        
+        /* Seções pequenas que devem ficar juntas */
+        .section.keep-together {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            display: block;
         }
         
         /* Para seções maiores, manter cabeçalho junto com conteúdo */
         .section-header {
-            page-break-after: avoid;
-            break-after: avoid;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
         }
         
         /* Evitar orphans e widows */
         .section-body {
-            orphans: 3;
-            widows: 3;
+            orphans: 4;
+            widows: 4;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        
+        /* Conteúdo de tabelas */
+        .items-section {
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
 
         /* Cabeçalho */
@@ -137,16 +156,20 @@
             color: var(--text-color);
         }
 
-        /* Tabela de itens */
+        /* Tabela de itens com melhor controle */
         table.items {
             width: 100%;
             border-collapse: collapse;
             border: 2px solid var(--primary-color);
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         table.items th,
         table.items td {
             border: 1px solid var(--primary-color);
             padding: 8px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         table.items th {
             background: var(--primary-color);
@@ -155,6 +178,20 @@
             font-weight: bold;
             font-size: 13px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            page-break-after: avoid;
+            break-after: avoid;
+        }
+        
+        /* Seções de produtos e serviços */
+        .produto-section, .servico-section {
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin-bottom: 15px;
+        }
+        
+        .produto-section h4, .servico-section h4 {
+            page-break-after: avoid;
+            break-after: avoid;
         }
         
 
@@ -218,26 +255,52 @@
         
         /* Regras específicas para melhor controle de quebras em PDF */
         @media print {
+            body {
+                print-color-adjust: exact;
+                -webkit-print-color-adjust: exact;
+            }
+            
             .section {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
-                margin-bottom: 10px;
+                margin-bottom: 12px;
+                display: block;
             }
             
             .section-header {
                 page-break-after: avoid !important;
                 break-after: avoid !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
             
             .section-body {
                 orphans: 4;
                 widows: 4;
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+            
+            /* Tabelas não devem quebrar */
+            table.items {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
             
             /* Forçar que conteúdo pequeno fique junto */
             .section-body > div {
                 page-break-inside: avoid;
                 break-inside: avoid;
+            }
+            
+            /* Grids e flexbox para PDF */
+            .grid-container {
+                display: block !important;
+            }
+            
+            .grid-item {
+                display: block !important;
+                margin-bottom: 8px;
             }
         }
     </style>
@@ -275,44 +338,45 @@
         <strong>Vendedor:</strong> {{ proposta.vendedor or 'N/A' }}
     </div>
     <!-- 01 Dados do Cliente -->
-    <div class="section">
+    <div class="section keep-together">
         <div class="section-header"><span class="number">01</span>Dados do Cliente</div>
         <div class="section-body" style="background: white;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                <div>
+            <div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div class="grid-item">
                     <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">NOME</div>
-                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ proposta.cliente.nome if proposta.cliente else 'N/A' }}</div>
+                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; word-wrap: break-word;">{{ proposta.cliente.nome if proposta.cliente else 'N/A' }}</div>
                 </div>
-                <div>
+                <div class="grid-item">
                     <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">{% if proposta.cliente and proposta.cliente.tipo == 'PJ' %}CNPJ{% else %}CPF{% endif %}</div>
                     <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ proposta.cliente.cpf_cnpj if proposta.cliente and proposta.cliente.cpf_cnpj else 'N/A' }}</div>
                 </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                <div>
+            <div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div class="grid-item">
                     <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">TELEFONE</div>
                     <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ proposta.cliente.telefone if proposta.cliente and proposta.cliente.telefone else 'N/A' }}</div>
                 </div>
-                <div>
+                <div class="grid-item">
                     <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">E-MAIL</div>
-                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ proposta.cliente.email if proposta.cliente and proposta.cliente.email else 'N/A' }}</div>
+                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; word-wrap: break-word;">{{ proposta.cliente.email if proposta.cliente and proposta.cliente.email else 'N/A' }}</div>
                 </div>
             </div>
             {% if proposta.cliente and proposta.cliente.endereco %}
-            <div>
+            <div class="grid-item">
                 <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">ENDEREÇO</div>
-                <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ proposta.cliente.endereco_completo }}</div>
+                <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; word-wrap: break-word;">{{ proposta.cliente.endereco_completo }}</div>
             </div>
             {% endif %}
         </div>
     </div>
     <!-- 02 Itens da Proposta -->
-    <div class="section">
+    <div class="section items-section">
         <div class="section-header"><span class="number">02</span>Itens da Proposta</div>
         <div class="section-body">
             
             <!-- PRODUTOS -->
             {% if proposta.produtos %}
+            <div class="produto-section">
             <h4 style="color: var(--primary-color); margin: 10px 0; padding: 8px; background: #e6f2ff; border-left: 4px solid var(--primary-color);">
                 📦 PRODUTOS
             </h4>
@@ -334,10 +398,12 @@
                 </tr>
                 {% endfor %}
             </table>
+            </div>
             {% endif %}
             
             <!-- SERVIÇOS -->
             {% if proposta.servicos %}
+            <div class="servico-section">
             <h4 style="color: var(--primary-color); margin: 20px 0 10px 0; padding: 8px; background: #e6ffe6; border-left: 4px solid #28a745;">
                 🔧 SERVIÇOS
             </h4>
@@ -359,6 +425,7 @@
                 </tr>
                 {% endfor %}
             </table>
+            </div>
             {% endif %}
             
             <!-- MENSAGEM SE NÃO HOUVER ITENS -->
@@ -371,7 +438,7 @@
         </div>
     </div>
     <!-- 03 Detalhamento da Proposta -->
-    <div class="section" style="page-break-inside: avoid; break-inside: avoid;">
+    <div class="section keep-together">
         <div class="section-header"><span class="number">03</span>Detalhamento da Proposta</div>
         <div class="section-body" style="background: white;">
             <div style="margin-bottom: 15px;">
@@ -387,7 +454,7 @@
         </div>
     </div>
     <!-- 04 Resumo Financeiro -->
-    <div class="section" style="border: 2px solid var(--primary-color); page-break-inside: avoid; break-inside: avoid;">
+    <div class="section keep-together" style="border: 2px solid var(--primary-color);">
         <div class="section-header">
             <span class="number">04</span>Resumo Financeiro
         </div>
@@ -399,7 +466,7 @@
             {% set valor_desconto = (subtotal * desconto) / 100 %}
             {% set valor_final = proposta.valor_total or (subtotal - valor_desconto) %}
             
-            <div style="display: flex; gap: 15px;">
+            <div class="grid-container" style="display: flex; gap: 15px;">
                 <!-- Coluna Esquerda - Valores -->
                 <div style="flex: 1; background: white; border: 1px solid var(--primary-color); padding: 15px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #ddd;">
@@ -458,25 +525,25 @@
         </div>
     </div>
     <!-- 05 Condições Comerciais -->
-    <div class="section page-break-before">
+    <div class="section keep-together page-break-before">
         <div class="section-header"><span class="number">05</span>Condições Comerciais</div>
         <div class="section-body" style="background: white;">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                <div>
+            <div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                <div class="grid-item">
                     <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">FORMA DE PAGAMENTO</div>
-                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ proposta.forma_pagamento or 'Entrada 50% e restante na conclusão' }}</div>
+                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; word-wrap: break-word;">{{ proposta.forma_pagamento or 'Entrada 50% e restante na conclusão' }}</div>
                 </div>
-                <div>
+                <div class="grid-item">
                     <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">PRAZO DE EXECUÇÃO</div>
                     <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ proposta.prazo_execucao or '15 dias úteis' }}</div>
                 </div>
             </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div>
+            <div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="grid-item">
                     <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">GARANTIA</div>
-                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ proposta.garantia or 'Conforme legislação vigente' }}</div>
+                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; word-wrap: break-word;">{{ proposta.garantia or 'Conforme legislação vigente' }}</div>
                 </div>
-                <div>
+                <div class="grid-item">
                     <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">VALIDADE</div>
                     <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">
                         {% if proposta.valida_ate %}
@@ -491,10 +558,10 @@
     </div>
     <!-- 06 Observações -->
     {% if proposta.observacoes %}
-    <div class="section">
+    <div class="section keep-together">
         <div class="section-header"><span class="number">06</span>Observações</div>
         <div class="section-body" style="background: white;">
-            <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; line-height: 1.6;">
+            <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; line-height: 1.6; word-wrap: break-word;">
                 {{ proposta.observacoes|replace('\n', '<br>')|safe }}
             </div>
         </div>
@@ -563,8 +630,8 @@
     
    
     
-    <!-- 09 Assinaturas -->
-    <div class="section">
+    <!-- 08 Assinaturas -->
+    <div class="section keep-together">
         <div class="section-header"><span class="number">08</span>Assinaturas</div>
         <div class="section-body">
             <table class="signature-table">

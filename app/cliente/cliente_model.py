@@ -126,6 +126,22 @@ class Cliente(BaseModel):
         return self.cpf_cnpj
     
     @property
+    def nome_exibicao(self):
+        """
+        Retorna o melhor nome para exibição.
+        Prioridade: nome_fantasia > nome > razao_social
+        (Priorizando o que foi cadastrado como nome principal)
+        """
+        if self.nome_fantasia and self.nome_fantasia.strip():
+            return self.nome_fantasia.strip()
+        elif self.nome and self.nome.strip():
+            return self.nome.strip()
+        elif self.razao_social and self.razao_social.strip():
+            return self.razao_social.strip()
+        else:
+            return f"Cliente {self.id}"
+    
+    @property
     def telefone_principal(self):
         """Retorna o telefone principal (prioriza celular)."""
         return self.celular or self.whatsapp or self.telefone or ''

@@ -20,9 +20,33 @@ from app.produto.produto_model import Produto
 from decimal import Decimal
 import decimal
 import os
-from datetime import datetime, time, date, timedelta
+import base64
+from datetime import datetime as dt, datetime, time, date, timedelta
 from werkzeug.utils import secure_filename
 import uuid
+
+# === FUNÇÃO UTILITÁRIA PARA BUSCAR CLIENTES ===
+def buscar_clientes_ativos():
+    """
+    Função simples e confiável para buscar clientes ativos.
+    Retorna APENAS clientes ativos com nome válido.
+    Garante consistência entre todos os módulos.
+    """
+    try:
+        # Busca básica e segura
+        clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+        
+        # Filtrar em Python para evitar problemas de SQL
+        clientes_validos = []
+        for cliente in clientes:
+            if cliente and cliente.nome and cliente.nome.strip():
+                clientes_validos.append(cliente)
+        
+        return clientes_validos
+        
+    except Exception as e:
+        print(f"❌ ERRO na busca de clientes: {e}")
+        return []
 
 # Configurações de upload
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads', 'ordem_servico', 'anexos')
@@ -106,11 +130,9 @@ def safe_decimal_convert(value, default=0):
         return Decimal(str(default))
 
 from werkzeug.utils import secure_filename
-from datetime import datetime, timedelta
 import re
 import os
 import uuid
-from datetime import datetime, date, time
 import tempfile
 import base64
 
@@ -125,26 +147,59 @@ ALLOWED_EXTENSIONS = {
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
 def get_logo_base64():
-    """Retorna a logo JSP.jpg em base64 para o PDF"""
+    """Retorna o logo configurado no sistema em base64 para o PDF"""
     try:
-        # Caminho para a logo JSP
-        logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'static', 'img', 'JSP.jpg')
+        from app.configuracao.configuracao_model import Configuracao
+        import base64
         
-        # Lê o arquivo da imagem e converte para base64
-        with open(logo_path, 'rb') as img_file:
-            img_data = img_file.read()
-            img_base64 = base64.b64encode(img_data).decode('utf-8')
-            return f"data:image/jpeg;base64,{img_base64}"
-    except FileNotFoundError:
-        # Fallback para SVG se a imagem não for encontrada
-        svg_logo = '''<svg width="120" height="60" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg">
-            <rect width="120" height="60" fill="#002755" rx="5"/>
-            <text x="60" y="20" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#f49d16">JSP</text>
-            <text x="60" y="40" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="white">SOLUÇÕES</text>
-            <text x="60" y="52" font-family="Arial, sans-serif" font-size="8" text-anchor="middle" fill="#f49d16">TECNOLÓGICAS</text>
-        </svg>'''
-        svg_base64 = base64.b64encode(svg_logo.encode('utf-8')).decode('utf-8')
-        return f"data:image/svg+xml;base64,{svg_base64}"
+        # Busca a configuração do sistema
+        config = Configuracao.get_solo()
+        
+        # Se há logo configurado, usa ele
+        if config and config.logo:
+            # Verifica se é caminho absoluto ou relativo
+            if os.path.isabs(config.logo):
+                logo_path = config.logo
+            else:
+                # Caminho relativo ao diretório static
+                logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'static', 'uploads', config.logo)
+            
+            # Lê o arquivo da imagem e converte para base64
+            if os.path.exists(logo_path):
+                with open(logo_path, 'rb') as img_file:
+                    img_data = img_file.read()
+                    img_base64 = base64.b64encode(img_data).decode('utf-8')
+                    # Detecta o tipo da imagem pela extensão
+                    ext = os.path.splitext(logo_path)[1].lower()
+                    if ext in ['.jpg', '.jpeg']:
+                        return img_base64
+                    elif ext in ['.png']:
+                        return img_base64
+                    elif ext in ['.gif']:
+                        return img_base64
+                    else:
+                        return img_base64
+        
+        # Fallback: tenta usar a logo padrão JSP.jpg
+        logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'static', 'img', 'JSP.jpg')
+        if os.path.exists(logo_path):
+            with open(logo_path, 'rb') as img_file:
+                img_data = img_file.read()
+                img_base64 = base64.b64encode(img_data).decode('utf-8')
+                return img_base64
+                
+    except Exception as e:
+        print(f"Erro ao carregar logo: {e}")
+    
+    # Fallback final: SVG padrão
+    svg_logo = '''<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+        <rect width="80" height="80" fill="#007bff" rx="8"/>
+        <text x="40" y="30" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">JSP</text>
+        <text x="40" y="50" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="white">ELÉTRICA</text>
+        <text x="40" y="65" font-family="Arial, sans-serif" font-size="8" text-anchor="middle" fill="white">INDUSTRIAL</text>
+    </svg>'''
+    svg_base64 = base64.b64encode(svg_logo.encode('utf-8')).decode('utf-8')
+    return f"data:image/svg+xml;base64,{svg_base64}"
 
 @ordem_servico_bp.route('/')
 @ordem_servico_bp.route('/listar')
@@ -218,12 +273,16 @@ def novo():
     """
     if request.method == 'POST':
         try:
+            print("🔍 DEBUG: Iniciando processamento POST...")
+            
             # Converte valores
+            print("🔍 DEBUG: Convertendo valores...")
             valor_servico = safe_decimal_convert(request.form.get('valor_servico', '0'), 0)
             valor_pecas = safe_decimal_convert(request.form.get('valor_pecas', '0'), 0)
             valor_desconto = safe_decimal_convert(request.form.get('valor_desconto', '0'), 0)
             valor_entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
             
+            print("🔍 DEBUG: Convertendo datas...")
             # Converte datas
             data_prevista = None
             data_primeira_parcela = None
@@ -259,15 +318,20 @@ def novo():
                 data_prevista=data_prevista,
                 # Data de abertura (editável)
                 data_abertura=(datetime.strptime(request.form.get('data_abertura'), '%Y-%m-%d').date() if request.form.get('data_abertura') else date.today()),
+                # Data de início (editável)
+                data_inicio=(datetime.strptime(request.form.get('data_inicio'), '%Y-%m-%dT%H:%M') if request.form.get('data_inicio') else None),
+                # Data de conclusão (editável)
+                data_conclusao=(datetime.strptime(request.form.get('data_conclusao'), '%Y-%m-%dT%H:%M') if request.form.get('data_conclusao') else None),
+                # Data de vencimento do pagamento (editável)
+                data_vencimento_pagamento=(datetime.strptime(request.form.get('data_vencimento_pagamento'), '%Y-%m-%d').date() if request.form.get('data_vencimento_pagamento') else None),
                 tecnico_responsavel=request.form.get('tecnico_responsavel', '').strip(),
-                valor_servico=Decimal(valor_servico) if valor_servico else 0,
-                valor_pecas=Decimal(valor_pecas) if valor_pecas else 0,
-                valor_desconto=Decimal(valor_desconto) if valor_desconto else 0,
+                valor_servico=Decimal(str(valor_servico)) if valor_servico else Decimal('0'),
+                valor_pecas=Decimal(str(valor_pecas)) if valor_pecas else Decimal('0'),
+                valor_desconto=Decimal(str(valor_desconto)) if valor_desconto else Decimal('0'),
                 prazo_garantia=int(request.form.get('prazo_garantia', 0)),
                 equipamento=request.form.get('equipamento', '').strip(),
                 marca_modelo=request.form.get('marca_modelo', '').strip(),
                 numero_serie=request.form.get('numero_serie', '').strip(),
-                defeito_relatado=request.form.get('defeito_relatado', '').strip(),
                 diagnostico=request.form.get('diagnostico', '').strip(),
                 diagnostico_tecnico=request.form.get('diagnostico_tecnico', '').strip(),
                 solucao=request.form.get('solucao', '').strip(),
@@ -279,17 +343,17 @@ def novo():
                 hora_final=hora_final,
                 total_horas=request.form.get('total_horas', '').strip(),
                 condicao_pagamento=request.form.get('condicao_pagamento', 'a_vista'),
+                status_pagamento=request.form.get('status_pagamento', 'pendente'),
                 numero_parcelas=safe_int_convert(request.form.get('numero_parcelas', '1'), default=1),
-                valor_entrada=Decimal(valor_entrada) if valor_entrada else 0,
+                valor_entrada=Decimal(str(valor_entrada)) if valor_entrada else Decimal('0'),
                 data_primeira_parcela=data_primeira_parcela,
-                data_vencimento_pagamento=data_vencimento_pagamento,
                 # Novos campos para anexos e descrição de pagamento
                 descricao_pagamento=request.form.get('descricao_pagamento', '').strip(),
                 observacoes_anexos=request.form.get('observacoes_anexos', '').strip()
             )
             
             # Validações
-            print(f"🔍 DEBUG: Validando título: '{ordem.titulo}'")
+            print(f"DEBUG: Validando título: '{ordem.titulo}'")
             if not ordem.titulo or ordem.titulo == 'OS sem título':
                 # Se não há título, usar equipamento como referência
                 if request.form.get('equipamento', '').strip():
@@ -297,34 +361,46 @@ def novo():
                 else:
                     ordem.titulo = f"OS #{ordem.numero}"
             
-            print(f"🔍 DEBUG: Validando cliente_id: '{ordem.cliente_id}'")
+            print(f"DEBUG: Validando cliente_id: '{ordem.cliente_id}'")
             if not ordem.cliente_id:
                 flash('Cliente é obrigatório!', 'error')
-                print("❌ DEBUG: Cliente é obrigatório")
+                print(" DEBUG: Cliente é obrigatório")
                 clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
                 numero_os = OrdemServico.gerar_proximo_numero()
                 return render_template('os/form.html', ordem=None, clientes=clientes, numero_os=numero_os, today=date.today())
             
             # Adiciona ordem à sessão (transação será confirmada no final)
-            db.session.add(ordem)
-            # Flush para garantir que ordem.id seja populado antes de criar os itens
-            db.session.flush()
+            try:
+                print("🔍 DEBUG: Iniciando processo de adicionar ordem...")
+                db.session.add(ordem)
+                # Flush para garantir que ordem.id seja populado antes de criar os itens
+                print("🔍 DEBUG: Fazendo flush da ordem...")
+                db.session.flush()
+                print(f"✅ DEBUG: Ordem adicionada com sucesso, ID: {ordem.id}")
+            except Exception as e:
+                print(f"❌ DEBUG: Erro ao adicionar ordem: {e}")
+                db.session.rollback()
+                flash(f'Erro ao criar ordem: {str(e)}', 'error')
+                clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+                numero_os = OrdemServico.gerar_proximo_numero()
+                return render_template('os/form.html', ordem=None, clientes=clientes, numero_os=numero_os, today=date.today())
             
             # Processa itens de serviço
             print("🔍 DEBUG: Processando itens de serviço com nova estrutura de tipos")
             
             # Primeiro tenta coletar dados da estrutura de arrays simples (nova)
+            print("🔍 DEBUG: Coletando dados de serviços...")
             servicos_desc_array = request.form.getlist('servico_descricao[]')
             servicos_tipo_array = request.form.getlist('servico_tipo[]')
             servicos_quantidade_array = request.form.getlist('servico_quantidade[]')
             servicos_valor_array = request.form.getlist('servico_valor[]')
             
-            print(f"🔍 DEBUG: Arrays simples encontrados - desc: {len(servicos_desc_array)}, tipo: {len(servicos_tipo_array)}, qtd: {len(servicos_quantidade_array)}, valor: {len(servicos_valor_array)}")
+            print(f"DEBUG: Arrays simples encontrados - desc: {len(servicos_desc_array)}, tipo: {len(servicos_tipo_array)}, qtd: {len(servicos_quantidade_array)}, valor: {len(servicos_valor_array)}")
             
             # Se encontrou arrays simples, usa essa estrutura
             servicos_data = []
             if servicos_desc_array:
-                print("🔍 DEBUG: Usando estrutura de arrays simples para serviços (novo)")
+                print("DEBUG: Usando estrutura de arrays simples para serviços (novo)")
                 for i, desc in enumerate(servicos_desc_array):
                     if desc and desc.strip():
                         tipo = servicos_tipo_array[i] if i < len(servicos_tipo_array) else 'Serviço Fechado'
@@ -339,7 +415,7 @@ def novo():
                         })
             else:
                 # Fallback para estrutura indexada (antiga)
-                print("🔍 DEBUG: Usando estrutura indexada para serviços (fallback)")
+                print("DEBUG: Usando estrutura indexada para serviços (fallback)")
                 index = 0
                 while True:
                     desc_key = f'servicos[{index}][descricao]'
@@ -368,6 +444,7 @@ def novo():
             print(f"🔍 DEBUG: Coletados {len(servicos_data)} serviços: {servicos_data}")
             
             # Criar itens de serviço
+            print("🔍 DEBUG: Criando itens de serviço...")
             for servico_data in servicos_data:
                 item = OrdemServicoItem(
                     ordem_servico_id=ordem.id,
@@ -396,11 +473,21 @@ def novo():
                     produto.calcular_total()
                     db.session.add(produto)
             
+            # Recalcula valor total considerando itens (DEPOIS que todos os itens foram criados)
+            ordem.valor_total = ordem.valor_total_calculado_novo
+            
             # NOTE: parcelas processing moved to after total calculation (see below)
+
+            # Preferência: incluir imagens no relatório
+            ordem.incluir_imagens_relatorio = True if request.form.get('incluir_imagens_relatorio') in ('1', 'on', 'true') else False
             
             # Processa arquivos anexados
-            if 'anexos' in request.files:
-                files = request.files.getlist('anexos')
+            if 'anexos' in request.files or 'anexos[]' in request.files:
+                # Pega os arquivos usando o nome correto
+                if 'anexos' in request.files:
+                    files = request.files.getlist('anexos')
+                else:
+                    files = request.files.getlist('anexos[]')
                 for file in files:
                     if file and file.filename and allowed_file(file.filename):
                         try:
@@ -419,13 +506,19 @@ def novo():
                             # Salva arquivo
                             file.save(filepath)
                             
+                            # Detecta tipo do arquivo
+                            content_type = file.content_type or 'application/octet-stream'
+                            tipo_arquivo = 'image' if content_type.startswith('image/') else 'document'
+                            
                             # Cria registro no banco
                             anexo = OrdemServicoAnexo(
                                 ordem_servico_id=ordem.id,
                                 nome_original=file.filename,
                                 nome_arquivo=filename,
-                                tipo_arquivo=file.content_type or 'application/octet-stream',
-                                tamanho=get_file_size(file)
+                                tipo_arquivo=tipo_arquivo,
+                                mime_type=content_type,
+                                tamanho=get_file_size(file),
+                                caminho=filepath
                             )
                             db.session.add(anexo)
                             
@@ -434,9 +527,6 @@ def novo():
                     elif file and file.filename and not allowed_file(file.filename):
                         flash(f'Tipo de arquivo não permitido: {file.filename}', 'warning')
             
-            # Recalcula valor total considerando itens
-            ordem.valor_total = ordem.valor_total_calculado_novo
-
             # Processa parcelas (validação + criação)
             if ordem.condicao_pagamento == 'parcelado' and ordem.numero_parcelas and ordem.numero_parcelas > 0:
                 entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
@@ -564,18 +654,29 @@ def novo():
 
             # Recalcula e atualiza valor total antes de confirmar transação
             ordem.valor_total = ordem.valor_total_calculado_novo
-            print(f"🔍 DEBUG: Valor total calculado: R$ {ordem.valor_total}")
+            print(f"DEBUG: Valor total calculado: R$ {ordem.valor_total}")
 
             try:
-                print("🔍 DEBUG: Tentando fazer commit da ordem...")
+                print("DEBUG: Tentando fazer commit da ordem...")
                 db.session.commit()
-                print("✅ DEBUG: Commit realizado com sucesso!")
+                print(" DEBUG: Commit realizado com sucesso!")
+                
+                # === INTEGRAÇÃO FINANCEIRA ===
+                try:
+                    from app.financeiro.financeiro_utils import gerar_lancamento_ordem_servico
+                    print("DEBUG: Gerando lançamento financeiro...")
+                    gerar_lancamento_ordem_servico(ordem)
+                    print(" DEBUG: Integração financeira concluída!")
+                except Exception as financeiro_error:
+                    print(f"⚠️ DEBUG: Erro na integração financeira: {financeiro_error}")
+                    # Não interrompe o fluxo - ordem já foi criada
+                
             except Exception as commit_error:
-                print(f"❌ DEBUG: Erro no commit: {commit_error}")
+                print(f" DEBUG: Erro no commit: {commit_error}")
                 db.session.rollback()
                 raise
 
-            flash(f'✅ Ordem de Serviço {ordem.numero} criada com sucesso! Você pode visualizar, editar ou gerar o PDF.', 'success')
+            flash(f'Ordem de Serviço {ordem.numero} criada com sucesso! Você pode visualizar, editar ou gerar o PDF.', 'success')
             return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
             
         except Exception as e:
@@ -590,7 +691,7 @@ def novo():
             return render_template('os/form.html', ordem=None, clientes=clientes, numero_os=numero_os, today=date.today())
     
     # GET - exibe formulário vazio
-    clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+    clientes = buscar_clientes_ativos()
     numero_os = OrdemServico.gerar_proximo_numero()
     return render_template('os/form.html', ordem=None, clientes=clientes, numero_os=numero_os, today=date.today())
 
@@ -617,26 +718,26 @@ def editar(id):
     Args:
         id: ID da ordem de serviço
     """
-    print(f"🔍 DEBUG: Iniciando edição para ID {id}")
+    print(f"DEBUG: Iniciando edição para ID {id}")
     
     ordem = OrdemServico.get_by_id(id)
     if not ordem:
-        print(f"❌ DEBUG: Ordem com ID {id} não encontrada")
+        print(f" DEBUG: Ordem com ID {id} não encontrada")
         flash('Ordem de serviço não encontrada!', 'error')
         return redirect(url_for('ordem_servico.listar'))
     
-    print(f"✅ DEBUG: Ordem encontrada: {ordem.numero}")
+    print(f" DEBUG: Ordem encontrada: {ordem.numero}")
     
     if request.method == 'POST':
         try:
-            print(f"🔍 DEBUG: Processando POST para ordem {id}")
-            print(f"🔍 DEBUG: Form data keys: {list(request.form.keys())}")
+            print(f"DEBUG: Processando POST para ordem {id}")
+            print(f"DEBUG: Form data keys: {list(request.form.keys())}")
             
             # Debug específico para serviços e produtos
             servicos_desc = request.form.getlist('servico_descricao[]')
             produtos_desc = request.form.getlist('produto_descricao[]')
-            print(f"🔍 DEBUG: Serviços encontrados: {len(servicos_desc)} - {servicos_desc}")
-            print(f"🔍 DEBUG: Produtos encontrados: {len(produtos_desc)} - {produtos_desc}")
+            print(f"DEBUG: Serviços encontrados: {len(servicos_desc)} - {servicos_desc}")
+            print(f"DEBUG: Produtos encontrados: {len(produtos_desc)} - {produtos_desc}")
             
             # Converte valores
             valor_servico = safe_decimal_convert(request.form.get('valor_servico', '0'), 0)
@@ -676,11 +777,29 @@ def editar(id):
                     except Exception:
                         pass
 
+            # Permite sobrescrever data_inicio manualmente
+            if request.form.get('data_inicio'):
+                try:
+                    ordem.data_inicio = datetime.strptime(request.form.get('data_inicio'), '%Y-%m-%dT%H:%M').replace(tzinfo=None)
+                except Exception:
+                    # aceitar também formato YYYY-MM-DD
+                    try:
+                        ordem.data_inicio = datetime.strptime(request.form.get('data_inicio'), '%Y-%m-%d')
+                    except Exception:
+                        pass
+
+            # Permite definir data de vencimento do pagamento
+            if request.form.get('data_vencimento_pagamento'):
+                try:
+                    ordem.data_vencimento_pagamento = datetime.strptime(request.form.get('data_vencimento_pagamento'), '%Y-%m-%d').date()
+                except Exception:
+                    pass
+
             if novo_status != ordem.status:
                 if novo_status == 'em_andamento' and ordem.status == 'aberta':
-                    ordem.data_inicio = datetime.now()
+                    ordem.data_inicio = dt.now()
                 elif novo_status == 'concluida' and ordem.status != 'concluida' and not ordem.data_conclusao:
-                    ordem.data_conclusao = datetime.now()
+                    ordem.data_conclusao = dt.now()
             ordem.status = novo_status
             
             ordem.prioridade = request.form.get('prioridade', 'normal')
@@ -693,7 +812,6 @@ def editar(id):
             ordem.equipamento = request.form.get('equipamento', '').strip()
             ordem.marca_modelo = request.form.get('marca_modelo', '').strip()
             ordem.numero_serie = request.form.get('numero_serie', '').strip()
-            ordem.defeito_relatado = request.form.get('defeito_relatado', '').strip()
             ordem.diagnostico = request.form.get('diagnostico', '').strip()
             ordem.diagnostico_tecnico = request.form.get('diagnostico_tecnico', '').strip()
             ordem.solucao = request.form.get('solucao', '').strip()
@@ -718,6 +836,7 @@ def editar(id):
             
             # Condições de Pagamento
             ordem.condicao_pagamento = request.form.get('condicao_pagamento', 'a_vista')
+            ordem.status_pagamento = request.form.get('status_pagamento', 'pendente')
             ordem.numero_parcelas = int(request.form.get('numero_parcelas', 1)) if request.form.get('numero_parcelas') else 1
             ordem.valor_entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
             
@@ -747,16 +866,16 @@ def editar(id):
                     ordem.titulo = f"OS #{ordem.numero}"
             
             # Processa itens de serviço - Remove antigos e adiciona novos
-            print(f"🔍 DEBUG: Removendo {len(ordem.servicos)} serviços antigos via loop delete")
+            print(f"DEBUG: Removendo {len(ordem.servicos)} serviços antigos via loop delete")
             servicos_removidos = 0
             for item_existente in list(ordem.servicos):
                 print(f"  🗑️ Removendo serviço: {item_existente.descricao}")
                 db.session.delete(item_existente)
                 servicos_removidos += 1
-            print(f"✅ {servicos_removidos} serviços removidos")
+            print(f" {servicos_removidos} serviços removidos")
             
             # Processa itens de serviço com nova estrutura de tipos
-            print("🔍 DEBUG: Processando itens de serviço com nova estrutura de tipos (edição)")
+            print("DEBUG: Processando itens de serviço com nova estrutura de tipos (edição)")
             
             # Primeiro tenta coletar dados da estrutura de arrays simples (nova)
             servicos_desc_array = request.form.getlist('servico_descricao[]')
@@ -764,12 +883,12 @@ def editar(id):
             servicos_quantidade_array = request.form.getlist('servico_quantidade[]')
             servicos_valor_array = request.form.getlist('servico_valor[]')
             
-            print(f"🔍 DEBUG: Arrays simples encontrados - desc: {len(servicos_desc_array)}, tipo: {len(servicos_tipo_array)}, qtd: {len(servicos_quantidade_array)}, valor: {len(servicos_valor_array)}")
+            print(f"DEBUG: Arrays simples encontrados - desc: {len(servicos_desc_array)}, tipo: {len(servicos_tipo_array)}, qtd: {len(servicos_quantidade_array)}, valor: {len(servicos_valor_array)}")
             
             # Se encontrou arrays simples, usa essa estrutura
             servicos_data = []
             if servicos_desc_array:
-                print("🔍 DEBUG: Usando estrutura de arrays simples para serviços")
+                print("DEBUG: Usando estrutura de arrays simples para serviços")
                 for i, desc in enumerate(servicos_desc_array):
                     if desc and desc.strip():
                         tipo = servicos_tipo_array[i] if i < len(servicos_tipo_array) else 'Serviço Fechado'
@@ -784,7 +903,7 @@ def editar(id):
                         })
             else:
                 # Fallback para estrutura indexada (antiga)
-                print("🔍 DEBUG: Usando estrutura indexada para serviços (fallback)")
+                print("DEBUG: Usando estrutura indexada para serviços (fallback)")
                 index = 0
                 while True:
                     desc_key = f'servicos[{index}][descricao]'
@@ -810,7 +929,7 @@ def editar(id):
                         
                     index += 1
             
-            print(f"🔍 DEBUG: Coletados {len(servicos_data)} serviços para edição: {servicos_data}")
+            print(f"DEBUG: Coletados {len(servicos_data)} serviços para edição: {servicos_data}")
 
             # Criar novos itens de serviço
             servicos_adicionados = 0
@@ -826,22 +945,22 @@ def editar(id):
                 db.session.add(item)
                 servicos_adicionados += 1
                 print(f"  ➕ Adicionado serviço: {item.descricao} - {item.quantidade} {item.tipo_servico} = R$ {item.valor_total}")
-            print(f"✅ {servicos_adicionados} serviços adicionados")
+            print(f" {servicos_adicionados} serviços adicionados")
             
             # Processa produtos utilizados - Remove antigos e adiciona novos
-            print(f"🔍 DEBUG: Removendo {len(ordem.produtos_utilizados)} produtos antigos via loop delete")
+            print(f"DEBUG: Removendo {len(ordem.produtos_utilizados)} produtos antigos via loop delete")
             produtos_removidos = 0
             for produto_existente in list(ordem.produtos_utilizados):
                 print(f"  🗑️ Removendo produto: {produto_existente.descricao}")
                 db.session.delete(produto_existente)
                 produtos_removidos += 1
-            print(f"✅ {produtos_removidos} produtos removidos")
+            print(f" {produtos_removidos} produtos removidos")
             
             produtos_desc = request.form.getlist('produto_descricao[]')
             produtos_qtd = request.form.getlist('produto_quantidade[]')
             produtos_valor = request.form.getlist('produto_valor[]')
 
-            print(f"🔍 DEBUG: Processando {len(produtos_desc)} produtos do formulário")
+            print(f"DEBUG: Processando {len(produtos_desc)} produtos do formulário")
             print(f"  📝 Descrições: {produtos_desc}")
             produtos_adicionados = 0
             for i, desc in enumerate(produtos_desc):
@@ -858,7 +977,7 @@ def editar(id):
                     db.session.add(produto)
                     produtos_adicionados += 1
                     print(f"  ➕ Adicionado produto: {desc.strip()}")
-            print(f"✅ {produtos_adicionados} produtos adicionados")
+            print(f" {produtos_adicionados} produtos adicionados")
             
             # Recalcula valores dos campos principais após adicionar todos os itens
             ordem.valor_servico = ordem.valor_total_servicos
@@ -991,40 +1110,87 @@ def editar(id):
                 print('Erro ao processar parcelas:', e)
             
             # Processa arquivos anexados
-            if 'anexos' in request.files:
-                files = request.files.getlist('anexos')
-                for file in files:
+            print(f"🔍 DEBUG ANEXOS EDITAR: Verificando anexos em request.files...")
+            print(f"🔍 DEBUG ANEXOS EDITAR: request.files keys: {list(request.files.keys())}")
+            print(f"🔍 DEBUG ANEXOS EDITAR: request.form keys: {list(request.form.keys())}")
+            print(f"🔍 DEBUG ANEXOS EDITAR: Tem campo 'anexos'? {'anexos' in request.files}")
+            print(f"🔍 DEBUG ANEXOS EDITAR: Tem campo 'anexos[]'? {'anexos[]' in request.files}")
+            print(f"🔍 DEBUG ANEXOS EDITAR: Valor de request.files.get('anexos'): {request.files.get('anexos')}")
+            print(f"🔍 DEBUG ANEXOS EDITAR: Valor de request.files.get('anexos[]'): {request.files.get('anexos[]')}")
+
+            # Atualiza preferência: incluir imagens no PDF
+            ordem.incluir_imagens_relatorio = True if request.form.get('incluir_imagens_relatorio') in ('1', 'on', 'true') else False
+            
+            # Verifica tanto 'anexos' quanto 'anexos[]'
+            if 'anexos' in request.files or 'anexos[]' in request.files:
+                # Pega os arquivos usando o nome correto
+                if 'anexos' in request.files:
+                    files = request.files.getlist('anexos')
+                    campo_usado = 'anexos'
+                else:
+                    files = request.files.getlist('anexos[]')
+                    campo_usado = 'anexos[]'
+                    
+                print(f"🔍 DEBUG ANEXOS EDITAR: {len(files)} arquivos encontrados usando campo '{campo_usado}'")
+                
+                for i, file in enumerate(files):
+                    print(f"🔍 DEBUG ANEXOS EDITAR: Arquivo {i+1}: filename='{file.filename}', content_type='{file.content_type}', size={get_file_size(file) if file else 0}")
+                    
                     if file and file.filename and allowed_file(file.filename):
                         try:
+                            print(f"🔍 DEBUG ANEXOS EDITAR: Processando arquivo válido: {file.filename}")
+                            
                             # Verifica tamanho
-                            if get_file_size(file) > MAX_FILE_SIZE:
+                            file_size = get_file_size(file)
+                            print(f"🔍 DEBUG ANEXOS EDITAR: Tamanho do arquivo: {file_size} bytes")
+                            
+                            if file_size > MAX_FILE_SIZE:
                                 flash(f'Arquivo {file.filename} é muito grande (máximo 16MB)', 'warning')
+                                print(f"❌ DEBUG ANEXOS EDITAR: Arquivo muito grande: {file.filename}")
                                 continue
                                 
                             # Gera nome único
                             filename = generate_unique_filename(file.filename)
                             filepath = os.path.join(UPLOAD_FOLDER, filename)
+                            print(f"🔍 DEBUG ANEXOS EDITAR: Salvando em: {filepath}")
                             
                             # Cria diretório se não existe
                             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
                             
                             # Salva arquivo
                             file.save(filepath)
+                            print(f"✅ DEBUG ANEXOS EDITAR: Arquivo salvo fisicamente: {filepath}")
+                            
+                            # Detecta tipo do arquivo
+                            content_type = file.content_type or 'application/octet-stream'
+                            tipo_arquivo = 'image' if content_type.startswith('image/') else 'document'
+                            print(f"🔍 DEBUG ANEXOS EDITAR: Tipo detectado: {tipo_arquivo}, MIME: {content_type}")
                             
                             # Cria registro no banco
                             anexo = OrdemServicoAnexo(
                                 ordem_servico_id=ordem.id,
                                 nome_original=file.filename,
                                 nome_arquivo=filename,
-                                tipo_arquivo=file.content_type or 'application/octet-stream',
-                                tamanho=get_file_size(file)
+                                tipo_arquivo=tipo_arquivo,
+                                mime_type=content_type,
+                                tamanho=file_size,
+                                caminho=filepath
                             )
                             db.session.add(anexo)
+                            print(f"✅ DEBUG ANEXOS EDITAR: Registro criado no banco: {anexo}")
                             
                         except Exception as e:
+                            print(f"❌ DEBUG ANEXOS EDITAR: Erro ao processar {file.filename}: {str(e)}")
                             flash(f'Erro ao salvar arquivo {file.filename}: {str(e)}', 'warning')
                     elif file and file.filename and not allowed_file(file.filename):
+                        print(f"❌ DEBUG ANEXOS EDITAR: Tipo não permitido: {file.filename}")
                         flash(f'Tipo de arquivo não permitido: {file.filename}', 'warning')
+                    elif file and file.filename == '':
+                        print(f"🔍 DEBUG ANEXOS EDITAR: Arquivo vazio ignorado")
+                    else:
+                        print(f"🔍 DEBUG ANEXOS EDITAR: Arquivo inválido: file={file}, filename='{file.filename if file else None}'")
+            else:
+                print("🔍 DEBUG ANEXOS EDITAR: Nenhum campo 'anexos' encontrado nos arquivos")
             
             # Recalcula valor total novamente antes do commit final
             ordem.valor_total = ordem.valor_total_calculado
@@ -1033,6 +1199,16 @@ def editar(id):
             try:
                 db.session.commit()
                 print(f"🏁 DEBUG: Ordem de Serviço salva com sucesso! Total final: R$ {ordem.valor_total}")
+                
+                # Integração financeira - gerar/atualizar lançamento
+                from app.financeiro.financeiro_utils import gerar_lancamento_ordem_servico
+                try:
+                    gerar_lancamento_ordem_servico(ordem)
+                    print(f"💰 DEBUG: Lançamento financeiro atualizado para OS {ordem.numero}")
+                except Exception as fin_err:
+                    print(f"⚠️ DEBUG: Erro na integração financeira: {fin_err}")
+                    # Não falha a operação principal
+                    
             except Exception as commit_err:
                 try:
                     db.session.rollback()
@@ -1040,31 +1216,28 @@ def editar(id):
                     pass
                 raise
 
-            flash(f'✅ Ordem de Serviço {ordem.numero} atualizada com sucesso!', 'success')
+            flash(f'Ordem de Serviço {ordem.numero} atualizada com sucesso!', 'success')
             return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
             
         except Exception as e:
             flash(f'Erro ao atualizar ordem de serviço: {str(e)}', 'error')
-            clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+            # Busca clientes com função robusta
+            db.session.rollback()
+            clientes = buscar_clientes_ativos()
             return render_template('os/form.html', ordem=ordem, clientes=clientes, today=date.today())
     
     # GET - exibe formulário preenchido
-    print("🔍 DEBUG: Buscando clientes...")
-    try:
-        clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
-        print(f"✅ DEBUG: {len(clientes)} clientes encontrados")
-    except Exception as e:
-        print(f"❌ DEBUG: Erro ao buscar clientes: {e}")
-        clientes = []
+    print("DEBUG: Buscando clientes...")
+    clientes = buscar_clientes_ativos()
     
-    print("🔍 DEBUG: Renderizando template...")
+    print("DEBUG: Renderizando template...")
     try:
         return render_template('os/form.html', 
                              ordem=ordem, 
                              clientes=clientes or [], 
                              today=date.today())
     except Exception as e:
-        print(f"❌ DEBUG: Erro ao renderizar template: {e}")
+        print(f" DEBUG: Erro ao renderizar template: {e}")
         import traceback
         traceback.print_exc()
         raise
@@ -1089,6 +1262,16 @@ def excluir(id):
     try:
         # Soft delete
         ordem.delete()
+        
+        # Integração financeira - remover/cancelar lançamento
+        from app.financeiro.financeiro_utils import cancelar_lancamento_ordem_servico
+        try:
+            cancelar_lancamento_ordem_servico(ordem)
+            print(f"💰 DEBUG: Lançamento financeiro cancelado para OS {ordem.numero}")
+        except Exception as fin_err:
+            print(f"⚠️ DEBUG: Erro ao cancelar lançamento financeiro: {fin_err}")
+            # Não falha a operação principal
+            
         flash(f'Ordem de Serviço "{ordem.numero}" excluída com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao excluir ordem de serviço: {str(e)}', 'error')
@@ -1286,7 +1469,7 @@ def listar_anexos(id):
         id: ID da ordem de serviço
     """
     ordem = OrdemServico.query.get_or_404(id)
-    anexos = OrdemServicoAnexo.query.filter_by(ordem_servico_id=id).all()
+    anexos = OrdemServicoAnexo.query.filter_by(ordem_servico_id=id).order_by(OrdemServicoAnexo.data_upload, OrdemServicoAnexo.id).all()
     
     resultado = []
     for anexo in anexos:
@@ -1321,6 +1504,130 @@ def download_anexo(anexo_id):
         flash('Arquivo não encontrado!', 'error')
         return redirect(url_for('ordem_servico.visualizar', id=anexo.ordem_servico_id))
 
+@ordem_servico_bp.route('/api/test')
+def api_test():
+    """Rota de teste básico."""
+    return {'message': 'API funcionando!', 'success': True}
+
+@ordem_servico_bp.route('/api/clientes')
+def api_clientes():
+    """API para buscar clientes ativos (para atualização dinâmica do select)."""
+    try:
+        print(" API /api/clientes chamada!")
+        
+        # Usa a função robusta para buscar clientes
+        clientes = buscar_clientes_ativos()
+        
+        # Debug: listar primeiros clientes
+        cliente11_encontrado = False
+        for i, cliente in enumerate(clientes[:5]):
+            print(f"  Cliente {i+1}: ID={cliente.id}, Nome='{cliente.nome}', Ativo={cliente.ativo}")
+            if cliente.id == 11:
+                cliente11_encontrado = True
+        
+        # Verificar especificamente Cliente 11
+        if not cliente11_encontrado:
+            c11_direto = Cliente.query.filter_by(id=11).first()
+            if c11_direto:
+                print(f"  ⚠️ Cliente 11 existe mas não aparece na lista: Nome='{c11_direto.nome}', Ativo={c11_direto.ativo}")
+            else:
+                print(f"   Cliente 11 não existe no banco")
+        else:
+            print(f"   Cliente 11 encontrado na lista!")
+        
+        # Formato para atualização do select
+        clientes_validos = []
+        for c in clientes:
+            if c.nome and c.nome.strip():  # Mesmo filtro do template
+                clientes_validos.append({
+                    'id': c.id,
+                    'nome': c.nome.strip(),
+                    'cpf_cnpj': c.cpf_cnpj or '',
+                    'cidade': c.cidade or ''
+                })
+        
+        resultado = {
+            'success': True,
+            'clientes': clientes_validos,
+            'total': len(clientes_validos),
+            'debug_info': {
+                'total_no_banco': len(clientes),
+                'com_nome_valido': len(clientes_validos),
+                'timestamp': str(dt.now())
+            }
+        }
+        
+        print(f" Retornando {resultado['total']} clientes válidos de {len(clientes)} no banco")
+        return jsonify(resultado)
+        
+    except Exception as e:
+        print(f" Erro na API de clientes: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@ordem_servico_bp.route('/api/clientes/test')
+def api_clientes_test():
+    """Rota de teste para debug."""
+    return jsonify({
+        'message': 'API de clientes funcionando!',
+        'timestamp': str(dt.now()),
+        'blueprint': 'ordem_servico',
+        'success': True
+    })
+
+@ordem_servico_bp.route('/api/clientes/refresh')
+def api_clientes_refresh():
+    """API para forçar refresh dos clientes com função robusta."""
+    try:
+        print(" API /api/clientes/refresh chamada - REFRESH FORÇADO!")
+        
+        # Usar função robusta para buscar clientes
+        clientes = buscar_clientes_ativos()
+        
+        # Debug: listar TODOS os clientes
+        print("LISTA COMPLETA DE CLIENTES:")
+        for i, cliente in enumerate(clientes):
+            print(f"  📝 Cliente {i+1}: ID={cliente.id}, Nome='{cliente.nome}', Ativo={cliente.ativo}")
+        
+        # Aplicar mesmo filtro do template
+        clientes_validos = []
+        
+        for c in clientes:
+            if c.nome and c.nome.strip():  # Mesmo filtro do template
+                clientes_validos.append({
+                    'id': c.id,
+                    'nome': c.nome.strip(),
+                    'cpf_cnpj': c.cpf_cnpj or '',
+                    'cidade': c.cidade or ''
+                })
+            else:
+                print(f"⚠️ Cliente ignorado: ID={c.id}, Nome='{c.nome or 'SEM_NOME'}'")
+        
+        print(f" CLIENTES VÁLIDOS: {len(clientes_validos)}")
+        
+        resultado = {
+            'success': True,
+            'clientes': clientes_validos,
+            'total': len(clientes_validos),
+            'debug_info': {
+                'total_no_banco': len(clientes),
+                'com_nome_valido': len(clientes_validos),
+                'timestamp': str(dt.now()),
+                'refresh': True
+            },
+            'message': f'Lista atualizada! {len(clientes_validos)} clientes encontrados.'
+        }
+        
+        print(f" RETORNANDO: {len(clientes_validos)} clientes válidos de {len(clientes)} totais")
+        return jsonify(resultado)
+        
+    except Exception as e:
+        print(f" Erro na API de clientes REFRESH: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @ordem_servico_bp.route('/<int:id>/relatorio-pdf')
 def gerar_relatorio_pdf(id):
     """
@@ -1328,39 +1635,78 @@ def gerar_relatorio_pdf(id):
     
     Args:
         id: ID da ordem de serviço
+        com_imagens: parâmetro opcional para forçar inclusão/exclusão de imagens (0 ou 1)
         
     Returns:
         PDF file: Relatório da ordem de serviço em PDF
     """
+    print(f"DEBUG PDF: Iniciando geração de PDF para OS ID: {id}")
+    
     try:
         # Busca a ordem de serviço
         ordem = OrdemServico.query.get_or_404(id)
+        print(f" DEBUG PDF: Ordem encontrada: {ordem.numero}")
+        
+        # Verifica se deve incluir imagens (parâmetro da URL ou configuração da OS)
+        com_imagens_param = request.args.get('com_imagens')
+        if com_imagens_param is not None:
+            # Parâmetro da URL tem prioridade
+            incluir_imagens = com_imagens_param == '1'
+            print(f"DEBUG PDF: Incluir imagens (via URL): {incluir_imagens}")
+        else:
+            # Usa configuração salva na OS
+            incluir_imagens = ordem.incluir_imagens_relatorio if hasattr(ordem, 'incluir_imagens_relatorio') else False
+            print(f"DEBUG PDF: Incluir imagens (via config OS): {incluir_imagens}")
+        
+        # Temporariamente define o valor para renderização
+        ordem_incluir_imagens_original = getattr(ordem, 'incluir_imagens_relatorio', False)
+        ordem.incluir_imagens_relatorio = incluir_imagens
         
         # Calcula totais se necessário
         if not ordem.valor_servico:
             total_servicos = sum(item.valor_total for item in ordem.servicos) if hasattr(ordem, 'servicos') and ordem.servicos else 0
-            ordem.valor_servico = total_servicos
+            ordem.valor_servico = Decimal(str(total_servicos))
             
         if not ordem.valor_pecas:
-            total_produtos = sum(produto.valor_total for produto in ordem.produtos) if hasattr(ordem, 'produtos') and ordem.produtos else 0
-            ordem.valor_pecas = total_produtos
+            total_produtos = sum(produto.valor_total for produto in ordem.produtos_utilizados) if hasattr(ordem, 'produtos_utilizados') and ordem.produtos_utilizados else 0
+            ordem.valor_pecas = Decimal(str(total_produtos))
+            
+        # Debug dos produtos
+        if hasattr(ordem, 'produtos_utilizados') and ordem.produtos_utilizados:
+            print(f"DEBUG PDF: Produtos encontrados:")
+            for i, produto in enumerate(ordem.produtos_utilizados, 1):
+                print(f"  {i}. {produto.descricao}: Qtd={produto.quantidade} x R${produto.valor_unitario} = R${produto.valor_total}")
+            print(f"DEBUG PDF: Total calculado: R$ {ordem.valor_pecas}")
+        else:
+            print(f"⚠️ DEBUG PDF: Nenhum produto encontrado!")
             
         if not ordem.valor_total:
-            ordem.valor_total = (ordem.valor_servico or 0) + (ordem.valor_pecas or 0) - (ordem.valor_desconto or 0)
+            valor_servico = Decimal(str(ordem.valor_servico or 0))
+            valor_pecas = Decimal(str(ordem.valor_pecas or 0))
+            valor_desconto = Decimal(str(ordem.valor_desconto or 0))
+            ordem.valor_total = valor_servico + valor_pecas - valor_desconto
         
+        print(f"DEBUG PDF: Importando configurações...")
         # Importar configurações da empresa
         from app.configuracao.configuracao_utils import get_config
         config = get_config()
         
-        # Renderiza o template HTML
+        print(f"DEBUG PDF: Renderizando template HTML...")
+        print(f"🔍 TEMPLATE SENDO USADO: 'os/pdf_ordem_servico.html'")
+        print(f"🔍 CAMINHO ABSOLUTO: {os.path.abspath(os.path.join('app', 'ordem_servico', 'templates', 'os', 'pdf_ordem_servico.html'))}")
+        
+        # Renderiza o template HTML com timestamp para evitar cache
         html_content = render_template(
             'os/pdf_ordem_servico.html',
             ordem=ordem,
-            now=datetime.now,
+            now=dt.now,
             logo_base64=get_logo_base64(),  # Função para obter logo em base64
             config=config,  # Adicionar configurações
-            timedelta=timedelta  # Para cálculo de garantia
+            timedelta=timedelta,  # Para cálculo de garantia
+            timestamp=dt.now().isoformat()  # Timestamp único para evitar cache
         )
+        print(f"🔍 PRIMEIROS 200 CHARS DO HTML: {html_content[:200]}...")
+        print(f" DEBUG PDF: Template renderizado com sucesso")
         
         # Configurações do WeasyPrint
         base_url = request.url_root
@@ -1378,45 +1724,78 @@ def gerar_relatorio_pdf(id):
         
         # Gera o PDF
         try:
+            print(f"DEBUG PDF: Tentando importar weasyprint...")
             import weasyprint
+            print(f" DEBUG PDF: WeasyPrint importado com sucesso")
+            
+            print(f"DEBUG PDF: Gerando arquivo PDF...")
             pdf_file = weasyprint.HTML(
                 string=html_content, 
                 base_url=base_url
             ).write_pdf(
                 stylesheets=[weasyprint.CSS(string=css_string)]
             )
+            print(f" DEBUG PDF: PDF gerado com sucesso, tamanho: {len(pdf_file)} bytes")
+            
+            # Gera o nome do arquivo baseado no número da OS e data
+            data_atual = dt.now().strftime('%d%m%y')
+            numero_os = ordem.numero.replace('-', '') if ordem.numero else f'OS{ordem.id}'
+            nome_arquivo = f"{numero_os}-{data_atual}.pdf"
+            print(f"DEBUG PDF: Nome do arquivo: {nome_arquivo}")
             
             # Cria resposta HTTP
             response = make_response(pdf_file)
             response.headers['Content-Type'] = 'application/pdf'
-            # Headers anti-cache para forçar refresh
-            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response.headers['Content-Disposition'] = f'inline; filename="{nome_arquivo}"'
+            # Headers anti-cache FORTES para forçar refresh total
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
             response.headers['Pragma'] = 'no-cache'
-            response.headers['Expires'] = '0'
-            # Removendo Content-Disposition para forçar abertura inline no navegador
+            response.headers['Expires'] = '-1'
+            response.headers['Last-Modified'] = dt.now().strftime('%a, %d %b %Y %H:%M:%S GMT')
+            response.headers['ETag'] = f'"{hash(dt.now().isoformat())}"'
             
+            print(f" DEBUG PDF: Resposta HTTP criada com sucesso")
             return response
             
-        except ImportError:
+        except ImportError as import_error:
             # Se WeasyPrint não estiver disponível, retorna HTML
+            print(f" DEBUG PDF: Erro de importação do WeasyPrint: {str(import_error)}")
             flash('WeasyPrint não disponível. Exibindo relatório em HTML.', 'warning')
-            return render_template(
-                'os/relatorios/relatorio_pdf.html',
+            response = make_response(render_template(
+                'os/relatorios/relatorio_limpo.html',
                 ordem=ordem,
-                now=datetime.now(),
-                config=config
-            )
+                now=dt.now,
+                config=config,
+                timestamp=dt.now().isoformat()
+            ))
+            # Headers anti-cache para HTML também
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '-1'
+            return response
         
         except Exception as pdf_error:
             # Se houver erro na geração do PDF, retorna HTML
+            print(f" DEBUG PDF: Erro na geração do PDF: {str(pdf_error)}")
+            print(f" DEBUG PDF: Tipo do erro: {type(pdf_error)}")
             flash(f'Erro na geração PDF: {str(pdf_error)}. Exibindo relatório em HTML.', 'warning')
-            return render_template(
-                'os/relatorios/relatorio_pdf.html',
+            response = make_response(render_template(
+                'os/relatorios/relatorio_limpo.html',
                 ordem=ordem,
-                now=datetime.now(),
-                config=config
-            )
+                now=dt.now,
+                config=config,
+                timestamp=dt.now().isoformat()
+            ))
+            # Headers anti-cache para HTML também
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '-1'
+            return response
         
     except Exception as e:
+        print(f" DEBUG PDF: Erro geral na geração de PDF: {str(e)}")
+        print(f" DEBUG PDF: Tipo do erro geral: {type(e)}")
+        import traceback
+        print(f" DEBUG PDF: Stack trace: {traceback.format_exc()}")
         flash(f'Erro ao gerar relatório PDF: {str(e)}', 'error')
         return redirect(url_for('ordem_servico.visualizar', id=id))

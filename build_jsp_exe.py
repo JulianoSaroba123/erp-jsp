@@ -23,7 +23,7 @@ def create_icon():
     icon_path = "jsp_icon.ico"
     
     if not os.path.exists(icon_path):
-        print("📦 Criando ícone padrão...")
+        print(" Criando ícone padrão...")
         # Usar um ícone do Windows padrão como fallback
         system_icon = r"C:\Windows\System32\imageres.dll,1"
         return None  # PyInstaller usará ícone padrão
@@ -71,15 +71,15 @@ def get_data_files():
 
 def build_executable():
     """Constrói o executável usando PyInstaller"""
-    print("🚀 INICIANDO BUILD DO EXECUTÁVEL JSP SISTEMA")
+    print(" INICIANDO BUILD DO EXECUTÁVEL JSP SISTEMA")
     print("=" * 50)
     
     # Verificar se PyInstaller está instalado
     try:
         import PyInstaller
-        print("✅ PyInstaller encontrado")
+        print(" PyInstaller encontrado")
     except ImportError:
-        print("❌ PyInstaller não encontrado. Instalando...")
+        print(" PyInstaller não encontrado. Instalando...")
         subprocess.run([sys.executable, '-m', 'pip', 'install', 'pyinstaller'])
     
     # Limpar builds anteriores
@@ -116,20 +116,20 @@ def build_executable():
     cmd.append(script_name)
     
     print("🔨 Construindo executável...")
-    print(f"📋 Comando: {' '.join(cmd)}")
+    print(f" Comando: {' '.join(cmd)}")
     
     try:
         # Executar PyInstaller
         result = subprocess.run(cmd, capture_output=True, text=True)
         
         if result.returncode == 0:
-            print("✅ Build concluído com sucesso!")
+            print(" Build concluído com sucesso!")
             
             # Verificar se executável foi criado
             exe_path = f"dist/{exe_name}.exe"
             if os.path.exists(exe_path):
                 size = os.path.getsize(exe_path) / (1024 * 1024)  # MB
-                print(f"📦 Executável criado: {exe_path}")
+                print(f" Executável criado: {exe_path}")
                 print(f"📏 Tamanho: {size:.1f} MB")
                 
                 # Criar atalho na área de trabalho
@@ -137,15 +137,15 @@ def build_executable():
                 
                 return True
             else:
-                print("❌ Executável não foi criado")
+                print(" Executável não foi criado")
                 return False
         else:
-            print("❌ Erro no build:")
+            print(" Erro no build:")
             print(result.stderr)
             return False
             
     except Exception as e:
-        print(f"❌ Erro durante build: {e}")
+        print(f" Erro durante build: {e}")
         return False
 
 def create_desktop_shortcut(exe_path, exe_name):
@@ -164,7 +164,7 @@ def create_desktop_shortcut(exe_path, exe_name):
         shortcut.IconLocation = os.path.abspath(exe_path)
         shortcut.save()
         
-        print(f"🔗 Atalho criado na área de trabalho: {exe_name}.lnk")
+        print(f" Atalho criado na área de trabalho: {exe_name}.lnk")
         
     except ImportError:
         print("⚠️  Para criar atalho, instale: pip install pywin32 winshell")
@@ -179,12 +179,12 @@ def install_dependencies():
         'winshell'
     ]
     
-    print("📦 Verificando dependências de build...")
+    print(" Verificando dependências de build...")
     
     for dep in dependencies:
         try:
             __import__(dep.replace('-', '_'))
-            print(f"✅ {dep} já instalado")
+            print(f" {dep} já instalado")
         except ImportError:
             print(f"📥 Instalando {dep}...")
             subprocess.run([sys.executable, '-m', 'pip', 'install', dep])
@@ -196,7 +196,7 @@ def main():
     
     # Verificar se estamos no diretório correto
     if not os.path.exists('jsp_launcher.py'):
-        print("❌ jsp_launcher.py não encontrado!")
+        print(" jsp_launcher.py não encontrado!")
         print("Execute este script no diretório raiz do projeto")
         return
     
@@ -205,15 +205,15 @@ def main():
     
     # Construir executável
     if build_executable():
-        print("\n🎉 SUCESSO! Executável criado com sucesso!")
+        print("\n SUCESSO! Executável criado com sucesso!")
         print("📍 Localização: dist/JSP_Sistema.exe")
         print("🖱️  Procure pelo atalho na área de trabalho")
-        print("\n💡 Para usar:")
+        print("\n Para usar:")
         print("   1. Clique duas vezes no JSP_Sistema.exe")
         print("   2. Aguarde o servidor iniciar")
         print("   3. O navegador abrirá automaticamente")
     else:
-        print("\n❌ Falha no build. Verifique os erros acima.")
+        print("\n Falha no build. Verifique os erros acima.")
 
 if __name__ == '__main__':
     main()

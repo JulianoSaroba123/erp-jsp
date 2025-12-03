@@ -24,7 +24,7 @@ LOGIN_HTML = """
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header text-center">
-                        <h3>🚀 ERP JSP Sistema</h3>
+                        <h3> ERP JSP Sistema</h3>
                     </div>
                     <div class="card-body">
                         {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
@@ -61,13 +61,13 @@ DASHBOARD_HTML = """
 <body>
     <nav class="navbar navbar-dark bg-dark">
         <div class="container-fluid">
-            <span class="navbar-brand">🚀 ERP JSP - Dashboard</span>
+            <span class="navbar-brand"> ERP JSP - Dashboard</span>
             <a href="/logout" class="btn btn-outline-light">Sair</a>
         </div>
     </nav>
     <div class="container mt-4">
         <div class="alert alert-success">
-            <h4>✅ Sistema ERP JSP Funcionando!</h4>
+            <h4> Sistema ERP JSP Funcionando!</h4>
             <p>Deploy realizado com sucesso no Render!</p>
             <p><strong>Usuário:</strong> {{ usuario }}</p>
         </div>
@@ -147,5 +147,5 @@ def health():
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
-    print(f"🚀 ERP JSP rodando na porta {port}")
+    print(f" ERP JSP rodando na porta {port}")
     app.run(host='0.0.0.0', port=port, debug=False)

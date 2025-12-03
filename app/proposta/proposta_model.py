@@ -39,8 +39,8 @@ class Proposta(BaseModel):
     observacoes = db.Column(db.Text)
     
     # Status da proposta
-    status = db.Column(db.String(20), default='pendente', nullable=False)
-    # Possíveis status: pendente, enviada, aprovada, rejeitada, cancelada
+    status = db.Column(db.String(20), default='rascunho', nullable=False)
+    # Possíveis status: rascunho, enviada, aprovada, rejeitada, cancelada
     
     # Datas
     data_emissao = db.Column(db.Date, default=date.today, nullable=False)
@@ -90,7 +90,7 @@ class Proposta(BaseModel):
     def status_formatado(self):
         """Retorna status formatado para exibição."""
         status_map = {
-            'pendente': 'Pendente',
+            'rascunho': 'Rascunho',
             'enviada': 'Enviada',
             'aprovada': 'Aprovada',
             'rejeitada': 'Rejeitada',
@@ -102,11 +102,11 @@ class Proposta(BaseModel):
     def status_cor(self):
         """Retorna cor do status para exibição."""
         cores = {
-            'pendente': 'warning',
+            'rascunho': 'secondary',
             'enviada': 'info',
             'aprovada': 'success',
             'rejeitada': 'danger',
-            'cancelada': 'secondary'
+            'cancelada': 'warning'
         }
         return cores.get(self.status, 'secondary')
     
@@ -247,6 +247,69 @@ class Proposta(BaseModel):
         self.valor_servicos = self.valor_total_servicos_calculado
         self.valor_total = self.valor_total_calculado
         self.save()
+    
+    def gerar_ordem_servico(self):
+        """
+        Gera uma nova Ordem de Serviço a partir desta proposta aprovada.
+        
+        Returns:
+            OrdemServico: Nova OS criada ou None se não foi possível
+        """
+        if not self.pode_converter:
+            return None
+        
+        from app.ordem_servico.ordem_servico_model import OrdemServico, OrdemServicoItem, OrdemServicoProduto
+        from datetime import timedelta
+        
+        # Criar nova OS
+        nova_os = OrdemServico(
+            proposta_id=self.id,
+            cliente_id=self.cliente_id,
+            titulo=self.titulo,
+            descricao=self.descricao,
+            observacoes=f"OS gerada automaticamente da Proposta {self.codigo}",
+            status='pendente',
+            prioridade=self.prioridade or 'normal',
+            tecnico_responsavel=self.vendedor,
+            valor_total=float(self.valor_total or 0),
+            data_prevista=date.today() + timedelta(days=7),  # 7 dias para execução
+            prazo_garantia=90  # 90 dias de garantia padrão
+        )
+        
+        # Salvar a OS primeiro para ter o ID
+        nova_os.save()
+        
+        # Transferir produtos
+        for produto in self.itens_produto:
+            if produto.ativo:
+                os_produto = OrdemServicoProduto(
+                    ordem_servico_id=nova_os.id,
+                    produto_id=produto.produto_id,
+                    descricao=produto.descricao,
+                    quantidade=produto.quantidade,
+                    valor_unitario=produto.valor_unitario,
+                    valor_total=produto.valor_total
+                )
+                os_produto.save()
+        
+        # Transferir serviços
+        for servico in self.itens_servico:
+            if servico.ativo:
+                os_servico = OrdemServicoItem(
+                    ordem_servico_id=nova_os.id,
+                    descricao=servico.descricao,
+                    tipo_servico=servico.tipo_servico or 'fechado',
+                    quantidade=servico.quantidade,
+                    valor_unitario=servico.valor_unitario,
+                    valor_total=servico.valor_total
+                )
+                os_servico.save()
+        
+        # Atualizar valores da OS
+        nova_os.atualizar_valores_automaticos()
+        nova_os.save()
+        
+        return nova_os
 
 
 class PropostaProduto(BaseModel):

@@ -264,7 +264,8 @@
                                        id="markup" 
                                        name="markup" 
                                        value="{{ '%.2f'|format(produto.markup|float) if produto.markup else '' }}"
-                                       placeholder="0,00">
+                                       placeholder="0,00"
+                                       required>
                                 <span class="input-group-text">%</span>
                             </div>
                             <small class="text-muted">Percentual sobre o custo</small>
@@ -301,11 +302,11 @@
                         
                         <div class="col-12 mt-3">
                             <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-outline-info btn-sm" id="btn-calcular-por-markup">
+                                <button type="button" class="btn btn-outline-info btn-sm" id="btn-calcular-preco-markup">
                                     <i class="fas fa-calculator me-1"></i>
                                     Calcular Preço por Markup
                                 </button>
-                                <button type="button" class="btn btn-outline-warning btn-sm" id="btn-calcular-markup">
+                                <button type="button" class="btn btn-outline-warning btn-sm" id="btn-calcular-markup-preco">
                                     <i class="fas fa-percent me-1"></i>
                                     Calcular Markup por Preço
                                 </button>
@@ -417,82 +418,147 @@
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const precoCustoInput = document.getElementById('preco_custo');
-        const precoVendaInput = document.getElementById('preco_venda');
-        const margemLucroInput = document.getElementById('margem_lucro');
-        const controlaEstoqueCheck = document.getElementById('controla_estoque');
-        const camposEstoque = document.querySelectorAll('#campos-estoque, #campos-estoque-min, #campos-estoque-max');
+console.log('🚀 JavaScript do produto carregando...');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 DOM carregado, iniciando configuração...');
+    
+    // Elementos
+    const precoCustoInput = document.getElementById('preco_custo');
+    const precoVendaInput = document.getElementById('preco_venda');
+    const markupInput = document.getElementById('markup');
+    const margemLucroInput = document.getElementById('margem_lucro');
+    const controlaEstoqueCheck = document.getElementById('controla_estoque');
+    
+    console.log('🔍 Elementos encontrados:', {
+        custo: !!precoCustoInput,
+        venda: !!precoVendaInput,
+        markup: !!markupInput,
+        margem: !!margemLucroInput,
+        estoque: !!controlaEstoqueCheck
+    });
+    
+    // Função para formatar número (vírgula para ponto)
+    function parseNumber(value) {
+        return parseFloat(value.replace(',', '.')) || 0;
+    }
+    
+    // Função para formatar para exibição (ponto para vírgula)
+    function formatDisplay(value) {
+        return value.toFixed(2).replace('.', ',');
+    }
+    
+    // Função principal de cálculo
+    function calcularPreco() {
+        const custo = parseNumber(precoCustoInput.value);
+        const markup = parseNumber(markupInput.value);
         
-        // Formatação de preços
-        function formatarPreco(valor) {
-            // Remove caracteres não numéricos exceto vírgula e ponto
-            valor = valor.replace(/[^\d,\.]/g, '');
-            // Substitui vírgula por ponto para cálculos
-            valor = valor.replace(',', '.');
-            return valor;
-        }
+        console.log('💰 Calculando - Custo:', custo, 'Markup:', markup);
         
-        function exibirPrecoFormatado(input, valor) {
-            if (valor && !isNaN(valor)) {
-                input.value = parseFloat(valor).toFixed(2).replace('.', ',');
-            }
-        }
-        
-        function calcularMargemLucro() {
-            const custo = parseFloat(formatarPreco(precoCustoInput.value)) || 0;
-            const venda = parseFloat(formatarPreco(precoVendaInput.value)) || 0;
+        if (custo > 0 && markup > 0) {
+            const venda = custo * (1 + markup / 100);
+            const margem = ((venda - custo) / custo) * 100;
             
-            if (custo > 0 && venda > 0) {
-                const margem = ((venda - custo) / custo) * 100;
-                margemLucroInput.value = margem.toFixed(2).replace('.', ',');
-            } else {
-                margemLucroInput.value = '0,00';
-            }
+            precoVendaInput.value = formatDisplay(venda);
+            margemLucroInput.value = formatDisplay(margem);
+            
+            console.log('✅ Resultado - Venda:', venda, 'Margem:', margem);
+            console.log('📝 Campos atualizados - Venda:', precoVendaInput.value, 'Margem:', margemLucroInput.value);
+        } else {
+            console.log('⚠️ Valores insuficientes para cálculo');
         }
+    }
+    
+    // Função para calcular markup reverso
+    function calcularMarkup() {
+        const custo = parseNumber(precoCustoInput.value);
+        const venda = parseNumber(precoVendaInput.value);
         
-        function toggleEstoque() {
-            const controla = controlaEstoqueCheck.checked;
-            camposEstoque.forEach(campo => {
-                const inputs = campo.querySelectorAll('input');
-                inputs.forEach(input => {
-                    input.disabled = !controla;
-                    if (!controla) {
-                        input.value = '0';
-                    }
-                });
-            });
+        console.log('🔄 Calculando markup reverso - Custo:', custo, 'Venda:', venda);
+        
+        if (custo > 0 && venda > 0) {
+            const markup = ((venda - custo) / custo) * 100;
+            const margem = markup; // Markup e margem são iguais neste contexto
+            
+            markupInput.value = formatDisplay(markup);
+            margemLucroInput.value = formatDisplay(margem);
+            
+            console.log('✅ Markup calculado:', markup);
+        } else {
+            console.log('⚠️ Valores insuficientes para calcular markup');
         }
+    }
+    
+    // Event listeners com logs
+    if (markupInput) {
+        console.log('🎯 Configurando listeners do markup...');
         
-        // Event listeners para preços
-        precoCustoInput.addEventListener('input', function() {
-            this.value = formatarPreco(this.value);
+        markupInput.addEventListener('input', function() {
+            console.log('⌨️ Markup input:', this.value);
+            calcularPreco();
         });
         
-        precoVendaInput.addEventListener('input', function() {
-            this.value = formatarPreco(this.value);
+        markupInput.addEventListener('blur', function() {
+            console.log('👁️ Markup blur:', this.value);
+            calcularPreco();
+        });
+        
+        markupInput.addEventListener('change', function() {
+            console.log('🔄 Markup change:', this.value);
+            calcularPreco();
+        });
+    }
+    
+    if (precoCustoInput) {
+        console.log('🎯 Configurando listeners do custo...');
+        
+        precoCustoInput.addEventListener('input', function() {
+            console.log('⌨️ Custo input:', this.value);
+            if (markupInput.value) {
+                calcularPreco();
+            }
         });
         
         precoCustoInput.addEventListener('blur', function() {
-            exibirPrecoFormatado(this, this.value);
-            calcularMargemLucro();
+            console.log('👁️ Custo blur:', this.value);
+            if (markupInput.value) {
+                calcularPreco();
+            }
         });
-        
+    }
+    
+    if (precoVendaInput) {
         precoVendaInput.addEventListener('blur', function() {
-            exibirPrecoFormatado(this, this.value);
-            calcularMargemLucro();
+            console.log('👁️ Venda blur:', this.value);
+            calcularMarkup();
         });
+    }
+    
+    // Controle de estoque
+    function toggleEstoque() {
+        const controla = controlaEstoqueCheck.checked;
+        const camposEstoque = document.querySelectorAll('#campos-estoque input, #campos-estoque-min input, #campos-estoque-max input');
         
-        // Event listener para controle de estoque
+        console.log('📦 Toggle estoque:', controla);
+        
+        camposEstoque.forEach(input => {
+            input.disabled = !controla;
+            if (!controla) input.value = '0';
+        });
+    }
+    
+    if (controlaEstoqueCheck) {
         controlaEstoqueCheck.addEventListener('change', toggleEstoque);
-        
-        // Gerar código automaticamente se não foi informado
-        document.getElementById('nome').addEventListener('blur', function() {
+    }
+    
+    // Geração automática de código
+    const nomeInput = document.getElementById('nome');
+    if (nomeInput) {
+        nomeInput.addEventListener('blur', function() {
             const codigoInput = document.getElementById('codigo');
-            if (!codigoInput.value.trim()) {
+            if (codigoInput && !codigoInput.value.trim()) {
                 const nome = this.value.trim();
                 if (nome) {
-                    // Gera código baseado no nome
                     let codigo = nome.toUpperCase()
                         .replace(/[ÁÀÂÃ]/g, 'A')
                         .replace(/[ÉÈÊẼ]/g, 'E')
@@ -503,61 +569,68 @@
                         .substring(0, 10);
                     
                     codigoInput.value = codigo;
+                    console.log('🏷️ Código gerado:', codigo);
                 }
             }
         });
-        
-        // Máscara para código de barras (apenas números)
-        document.getElementById('codigo_barras').addEventListener('input', function() {
+    }
+    
+    // Máscaras
+    const codigoBarrasInput = document.getElementById('codigo_barras');
+    if (codigoBarrasInput) {
+        codigoBarrasInput.addEventListener('input', function() {
             this.value = this.value.replace(/\D/g, '');
         });
-        
-        // Máscara para peso (apenas números e ponto)
-        document.getElementById('peso').addEventListener('input', function() {
+    }
+    
+    const pesoInput = document.getElementById('peso');
+    if (pesoInput) {
+        pesoInput.addEventListener('input', function() {
             this.value = this.value.replace(/[^\d\.]/g, '');
         });
-        
-        // Função para calcular preço de venda por markup
-        function calcularPrecoPorMarkup() {
-            const precoCusto = parseFloat(precoCustoInput.value.replace(',', '.')) || 0;
-            const markup = parseFloat(document.getElementById('markup').value.replace(',', '.')) || 0;
-            
-            if (precoCusto > 0 && markup > 0) {
-                const precoVenda = precoCusto * (1 + markup / 100);
-                precoVendaInput.value = precoVenda.toFixed(2).replace('.', ',');
-                calcularMargemLucro();
-            }
-        }
-        
-        // Função para calcular markup por preço de venda
-        function calcularMarkupPorPreco() {
-            const precoCusto = parseFloat(precoCustoInput.value.replace(',', '.')) || 0;
-            const precoVenda = parseFloat(precoVendaInput.value.replace(',', '.')) || 0;
-            
-            if (precoCusto > 0 && precoVenda > 0) {
-                const markup = ((precoVenda - precoCusto) / precoCusto) * 100;
-                document.getElementById('markup').value = markup.toFixed(2).replace('.', ',');
-                calcularMargemLucro();
-            }
-        }
-        
-        // Event listeners para os botões de markup
-        document.getElementById('btn-calcular-markup').addEventListener('click', function(e) {
+    }
+    
+    // Botões de cálculo
+    const btnCalcularPreco = document.getElementById('btn-calcular-preco-markup');
+    if (btnCalcularPreco) {
+        btnCalcularPreco.addEventListener('click', function(e) {
             e.preventDefault();
-            calcularPrecoPorMarkup();
+            console.log('🖱️ Botão calcular preço clicado');
+            calcularPreco();
         });
-        
-        document.getElementById('btn-calcular-por-preco').addEventListener('click', function(e) {
+    }
+    
+    const btnCalcularMarkup = document.getElementById('btn-calcular-markup-preco');
+    if (btnCalcularMarkup) {
+        btnCalcularMarkup.addEventListener('click', function(e) {
             e.preventDefault();
-            calcularMarkupPorPreco();
+            console.log('🖱️ Botão calcular markup clicado');
+            calcularMarkup();
         });
+    }
+    
+    // Inicialização
+    toggleEstoque();
+    if (nomeInput) nomeInput.focus();
+    
+    // Função global para teste
+    window.calcularPreco = calcularPreco;
+    window.testarCalculo = function() {
+        console.log('🧪 TESTE MANUAL INICIADO');
+        console.log('📊 Valores atuais:');
+        console.log('  - Custo:', precoCustoInput.value);
+        console.log('  - Markup:', markupInput.value);
+        console.log('  - Venda:', precoVendaInput.value);
         
-        // Inicializa
-        toggleEstoque();
-        calcularMargemLucro();
+        calcularPreco();
         
-        // Foco no nome
-        document.getElementById('nome').focus();
-    });
+        console.log('📊 Valores após cálculo:');
+        console.log('  - Venda:', precoVendaInput.value);
+        console.log('  - Margem:', margemLucroInput.value);
+    };
+    
+    console.log('✅ Configuração concluída!');
+    console.log('💡 Para testar, digite no console: window.testarCalculo()');
+});
 </script>
 {% endblock %}

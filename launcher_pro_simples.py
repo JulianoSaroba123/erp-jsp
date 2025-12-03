@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-🚀 ERP JSP Professional Launcher - Versão Simplificada
+ ERP JSP Professional Launcher - Versão Simplificada
 Interface gráfica profissional para iniciar o ERP JSP
 """
 
@@ -26,8 +26,8 @@ def show_console_loading():
     print("██╔══╝░░██║░░██║██║░░╚██╗██╗░░██║░░╚═══██╗██╔═══╝░")
     print("███████╗╚█████╔╝╚██████╔╝╚█████╔╝░██████╔╝██║░░░░░")
     print("╚══════╝░╚════╝░░╚═════╝░░╚════╝░░╚═════╝░╚═╝░░░░░")
-    print("\n⚡ JSP Automação Industrial & Solar ⚡")
-    print("🚀 ERP Sistema Professional v3.0")
+    print("\n JSP Automação Industrial & Solar ")
+    print(" ERP Sistema Professional v3.0")
     print("="*60)
     
 def start_system():
@@ -37,17 +37,17 @@ def start_system():
         
         print("\n🔍 Verificando sistema...")
         if not os.path.exists('app'):
-            print("❌ ERRO: Pasta 'app' não encontrada!")
+            print(" ERRO: Pasta 'app' não encontrada!")
             return False
             
         if not os.path.exists('run.py'):
-            print("❌ ERRO: Arquivo 'run.py' não encontrado!")
+            print(" ERRO: Arquivo 'run.py' não encontrado!")
             return False
             
-        print("✅ Arquivos verificados")
+        print(" Arquivos verificados")
         
-        print("🚀 Iniciando servidor Flask...")
-        print("⏳ Por favor aguarde...")
+        print(" Iniciando servidor Flask...")
+        print(" Por favor aguarde...")
         
         # Iniciar Flask em processo separado
         flask_process = subprocess.Popen(
@@ -57,19 +57,19 @@ def start_system():
             creationflags=0x08000000 if os.name == 'nt' else 0  # CREATE_NO_WINDOW
         )
         
-        print("✅ Processo iniciado")
+        print(" Processo iniciado")
         
         # Aguardar servidor (com animação)
-        print("🌐 Aguardando servidor... ", end="", flush=True)
+        print(" Aguardando servidor... ", end="", flush=True)
         for i in range(15):
             print(".", end="", flush=True)
             time.sleep(1)
             
-        print("\n🎯 Abrindo navegador...")
+        print("\n Abrindo navegador...")
         webbrowser.open('http://127.0.0.1:5001/auth/login')
         
-        print("✅ Sistema iniciado com sucesso!")
-        print("🔗 URL: http://127.0.0.1:5001")
+        print(" Sistema iniciado com sucesso!")
+        print(" URL: http://127.0.0.1:5001")
         print("\n" + "="*60)
         print("⚠️  IMPORTANTE:")
         print("   • Sistema rodando em segundo plano")
@@ -80,7 +80,7 @@ def start_system():
         return flask_process
         
     except Exception as e:
-        print(f"❌ Erro: {e}")
+        print(f" Erro: {e}")
         return False
 
 def main_console():
@@ -98,11 +98,11 @@ def main_console():
         print("\n🛑 Parando sistema...")
         if 'flask_process' in locals() and flask_process:
             flask_process.terminate()
-        print("✅ Sistema parado")
+        print(" Sistema parado")
     except Exception as e:
-        print(f"❌ Erro: {e}")
+        print(f" Erro: {e}")
     finally:
-        input("\n📋 Pressione Enter para sair...")
+        input("\n Pressione Enter para sair...")
 
 def main_gui():
     """Launcher modo gráfico"""
@@ -131,7 +131,7 @@ def main_gui():
             
             title = tk.Label(
                 header,
-                text="⚡ JSP",
+                text=" JSP",
                 font=("Arial", 28, "bold"),
                 fg="#3b82f6",
                 bg="#1a1a1a"
@@ -153,7 +153,7 @@ def main_gui():
             
             self.status_label = tk.Label(
                 status_frame,
-                text="🔄 Pronto para iniciar",
+                text=" Pronto para iniciar",
                 font=("Arial", 10, "bold"),
                 fg="white",
                 bg="#2d3748"
@@ -188,7 +188,7 @@ def main_gui():
             
             self.btn_start = tk.Button(
                 btn_frame,
-                text="🚀 Iniciar Sistema",
+                text=" Iniciar Sistema",
                 font=("Arial", 11, "bold"),
                 bg="#10b981",
                 fg="white",
@@ -213,7 +213,7 @@ def main_gui():
             
             btn_exit = tk.Button(
                 btn_frame,
-                text="❌ Sair",
+                text=" Sair",
                 font=("Arial", 11),
                 bg="#ef4444",
                 fg="white",
@@ -224,8 +224,8 @@ def main_gui():
             btn_exit.pack(side=tk.RIGHT)
             
             # Log inicial
-            self.log("🚀 ERP JSP Professional Launcher v3.0")
-            self.log("⚡ JSP Automação Industrial & Solar")
+            self.log(" ERP JSP Professional Launcher v3.0")
+            self.log(" JSP Automação Industrial & Solar")
             self.log("📅 " + time.strftime("%d/%m/%Y %H:%M:%S"))
             self.log("-" * 50)
             
@@ -250,14 +250,14 @@ def main_gui():
                     
                     if not os.path.exists('app'):
                         raise Exception("Pasta 'app' não encontrada")
-                    self.log("✅ Pasta 'app' encontrada")
+                    self.log(" Pasta 'app' encontrada")
                     
                     if not os.path.exists('run.py'):
                         raise Exception("Arquivo 'run.py' não encontrado")
-                    self.log("✅ Arquivo 'run.py' encontrado")
+                    self.log(" Arquivo 'run.py' encontrado")
                     
-                    self.update_status("🚀 Iniciando servidor...")
-                    self.log("🚀 Iniciando Flask...")
+                    self.update_status(" Iniciando servidor...")
+                    self.log(" Iniciando Flask...")
                     
                     # Iniciar Flask
                     self.flask_process = subprocess.Popen(
@@ -267,18 +267,18 @@ def main_gui():
                         creationflags=0x08000000 if os.name == 'nt' else 0
                     )
                     
-                    self.log("✅ Processo Flask iniciado")
-                    self.update_status("⏳ Aguardando servidor...")
+                    self.log(" Processo Flask iniciado")
+                    self.update_status(" Aguardando servidor...")
                     
                     # Aguardar
                     time.sleep(8)
                     
-                    self.update_status("🌐 Abrindo navegador...")
-                    self.log("🎯 Abrindo http://127.0.0.1:5001")
+                    self.update_status(" Abrindo navegador...")
+                    self.log(" Abrindo http://127.0.0.1:5001")
                     webbrowser.open('http://127.0.0.1:5001/auth/login')
                     
-                    self.update_status("✅ Sistema rodando!")
-                    self.log("🎉 Sistema iniciado com sucesso!")
+                    self.update_status(" Sistema rodando!")
+                    self.log(" Sistema iniciado com sucesso!")
                     
                     # Atualizar botões
                     self.btn_start.config(state=tk.DISABLED)
@@ -286,8 +286,8 @@ def main_gui():
                     self.progress.stop()
                     
                 except Exception as e:
-                    self.log(f"❌ Erro: {e}")
-                    self.update_status("❌ Falha na inicialização")
+                    self.log(f" Erro: {e}")
+                    self.update_status(" Falha na inicialização")
                     self.progress.stop()
                     messagebox.showerror("Erro", f"Falha: {e}")
                     
@@ -303,7 +303,7 @@ def main_gui():
             self.update_status("🛑 Sistema parado")
             self.btn_start.config(state=tk.NORMAL)
             self.btn_stop.config(state=tk.DISABLED)
-            self.log("✅ Sistema parado")
+            self.log(" Sistema parado")
             
         def run(self):
             """Executa o launcher"""
@@ -316,7 +316,7 @@ def main_gui():
 if __name__ == "__main__":
     # Verificar localização
     if not os.path.exists('app') or not os.path.exists('run.py'):
-        print("❌ ERRO: Este arquivo deve estar na pasta raiz do ERP JSP!")
+        print(" ERRO: Este arquivo deve estar na pasta raiz do ERP JSP!")
         print("   Certifique-se de que 'app/' e 'run.py' existem.")
         input("\nPressione Enter para sair...")
         sys.exit(1)

@@ -37,6 +37,15 @@ def listar():
     else:
         clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
     
+    # Debug: verificar se Cliente 11 está na lista
+    cliente11_na_lista = any(c.id == 11 for c in clientes)
+    print(f"DEBUG LISTAGEM: {len(clientes)} clientes encontrados")
+    print(f"DEBUG: Cliente 11 na lista: {cliente11_na_lista}")
+    if not cliente11_na_lista:
+        cliente11_direto = Cliente.query.filter_by(id=11).first()
+        if cliente11_direto:
+            print(f"DEBUG: Cliente 11 existe no banco - Nome: {cliente11_direto.nome}, Ativo: {cliente11_direto.ativo}")
+    
     return render_template('cliente/listar.html', clientes=clientes, busca=busca)
 
 @cliente_bp.route('/novo', methods=['GET', 'POST'])
@@ -44,21 +53,59 @@ def novo():
     """Cria um novo cliente."""
     if request.method == 'POST':
         try:
-            # Validar se CPF/CNPJ já existe
+            # Validar se CPF/CNPJ já existe (incluindo clientes inativos)
             cpf_cnpj = request.form.get('cpf_cnpj')
             if cpf_cnpj:
                 cliente_existente = Cliente.query.filter(
-                    Cliente.cpf_cnpj == cpf_cnpj,
-                    Cliente.ativo == True
+                    Cliente.cpf_cnpj == cpf_cnpj
                 ).first()
                 
                 if cliente_existente:
-                    flash(f'CPF/CNPJ {cpf_cnpj} já está sendo usado pelo cliente: {cliente_existente.nome}', 'error')
-                    return render_template('cliente/form.html')
+                    if not cliente_existente.ativo:
+                        # Cliente inativo encontrado - oferecer reativação
+                        flash(f'Cliente {cliente_existente.nome} com CPF/CNPJ {cpf_cnpj} existe mas está inativo. Reativando...', 'info')
+                        
+                        # Reativar e atualizar dados do cliente existente
+                        cliente_existente.ativo = True
+                        cliente_existente.nome = request.form.get('nome') or cliente_existente.nome
+                        cliente_existente.nome_fantasia = request.form.get('nome_fantasia') or cliente_existente.nome_fantasia
+                        cliente_existente.razao_social = request.form.get('razao_social') or cliente_existente.razao_social
+                        cliente_existente.tipo = request.form.get('tipo') or cliente_existente.tipo
+                        cliente_existente.email = request.form.get('email') or cliente_existente.email
+                        cliente_existente.telefone = request.form.get('telefone') or cliente_existente.telefone
+                        cliente_existente.endereco = request.form.get('endereco') or cliente_existente.endereco
+                        cliente_existente.cidade = request.form.get('cidade') or cliente_existente.cidade
+                        cliente_existente.estado = request.form.get('estado') or cliente_existente.estado
+                        cliente_existente.cep = request.form.get('cep') or cliente_existente.cep
+                        
+                        try:
+                            db.session.commit()
+                            flash(f'Cliente {cliente_existente.nome} reativado e atualizado com sucesso!', 'success')
+                            return redirect(url_for('cliente.listar'))
+                        except Exception as e:
+                            db.session.rollback()
+                            flash(f'Erro ao reativar cliente: {str(e)}', 'error')
+                            return render_template('cliente/form.html')
+                    else:
+                        # Cliente ativo - erro
+                        flash(f'CPF/CNPJ {cpf_cnpj} já está sendo usado pelo cliente ativo: {cliente_existente.nome}', 'error')
+                        return render_template('cliente/form.html')
+            
+            # Validar campos obrigatórios
+            nome = request.form.get('nome', '').strip()
+            tipo = request.form.get('tipo', '')
+            
+            if not nome:
+                flash('Nome é obrigatório!', 'error')
+                return render_template('cliente/form.html')
+                
+            if not tipo:
+                flash('Tipo de cliente (PF/PJ) é obrigatório!', 'error')
+                return render_template('cliente/form.html')
             
             cliente = Cliente(
                 # Dados principais
-                nome=request.form.get('nome'),
+                nome=nome,
                 nome_fantasia=request.form.get('nome_fantasia'),
                 razao_social=request.form.get('razao_social'),
                 tipo=request.form.get('tipo'),
@@ -117,7 +164,10 @@ def novo():
                 
                 # Status
                 status=request.form.get('status', 'ativo'),
-                motivo_bloqueio=request.form.get('motivo_bloqueio') if request.form.get('status') == 'bloqueado' else None
+                motivo_bloqueio=request.form.get('motivo_bloqueio') if request.form.get('status') == 'bloqueado' else None,
+                
+                # Garantir que o cliente esteja ativo
+                ativo=True
             )
             
             db.session.add(cliente)
@@ -140,25 +190,37 @@ def editar(id):
     
     if request.method == 'POST':
         try:
-            # Validar se CPF/CNPJ já existe (exceto o próprio cliente)
+            # Validar se CPF/CNPJ já existe (exceto o próprio cliente, incluindo inativos)
             novo_cpf_cnpj = request.form.get('cpf_cnpj')
             if novo_cpf_cnpj:
                 cliente_existente = Cliente.query.filter(
                     Cliente.cpf_cnpj == novo_cpf_cnpj,
-                    Cliente.id != id,
-                    Cliente.ativo == True
+                    Cliente.id != id
                 ).first()
                 
                 if cliente_existente:
-                    flash(f'CPF/CNPJ {novo_cpf_cnpj} já está sendo usado pelo cliente: {cliente_existente.nome}', 'error')
+                    status_texto = "ativo" if cliente_existente.ativo else "inativo"
+                    flash(f'CPF/CNPJ {novo_cpf_cnpj} já está sendo usado pelo cliente: {cliente_existente.nome} ({status_texto})', 'error')
                     return render_template('cliente/form.html', cliente=cliente)
+            
+            # Validar campos obrigatórios
+            nome = request.form.get('nome', '').strip()
+            tipo = request.form.get('tipo', '')
+            
+            if not nome:
+                flash('Nome é obrigatório!', 'error')
+                return render_template('cliente/form.html', cliente=cliente)
+                
+            if not tipo:
+                flash('Tipo de cliente (PF/PJ) é obrigatório!', 'error')
+                return render_template('cliente/form.html', cliente=cliente)
             
             # Atualiza todos os campos do cliente
             # Dados principais
-            cliente.nome = request.form.get('nome')
+            cliente.nome = nome
             cliente.nome_fantasia = request.form.get('nome_fantasia')
             cliente.razao_social = request.form.get('razao_social')
-            cliente.tipo = request.form.get('tipo')
+            cliente.tipo = tipo
             
             # Documentos
             cliente.cpf_cnpj = novo_cpf_cnpj
@@ -219,8 +281,10 @@ def editar(id):
             cliente.status = request.form.get('status')
             if request.form.get('status') == 'bloqueado':
                 cliente.motivo_bloqueio = request.form.get('motivo_bloqueio')
+                cliente.ativo = False  # Bloquear = inativo
             else:
                 cliente.motivo_bloqueio = None
+                cliente.ativo = True  # Garantir que fique ativo
             
             db.session.commit()
             
@@ -304,7 +368,7 @@ def consultar_cnpj(cnpj):
         
         # Tenta primeira API - ReceitaWS
         try:
-            print(f"🔍 Consultando CNPJ {cnpj_limpo} na ReceitaWS...")
+            print(f"Consultando CNPJ {cnpj_limpo} na ReceitaWS...")
             url = f'https://www.receitaws.com.br/v1/cnpj/{cnpj_limpo}'
             response = requests.get(url, timeout=10)
             
@@ -334,7 +398,7 @@ def consultar_cnpj(cnpj):
                             }
                         }
                     }
-                    print(f"✅ Dados encontrados na ReceitaWS!")
+                    print(f" Dados encontrados na ReceitaWS!")
                     return jsonify(resultado)
         
         except Exception as e:
@@ -342,7 +406,7 @@ def consultar_cnpj(cnpj):
         
         # Se chegou aqui, tenta segunda API - BrasilAPI  
         try:
-            print(f"🔍 Tentando BrasilAPI...")
+            print(f"Tentando BrasilAPI...")
             url = f'https://brasilapi.com.br/api/cnpj/v1/{cnpj_limpo}'
             response = requests.get(url, timeout=10)
             
@@ -370,7 +434,7 @@ def consultar_cnpj(cnpj):
                         }
                     }
                 }
-                print(f"✅ Dados encontrados na BrasilAPI!")
+                print(f" Dados encontrados na BrasilAPI!")
                 return jsonify(resultado)
                 
         except Exception as e:
@@ -383,7 +447,7 @@ def consultar_cnpj(cnpj):
         }), 404
         
     except Exception as e:
-        print(f"❌ Erro geral na consulta CNPJ: {e}")
+        print(f" Erro geral na consulta CNPJ: {e}")
         return jsonify({'success': False, 'error': 'Erro interno do servidor'}), 500
 
 

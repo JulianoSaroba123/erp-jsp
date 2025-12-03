@@ -95,10 +95,10 @@ def editar():
 @bp_config.route('/lookup/cnpj')
 def lookup_cnpj():
     cnpj = request.args.get('cnpj')
-    print(f"🔍 Busca CNPJ recebida: {cnpj}")
+    print(f"Busca CNPJ recebida: {cnpj}")
     
     if not cnpj:
-        print("❌ CNPJ não fornecido")
+        print(" CNPJ não fornecido")
         return {'error': 'CNPJ é obrigatório'}, 400
 
     # Limpa o CNPJ - remove tudo que não é dígito
@@ -107,7 +107,7 @@ def lookup_cnpj():
     
     # Validar se tem pelo menos 11 dígitos
     if len(cnpj_only) < 11:
-        print(f"❌ CNPJ muito curto: {len(cnpj_only)} dígitos")
+        print(f" CNPJ muito curto: {len(cnpj_only)} dígitos")
         return {'error': 'CNPJ deve ter pelo menos 11 dígitos'}, 400
     
     try:
@@ -115,44 +115,44 @@ def lookup_cnpj():
         print(f"📡 Fazendo requisição para: {url}")
         
         resp = requests.get(url, timeout=10)
-        print(f"📊 Status da API: {resp.status_code}")
+        print(f" Status da API: {resp.status_code}")
         
         if resp.status_code == 200:
             data = resp.json()
-            print(f"✅ Dados recebidos: {data.get('razao_social', 'N/A')}")
+            print(f" Dados recebidos: {data.get('razao_social', 'N/A')}")
             
             # Log dos campos principais
             campos_log = ['razao_social', 'nome_fantasia', 'situacao', 'email']
             for campo in campos_log:
                 if campo in data:
-                    print(f"   📋 {campo}: {data[campo]}")
+                    print(f"    {campo}: {data[campo]}")
             
             return data
         elif resp.status_code == 404:
-            print("❌ CNPJ não encontrado na base de dados")
+            print(" CNPJ não encontrado na base de dados")
             return {'error': 'CNPJ não encontrado'}, 404
         else:
-            print(f"❌ Erro na API: {resp.status_code} - {resp.text}")
+            print(f" Erro na API: {resp.status_code} - {resp.text}")
             return {'error': f'Erro na consulta: {resp.status_code}'}, 500
             
     except requests.Timeout:
-        print("❌ Timeout na consulta")
+        print(" Timeout na consulta")
         return {'error': 'Timeout na consulta - tente novamente'}, 500
     except requests.ConnectionError:
-        print("❌ Erro de conexão")
+        print(" Erro de conexão")
         return {'error': 'Erro de conexão com o serviço de consulta'}, 500
     except Exception as e:
-        print(f"❌ Erro inesperado: {str(e)}")
+        print(f" Erro inesperado: {str(e)}")
         return {'error': f'Erro interno: {str(e)}'}, 500
 
 
 @bp_config.route('/lookup/cep')
 def lookup_cep():
     cep = request.args.get('cep')
-    print(f"🔍 Busca CEP recebida: {cep}")
+    print(f"Busca CEP recebida: {cep}")
     
     if not cep:
-        print("❌ CEP não fornecido")
+        print(" CEP não fornecido")
         return {'error': 'CEP é obrigatório'}, 400
         
     # Limpa o CEP - remove tudo que não é dígito
@@ -161,7 +161,7 @@ def lookup_cep():
     
     # Validar se tem 8 dígitos
     if len(cep_only) != 8:
-        print(f"❌ CEP inválido: {len(cep_only)} dígitos")
+        print(f" CEP inválido: {len(cep_only)} dígitos")
         return {'error': 'CEP deve ter exatamente 8 dígitos'}, 400
     
     try:
@@ -169,37 +169,37 @@ def lookup_cep():
         print(f"📡 Fazendo requisição para: {url}")
         
         resp = requests.get(url, timeout=10)
-        print(f"📊 Status da API: {resp.status_code}")
+        print(f" Status da API: {resp.status_code}")
         
         if resp.status_code == 200:
             data = resp.json()
             
             # Verificar se o CEP foi encontrado
             if 'erro' in data:
-                print("❌ CEP não encontrado")
+                print(" CEP não encontrado")
                 return {'error': 'CEP não encontrado'}, 404
             
-            print(f"✅ Dados recebidos: {data.get('localidade', 'N/A')} - {data.get('uf', 'N/A')}")
+            print(f" Dados recebidos: {data.get('localidade', 'N/A')} - {data.get('uf', 'N/A')}")
             
             # Log dos campos principais
             campos_log = ['logradouro', 'bairro', 'localidade', 'uf']
             for campo in campos_log:
                 if campo in data and data[campo]:
-                    print(f"   📋 {campo}: {data[campo]}")
+                    print(f"    {campo}: {data[campo]}")
             
             return data
         else:
-            print(f"❌ Erro na API: {resp.status_code} - {resp.text}")
+            print(f" Erro na API: {resp.status_code} - {resp.text}")
             return {'error': f'Erro na consulta: {resp.status_code}'}, 500
             
     except requests.Timeout:
-        print("❌ Timeout na consulta")
+        print(" Timeout na consulta")
         return {'error': 'Timeout na consulta - tente novamente'}, 500
     except requests.ConnectionError:
-        print("❌ Erro de conexão")
+        print(" Erro de conexão")
         return {'error': 'Erro de conexão com o serviço de consulta'}, 500
     except Exception as e:
-        print(f"❌ Erro inesperado: {str(e)}")
+        print(f" Erro inesperado: {str(e)}")
         return {'error': f'Erro interno: {str(e)}'}, 500
 
 

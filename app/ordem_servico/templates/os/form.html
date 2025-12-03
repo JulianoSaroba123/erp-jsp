@@ -36,46 +36,208 @@
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label text-white">Cliente *</label>
-                        <select class="form-select bg-dark text-white border-secondary" name="cliente_id" required>
-                            <option value="">Selecione um cliente</option>
-                            {% for cliente in clientes %}
-                            <option value="{{ cliente.id }}" 
-                                    {% if ordem and ordem.cliente_id == cliente.id %}selected{% endif %}>
-                                {{ cliente.nome }}
-                            </option>
-                            {% endfor %}
+                        <div class="input-group">
+                            <select class="form-select bg-dark text-white border-secondary" name="cliente_id" id="cliente_select_os" required>
+                                <option value="">Selecione um cliente</option>
+                                {% for cliente in clientes %}
+                                    {% if cliente.nome and cliente.nome.strip() %}
+                                    <option value="{{ cliente.id }}" 
+                                            {% if ordem and ordem.cliente_id == cliente.id %}selected{% endif %}>
+                                        {{ cliente.nome }}
+                                    </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-outline-info" type="button" id="btnAtualizarClientesOS" title="Atualizar lista de clientes" data-no-submit="true">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button class="btn btn-outline-warning" type="button" id="btnRefreshClientesOS" title="Refresh forçado com debug" data-no-submit="true">
+                                <i class="fas fa-refresh"></i>
+                            </button>
+                            <a href="{{ url_for('cliente.novo') }}" class="btn btn-outline-success" title="Cadastrar novo cliente" target="_blank">
+                                <i class="fas fa-plus"></i>
+                            </a>
+                        </div>
+                        <small class="text-muted">💡 Cadastrou um cliente novo? Clique em <i class="fas fa-sync-alt"></i> para atualizar ou <i class="fas fa-refresh"></i> para debug</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Solicitante</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                               name="solicitante" value="{{ ordem.solicitante if ordem else '' }}" placeholder="Nome do solicitante">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Técnico Responsável</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                               name="tecnico_responsavel" value="{{ ordem.tecnico_responsavel if ordem else '' }}" placeholder="Nome do técnico">
+                    </div>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label class="form-label text-white">Título do Serviço *</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                               name="titulo" value="{{ ordem.titulo if ordem else '' }}" required placeholder="Título da ordem de serviço">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-white">Prioridade</label>
+                        <select class="form-select bg-dark text-white border-secondary" name="prioridade">
+                            <option value="baixa" {% if ordem and ordem.prioridade == 'baixa' %}selected{% endif %}>📝 Baixa</option>
+                            <option value="normal" {% if ordem and ordem.prioridade == 'normal' %}selected{% elif not ordem %}selected{% endif %}>⚡ Normal</option>
+                            <option value="alta" {% if ordem and ordem.prioridade == 'alta' %}selected{% endif %}>🔥 Alta</option>
+                            <option value="urgente" {% if ordem and ordem.prioridade == 'urgente' %}selected{% endif %}>🚨 Urgente</option>
                         </select>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label text-white">Equipamento *</label>
-                        <input type="text" class="form-control bg-dark text-white border-secondary" 
-                               name="equipamento" value="{{ ordem.equipamento if ordem else '' }}" required>
+                    <div class="col-md-2">
+                        <label class="form-label text-white">Status</label>
+                        <select class="form-select bg-dark text-white border-secondary" name="status">
+                            <option value="aberta" {% if ordem and ordem.status == 'aberta' %}selected{% elif not ordem %}selected{% endif %}>📂 Aberta</option>
+                            <option value="iniciada" {% if ordem and ordem.status == 'iniciada' %}selected{% endif %}>▶️ Iniciada</option>
+                            <option value="em_andamento" {% if ordem and (ordem.status == 'em_andamento' or ordem.status == 'em_execucao') %}selected{% endif %}>🔄 Em Andamento</option>
+                            <option value="aguardando_cliente" {% if ordem and ordem.status == 'aguardando_cliente' %}selected{% endif %}>⏳ Aguardando Cliente</option>
+                            <option value="concluida" {% if ordem and ordem.status == 'concluida' %}selected{% endif %}>✅ Concluída</option>
+                            <option value="cancelada" {% if ordem and ordem.status == 'cancelada' %}selected{% endif %}>❌ Cancelada</option>
+                        </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                         <label class="form-label text-white">Data Prevista</label>
                         <input type="date" class="form-control bg-dark text-white border-secondary" 
-                               name="data_prevista" value="{{ ordem.data_prevista if ordem else '' }}">
+                               name="data_prevista" value="{{ ordem.data_prevista.strftime('%Y-%m-%d') if ordem and ordem.data_prevista else '' }}">
                     </div>
-                    <div class="col-12">
-                        <label class="form-label text-white">Descrição do Problema</label>
-                        <textarea class="form-control bg-dark text-white border-secondary" name="descricao" rows="3">{{ ordem.descricao if ordem else '' }}</textarea>
+                </div>
+                <div class="row g-3 mt-2">
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Data de Abertura</label>
+                        <input type="date" class="form-control bg-dark text-white border-secondary" 
+                               name="data_abertura" value="{{ ordem.data_abertura.strftime('%Y-%m-%d') if ordem and ordem.data_abertura else '' }}">
+                        <small class="text-muted">📅 Data em que a OS foi criada</small>
                     </div>
-                    <div class="col-12">
-                        <label class="form-label text-white">Observações Técnicas</label>
-                        <textarea class="form-control bg-dark text-white border-secondary" name="observacoes" rows="3">{{ ordem.observacoes if ordem else '' }}</textarea>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Data de Início</label>
+                        <input type="datetime-local" class="form-control bg-dark text-white border-secondary" 
+                               name="data_inicio" value="{{ ordem.data_inicio.strftime('%Y-%m-%dT%H:%M') if ordem and ordem.data_inicio else '' }}">
+                        <small class="text-muted">🚀 Data/hora que o serviço começou</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Data de Conclusão</label>
+                        <input type="datetime-local" class="form-control bg-dark text-white border-secondary" 
+                               name="data_conclusao" value="{{ ordem.data_conclusao.strftime('%Y-%m-%dT%H:%M') if ordem and ordem.data_conclusao else '' }}">
+                        <small class="text-muted">✅ Data/hora que o serviço foi finalizado</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Data Vencimento Pgto</label>
+                        <input type="date" class="form-control bg-dark text-white border-secondary" 
+                               name="data_vencimento_pagamento" value="{{ ordem.data_vencimento_pagamento.strftime('%Y-%m-%d') if ordem and ordem.data_vencimento_pagamento else '' }}">
+                        <small class="text-muted">💰 Vencimento do pagamento</small>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- SERVIÇOS -->
+        <!-- DADOS DO EQUIPAMENTO -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="fas fa-cogs"></i> Dados do Equipamento</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label text-white">Equipamento *</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                               name="equipamento" value="{{ ordem.equipamento if ordem else '' }}" required placeholder="Tipo do equipamento">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-white">Marca/Modelo</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                               name="marca_modelo" value="{{ ordem.marca_modelo if ordem else '' }}" placeholder="Marca e modelo">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Número de Série</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                               name="numero_serie" value="{{ ordem.numero_serie if ordem else '' }}" placeholder="Número de série">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DESCRIÇÕES TÉCNICAS -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> Descrições Técnicas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-white">Problema Relatado pelo Cliente</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" name="descricao_problema" rows="4" placeholder="O que o cliente relatou? Ex: Notebook não liga, tela azul, etc.">{{ ordem.descricao_problema if ordem else '' }}</textarea>
+                        <small class="text-muted">Relato inicial do cliente sobre o problema</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white">Diagnóstico Técnico</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" name="diagnostico_tecnico" rows="4" placeholder="Análise técnica do problema. Ex: Fonte queimada, HD com defeito, etc.">{{ ordem.diagnostico_tecnico if ordem else '' }}</textarea>
+                        <small class="text-muted">Diagnóstico após análise técnica</small>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-white">Solução Aplicada</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" name="solucao" rows="3" placeholder="O que foi feito para resolver? Ex: Substituída fonte 65W, reinstalado Windows, etc.">{{ ordem.solucao if ordem else '' }}</textarea>
+                        <small class="text-muted">Procedimento realizado para solucionar o problema</small>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-white">Observações Gerais</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" name="observacoes" rows="3" placeholder="Observações adicionais, recomendações, etc.">{{ ordem.observacoes if ordem else '' }}</textarea>
+                        <small class="text-muted">Informações complementares sobre o serviço</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTROLE DE TEMPO E KM -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-clock"></i> Controle de Tempo e Deslocamento</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Hora Inicial</label>
+                        <input type="time" class="form-control bg-dark text-white border-secondary" 
+                               name="hora_inicial" value="{{ ordem.hora_inicial.strftime('%H:%M') if ordem and ordem.hora_inicial else '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Hora Final</label>
+                        <input type="time" class="form-control bg-dark text-white border-secondary" 
+                               name="hora_final" value="{{ ordem.hora_final.strftime('%H:%M') if ordem and ordem.hora_final else '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">KM Inicial</label>
+                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                               name="km_inicial" value="{{ ordem.km_inicial if ordem else '' }}" step="1" min="0">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">KM Final</label>
+                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                               name="km_final" value="{{ ordem.km_final if ordem else '' }}" step="1" min="0">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white">Total de Horas Trabalhadas</label>
+                        <input type="text" class="form-control bg-info text-white" 
+                               id="totalHoras" name="total_horas" readonly placeholder="Calculado automaticamente">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white">KM Total (Deslocamento)</label>
+                        <input type="text" class="form-control bg-info text-white" 
+                               id="totalKm" name="total_km" readonly placeholder="Calculado automaticamente">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITENS DE SERVIÇO -->
         <div class="card bg-dark border-secondary mb-4">
             <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-wrench"></i> Serviços Realizados</h5>
-                <button type="button" class="btn btn-outline-light btn-sm" id="btnAdicionarServico">
-                    <i class="fas fa-plus me-1"></i>Adicionar
+                <button type="button" class="btn btn-outline-light btn-sm" id="btnAdicionarServico" data-no-submit="true">
+                    <i class="fas fa-plus me-1"></i>Adicionar Serviço
                 </button>
             </div>
             <div class="card-body">
@@ -101,10 +263,10 @@
                                     </div>
                                     <div class="col-md-2">
                                         <select class="form-select form-select-sm bg-dark text-white border-secondary" name="servico_tipo[]">
-                                            <option value="Serviço Fechado" {% if servico.tipo_servico == 'fechado' %}selected{% endif %}>🎯 Serviço Fechado</option>
-                                            <option value="Hora Técnica" {% if servico.tipo_servico == 'hora' %}selected{% endif %}>⏱️ Hora Técnica</option>
-                                            <option value="Deslocamento" {% if servico.tipo_servico == 'deslocamento' %}selected{% endif %}>🚗 Deslocamento</option>
-                                            <option value="Outros" {% if servico.tipo_servico == 'outros' %}selected{% endif %}>📋 Outros</option>
+                                            <option value="fechado" {% if servico.tipo_servico == 'fechado' %}selected{% endif %}>🎯 Serviço Fechado</option>
+                                            <option value="hora" {% if servico.tipo_servico == 'hora' %}selected{% endif %}>⏱️ Hora Técnica</option>
+                                            <option value="deslocamento" {% if servico.tipo_servico == 'deslocamento' %}selected{% endif %}>🚗 Deslocamento</option>
+                                            <option value="outros" {% if servico.tipo_servico == 'outros' %}selected{% endif %}>📋 Outros</option>
                                         </select>
                                     </div>
                                     <div class="col-md-2">
@@ -113,11 +275,11 @@
                                     </div>
                                     <div class="col-md-2">
                                         <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary servico-valor" 
-                                               name="servico_valor[]" value="{{ servico.valor_unitario }}" placeholder="0,00">
+                                               name="servico_valor[]" value="{{ '{:,.2f}'.format(servico.valor_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}" placeholder="0,00">
                                     </div>
                                     <div class="col-md-2">
                                         <input type="text" class="form-control form-control-sm bg-secondary text-white servico-total" 
-                                               readonly value="R$ {{ '%.2f'|format(servico.quantidade * servico.valor_unitario) }}">
+                                               readonly value="R$ {{ '{:,.2f}'.format((servico.quantidade or 0) * (servico.valor_unitario or 0)).replace(',', 'X').replace('.', ',').replace('X', '.') }}">
                                     </div>
                                     <div class="col-md-1">
                                         <button type="button" class="btn btn-outline-danger btn-sm w-100 btn-remover-servico">
@@ -132,12 +294,12 @@
             </div>
         </div>
 
-        <!-- PRODUTOS -->
+        <!-- PRODUTOS/PEÇAS -->
         <div class="card bg-dark border-secondary mb-4">
             <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-boxes"></i> Produtos/Peças Utilizados</h5>
-                <button type="button" class="btn btn-outline-light btn-sm" id="btnAdicionarProduto">
-                    <i class="fas fa-plus me-1"></i>Adicionar
+                <button type="button" class="btn btn-outline-light btn-sm" id="btnAdicionarProduto" data-no-submit="true">
+                    <i class="fas fa-plus me-1"></i>Adicionar Produto
                 </button>
             </div>
             <div class="card-body">
@@ -152,8 +314,8 @@
                 
                 <!-- Container para produtos dinâmicos -->
                 <div id="produtosContainer">
-                    {% if ordem and ordem.produtos %}
-                        {% for produto in ordem.produtos %}
+                    {% if ordem and ordem.produtos_utilizados %}
+                        {% for produto in ordem.produtos_utilizados %}
                             <div class="produto-item mb-3">
                                 <div class="row g-2 align-items-center">
                                     <div class="col-md-4">
@@ -166,11 +328,11 @@
                                     </div>
                                     <div class="col-md-2">
                                         <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary produto-valor" 
-                                               name="produto_valor[]" value="{{ produto.valor_unitario }}" placeholder="0,00">
+                                               name="produto_valor[]" value="{{ '{:,.2f}'.format(produto.valor_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}" placeholder="0,00">
                                     </div>
                                     <div class="col-md-2">
                                         <input type="text" class="form-control form-control-sm bg-secondary text-white produto-total" 
-                                               readonly value="R$ {{ '%.2f'|format(produto.quantidade * produto.valor_unitario) }}">
+                                               readonly value="R$ {{ '{:,.2f}'.format((produto.quantidade or 0) * (produto.valor_unitario or 0)).replace(',', 'X').replace('.', ',').replace('X', '.') }}">
                                     </div>
                                     <div class="col-md-2">
                                         <button type="button" class="btn btn-outline-danger btn-sm w-100 btn-remover-produto">
@@ -192,25 +354,173 @@
             </div>
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label text-white">Valor Serviços</label>
                         <input type="text" class="form-control bg-dark text-white border-secondary" 
-                               id="valorServicos" name="valor_servicos" readonly value="R$ 0,00">
+                               id="valorServicos" name="valor_servico" readonly value="R$ {{ '{:,.2f}'.format(ordem.valor_servico or 0).replace(',', 'X').replace('.', ',').replace('X', '.') if ordem else '0,00' }}">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label text-white">Valor Produtos</label>
                         <input type="text" class="form-control bg-dark text-white border-secondary" 
-                               id="valorProdutos" name="valor_produtos" readonly value="R$ 0,00">
+                               id="valorProdutos" name="valor_pecas" readonly value="R$ {{ '{:,.2f}'.format(ordem.valor_pecas or 0).replace(',', 'X').replace('.', ',').replace('X', '.') if ordem else '0,00' }}">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label text-white">Desconto</label>
                         <input type="text" class="form-control bg-dark text-white border-secondary" 
-                               id="desconto" name="desconto" placeholder="0,00" value="{{ ordem.desconto if ordem else '0,00' }}">
+                               id="desconto" name="valor_desconto" placeholder="0,00" value="{{ '{:,.2f}'.format(ordem.valor_desconto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') if ordem else '0,00' }}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label text-white">Valor Total</label>
                         <input type="text" class="form-control bg-success text-white" 
-                               id="valorTotal" name="valor_total" readonly value="R$ 0,00">
+                               id="valorTotal" name="valor_total" readonly value="R$ {{ '{:,.2f}'.format(ordem.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') if ordem else '0,00' }}">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONDIÇÕES DE PAGAMENTO E GARANTIA -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-credit-card"></i> Condições de Pagamento e Garantia</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Condição de Pagamento</label>
+                        <select class="form-select bg-dark text-white border-secondary" name="condicao_pagamento">
+                            <option value="a_vista" {% if not ordem or ordem.condicao_pagamento == 'a_vista' %}selected{% endif %}>💰 À Vista</option>
+                            <option value="parcelado" {% if ordem and ordem.condicao_pagamento == 'parcelado' %}selected{% endif %}>💳 Parcelado</option>
+                            <option value="30_dias" {% if ordem and ordem.condicao_pagamento == '30_dias' %}selected{% endif %}>📅 30 Dias</option>
+                            <option value="entrada_saldo" {% if ordem and ordem.condicao_pagamento == 'entrada_saldo' %}selected{% endif %}>💵 Entrada + Saldo</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">Status Pagamento</label>
+                        <select class="form-select bg-dark text-white border-secondary" name="status_pagamento">
+                            <option value="pendente" {% if not ordem or ordem.status_pagamento == 'pendente' %}selected{% endif %}>⏳ Pendente</option>
+                            <option value="parcial" {% if ordem and ordem.status_pagamento == 'parcial' %}selected{% endif %}>🔄 Parcial</option>
+                            <option value="pago" {% if ordem and ordem.status_pagamento == 'pago' %}selected{% endif %}>✅ Pago</option>
+                            <option value="vencido" {% if ordem and ordem.status_pagamento == 'vencido' %}selected{% endif %}>❌ Vencido</option>
+                            <option value="cancelado" {% if ordem and ordem.status_pagamento == 'cancelado' %}selected{% endif %}>🚫 Cancelado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-white">Nº Parcelas</label>
+                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                               name="numero_parcelas" value="{{ ordem.numero_parcelas if ordem else 1 }}" min="1" max="12">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-white">Valor Entrada</label>
+                        <input type="text" class="form-control bg-dark text-white border-secondary" 
+                               name="valor_entrada" value="{{ '{:,.2f}'.format(ordem.valor_entrada or 0).replace(',', 'X').replace('.', ',').replace('X', '.') if ordem else '0,00' }}" placeholder="0,00">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label text-white">Garantia (dias)</label>
+                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                               name="prazo_garantia" value="{{ ordem.prazo_garantia if ordem else 90 }}" min="0" max="365">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white">Data 1ª Parcela</label>
+                        <input type="date" class="form-control bg-dark text-white border-secondary" 
+                               name="data_primeira_parcela" value="{{ ordem.data_primeira_parcela.strftime('%Y-%m-%d') if ordem and ordem.data_primeira_parcela else '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white">Vencimento Pagamento</label>
+                        <input type="date" class="form-control bg-dark text-white border-secondary" 
+                               name="data_vencimento_pagamento" value="{{ ordem.data_vencimento_pagamento.strftime('%Y-%m-%d') if ordem and ordem.data_vencimento_pagamento else '' }}">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label text-white">Descrição das Condições de Pagamento</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" name="descricao_pagamento" rows="2" placeholder="Descreva as condições específicas de pagamento">{{ ordem.descricao_pagamento if ordem else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANEXOS -->
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="fas fa-paperclip"></i> Anexos e Documentos</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-white" for="anexos_input">Anexar Arquivos</label>
+                        <input id="anexos_input" type="file" class="form-control bg-dark text-white border-secondary" 
+                               name="anexos[]" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.txt">
+                        <small class="text-muted">Formatos aceitos: PDF, JPG, PNG, DOC, DOCX, TXT (máx. 16MB)</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white">Observações dos Anexos</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" name="observacoes_anexos" rows="3" placeholder="Observações sobre os anexos">{{ ordem.observacoes_anexos if ordem else '' }}</textarea>
+                    </div>
+                </div>
+                {% if ordem and ordem.anexos %}
+                <hr class="border-secondary">
+                <h6 class="text-white mb-3">📎 Anexos Existentes ({{ ordem.anexos|length }})</h6>
+                <div class="row g-3">
+                    {% for anexo in ordem.anexos %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="{{ anexo.icone }} me-2"></i>
+                                <div class="flex-grow-1 min-width-0">
+                                    <h6 class="mb-0 text-truncate text-white" title="{{ anexo.nome_original }}">
+                                        {{ anexo.nome_original }}
+                                    </h6>
+                                    <small class="text-muted">{{ anexo.tamanho_formatado }}</small>
+                                    {% if anexo.data_upload %}
+                                    <small class="text-muted d-block">{{ anexo.data_upload.strftime('%d/%m/%Y %H:%M') }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Preview para imagens -->
+                            {% if anexo.tipo_arquivo == 'image' or (anexo.mime_type and 'image' in anexo.mime_type) %}
+                            <div class="mb-2">
+                                <img src="{{ url_for('ordem_servico.visualizar_anexo', anexo_id=anexo.id) }}" 
+                                     class="img-fluid rounded" 
+                                     style="max-height: 80px; width: 100%; object-fit: cover;"
+                                     alt="{{ anexo.nome_original }}">
+                            </div>
+                            {% endif %}
+                            
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('ordem_servico.baixar_anexo', anexo_id=anexo.id) }}" 
+                                   class="btn btn-outline-primary btn-sm flex-fill">
+                                    <i class="fas fa-download me-1"></i> Download
+                                </a>
+                                {% if anexo.tipo_arquivo == 'image' or (anexo.mime_type and 'image' in anexo.mime_type) %}
+                                <a href="{{ url_for('ordem_servico.visualizar_anexo', anexo_id=anexo.id) }}" 
+                                   class="btn btn-outline-info btn-sm flex-fill" 
+                                   target="_blank">
+                                    <i class="fas fa-eye me-1"></i> Ver
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <hr class="border-secondary">
+                <div class="row g-3 mt-2">
+                    <div class="col-md-8" id="preferencia_imagens_container">
+                        <div class="d-flex align-items-center p-3 rounded-3" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2)); border: 1px solid rgba(102, 126, 234, 0.3);">
+                            <div class="form-check form-switch me-3">
+                                <input class="form-check-input" type="checkbox" role="switch" 
+                                       id="incluir_imagens_relatorio" name="incluir_imagens_relatorio" value="1"
+                                       style="width: 3em; height: 1.5em; cursor: pointer;"
+                                       {% if (ordem and ordem.incluir_imagens_relatorio) or (request and request.form and request.form.get('incluir_imagens_relatorio')) %}checked{% endif %}>
+                            </div>
+                            <div>
+                                <label class="form-check-label text-white fw-bold mb-0" for="incluir_imagens_relatorio" style="cursor: pointer;">
+                                    <i class="fas fa-images me-2 text-info"></i>Incluir imagens no PDF
+                                </label>
+                                <div class="small text-muted">Quando ativado, as imagens anexadas serão exibidas no relatório PDF da OS.</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -218,14 +528,31 @@
 
         <!-- BOTÕES -->
         <div class="card bg-dark border-secondary">
-            <div class="card-body text-center">
-                <button type="submit" class="btn btn-success btn-lg me-2">
-                    <i class="fas fa-save me-1"></i>
-                    {% if ordem %}Atualizar Ordem{% else %}Criar Ordem{% endif %}
-                </button>
-                <a href="{{ url_for('ordem_servico.listar') }}" class="btn btn-secondary btn-lg">
-                    <i class="fas fa-times me-1"></i>Cancelar
-                </a>
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <button type="submit" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-save me-2"></i>
+                            {% if ordem %}Atualizar Ordem de Serviço{% else %}Criar Ordem de Serviço{% endif %}
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('ordem_servico.listar') }}" class="btn btn-secondary btn-lg w-100">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        {% if ordem %}
+                        <a href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}" class="btn btn-info btn-lg w-100">
+                            <i class="fas fa-eye me-2"></i>Visualizar
+                        </a>
+                        {% else %}
+                        <button type="reset" class="btn btn-warning btn-lg w-100" onclick="limparFormulario()">
+                            <i class="fas fa-eraser me-2"></i>Limpar
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
     </form>
@@ -236,13 +563,62 @@
 {{ super() }}
 
 <script>
-console.log('🚀 Sistema de Ordem de Serviço inicializado!');
-
 document.addEventListener('DOMContentLoaded', function() {
     let servicoIndex = {{ (ordem.servicos|length) if ordem and ordem.servicos else 0 }};
-    let produtoIndex = {{ (ordem.produtos|length) if ordem and ordem.produtos else 0 }};
+    let produtoIndex = {{ (ordem.produtos_utilizados|length) if ordem and ordem.produtos_utilizados else 0 }};
     
-    console.log('Índices iniciais:', { servicoIndex, produtoIndex });
+    // Prevenir reload de página por botões do formulário
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Permitir apenas o submit real do formulário principal
+            console.log('📝 Formulário sendo submetido...');
+        });
+    }
+    
+    // Prevenir comportamento padrão de todos os botões que não são de submit
+    document.addEventListener('click', function(e) {
+        const target = e.target.closest('button');
+        if (target && target.type !== 'submit' && target.form && !target.hasAttribute('data-allow-default')) {
+            // Para botões dentro de forms que não são submit, prevenir comportamento padrão
+            if (target.id === 'btnAtualizarClientesOS' || target.id === 'btnRefreshClientesOS' || 
+                target.classList.contains('btn-remover-servico') || target.classList.contains('btn-remover-produto') ||
+                target.id === 'btnAdicionarServico' || target.id === 'btnAdicionarProduto') {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🛡️ Comportamento padrão prevenido para:', target.id || target.className);
+            }
+        }
+    });
+    
+    console.log('🚀 Sistema de Ordem de Serviço inicializado!');
+    
+    console.log('📊 Índices iniciais:', { servicoIndex, produtoIndex });
+    console.log('📋 Containers encontrados:', {
+        servicosContainer: !!document.getElementById('servicosContainer'),
+        produtosContainer: !!document.getElementById('produtosContainer'),
+        btnAdicionarServico: !!document.getElementById('btnAdicionarServico'),
+        btnAdicionarProduto: !!document.getElementById('btnAdicionarProduto')
+    });
+    
+    // Verificar se existem itens já carregados
+    const servicosExistentes = document.querySelectorAll('.servico-item');
+    const produtosExistentes = document.querySelectorAll('.produto-item');
+    console.log('🔍 Itens existentes encontrados:', {
+        servicos: servicosExistentes.length,
+        produtos: produtosExistentes.length
+    });
+    
+    // Função para limpar formulário
+    window.limparFormulario = function() {
+        if (confirm('Tem certeza que deseja limpar todos os campos?')) {
+            document.getElementById('servicosContainer').innerHTML = '';
+            document.getElementById('produtosContainer').innerHTML = '';
+            calcularTotaisGerais();
+            servicoIndex = 0;
+            produtoIndex = 0;
+        }
+    }
     
     // Função para converter valor monetário para número
     function converterParaNumero(valor) {
@@ -309,10 +685,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="col-md-2">
                     <select class="form-select form-select-sm bg-dark text-white border-secondary" name="servico_tipo[]">
-                        <option value="Serviço Fechado">🎯 Serviço Fechado</option>
-                        <option value="Hora Técnica">⏱️ Hora Técnica</option>
-                        <option value="Deslocamento">🚗 Deslocamento</option>
-                        <option value="Outros">📋 Outros</option>
+                        <option value="fechado">🎯 Serviço Fechado</option>
+                        <option value="hora">⏱️ Hora Técnica</option>
+                        <option value="deslocamento">🚗 Deslocamento</option>
+                        <option value="outros">📋 Outros</option>
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -404,19 +780,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Event listeners para remover itens
+    // Event listeners para remover itens (usando delegação de eventos)
     document.addEventListener('click', function(e) {
         if (e.target.closest('.btn-remover-servico')) {
-            e.target.closest('.servico-item').remove();
-            calcularTotaisGerais();
+            if (confirm('Remover este serviço?')) {
+                e.target.closest('.servico-item').remove();
+                calcularTotaisGerais();
+            }
         }
         if (e.target.closest('.btn-remover-produto')) {
-            e.target.closest('.produto-item').remove();
-            calcularTotaisGerais();
+            if (confirm('Remover este produto?')) {
+                e.target.closest('.produto-item').remove();
+                calcularTotaisGerais();
+            }
         }
     });
     
-    // Event listeners para cálculos em itens existentes
+    // Event listeners para cálculos em itens (usando delegação de eventos)
     document.addEventListener('input', function(e) {
         if (e.target.matches('.servico-quantidade, .servico-valor')) {
             calcularTotalItem(e.target.closest('.servico-item'));
@@ -429,8 +809,446 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Calcular totais iniciais
-    calcularTotaisGerais();
+    // Event listener específico para o campo desconto
+    const descontoField = document.getElementById('desconto');
+    if (descontoField) {
+        descontoField.addEventListener('input', calcularTotaisGerais);
+    }
+    
+    // Calcular totais iniciais após carregar a página
+    setTimeout(() => {
+        calcularTotaisGerais();
+        console.log('💰 Totais calculados automaticamente');
+    }, 100);
+    
+    // ===== FUNCIONALIDADE ATUALIZAR CLIENTES =====
+    
+    async function atualizarListaClientesOS(event) {
+        // Prevenir qualquer comportamento padrão que possa interferir no formulário
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        const btnAtualizar = document.getElementById('btnAtualizarClientesOS');
+        const selectCliente = document.getElementById('cliente_select_os');
+        
+        if (!btnAtualizar || !selectCliente) {
+            console.error('❌ Elementos não encontrados: btnAtualizar ou selectCliente');
+            showToastOS('Elementos do formulário não encontrados!', 'error');
+            return;
+        }
+        
+        const clienteSelecionadoId = selectCliente.value;
+        console.log('🔄 Preservando seleção atual:', clienteSelecionadoId);
+        
+        try {
+            console.log('🔄 Iniciando atualização de clientes...');
+            console.log('👤 Cliente atualmente selecionado:', clienteSelecionadoId);
+            
+            // Mostrar loading
+            btnAtualizar.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btnAtualizar.disabled = true;
+            
+            // Construir URLs para teste
+            const baseUrl = window.location.origin;
+            const testUrl = baseUrl + '/ordem_servico/api/test';
+            const apiUrl = baseUrl + '/ordem_servico/api/clientes';
+            
+            console.log('🧪 Testando conectividade primeiro...');
+            
+            // Primeiro teste: verificar se o blueprint responde
+            const testResponse = await fetch(testUrl);
+            if (!testResponse.ok) {
+                throw new Error(`Blueprint não responde: ${testResponse.status}`);
+            }
+            console.log('✅ Blueprint funcionando');
+            
+            // Segundo teste: API de clientes
+            console.log('📡 Fazendo requisição para:', apiUrl);
+            
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            });
+            console.log('📡 Resposta recebida:', response.status, response.statusText);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log('📋 Dados recebidos:', data);
+            
+            if (data.success) {
+                // Debug info
+                if (data.debug_info) {
+                    console.log('🔍 Debug Info:', data.debug_info);
+                    console.log(`📊 Total no banco: ${data.debug_info.total_no_banco}`);
+                    console.log(`✅ Com nome válido: ${data.debug_info.com_nome_valido}`);
+                }
+                
+                // Contar clientes antes da atualização
+                const clientesAntes = selectCliente.options.length - 1; // -1 para excluir "Selecione um cliente"
+                
+                // Limpar select
+                selectCliente.innerHTML = '<option value="">Selecione um cliente</option>';
+                
+                // Adicionar clientes atualizados
+                let clientesAdicionados = 0;
+                data.clientes.forEach(cliente => {
+                    const option = document.createElement('option');
+                    option.value = cliente.id;
+                    option.textContent = cliente.nome;
+                    
+                    // Manter seleção anterior se ainda existir
+                    if (clienteSelecionadoId && cliente.id == clienteSelecionadoId) {
+                        option.selected = true;
+                        console.log('🎯 Cliente reselectionado:', cliente.nome);
+                    }
+                    
+                    selectCliente.appendChild(option);
+                    clientesAdicionados++;
+                });
+                
+                // Feedback visual
+                btnAtualizar.classList.add('btn-success');
+                btnAtualizar.classList.remove('btn-outline-info');
+                setTimeout(() => {
+                    btnAtualizar.classList.remove('btn-success');
+                    btnAtualizar.classList.add('btn-outline-info');
+                }, 2000);
+                
+                console.log(`✅ Lista de clientes atualizada: ${clientesAdicionados} clientes (antes: ${clientesAntes})`);
+                
+                // Garantir que não há reload desnecessário
+                const urlBeforeUpdate = window.location.href;
+                const scrollPosition = window.pageYOffset;
+                
+                // Mostrar notificação com mais detalhes
+                if (data.total > 0) {
+                    const diferenca = clientesAdicionados - clientesAntes;
+                    let mensagem = `Lista atualizada! ${data.total} clientes disponíveis`;
+                    if (diferenca > 0) {
+                        mensagem += ` (+${diferenca} novos)`;
+                    } else if (diferenca < 0) {
+                        mensagem += ` (${Math.abs(diferenca)} removidos)`;
+                    } else {
+                        mensagem += ` (nenhuma alteração)`;
+                    }
+                    showToastOS(mensagem, 'success');
+                    
+                    // Garantir que o foco não seja perdido do formulário e posição mantida
+                    setTimeout(() => {
+                        selectCliente.focus();
+                        if (window.location.href !== urlBeforeUpdate) {
+                            console.warn('⚠️ URL mudou! Restaurando...');
+                            history.replaceState(null, '', urlBeforeUpdate);
+                        }
+                        if (window.pageYOffset !== scrollPosition) {
+                            window.scrollTo(0, scrollPosition);
+                        }
+                    }, 100);
+                } else {
+                    showToastOS('Nenhum cliente ativo encontrado', 'warning');
+                }
+                
+            } else {
+                throw new Error(data.error || 'Erro desconhecido');
+            }
+            
+        } catch (error) {
+            console.error('❌ Erro ao atualizar clientes:', error);
+            
+            let errorMessage = 'Erro ao atualizar lista de clientes';
+            let fallbackAction = false;
+            
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage = 'Erro de conexão. Servidor pode estar offline.';
+                fallbackAction = true;
+            } else if (error.message.includes('404')) {
+                errorMessage = 'API não encontrada. Recarregando página...';
+                fallbackAction = true;
+            } else if (error.message.includes('500')) {
+                errorMessage = 'Erro interno do servidor.';
+            }
+            
+            showToastOS(errorMessage, 'error');
+            
+            // Se for erro de conectividade, oferecer alternativa
+            if (fallbackAction) {
+                setTimeout(() => {
+                    if (confirm('A funcionalidade de atualização não está disponível. Deseja recarregar a página para ver novos clientes?')) {
+                        window.location.reload();
+                    } else {
+                        showToastOS('💡 DICA: Recarregue a página (F5) para ver clientes cadastrados recentemente', 'info');
+                    }
+                }, 1000);
+            }
+            
+            btnAtualizar.classList.add('btn-danger');
+            btnAtualizar.classList.remove('btn-outline-info');
+            setTimeout(() => {
+                btnAtualizar.classList.remove('btn-danger');
+                btnAtualizar.classList.add('btn-outline-info');
+            }, 3000);
+            
+        } finally {
+            // Restaurar botão
+            btnAtualizar.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            btnAtualizar.disabled = false;
+        }
+    }
+    
+    function showToastOS(message, type = 'info') {
+        // Criar toast simples sem interferir no formulário
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'warning'} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px; pointer-events: auto;';
+        toast.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+            ${message}
+            <button type="button" class="btn-close" onclick="this.parentElement.remove(); event.stopPropagation();"></button>
+        `;
+        
+        // Garantir que o toast não interfira no formulário
+        toast.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+        
+        document.body.appendChild(toast);
+        
+        // Auto remover após 5 segundos
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 5000);
+    }
+    
+    // Event listener para o botão atualizar
+    const btnAtualizarOS = document.getElementById('btnAtualizarClientesOS');
+    if (btnAtualizarOS) {
+        btnAtualizarOS.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            console.log('🔄 Botão atualizar clicado - prevenindo comportamento padrão');
+            atualizarListaClientesOS(event);
+            return false;
+        });
+        console.log('✅ Funcionalidade de atualização de clientes carregada para OS!');
+    } else {
+        console.error('❌ Botão btnAtualizarClientesOS não encontrado!');
+    }
+    
+    // Event listener para o botão refresh forçado 
+    const btnRefreshOS = document.getElementById('btnRefreshClientesOS');
+    if (btnRefreshOS) {
+        btnRefreshOS.addEventListener('click', async function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            console.log('🔥 Botão refresh clicado - prevenindo comportamento padrão');
+            
+            const selectCliente = document.getElementById('cliente_select_os');
+            const clienteSelecionadoId = selectCliente.value;
+            
+            try {
+                console.log('🔥 REFRESH FORÇADO iniciado...');
+                
+                btnRefreshOS.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                btnRefreshOS.disabled = true;
+                
+                const response = await fetch(window.location.origin + '/ordem_servico/api/clientes/refresh', {
+                    headers: {'Cache-Control': 'no-cache'}
+                });
+                
+                const data = await response.json();
+                console.log('🔥 Dados do refresh forçado:', data);
+                
+                if (data.success) {
+                    // Limpar e repopular
+                    selectCliente.innerHTML = '<option value="">Selecione um cliente</option>';
+                    
+                    data.clientes.forEach(cliente => {
+                        const option = document.createElement('option');
+                        option.value = cliente.id;
+                        option.textContent = cliente.nome;
+                        if (clienteSelecionadoId && cliente.id == clienteSelecionadoId) {
+                            option.selected = true;
+                        }
+                        selectCliente.appendChild(option);
+                    });
+                    
+                    // Mostrar detalhes do debug
+                    let mensagem = `🔥 REFRESH: ${data.total} clientes carregados`;
+                    if (data.debug_info.sem_nome_valido > 0) {
+                        mensagem += ` (${data.debug_info.sem_nome_valido} ignorados)`;
+                    }
+                    
+                    console.log(`🔥 ${mensagem}`);
+                    showToastOS(mensagem, 'success');
+                    
+                    // Log dos clientes ignorados se houver
+                    if (data.ignorados && data.ignorados.length > 0) {
+                        console.warn('⚠️ Clientes ignorados:', data.ignorados);
+                        showToastOS(`⚠️ ${data.ignorados.length} clientes ignorados por nome inválido (veja console)`, 'warning');
+                    }
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                console.error('❌ Erro no refresh forçado:', error);
+                showToastOS('Erro no refresh forçado: ' + error.message, 'error');
+            } finally {
+                btnRefreshOS.innerHTML = '<i class="fas fa-refresh"></i>';
+                btnRefreshOS.disabled = false;
+            }
+        });
+        console.log('✅ Funcionalidade de refresh forçado carregada!');
+    } else {
+        console.error('❌ Botão btnRefreshClientesOS não encontrado!');
+    }
+    
+    // Função para calcular total de horas
+    function calcularTotalHoras() {
+        const horaInicial = document.querySelector('input[name="hora_inicial"]').value;
+        const horaFinal = document.querySelector('input[name="hora_final"]').value;
+        const totalHorasField = document.getElementById('totalHoras');
+        
+        if (horaInicial && horaFinal) {
+            const [horaIni, minIni] = horaInicial.split(':').map(Number);
+            const [horaFin, minFin] = horaFinal.split(':').map(Number);
+            
+            const inicialMinutos = horaIni * 60 + minIni;
+            const finalMinutos = horaFin * 60 + minFin;
+            
+            if (finalMinutos > inicialMinutos) {
+                const diffMinutos = finalMinutos - inicialMinutos;
+                const horas = Math.floor(diffMinutos / 60);
+                const minutos = diffMinutos % 60;
+                
+                totalHorasField.value = `${horas}h ${minutos.toString().padStart(2, '0')}min`;
+            } else {
+                totalHorasField.value = '';
+            }
+        } else {
+            totalHorasField.value = '';
+        }
+    }
+    
+    // Função para calcular KM total
+    function calcularTotalKm() {
+        const kmInicial = parseFloat(document.querySelector('input[name="km_inicial"]').value) || 0;
+        const kmFinal = parseFloat(document.querySelector('input[name="km_final"]').value) || 0;
+        const totalKmField = document.getElementById('totalKm');
+        
+        if (kmFinal > kmInicial) {
+            const totalKm = kmFinal - kmInicial;
+            totalKmField.value = `${totalKm} km`;
+        } else {
+            totalKmField.value = '';
+        }
+    }
+    
+    // Event listeners para os campos de tempo
+    document.querySelector('input[name="hora_inicial"]').addEventListener('change', calcularTotalHoras);
+    document.querySelector('input[name="hora_final"]').addEventListener('change', calcularTotalHoras);
+    
+    // Event listeners para os campos de KM
+    document.querySelector('input[name="km_inicial"]').addEventListener('input', calcularTotalKm);
+    document.querySelector('input[name="km_final"]').addEventListener('input', calcularTotalKm);
+    
+    // Calcular valores iniciais se existirem
+    calcularTotalHoras();
+    calcularTotalKm();
+    
+    // Inicializar eventos nos itens existentes (para modo edição)
+    function inicializarItensExistentes() {
+        console.log('🔧 Inicializando eventos nos itens existentes...');
+        
+        // Aguardar um pouco para garantir que o DOM está totalmente renderizado
+        setTimeout(() => {
+            // Inicializar serviços existentes
+            document.querySelectorAll('.servico-item').forEach(function(item) {
+                const qtdField = item.querySelector('.servico-quantidade');
+                const valorField = item.querySelector('.servico-valor');
+                const removerBtn = item.querySelector('.btn-remover-servico');
+                
+                if (qtdField && valorField) {
+                    qtdField.addEventListener('input', function() {
+                        calcularTotalItem(item);
+                    });
+                    valorField.addEventListener('input', function() {
+                        calcularTotalItem(item);
+                    });
+                    console.log('✅ Eventos adicionados ao serviço:', item.querySelector('input[name="servico_descricao[]"]').value);
+                }
+                
+                if (removerBtn) {
+                    removerBtn.addEventListener('click', function() {
+                        if (confirm('Remover este serviço?')) {
+                            item.remove();
+                            calcularTotaisGerais();
+                        }
+                    });
+                }
+            });
+            
+            // Inicializar produtos existentes
+            document.querySelectorAll('.produto-item').forEach(function(item) {
+                const qtdField = item.querySelector('.produto-quantidade');
+                const valorField = item.querySelector('.produto-valor');
+                const removerBtn = item.querySelector('.btn-remover-produto');
+                
+                if (qtdField && valorField) {
+                    qtdField.addEventListener('input', function() {
+                        calcularTotalItem(item);
+                    });
+                    valorField.addEventListener('input', function() {
+                        calcularTotalItem(item);
+                    });
+                    console.log('✅ Eventos adicionados ao produto:', item.querySelector('input[name="produto_descricao[]"]').value);
+                }
+                
+                if (removerBtn) {
+                    removerBtn.addEventListener('click', function() {
+                        if (confirm('Remover este produto?')) {
+                            item.remove();
+                            calcularTotaisGerais();
+                        }
+                    });
+                }
+            });
+            
+            // Calcular totais iniciais
+            calcularTotaisGerais();
+            console.log('✅ Eventos inicializados nos itens existentes');
+        }, 250);
+    }
+    
+    // Chamar função de inicialização
+    inicializarItensExistentes();
+    
+    // Debug: Verificar elementos
+    console.log('🔍 Debug elementos:');
+    console.log('  - Botão atualizar:', document.getElementById('btnAtualizarClientesOS'));
+    console.log('  - Select cliente:', document.getElementById('cliente_select_os'));
+    console.log('  - URL atual:', window.location.href);
+
+    // Evitar que cliques na preferência de imagens abram o seletor de arquivos
+    const prefContainer = document.getElementById('preferencia_imagens_container');
+    const anexosInput = document.getElementById('anexos_input');
+    if (prefContainer && anexosInput) {
+        prefContainer.addEventListener('click', function(e) {
+            // Não deixar que o clique borbulhe para elementos que poderiam focar o input de arquivos
+            e.stopPropagation();
+        });
+    }
 });
 </script>
 {% endblock %}

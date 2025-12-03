@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🚀 JSP Sistema - Launcher Executável
+ JSP Sistema - Launcher Executável
 ====================================
 
 Script principal que:
@@ -46,28 +46,28 @@ class JSPLauncher:
     
     def wait_for_server(self, max_wait=60):
         """Aguarda o servidor estar pronto"""
-        print("⏳ Aguardando servidor Flask iniciar...")
+        print(" Aguardando servidor Flask iniciar...")
         
         for i in range(max_wait):
             try:
                 import urllib.request
                 urllib.request.urlopen(f'http://{SERVER_HOST}:{SERVER_PORT}', timeout=2)
-                print("✅ Servidor Flask está pronto!")
+                print(" Servidor Flask está pronto!")
                 return True
             except Exception as e:
                 if i < 5:
-                    print(f"🔄 Aguardando servidor... ({i+1}/5)")
+                    print(f" Aguardando servidor... ({i+1}/5)")
                 elif i % 10 == 0:  # A cada 10 segundos
                     print(f"🕒 Ainda inicializando... ({i}s/{max_wait}s)")
                 time.sleep(1)
         
-        print("❌ Timeout: Servidor não respondeu")
+        print(" Timeout: Servidor não respondeu")
         return False
     
     def start_flask_server_direct(self):
         """Inicia o servidor Flask diretamente integrado (solução para PyInstaller)"""
         try:
-            print("🚀 Iniciando servidor Flask integrado...")
+            print(" Iniciando servidor Flask integrado...")
             
             # Configurar paths para PyInstaller
             if getattr(sys, 'frozen', False):
@@ -85,16 +85,16 @@ class JSPLauncher:
             if app_path not in sys.path:
                 sys.path.insert(0, app_path)
             
-            print(f"📁 Base path: {base_path}")
-            print(f"📦 App path: {app_path}")
+            print(f" Base path: {base_path}")
+            print(f" App path: {app_path}")
             
             # Configurar variáveis de ambiente Flask
             os.environ['FLASK_ENV'] = 'production'
             
-            print("📦 Importando aplicação Flask...")
+            print(" Importando aplicação Flask...")
             from app.app import create_app
             
-            print("⚙️ Criando aplicação...")
+            print(" Criando aplicação...")
             app = create_app()
             
             print("🧵 Iniciando servidor em thread...")
@@ -114,7 +114,7 @@ class JSPLauncher:
                         threaded=True
                     )
                 except Exception as e:
-                    print(f"❌ Erro no servidor Flask: {e}")
+                    print(f" Erro no servidor Flask: {e}")
                     import traceback
                     traceback.print_exc()
             
@@ -123,11 +123,11 @@ class JSPLauncher:
             
             # Aguardar inicialização
             time.sleep(3)
-            print("✅ Servidor Flask integrado iniciado")
+            print(" Servidor Flask integrado iniciado")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao iniciar Flask integrado: {e}")
+            print(f" Erro ao iniciar Flask integrado: {e}")
             import traceback
             traceback.print_exc()
             return False
@@ -143,7 +143,7 @@ class JSPLauncher:
             else:
                 raise FileNotFoundError("Não foi possível encontrar run.py ou app.py")
             
-            print(f"🚀 Iniciando servidor Flask ({script})...")
+            print(f" Iniciando servidor Flask ({script})...")
             
             # Configurar variáveis de ambiente
             env = os.environ.copy()
@@ -189,7 +189,7 @@ class JSPLauncher:
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao iniciar servidor: {e}")
+            print(f" Erro ao iniciar servidor: {e}")
             return False
     
     def cleanup(self):
@@ -206,11 +206,11 @@ class JSPLauncher:
     def open_browser(self):
         """Abre o navegador na URL de login"""
         try:
-            print(f"🌐 Abrindo navegador em: {LOGIN_URL}")
+            print(f" Abrindo navegador em: {LOGIN_URL}")
             webbrowser.open(LOGIN_URL)
             return True
         except Exception as e:
-            print(f"❌ Erro ao abrir navegador: {e}")
+            print(f" Erro ao abrir navegador: {e}")
             return False
     
     def show_message(self, title, message, msg_type="info"):
@@ -267,12 +267,12 @@ class JSPLauncher:
             # Verificar se porta está livre
             if not self.check_port_available(SERVER_HOST, SERVER_PORT):
                 print(f"⚠️  Porta {SERVER_PORT} já está em uso")
-                print(f"🌐 Tentando abrir navegador diretamente...")
+                print(f" Tentando abrir navegador diretamente...")
                 self.open_browser()
                 return
             
             # Iniciar servidor Flask integrado (melhor para PyInstaller)
-            print("🚀 Iniciando servidor Flask integrado...")
+            print(" Iniciando servidor Flask integrado...")
             if not self.start_flask_server_direct():
                 self.show_message("Erro JSP Sistema", 
                                 "Falha ao iniciar servidor Flask integrado.\nVerifique se todos os arquivos estão presentes.", 
@@ -288,7 +288,7 @@ class JSPLauncher:
             
             # Abrir navegador
             if not self.open_browser():
-                print("❌ Falha ao abrir navegador")
+                print(" Falha ao abrir navegador")
                 self.show_message("JSP Sistema", 
                                 f"Sistema iniciado!\n\nAcesse manualmente: {LOGIN_URL}", 
                                 "info")
@@ -297,9 +297,9 @@ class JSPLauncher:
                                 "Sistema iniciado com sucesso!\n\nO navegador foi aberto automaticamente.\nFeche esta mensagem para continuar.", 
                                 "info")
             
-            print("✅ JSP Sistema iniciado com sucesso!")
-            print(f"🌐 Acesse: {LOGIN_URL}")
-            print("🔄 Sistema rodando em background...")
+            print(" JSP Sistema iniciado com sucesso!")
+            print(f" Acesse: {LOGIN_URL}")
+            print(" Sistema rodando em background...")
             
             # Manter rodando até interrupção ou erro do servidor
             try:
@@ -307,7 +307,7 @@ class JSPLauncher:
                     time.sleep(2)
                     # Verificar se processo ainda existe (apenas para subprocess)
                     if hasattr(self, 'server_process') and self.server_process and self.server_process.poll() is not None:
-                        print("❌ Servidor Flask parou inesperadamente")
+                        print(" Servidor Flask parou inesperadamente")
                         self.show_message("JSP Sistema", 
                                         "O servidor parou inesperadamente.\nReinicie o sistema.", 
                                         "error")
@@ -316,7 +316,7 @@ class JSPLauncher:
                 print("\n🛑 Encerrando JSP Sistema...")
             
         except Exception as e:
-            print(f"❌ Erro geral: {e}")
+            print(f" Erro geral: {e}")
             self.show_message("Erro JSP Sistema", 
                             f"Erro inesperado:\n{str(e)}\n\nContate o suporte técnico.", 
                             "error")

@@ -42,8 +42,12 @@ def init_extensions(app):
     # User loader para Flask-Login
     @login_manager.user_loader
     def load_user(user_id):
-        from app.auth.usuario_model import Usuario
-        return Usuario.query.get(int(user_id))
+        try:
+            from app.auth.usuario_model import Usuario
+            return Usuario.query.get(int(user_id))
+        except Exception as e:
+            print(f"⚠️ Erro no load_user: {e}")
+            return None
     
     # Cria diretório do banco se necessário (para SQLite)
     import os

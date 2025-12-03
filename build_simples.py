@@ -16,7 +16,7 @@ def clean_build():
         if os.path.exists(dir_name):
             try:
                 shutil.rmtree(dir_name)
-                print(f"✅ {dir_name}/ limpo")
+                print(f" {dir_name}/ limpo")
             except:
                 pass
 
@@ -52,27 +52,27 @@ def build_exe():
         exe_path = "dist/JSP_Sistema.exe"
         if os.path.exists(exe_path):
             size = os.path.getsize(exe_path) / (1024*1024)  # MB
-            print(f"\n✅ SUCESSO!")
-            print(f"📁 Executável: {exe_path}")
+            print(f"\n SUCESSO!")
+            print(f" Executável: {exe_path}")
             print(f"📏 Tamanho: {size:.1f} MB")
             return True
         else:
-            print("\n❌ Executável não encontrado")
+            print("\n Executável não encontrado")
             return False
             
     except subprocess.TimeoutExpired:
-        print("\n⏰ Timeout - build cancelado")
+        print("\n Timeout - build cancelado")
         return False
     except subprocess.CalledProcessError as e:
-        print(f"\n❌ Erro no build: {e}")
+        print(f"\n Erro no build: {e}")
         return False
     except Exception as e:
-        print(f"\n❌ Erro: {e}")
+        print(f"\n Erro: {e}")
         return False
 
 if __name__ == "__main__":
     if build_exe():
-        print("\n🚀 Build concluído com sucesso!")
-        print("📋 Para testar: dist/JSP_Sistema.exe")
+        print("\n Build concluído com sucesso!")
+        print(" Para testar: dist/JSP_Sistema.exe")
     else:
         print("\n💥 Build falhou!")

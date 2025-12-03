@@ -9,8 +9,8 @@ import os
 def build_launcher():
     """Gera o executável profissional"""
     
-    print("🔧 Gerando executável profissional do ERP JSP...")
-    print("📦 Isso pode demorar alguns minutos...")
+    print(" Gerando executável profissional do ERP JSP...")
+    print(" Isso pode demorar alguns minutos...")
     
     args = [
         'launcher_profissional.py',
@@ -36,12 +36,12 @@ def build_launcher():
     
     try:
         PyInstaller.__main__.run(args)
-        print("\n✅ Executável criado com sucesso!")
-        print("📁 Arquivo: ERP_JSP_Professional.exe")
-        print("🎯 Para usar: Clique duplo no arquivo .exe")
+        print("\n Executável criado com sucesso!")
+        print(" Arquivo: ERP_JSP_Professional.exe")
+        print(" Para usar: Clique duplo no arquivo .exe")
         
     except Exception as e:
-        print(f"\n❌ Erro ao gerar executável: {e}")
+        print(f"\n Erro ao gerar executável: {e}")
         return False
     
     return True

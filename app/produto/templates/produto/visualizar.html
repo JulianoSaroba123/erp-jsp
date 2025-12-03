@@ -333,14 +333,14 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label class="form-label text-muted">Data de Cadastro</label>
-                            <div>{{ produto.data_criacao.strftime('%d/%m/%Y às %H:%M') }}</div>
+                            <div>{{ produto.criado_em.strftime('%d/%m/%Y às %H:%M') }}</div>
                         </div>
                     </div>
                     
                     <div class="col-md-6">
                         <div class="mb-3">
                             <label class="form-label text-muted">Última Atualização</label>
-                            <div>{{ produto.data_atualizacao.strftime('%d/%m/%Y às %H:%M') }}</div>
+                            <div>{{ produto.atualizado_em.strftime('%d/%m/%Y às %H:%M') }}</div>
                         </div>
                     </div>
                 </div>

@@ -19,10 +19,10 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     debug = os.environ.get('FLASK_ENV') == 'development'
     
-    print("🚀 ERP JSP - Servidor de Desenvolvimento")
+    print(" ERP JSP - Servidor de Desenvolvimento")
     print(f"📍 Porta: {port}")
-    print(f"🔧 Debug: {debug}")
-    print(f"🔗 URL: http://localhost:{port}")
-    print("🎯 Para produção, use: gunicorn app.app:app")
+    print(f" Debug: {debug}")
+    print(f" URL: http://localhost:{port}")
+    print(" Para produção, use: gunicorn app.app:app")
     
     app.run(host='0.0.0.0', port=port, debug=debug)

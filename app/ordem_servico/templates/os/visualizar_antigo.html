@@ -1,0 +1,1866 @@
+{% extends "base.html" %}
+
+{% block title %}OS {{ ordem.numero }} - {{ ordem.titulo }} - ERP JSP{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ========================================
+   GLASSMORPHISM & TEMA PREMIUM
+   ======================================== */
+:root {
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.18);
+    --shadow-light: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    --shadow-premium: 0 15px 35px rgba(0, 0, 0, 0.1);
+    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-success: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --glass-blur: blur(4px);
+}
+
+body {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+}
+
+/* Glass Cards */
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-light);
+    border-radius: 20px;
+    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.glass-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(31, 38, 135, 0.4);
+}
+
+/* Premium Header */
+.premium-header {
+    background: var(--gradient-primary);
+    border-radius: 25px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.premium-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    backdrop-filter: blur(10px);
+}
+
+.premium-header .content {
+    position: relative;
+    z-index: 2;
+}
+
+/* Logo Empresa */
+.company-logo {
+    width: 60px;
+    height: 60px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    backdrop-filter: blur(10px);
+}
+
+/* Badge Animado OS */
+.os-badge {
+    background: rgba(255,255,255,0.9);
+    color: #667eea;
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 1.25rem;
+    animation: bounceIn 1s ease-out;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+@keyframes bounceIn {
+    0% { transform: scale(0.3); opacity: 0; }
+    50% { transform: scale(1.05); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.status-aberta { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+.status-em-andamento { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
+.status-aguardando-cliente { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #333; }
+.status-concluida { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
+.status-cancelada { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: white; }
+
+.prioridade-baixa { background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); color: #333; }
+.prioridade-normal { background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%); color: white; }
+.prioridade-alta { background: linear-gradient(135deg, #fdbb2d 0%, #22c1c3 100%); color: white; }
+.prioridade-urgente { background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%); color: white; }
+
+/* Timeline Premium */
+.timeline-premium {
+    position: relative;
+    padding-left: 40px;
+}
+
+.timeline-premium::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(to bottom, #667eea, #764ba2);
+    border-radius: 2px;
+}
+
+.timeline-item-premium {
+    position: relative;
+    margin-bottom: 2rem;
+}
+
+.timeline-marker-premium {
+    position: absolute;
+    left: -30px;
+    top: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.timeline-content-premium {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    padding: 1rem 1.5rem;
+    border-radius: 15px;
+    border: 1px solid rgba(255,255,255,0.2);
+    margin-left: 1rem;
+}
+
+/* Progress Bar */
+.progress-premium {
+    height: 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+.progress-premium .progress-bar {
+    background: var(--gradient-primary);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+/* Valor Total Card */
+.valor-total-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    text-align: center;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.valor-total-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.valor-total-card .content {
+    position: relative;
+    z-index: 2;
+}
+
+/* Floating Action Button Melhorado */
+.fab {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, 
+        rgba(102, 126, 234, 0.95) 0%, 
+        rgba(118, 75, 162, 0.95) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    text-decoration: none;
+    box-shadow: 
+        0 8px 32px rgba(102, 126, 234, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+    z-index: 1000;
+    border: none;
+    cursor: pointer;
+}
+
+.fab:hover {
+    transform: scale(1.1) translateY(-3px);
+    box-shadow: 
+        0 20px 40px rgba(102, 126, 234, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.fab-main {
+    background: linear-gradient(135deg, 
+        rgba(102, 126, 234, 0.95) 0%, 
+        rgba(118, 75, 162, 0.95) 100%);
+}
+
+.fab-main:hover {
+    background: linear-gradient(135deg, 
+        rgba(102, 126, 234, 1) 0%, 
+        rgba(118, 75, 162, 1) 100%);
+}
+
+.fab-menu {
+    position: fixed;
+    bottom: 120px;
+    right: 30px;
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.fab-item {
+    background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.15) 0%, 
+        rgba(255, 255, 255, 0.05) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50px;
+    padding: 15px 20px;
+    color: white;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+    opacity: 0;
+    transform: translateX(100px) scale(0.8);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    min-width: 160px;
+    position: relative;
+    overflow: hidden;
+}
+
+.fab-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.fab-item:hover::before {
+    left: 100%;
+}
+
+/* Animações de entrada dos botões */
+.fab-item:nth-child(1) { animation: slideInFab 0.5s ease 0.1s forwards; }
+.fab-item:nth-child(2) { animation: slideInFab 0.5s ease 0.2s forwards; }
+.fab-item:nth-child(3) { animation: slideInFab 0.5s ease 0.3s forwards; }
+.fab-item:nth-child(4) { animation: slideInFab 0.5s ease 0.4s forwards; }
+.fab-item:nth-child(5) { animation: slideInFab 0.5s ease 0.5s forwards; }
+.fab-item:nth-child(6) { animation: slideInFab 0.5s ease 0.6s forwards; }
+
+@keyframes slideInFab {
+    to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+/* Ícones dos botões */
+.fab-item i {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+    width: 20px;
+    text-align: center;
+}
+
+.fab-text {
+    position: relative;
+    z-index: 2;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Estilos específicos por tipo de botão */
+.fab-edit:hover {
+    background: linear-gradient(135deg, 
+        rgba(255, 193, 7, 0.95) 0%, 
+        rgba(255, 154, 0, 0.95) 100%);
+    border-color: rgba(255, 193, 7, 0.5);
+    transform: translateX(-10px) translateY(-3px) scale(1.05);
+    box-shadow: 
+        0 12px 30px rgba(255, 193, 7, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.fab-pdf:hover {
+    background: linear-gradient(135deg, 
+        rgba(220, 53, 69, 0.95) 0%, 
+        rgba(198, 40, 40, 0.95) 100%);
+    border-color: rgba(220, 53, 69, 0.5);
+    transform: translateX(-10px) translateY(-3px) scale(1.05);
+    box-shadow: 
+        0 12px 30px rgba(220, 53, 69, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.fab-duplicate:hover {
+    background: linear-gradient(135deg, 
+        rgba(13, 202, 240, 0.95) 0%, 
+        rgba(0, 123, 255, 0.95) 100%);
+    border-color: rgba(13, 202, 240, 0.5);
+    transform: translateX(-10px) translateY(-3px) scale(1.05);
+    box-shadow: 
+        0 12px 30px rgba(13, 202, 240, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.fab-new:hover {
+    background: linear-gradient(135deg, 
+        rgba(25, 135, 84, 0.95) 0%, 
+        rgba(20, 108, 67, 0.95) 100%);
+    border-color: rgba(25, 135, 84, 0.5);
+    transform: translateX(-10px) translateY(-3px) scale(1.05);
+    box-shadow: 
+        0 12px 30px rgba(25, 135, 84, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.fab-list:hover {
+    background: linear-gradient(135deg, 
+        rgba(108, 117, 125, 0.95) 0%, 
+        rgba(73, 80, 87, 0.95) 100%);
+    border-color: rgba(108, 117, 125, 0.5);
+    transform: translateX(-10px) translateY(-3px) scale(1.05);
+    box-shadow: 
+        0 12px 30px rgba(108, 117, 125, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.fab-cancel:hover {
+    background: linear-gradient(135deg, 
+        rgba(220, 53, 69, 0.95) 0%, 
+        rgba(176, 42, 55, 0.95) 100%);
+    border-color: rgba(220, 53, 69, 0.5);
+    transform: translateX(-10px) translateY(-3px) scale(1.05);
+    box-shadow: 
+        0 12px 30px rgba(220, 53, 69, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+/* Hover nos ícones */
+.fab-item:hover i {
+    opacity: 1;
+    transform: scale(1.2) rotate(5deg);
+}
+
+/* Responsivo para FAB */
+@media (max-width: 768px) {
+    .fab {
+        width: 60px;
+        height: 60px;
+        bottom: 20px;
+        right: 20px;
+        font-size: 1.25rem;
+    }
+    
+    .fab-menu {
+        bottom: 100px;
+        right: 20px;
+    }
+    
+    .fab-item {
+        padding: 12px 16px;
+        min-width: 140px;
+        gap: 10px;
+        font-size: 0.9rem;
+    }
+    
+    .fab-text {
+        font-size: 0.85rem;
+    }
+}
+
+/* Section Headers */
+.section-header {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 15px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.section-header h5 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+/* Info Cards */
+.info-card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateY(-2px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .fab {
+        width: 60px;
+        height: 60px;
+        bottom: 20px;
+        right: 20px;
+        font-size: 1.25rem;
+    }
+    
+    .fab-menu {
+        bottom: 100px;
+        right: 20px;
+    }
+    
+    .premium-header {
+        padding: 1.5rem;
+        border-radius: 15px;
+    }
+    
+    .glass-card {
+        border-radius: 15px;
+    }
+    
+    .os-badge {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+    }
+}
+
+/* Anexos Preview */
+.anexo-preview img {
+    max-height: 120px;
+    max-width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Tabelas */
+.table-glass {
+    background: transparent;
+    --bs-table-bg: transparent;
+}
+
+.table-glass td {
+    border-color: rgba(255,255,255,0.1);
+}
+
+/* Badges Icons */
+.badge-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <!-- CABEÇALHO PREMIUM COM IDENTIDADE VISUAL -->
+    <div class="premium-header">
+        <div class="content">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <!-- Logo da Empresa -->
+                    <div class="company-logo">
+                        <i class="fas fa-cog fa-lg text-white"></i>
+                    </div>
+                    
+                    <!-- Informações Principais -->
+                    <h1 class="text-white mb-2 fw-bold">
+                        <i class="fas fa-tools me-2"></i>
+                        Ordem de Serviço
+                    </h1>
+                    <div class="os-badge">
+                        <i class="fas fa-hashtag me-2"></i>{{ ordem.numero }}
+                    </div>
+                    
+                    <!-- Cliente em Destaque -->
+                    <div class="mt-3 text-white">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-circle fa-lg me-2"></i>
+                            <div>
+                                <h4 class="mb-0">{{ ordem.cliente.nome }}</h4>
+                                <small class="opacity-75">{{ ordem.titulo }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status e Prioridade -->
+                <div class="col-md-4 text-end">
+                    <div class="mb-3">
+                        {% if ordem.status == 'aberta' %}
+                            <span class="status-badge status-aberta">
+                                <i class="fas fa-folder-open"></i> Aberta
+                            </span>
+                        {% elif ordem.status == 'em_andamento' %}
+                            <span class="status-badge status-em-andamento">
+                                <i class="fas fa-cogs"></i> Em Andamento
+                            </span>
+                        {% elif ordem.status == 'aguardando_cliente' %}
+                            <span class="status-badge status-aguardando-cliente">
+                                <i class="fas fa-clock"></i> Aguardando Cliente
+                            </span>
+                        {% elif ordem.status == 'concluida' %}
+                            <span class="status-badge status-concluida">
+                                <i class="fas fa-check-circle"></i> Concluída
+                            </span>
+                        {% elif ordem.status == 'cancelada' %}
+                            <span class="status-badge status-cancelada">
+                                <i class="fas fa-times-circle"></i> Cancelada
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        {% if ordem.prioridade == 'baixa' %}
+                            <span class="status-badge prioridade-baixa">
+                                <i class="fas fa-arrow-down"></i> Baixa
+                            </span>
+                        {% elif ordem.prioridade == 'normal' %}
+                            <span class="status-badge prioridade-normal">
+                                <i class="fas fa-minus"></i> Normal
+                            </span>
+                        {% elif ordem.prioridade == 'alta' %}
+                            <span class="status-badge prioridade-alta">
+                                <i class="fas fa-arrow-up"></i> Alta
+                            </span>
+                        {% elif ordem.prioridade == 'urgente' %}
+                            <span class="status-badge prioridade-urgente">
+                                <i class="fas fa-exclamation-triangle"></i> Urgente
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Progress Bar do Status -->
+            <div class="mt-4">
+                <div class="d-flex justify-content-between text-white small mb-2">
+                    <span>Progresso da OS</span>
+                    <span>
+                        {% if ordem.status == 'aberta' %}25%
+                        {% elif ordem.status == 'em_andamento' %}50%
+                        {% elif ordem.status == 'aguardando_cliente' %}75%
+                        {% elif ordem.status == 'concluida' %}100%
+                        {% elif ordem.status == 'cancelada' %}0%
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="progress-premium">
+                    <div class="progress-bar" 
+                         style="width: 
+                         {% if ordem.status == 'aberta' %}25%
+                         {% elif ordem.status == 'em_andamento' %}50%
+                         {% elif ordem.status == 'aguardando_cliente' %}75%
+                         {% elif ordem.status == 'concluida' %}100%
+                         {% elif ordem.status == 'cancelada' %}10%
+                         {% endif %}"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- COLUNA PRINCIPAL -->
+        <div class="col-lg-8">
+            
+            <!-- CARD INFORMAÇÕES BÁSICAS -->
+            <div class="glass-card mb-4">
+                <div class="section-header">
+                    <h5><i class="fas fa-info-circle text-primary"></i> Informações Básicas</h5>
+                </div>
+                <div class="info-card">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="table-responsive">
+                                <table class="table table-glass">
+                                    <tr>
+                                        <td class="fw-bold text-muted pe-3">
+                                            <i class="fas fa-calendar-plus me-2"></i>Abertura:
+                                        </td>
+                                        <td>
+                                            <strong>{{ ordem.data_abertura.strftime('%d/%m/%Y') }}</strong>
+                                            <div class="small text-muted">{{ ordem.dias_em_aberto }} dia(s) em aberto</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-user-edit me-2"></i>Solicitante:
+                                        </td>
+                                        <td><strong>{{ ordem.solicitante or 'Não informado' }}</strong></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-phone me-2"></i>Contato:
+                                        </td>
+                                        <td>
+                                            {% if ordem.cliente.telefone %}
+                                                <strong>{{ ordem.cliente.telefone }}</strong>
+                                            {% endif %}
+                                            {% if ordem.cliente.email %}
+                                                <div class="small text-muted">{{ ordem.cliente.email }}</div>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% if ordem.proposta %}
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-file-contract me-2"></i>Proposta:
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('proposta.visualizar_proposta', id=ordem.proposta.id) }}" 
+                                               class="text-primary fw-bold text-decoration-none">
+                                                {{ ordem.proposta.codigo }}
+                                            </a>
+                                            <div class="small text-success">
+                                                <i class="fas fa-check me-1"></i>Gerada a partir de proposta aprovada
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="table-responsive">
+                                <table class="table table-glass">
+                                    <tr>
+                                        <td class="fw-bold text-muted pe-3">
+                                            <i class="fas fa-clock me-2"></i>Prevista:
+                                        </td>
+                                        <td>
+                                            {% if ordem.data_prevista %}
+                                                <strong class="{{ 'text-danger' if ordem.prazo_vencido else 'text-success' }}">
+                                                    {{ ordem.data_prevista.strftime('%d/%m/%Y') }}
+                                                </strong>
+                                                {% if ordem.prazo_vencido %}
+                                                    <div class="small text-danger">
+                                                        <i class="fas fa-exclamation-triangle me-1"></i>Prazo vencido
+                                                    </div>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">Não definida</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% if ordem.data_inicio %}
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-play me-2"></i>Início:
+                                        </td>
+                                        <td><strong>{{ ordem.data_inicio.strftime('%d/%m/%Y %H:%M') }}</strong></td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if ordem.data_conclusao %}
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-check me-2"></i>Conclusão:
+                                        </td>
+                                        <td><strong>{{ ordem.data_conclusao.strftime('%d/%m/%Y %H:%M') }}</strong></td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if ordem.tecnico_responsavel %}
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-user-cog me-2"></i>Técnico:
+                                        </td>
+                                        <td><strong>{{ ordem.tecnico_responsavel }}</strong></td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if ordem.descricao %}
+                    <hr class="my-3" style="border-color: rgba(255,255,255,0.1);">
+                    <div>
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-file-alt me-2"></i>Descrição do Serviço:
+                        </h6>
+                        <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border-left: 4px solid #667eea;">
+                            {{ ordem.descricao }}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- CARD EQUIPAMENTO -->
+            {% if ordem.equipamento or ordem.marca_modelo or ordem.numero_serie %}
+            <div class="glass-card mb-4">
+                <div class="section-header">
+                    <h5><i class="fas fa-desktop text-info"></i> Equipamento</h5>
+                </div>
+                <div class="info-card">
+                    <div class="row">
+                        <div class="col-md-6">
+                            {% if ordem.equipamento %}
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted d-flex align-items-center mb-2">
+                                    <i class="fas fa-desktop me-2"></i>Equipamento:
+                                </label>
+                                <div class="badge bg-primary fs-6">{{ ordem.equipamento }}</div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if ordem.marca_modelo %}
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted d-flex align-items-center mb-2">
+                                    <i class="fas fa-tag me-2"></i>Marca/Modelo:
+                                </label>
+                                <div>{{ ordem.marca_modelo }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            {% if ordem.numero_serie %}
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted d-flex align-items-center mb-2">
+                                    <i class="fas fa-barcode me-2"></i>Número de Série:
+                                </label>
+                                <code class="bg-dark text-warning p-2 rounded">{{ ordem.numero_serie }}</code>
+                            </div>
+                            {% endif %}
+                            
+                            {% if ordem.prazo_garantia > 0 %}
+                            <div class="mb-3">
+                                <label class="fw-bold text-muted d-flex align-items-center mb-2">
+                                    <i class="fas fa-shield-alt me-2"></i>Garantia:
+                                </label>
+                                <span class="badge bg-success fs-6">{{ ordem.prazo_garantia }} dia(s)</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- CARD DIAGNÓSTICO TÉCNICO -->
+            <div class="glass-card mb-4">
+                <div class="section-header">
+                    <h5><i class="fas fa-stethoscope text-danger"></i> Diagnóstico Técnico</h5>
+                </div>
+                <div class="info-card">
+                    {% if ordem.descricao_problema %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-exclamation-circle text-warning me-2"></i>Problema Relatado:
+                        </h6>
+                        <div class="p-3 rounded-3" style="background: rgba(255, 193, 7, 0.1); border-left: 4px solid #ffc107;">
+                            {{ ordem.descricao_problema }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if ordem.defeito_relatado %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-bug text-danger me-2"></i>Defeito Relatado:
+                        </h6>
+                        <div class="p-3 rounded-3" style="background: rgba(220, 53, 69, 0.1); border-left: 4px solid #dc3545;">
+                            {{ ordem.defeito_relatado }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if ordem.diagnostico %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-search text-info me-2"></i>Diagnóstico:
+                        </h6>
+                        <div class="p-3 rounded-3" style="background: rgba(13, 202, 240, 0.1); border-left: 4px solid #0dcaf0;">
+                            {{ ordem.diagnostico }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if ordem.solucao %}
+                    <div class="mb-0">
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-wrench text-success me-2"></i>Solução Aplicada:
+                        </h6>
+                        <div class="p-3 rounded-3" style="background: rgba(25, 135, 84, 0.1); border-left: 4px solid #198754;">
+                            {{ ordem.solucao }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if not ordem.defeito_relatado and not ordem.diagnostico and not ordem.solucao and not ordem.descricao_problema %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-clipboard-list fa-3x mb-3 opacity-50"></i>
+                        <p class="mb-0 fs-5">Informações técnicas não preenchidas</p>
+                        <small>Clique em "Editar" para adicionar diagnósticos</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- CARD OBSERVAÇÕES -->
+            {% if ordem.observacoes %}
+            <div class="glass-card mb-4">
+                <div class="section-header">
+                    <h5><i class="fas fa-sticky-note text-warning"></i> Observações</h5>
+                </div>
+                <div class="info-card">
+                    <div class="p-3 rounded-3" style="background: rgba(255, 193, 7, 0.1); border-left: 4px solid #ffc107;">
+                        {{ ordem.observacoes }}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- SIDEBAR PREMIUM -->
+        <div class="col-lg-4">
+            
+            <!-- CARD VALOR TOTAL EM DESTAQUE -->
+            <div class="valor-total-card">
+                <div class="content">
+                    <div class="mb-2">
+                        <i class="fas fa-coins fa-2x"></i>
+                    </div>
+                    <h6 class="mb-1 opacity-75">Valor Total</h6>
+                    <h2 class="mb-0 fw-bold">R$ {{ '{:.2f}'.format(ordem.valor_total or 0).replace('.', ',') }}</h2>
+                    {% if ordem.condicao_pagamento == 'a_vista' %}
+                        <small class="badge bg-light text-dark mt-2">
+                            <i class="fas fa-money-bill-wave me-1"></i>À Vista
+                        </small>
+                    {% else %}
+                        <small class="badge bg-light text-dark mt-2">
+                            <i class="fas fa-credit-card me-1"></i>{{ ordem.numero_parcelas }}x Parcelado
+                        </small>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- CARD SERVIÇOS E PRODUTOS REALIZADOS -->
+            <div class="glass-card mb-4">
+                <div class="section-header">
+                    <h5><i class="fas fa-clipboard-list text-success"></i> Serviços e Produtos</h5>
+                </div>
+                <div class="info-card">
+                    <!-- SERVIÇOS REALIZADOS -->
+                    {% if ordem.servicos and ordem.servicos|length > 0 %}
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3 d-flex align-items-center">
+                            <i class="fas fa-tools text-primary me-2"></i>
+                            Serviços Realizados ({{ ordem.servicos|length }})
+                            <span class="badge bg-primary ms-2">R$ {{ '{:.2f}'.format(ordem.valor_total_servicos or 0).replace('.', ',') }}</span>
+                        </h6>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-glass table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th style="width: 40%;">
+                                            <i class="fas fa-clipboard me-2"></i>Descrição
+                                        </th>
+                                        <th style="width: 15%;">
+                                            <i class="fas fa-tag me-2"></i>Tipo
+                                        </th>
+                                        <th style="width: 15%;">
+                                            <i class="fas fa-calculator me-2"></i>Qtd
+                                        </th>
+                                        <th style="width: 15%;">
+                                            <i class="fas fa-dollar-sign me-2"></i>Valor Unit.
+                                        </th>
+                                        <th style="width: 15%;">
+                                            <i class="fas fa-coins me-2"></i>Total
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for servico in ordem.servicos %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold">{{ servico.descricao }}</div>
+                                        </td>
+                                        <td>
+                                            {% if servico.tipo_servico == 'fechado' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-circle me-1"></i>Fechado
+                                                </span>
+                                            {% elif servico.tipo_servico == 'hora' %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-clock me-1"></i>Por Hora
+                                                </span>
+                                            {% elif servico.tipo_servico == 'deslocamento' %}
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-car me-1"></i>Deslocamento
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">
+                                                    <i class="fas fa-cog me-1"></i>Outros
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="fw-bold text-center">
+                                            {{ servico.quantidade or 1 }}
+                                        </td>
+                                        <td class="fw-bold text-success">
+                                            R$ {{ '{:.2f}'.format(servico.valor_unitario or 0).replace('.', ',') }}
+                                        </td>
+                                        <td class="fw-bold text-primary fs-6">
+                                            R$ {{ '{:.2f}'.format(servico.valor_total or 0).replace('.', ',') }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-dark">
+                                    <tr>
+                                        <th colspan="4" class="text-end">
+                                            <i class="fas fa-calculator me-2"></i>Total Serviços:
+                                        </th>
+                                        <th class="text-primary fs-5">
+                                            R$ {{ '{:.2f}'.format(ordem.valor_total_servicos or 0).replace('.', ',') }}
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-tools fa-3x mb-3 opacity-50"></i>
+                        <h6 class="mb-2">Nenhum serviço cadastrado</h6>
+                        <p class="small">Clique em "Editar" para adicionar serviços</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- DIVISOR -->
+                    {% if (ordem.servicos and ordem.servicos|length > 0) and (ordem.produtos_utilizados and ordem.produtos_utilizados|length > 0) %}
+                    <hr class="my-4" style="border-color: rgba(255,255,255,0.1);">
+                    {% endif %}
+
+                    <!-- PRODUTOS UTILIZADOS -->
+                    {% if ordem.produtos_utilizados and ordem.produtos_utilizados|length > 0 %}
+                    <div>
+                        <h6 class="fw-bold mb-3 d-flex align-items-center">
+                            <i class="fas fa-boxes text-info me-2"></i>
+                            Produtos/Peças Utilizados ({{ ordem.produtos_utilizados|length }})
+                            <span class="badge bg-info ms-2">R$ {{ '{:.2f}'.format(ordem.valor_total_produtos or 0).replace('.', ',') }}</span>
+                        </h6>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-glass table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th style="width: 50%;">
+                                            <i class="fas fa-box me-2"></i>Produto/Peça
+                                        </th>
+                                        <th style="width: 15%;">
+                                            <i class="fas fa-calculator me-2"></i>Qtd
+                                        </th>
+                                        <th style="width: 17.5%;">
+                                            <i class="fas fa-dollar-sign me-2"></i>Valor Unit.
+                                        </th>
+                                        <th style="width: 17.5%;">
+                                            <i class="fas fa-coins me-2"></i>Total
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for produto in ordem.produtos_utilizados %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold">{{ produto.descricao }}</div>
+                                        </td>
+                                        <td class="fw-bold text-center">
+                                            {{ produto.quantidade or 1 }}
+                                        </td>
+                                        <td class="fw-bold text-success">
+                                            R$ {{ '{:.2f}'.format(produto.valor_unitario or 0).replace('.', ',') }}
+                                        </td>
+                                        <td class="fw-bold text-info fs-6">
+                                            R$ {{ '{:.2f}'.format(produto.valor_total or 0).replace('.', ',') }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="table-dark">
+                                    <tr>
+                                        <th colspan="3" class="text-end">
+                                            <i class="fas fa-calculator me-2"></i>Total Produtos:
+                                        </th>
+                                        <th class="text-info fs-5">
+                                            R$ {{ '{:.2f}'.format(ordem.valor_total_produtos or 0).replace('.', ',') }}
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                    {% if not (ordem.servicos and ordem.servicos|length > 0) %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-boxes fa-3x mb-3 opacity-50"></i>
+                        <h6 class="mb-2">Nenhum produto/peça cadastrado</h6>
+                        <p class="small">Clique em "Editar" para adicionar produtos</p>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                    
+                    <!-- RESUMO FINAL -->
+                    {% if (ordem.servicos and ordem.servicos|length > 0) or (ordem.produtos_utilizados and ordem.produtos_utilizados|length > 0) %}
+                    <div class="mt-4 p-3 rounded-3" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border: 1px solid rgba(102, 126, 234, 0.2);">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1 fw-bold">
+                                    <i class="fas fa-receipt me-2 text-primary"></i>
+                                    Resumo do Orçamento
+                                </h6>
+                                <small class="text-muted">
+                                    {{ (ordem.servicos|length if ordem.servicos else 0) + (ordem.produtos_utilizados|length if ordem.produtos_utilizados else 0) }} itens no total
+                                </small>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="fs-4 fw-bold text-success">
+                                    R$ {{ '{:.2f}'.format(ordem.valor_total or 0).replace('.', ',') }}
+                                </div>
+                                {% if ordem.valor_desconto and ordem.valor_desconto > 0 %}
+                                <small class="text-danger">
+                                    Desconto: R$ {{ '{:.2f}'.format(ordem.valor_desconto).replace('.', ',') }}
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- CARD CONTROLE DE TEMPO E DESLOCAMENTO -->
+            {% if ordem.hora_inicial or ordem.hora_final or ordem.km_inicial or ordem.km_final or ordem.total_horas or ordem.total_km %}
+            <div class="glass-card mb-4">
+                <div class="section-header">
+                    <h5><i class="fas fa-stopwatch text-warning"></i> Controle de Tempo e Deslocamento</h5>
+                </div>
+                <div class="info-card">
+                    <div class="row g-4">
+                        <!-- CONTROLE DE TEMPO -->
+                        {% if ordem.hora_inicial or ordem.hora_final or ordem.total_horas %}
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3 d-flex align-items-center">
+                                <i class="fas fa-clock text-primary me-2"></i>
+                                Controle de Horário
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-glass mb-0">
+                                    {% if ordem.hora_inicial %}
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-play me-2 text-success"></i>Hora Inicial:
+                                        </td>
+                                        <td class="text-end fw-bold">
+                                            {{ ordem.hora_inicial.strftime('%H:%M') }}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if ordem.hora_final %}
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-stop me-2 text-danger"></i>Hora Final:
+                                        </td>
+                                        <td class="text-end fw-bold">
+                                            {{ ordem.hora_final.strftime('%H:%M') }}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if ordem.total_horas %}
+                                    <tr style="border-top: 2px solid rgba(255,255,255,0.2);">
+                                        <td class="fw-bold text-primary">
+                                            <i class="fas fa-hourglass-half me-2"></i>Total Trabalhado:
+                                        </td>
+                                        <td class="text-end fw-bold text-primary fs-5">
+                                            {{ ordem.total_horas }}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <!-- CONTROLE DE KM -->
+                        {% if ordem.km_inicial or ordem.km_final or ordem.total_km %}
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3 d-flex align-items-center">
+                                <i class="fas fa-route text-info me-2"></i>
+                                Controle de Quilometragem
+                            </h6>
+                            <div class="table-responsive">
+                                <table class="table table-glass mb-0">
+                                    {% if ordem.km_inicial is not none %}
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-map-marker-alt me-2 text-success"></i>KM Inicial:
+                                        </td>
+                                        <td class="text-end fw-bold">
+                                            {{ '{:,.0f}'.format(ordem.km_inicial).replace(',', '.') }} km
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if ordem.km_final is not none %}
+                                    <tr>
+                                        <td class="fw-bold text-muted">
+                                            <i class="fas fa-flag-checkered me-2 text-danger"></i>KM Final:
+                                        </td>
+                                        <td class="text-end fw-bold">
+                                            {{ '{:,.0f}'.format(ordem.km_final).replace(',', '.') }} km
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% if ordem.total_km %}
+                                    <tr style="border-top: 2px solid rgba(255,255,255,0.2);">
+                                        <td class="fw-bold text-info">
+                                            <i class="fas fa-road me-2"></i>Total Percorrido:
+                                        </td>
+                                        <td class="text-end fw-bold text-info fs-5">
+                                            {{ ordem.total_km }}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- RESUMO VISUAL -->
+                    {% if ordem.total_horas or ordem.total_km %}
+                    <div class="mt-4 p-3 rounded-3" style="background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 154, 0, 0.1) 100%); border: 1px solid rgba(255, 193, 7, 0.2);">
+                        <div class="row text-center">
+                            {% if ordem.total_horas %}
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-clock fa-2x text-warning me-3"></i>
+                                    <div>
+                                        <div class="fs-4 fw-bold text-warning">{{ ordem.total_horas }}</div>
+                                        <small class="text-muted">Tempo Total</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% if ordem.total_km %}
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-route fa-2x text-info me-3"></i>
+                                    <div>
+                                        <div class="fs-4 fw-bold text-info">{{ ordem.total_km }}</div>
+                                        <small class="text-muted">Distância Total</small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- CARD RESUMO FINANCEIRO -->
+            <div class="glass-card mb-4">
+                <div class="section-header">
+                    <h5><i class="fas fa-calculator text-success"></i> Resumo Financeiro</h5>
+                </div>
+                <div class="info-card">
+                    <div class="table-responsive">
+                        <table class="table table-glass mb-0">
+                            <tr>
+                                <td class="fw-bold text-muted">
+                                    <i class="fas fa-tools me-2 text-primary"></i>Serviços:
+                                </td>
+                                <td class="text-end">
+                                    <strong class="text-primary">R$ {{ '{:.2f}'.format(ordem.valor_total_servicos or ordem.valor_servico or 0).replace('.', ',') }}</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-muted">
+                                    <i class="fas fa-cog me-2 text-info"></i>Produtos/Peças:
+                                </td>
+                                <td class="text-end">
+                                    <strong class="text-info">R$ {{ '{:.2f}'.format(ordem.valor_total_produtos or ordem.valor_pecas or 0).replace('.', ',') }}</strong>
+                                </td>
+                            </tr>
+                            {% if ordem.valor_desconto and ordem.valor_desconto > 0 %}
+                            <tr>
+                                <td class="fw-bold text-muted">
+                                    <i class="fas fa-percentage me-2 text-danger"></i>Desconto:
+                                </td>
+                                <td class="text-end text-danger">
+                                    <strong>- R$ {{ '{:.2f}'.format(ordem.valor_desconto).replace('.', ',') }}</strong>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            <tr style="border-top: 2px solid rgba(255,255,255,0.2);">
+                                <td class="fw-bold text-success fs-5">
+                                    <i class="fas fa-dollar-sign me-2"></i>Total Geral:
+                                </td>
+                                <td class="text-end text-success fs-5">
+                                    <strong>R$ {{ '{:.2f}'.format(ordem.valor_total_calculado_novo or ordem.valor_total or 0).replace('.', ',') }}</strong>
+                                </td>
+                            </tr>
+                            {% if ordem.valor_entrada and ordem.valor_entrada > 0 %}
+                            <tr style="background: rgba(25, 135, 84, 0.1);">
+                                <td class="fw-bold text-success">
+                                    <i class="fas fa-money-bill-wave me-2"></i>Entrada Paga:
+                                </td>
+                                <td class="text-end text-success">
+                                    <strong>- R$ {{ '{:.2f}'.format(ordem.valor_entrada).replace('.', ',') }}</strong>
+                                </td>
+                            </tr>
+                            <tr style="border-top: 2px solid #ffc107;">
+                                <td class="fw-bold text-warning fs-5">
+                                    <i class="fas fa-hourglass-half me-2"></i>Saldo a Receber:
+                                </td>
+                                <td class="text-end text-warning fs-5">
+                                    <strong>R$ {{ '{:.2f}'.format((ordem.valor_total_calculado_novo or ordem.valor_total or 0) - (ordem.valor_entrada or 0)).replace('.', ',') }}</strong>
+                                </td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD CONDIÇÕES DE PAGAMENTO -->
+            <div class="glass-card mb-4">
+                <div class="section-header">
+                    <h5><i class="fas fa-credit-card text-info"></i> Condições de Pagamento</h5>
+                </div>
+                <div class="info-card">
+                    <div class="mb-3">
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-money-bill me-2"></i>Forma de Pagamento:
+                        </h6>
+                        {% if ordem.condicao_pagamento == 'a_vista' %}
+                            <span class="badge bg-success fs-6 px-3 py-2">
+                                <i class="fas fa-money-bill-wave me-1"></i>À Vista
+                            </span>
+                            {% if ordem.data_vencimento_efetiva %}
+                            <div class="mt-2">
+                                <small class="text-muted">Vencimento: </small>
+                                <strong>{{ ordem.data_vencimento_efetiva.strftime('%d/%m/%Y') }}</strong>
+                                {% if ordem.dias_para_vencimento is not none %}
+                                    {% if ordem.dias_para_vencimento > 0 %}
+                                        <div class="small text-success">
+                                            <i class="fas fa-clock me-1"></i>{{ ordem.dias_para_vencimento }} dia(s) para vencer
+                                        </div>
+                                    {% elif ordem.dias_para_vencimento == 0 %}
+                                        <div class="small text-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Vence hoje
+                                        </div>
+                                    {% else %}
+                                        <div class="small text-danger">
+                                            <i class="fas fa-times-circle me-1"></i>Vencido há {{ ordem.dias_para_vencimento|abs }} dia(s)
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-warning fs-6 px-3 py-2">
+                                <i class="fas fa-credit-card me-1"></i>{{ ordem.numero_parcelas }}x Parcelado
+                            </span>
+                            
+                            {% if ordem.valor_entrada and ordem.valor_entrada > 0 %}
+                            <div class="mt-3">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="p-3 rounded-3" style="background: rgba(25, 135, 84, 0.1); border-left: 4px solid #198754;">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-money-bill-wave me-2 text-success"></i>
+                                                    <small class="text-muted">Entrada:</small>
+                                                </div>
+                                                <strong class="text-success fs-4">R$ {{ '{:.2f}'.format(ordem.valor_entrada).replace('.', ',') }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-3 rounded-3" style="background: rgba(255, 193, 7, 0.1); border-left: 4px solid #ffc107;">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <i class="fas fa-hourglass-half me-2 text-warning"></i>
+                                                    <small class="text-muted">Saldo a Pagar:</small>
+                                                </div>
+                                                <strong class="text-warning fs-4">R$ {{ '{:.2f}'.format((ordem.valor_total or 0) - (ordem.valor_entrada or 0)).replace('.', ',') }}</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="mt-3 p-3 rounded-3" style="background: rgba(220, 53, 69, 0.1); border-left: 4px solid #dc3545;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                                        <small class="text-muted">Sem entrada - Total a pagar:</small>
+                                    </div>
+                                    <strong class="text-danger fs-4">R$ {{ '{:.2f}'.format(ordem.valor_total or 0).replace('.', ',') }}</strong>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            {% if ordem.data_primeira_parcela %}
+                            <div class="mt-2">
+                                <small class="text-muted">1ª Parcela: </small>
+                                <strong>{{ ordem.data_primeira_parcela.strftime('%d/%m/%Y') }}</strong>
+                                {% if ordem.dias_para_vencimento is not none %}
+                                    {% if ordem.dias_para_vencimento > 0 %}
+                                        <div class="small text-success">
+                                            <i class="fas fa-clock me-1"></i>{{ ordem.dias_para_vencimento }} dia(s) para vencer
+                                        </div>
+                                    {% elif ordem.dias_para_vencimento == 0 %}
+                                        <div class="small text-warning">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Vence hoje
+                                        </div>
+                                    {% else %}
+                                        <div class="small text-danger">
+                                            <i class="fas fa-times-circle me-1"></i>Vencida há {{ ordem.dias_para_vencimento|abs }} dia(s)
+                                        </div>
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    
+                    {% if ordem.descricao_pagamento %}
+                    <div class="mt-3 p-3 rounded-3" style="background: rgba(13, 202, 240, 0.1); border-left: 4px solid #0dcaf0;">
+                        <h6 class="fw-bold mb-1">
+                            <i class="fas fa-comment me-1"></i>Observações:
+                        </h6>
+                        <span>{{ ordem.descricao_pagamento }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Parcelas Detalhadas -->
+                    {% if ordem.parcelas and ordem.parcelas|length > 0 %}
+                    <hr class="my-3" style="border-color: rgba(255,255,255,0.1);">
+                    <h6 class="fw-bold mb-3">
+                        <i class="fas fa-receipt me-2"></i>Parcelas ({{ ordem.parcelas|length }})
+                    </h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-glass">
+                            <thead>
+                                <tr>
+                                    <th style="width: 20%;">#</th>
+                                    <th style="width: 40%;">Vencimento</th>
+                                    <th style="width: 40%;">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for parcela in ordem.parcelas %}
+                                <tr>
+                                    <td><span class="badge bg-primary">{{ parcela.numero_parcela }}</span></td>
+                                    <td><small>{{ parcela.data_vencimento.strftime('%d/%m/%Y') }}</small></td>
+                                    <td>
+                                        <strong class="text-success">R$ {{ '{:.2f}'.format(parcela.valor).replace('.', ',') }}</strong>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- TIMELINE PREMIUM -->
+            <div class="glass-card mb-4">
+                <div class="section-header">
+                    <h5><i class="fas fa-history text-info"></i> Linha do Tempo</h5>
+                </div>
+                <div class="info-card">
+                    <div class="timeline-premium">
+                        <!-- Abertura -->
+                        <div class="timeline-item-premium">
+                            <div class="timeline-marker-premium" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                                <i class="fas fa-folder-open"></i>
+                            </div>
+                            <div class="timeline-content-premium">
+                                <h6 class="mb-1 fw-bold">Ordem Aberta</h6>
+                                <p class="text-muted small mb-0">
+                                    <i class="fas fa-calendar me-1"></i>{{ ordem.data_abertura.strftime('%d/%m/%Y') }}
+                                </p>
+                                <small class="text-info">{{ ordem.dias_em_aberto }} dia(s) atrás</small>
+                            </div>
+                        </div>
+
+                        <!-- Início -->
+                        {% if ordem.data_inicio %}
+                        <div class="timeline-item-premium">
+                            <div class="timeline-marker-premium" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                                <i class="fas fa-play"></i>
+                            </div>
+                            <div class="timeline-content-premium">
+                                <h6 class="mb-1 fw-bold">Serviço Iniciado</h6>
+                                <p class="text-muted small mb-0">
+                                    <i class="fas fa-clock me-1"></i>{{ ordem.data_inicio.strftime('%d/%m/%Y %H:%M') }}
+                                </p>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Conclusão ou Status Atual -->
+                        {% if ordem.data_conclusao %}
+                        <div class="timeline-item-premium">
+                            <div class="timeline-marker-premium" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="timeline-content-premium">
+                                <h6 class="mb-1 fw-bold text-success">Serviço Concluído</h6>
+                                <p class="text-muted small mb-0">
+                                    <i class="fas fa-check-circle me-1"></i>{{ ordem.data_conclusao.strftime('%d/%m/%Y %H:%M') }}
+                                </p>
+                            </div>
+                        </div>
+                        {% elif ordem.status != 'aberta' %}
+                        <div class="timeline-item-premium">
+                            <div class="timeline-marker-premium" style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);">
+                                <i class="fas fa-cogs"></i>
+                            </div>
+                            <div class="timeline-content-premium">
+                                <h6 class="mb-1 fw-bold">{{ ordem.status_formatado }}</h6>
+                                <p class="text-muted small mb-0">Status atual</p>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- ANEXOS -->
+            {% if ordem.anexos %}
+            <div class="glass-card mb-4">
+                <div class="section-header">
+                    <h5><i class="fas fa-paperclip text-primary"></i> Anexos ({{ ordem.anexos|length }})</h5>
+                </div>
+                <div class="info-card">
+                    <div class="row g-2">
+                        {% for anexo in ordem.anexos %}
+                        <div class="col-12">
+                            <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="{{ anexo.icone }} text-primary me-2 fa-lg"></i>
+                                    <div class="flex-grow-1 min-width-0">
+                                        <h6 class="mb-0 text-truncate" title="{{ anexo.nome_original }}">
+                                            {{ anexo.nome_original }}
+                                        </h6>
+                                        <small class="text-muted">{{ anexo.tamanho_formatado }}</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Preview para imagens -->
+                                {% if anexo.tipo_arquivo.startswith('image/') %}
+                                <div class="text-center mb-2">
+                                    <img src="{{ url_for('ordem_servico.visualizar_anexo', anexo_id=anexo.id) }}" 
+                                         class="anexo-preview img-thumbnail"
+                                         alt="{{ anexo.nome_original }}"
+                                         style="max-height: 100px;">
+                                </div>
+                                {% endif %}
+                                
+                                <div class="d-flex gap-1">
+                                    <a href="{{ url_for('ordem_servico.baixar_anexo', anexo_id=anexo.id) }}" 
+                                       class="btn btn-sm btn-outline-primary flex-fill">
+                                        <i class="fas fa-download me-1"></i>Baixar
+                                    </a>
+                                    
+                                    {% if not anexo.tipo_arquivo.startswith('image/') %}
+                                    <a href="{{ url_for('ordem_servico.visualizar_anexo', anexo_id=anexo.id) }}" 
+                                       class="btn btn-sm btn-outline-info" target="_blank">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    {% endif %}
+                                    
+                                    <form method="POST" action="{{ url_for('ordem_servico.excluir_anexo', anexo_id=anexo.id) }}" 
+                                          class="d-inline" onsubmit="return confirm('Confirma exclusão?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- FLOATING ACTION MENU MELHORADO -->
+    <div class="fab-menu" id="fabMenu" style="display: none;">
+        <!-- Editar OS -->
+        <a href="{{ url_for('ordem_servico.editar', id=ordem.id) }}" class="fab-item fab-edit" title="Editar Ordem de Serviço">
+            <i class="fas fa-edit"></i>
+            <span class="fab-text">Editar OS</span>
+        </a>
+        
+        <!-- Gerar PDF -->
+        <a href="{{ url_for('ordem_servico.gerar_relatorio_pdf', id=ordem.id) }}" class="fab-item fab-pdf" target="_blank" title="Gerar Relatório em PDF">
+            <i class="fas fa-file-pdf"></i>
+            <span class="fab-text">Gerar PDF</span>
+        </a>
+        
+        <!-- Duplicar OS -->
+        <a href="{{ url_for('ordem_servico.novo') }}?duplicar={{ ordem.id }}" class="fab-item fab-duplicate" title="Duplicar esta OS">
+            <i class="fas fa-copy"></i>
+            <span class="fab-text">Duplicar</span>
+        </a>
+        
+        <!-- Nova OS -->
+        <a href="{{ url_for('ordem_servico.novo') }}" class="fab-item fab-new" title="Criar Nova Ordem de Serviço">
+            <i class="fas fa-plus"></i>
+            <span class="fab-text">Nova OS</span>
+        </a>
+        
+        <!-- Voltar para Lista -->
+        <a href="{{ url_for('ordem_servico.listar') }}" class="fab-item fab-list" title="Voltar para Lista de OS">
+            <i class="fas fa-list"></i>
+            <span class="fab-text">Listar OS</span>
+        </a>
+        
+        {% if ordem.status not in ['concluida', 'cancelada'] %}
+        <!-- Cancelar OS -->
+        <button class="fab-item fab-cancel" onclick="cancelarOS()" title="Cancelar Ordem de Serviço">
+            <i class="fas fa-ban"></i>
+            <span class="fab-text">Cancelar</span>
+        </button>
+        {% endif %}
+    </div>
+    
+    <!-- FAB PRINCIPAL MELHORADO -->
+    <button class="fab fab-main" id="fabButton" onclick="toggleFab()" title="Menu de Ações">
+        <i class="fas fa-cog" id="fabIcon"></i>
+    </button>
+</div>
+
+<script>
+// Sistema FAB Melhorado
+let fabOpen = false;
+
+// FAB Menu Toggle com Animações
+function toggleFab() {
+    const fabMenu = document.getElementById('fabMenu');
+    const fabIcon = document.getElementById('fabIcon');
+    const fabItems = fabMenu.querySelectorAll('.fab-item');
+    
+    fabOpen = !fabOpen;
+    
+    if (fabOpen) {
+        // Abrir menu
+        fabMenu.style.display = 'flex';
+        fabIcon.className = 'fas fa-times';
+        fabIcon.style.transform = 'rotate(180deg)';
+        
+        // Animar botões individualmente
+        fabItems.forEach((item, index) => {
+            setTimeout(() => {
+                item.style.animation = `slideInFab 0.5s ease ${index * 0.1}s forwards`;
+            }, 50);
+        });
+        
+    } else {
+        // Fechar menu
+        fabIcon.className = 'fas fa-cog';
+        fabIcon.style.transform = 'rotate(0deg)';
+        
+        // Animar saída
+        fabItems.forEach((item, index) => {
+            item.style.animation = `slideOutFab 0.3s ease ${index * 0.05}s forwards`;
+        });
+        
+        setTimeout(() => {
+            fabMenu.style.display = 'none';
+        }, 400);
+    }
+}
+
+// Cancelar OS com confirmação melhorada
+function cancelarOS() {
+    // Modal de confirmação personalizado
+    const modalHtml = `
+        <div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-dark text-white border-danger">
+                    <div class="modal-header border-danger">
+                        <h5 class="modal-title">
+                            <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                            Cancelar Ordem de Serviço
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Atenção!</strong> Esta ação não pode ser desfeita.
+                        </div>
+                        <p>Tem certeza que deseja cancelar a Ordem de Serviço <strong>#{{ ordem.numero }}</strong>?</p>
+                        <p class="small text-muted">O status será alterado para "Cancelada" e não poderá mais ser editada.</p>
+                    </div>
+                    <div class="modal-footer border-danger">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Não, Manter
+                        </button>
+                        <button type="button" class="btn btn-danger" onclick="confirmarCancelamento()">
+                            <i class="fas fa-ban me-2"></i>Sim, Cancelar OS
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Adicionar modal ao DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Mostrar modal
+    const modal = new bootstrap.Modal(document.getElementById('cancelModal'));
+    modal.show();
+    
+    // Remover modal após fechar
+    document.getElementById('cancelModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+// Confirmar cancelamento
+function confirmarCancelamento() {
+    const modal = bootstrap.Modal.getInstance(document.getElementById('cancelModal'));
+    modal.hide();
+    
+    // Mostrar loading
+    showToast('Cancelando ordem de serviço...', 'info');
+    
+    fetch('{{ url_for("ordem_servico.cancelar_servico", id=ordem.id) }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() if csrf_token else "" }}'
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            showToast('Ordem de serviço cancelada com sucesso!', 'success');
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+        } else {
+            throw new Error('Erro no servidor');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        showToast('Erro ao cancelar a OS. Tente novamente.', 'error');
+    });
+}
+
+// Sistema de Toast melhorado
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toastContainer') || createToastContainer();
+    
+    const toastId = 'toast-' + Date.now();
+    const iconMap = {
+        success: 'fa-check-circle',
+        error: 'fa-exclamation-triangle',
+        warning: 'fa-exclamation-circle',
+        info: 'fa-info-circle'
+    };
+    
+    const colorMap = {
+        success: 'success',
+        error: 'danger',
+        warning: 'warning',
+        info: 'info'
+    };
+    
+    const toastHtml = `
+        <div class="toast align-items-center text-white bg-${colorMap[type]} border-0" id="${toastId}" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="fas ${iconMap[type]} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, {
+        autohide: true,
+        delay: 4000
+    });
+    
+    toast.show();
+    
+    // Remover após esconder
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        this.remove();
+    });
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '9999';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Fechar FAB ao clicar fora
+document.addEventListener('click', function(event) {
+    const fabButton = document.getElementById('fabButton');
+    const fabMenu = document.getElementById('fabMenu');
+    
+    if (fabOpen && !fabButton.contains(event.target) && !fabMenu.contains(event.target)) {
+        toggleFab();
+    }
+});
+
+// Fechar FAB com ESC
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape' && fabOpen) {
+        toggleFab();
+    }
+});
+
+// Adicionar animação de saída no CSS
+const style = document.createElement('style');
+style.textContent = `
+@keyframes slideOutFab {
+    from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100px) scale(0.8);
+    }
+}
+
+/* Smooth icon transition */
+#fabIcon {
+    transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* Pulse animation para chamar atenção */
+@keyframes pulse {
+    0% { box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4); }
+    50% { box-shadow: 0 8px 32px rgba(102, 126, 234, 0.8), 0 0 0 10px rgba(102, 126, 234, 0.1); }
+    100% { box-shadow: 0 8px 32px rgba(102, 126, 234, 0.4); }
+}
+
+.fab-main {
+    animation: pulse 3s infinite;
+}
+
+.fab-main:hover {
+    animation: none;
+}
+`;
+document.head.appendChild(style);
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎨 Sistema FAB Premium carregado!');
+    
+    // Toast de boas vindas
+    setTimeout(() => {
+        showToast('Use o menu flutuante para ações rápidas!', 'info');
+    }, 2000);
+});
+</script>
+{% endblock %}
+

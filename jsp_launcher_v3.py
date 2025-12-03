@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-🚀 JSP Sistema Launcher Simplificado - Versão v3
+ JSP Sistema Launcher Simplificado - Versão v3
 ===============================================
 
 Launcher que funciona tanto como script quanto executável.
@@ -34,11 +34,11 @@ class JSPLauncherSimple:
         if getattr(sys, 'frozen', False):
             # Executando como .exe
             base_dir = sys._MEIPASS
-            print(f"🔧 Modo executável - Base: {base_dir}")
+            print(f" Modo executável - Base: {base_dir}")
         else:
             # Executando como script
             base_dir = os.path.dirname(os.path.abspath(__file__))
-            print(f"🔧 Modo script - Base: {base_dir}")
+            print(f" Modo script - Base: {base_dir}")
         
         # Configurar sys.path
         if base_dir not in sys.path:
@@ -50,20 +50,20 @@ class JSPLauncherSimple:
     
     def wait_for_server(self, timeout=30):
         """Aguarda servidor estar pronto"""
-        print("⏳ Aguardando Flask iniciar...")
+        print(" Aguardando Flask iniciar...")
         
         for i in range(timeout):
             try:
                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                     s.settimeout(1)
                     if s.connect_ex((SERVER_HOST, SERVER_PORT)) == 0:
-                        print("✅ Flask pronto!")
+                        print(" Flask pronto!")
                         return True
             except:
                 pass
             
             if i % 5 == 0 and i > 0:
-                print(f"🔄 Ainda aguardando... ({i}/{timeout}s)")
+                print(f" Ainda aguardando... ({i}/{timeout}s)")
             time.sleep(1)
         
         return False
@@ -71,15 +71,15 @@ class JSPLauncherSimple:
     def start_flask_integrated(self):
         """Inicia Flask integrado na aplicação"""
         try:
-            print("🚀 Iniciando Flask integrado...")
+            print(" Iniciando Flask integrado...")
             
             # Importar Flask
             from app.app import create_app
-            print("📦 App importado com sucesso")
+            print(" App importado com sucesso")
             
             # Criar aplicação
             self.flask_app = create_app()
-            print("⚙️ App criado com sucesso")
+            print(" App criado com sucesso")
             
             # Função para executar Flask
             def run_flask():
@@ -98,17 +98,17 @@ class JSPLauncherSimple:
                         threaded=True
                     )
                 except Exception as e:
-                    print(f"❌ Erro Flask: {e}")
+                    print(f" Erro Flask: {e}")
             
             # Iniciar thread
             self.flask_thread = threading.Thread(target=run_flask, daemon=True)
             self.flask_thread.start()
             
-            print("✅ Flask thread iniciada")
+            print(" Flask thread iniciada")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao iniciar Flask: {e}")
+            print(f" Erro ao iniciar Flask: {e}")
             import traceback
             traceback.print_exc()
             return False
@@ -129,11 +129,11 @@ class JSPLauncherSimple:
     def open_browser(self):
         """Abre navegador"""
         try:
-            print(f"🌐 Abrindo: {LOGIN_URL}")
+            print(f" Abrindo: {LOGIN_URL}")
             webbrowser.open(LOGIN_URL)
             return True
         except Exception as e:
-            print(f"❌ Erro browser: {e}")
+            print(f" Erro browser: {e}")
             return False
     
     def run(self):
@@ -145,7 +145,7 @@ class JSPLauncherSimple:
         try:
             # Configurar paths
             base_dir = self.setup_paths()
-            print(f"📁 Diretório: {base_dir}")
+            print(f" Diretório: {base_dir}")
             
             # Verificar arquivos essenciais
             app_dir = os.path.join(base_dir, 'app')
@@ -171,8 +171,8 @@ class JSPLauncherSimple:
             # Mostrar mensagem de sucesso
             self.show_message_simple("JSP Sistema", f"Sistema iniciado com sucesso!\n\nAcesso: {LOGIN_URL}\n\nO navegador foi aberto automaticamente.")
             
-            print("✅ JSP Sistema rodando!")
-            print("🔄 Mantenha esta janela aberta...")
+            print(" JSP Sistema rodando!")
+            print(" Mantenha esta janela aberta...")
             
             # Manter aplicação viva
             try:
@@ -180,13 +180,13 @@ class JSPLauncherSimple:
                     time.sleep(2)
                     # Verificar se thread ainda está ativa
                     if self.flask_thread and not self.flask_thread.is_alive():
-                        print("❌ Flask thread parou")
+                        print(" Flask thread parou")
                         break
             except KeyboardInterrupt:
                 print("\n🛑 Encerrando...")
             
         except Exception as e:
-            print(f"❌ Erro geral: {e}")
+            print(f" Erro geral: {e}")
             self.show_message_simple("Erro JSP", f"Erro inesperado:\n{str(e)}")
 
 def main():

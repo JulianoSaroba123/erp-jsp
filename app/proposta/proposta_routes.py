@@ -90,8 +90,8 @@ def listar_propostas():
         
         # Calcular estatísticas
         total_propostas = len(propostas)
-        propostas_pendentes = len([p for p in propostas if p.status in ['Pendente', 'Enviada']])
-        propostas_aprovadas = len([p for p in propostas if p.status == 'Aprovada'])
+        propostas_pendentes = len([p for p in propostas if p.status.lower() in ['pendente', 'enviada']])
+        propostas_aprovadas = len([p for p in propostas if p.status.lower() == 'aprovada'])
         valor_total = sum([p.valor_total or 0 for p in propostas])
         
         logger.debug(f"Estatísticas: total={total_propostas}, pendentes={propostas_pendentes}, aprovadas={propostas_aprovadas}, valor={valor_total}")
@@ -184,7 +184,7 @@ def nova_proposta():
                 produtos_qtds = request.form.getlist('produto_quantidade[]')
                 produtos_valores = request.form.getlist('produto_valor[]')
                 
-                logger.debug(f"📦 Produtos recebidos na criação: desc={produtos_descricoes}, qtd={produtos_qtds}, valor={produtos_valores}")
+                logger.debug(f" Produtos recebidos na criação: desc={produtos_descricoes}, qtd={produtos_qtds}, valor={produtos_valores}")
                 
                 valor_total_produtos = 0
                 produtos_validos = []
@@ -213,7 +213,7 @@ def nova_proposta():
                 servicos_qtds = request.form.getlist('servico_horas[]')  # Usando servico_horas[]
                 servicos_valores = request.form.getlist('servico_valor[]')
                 
-                logger.debug(f"🔧 Serviços recebidos na criação: desc={servicos_descricoes}, horas={servicos_qtds}, valor={servicos_valores}")
+                logger.debug(f" Serviços recebidos na criação: desc={servicos_descricoes}, horas={servicos_qtds}, valor={servicos_valores}")
                 
                 valor_total_servicos = 0
                 servicos_validos = []
@@ -270,7 +270,7 @@ def nova_proposta():
                 nova_prop.valor_total = valor_final
                 
                 db.session.commit()
-                logger.debug(f"✅ Produtos e serviços adicionados na criação: {len(produtos_validos)} produtos, {len(servicos_validos)} serviços")
+                logger.debug(f" Produtos e serviços adicionados na criação: {len(produtos_validos)} produtos, {len(servicos_validos)} serviços")
                 
             except Exception as e:
                 logger.error(f"Erro ao processar produtos/serviços na criação: {str(e)}")
@@ -416,7 +416,7 @@ def editar_proposta(id):
             produtos_qtds = request.form.getlist('produto_quantidade[]')
             produtos_valores = request.form.getlist('produto_valor[]')
             
-            logger.debug(f"📦 Produtos recebidos: desc={produtos_descricoes}, qtd={produtos_qtds}, valor={produtos_valores}")
+            logger.debug(f" Produtos recebidos: desc={produtos_descricoes}, qtd={produtos_qtds}, valor={produtos_valores}")
             
             valor_total_produtos = 0
             produtos_validos = []
@@ -446,7 +446,7 @@ def editar_proposta(id):
             servicos_qtds = request.form.getlist('servico_horas[]')  # Corrigido: usar servico_horas[]
             servicos_valores = request.form.getlist('servico_valor[]')
             
-            logger.debug(f"🔧 Serviços recebidos: desc={servicos_descricoes}, tipos={servicos_tipos}, horas={servicos_qtds}, valor={servicos_valores}")
+            logger.debug(f" Serviços recebidos: desc={servicos_descricoes}, tipos={servicos_tipos}, horas={servicos_qtds}, valor={servicos_valores}")
             
             valor_total_servicos = 0
             servicos_validos = []
@@ -520,7 +520,7 @@ def editar_proposta(id):
             proposta.valor_total = valor_final
             
             logger.debug(f"💰 Valores calculados: produtos={valor_total_produtos}, servicos={valor_total_servicos}, total={valor_final}")
-            logger.debug(f"📊 Produtos válidos: {len(produtos_validos)}, Serviços válidos: {len(servicos_validos)}")
+            logger.debug(f" Produtos válidos: {len(produtos_validos)}, Serviços válidos: {len(servicos_validos)}")
 
             # Processar parcelas: remover existentes e recriar conforme formulário
             try:
@@ -600,7 +600,7 @@ def editar_proposta(id):
 
             db.session.commit()
             
-            logger.debug(f"✅ Proposta {id} atualizada com sucesso!")
+            logger.debug(f" Proposta {id} atualizada com sucesso!")
             flash('Proposta atualizada com sucesso!', 'success')
             return redirect(url_for('proposta.visualizar_proposta', id=id))
             
@@ -784,6 +784,46 @@ def duplicar_proposta(id):
         flash(f'Erro ao duplicar proposta: {str(e)}', 'error')
         return redirect(url_for('proposta.visualizar_proposta', id=id))
 
+
+@proposta_bp.route('/<int:id>/gerar-os', methods=['POST'])
+def gerar_os_de_proposta(id):
+    """Gera uma Ordem de Serviço a partir de uma proposta aprovada."""
+    try:
+        logger.debug(f"Gerando OS a partir da proposta {id}...")
+        
+        proposta = Proposta.query.get_or_404(id)
+        
+        # Verificar se a proposta pode ser convertida
+        if not proposta.pode_converter:
+            flash('Esta proposta não pode ser convertida em OS. Verifique se está aprovada.', 'warning')
+            return redirect(url_for('proposta.visualizar_proposta', id=id))
+        
+        # Verificar se já existe OS para esta proposta
+        from app.ordem_servico.ordem_servico_model import OrdemServico
+        os_existente = OrdemServico.query.filter_by(proposta_id=id, ativo=True).first()
+        
+        if os_existente:
+            flash(f'Já existe uma OS criada para esta proposta: {os_existente.numero}', 'info')
+            return redirect(url_for('ordem_servico.visualizar', id=os_existente.id))
+        
+        # Gerar nova OS
+        nova_os = proposta.gerar_ordem_servico()
+        
+        if nova_os:
+            flash(f'Ordem de Serviço {nova_os.numero} criada com sucesso!', 'success')
+            logger.info(f"OS {nova_os.numero} criada a partir da proposta {proposta.codigo}")
+            return redirect(url_for('ordem_servico.visualizar', id=nova_os.id))
+        else:
+            flash('Erro ao gerar Ordem de Serviço. Verifique os dados da proposta.', 'error')
+            return redirect(url_for('proposta.visualizar_proposta', id=id))
+    
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Erro ao gerar OS da proposta {id}: {str(e)}")
+        flash(f'Erro ao gerar OS: {str(e)}', 'error')
+        return redirect(url_for('proposta.visualizar_proposta', id=id))
+
+
 # API Endpoints
 
 @proposta_bp.route('/api/clientes')
@@ -938,7 +978,7 @@ def relatorio_os(id):
         # Preparar dados para o template de OS
         dados_os = {
             'numero': f"OS-{proposta.codigo or proposta.id:04d}",
-            'data': proposta.data_criacao.strftime('%d/%m/%Y') if proposta.data_criacao else datetime.now().strftime('%d/%m/%Y'),
+            'data': proposta.criado_em.strftime('%d/%m/%Y') if proposta.criado_em else datetime.now().strftime('%d/%m/%Y'),
             'tecnico': 'JSP Automação',
             'prioridade': 'Normal',
             'prazo': '15 dias úteis',
