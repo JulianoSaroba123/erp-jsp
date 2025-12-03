@@ -156,3 +156,152 @@ def sobre():
 def configuracoes():
     """Página de configurações do sistema."""
     return render_template('painel/configuracoes.html')
+
+
+@painel_bp.route('/importar-dados', methods=['GET', 'POST'])
+@login_required
+def importar_dados():
+    """
+    Importa dados de um arquivo JSON exportado do SQLite local.
+    Apenas admin pode usar.
+    """
+    from flask import request, flash, jsonify
+    import json
+    
+    # Apenas admin
+    if current_user.tipo_usuario != 'admin':
+        flash('Acesso negado. Apenas administradores.', 'error')
+        return redirect(url_for('painel.dashboard'))
+    
+    if request.method == 'GET':
+        return '''
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Importar Dados - ERP JSP</title>
+            <style>
+                body { font-family: Arial; background: #0a1929; color: #fff; padding: 40px; }
+                .container { max-width: 600px; margin: 0 auto; }
+                h1 { color: #00d4ff; }
+                form { background: #1a2d42; padding: 30px; border-radius: 10px; }
+                input[type=file] { margin: 20px 0; }
+                button { background: #00d4ff; color: #000; padding: 15px 30px; border: none; 
+                         border-radius: 5px; cursor: pointer; font-size: 16px; }
+                button:hover { background: #00b8e6; }
+                .warning { background: #ffcc00; color: #000; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>📦 Importar Dados</h1>
+                <div class="warning">
+                    ⚠️ Esta ação irá importar dados do arquivo JSON para o banco de dados.
+                    Dados existentes podem ser sobrescritos!
+                </div>
+                <form method="POST" enctype="multipart/form-data">
+                    <p>Selecione o arquivo <strong>dados_para_render.json</strong>:</p>
+                    <input type="file" name="arquivo" accept=".json" required>
+                    <br><br>
+                    <button type="submit">🚀 Importar Dados</button>
+                </form>
+                <br>
+                <a href="/dashboard" style="color: #00d4ff;">← Voltar ao Dashboard</a>
+            </div>
+        </body>
+        </html>
+        '''
+    
+    # POST - processa importação
+    try:
+        arquivo = request.files.get('arquivo')
+        if not arquivo:
+            flash('Nenhum arquivo enviado.', 'error')
+            return redirect(url_for('painel.importar_dados'))
+        
+        dados = json.load(arquivo)
+        resultados = []
+        
+        # Mapeia tabelas para models
+        from app.cliente.cliente_model import Cliente
+        from app.fornecedor.fornecedor_model import Fornecedor
+        from app.produto.produto_model import Produto
+        from app.ordem_servico.ordem_servico_model import OrdemServico, OrdemServicoItem, OrdemServicoAnexo
+        from app.proposta.proposta_model import Proposta
+        
+        # Importa clientes
+        if 'clientes' in dados:
+            count = 0
+            for row in dados['clientes']['rows']:
+                if not Cliente.query.filter_by(id=row.get('id')).first():
+                    cliente = Cliente()
+                    for col, val in row.items():
+                        if hasattr(cliente, col) and col != 'id':
+                            setattr(cliente, col, val)
+                    db.session.add(cliente)
+                    count += 1
+            db.session.commit()
+            resultados.append(f"Clientes: {count} importados")
+        
+        # Importa fornecedores
+        if 'fornecedores' in dados:
+            count = 0
+            for row in dados['fornecedores']['rows']:
+                if not Fornecedor.query.filter_by(id=row.get('id')).first():
+                    obj = Fornecedor()
+                    for col, val in row.items():
+                        if hasattr(obj, col) and col != 'id':
+                            setattr(obj, col, val)
+                    db.session.add(obj)
+                    count += 1
+            db.session.commit()
+            resultados.append(f"Fornecedores: {count} importados")
+        
+        # Importa produtos
+        if 'produtos' in dados:
+            count = 0
+            for row in dados['produtos']['rows']:
+                if not Produto.query.filter_by(id=row.get('id')).first():
+                    obj = Produto()
+                    for col, val in row.items():
+                        if hasattr(obj, col) and col != 'id':
+                            setattr(obj, col, val)
+                    db.session.add(obj)
+                    count += 1
+            db.session.commit()
+            resultados.append(f"Produtos: {count} importados")
+        
+        # Importa ordens de serviço
+        if 'ordem_servico' in dados:
+            count = 0
+            for row in dados['ordem_servico']['rows']:
+                if not OrdemServico.query.filter_by(id=row.get('id')).first():
+                    obj = OrdemServico()
+                    for col, val in row.items():
+                        if hasattr(obj, col) and col != 'id':
+                            setattr(obj, col, val)
+                    db.session.add(obj)
+                    count += 1
+            db.session.commit()
+            resultados.append(f"Ordens de Serviço: {count} importadas")
+        
+        # Importa propostas
+        if 'propostas' in dados:
+            count = 0
+            for row in dados['propostas']['rows']:
+                if not Proposta.query.filter_by(id=row.get('id')).first():
+                    obj = Proposta()
+                    for col, val in row.items():
+                        if hasattr(obj, col) and col != 'id':
+                            setattr(obj, col, val)
+                    db.session.add(obj)
+                    count += 1
+            db.session.commit()
+            resultados.append(f"Propostas: {count} importadas")
+        
+        flash('✅ Importação concluída! ' + ' | '.join(resultados), 'success')
+        return redirect(url_for('painel.dashboard'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Erro na importação: {str(e)}', 'error')
+        return redirect(url_for('painel.importar_dados'))
