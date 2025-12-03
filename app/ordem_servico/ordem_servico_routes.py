@@ -1766,7 +1766,7 @@ def gerar_relatorio_pdf(id):
             print(f" DEBUG PDF: Erro de importação do WeasyPrint: {str(import_error)}")
             flash('WeasyPrint não disponível. Exibindo relatório em HTML.', 'warning')
             response = make_response(render_template(
-                'os/relatorios/relatorio_limpo.html',
+                'os/relatorios/relatorio_os.html',
                 ordem=ordem,
                 now=dt.now,
                 config=config,
@@ -1784,7 +1784,7 @@ def gerar_relatorio_pdf(id):
             print(f" DEBUG PDF: Tipo do erro: {type(pdf_error)}")
             flash(f'Erro na geração PDF: {str(pdf_error)}. Exibindo relatório em HTML.', 'warning')
             response = make_response(render_template(
-                'os/relatorios/relatorio_limpo.html',
+                'os/relatorios/relatorio_os.html',
                 ordem=ordem,
                 now=dt.now,
                 config=config,

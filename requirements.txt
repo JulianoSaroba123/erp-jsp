@@ -25,3 +25,5 @@ Werkzeug==3.0.3
 
 # Servidor de Produção
 gunicorn==21.2.0
+# PDF Generation
+WeasyPrint==62.3
