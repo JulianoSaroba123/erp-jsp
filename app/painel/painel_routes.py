@@ -407,15 +407,15 @@ def importar_auto():
         from app.ordem_servico.ordem_servico_model import OrdemServico
         
         ordens_data = [
-            {"numero": "OS-2025-002", "cliente_nome": "Ricardo Cury", "titulo": "Bomba Poço Artesiano", "status": "concluida", "prioridade": "alta", "data_abertura": "2025-11-18", "valor_servico": 360, "valor_total": 360, "tecnico_responsavel": "Juliano", "equipamento": "Bomba Poço artesiano", "marca_modelo": "NT"},
-            {"numero": "OS-2025-003", "cliente_nome": "CONDOMINIO EDIFICIO CLOVIS DOS SANTOS", "titulo": "Gerador Diesel MWM 81 kVA", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-11-11", "valor_pecas": 1100, "valor_total": 1100, "tecnico_responsavel": "Juliano", "equipamento": "Gerador Diesel MWM 81 kVA", "marca_modelo": "MWM-0229-6 / WEG- GTA 81/78KVA"},
-            {"numero": "OS20250007", "cliente_nome": "Mr Jacky", "titulo": "Máquina M5", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-11-18", "valor_servico": 720, "valor_total": 720, "tecnico_responsavel": "Juliano", "equipamento": "Calandra Termotransferidora M5", "marca_modelo": "TF-601"},
-            {"numero": "OS20250008", "cliente_nome": "Rodrigo Quartarolo", "titulo": "Bomba de Desinfecção", "status": "concluida", "prioridade": "alta", "data_abertura": "2025-11-18", "valor_servico": 200, "valor_total": 200, "tecnico_responsavel": "Juliano", "equipamento": "Bomba de produto", "marca_modelo": "Sem Marca"},
-            {"numero": "OS20250009", "cliente_nome": "Sergio Yoshio Fujiwara", "titulo": "Atendimento Emergencial", "status": "concluida", "prioridade": "alta", "data_abertura": "2025-11-21", "valor_servico": 1240, "valor_pecas": 510, "valor_total": 1750, "tecnico_responsavel": "Juliano", "equipamento": "Grupo Gerador / Pivô", "marca_modelo": "BTA225-MI 09"},
-            {"numero": "OS20250010", "cliente_nome": "Mr Jacky", "titulo": "Revisadora 01", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-11-21", "valor_servico": 180, "valor_pecas": 181.45, "valor_total": 361.45, "tecnico_responsavel": "Juliano", "equipamento": "Revisadora 01", "marca_modelo": "S/marca"},
-            {"numero": "OS20250011", "cliente_nome": "Sander", "titulo": "Grupos Geradores", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-11-27", "valor_servico": 800, "valor_total": 800, "tecnico_responsavel": "Juliano", "equipamento": "Grupos Geradores 1 e 2", "marca_modelo": "MWM"},
-            {"numero": "OS20250016", "cliente_nome": "CONDOMINIO EDIFICIO CLOVIS DOS SANTOS", "titulo": "Grupo Gerador", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-12-02", "valor_servico": 360, "valor_total": 360, "tecnico_responsavel": "Juliano", "equipamento": "Grupo-Gerador", "marca_modelo": "MWM-0229-6 / WEG- GTA 81/78KVA"},
-            {"numero": "OS20250017", "cliente_nome": "Mr Jacky", "titulo": "Maquina M5/ Revisora 01", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-12-01", "valor_servico": 760, "valor_total": 760, "tecnico_responsavel": "Juliano", "equipamento": "Calandra Termo transferidora /Revisadora", "marca_modelo": "TF 601/ OMATEC"}
+            {"numero": "OS-2025-002", "cliente_nome": "Ricardo Cury", "titulo": "Bomba Poço Artesiano", "status": "concluida", "prioridade": "alta", "data_abertura": "2025-11-18", "data_inicio": "2025-11-18 07:30:00", "data_conclusao": "2025-11-18 09:30:00", "data_vencimento_pagamento": "2025-11-25", "valor_servico": 360, "valor_total": 360, "tecnico_responsavel": "Juliano", "equipamento": "Bomba Poço artesiano", "marca_modelo": "NT", "solicitante": "Mário", "solucao": "Solicitado a substituição por uma igual ou compatível"},
+            {"numero": "OS-2025-003", "cliente_nome": "CONDOMINIO EDIFICIO CLOVIS DOS SANTOS", "titulo": "Gerador Diesel MWM 81 kVA", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-11-11", "data_inicio": "2025-11-20 13:30:00", "data_conclusao": "2025-11-20 17:40:00", "data_vencimento_pagamento": "2025-11-24", "valor_pecas": 1100, "valor_total": 1100, "tecnico_responsavel": "Juliano", "equipamento": "Gerador Diesel MWM 81 kVA", "marca_modelo": "MWM-0229-6 / WEG- GTA 81/78KVA", "solicitante": "Rose", "observacoes": "Orçamento enviado para aprovação do cliente"},
+            {"numero": "OS20250007", "cliente_nome": "Mr Jacky", "titulo": "Máquina M5", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-11-18", "data_conclusao": "2025-11-19 20:28:00", "data_vencimento_pagamento": "2025-11-24", "valor_servico": 720, "valor_total": 720, "tecnico_responsavel": "Juliano", "equipamento": "Calandra Termotransferidora M5", "marca_modelo": "TF-601", "solicitante": "Márcia", "solucao": "Realizado reaperto nos bornes de conexão dos terminais do sensor de temperatura. Reapertado a temperatura o sensor que estava solto. Feito a calibração da temperatura"},
+            {"numero": "OS20250008", "cliente_nome": "Rodrigo Quartarolo", "titulo": "Bomba de Desinfecção", "status": "concluida", "prioridade": "alta", "data_abertura": "2025-11-18", "data_inicio": "2025-11-18 08:00:00", "data_conclusao": "2025-11-18 08:00:00", "data_vencimento_pagamento": "2025-11-24", "valor_servico": 200, "valor_total": 200, "tecnico_responsavel": "Juliano", "equipamento": "Bomba de produto", "marca_modelo": "Sem Marca", "solicitante": "Rodrigo", "solucao": "Solicitado o destravamento da bomba. Substituído o cabo inteiro nesse ponto e reapertado as conexões. Realizado testes de comando, ok."},
+            {"numero": "OS20250009", "cliente_nome": "Sergio Yoshio Fujiwara", "titulo": "Atendimento Emergencial", "status": "concluida", "prioridade": "alta", "data_abertura": "2025-11-21", "data_inicio": "2025-11-21 13:30:00", "data_conclusao": "2025-11-21 21:45:00", "data_vencimento_pagamento": "2025-11-24", "valor_servico": 1240, "valor_pecas": 510, "valor_total": 1750, "tecnico_responsavel": "Juliano", "equipamento": "Grupo Gerador / Pivô", "marca_modelo": "BTA225-MI 09", "solicitante": "Mateus", "solucao": "Grupo gerador - Substituição da placa AVR. Pivô - Isolado o cabo de comando e detectado 2 chaves de segurança danificadas e um fim de curso danificado nas torres"},
+            {"numero": "OS20250010", "cliente_nome": "Mr Jacky", "titulo": "Revisadora 01", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-11-21", "data_inicio": "2025-11-21 10:35:00", "data_conclusao": "2025-11-21 11:35:00", "data_vencimento_pagamento": "2025-11-24", "valor_servico": 180, "valor_pecas": 181.45, "valor_total": 361.45, "tecnico_responsavel": "Juliano", "equipamento": "Revisadora 01", "marca_modelo": "S/marca", "solicitante": "Márcia", "solucao": "Substituição da pedaleira e Lâmpadas"},
+            {"numero": "OS20250011", "cliente_nome": "Sander", "titulo": "Grupos Geradores", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-11-27", "data_inicio": "2025-11-27 08:00:00", "data_conclusao": "2025-11-27 16:00:00", "data_vencimento_pagamento": "2025-12-01", "valor_servico": 800, "valor_total": 800, "tecnico_responsavel": "Juliano", "equipamento": "Grupos Geradores 1 e 2", "marca_modelo": "MWM", "solicitante": "Sander", "solucao": "Realizado a limpeza e organização dos cabos de comando dos dois grupos geradores e regulagem de abertura e fechamento da porta compartimento do painel de comando"},
+            {"numero": "OS20250016", "cliente_nome": "CONDOMINIO EDIFICIO CLOVIS DOS SANTOS", "titulo": "Grupo Gerador", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-12-02", "data_inicio": "2025-12-02 13:30:00", "data_conclusao": "2025-12-02 15:30:00", "data_vencimento_pagamento": "2025-12-05", "valor_servico": 360, "valor_total": 360, "tecnico_responsavel": "Juliano", "equipamento": "Grupo-Gerador", "marca_modelo": "MWM-0229-6 / WEG- GTA 81/78KVA", "solicitante": "Rose", "observacoes": "Recomendo aumentar a frequência de partidas semanais.", "solucao": "Foi desmontado o compartimento do mecanismo do acelerador eletrônico que se localiza na bomba injetora. Realizado a limpeza do compartimento do mecanismo do acelerador que estava travado. Realizado vários testes de partida e funcionamento."},
+            {"numero": "OS20250017", "cliente_nome": "Mr Jacky", "titulo": "Maquina M5/ Revisora 01", "status": "concluida", "prioridade": "normal", "data_abertura": "2025-12-01", "data_inicio": "2025-12-01 09:30:00", "data_conclusao": "2025-12-01 11:30:00", "data_vencimento_pagamento": "2025-12-03", "valor_servico": 760, "valor_total": 760, "tecnico_responsavel": "Juliano", "equipamento": "Calandra Termo transferidora /Revisadora", "marca_modelo": "TF 601/ OMATEC", "solicitante": "Márcia", "solucao": "M5 - Realizado o ajuste de compensação no controlador. Feito acompanhamento do processo. Revisadora 01 - Retirado a placa de controle para manutenção e testes em bancada"}
         ]
         
         # Importa ordens de serviço
@@ -423,17 +423,39 @@ def importar_auto():
         count = 0
         for row in ordens_data:
             exists = OrdemServico.query.filter_by(numero=row.get('numero')).first()
-            if not exists:
-                # Busca cliente pelo nome
+            if exists:
+                # Atualiza os dados existentes
+                obj = exists
+                cliente = Cliente.query.filter_by(nome=row.get('cliente_nome')).first()
+                if cliente:
+                    obj.cliente_id = cliente.id
+                for col, val in row.items():
+                    if col == 'cliente_nome':
+                        continue
+                    if col == 'data_abertura' and val:
+                        val = datetime.strptime(val, '%Y-%m-%d').date()
+                    elif col == 'data_vencimento_pagamento' and val:
+                        val = datetime.strptime(val, '%Y-%m-%d').date()
+                    elif col in ['data_inicio', 'data_conclusao'] and val:
+                        val = datetime.strptime(val, '%Y-%m-%d %H:%M:%S')
+                    if hasattr(obj, col):
+                        setattr(obj, col, val)
+                count += 1
+            else:
+                # Cria nova ordem
                 cliente = Cliente.query.filter_by(nome=row.get('cliente_nome')).first()
                 if cliente:
                     obj = OrdemServico()
                     obj.cliente_id = cliente.id
                     for col, val in row.items():
                         if col == 'cliente_nome':
-                            continue  # Pula, já processamos
+                            continue
                         if col == 'data_abertura' and val:
                             val = datetime.strptime(val, '%Y-%m-%d').date()
+                        elif col == 'data_vencimento_pagamento' and val:
+                            val = datetime.strptime(val, '%Y-%m-%d').date()
+                        elif col in ['data_inicio', 'data_conclusao'] and val:
+                            val = datetime.strptime(val, '%Y-%m-%d %H:%M:%S')
                         if hasattr(obj, col):
                             setattr(obj, col, val)
                     obj.ativo = True
