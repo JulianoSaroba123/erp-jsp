@@ -620,16 +620,48 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Função para converter valor monetário para número
+    // Função para converter valor monetário para número (robusta: BR e US)
     function converterParaNumero(valor) {
-        if (!valor) return 0;
-        // Remove R$, espaços e pontos de milhar, depois troca vírgula por ponto
-        let limpo = valor.toString()
-            .replace('R$', '')
-            .replace(/\s/g, '')
-            .replace(/\./g, '')  // Remove pontos de milhar
-            .replace(',', '.');   // Troca vírgula decimal por ponto
-        return parseFloat(limpo) || 0;
+        if (valor === null || valor === undefined) return 0;
+        let s = valor.toString().trim();
+        if (s === '') return 0;
+
+        // Remove símbolo de moeda e espaços
+        s = s.replace('R$', '').replace(/\s/g, '');
+
+        // Casos:
+        // 1) BR: 1.750,00 (ponto = milhar, vírgula = decimal)
+        // 2) US: 1,750.00 (vírgula = milhar, ponto = decimal)
+        // 3) Simples BR: 700,00
+        // 4) Simples US: 700.00
+
+        const hasComma = s.includes(',');
+        const hasDot = s.includes('.');
+
+        if (hasComma && hasDot) {
+            // Decidir pelo padrão observando o separador decimal
+            const lastComma = s.lastIndexOf(',');
+            const lastDot = s.lastIndexOf('.');
+            if (lastComma > lastDot) {
+                // Ex: 1.750,00 → BR
+                // Remove pontos de milhar, troca vírgula por ponto
+                s = s.replace(/\./g, '').replace(',', '.');
+            } else {
+                // Ex: 1,750.00 → US
+                // Remove vírgulas de milhar, mantém ponto como decimal
+                s = s.replace(/,/g, '');
+            }
+        } else if (hasComma && !hasDot) {
+            // Provável BR: 700,00
+            s = s.replace(/\./g, '').replace(',', '.');
+        } else {
+            // Apenas ponto ou nenhum separador: tratar como decimal com ponto
+            // Também remover qualquer vírgula residual (milhar) por segurança
+            s = s.replace(/,/g, '');
+        }
+
+        const n = parseFloat(s);
+        return isNaN(n) ? 0 : n;
     }
     
     // Função para formatar número para moeda brasileira (não depende de locale)
@@ -1280,8 +1312,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Calcular totais iniciais
-            calcularTotaisGerais();
+            // Calcular totais iniciais (apenas se houver itens)
+            const temServicos = document.querySelectorAll('.servico-total').length > 0;
+            const temProdutos = document.querySelectorAll('.produto-total').length > 0;
+            if (temServicos || temProdutos) {
+                calcularTotaisGerais();
+            }
             console.log('✅ Eventos inicializados nos itens existentes');
         }, 250);
     }
