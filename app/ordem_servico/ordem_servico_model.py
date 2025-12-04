@@ -566,15 +566,10 @@ class OrdemServicoItem(BaseModel):
         return f'<OrdemServicoItem {self.descricao}: {self.quantidade} {self.tipo_servico}>'
     
     def calcular_total(self):
-        """Calcula valor total do item baseado no tipo de serviço."""
-        if self.tipo_servico == 'fechado':
-            # Para serviço fechado, ignora quantidade
-            self.valor_total = float(Decimal(str(self.valor_unitario or 0)))
-        else:
-            # Para hora ou dia, multiplica quantidade × valor unitário
-            quantidade = float(self.quantidade or 0)
-            valor_unit = float(self.valor_unitario or 0)
-            self.valor_total = float(Decimal(str(quantidade)) * Decimal(str(valor_unit)))
+        """Calcula valor total do item (quantidade × valor unitário)."""
+        quantidade = float(self.quantidade or 0)
+        valor_unit = float(self.valor_unitario or 0)
+        self.valor_total = float(Decimal(str(quantidade)) * Decimal(str(valor_unit)))
     
     @property
     def tipo_servico_display(self):
