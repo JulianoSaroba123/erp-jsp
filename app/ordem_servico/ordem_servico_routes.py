@@ -814,9 +814,8 @@ def editar(id):
             ordem.prioridade = request.form.get('prioridade', 'normal')
             ordem.data_prevista = data_prevista
             ordem.tecnico_responsavel = request.form.get('tecnico_responsavel', '').strip()
-            ordem.valor_servico = valor_servico
-            ordem.valor_pecas = valor_pecas
-            ordem.valor_desconto = valor_desconto
+            # valor_servico e valor_pecas serão recalculados após processar itens
+            ordem.valor_desconto = safe_decimal_convert(request.form.get('valor_desconto', '0'), 0)
             ordem.prazo_garantia = int(request.form.get('prazo_garantia', 0))
             ordem.equipamento = request.form.get('equipamento', '').strip()
             ordem.marca_modelo = request.form.get('marca_modelo', '').strip()
