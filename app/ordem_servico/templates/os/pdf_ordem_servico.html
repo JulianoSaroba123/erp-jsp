@@ -524,19 +524,19 @@
                 <div class="financial-summary">
                     <div class="financial-row">
                         <span class="financial-label">Valor dos Serviços:</span>
-                        <span class="financial-value">R$ {{ "%.2f"|format(ordem.valor_servico|float) if ordem.valor_servico else "0,00" }}</span>
+                        <span class="financial-value">R$ {{ "%.2f"|format(ordem.valor_total_servicos|float) if ordem.valor_total_servicos else "0,00" }}</span>
                     </div>
                     <div class="financial-row">
                         <span class="financial-label">Valor das Peças:</span>
-                        <span class="financial-value">R$ {{ "%.2f"|format(ordem.valor_pecas|float) if ordem.valor_pecas else "0,00" }}</span>
+                        <span class="financial-value">R$ {{ "%.2f"|format(ordem.valor_total_produtos|float) if ordem.valor_total_produtos else "0,00" }}</span>
                     </div>
                     <div class="financial-row">
                         <span class="financial-label">SUBTOTAL:</span>
-                        <span class="financial-value">R$ {{ "%.2f"|format((ordem.valor_servico|float + ordem.valor_pecas|float) if (ordem.valor_servico and ordem.valor_pecas) else 0) }}</span>
+                        <span class="financial-value">R$ {{ "%.2f"|format((ordem.valor_total_servicos|float + ordem.valor_total_produtos|float) if (ordem.valor_total_servicos and ordem.valor_total_produtos) else 0) }}</span>
                     </div>
                     <div class="financial-row">
                         <span class="financial-label">TOTAL A PAGAR:</span>
-                        <span class="financial-value">R$ {{ "%.2f"|format(ordem.valor_total|float) if ordem.valor_total else "0,00" }}</span>
+                        <span class="financial-value">R$ {{ "%.2f"|format(ordem.valor_total_calculado_novo|float) if ordem.valor_total_calculado_novo else "0,00" }}</span>
                     </div>
                 </div>
             </div>
