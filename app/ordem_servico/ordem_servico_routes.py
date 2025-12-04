@@ -477,7 +477,10 @@ def novo():
                     produto.calcular_total()
                     db.session.add(produto)
             
-            # Recalcula valor total considerando itens (DEPOIS que todos os itens foram criados)
+            # Recalcula valores principais considerando itens (DEPOIS que todos os itens foram criados)
+            # Garante consistência entre telas e PDF
+            ordem.valor_servico = ordem.valor_total_servicos
+            ordem.valor_pecas = ordem.valor_total_produtos
             ordem.valor_total = ordem.valor_total_calculado_novo
             
             # NOTE: parcelas processing moved to after total calculation (see below)
@@ -656,9 +659,11 @@ def novo():
                             )
                             db.session.add(parcela)
 
-            # Recalcula e atualiza valor total antes de confirmar transação
+            # Recalcula e atualiza valores antes de confirmar transação
+            ordem.valor_servico = ordem.valor_total_servicos
+            ordem.valor_pecas = ordem.valor_total_produtos
             ordem.valor_total = ordem.valor_total_calculado_novo
-            print(f"DEBUG: Valor total calculado: R$ {ordem.valor_total}")
+            print(f"DEBUG: Totais calculados → Serviços: R$ {ordem.valor_servico} | Peças: R$ {ordem.valor_pecas} | Total: R$ {ordem.valor_total}")
 
             try:
                 print("DEBUG: Tentando fazer commit da ordem...")
