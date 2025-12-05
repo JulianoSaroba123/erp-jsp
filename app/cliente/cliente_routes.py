@@ -52,6 +52,14 @@ def listar():
 def novo():
     """Cria um novo cliente."""
     if request.method == 'POST':
+        print(f"\n{'='*60}")
+        print(f"🆕 NOVO CLIENTE - POST RECEBIDO")
+        print(f"{'='*60}")
+        print(f"📋 Form data keys: {list(request.form.keys())}")
+        print(f"📝 Nome: {request.form.get('nome')}")
+        print(f"🏢 Tipo: {request.form.get('tipo')}")
+        print(f"📄 CPF/CNPJ: {request.form.get('cpf_cnpj')}")
+        print(f"{'='*60}\n")
         try:
             # Validar se CPF/CNPJ já existe (incluindo clientes inativos)
             cpf_cnpj = request.form.get('cpf_cnpj')
@@ -88,20 +96,29 @@ def novo():
                             return render_template('cliente/form.html')
                     else:
                         # Cliente ativo - erro
+                        print(f"⚠️ VALIDAÇÃO: CPF/CNPJ {cpf_cnpj} já existe (cliente ativo)")
                         flash(f'CPF/CNPJ {cpf_cnpj} já está sendo usado pelo cliente ativo: {cliente_existente.nome}', 'error')
-                        return render_template('cliente/form.html')
+                        # Criar objeto com dados do form para não perder
+                        cliente = Cliente(**{k: v for k, v in request.form.items() if hasattr(Cliente, k)})
+                        return render_template('cliente/form.html', cliente=cliente)
             
             # Validar campos obrigatórios
             nome = request.form.get('nome', '').strip()
             tipo = request.form.get('tipo', '')
             
             if not nome:
+                print("⚠️ VALIDAÇÃO: Nome é obrigatório!")
                 flash('Nome é obrigatório!', 'error')
-                return render_template('cliente/form.html')
+                # Criar objeto com dados do form para não perder
+                cliente = Cliente(**{k: v for k, v in request.form.items() if hasattr(Cliente, k)})
+                return render_template('cliente/form.html', cliente=cliente)
                 
             if not tipo:
+                print("⚠️ VALIDAÇÃO: Tipo é obrigatório!")
                 flash('Tipo de cliente (PF/PJ) é obrigatório!', 'error')
-                return render_template('cliente/form.html')
+                # Criar objeto com dados do form para não perder
+                cliente = Cliente(**{k: v for k, v in request.form.items() if hasattr(Cliente, k)})
+                return render_template('cliente/form.html', cliente=cliente)
             
             cliente = Cliente(
                 # Dados principais
@@ -184,11 +201,15 @@ def novo():
             
         except Exception as e:
             db.session.rollback()
-            print(f"ERRO ao criar cliente: {str(e)}")
+            print(f"❌ ERRO ao criar cliente: {str(e)}")
             import traceback
             traceback.print_exc()
             flash(f'Erro ao criar cliente: {str(e)}', 'error')
+            # Criar objeto com dados do form para não perder
+            cliente = Cliente(**{k: v for k, v in request.form.items() if hasattr(Cliente, k)})
+            return render_template('cliente/form.html', cliente=cliente)
     
+    # GET - formulário vazio
     cliente = Cliente()
     return render_template('cliente/form.html', cliente=cliente)
 
