@@ -33,7 +33,7 @@ def setup_completo():
         # 2. Criar usuário admin
         print("👤 PASSO 2: Criando usuário admin...")
         try:
-            from app.auth.models import Usuario
+            from app.auth.usuario_model import Usuario
             from werkzeug.security import generate_password_hash
             
             admin = Usuario.query.filter_by(usuario='admin').first()
@@ -130,8 +130,8 @@ def setup_completo():
             # Tentar inserir cliente teste
             teste = Cliente(
                 nome='CLIENTE TESTE RENDER',
-                tipo_pessoa='juridica',
-                cnpj='00.000.000/0001-00',
+                tipo='PJ',
+                cpf_cnpj='00.000.000/0001-00',
                 email='teste@render.com',
                 telefone='(00) 0000-0000',
                 ativo=True
