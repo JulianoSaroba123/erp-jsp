@@ -509,15 +509,15 @@ def editar_proposta(id):
                 )
                 db.session.add(novo_servico)
             
-            # Calcular valores finais
-            subtotal = valor_total_produtos + valor_total_servicos
-            desconto_valor = subtotal * (proposta.desconto / 100)
-            valor_final = subtotal - desconto_valor
-            
-            # Atualizar valores na proposta
+            # Calcular valores finais a partir dos itens válidos
+            # (não usar valores readonly do formulário)
             proposta.valor_produtos = valor_total_produtos
             proposta.valor_servicos = valor_total_servicos
-            proposta.valor_total = valor_final
+            
+            # Recalcular total considerando desconto
+            subtotal = valor_total_produtos + valor_total_servicos
+            desconto_valor = subtotal * (proposta.desconto / 100)
+            proposta.valor_total = subtotal - desconto_valor
             
             logger.debug(f"💰 Valores calculados: produtos={valor_total_produtos}, servicos={valor_total_servicos}, total={valor_final}")
             logger.debug(f" Produtos válidos: {len(produtos_validos)}, Serviços válidos: {len(servicos_validos)}")
@@ -598,9 +598,14 @@ def editar_proposta(id):
             except Exception as e:
                 logger.error(f"Erro ao processar parcelas da proposta {id}: {e}")
 
+            # Flush para garantir que os itens foram salvos antes de commit final
+            db.session.flush()
+            
+            # Commit final
             db.session.commit()
             
             logger.debug(f" Proposta {id} atualizada com sucesso!")
+            logger.debug(f"💾 Valores salvos: produtos={proposta.valor_produtos}, servicos={proposta.valor_servicos}, total={proposta.valor_total}")
             flash('Proposta atualizada com sucesso!', 'success')
             return redirect(url_for('proposta.visualizar_proposta', id=id))
             
