@@ -12,8 +12,11 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
     if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
         # Render às vezes fornece URL antiga; corrige para SQLAlchemy
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql://", 1)
-    # Não precisa trocar driver - psycopg2 funciona com postgresql://
+        # Usa postgresql+psycopg para psycopg v3 (compatível Python 3.13)
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql+psycopg://", 1)
+    elif SQLALCHEMY_DATABASE_URI and "postgresql://" in SQLALCHEMY_DATABASE_URI:
+        # Se já é postgresql://, adiciona driver psycopg
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgresql://", "postgresql+psycopg://", 1)
     elif not SQLALCHEMY_DATABASE_URI:
         # Fallback para SQLite local se não houver DATABASE_URL
         basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))

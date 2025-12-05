@@ -7,10 +7,10 @@ WTForms==3.1.2
 Flask-Login==0.6.3
 Flask-Migrate==4.0.5
 
-# Banco de Dados - VERSÕES COMPATÍVEIS Python 3.11
+# Banco de Dados
 SQLAlchemy==2.0.31
-# PostgreSQL driver - use psycopg2-binary for better compatibility
-psycopg2-binary==2.9.9
+# PostgreSQL driver - psycopg (v3) compatível com Python 3.11-3.13
+psycopg[binary]==3.1.18
 
 # Validação e Formatação
 email-validator==2.1.1
