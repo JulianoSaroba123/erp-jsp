@@ -171,13 +171,22 @@ def novo():
             )
             
             db.session.add(cliente)
+            print(f"DEBUG: Cliente adicionado à sessão - Nome: {cliente.nome}, CPF/CNPJ: {cliente.cpf_cnpj}")
+            
+            db.session.flush()  # Força persistência antes do commit
+            print(f"DEBUG: Flush executado - ID gerado: {cliente.id}")
+            
             db.session.commit()
+            print(f"DEBUG: Commit executado com sucesso - Cliente ID {cliente.id} salvo!")
             
             flash(f'Cliente {cliente.nome} criado com sucesso!', 'success')
             return redirect(url_for('cliente.listar'))
             
         except Exception as e:
             db.session.rollback()
+            print(f"ERRO ao criar cliente: {str(e)}")
+            import traceback
+            traceback.print_exc()
             flash(f'Erro ao criar cliente: {str(e)}', 'error')
     
     cliente = Cliente()
@@ -286,13 +295,22 @@ def editar(id):
                 cliente.motivo_bloqueio = None
                 cliente.ativo = True  # Garantir que fique ativo
             
+            print(f"DEBUG: Preparando commit - Cliente ID {cliente.id}, Nome: {cliente.nome}")
+            
+            db.session.flush()  # Força persistência antes do commit
+            print(f"DEBUG: Flush executado - Alterações aplicadas")
+            
             db.session.commit()
+            print(f"DEBUG: Commit executado com sucesso - Cliente ID {cliente.id} atualizado!")
             
             flash(f'Cliente {cliente.nome} atualizado com sucesso!', 'success')
             return redirect(url_for('cliente.listar'))
             
         except Exception as e:
             db.session.rollback()
+            print(f"ERRO ao atualizar cliente: {str(e)}")
+            import traceback
+            traceback.print_exc()
             flash(f'Erro ao atualizar cliente: {str(e)}', 'error')
     
     return render_template('cliente/form.html', cliente=cliente)
