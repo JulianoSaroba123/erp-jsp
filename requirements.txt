@@ -10,7 +10,7 @@ Flask-Migrate==4.0.5
 # Banco de Dados
 SQLAlchemy==2.0.31
 # PostgreSQL driver - psycopg (v3) compatível com Python 3.11-3.13
-psycopg[binary]==3.1.18
+psycopg[binary]>=3.2.2
 
 # Validação e Formatação
 email-validator==2.1.1
