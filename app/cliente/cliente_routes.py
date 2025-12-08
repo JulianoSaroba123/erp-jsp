@@ -103,12 +103,21 @@ def novo():
                         return render_template('cliente/form.html', cliente=cliente)
             
             # Validar campos obrigatórios
+            tipo = request.form.get('tipo', '').strip()
             nome = request.form.get('nome', '').strip()
-            tipo = request.form.get('tipo', '')
+            nome_fantasia = request.form.get('nome_fantasia', '').strip()
+            
+            # Para PJ, se nome está vazio mas tem nome_fantasia, usa nome_fantasia como nome
+            if tipo.upper() == 'PJ' and not nome and nome_fantasia:
+                nome = nome_fantasia
+                print(f"✅ PJ: Usando nome_fantasia como nome: {nome}")
             
             if not nome:
                 print("⚠️ VALIDAÇÃO: Nome é obrigatório!")
-                flash('Nome é obrigatório!', 'error')
+                if tipo.upper() == 'PJ':
+                    flash('Nome Fantasia é obrigatório para Pessoa Jurídica!', 'error')
+                else:
+                    flash('Nome é obrigatório!', 'error')
                 # Criar objeto com dados do form para não perder
                 cliente = Cliente(**{k: v for k, v in request.form.items() if hasattr(Cliente, k)})
                 return render_template('cliente/form.html', cliente=cliente)
