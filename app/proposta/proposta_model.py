@@ -261,23 +261,45 @@ class Proposta(BaseModel):
         from app.ordem_servico.ordem_servico_model import OrdemServico, OrdemServicoItem, OrdemServicoProduto
         from datetime import timedelta
         
-        # Criar nova OS
+        # Criar nova OS com todos os campos obrigatórios
         nova_os = OrdemServico(
+            # Campos obrigatórios do banco
+            numero=OrdemServico.gerar_proximo_numero(),  # Gera número sequencial
             proposta_id=self.id,
             cliente_id=self.cliente_id,
-            titulo=self.titulo,
-            descricao=self.descricao,
+            titulo=self.titulo or 'Ordem de Serviço',
+            descricao=self.descricao or '',
             observacoes=f"OS gerada automaticamente da Proposta {self.codigo}",
             status='pendente',
             prioridade=self.prioridade or 'normal',
-            tecnico_responsavel=self.vendedor,
+            data_abertura=date.today(),
+            data_prevista=date.today() + timedelta(days=7),
+            
+            # Campos opcionais com valores padrão
+            solicitante=self.cliente.nome if self.cliente else None,
+            tecnico_responsavel=self.vendedor or 'Juliano',
+            tipo_servico='a_vista',
+            
+            # Valores financeiros
+            valor_servico=0.0,
+            valor_pecas=0.0,
+            valor_desconto=float(self.desconto or 0),
             valor_total=float(self.valor_total or 0),
-            data_prevista=date.today() + timedelta(days=7),  # 7 dias para execução
-            prazo_garantia=90  # 90 dias de garantia padrão
+            
+            # Garantia
+            prazo_garantia=90,  # 90 dias padrão
+            
+            # Condições de pagamento
+            condicao_pagamento='a_vista',
+            numero_parcelas=1,
+            valor_entrada=0.0,
+            status_pagamento='pendente'
         )
         
         # Salvar a OS primeiro para ter o ID
-        nova_os.save()
+        from app.extensoes import db
+        db.session.add(nova_os)
+        db.session.flush()  # Gera o ID sem fazer commit
         
         # Transferir produtos
         for produto in self.itens_produto:
@@ -290,7 +312,7 @@ class Proposta(BaseModel):
                     valor_unitario=produto.valor_unitario,
                     valor_total=produto.valor_total
                 )
-                os_produto.save()
+                db.session.add(os_produto)
         
         # Transferir serviços
         for servico in self.itens_servico:
@@ -303,11 +325,13 @@ class Proposta(BaseModel):
                     valor_unitario=servico.valor_unitario,
                     valor_total=servico.valor_total
                 )
-                os_servico.save()
+                db.session.add(os_servico)
         
         # Atualizar valores da OS
         nova_os.atualizar_valores_automaticos()
-        nova_os.save()
+        
+        # Commit de tudo
+        db.session.commit()
         
         return nova_os
 

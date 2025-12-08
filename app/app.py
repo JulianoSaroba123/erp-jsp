@@ -97,7 +97,7 @@ def create_app(config_name=None):
         try:
             from app.extensoes import db
             db.create_all()
-            print(" ✓ Tabelas do banco de dados verificadas/criadas!")
+            print("[OK] Tabelas do banco de dados verificadas/criadas!")
             
             # Cria usuário admin padrão se não existir nenhum usuário
             from app.auth.usuario_model import Usuario
@@ -110,10 +110,10 @@ def create_app(config_name=None):
                     ativo=True,
                     email_confirmado=True
                 )
-                admin.set_senha('admin123')
+                admin.set_password('admin123')
                 db.session.add(admin)
                 db.session.commit()
-                print(" ✓ Usuário admin padrão criado! (admin / admin123)")
+                print("[OK] Usuario admin padrao criado! (admin / admin123)")
         except Exception as e:
             print(f" ⚠ Aviso na criação de tabelas: {e}")
 

@@ -569,10 +569,20 @@
                         <span class="financial-label">SUBTOTAL:</span>
                         <span class="financial-value">R$ {{ "%.2f"|format((ordem.valor_total_servicos|float + ordem.valor_total_produtos|float) if (ordem.valor_total_servicos and ordem.valor_total_produtos) else 0) }}</span>
                     </div>
-                    <div class="financial-row">
-                        <span class="financial-label">TOTAL A PAGAR:</span>
-                        <span class="financial-value">R$ {{ "%.2f"|format(ordem.valor_total_calculado_novo|float) if ordem.valor_total_calculado_novo else "0,00" }}</span>
+                    <div class="financial-row" style="border-top: 2px solid #1a365d; padding-top: 10px; margin-top: 10px;">
+                        <span class="financial-label" style="font-weight: bold; font-size: 14px;">TOTAL A PAGAR:</span>
+                        <span class="financial-value" style="font-weight: bold; font-size: 14px; color: #1a365d;">R$ {{ "%.2f"|format(ordem.valor_total_calculado_novo|float) if ordem.valor_total_calculado_novo else "0,00" }}</span>
                     </div>
+                    {% if ordem.valor_entrada and ordem.valor_entrada > 0 %}
+                    <div class="financial-row" style="background: #e8f5e9; padding: 8px; margin-top: 10px; border-radius: 5px;">
+                        <span class="financial-label" style="color: #2e7d32; font-weight: bold;">💰 Entrada:</span>
+                        <span class="financial-value" style="color: #2e7d32; font-weight: bold;">R$ {{ "%.2f"|format(ordem.valor_entrada|float) }}</span>
+                    </div>
+                    <div class="financial-row" style="background: #fff3e0; padding: 8px; margin-top: 5px; border-radius: 5px;">
+                        <span class="financial-label" style="color: #ef6c00; font-weight: bold;">⏳ Saldo Restante:</span>
+                        <span class="financial-value" style="color: #ef6c00; font-weight: bold;">R$ {{ "%.2f"|format((ordem.valor_total_calculado_novo|float - ordem.valor_entrada|float) if ordem.valor_total_calculado_novo and ordem.valor_entrada else 0) }}</span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
