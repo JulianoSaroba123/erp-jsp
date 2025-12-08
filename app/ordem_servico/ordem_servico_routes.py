@@ -213,14 +213,26 @@ def listar():
     
     Suporte para busca por número, cliente ou status.
     """
+    # DEBUG: Log de início
+    print("=" * 80)
+    print("🔍 DEBUG ROTA /listar")
+    print("=" * 80)
+    
     # Parâmetros de busca
     busca = request.args.get('busca', '').strip()
     status = request.args.get('status', '').strip()
     prioridade = request.args.get('prioridade', '').strip()
     cliente_id = request.args.get('cliente_id', '').strip()
     
+    print(f"📊 Parâmetros recebidos:")
+    print(f"   busca: '{busca}'")
+    print(f"   status: '{status}'")
+    print(f"   prioridade: '{prioridade}'")
+    print(f"   cliente_id: '{cliente_id}'")
+    
     # Query base
     query = OrdemServico.query.filter_by(ativo=True)
+    print(f"\n🔍 Query base criada (ativo=True)")
     
     # Aplica filtros se houver busca
     if busca:
@@ -252,11 +264,33 @@ def listar():
     # Ordena por data de abertura (mais recentes primeiro)
     ordens = query.order_by(OrdemServico.data_abertura.desc()).all()
     
+    print(f"\n📋 Resultado da query:")
+    print(f"   Total de OS encontradas: {len(ordens)}")
+    if ordens:
+        print(f"   Primeiras 3 OS:")
+        for os in ordens[:3]:
+            print(f"   - {os.numero} | {os.titulo} | Status: {os.status}")
+    else:
+        print("   ⚠️ NENHUMA OS ENCONTRADA!")
+        
+        # Debug adicional
+        total_sem_filtro = OrdemServico.query.count()
+        print(f"\n   🔍 Total de OS SEM filtro: {total_sem_filtro}")
+        
+        if total_sem_filtro > 0:
+            print("   🔍 Verificando valores do campo 'ativo':")
+            todas = OrdemServico.query.limit(5).all()
+            for os in todas:
+                print(f"      {os.numero}: ativo={os.ativo} (tipo: {type(os.ativo).__name__})")
+    
     # Lista de clientes para filtro
     clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+    print(f"\n👥 Clientes ativos: {len(clientes)}")
     
     # Estatísticas
     stats = OrdemServico.estatisticas_dashboard()
+    print(f"\n📊 Estatísticas: {stats}")
+    print("=" * 80)
     
     return render_template('os/listar.html', 
                          ordens=ordens, 
