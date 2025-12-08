@@ -517,6 +517,41 @@
             </div>
         </div>
 
+        <!-- PRODUTOS UTILIZADOS -->
+        <div class="section">
+            <div class="section-title">PRODUTOS/PEÇAS UTILIZADOS</div>
+            <div class="section-content">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #1a365d; color: white;">
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Item</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Descrição</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Qtd</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Vl Unit.</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Vl Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if ordem.produtos_utilizados and ordem.produtos_utilizados|length > 0 %}
+                            {% for produto in ordem.produtos_utilizados %}
+                            <tr>
+                                <td style="border: 1px solid #ddd; padding: 8px;">{{ loop.index }}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;">{{ produto.descricao }}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{{ produto.quantidade }}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">R$ {{ "%.2f"|format(produto.valor_unitario) }}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">R$ {{ "%.2f"|format(produto.valor_total) }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="5" style="border: 1px solid #ddd; padding: 8px; text-align: center;">Nenhum produto/peça cadastrado</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- RESUMO FINANCEIRO -->
         <div class="section">
             <div class="section-title">RESUMO FINANCEIRO</div>
@@ -542,43 +577,7 @@
             </div>
         </div>
 
-        <!-- DADOS BANCÁRIOS -->
-        <div class="section">
-            <div class="section-title">DADOS BANCÁRIOS</div>
-            <div class="section-content">
-                <div class="data-row">
-                    <div class="data-cell">
-                        <div class="data-label">Banco</div>
-                        <div class="data-value">{{ config.banco if config and config.banco else 'Banco do Brasil' }}</div>
-                    </div>
-                    <div class="data-cell">
-                        <div class="data-label">Agência</div>
-                        <div class="data-value">{{ config.agencia if config and config.agencia else '0001-9' }}</div>
-                    </div>
-                    <div class="data-cell">
-                        <div class="data-label">Conta Corrente</div>
-                        <div class="data-value">{{ config.conta if config and config.conta else '12345-6' }}</div>
-                    </div>
-                </div>
-                <div class="data-row">
-                    <div class="data-cell">
-                        <div class="data-label">Favorecido</div>
-                        <div class="data-value data-value-large">{{ config.razao_social if config and config.razao_social else 'JSP ELÉTRICA INDUSTRIAL LTDA' }}</div>
-                    </div>
-                </div>
-                <div class="data-row">
-                    <div class="data-cell">
-                        <div class="data-label">CNPJ</div>
-                        <div class="data-value">{{ config.cnpj if config and config.cnpj else '00.000.000/0001-00' }}</div>
-                    </div>
-                    <div class="data-cell">
-                        <div class="data-label">PIX</div>
-                        <div class="data-value">{{ config.pix if config and config.pix else (config.cnpj if config and config.cnpj else 'CNPJ') }}</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
+       
         <!-- CONDIÇÕES DE PAGAMENTO -->
         <div class="section">
             <div class="section-title">CONDIÇÕES DE PAGAMENTO</div>
@@ -586,23 +585,83 @@
                 <div class="data-row">
                     <div class="data-cell">
                         <div class="data-label">Forma de Pagamento</div>
-                        <div class="data-value">{{ ordem.condicao_pagamento if ordem.condicao_pagamento else 'À vista' }}</div>
+                        <div class="data-value">
+                            {% if ordem.condicao_pagamento == 'a_vista' %}
+                                À Vista
+                            {% elif ordem.condicao_pagamento == 'parcelado' %}
+                                Parcelado em {{ ordem.numero_parcelas }}x
+                            {% else %}
+                                {{ ordem.condicao_pagamento|title if ordem.condicao_pagamento else 'À Vista' }}
+                            {% endif %}
+                        </div>
                     </div>
+                    {% if ordem.valor_entrada and ordem.valor_entrada > 0 %}
                     <div class="data-cell">
-                        <div class="data-label">Parcelas</div>
-                        <div class="data-value">{{ ordem.numero_parcelas if ordem.numero_parcelas else '1x' }}</div>
+                        <div class="data-label">Valor de Entrada</div>
+                        <div class="data-value" style="font-weight: bold; color: #28a745;">R$ {{ "%.2f"|format(ordem.valor_entrada|float) }}</div>
                     </div>
+                    {% endif %}
+                    {% if ordem.condicao_pagamento == 'parcelado' and ordem.valor_entrada and ordem.valor_entrada > 0 %}
+                    <div class="data-cell">
+                        <div class="data-label">Saldo a Parcelar</div>
+                        <div class="data-value">R$ {{ "%.2f"|format((ordem.valor_total|float - ordem.valor_entrada|float) if ordem.valor_total and ordem.valor_entrada else 0) }}</div>
+                    </div>
+                    {% endif %}
+                    {% if not (ordem.valor_entrada and ordem.valor_entrada > 0) %}
                     <div class="data-cell">
                         <div class="data-label">Vencimento</div>
                         <div class="data-value">{{ ordem.data_vencimento_pagamento.strftime('%d/%m/%Y') if ordem.data_vencimento_pagamento else 'À vista' }}</div>
                     </div>
+                    {% endif %}
                 </div>
+                {% if ordem.descricao_pagamento %}
                 <div class="data-row">
                     <div class="data-cell">
                         <div class="data-label">Observações de Pagamento</div>
-                        <div class="data-value data-value-large formatted-text">{{ ordem.descricao_pagamento if ordem.descricao_pagamento else 'Pagamento à vista na entrega do serviço' }}</div>
+                        <div class="data-value data-value-large formatted-text">{{ ordem.descricao_pagamento }}</div>
                     </div>
                 </div>
+                {% endif %}
+                
+                <!-- Tabela de Parcelas -->
+                {% if ordem.parcelas and ordem.parcelas|length > 0 %}
+                <div style="margin-top: 15px;">
+                    <div style="font-weight: bold; margin-bottom: 10px; color: #1a365d;">Detalhamento das Parcelas:</div>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #1a365d; color: white;">
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Parcela</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Vencimento</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Valor</th>
+                                <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for parcela in ordem.parcelas %}
+                            <tr>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{{ parcela.numero_parcela }}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{{ parcela.data_vencimento.strftime('%d/%m/%Y') if parcela.data_vencimento else 'N/A' }}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: right; font-weight: bold;">R$ {{ "%.2f"|format(parcela.valor|float) }}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">
+                                    {% if parcela.pago %}
+                                        <span style="color: #28a745; font-weight: bold;">✓ Paga</span>
+                                    {% elif parcela.status_parcela == 'vencida' %}
+                                        <span style="color: #dc3545; font-weight: bold;">⚠ Vencida</span>
+                                    {% else %}
+                                        <span style="color: #ffc107; font-weight: bold;">⏱ Pendente</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            <tr style="background: #f8f9fa; font-weight: bold;">
+                                <td colspan="2" style="border: 1px solid #ddd; padding: 8px; text-align: right;">TOTAL DAS PARCELAS:</td>
+                                <td style="border: 1px solid #ddd; padding: 8px; text-align: right; color: #28a745;">R$ {{ "%.2f"|format(ordem.parcelas|sum(attribute='valor')|float) }}</td>
+                                <td style="border: 1px solid #ddd; padding: 8px;"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
             </div>
         </div>
 
