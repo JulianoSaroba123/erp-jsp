@@ -205,6 +205,22 @@ def get_logo_base64():
     svg_base64 = base64.b64encode(svg_logo.encode('utf-8')).decode('utf-8')
     return f"data:image/svg+xml;base64,{svg_base64}"
 
+@ordem_servico_bp.route('/teste_os')
+def teste_os():
+    """Endpoint de teste para verificar se as OS estão acessíveis"""
+    from app.ordem_servico.ordem_servico_model import OrdemServico
+    
+    todas = OrdemServico.query.all()
+    ativas = OrdemServico.query.filter_by(ativo=True).all()
+    
+    resultado = {
+        'total_os': len(todas),
+        'os_ativas': len(ativas),
+        'lista_os': [{'numero': os.numero, 'titulo': os.titulo, 'ativo': os.ativo} for os in todas]
+    }
+    
+    return jsonify(resultado)
+
 @ordem_servico_bp.route('/')
 @ordem_servico_bp.route('/listar')
 def listar():
