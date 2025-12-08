@@ -692,16 +692,50 @@
             const nomeFantasia = document.getElementById('nome_fantasia');
             const nomeHidden = document.getElementById('nome_hidden');
             
-            // Atualiza o nome hidden quando nome fantasia mudar
-            nomeFantasia.addEventListener('input', function() {
-                nomeHidden.value = this.value;
-            });
-            
-            // Se já tem valor, sincroniza
-            if (nomeFantasia.value && !nomeHidden.value) {
-                nomeHidden.value = nomeFantasia.value;
+            if (nomeFantasia && nomeHidden) {
+                // Atualiza o nome hidden quando nome fantasia mudar
+                nomeFantasia.addEventListener('input', function() {
+                    nomeHidden.value = this.value;
+                });
+                
+                // Se já tem valor, sincroniza imediatamente
+                if (nomeFantasia.value) {
+                    nomeHidden.value = nomeFantasia.value;
+                }
             }
         }
+        
+        // Antes de submeter, garante que o campo nome está preenchido
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            const tipo = tipoSelect.value;
+            
+            if (tipo === 'PJ') {
+                const nomeFantasia = document.getElementById('nome_fantasia').value.trim();
+                const nomeHidden = document.getElementById('nome_hidden');
+                
+                if (!nomeFantasia) {
+                    e.preventDefault();
+                    alert('❌ Nome Fantasia é obrigatório para Pessoa Jurídica!');
+                    document.getElementById('nome_fantasia').focus();
+                    return false;
+                }
+                
+                // Garante que o nome está preenchido com nome fantasia
+                nomeHidden.value = nomeFantasia;
+            } else {
+                const nome = document.getElementById('nome').value.trim();
+                
+                if (!nome) {
+                    e.preventDefault();
+                    alert('❌ Nome Completo é obrigatório!');
+                    document.getElementById('nome').focus();
+                    return false;
+                }
+            }
+            
+            return true;
+        });
         
         // Controla exibição do motivo de bloqueio
         function controleMotivoBoqueio() {
