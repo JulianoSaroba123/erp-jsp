@@ -1130,6 +1130,126 @@ body {
         </div>
     </div>
 
+    <!-- Informações de Pagamento -->
+    {% if ordem.condicao_pagamento or ordem.valor_entrada or ordem.parcelas %}
+    <div class="glass-card mb-4">
+        <div class="section-header">
+            <h5>
+                <i class="fas fa-credit-card text-success"></i>
+                Condições de Pagamento
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <!-- Condição de Pagamento -->
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <small class="text-muted d-block mb-1">
+                            <i class="fas fa-handshake me-1"></i>Forma de Pagamento
+                        </small>
+                        <strong>
+                            {% if ordem.condicao_pagamento == 'a_vista' %}
+                                À Vista
+                            {% elif ordem.condicao_pagamento == 'parcelado' %}
+                                Parcelado ({{ ordem.numero_parcelas }}x)
+                            {% else %}
+                                {{ ordem.condicao_pagamento|title }}
+                            {% endif %}
+                        </strong>
+                    </div>
+                </div>
+
+                <!-- Valor de Entrada -->
+                {% if ordem.valor_entrada and ordem.valor_entrada > 0 %}
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <small class="text-muted d-block mb-1">
+                            <i class="fas fa-hand-holding-usd me-1"></i>Entrada
+                        </small>
+                        <strong class="text-success">R$ {{ "{:,.2f}".format(ordem.valor_entrada or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Saldo Restante -->
+                {% if ordem.condicao_pagamento == 'parcelado' and ordem.valor_entrada and ordem.valor_entrada > 0 %}
+                <div class="col-md-6">
+                    <div class="info-card">
+                        <small class="text-muted d-block mb-1">
+                            <i class="fas fa-calculator me-1"></i>Saldo a Parcelar
+                        </small>
+                        <strong>R$ {{ "{:,.2f}".format((ordem.valor_total or 0) - (ordem.valor_entrada or 0)).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Descrição do Pagamento -->
+                {% if ordem.descricao_pagamento %}
+                <div class="col-12">
+                    <div class="info-card">
+                        <small class="text-muted d-block mb-1">
+                            <i class="fas fa-comment me-1"></i>Observações de Pagamento
+                        </small>
+                        <p class="mb-0">{{ ordem.descricao_pagamento }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Parcelas -->
+            {% if ordem.parcelas and ordem.parcelas|length > 0 %}
+            <div class="mt-3">
+                <h6 class="mb-3">
+                    <i class="fas fa-list-ol me-2"></i>Parcelas ({{ ordem.parcelas|length }})
+                </h6>
+                <div class="table-responsive">
+                    <table class="table table-glass table-hover">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-hashtag me-1"></i>Nº</th>
+                                <th><i class="fas fa-calendar me-1"></i>Vencimento</th>
+                                <th><i class="fas fa-dollar-sign me-1"></i>Valor</th>
+                                <th><i class="fas fa-info-circle me-1"></i>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for parcela in ordem.parcelas %}
+                            <tr>
+                                <td><strong>{{ parcela.numero_parcela }}</strong></td>
+                                <td>{{ parcela.data_vencimento.strftime('%d/%m/%Y') if parcela.data_vencimento else 'N/A' }}</td>
+                                <td><strong>R$ {{ "{:,.2f}".format(parcela.valor or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong></td>
+                                <td>
+                                    {% if parcela.pago %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>Paga
+                                        </span>
+                                    {% elif parcela.status_parcela == 'vencida' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>Vencida
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock me-1"></i>Pendente
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-active">
+                                <td colspan="2" class="text-end"><strong>Total das Parcelas:</strong></td>
+                                <td colspan="2"><strong class="text-success">R$ {{ "{:,.2f}".format(ordem.parcelas|sum(attribute='valor') or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Descrição do Serviço -->
     {% if ordem.descricao %}
     <div class="glass-card mb-4">
