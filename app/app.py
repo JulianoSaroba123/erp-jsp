@@ -116,8 +116,96 @@ def create_app(config_name=None):
                 print("[OK] Usuario admin padrao criado! (admin / admin123)")
         except Exception as e:
             print(f" ⚠ Aviso na criação de tabelas: {e}")
+        
+        # Popula banco com dados iniciais se estiver vazio
+        try:
+            popular_banco_se_vazio()
+        except Exception as e:
+            print(f" ⚠ Aviso ao popular banco: {e}")
 
     return app
+
+def popular_banco_se_vazio():
+    """Popula o banco com dados do erp.db se estiver vazio"""
+    from app.ordem_servico.ordem_servico_model import OrdemServico
+    from app.cliente.cliente_model import Cliente
+    import os
+    import sqlite3
+    from datetime import datetime
+    
+    try:
+        total_os = OrdemServico.query.count()
+        
+        if total_os > 0:
+            print(f"✅ Banco já tem {total_os} OS")
+            return
+        
+        print("📊 Banco de OS vazio - verificando erp.db...")
+        
+        if not os.path.exists('erp.db'):
+            print("⚠️ erp.db não encontrado - pulando importação")
+            return
+        
+        print("🔄 Importando dados do erp.db...")
+        
+        conn = sqlite3.connect('erp.db')
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Cria mapeamento de clientes (CPF/CNPJ)
+        clientes_local = cursor.execute("SELECT id, nome, cpf_cnpj FROM clientes").fetchall()
+        clientes_render = Cliente.query.all()
+        
+        mapa_clientes = {}
+        for cli_local in clientes_local:
+            for cli_render in clientes_render:
+                if cli_render.cpf_cnpj and cli_local['cpf_cnpj'] and cli_render.cpf_cnpj == cli_local['cpf_cnpj']:
+                    mapa_clientes[cli_local['id']] = cli_render.id
+                    print(f"   Mapeado: {cli_local['nome']} (local {cli_local['id']} → render {cli_render.id})")
+                    break
+        
+        # Importa OS
+        ordens = cursor.execute("SELECT * FROM ordem_servico WHERE ativo = 1 ORDER BY id").fetchall()
+        importadas = 0
+        
+        for row in ordens:
+            cliente_id_render = mapa_clientes.get(row['cliente_id'])
+            if not cliente_id_render:
+                print(f"   ⚠️ Cliente local {row['cliente_id']} não encontrado no Render - pulando OS {row['numero']}")
+                continue
+            
+            nova_os = OrdemServico(
+                numero=row['numero'],
+                cliente_id=cliente_id_render,
+                titulo=row['titulo'] or 'OS sem título',
+                descricao=row['descricao'],
+                status=row['status'] or 'aberta',
+                prioridade=row['prioridade'] or 'normal',
+                data_abertura=row['data_abertura'] if row['data_abertura'] else datetime.now().date(),
+                data_previsao=row['data_previsao'] if row['data_previsao'] else None,
+                data_conclusao=row['data_conclusao'] if row['data_conclusao'] else None,
+                valor_mao_obra=row['valor_mao_obra'] or 0,
+                valor_produtos=row['valor_produtos'] or 0,
+                valor_total=row['valor_total'] or 0,
+                forma_pagamento=row['forma_pagamento'] or 'a_vista',
+                num_parcelas=row['num_parcelas'] or 1,
+                valor_entrada=row['valor_entrada'] or 0,
+                observacoes=row['observacoes'],
+                ativo=True
+            )
+            
+            db.session.add(nova_os)
+            importadas += 1
+        
+        db.session.commit()
+        conn.close()
+        
+        print(f"✅ Auto-importação concluída: {importadas} OS importadas!")
+        
+    except Exception as e:
+        print(f"❌ Erro na auto-importação: {e}")
+        import traceback
+        traceback.print_exc()
 
 def register_blueprints(app):
     """
