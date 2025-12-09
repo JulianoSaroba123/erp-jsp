@@ -221,6 +221,43 @@ def teste_os():
     
     return jsonify(resultado)
 
+@ordem_servico_bp.route('/teste_pdf')
+def teste_pdf():
+    """Endpoint de teste para verificar se WeasyPrint está funcionando"""
+    resultado = {
+        'status': 'iniciando',
+        'erros': []
+    }
+    
+    try:
+        # Teste 1: Importar WeasyPrint
+        import weasyprint
+        resultado['weasyprint_importado'] = True
+        resultado['weasyprint_versao'] = weasyprint.__version__
+    except ImportError as e:
+        resultado['weasyprint_importado'] = False
+        resultado['erros'].append(f'ImportError: {str(e)}')
+        return jsonify(resultado)
+    except Exception as e:
+        resultado['weasyprint_importado'] = False
+        resultado['erros'].append(f'Erro inesperado ao importar: {str(e)}')
+        return jsonify(resultado)
+    
+    try:
+        # Teste 2: Gerar um PDF simples
+        html_simples = '<html><body><h1>Teste PDF</h1><p>Se você está vendo isto, o PDF funciona!</p></body></html>'
+        pdf_bytes = weasyprint.HTML(string=html_simples).write_pdf()
+        resultado['pdf_gerado'] = True
+        resultado['pdf_tamanho'] = len(pdf_bytes)
+    except Exception as e:
+        resultado['pdf_gerado'] = False
+        resultado['erros'].append(f'Erro ao gerar PDF: {str(e)}')
+        import traceback
+        resultado['traceback'] = traceback.format_exc()
+    
+    resultado['status'] = 'completo'
+    return jsonify(resultado)
+
 @ordem_servico_bp.route('/')
 @ordem_servico_bp.route('/listar')
 def listar():
