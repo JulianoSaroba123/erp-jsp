@@ -20,7 +20,8 @@ import os
 import sys
 from datetime import datetime
 from decimal import Decimal
-import psycopg
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
 # Carrega variáveis de ambiente
@@ -60,7 +61,7 @@ def conectar_sqlite():
 def conectar_postgres():
     """Conecta ao banco PostgreSQL da Render"""
     try:
-        conn = psycopg.connect(DATABASE_URL)
+        conn = psycopg2.connect(DATABASE_URL)
         print(f"✅ Conectado ao PostgreSQL: {PG_HOST}/{PG_NAME}")
         return conn
     except Exception as e:
