@@ -293,9 +293,14 @@ def listar():
     print(f"   prioridade: '{prioridade}'")
     print(f"   cliente_id: '{cliente_id}'")
     
-    # Query base - REMOVIDO O FILTRO POR ENQUANTO
-    query = OrdemServico.query
-    print(f"\n🔍 Query base criada (SEM filtro ativo)")
+    # Query base - Filtro seguro para ativo (considera NULL como ativo)
+    query = OrdemServico.query.filter(
+        db.or_(
+            OrdemServico.ativo == True,
+            OrdemServico.ativo.is_(None)
+        )
+    )
+    print(f"\n🔍 Query base criada com filtro seguro: (ativo=True OR ativo IS NULL)")
     
     # Aplica filtros se houver busca
     if busca:

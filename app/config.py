@@ -8,19 +8,21 @@ load_dotenv()
 class Config:
     """Configuração base do aplicativo"""
     
-    # Banco de dados PostgreSQL (Render)
+    # Banco de dados
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
-    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
-        # Render às vezes fornece URL antiga; corrige para SQLAlchemy
-        # Usa postgresql+psycopg para psycopg v3 (compatível Python 3.13)
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql+psycopg://", 1)
-    elif SQLALCHEMY_DATABASE_URI and "postgresql://" in SQLALCHEMY_DATABASE_URI:
-        # Se já é postgresql://, adiciona driver psycopg
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgresql://", "postgresql+psycopg://", 1)
-    elif not SQLALCHEMY_DATABASE_URI:
-        # Fallback para SQLite local se não houver DATABASE_URL
+    
+    if SQLALCHEMY_DATABASE_URI:
+        # Produção: Usa PostgreSQL do Render
+        # Corrige URL do Render para SQLAlchemy + psycopg
+        if SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
+            SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql+psycopg://", 1)
+        elif SQLALCHEMY_DATABASE_URI.startswith("postgresql://"):
+            SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgresql://", "postgresql+psycopg://", 1)
+    else:
+        # Desenvolvimento: Usa SQLite local
         basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
         SQLALCHEMY_DATABASE_URI = f'sqlite:///{os.path.join(basedir, "erp.db")}'
+        print("⚠️  DATABASE_URL não encontrada. Usando SQLite local: erp.db")
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = os.getenv("SECRET_KEY", "jsp_chave_secreta")
