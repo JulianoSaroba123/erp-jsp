@@ -271,21 +271,31 @@ def listar():
     print("🔍 DEBUG ROTA /listar")
     print("=" * 80)
     
+    # DEBUG: Verificar TODAS as OS no banco
+    total_os = OrdemServico.query.count()
+    print(f"🔍 Total de OS no banco (SEM filtro): {total_os}")
+    
+    if total_os > 0:
+        print(f"🔍 Primeiras 5 OS no banco:")
+        primeiras = OrdemServico.query.limit(5).all()
+        for os in primeiras:
+            print(f"   ID={os.id}, numero={os.numero}, ativo={os.ativo} (tipo: {type(os.ativo)}), titulo={os.titulo}")
+    
     # Parâmetros de busca
     busca = request.args.get('busca', '').strip()
     status = request.args.get('status', '').strip()
     prioridade = request.args.get('prioridade', '').strip()
     cliente_id = request.args.get('cliente_id', '').strip()
     
-    print(f"📊 Parâmetros recebidos:")
+    print(f"\n📊 Parâmetros recebidos:")
     print(f"   busca: '{busca}'")
     print(f"   status: '{status}'")
     print(f"   prioridade: '{prioridade}'")
     print(f"   cliente_id: '{cliente_id}'")
     
-    # Query base
-    query = OrdemServico.query.filter_by(ativo=True)
-    print(f"\n🔍 Query base criada (ativo=True)")
+    # Query base - REMOVIDO O FILTRO POR ENQUANTO
+    query = OrdemServico.query
+    print(f"\n🔍 Query base criada (SEM filtro ativo)")
     
     # Aplica filtros se houver busca
     if busca:
@@ -322,19 +332,9 @@ def listar():
     if ordens:
         print(f"   Primeiras 3 OS:")
         for os in ordens[:3]:
-            print(f"   - {os.numero} | {os.titulo} | Status: {os.status}")
+            print(f"   - {os.numero} | {os.titulo} | Status: {os.status} | Ativo: {os.ativo}")
     else:
         print("   ⚠️ NENHUMA OS ENCONTRADA!")
-        
-        # Debug adicional
-        total_sem_filtro = OrdemServico.query.count()
-        print(f"\n   🔍 Total de OS SEM filtro: {total_sem_filtro}")
-        
-        if total_sem_filtro > 0:
-            print("   🔍 Verificando valores do campo 'ativo':")
-            todas = OrdemServico.query.limit(5).all()
-            for os in todas:
-                print(f"      {os.numero}: ativo={os.ativo} (tipo: {type(os.ativo).__name__})")
     
     # Lista de clientes para filtro
     clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
