@@ -1817,75 +1817,17 @@ def gerar_relatorio_pdf(id):
             }
         '''
         
-        # Gera o PDF
-        try:
-            print(f"DEBUG PDF: Tentando importar weasyprint...")
-            import weasyprint
-            print(f" DEBUG PDF: WeasyPrint importado com sucesso")
-            
-            print(f"DEBUG PDF: Gerando arquivo PDF...")
-            pdf_file = weasyprint.HTML(
-                string=html_content, 
-                base_url=base_url
-            ).write_pdf(
-                stylesheets=[weasyprint.CSS(string=css_string)]
-            )
-            print(f" DEBUG PDF: PDF gerado com sucesso, tamanho: {len(pdf_file)} bytes")
-            
-            # Gera o nome do arquivo baseado no número da OS e data
-            data_atual = dt.now().strftime('%d%m%y')
-            numero_os = ordem.numero.replace('-', '') if ordem.numero else f'OS{ordem.id}'
-            nome_arquivo = f"{numero_os}-{data_atual}.pdf"
-            print(f"DEBUG PDF: Nome do arquivo: {nome_arquivo}")
-            
-            # Cria resposta HTTP
-            response = make_response(pdf_file)
-            response.headers['Content-Type'] = 'application/pdf'
-            response.headers['Content-Disposition'] = f'inline; filename="{nome_arquivo}"'
-            # Headers anti-cache FORTES para forçar refresh total
-            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
-            response.headers['Pragma'] = 'no-cache'
-            response.headers['Expires'] = '-1'
-            response.headers['Last-Modified'] = dt.now().strftime('%a, %d %b %Y %H:%M:%S GMT')
-            response.headers['ETag'] = f'"{hash(dt.now().isoformat())}"'
-            
-            print(f" DEBUG PDF: Resposta HTTP criada com sucesso")
-            return response
-            
-        except ImportError as import_error:
-            # Se WeasyPrint não estiver disponível, retorna HTML
-            print(f" DEBUG PDF: Erro de importação do WeasyPrint: {str(import_error)}")
-            flash('WeasyPrint não disponível. Exibindo relatório em HTML.', 'warning')
-            response = make_response(render_template(
-                'os/relatorios/relatorio_os.html',
-                ordem=ordem,
-                now=dt.now,
-                config=config,
-                timestamp=dt.now().isoformat()
-            ))
-            # Headers anti-cache para HTML também
-            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
-            response.headers['Pragma'] = 'no-cache'
-            response.headers['Expires'] = '-1'
-            return response
+        # Retorna HTML otimizado para impressão (usuário usa Ctrl+P para gerar PDF)
+        print(f"DEBUG PDF: Retornando HTML para impressão...")
         
-        except Exception as pdf_error:
-            # Se houver erro na geração do PDF, retorna HTML
-            print(f" DEBUG PDF: Erro na geração do PDF: {str(pdf_error)}")
-            print(f" DEBUG PDF: Tipo do erro: {type(pdf_error)}")
-            flash(f'Erro na geração PDF: {str(pdf_error)}. Exibindo relatório em HTML.', 'warning')
-            response = make_response(render_template(
-                'os/relatorios/relatorio_os.html',
-                ordem=ordem,
-                now=dt.now,
-                config=config,
-                timestamp=dt.now().isoformat()
-            ))
-            # Headers anti-cache para HTML também
-            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
-            response.headers['Pragma'] = 'no-cache'
-            response.headers['Expires'] = '-1'
-            return response
+        response = make_response(html_content)
+        response.headers['Content-Type'] = 'text/html; charset=utf-8'
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
+        
+        print(f" DEBUG PDF: HTML retornado com sucesso")
+        return response
         
     except Exception as e:
         print(f" DEBUG PDF: Erro geral na geração de PDF: {str(e)}")
