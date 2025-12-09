@@ -723,21 +723,51 @@ body {
 /* Responsividade da Barra de Ações */
 @media (max-width: 768px) {
     .action-bar {
-        padding: 1rem;
+        padding: 0.75rem;
         margin-bottom: 1rem;
     }
     
+    .action-bar .row {
+        gap: 0.5rem;
+    }
+    
     .action-bar .d-flex {
-        justify-content: center;
+        justify-content: flex-start;
+        gap: 0.5rem !important;
+        flex-wrap: wrap;
+    }
+    
+    .action-bar .col-md-8,
+    .action-bar .col-md-4 {
+        width: 100%;
+        padding: 0;
     }
     
     .btn-premium, .btn-success-premium, .btn-warning-premium, 
     .btn-secondary-premium, .btn-outline-premium {
-        padding: 0.6rem 1.2rem;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        margin-bottom: 0;
+        min-width: auto;
+        flex: 0 0 auto;
+        white-space: nowrap;
+    }
+    
+    /* Botões de grupo ficam mais compactos */
+    .btn-group {
+        flex: 0 0 auto;
+    }
+    
+    .btn-group .btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+    }
+    
+    /* Ícones dos botões ficam menores */
+    .btn-premium i, .btn-success-premium i, .btn-warning-premium i,
+    .btn-secondary-premium i, .btn-outline-premium i {
         font-size: 0.9rem;
-        margin-bottom: 0.5rem;
-        min-width: 140px;
-        justify-content: center;
+        margin-right: 0.25rem;
     }
     
     .premium-header {
@@ -751,6 +781,16 @@ body {
     
     .premium-header .col-md-4 {
         margin-top: 1rem;
+    }
+    
+    /* Ajusta ações de status para mobile */
+    .action-bar .text-end {
+        text-align: left !important;
+        margin-top: 0.5rem;
+    }
+    
+    .action-bar .text-end .d-flex {
+        justify-content: flex-start !important;
     }
 }
 
