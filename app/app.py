@@ -126,7 +126,7 @@ def create_app(config_name=None):
     return app
 
 def popular_banco_se_vazio():
-    """Popula o banco com dados do erp.db se estiver vazio"""
+    """Sincroniza dados do erp.db local com o banco Render"""
     from app.ordem_servico.ordem_servico_model import OrdemServico
     from app.cliente.cliente_model import Cliente
     import os
@@ -134,19 +134,14 @@ def popular_banco_se_vazio():
     from datetime import datetime
     
     try:
-        total_os = OrdemServico.query.count()
-        
-        if total_os > 0:
-            print(f"✅ Banco já tem {total_os} OS")
-            return
-        
-        print("📊 Banco de OS vazio - verificando erp.db...")
-        
         if not os.path.exists('erp.db'):
-            print("⚠️ erp.db não encontrado - pulando importação")
+            print("⚠️ erp.db não encontrado - pulando sincronização")
             return
         
-        print("🔄 Importando dados do erp.db...")
+        print("🔄 Verificando sincronização com erp.db...")
+        
+        total_os = OrdemServico.query.count()
+        print(f"📊 OS no banco Render: {total_os}")
         
         conn = sqlite3.connect('erp.db')
         conn.row_factory = sqlite3.Row
@@ -164,18 +159,32 @@ def popular_banco_se_vazio():
                     print(f"   Mapeado: {cli_local['nome']} (local {cli_local['id']} → render {cli_render.id})")
                     break
         
-        # Importa OS
+        # Busca OS existentes no Render (por número)
+        os_existentes = {os.numero: os for os in OrdemServico.query.all()}
+        
+        # Importa/Atualiza OS do erp.db
         ordens = cursor.execute("SELECT * FROM ordem_servico WHERE ativo = 1 ORDER BY id").fetchall()
         importadas = 0
+        atualizadas = 0
+        puladas = 0
         
         for row in ordens:
-            cliente_id_render = mapa_clientes.get(row['cliente_id'])
-            if not cliente_id_render:
-                print(f"   ⚠️ Cliente local {row['cliente_id']} não encontrado no Render - pulando OS {row['numero']}")
+            numero_os = row['numero']
+            
+            # Verifica se já existe
+            if numero_os in os_existentes:
+                puladas += 1
                 continue
             
+            # Mapeia cliente
+            cliente_id_render = mapa_clientes.get(row['cliente_id'])
+            if not cliente_id_render:
+                print(f"   ⚠️ Cliente local {row['cliente_id']} não encontrado - pulando OS {numero_os}")
+                continue
+            
+            # Cria nova OS
             nova_os = OrdemServico(
-                numero=row['numero'],
+                numero=numero_os,
                 cliente_id=cliente_id_render,
                 titulo=row['titulo'] or 'OS sem título',
                 descricao=row['descricao'],
@@ -197,10 +206,13 @@ def popular_banco_se_vazio():
             db.session.add(nova_os)
             importadas += 1
         
-        db.session.commit()
-        conn.close()
+        if importadas > 0:
+            db.session.commit()
+            print(f"✅ Sincronização: {importadas} novas OS importadas, {puladas} já existentes")
+        else:
+            print(f"✅ Banco sincronizado: {puladas} OS já existem")
         
-        print(f"✅ Auto-importação concluída: {importadas} OS importadas!")
+        conn.close()
         
     except Exception as e:
         print(f"❌ Erro na auto-importação: {e}")
