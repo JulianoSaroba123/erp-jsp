@@ -30,7 +30,7 @@ class BaseModel(db.Model):
     atualizado_em = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     
     # Campos de auditoria (para futura implementação)
-    ativo = db.Column(db.Boolean, default=True, nullable=False)
+    ativo = db.Column(db.Boolean, default=True, nullable=False, server_default='true')
     
     def save(self):
         """

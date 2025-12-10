@@ -123,7 +123,14 @@ def create_app(config_name=None):
         except Exception as e:
             print(f" ⚠ Aviso ao popular banco: {e}")
         
-        # Corrige ordens de serviço (migração automática)
+        # Correção global do campo 'ativo' (todas as tabelas)
+        try:
+            from scripts.corrigir_ativo_global import corrigir_campo_ativo_global
+            corrigir_campo_ativo_global()
+        except Exception as e:
+            print(f" ⚠ Aviso na correção global de 'ativo': {e}")
+        
+        # Corrige ordens de serviço (migração automática de status)
         try:
             from scripts.corrigir_ordens_servico_render import corrigir_ordens_servico
             corrigir_ordens_servico()
