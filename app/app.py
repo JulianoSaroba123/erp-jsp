@@ -122,6 +122,13 @@ def create_app(config_name=None):
             popular_banco_se_vazio()
         except Exception as e:
             print(f" ⚠ Aviso ao popular banco: {e}")
+        
+        # Corrige ordens de serviço (migração automática)
+        try:
+            from scripts.corrigir_ordens_servico_render import corrigir_ordens_servico
+            corrigir_ordens_servico()
+        except Exception as e:
+            print(f" ⚠ Aviso na correção de OS: {e}")
 
     return app
 

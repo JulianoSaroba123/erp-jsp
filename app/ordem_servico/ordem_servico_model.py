@@ -76,11 +76,11 @@ class OrdemServico(BaseModel):
     observacoes = db.Column(db.Text)
     tipo_servico = db.Column(db.String(100))  # Tipo/categoria do serviço
     
-    # Status do serviço
-    status = db.Column(db.String(20), default='pendente', nullable=False)
+    # Status do serviço (PADRONIZADO)
+    status = db.Column(db.String(20), default='pendente', nullable=False, server_default='pendente')
     # Possíveis status: pendente, em_execucao, finalizada, cancelada
     
-    prioridade = db.Column(db.String(20), default='normal', nullable=False)
+    prioridade = db.Column(db.String(20), default='normal', nullable=False, server_default='normal')
     # Possíveis prioridades: baixa, normal, alta, urgente
 
         
@@ -337,21 +337,18 @@ class OrdemServico(BaseModel):
     
     @classmethod
     def estatisticas_dashboard(cls):
-        """Retorna estatísticas para o dashboard."""
+        """Retorna estatísticas para o dashboard (PADRONIZADO)."""
         total = cls.query.filter_by(ativo=True).count()
         
-        # Abertas (novo status)
-        abertas = cls.query.filter_by(status='aberta', ativo=True).count()
+        # Pendentes (status padrão)
+        pendentes = cls.query.filter_by(status='pendente', ativo=True).count()
         
-        # Em andamento (incluindo em_execucao para compatibilidade)
-        em_andamento = cls.query.filter(
-            cls.ativo == True,
-            cls.status.in_(['em_andamento', 'em_execucao', 'iniciada'])
-        ).count()
+        # Em execução
+        em_andamento = cls.query.filter_by(status='em_execucao', ativo=True).count()
         
-        # Concluídas este mês
+        # Finalizadas este mês
         concluidas_mes = cls.query.filter(
-            cls.status.in_(['concluida', 'finalizada']),
+            cls.status == 'finalizada',
             cls.ativo == True,
             func.extract('month', cls.data_conclusao) == date.today().month,
             func.extract('year', cls.data_conclusao) == date.today().year
@@ -359,7 +356,7 @@ class OrdemServico(BaseModel):
         
         return {
             'total': total,
-            'abertas': abertas,
+            'abertas': pendentes,  # Compatibilidade com template
             'em_andamento': em_andamento,
             'concluidas_mes': concluidas_mes
         }

@@ -322,19 +322,52 @@ def listar():
     print(f"   cliente_id: '{cliente_id}'")
     
     # ============================================================
-    # 🚨 QUERY SIMPLIFICADA - SEM FILTROS (DEBUG)
+    # QUERY COM FILTRO EXPLÍCITO - ativo=True
     # ============================================================
-    ordens = OrdemServico.query.all()
-    print(f"\n✅ Query SIMPLIFICADA executada: OrdemServico.query.all()")
+    
+    # Log de diagnóstico
+    total_geral = OrdemServico.query.count()
+    total_ativas = OrdemServico.query.filter(OrdemServico.ativo == True).count()
+    print(f"\n📊 DIAGNÓSTICO:")
+    print(f"   Total de OS (sem filtro): {total_geral}")
+    print(f"   Total de OS ativas: {total_ativas}")
+    
+    # Query principal
+    query = OrdemServico.query.filter(OrdemServico.ativo == True)
+    
+    # Aplica filtros de busca se houver
+    if busca:
+        query = query.join(Cliente).filter(
+            db.or_(
+                OrdemServico.numero.ilike(f'%{busca}%'),
+                OrdemServico.titulo.ilike(f'%{busca}%'),
+                OrdemServico.equipamento.ilike(f'%{busca}%'),
+                Cliente.nome.ilike(f'%{busca}%')
+            )
+        )
+    
+    if status:
+        query = query.filter(OrdemServico.status == status)
+    
+    if prioridade:
+        query = query.filter(OrdemServico.prioridade == prioridade)
+    
+    if cliente_id:
+        try:
+            query = query.filter(OrdemServico.cliente_id == int(cliente_id))
+        except ValueError:
+            pass
+    
+    ordens = query.order_by(OrdemServico.data_abertura.desc()).all()
     
     print(f"\n📋 Resultado da query:")
     print(f"   Total de OS encontradas: {len(ordens)}")
     if ordens:
-        print(f"   Primeiras 3 OS:")
-        for os in ordens[:3]:
-            print(f"   - {os.numero} | {os.titulo} | Status: {os.status} | Ativo: {os.ativo}")
+        print(f"   Primeiras 5 OS:")
+        for os in ordens[:5]:
+            print(f"   - {os.numero} | {os.titulo} | Status: {os.status}")
     else:
-        print("   ⚠️ NENHUMA OS ENCONTRADA!")
+        print("   ⚠️ NENHUMA OS ENCONTRADA COM OS FILTROS APLICADOS")
     
     # Lista de clientes para filtro
     clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
