@@ -293,44 +293,11 @@ def listar():
     print(f"   prioridade: '{prioridade}'")
     print(f"   cliente_id: '{cliente_id}'")
     
-    # Query base - Filtro seguro para ativo (considera NULL como ativo)
-    query = OrdemServico.query.filter(
-        db.or_(
-            OrdemServico.ativo == True,
-            OrdemServico.ativo.is_(None)
-        )
-    )
-    print(f"\n🔍 Query base criada com filtro seguro: (ativo=True OR ativo IS NULL)")
-    
-    # Aplica filtros se houver busca
-    if busca:
-        # Busca em múltiplos campos
-        query = query.join(Cliente).filter(
-            db.or_(
-                OrdemServico.numero.ilike(f'%{busca}%'),
-                OrdemServico.titulo.ilike(f'%{busca}%'),
-                OrdemServico.equipamento.ilike(f'%{busca}%'),
-                Cliente.nome.ilike(f'%{busca}%')
-            )
-        )
-    
-    # Filtro por status
-    if status:
-        query = query.filter(OrdemServico.status == status)
-    
-    # Filtro por prioridade
-    if prioridade:
-        query = query.filter(OrdemServico.prioridade == prioridade)
-    
-    # Filtro por cliente
-    if cliente_id:
-        try:
-            query = query.filter(OrdemServico.cliente_id == int(cliente_id))
-        except ValueError:
-            pass
-    
-    # Ordena por data de abertura (mais recentes primeiro)
-    ordens = query.order_by(OrdemServico.data_abertura.desc()).all()
+    # ============================================================
+    # 🚨 QUERY SIMPLIFICADA - SEM FILTROS (DEBUG)
+    # ============================================================
+    ordens = OrdemServico.query.all()
+    print(f"\n✅ Query SIMPLIFICADA executada: OrdemServico.query.all()")
     
     print(f"\n📋 Resultado da query:")
     print(f"   Total de OS encontradas: {len(ordens)}")
