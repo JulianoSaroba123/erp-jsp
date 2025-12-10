@@ -640,22 +640,28 @@ def novo():
                             # Cria diretório se não existe
                             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
                             
-                            # Salva arquivo
+                            # Lê o conteúdo do arquivo para salvar no banco (Render precisa)
+                            file.seek(0)  # Volta ao início do arquivo
+                            file_content = file.read()
+                            file.seek(0)  # Volta novamente para salvar em disco
+                            
+                            # Salva arquivo em disco também (para desenvolvimento local)
                             file.save(filepath)
                             
                             # Detecta tipo do arquivo
                             content_type = file.content_type or 'application/octet-stream'
                             tipo_arquivo = 'image' if content_type.startswith('image/') else 'document'
                             
-                            # Cria registro no banco
+                            # Cria registro no banco (com conteúdo em BLOB para Render)
                             anexo = OrdemServicoAnexo(
                                 ordem_servico_id=ordem.id,
                                 nome_original=file.filename,
                                 nome_arquivo=filename,
                                 tipo_arquivo=tipo_arquivo,
                                 mime_type=content_type,
-                                tamanho=get_file_size(file),
-                                caminho=filepath
+                                tamanho=len(file_content),
+                                caminho=filepath,
+                                conteudo=file_content  # Salva no banco para persistir no Render
                             )
                             db.session.add(anexo)
                             
@@ -1295,7 +1301,12 @@ def editar(id):
                             # Cria diretório se não existe
                             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
                             
-                            # Salva arquivo
+                            # Lê o conteúdo do arquivo para salvar no banco (Render precisa)
+                            file.seek(0)  # Volta ao início do arquivo
+                            file_content = file.read()
+                            file.seek(0)  # Volta novamente para salvar em disco
+                            
+                            # Salva arquivo em disco (para desenvolvimento local)
                             file.save(filepath)
                             print(f"✅ DEBUG ANEXOS EDITAR: Arquivo salvo fisicamente: {filepath}")
                             
@@ -1304,15 +1315,16 @@ def editar(id):
                             tipo_arquivo = 'image' if content_type.startswith('image/') else 'document'
                             print(f"🔍 DEBUG ANEXOS EDITAR: Tipo detectado: {tipo_arquivo}, MIME: {content_type}")
                             
-                            # Cria registro no banco
+                            # Cria registro no banco (com conteúdo em BLOB para Render)
                             anexo = OrdemServicoAnexo(
                                 ordem_servico_id=ordem.id,
                                 nome_original=file.filename,
                                 nome_arquivo=filename,
                                 tipo_arquivo=tipo_arquivo,
                                 mime_type=content_type,
-                                tamanho=file_size,
-                                caminho=filepath
+                                tamanho=len(file_content),
+                                caminho=filepath,
+                                conteudo=file_content  # Salva no banco para persistir no Render
                             )
                             db.session.add(anexo)
                             print(f"✅ DEBUG ANEXOS EDITAR: Registro criado no banco: {anexo}")
@@ -1846,32 +1858,40 @@ def gerar_relatorio_pdf(id):
                 
                 if anexo.tipo_arquivo == 'image' or (anexo.mime_type and 'image' in anexo.mime_type):
                     try:
-                        # Tenta diferentes caminhos possíveis
-                        possible_paths = [
-                            anexo.caminho,  # Caminho completo salvo no banco
-                            os.path.join(UPLOAD_FOLDER, anexo.nome_arquivo),  # Usando UPLOAD_FOLDER
-                            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads', 'ordem_servico', 'anexos', anexo.nome_arquivo),
-                            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'app', 'static', 'uploads', anexo.nome_arquivo),  # Caminho usado atualmente
-                        ]
-                        
-                        arquivo_encontrado = None
-                        for caminho_teste in possible_paths:
-                            if os.path.exists(caminho_teste):
-                                arquivo_encontrado = caminho_teste
-                                print(f"     ✅ Arquivo encontrado em: {arquivo_encontrado}")
-                                break
-                            else:
-                                print(f"     ❌ Não encontrado em: {caminho_teste}")
-                        
-                        if arquivo_encontrado:
-                            # Lê o arquivo e converte para base64
-                            with open(arquivo_encontrado, 'rb') as img_file:
-                                img_data = img_file.read()
-                                img_base64 = base64.b64encode(img_data).decode('utf-8')
-                                anexos_base64[str(anexo.id)] = img_base64
-                                print(f"     ✅ Convertido: {len(img_base64)} chars base64 | {len(img_data)} bytes")
+                        # PRIORIDADE 1: Usar conteúdo BLOB salvo no banco (funciona no Render)
+                        if anexo.conteudo:
+                            print(f"     ✅ Usando conteúdo do BLOB no banco ({len(anexo.conteudo)} bytes)")
+                            img_base64 = base64.b64encode(anexo.conteudo).decode('utf-8')
+                            anexos_base64[str(anexo.id)] = img_base64
+                            print(f"     ✅ Convertido do BLOB: {len(img_base64)} chars base64")
                         else:
-                            print(f"     ⚠️ ARQUIVO NÃO ENCONTRADO em nenhum caminho testado!")
+                            # PRIORIDADE 2: Tentar ler do disco (desenvolvimento local)
+                            print(f"     ⚠️ BLOB vazio, tentando ler do disco...")
+                            possible_paths = [
+                                anexo.caminho,  # Caminho completo salvo no banco
+                                os.path.join(UPLOAD_FOLDER, anexo.nome_arquivo),  # Usando UPLOAD_FOLDER
+                                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads', 'ordem_servico', 'anexos', anexo.nome_arquivo),
+                                os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'app', 'static', 'uploads', anexo.nome_arquivo),  # Caminho usado atualmente
+                            ]
+                            
+                            arquivo_encontrado = None
+                            for caminho_teste in possible_paths:
+                                if os.path.exists(caminho_teste):
+                                    arquivo_encontrado = caminho_teste
+                                    print(f"     ✅ Arquivo encontrado em: {arquivo_encontrado}")
+                                    break
+                                else:
+                                    print(f"     ❌ Não encontrado em: {caminho_teste}")
+                            
+                            if arquivo_encontrado:
+                                # Lê o arquivo e converte para base64
+                                with open(arquivo_encontrado, 'rb') as img_file:
+                                    img_data = img_file.read()
+                                    img_base64 = base64.b64encode(img_data).decode('utf-8')
+                                    anexos_base64[str(anexo.id)] = img_base64
+                                    print(f"     ✅ Convertido do disco: {len(img_base64)} chars base64 | {len(img_data)} bytes")
+                            else:
+                                print(f"     ⚠️ ARQUIVO NÃO ENCONTRADO em nenhum caminho testado!")
                             
                     except Exception as e:
                         print(f"     ⚠️ ERRO ao converter {anexo.nome_original}: {str(e)}")

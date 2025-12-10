@@ -52,9 +52,11 @@ class Produto(BaseModel):
     estoque_maximo = db.Column(db.Integer, default=0)
     controla_estoque = db.Column(db.Boolean, default=True)
     
-    # Fornecedor principal
-    fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedores.id'), nullable=True)
-    # Relacionamento será criado quando o fornecedor estiver ativo
+    # Fornecedor principal (FK opcional - pode não existir no início)
+    fornecedor_id = db.Column(db.Integer, nullable=True)
+    # FK removida temporariamente para evitar erro 500 se tabela fornecedores não existe
+    # TODO: Adicionar FK após garantir que tabela fornecedores existe:
+    # db.ForeignKey('fornecedores.id')
     
     # Status
     status = db.Column(db.String(20), default='ativo')  # ativo, inativo, descontinuado

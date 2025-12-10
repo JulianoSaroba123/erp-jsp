@@ -681,6 +681,7 @@ class OrdemServicoAnexo(BaseModel):
     mime_type = db.Column(db.String(100))
     tamanho = db.Column(db.Integer)  # em bytes
     caminho = db.Column(db.String(500), nullable=False)
+    conteudo = db.Column(db.LargeBinary)  # Conteúdo do arquivo em BLOB (para Render)
     
     def __repr__(self):
         return f'<OrdemServicoAnexo {self.nome_original}>'
