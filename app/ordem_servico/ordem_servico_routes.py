@@ -1663,21 +1663,27 @@ def excluir_anexo(anexo_id):
     """
     anexo = OrdemServicoAnexo.query.get_or_404(anexo_id)
     ordem_id = anexo.ordem_servico_id
+    nome_arquivo = anexo.nome_original
     
     try:
-        # Remove arquivo físico
+        # Remove arquivo físico (se existir)
         filepath = os.path.join(UPLOAD_FOLDER, anexo.nome_arquivo)
         if os.path.exists(filepath):
             os.remove(filepath)
         
-        # Remove registro do banco
+        # Remove registro do banco (BLOB também será removido automaticamente)
         anexo.delete()
         
-        flash('Anexo excluído com sucesso!', 'success')
+        return jsonify({
+            'success': True,
+            'message': f'Anexo "{nome_arquivo}" excluído com sucesso!'
+        }), 200
+        
     except Exception as e:
-        flash(f'Erro ao excluir anexo: {str(e)}', 'error')
-    
-    return redirect(url_for('ordem_servico.visualizar', id=ordem_id))
+        return jsonify({
+            'success': False,
+            'message': f'Erro ao excluir anexo: {str(e)}'
+        }), 500
 
 @ordem_servico_bp.route('/<int:id>/anexos')
 def listar_anexos(id):
