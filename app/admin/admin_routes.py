@@ -9,6 +9,21 @@ from sqlalchemy import text
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+@admin_bp.route('/test', methods=['GET'])
+def test():
+    """
+    Rota de teste simples para verificar se o blueprint está funcionando
+    """
+    return jsonify({
+        "success": True,
+        "message": "✅ Admin blueprint funcionando!",
+        "routes": [
+            "/admin/test",
+            "/admin/migrate-add-conteudo",
+            "/admin/check-database"
+        ]
+    })
+
 @admin_bp.route('/migrate-add-conteudo', methods=['GET'])
 def migrate_add_conteudo():
     """
