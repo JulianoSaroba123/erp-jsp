@@ -221,41 +221,69 @@ def teste_os():
     
     return jsonify(resultado)
 
-@ordem_servico_bp.route('/teste_pdf')
-def teste_pdf():
-    """Endpoint de teste para verificar se WeasyPrint está funcionando"""
+@ordem_servico_bp.route('/debug_banco')
+def debug_banco():
+    """🔍 Endpoint de DEBUG - Verifica banco de dados"""
+    from sqlalchemy import text, inspect
+    from app.extensoes import db
+    import os
+    
     resultado = {
         'status': 'iniciando',
-        'erros': []
+        'erros': [],
+        'dados': {}
     }
     
     try:
-        # Teste 1: Importar WeasyPrint
-        import weasyprint
-        resultado['weasyprint_importado'] = True
-        resultado['weasyprint_versao'] = weasyprint.__version__
-    except ImportError as e:
-        resultado['weasyprint_importado'] = False
-        resultado['erros'].append(f'ImportError: {str(e)}')
-        return jsonify(resultado)
+        # 1. Conexão
+        resultado['dados']['database_url_exists'] = bool(os.getenv('DATABASE_URL'))
+        resultado['dados']['sqlalchemy_uri'] = str(db.engine.url)[:80]
+        
+        # 2. Tabelas
+        inspector = inspect(db.engine)
+        tabelas = inspector.get_table_names()
+        resultado['dados']['total_tabelas'] = len(tabelas)
+        resultado['dados']['ordem_servico_existe'] = 'ordem_servico' in tabelas
+        resultado['dados']['lista_tabelas'] = tabelas
+        
+        # 3. Schema
+        try:
+            schema_result = db.session.execute(text("SELECT current_schema()"))
+            resultado['dados']['schema_atual'] = schema_result.scalar()
+        except:
+            resultado['dados']['schema_atual'] = 'N/A (SQLite)'
+        
+        # 4. Query SQL direta
+        sql_result = db.session.execute(text("SELECT COUNT(*) FROM ordem_servico"))
+        resultado['dados']['count_sql'] = sql_result.scalar()
+        
+        if resultado['dados']['count_sql'] > 0:
+            sql_result2 = db.session.execute(text("SELECT id, numero, titulo FROM ordem_servico LIMIT 3"))
+            resultado['dados']['primeiras_os_sql'] = [
+                {'id': row[0], 'numero': row[1], 'titulo': row[2]} 
+                for row in sql_result2.fetchall()
+            ]
+        
+        # 5. Query ORM
+        total_orm = OrdemServico.query.count()
+        resultado['dados']['count_orm'] = total_orm
+        resultado['dados']['model_tablename'] = OrdemServico.__tablename__
+        
+        if total_orm > 0:
+            primeiras_orm = OrdemServico.query.limit(3).all()
+            resultado['dados']['primeiras_os_orm'] = [
+                {'id': os.id, 'numero': os.numero, 'titulo': os.titulo}
+                for os in primeiras_orm
+            ]
+        
+        resultado['status'] = 'sucesso'
+        
     except Exception as e:
-        resultado['weasyprint_importado'] = False
-        resultado['erros'].append(f'Erro inesperado ao importar: {str(e)}')
-        return jsonify(resultado)
-    
-    try:
-        # Teste 2: Gerar um PDF simples
-        html_simples = '<html><body><h1>Teste PDF</h1><p>Se você está vendo isto, o PDF funciona!</p></body></html>'
-        pdf_bytes = weasyprint.HTML(string=html_simples).write_pdf()
-        resultado['pdf_gerado'] = True
-        resultado['pdf_tamanho'] = len(pdf_bytes)
-    except Exception as e:
-        resultado['pdf_gerado'] = False
-        resultado['erros'].append(f'Erro ao gerar PDF: {str(e)}')
+        resultado['status'] = 'erro'
+        resultado['erros'].append(str(e))
         import traceback
         resultado['traceback'] = traceback.format_exc()
     
-    resultado['status'] = 'completo'
     return jsonify(resultado)
 
 @ordem_servico_bp.route('/')
