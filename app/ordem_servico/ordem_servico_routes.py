@@ -257,22 +257,32 @@ def debug_banco():
         sql_result = db.session.execute(text("SELECT COUNT(*) FROM ordem_servico"))
         resultado['dados']['count_sql'] = sql_result.scalar()
         
+        # 4.1 Status SQL direta
+        sql_status = db.session.execute(text("SELECT status, COUNT(*) FROM ordem_servico GROUP BY status"))
+        resultado['dados']['status_sql'] = {row[0]: row[1] for row in sql_status.fetchall()}
+        
+        # 4.2 Campo ativo SQL direta
+        sql_ativo = db.session.execute(text("SELECT ativo, COUNT(*) FROM ordem_servico GROUP BY ativo"))
+        resultado['dados']['ativo_sql'] = {str(row[0]): row[1] for row in sql_ativo.fetchall()}
+        
         if resultado['dados']['count_sql'] > 0:
-            sql_result2 = db.session.execute(text("SELECT id, numero, titulo FROM ordem_servico LIMIT 3"))
+            sql_result2 = db.session.execute(text("SELECT id, numero, titulo, status, ativo FROM ordem_servico LIMIT 5"))
             resultado['dados']['primeiras_os_sql'] = [
-                {'id': row[0], 'numero': row[1], 'titulo': row[2]} 
+                {'id': row[0], 'numero': row[1], 'titulo': row[2], 'status': row[3], 'ativo': row[4]} 
                 for row in sql_result2.fetchall()
             ]
         
         # 5. Query ORM
         total_orm = OrdemServico.query.count()
+        total_orm_ativas = OrdemServico.query.filter(OrdemServico.ativo == True).count()
         resultado['dados']['count_orm'] = total_orm
+        resultado['dados']['count_orm_ativas'] = total_orm_ativas
         resultado['dados']['model_tablename'] = OrdemServico.__tablename__
         
         if total_orm > 0:
-            primeiras_orm = OrdemServico.query.limit(3).all()
+            primeiras_orm = OrdemServico.query.limit(5).all()
             resultado['dados']['primeiras_os_orm'] = [
-                {'id': os.id, 'numero': os.numero, 'titulo': os.titulo}
+                {'id': os.id, 'numero': os.numero, 'titulo': os.titulo, 'status': os.status, 'ativo': os.ativo}
                 for os in primeiras_orm
             ]
         
