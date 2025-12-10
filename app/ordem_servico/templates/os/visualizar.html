@@ -123,47 +123,77 @@ body {
 /* Timeline Premium */
 .timeline-premium {
     position: relative;
-    padding-left: 40px;
+    padding-left: 0;
+    padding-top: 1rem;
 }
 
 .timeline-premium::before {
     content: '';
     position: absolute;
-    left: 15px;
-    top: 0;
-    bottom: 0;
-    width: 4px;
-    background: linear-gradient(to bottom, #667eea, #764ba2);
+    left: 17px;
+    top: 30px;
+    bottom: 30px;
+    width: 3px;
+    background: linear-gradient(to bottom, #667eea, #764ba2, #f093fb);
     border-radius: 2px;
+    opacity: 0.6;
 }
 
 .timeline-item-premium {
     position: relative;
     margin-bottom: 2rem;
+    padding-left: 50px; /* Espaço para o marcador */
+    min-height: 60px; /* Altura mínima */
 }
 
 .timeline-marker-premium {
     position: absolute;
-    left: -30px;
-    top: 0;
-    width: 20px;
-    height: 20px;
+    left: 0;
+    top: 5px;
+    width: 35px;
+    height: 35px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     color: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 2;
+    border: 3px solid #fff;
 }
 
 .timeline-content-premium {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.95);
     backdrop-filter: blur(10px);
-    padding: 1rem 1.5rem;
-    border-radius: 15px;
-    border: 1px solid rgba(255,255,255,0.2);
-    margin-left: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    overflow: hidden;
+    word-wrap: break-word;
+}
+
+.timeline-content-premium h6 {
+    color: #2d3748;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.timeline-content-premium p {
+    color: #4a5568;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.timeline-content-premium small {
+    color: #718096;
+    font-size: 0.813rem;
+    display: block;
+    margin-top: 0.5rem;
+    line-height: 1.4;
 }
 
 /* Progress Bar */
@@ -192,6 +222,7 @@ body {
     position: relative;
     overflow: hidden;
     margin-bottom: 1.5rem;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
 }
 
 .valor-total-card::before {
@@ -213,6 +244,49 @@ body {
 .valor-total-card .content {
     position: relative;
     z-index: 2;
+}
+
+.valor-total-card h6 {
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+}
+
+.valor-total-card h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    margin-bottom: 0;
+}
+
+/* Cards de Informação com Ícones */
+.glass-card .card-body {
+    padding: 1.5rem;
+}
+
+.glass-card .card-body p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    color: #4a5568;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.glass-card .card-body p i {
+    margin-top: 3px;
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+}
+
+.glass-card .card-body strong {
+    color: #2d3748;
+    font-weight: 600;
+    min-width: 150px;
+    display: inline-block;
 }
 
 /* Botões de Ação Premium (Salvar/Imprimir) */
@@ -486,36 +560,58 @@ body {
 
 /* Section Headers */
 .section-header {
-    background: rgba(255,255,255,0.1);
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 15px;
+    border-left: 4px solid #667eea;
+    border-radius: 8px;
     padding: 1rem 1.5rem;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .section-header h5 {
     margin: 0;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
     font-weight: 600;
+    color: #2d3748;
+    font-size: 1.1rem;
+}
+
+.section-header i {
+    font-size: 1.25rem;
 }
 
 /* Info Cards */
 .info-card {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.95);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 15px;
+    border: 1px solid rgba(0,0,0,0.08);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     padding: 1.5rem;
     margin-bottom: 1.5rem;
     transition: all 0.3s ease;
+    overflow: hidden;
 }
 
 .info-card:hover {
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,1);
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.info-card p, .info-card div {
+    color: #4a5568;
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+    word-wrap: break-word;
+}
+
+.info-card strong {
+    color: #2d3748;
+    font-weight: 600;
 }
 
 /* Responsive */
@@ -635,18 +731,40 @@ body {
     }
     
     .timeline-premium {
-        padding-left: 20px;
+        padding-left: 0;
+        padding-top: 0.5rem;
     }
     
     .timeline-premium::before {
-        left: 8px;
+        left: 14px;
+        top: 25px;
+        width: 2px;
+    }
+    
+    .timeline-item-premium {
+        padding-left: 45px;
+        margin-bottom: 1.5rem;
     }
     
     .timeline-marker-premium {
-        left: -15px;
-        width: 16px;
-        height: 16px;
-        font-size: 0.6rem;
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+        border-width: 2px;
+    }
+    
+    .timeline-content-premium {
+        padding: 1rem;
+        font-size: 0.875rem;
+    }
+    
+    .timeline-content-premium h6 {
+        font-size: 0.875rem;
+    }
+    
+    .timeline-content-premium small {
+        font-size: 0.75rem;
+        line-height: 1.3;
     }
 }
 
@@ -674,8 +792,14 @@ body {
 
 /* Melhorias na Timeline */
 .timeline-item-premium:hover .timeline-content-premium {
-    background: rgba(255,255,255,0.15);
+    background: rgba(255,255,255,1);
     transform: translateX(5px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.timeline-item-premium:hover .timeline-marker-premium {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
 }
 
 /* Cores Dinâmicas para Progresso */
