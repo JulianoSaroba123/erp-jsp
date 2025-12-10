@@ -1851,6 +1851,7 @@ def gerar_relatorio_pdf(id):
                             anexo.caminho,  # Caminho completo salvo no banco
                             os.path.join(UPLOAD_FOLDER, anexo.nome_arquivo),  # Usando UPLOAD_FOLDER
                             os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads', 'ordem_servico', 'anexos', anexo.nome_arquivo),
+                            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'app', 'static', 'uploads', anexo.nome_arquivo),  # Caminho usado atualmente
                         ]
                         
                         arquivo_encontrado = None
