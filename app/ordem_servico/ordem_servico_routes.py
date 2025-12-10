@@ -1860,16 +1860,34 @@ def gerar_relatorio_pdf(id):
             }
         '''
         
-        # Retorna HTML otimizado para impressão (usuário usa Ctrl+P para gerar PDF)
-        print(f"DEBUG PDF: Retornando HTML para impressão...")
+        # Retorna HTML otimizado para impressão com script de auto-download
+        print(f"DEBUG PDF: Retornando HTML para impressão com auto-download...")
+        
+        # Adiciona script para forçar diálogo de impressão (salvar como PDF)
+        script_auto_print = '''
+        <script>
+            window.onload = function() {
+                // Abre automaticamente o diálogo de impressão
+                window.print();
+            };
+        </script>
+        '''
+        
+        # Injeta o script antes do </body>
+        if '</body>' in html_content:
+            html_content = html_content.replace('</body>', f'{script_auto_print}</body>')
+        else:
+            html_content += script_auto_print
         
         response = make_response(html_content)
         response.headers['Content-Type'] = 'text/html; charset=utf-8'
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0, private'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '-1'
+        # Sugere nome do arquivo para quando o usuário escolher "Salvar como PDF"
+        response.headers['Content-Disposition'] = f'inline; filename="OS_{ordem.numero}_{dt.now().strftime("%Y%m%d")}.pdf"'
         
-        print(f" DEBUG PDF: HTML retornado com sucesso")
+        print(f" DEBUG PDF: HTML retornado com sucesso (com auto-print)")
         return response
         
     except Exception as e:
