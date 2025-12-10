@@ -288,6 +288,10 @@ def register_blueprints(app):
     # Blueprint de propostas
     from app.proposta.proposta_routes import proposta_bp
     app.register_blueprint(proposta_bp, url_prefix='/propostas')
+    
+    # Blueprint de status do sistema
+    from app.status_routes import status_bp
+    app.register_blueprint(status_bp)
 
 
 def register_auxiliary_routes(app):
