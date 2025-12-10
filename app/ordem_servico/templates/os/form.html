@@ -497,6 +497,12 @@
                                     <i class="fas fa-eye me-1"></i> Ver
                                 </a>
                                 {% endif %}
+                                <button onclick="excluirAnexo({{ anexo.id }}, '{{ anexo.nome_original }}')" 
+                                        class="btn btn-outline-danger btn-sm"
+                                        type="button"
+                                        title="Excluir anexo">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1341,5 +1347,59 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Função para excluir anexo
+async function excluirAnexo(anexoId, nomeArquivo) {
+    if (!confirm(`Tem certeza que deseja excluir o anexo "${nomeArquivo}"?\n\nEsta ação não pode ser desfeita.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`{{ url_for('ordem_servico.excluir_anexo', anexo_id=0) }}`.replace('0', anexoId), {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showNotification('Anexo excluído com sucesso!', 'success');
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showNotification(data.message || 'Erro ao excluir anexo', 'error');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        showNotification('Erro ao excluir anexo', 'error');
+    }
+}
+
+// Função para obter CSRF token
+function getCsrfToken() {
+    return document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '';
+}
+
+// Função para mostrar notificações
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove após 5 segundos
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
 </script>
 {% endblock %}
