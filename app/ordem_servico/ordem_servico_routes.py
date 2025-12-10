@@ -1837,19 +1837,46 @@ def gerar_relatorio_pdf(id):
         anexos_base64 = {}
         if incluir_imagens and hasattr(ordem, 'anexos') and ordem.anexos:
             import base64
-            print(f"DEBUG PDF: Convertendo {len(ordem.anexos)} anexos para base64...")
+            print(f"🖼️ DEBUG PDF: Convertendo {len(ordem.anexos)} anexos para base64...")
             for anexo in ordem.anexos:
+                print(f"  📁 Processando: {anexo.nome_original}")
+                print(f"     - Tipo: {anexo.tipo_arquivo}")
+                print(f"     - MIME: {anexo.mime_type}")
+                print(f"     - Caminho salvo: {anexo.caminho}")
+                
                 if anexo.tipo_arquivo == 'image' or (anexo.mime_type and 'image' in anexo.mime_type):
                     try:
-                        # Lê o arquivo e converte para base64
-                        with open(anexo.caminho, 'rb') as img_file:
-                            img_data = img_file.read()
-                            img_base64 = base64.b64encode(img_data).decode('utf-8')
-                            anexos_base64[str(anexo.id)] = img_base64
-                            print(f"  ✅ Anexo {anexo.nome_original}: {len(img_base64)} chars base64")
+                        # Tenta diferentes caminhos possíveis
+                        possible_paths = [
+                            anexo.caminho,  # Caminho completo salvo no banco
+                            os.path.join(UPLOAD_FOLDER, anexo.nome_arquivo),  # Usando UPLOAD_FOLDER
+                            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads', 'ordem_servico', 'anexos', anexo.nome_arquivo),
+                        ]
+                        
+                        arquivo_encontrado = None
+                        for caminho_teste in possible_paths:
+                            if os.path.exists(caminho_teste):
+                                arquivo_encontrado = caminho_teste
+                                print(f"     ✅ Arquivo encontrado em: {arquivo_encontrado}")
+                                break
+                            else:
+                                print(f"     ❌ Não encontrado em: {caminho_teste}")
+                        
+                        if arquivo_encontrado:
+                            # Lê o arquivo e converte para base64
+                            with open(arquivo_encontrado, 'rb') as img_file:
+                                img_data = img_file.read()
+                                img_base64 = base64.b64encode(img_data).decode('utf-8')
+                                anexos_base64[str(anexo.id)] = img_base64
+                                print(f"     ✅ Convertido: {len(img_base64)} chars base64 | {len(img_data)} bytes")
+                        else:
+                            print(f"     ⚠️ ARQUIVO NÃO ENCONTRADO em nenhum caminho testado!")
+                            
                     except Exception as e:
-                        print(f"  ⚠️ Erro ao converter {anexo.nome_original}: {str(e)}")
-            print(f"DEBUG PDF: Total de imagens convertidas: {len(anexos_base64)}")
+                        print(f"     ⚠️ ERRO ao converter {anexo.nome_original}: {str(e)}")
+                        import traceback
+                        print(f"     Stack: {traceback.format_exc()}")
+            print(f"🖼️ DEBUG PDF: Total de imagens convertidas com sucesso: {len(anexos_base64)}/{len(ordem.anexos)}")
         
         # Renderiza o template HTML com timestamp para evitar cache
         html_content = render_template(
