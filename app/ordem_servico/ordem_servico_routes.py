@@ -653,16 +653,29 @@ def novo():
                             tipo_arquivo = 'image' if content_type.startswith('image/') else 'document'
                             
                             # Cria registro no banco (com conteúdo em BLOB para Render)
-                            anexo = OrdemServicoAnexo(
-                                ordem_servico_id=ordem.id,
-                                nome_original=file.filename,
-                                nome_arquivo=filename,
-                                tipo_arquivo=tipo_arquivo,
-                                mime_type=content_type,
-                                tamanho=len(file_content),
-                                caminho=filepath,
-                                conteudo=file_content  # Salva no banco para persistir no Render
-                            )
+                            try:
+                                anexo = OrdemServicoAnexo(
+                                    ordem_servico_id=ordem.id,
+                                    nome_original=file.filename,
+                                    nome_arquivo=filename,
+                                    tipo_arquivo=tipo_arquivo,
+                                    mime_type=content_type,
+                                    tamanho=len(file_content),
+                                    caminho=filepath,
+                                    conteudo=file_content  # Salva no banco para persistir no Render
+                                )
+                            except TypeError:
+                                # Se a coluna conteudo não existir ainda, cria sem ela
+                                print(f"⚠️ Coluna 'conteudo' não existe, criando anexo sem BLOB")
+                                anexo = OrdemServicoAnexo(
+                                    ordem_servico_id=ordem.id,
+                                    nome_original=file.filename,
+                                    nome_arquivo=filename,
+                                    tipo_arquivo=tipo_arquivo,
+                                    mime_type=content_type,
+                                    tamanho=len(file_content),
+                                    caminho=filepath
+                                )
                             db.session.add(anexo)
                             
                         except Exception as e:
@@ -1316,16 +1329,29 @@ def editar(id):
                             print(f"🔍 DEBUG ANEXOS EDITAR: Tipo detectado: {tipo_arquivo}, MIME: {content_type}")
                             
                             # Cria registro no banco (com conteúdo em BLOB para Render)
-                            anexo = OrdemServicoAnexo(
-                                ordem_servico_id=ordem.id,
-                                nome_original=file.filename,
-                                nome_arquivo=filename,
-                                tipo_arquivo=tipo_arquivo,
-                                mime_type=content_type,
-                                tamanho=len(file_content),
-                                caminho=filepath,
-                                conteudo=file_content  # Salva no banco para persistir no Render
-                            )
+                            try:
+                                anexo = OrdemServicoAnexo(
+                                    ordem_servico_id=ordem.id,
+                                    nome_original=file.filename,
+                                    nome_arquivo=filename,
+                                    tipo_arquivo=tipo_arquivo,
+                                    mime_type=content_type,
+                                    tamanho=len(file_content),
+                                    caminho=filepath,
+                                    conteudo=file_content  # Salva no banco para persistir no Render
+                                )
+                            except TypeError:
+                                # Se a coluna conteudo não existir ainda, cria sem ela
+                                print(f"⚠️ Coluna 'conteudo' não existe, criando anexo sem BLOB")
+                                anexo = OrdemServicoAnexo(
+                                    ordem_servico_id=ordem.id,
+                                    nome_original=file.filename,
+                                    nome_arquivo=filename,
+                                    tipo_arquivo=tipo_arquivo,
+                                    mime_type=content_type,
+                                    tamanho=len(file_content),
+                                    caminho=filepath
+                                )
                             db.session.add(anexo)
                             print(f"✅ DEBUG ANEXOS EDITAR: Registro criado no banco: {anexo}")
                             
@@ -1859,7 +1885,7 @@ def gerar_relatorio_pdf(id):
                 if anexo.tipo_arquivo == 'image' or (anexo.mime_type and 'image' in anexo.mime_type):
                     try:
                         # PRIORIDADE 1: Usar conteúdo BLOB salvo no banco (funciona no Render)
-                        if anexo.conteudo:
+                        if hasattr(anexo, 'conteudo') and anexo.conteudo:
                             print(f"     ✅ Usando conteúdo do BLOB no banco ({len(anexo.conteudo)} bytes)")
                             img_base64 = base64.b64encode(anexo.conteudo).decode('utf-8')
                             anexos_base64[str(anexo.id)] = img_base64
