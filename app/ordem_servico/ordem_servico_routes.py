@@ -1573,12 +1573,25 @@ def api_buscar():
 def baixar_anexo(anexo_id):
     """
     Serve um arquivo anexado à ordem de serviço.
+    Serve do BLOB primeiro, depois tenta disco físico.
     
     Args:
         anexo_id: ID do anexo
     """
+    from flask import Response
+    import io
+    
     anexo = OrdemServicoAnexo.query.get_or_404(anexo_id)
     
+    # 1. Tenta servir do BLOB (se disponível)
+    if hasattr(anexo, 'conteudo') and anexo.conteudo:
+        return Response(
+            io.BytesIO(anexo.conteudo),
+            mimetype=anexo.mime_type,
+            headers={'Content-Disposition': f'attachment; filename="{anexo.nome_original}"'}
+        )
+    
+    # 2. Fallback: tenta servir do disco
     try:
         return send_from_directory(
             UPLOAD_FOLDER,
@@ -1594,12 +1607,25 @@ def baixar_anexo(anexo_id):
 def visualizar_anexo(anexo_id):
     """
     Visualiza um arquivo anexado (para imagens principalmente).
+    Serve do BLOB primeiro, depois tenta disco físico.
     
     Args:
         anexo_id: ID do anexo
     """
+    from flask import Response
+    import io
+    
     anexo = OrdemServicoAnexo.query.get_or_404(anexo_id)
     
+    # 1. Tenta servir do BLOB (se disponível)
+    if hasattr(anexo, 'conteudo') and anexo.conteudo:
+        return Response(
+            io.BytesIO(anexo.conteudo),
+            mimetype=anexo.mime_type,
+            headers={'Content-Disposition': f'inline; filename="{anexo.nome_original}"'}
+        )
+    
+    # 2. Fallback: tenta servir do disco
     try:
         return send_from_directory(
             UPLOAD_FOLDER,
@@ -1607,6 +1633,23 @@ def visualizar_anexo(anexo_id):
             as_attachment=False
         )
     except FileNotFoundError:
+        # 3. Tenta caminhos alternativos
+        possible_paths = [
+            os.path.join('app', 'static', 'uploads', anexo.nome_arquivo),
+            os.path.join(current_app.root_path, 'static', 'uploads', anexo.nome_arquivo),
+            os.path.join('uploads', anexo.nome_arquivo)
+        ]
+        
+        for path in possible_paths:
+            if os.path.exists(path):
+                with open(path, 'rb') as f:
+                    return Response(
+                        io.BytesIO(f.read()),
+                        mimetype=anexo.mime_type,
+                        headers={'Content-Disposition': f'inline; filename="{anexo.nome_original}"'}
+                    )
+        
+        # Arquivo não encontrado em lugar nenhum
         flash('Arquivo não encontrado!', 'error')
         return redirect(url_for('ordem_servico.visualizar', id=anexo.ordem_servico_id))
 
