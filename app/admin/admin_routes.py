@@ -3,9 +3,8 @@
 Endpoint admin para executar migrações no banco de dados
 """
 
-from flask import Blueprint, jsonify
-from app.extensoes import db
-from sqlalchemy import text
+from flask import Blueprint, jsonify, current_app
+import traceback
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -31,6 +30,9 @@ def migrate_add_conteudo():
     Acesse: https://erp-jsp-th5o.onrender.com/admin/migrate-add-conteudo
     """
     try:
+        from app.extensoes import db
+        from sqlalchemy import text
+        
         # Verifica se a coluna já existe
         check_sql = text("""
             SELECT column_name 
@@ -78,11 +80,18 @@ def migrate_add_conteudo():
             }), 500
             
     except Exception as e:
-        db.session.rollback()
+        try:
+            from app.extensoes import db
+            db.session.rollback()
+        except:
+            pass
+        
+        import traceback
         return jsonify({
             'success': False,
             'message': f'❌ Erro: {str(e)}',
-            'status': 'error'
+            'status': 'error',
+            'traceback': traceback.format_exc()
         }), 500
 
 @admin_bp.route('/check-database', methods=['GET'])
@@ -92,6 +101,9 @@ def check_database():
     Acesse: https://erp-jsp-th5o.onrender.com/admin/check-database
     """
     try:
+        from app.extensoes import db
+        from sqlalchemy import text
+        
         sql = text("""
             SELECT column_name, data_type, is_nullable
             FROM information_schema.columns 
@@ -117,7 +129,9 @@ def check_database():
         }), 200
         
     except Exception as e:
+        import traceback
         return jsonify({
             'success': False,
-            'message': f'❌ Erro: {str(e)}'
+            'message': f'❌ Erro: {str(e)}',
+            'traceback': traceback.format_exc()
         }), 500
