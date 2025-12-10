@@ -1833,6 +1833,24 @@ def gerar_relatorio_pdf(id):
         print(f"🔍 TEMPLATE SENDO USADO: 'os/pdf_ordem_servico.html'")
         print(f"🔍 CAMINHO ABSOLUTO: {os.path.abspath(os.path.join('app', 'ordem_servico', 'templates', 'os', 'pdf_ordem_servico.html'))}")
         
+        # Converter imagens anexadas para base64 se incluir_imagens estiver ativo
+        anexos_base64 = {}
+        if incluir_imagens and hasattr(ordem, 'anexos') and ordem.anexos:
+            import base64
+            print(f"DEBUG PDF: Convertendo {len(ordem.anexos)} anexos para base64...")
+            for anexo in ordem.anexos:
+                if anexo.tipo_arquivo == 'image' or (anexo.mime_type and 'image' in anexo.mime_type):
+                    try:
+                        # Lê o arquivo e converte para base64
+                        with open(anexo.caminho, 'rb') as img_file:
+                            img_data = img_file.read()
+                            img_base64 = base64.b64encode(img_data).decode('utf-8')
+                            anexos_base64[str(anexo.id)] = img_base64
+                            print(f"  ✅ Anexo {anexo.nome_original}: {len(img_base64)} chars base64")
+                    except Exception as e:
+                        print(f"  ⚠️ Erro ao converter {anexo.nome_original}: {str(e)}")
+            print(f"DEBUG PDF: Total de imagens convertidas: {len(anexos_base64)}")
+        
         # Renderiza o template HTML com timestamp para evitar cache
         html_content = render_template(
             'os/pdf_ordem_servico.html',
@@ -1841,7 +1859,8 @@ def gerar_relatorio_pdf(id):
             logo_base64=get_logo_base64(),  # Função para obter logo em base64
             config=config,  # Adicionar configurações
             timedelta=timedelta,  # Para cálculo de garantia
-            timestamp=dt.now().isoformat()  # Timestamp único para evitar cache
+            timestamp=dt.now().isoformat(),  # Timestamp único para evitar cache
+            anexos_base64=anexos_base64  # Imagens em base64
         )
         print(f"🔍 PRIMEIROS 200 CHARS DO HTML: {html_content[:200]}...")
         print(f" DEBUG PDF: Template renderizado com sucesso")

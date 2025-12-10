@@ -466,14 +466,25 @@
         <div class="section">
             <div class="section-title">IMAGENS ANEXADAS</div>
             <div class="section-content">
-                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; page-break-inside: avoid;">
                     {% for anexo in ordem.anexos %}
                         {% if anexo.tipo_arquivo == 'image' or (anexo.mime_type and 'image' in anexo.mime_type) %}
-                            <div style="flex: 1 1 45%; border: 1px solid #ddd; border-radius: 6px; padding: 8px; background: #fff;">
-                                <div style="font-size: 10px; font-weight: bold; margin-bottom: 6px; color: #333;">{{ anexo.nome_original }}</div>
-                                {# WeasyPrint precisa de caminho absoluto com prefixo file:/// e barras #}
-                                <img src="file:///{{ anexo.caminho | replace('\\', '/') }}" alt="{{ anexo.nome_original }}" style="width: 100%; height: auto; max-height: 360px; object-fit: contain;"/>
-                                <div style="font-size: 9px; color: #666; margin-top: 4px;">{{ anexo.tamanho_formatado }}</div>
+                            <div style="border: 2px solid #e2e8f0; border-radius: 8px; padding: 12px; background: #f7fafc; page-break-inside: avoid;">
+                                <div style="font-size: 11px; font-weight: 600; margin-bottom: 8px; color: #2d3748; text-align: center; background: #fff; padding: 6px; border-radius: 4px;">
+                                    📷 {{ anexo.nome_original }}
+                                </div>
+                                {% if anexos_base64 and anexo.id|string in anexos_base64 %}
+                                    <img src="data:{{ anexo.mime_type }};base64,{{ anexos_base64[anexo.id|string] }}" 
+                                         alt="{{ anexo.nome_original }}" 
+                                         style="width: 100%; height: auto; max-height: 400px; object-fit: contain; border: 1px solid #cbd5e0; border-radius: 4px; background: #fff;"/>
+                                {% else %}
+                                    <div style="width: 100%; height: 200px; display: flex; align-items: center; justify-content: center; background: #e2e8f0; border: 2px dashed #cbd5e0; border-radius: 4px; color: #718096; font-size: 11px;">
+                                        ⚠️ Imagem não disponível
+                                    </div>
+                                {% endif %}
+                                <div style="font-size: 9px; color: #718096; margin-top: 6px; text-align: center; background: #fff; padding: 4px; border-radius: 4px;">
+                                    💾 {{ anexo.tamanho_formatado }}
+                                </div>
                             </div>
                         {% endif %}
                     {% endfor %}
