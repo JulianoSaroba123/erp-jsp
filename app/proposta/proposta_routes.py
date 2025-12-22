@@ -672,12 +672,12 @@ def gerar_pdf(id):
         
         # Carregar produtos e serviços via SQL direto
         produtos_result = db.session.execute(
-            text("SELECT descricao, quantidade, valor_unitario, valor_total FROM proposta_produto WHERE proposta_id = :id AND ativo = 1"), 
+            text("SELECT descricao, quantidade, valor_unitario, valor_total FROM proposta_produto WHERE proposta_id = :id AND ativo = true"), 
             {"id": id}
         ).fetchall()
         
         servicos_result = db.session.execute(
-            text("SELECT descricao, quantidade, valor_unitario, valor_total FROM proposta_servico WHERE proposta_id = :id AND ativo = 1"), 
+            text("SELECT descricao, quantidade, valor_unitario, valor_total FROM proposta_servico WHERE proposta_id = :id AND ativo = true"), 
             {"id": id}
         ).fetchall()
         
