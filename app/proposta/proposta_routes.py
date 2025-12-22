@@ -519,7 +519,7 @@ def editar_proposta(id):
             desconto_valor = subtotal * (proposta.desconto / 100)
             proposta.valor_total = subtotal - desconto_valor
             
-            logger.debug(f"💰 Valores calculados: produtos={valor_total_produtos}, servicos={valor_total_servicos}, total={valor_final}")
+            logger.debug(f"💰 Valores calculados: produtos={valor_total_produtos}, servicos={valor_total_servicos}, total={proposta.valor_total}")
             logger.debug(f" Produtos válidos: {len(produtos_validos)}, Serviços válidos: {len(servicos_validos)}")
 
             # Processar parcelas: remover existentes e recriar conforme formulário
