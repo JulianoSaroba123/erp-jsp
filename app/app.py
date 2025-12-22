@@ -152,6 +152,24 @@ def create_app(config_name=None):
         except Exception as e:
             print(f" ⚠ Aviso na migração de campos de proposta: {e}")
         
+        # Corrige sequências de ID (PostgreSQL)
+        try:
+            from sqlalchemy import text
+            tabelas = ['propostas', 'clientes', 'fornecedores', 'produtos', 'ordem_servico', 
+                      'usuarios', 'proposta_produto', 'proposta_servico', 'proposta_parcela']
+            
+            for tabela in tabelas:
+                try:
+                    query = f"SELECT setval(pg_get_serial_sequence('{tabela}', 'id'), COALESCE((SELECT MAX(id) FROM {tabela}), 1), true)"
+                    db.session.execute(text(query))
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+                    pass  # Ignora se tabela não existe ou não tem sequência
+            print("[OK] Sequências de ID verificadas/corrigidas!")
+        except Exception as e:
+            print(f" ⚠ Aviso na correção de sequências: {e}")
+        
         # Corrige ordens de serviço (migração automática de status)
         try:
             from scripts.corrigir_ordens_servico_render import corrigir_ordens_servico
