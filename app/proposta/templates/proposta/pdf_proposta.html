@@ -361,12 +361,12 @@
                     <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; word-wrap: break-word;">{{ proposta.cliente.email if proposta.cliente and proposta.cliente.email else 'N/A' }}</div>
                 </div>
             </div>
-            {% if proposta.cliente and proposta.cliente.endereco %}
-            <div class="grid-item">
+            <div style="margin-bottom: 0;">
                 <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">ENDEREÇO</div>
-                <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; word-wrap: break-word;">{{ proposta.cliente.endereco_completo }}</div>
+                <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; word-wrap: break-word;">
+                    {{ proposta.cliente.endereco_completo if proposta.cliente and proposta.cliente.endereco else 'N/A' }}
+                </div>
             </div>
-            {% endif %}
         </div>
     </div>
     <!-- 02 Itens da Proposta -->
