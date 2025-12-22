@@ -473,17 +473,17 @@ def editar_proposta(id):
                     valor_total_servicos += valor_item
             
             # Deletar produtos e serviços existentes (não apenas desativar)
-            db.session.execute(
-                text("DELETE FROM proposta_produto WHERE proposta_id = :id"),
-                {"id": id}
-            )
-            db.session.execute(
-                text("DELETE FROM proposta_servico WHERE proposta_id = :id"),
-                {"id": id}
-            )
+            from app.proposta.proposta_model import PropostaProduto, PropostaServico
+            
+            try:
+                PropostaProduto.query.filter_by(proposta_id=id).delete()
+                PropostaServico.query.filter_by(proposta_id=id).delete()
+                db.session.flush()  # Flush para confirmar deletes antes de inserir
+            except Exception as e:
+                logger.warning(f"Erro ao deletar itens antigos: {e}")
+                db.session.rollback()
             
             # Inserir produtos válidos usando ORM
-            from app.proposta.proposta_model import PropostaProduto, PropostaServico
             
             for produto in produtos_validos:
                 novo_produto = PropostaProduto(
@@ -525,8 +525,9 @@ def editar_proposta(id):
             # Processar parcelas: remover existentes e recriar conforme formulário
             try:
                 from app.proposta.proposta_model import PropostaParcela
-                # Remover existentes
-                db.session.execute(text("UPDATE proposta_parcela SET ativo = 0 WHERE proposta_id = :id"), {"id": id})
+                # Remover existentes usando ORM
+                PropostaParcela.query.filter_by(proposta_id=id).delete()
+                db.session.flush()
 
                 entrada = converter_valor_monetario(request.form.get('entrada', 0))
                 parcelas_datas = request.form.getlist('parcela_data[]')
