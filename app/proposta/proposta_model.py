@@ -65,9 +65,9 @@ class Proposta(BaseModel):
     
     # Condições
     condicoes_pagamento = db.Column(db.Text)
-    prazo_execucao = db.Column(db.String(100))
-    garantia = db.Column(db.String(100))
-    forma_pagamento = db.Column(db.String(50), default='a_vista')
+    prazo_execucao = db.Column(db.String(500))
+    garantia = db.Column(db.String(500))
+    forma_pagamento = db.Column(db.String(500), default='a_vista')
     
     # Meta campos herdados de BaseModel:
     # id, data_criacao, data_atualizacao, ativo, usuario_criacao, usuario_atualizacao
