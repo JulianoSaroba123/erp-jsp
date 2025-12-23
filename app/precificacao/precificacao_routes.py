@@ -9,7 +9,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 precificacao_bp = Blueprint(
-    "precificacao", __name__, template_folder="templates", url_prefix="/precificacao"
+    "precificacao", __name__, template_folder="templates"
 )
 
 def converter_valor_monetario(valor_str):
@@ -36,9 +36,13 @@ def calculadora():
     try:
         if request.method == "GET":
             # Buscar última configuração para reutilizar valores
-            config_atual = ConfigPrecificacao.query.order_by(
-                ConfigPrecificacao.data_simulacao.desc()
-            ).first()
+            try:
+                config_atual = ConfigPrecificacao.query.order_by(
+                    ConfigPrecificacao.data_simulacao.desc()
+                ).first()
+            except Exception as e:
+                logger.warning(f"Erro ao buscar config anterior: {e}")
+                config_atual = None
             
             return render_template(
                 "precificacao/calculadora.html",
