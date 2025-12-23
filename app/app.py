@@ -170,6 +170,33 @@ def create_app(config_name=None):
         except Exception as e:
             print(f" ⚠ Aviso na correção de sequências: {e}")
         
+        # Migração: adicionar colunas de precificação
+        try:
+            from sqlalchemy import text, inspect
+            inspector = inspect(db.engine)
+            
+            if 'config_precificacao' in inspector.get_table_names():
+                colunas_existentes = [col['name'] for col in inspector.get_columns('config_precificacao')]
+                
+                # Adicionar colunas se não existirem
+                if 'percentual_encargos' not in colunas_existentes:
+                    db.session.execute(text("ALTER TABLE config_precificacao ADD COLUMN percentual_encargos FLOAT DEFAULT 80.0"))
+                    db.session.commit()
+                    print("[OK] Coluna percentual_encargos adicionada!")
+                
+                if 'percentual_impostos' not in colunas_existentes:
+                    db.session.execute(text("ALTER TABLE config_precificacao ADD COLUMN percentual_impostos FLOAT DEFAULT 13.33"))
+                    db.session.commit()
+                    print("[OK] Coluna percentual_impostos adicionada!")
+                
+                if 'horas_improdutivas_percentual' not in colunas_existentes:
+                    db.session.execute(text("ALTER TABLE config_precificacao ADD COLUMN horas_improdutivas_percentual FLOAT DEFAULT 20.0"))
+                    db.session.commit()
+                    print("[OK] Coluna horas_improdutivas_percentual adicionada!")
+        except Exception as e:
+            db.session.rollback()
+            print(f" ⚠ Aviso na migração de precificação: {e}")
+        
         # Corrige ordens de serviço (migração automática de status)
         try:
             from scripts.corrigir_ordens_servico_render import corrigir_ordens_servico
