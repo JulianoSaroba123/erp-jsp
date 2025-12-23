@@ -47,6 +47,9 @@ class ConfigPrecificacao(db.Model):
     
     # Margem e Estratégia
     margem_lucro_percentual = Column(Float, default=30.0)
+    percentual_encargos = Column(Float, default=80.0)  # Encargos trabalhistas (INSS, FGTS, férias, 13º)
+    percentual_impostos = Column(Float, default=13.33)  # Simples Nacional (média)
+    horas_improdutivas_percentual = Column(Float, default=20.0)  # Tempo perdido, administrativo, etc
     
     # Resultados Calculados
     total_custos_fixos = Column(Float, default=0.0)
@@ -89,16 +92,16 @@ class ConfigPrecificacao(db.Model):
             self.custo_outros_variaveis
         )
         
-        # 2. Calcular custos de colaboradores
-        self.total_custo_fixo_colaboradores = (
-            self.colaboradores_fixos_qtd * self.salario_medio_fixo
-        )
+        # 2. Calcular custos de colaboradores COM ENCARGOS
+        custo_fixos_bruto = self.colaboradores_fixos_qtd * self.salario_medio_fixo
+        self.total_custo_fixo_colaboradores = custo_fixos_bruto * (1 + self.percentual_encargos / 100)
         
-        self.total_custo_diaristas = (
+        custo_diaristas_bruto = (
             self.colaboradores_diaristas_qtd * 
             self.valor_diaria * 
             self.dias_trabalhados_mes
         )
+        self.total_custo_diaristas = custo_diaristas_bruto * (1 + self.percentual_encargos / 100)
         
         # 3. Custo total mensal
         self.custo_total_mensal = (
@@ -108,14 +111,23 @@ class ConfigPrecificacao(db.Model):
             self.total_custo_diaristas
         )
         
-        # 4. Cálculo do valor hora
-        total_horas_mensais = (
+        # 4. Cálculo do valor hora considerando horas produtivas
+        total_horas_teoricas = (
             self.colaboradores_produtivos * self.horas_mensais_colaborador
         )
         
-        if total_horas_mensais > 0:
-            self.valor_hora_base = self.custo_total_mensal / total_horas_mensais
-            self.valor_hora_final = self.valor_hora_base * (1 + self.margem_lucro_percentual / 100)
+        # Descontar horas improdutivas
+        total_horas_produtivas = total_horas_teoricas * (1 - self.horas_improdutivas_percentual / 100)
+        
+        if total_horas_produtivas > 0:
+            # Valor hora base (custo sem margem)
+            self.valor_hora_base = self.custo_total_mensal / total_horas_produtivas
+            
+            # Adicionar margem de lucro
+            valor_com_lucro = self.valor_hora_base * (1 + self.margem_lucro_percentual / 100)
+            
+            # Adicionar impostos sobre venda (para que o líquido seja o planejado)
+            self.valor_hora_final = valor_com_lucro / (1 - self.percentual_impostos / 100)
         else:
             self.valor_hora_base = 0.0
             self.valor_hora_final = 0.0

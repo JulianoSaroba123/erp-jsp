@@ -87,8 +87,11 @@ def calculadora():
             horas_mensais_colaborador=float(request.form.get('horas_mensais_colaborador', 160)),
             colaboradores_produtivos=int(request.form.get('colaboradores_produtivos', 1)),
             
-            # Margem
+            # Margem e parâmetros de cálculo
             margem_lucro_percentual=float(request.form.get('margem_lucro_percentual', 30)),
+            percentual_encargos=float(request.form.get('percentual_encargos', 80)),
+            percentual_impostos=float(request.form.get('percentual_impostos', 13.33)),
+            horas_improdutivas_percentual=float(request.form.get('horas_improdutivas_percentual', 20)),
             
             # Observações
             observacoes=request.form.get('observacoes', '').strip()
