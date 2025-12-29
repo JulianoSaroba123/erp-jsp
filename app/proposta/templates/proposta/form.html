@@ -26,6 +26,53 @@
 {% endblock %}
 
 {% block content %}
+<style>
+    /* Cores JSP Ciano - Form */
+    .card.bg-dark {
+        background: #1f2937 !important;
+        border: 1px solid #374151 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .card-header.bg-secondary,
+    .card-header.bg-primary,
+    .card-header.bg-success,
+    .card-header.bg-warning,
+    .card-header.bg-info {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 12px 12px 0 0 !important;
+    }
+    .card-header h5 {
+        color: white !important;
+        font-weight: 600 !important;
+    }
+    .btn-primary {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+        border: none !important;
+        color: white !important;
+    }
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%) !important;
+        box-shadow: 0 4px 8px rgba(6,182,212,0.3);
+    }
+    .btn-success {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        border: none !important;
+    }
+    .btn-success:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+    }
+    .text-primary {
+        color: #06b6d4 !important;
+    }
+    label.text-white {
+        color: #f3f4f6 !important;
+        font-weight: 500 !important;
+    }
+</style>
+
 <div class="container-fluid">
     <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
         
