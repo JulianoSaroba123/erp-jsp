@@ -165,6 +165,22 @@
             body { margin: 0; padding: 15mm; }
             .section { page-break-inside: avoid; }
         }
+        
+        /* Remover data/hora de impressão automática do navegador */
+        @page {
+            margin: 15mm;
+            size: A4;
+        }
+        
+        @media print {
+            @page {
+                margin-top: 15mm;
+                margin-bottom: 15mm;
+            }
+        }
+    </style>
+</head>
+<body>
     <div class="header">
         <div>
             <h1>JSP Automação Industrial & Solar</h1>
