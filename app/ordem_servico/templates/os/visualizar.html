@@ -1,2086 +1,496 @@
 {% extends "base.html" %}
 
-{% block title %}OS {{ ordem.numero }} - {{ ordem.titulo }} - ERP JSP{% endblock %}
-
-{% block extra_css %}
-<style>
-/* ========================================
-   GLASSMORPHISM & TEMA PREMIUM
-   ======================================== */
-:root {
-    --glass-bg: rgba(255, 255, 255, 0.1);
-    --glass-border: rgba(255, 255, 255, 0.18);
-    --shadow-light: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-    --shadow-premium: 0 15px 35px rgba(0, 0, 0, 0.1);
-    --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --gradient-success: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --gradient-warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    --glass-blur: blur(4px);
-}
-
-body {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-    min-height: 100vh;
-}
-
-/* Glass Cards */
-.glass-card {
-    background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-light);
-    border-radius: 20px;
-    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-}
-
-.glass-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 40px rgba(31, 38, 135, 0.4);
-}
-
-/* Premium Header */
-.premium-header {
-    background: var(--gradient-primary);
-    border-radius: 25px;
-    padding: 2rem;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 2rem;
-}
-
-.premium-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-    backdrop-filter: blur(10px);
-}
-
-.premium-header .content {
-    position: relative;
-    z-index: 2;
-}
-
-/* Logo Empresa */
-.company-logo {
-    width: 60px;
-    height: 60px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1rem;
-    backdrop-filter: blur(10px);
-}
-
-/* Badge Animado OS */
-.os-badge {
-    background: rgba(255,255,255,0.9);
-    color: #667eea;
-    padding: 0.75rem 1.5rem;
-    border-radius: 50px;
-    font-weight: 700;
-    font-size: 1.25rem;
-    animation: bounceIn 1s ease-out;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-}
-
-@keyframes bounceIn {
-    0% { transform: scale(0.3); opacity: 0; }
-    50% { transform: scale(1.05); }
-    70% { transform: scale(0.9); }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* Status Badges */
-.status-badge {
-    padding: 0.5rem 1rem;
-    border-radius: 25px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.3);
-}
-
-.status-aberta { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
-.status-em-andamento { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; }
-.status-aguardando-cliente { background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); color: #333; }
-.status-concluida { background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333; }
-.status-cancelada { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); color: white; }
-
-.prioridade-baixa { background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); color: #333; }
-.prioridade-normal { background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%); color: white; }
-.prioridade-alta { background: linear-gradient(135deg, #fdbb2d 0%, #22c1c3 100%); color: white; }
-.prioridade-urgente { background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%); color: white; }
-
-/* Timeline Premium */
-.timeline-premium {
-    position: relative;
-    padding-left: 0;
-    padding-top: 1rem;
-}
-
-.timeline-premium::before {
-    content: '';
-    position: absolute;
-    left: 17px;
-    top: 30px;
-    bottom: 30px;
-    width: 3px;
-    background: linear-gradient(to bottom, #667eea, #764ba2, #f093fb);
-    border-radius: 2px;
-    opacity: 0.6;
-}
-
-.timeline-item-premium {
-    position: relative;
-    margin-bottom: 2rem;
-    padding-left: 50px; /* Espaço para o marcador */
-    min-height: 60px; /* Altura mínima */
-}
-
-.timeline-marker-premium {
-    position: absolute;
-    left: 0;
-    top: 5px;
-    width: 35px;
-    height: 35px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.875rem;
-    color: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-    z-index: 2;
-    border: 3px solid #fff;
-}
-
-.timeline-content-premium {
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(10px);
-    padding: 1.25rem 1.5rem;
-    border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.05);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    transition: all 0.3s ease;
-    overflow: hidden;
-    word-wrap: break-word;
-}
-
-.timeline-content-premium h6 {
-    color: #2d3748;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    font-size: 0.95rem;
-}
-
-.timeline-content-premium p {
-    color: #4a5568;
-    margin-bottom: 0.25rem;
-    font-size: 0.875rem;
-}
-
-.timeline-content-premium small {
-    color: #718096;
-    font-size: 0.813rem;
-    display: block;
-    margin-top: 0.5rem;
-    line-height: 1.4;
-}
-
-/* Progress Bar */
-.progress-premium {
-    height: 12px;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.1);
-    backdrop-filter: blur(10px);
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.2);
-}
-
-.progress-premium .progress-bar {
-    background: var(--gradient-primary);
-    border-radius: 10px;
-    transition: all 0.3s ease;
-}
-
-/* Valor Total Card */
-.valor-total-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 20px;
-    padding: 2rem;
-    text-align: center;
-    color: white;
-    position: relative;
-    overflow: hidden;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-}
-
-.valor-total-card::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-    animation: shimmer 3s infinite;
-}
-
-@keyframes shimmer {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.valor-total-card .content {
-    position: relative;
-    z-index: 2;
-}
-
-.valor-total-card h6 {
-    font-size: 0.875rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    opacity: 0.9;
-    margin-bottom: 0.5rem;
-}
-
-.valor-total-card h2 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    margin-bottom: 0;
-}
-
-/* Cards de Informação com Ícones */
-.glass-card .card-body {
-    padding: 1.5rem;
-}
-
-.glass-card .card-body p {
-    margin-bottom: 1rem;
-    line-height: 1.6;
-    color: #4a5568;
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-}
-
-.glass-card .card-body p i {
-    margin-top: 3px;
-    flex-shrink: 0;
-    width: 20px;
-    text-align: center;
-}
-
-.glass-card .card-body strong {
-    color: #2d3748;
-    font-weight: 600;
-    min-width: 150px;
-    display: inline-block;
-}
-
-/* Botões de Ação Premium (Salvar/Imprimir) */
-.btn-success-premium {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
-    border: none !important;
-    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3) !important;
-    transition: all 0.3s ease !important;
-    position: relative;
-    overflow: hidden;
-}
-
-.btn-success-premium::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-}
-
-.btn-success-premium:hover::before {
-    width: 300px;
-    height: 300px;
-}
-
-.btn-success-premium:hover {
-    transform: translateY(-3px) !important;
-    box-shadow: 0 15px 40px rgba(16, 185, 129, 0.5) !important;
-}
-
-.btn-success-premium i {
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-}
-
-/* Floating Action Button Melhorado */
-.fab {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    width: 70px;
-    height: 70px;
-    background: linear-gradient(135deg, 
-        rgba(102, 126, 234, 0.95) 0%, 
-        rgba(118, 75, 162, 0.95) 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 1.5rem;
-    text-decoration: none;
-    box-shadow: 
-        0 8px 32px rgba(102, 126, 234, 0.4),
-        0 0 0 1px rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
-    z-index: 1000;
-    border: none;
-    cursor: pointer;
-}
-
-.fab:hover {
-    transform: scale(1.1) translateY(-3px);
-    box-shadow: 
-        0 20px 40px rgba(102, 126, 234, 0.6),
-        0 0 0 1px rgba(255, 255, 255, 0.2);
-    color: white;
-}
-
-.fab-main {
-    background: linear-gradient(135deg, 
-        rgba(102, 126, 234, 0.95) 0%, 
-        rgba(118, 75, 162, 0.95) 100%);
-}
-
-.fab-main:hover {
-    background: linear-gradient(135deg, 
-        rgba(102, 126, 234, 1) 0%, 
-        rgba(118, 75, 162, 1) 100%);
-}
-
-.fab-menu {
-    position: fixed;
-    bottom: 120px;
-    right: 30px;
-    z-index: 999;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.fab-item {
-    background: linear-gradient(135deg, 
-        rgba(255, 255, 255, 0.15) 0%, 
-        rgba(255, 255, 255, 0.05) 100%);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 50px;
-    padding: 15px 20px;
-    color: white;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-weight: 600;
-    font-size: 0.95rem;
-    transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
-    opacity: 0;
-    transform: translateX(100px) scale(0.8);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    min-width: 160px;
-    position: relative;
-    overflow: hidden;
-}
-
-.fab-item::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    transition: left 0.5s ease;
-}
-
-.fab-item:hover::before {
-    left: 100%;
-}
-
-/* Animações de entrada dos botões */
-.fab-item:nth-child(1) { animation: slideInFab 0.5s ease 0.1s forwards; }
-.fab-item:nth-child(2) { animation: slideInFab 0.5s ease 0.2s forwards; }
-.fab-item:nth-child(3) { animation: slideInFab 0.5s ease 0.3s forwards; }
-.fab-item:nth-child(4) { animation: slideInFab 0.5s ease 0.4s forwards; }
-.fab-item:nth-child(5) { animation: slideInFab 0.5s ease 0.5s forwards; }
-.fab-item:nth-child(6) { animation: slideInFab 0.5s ease 0.6s forwards; }
-
-@keyframes slideInFab {
-    to {
-        opacity: 1;
-        transform: translateX(0) scale(1);
-    }
-}
-
-/* Ícones dos botões */
-.fab-item i {
-    font-size: 1.2rem;
-    opacity: 0.9;
-    transition: all 0.3s ease;
-    width: 20px;
-    text-align: center;
-}
-
-.fab-text {
-    position: relative;
-    z-index: 2;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-}
-
-/* Estilos específicos por tipo de botão */
-.fab-edit:hover {
-    background: linear-gradient(135deg, 
-        rgba(255, 193, 7, 0.95) 0%, 
-        rgba(255, 154, 0, 0.95) 100%);
-    border-color: rgba(255, 193, 7, 0.5);
-    transform: translateX(-10px) translateY(-3px) scale(1.05);
-    box-shadow: 
-        0 12px 30px rgba(255, 193, 7, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.3);
-}
-
-.fab-pdf:hover {
-    background: linear-gradient(135deg, 
-        rgba(220, 53, 69, 0.95) 0%, 
-        rgba(198, 40, 40, 0.95) 100%);
-    border-color: rgba(220, 53, 69, 0.5);
-    transform: translateX(-10px) translateY(-3px) scale(1.05);
-    box-shadow: 
-        0 12px 30px rgba(220, 53, 69, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.3);
-}
-
-.fab-duplicate:hover {
-    background: linear-gradient(135deg, 
-        rgba(13, 202, 240, 0.95) 0%, 
-        rgba(0, 123, 255, 0.95) 100%);
-    border-color: rgba(13, 202, 240, 0.5);
-    transform: translateX(-10px) translateY(-3px) scale(1.05);
-    box-shadow: 
-        0 12px 30px rgba(13, 202, 240, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.3);
-}
-
-.fab-new:hover {
-    background: linear-gradient(135deg, 
-        rgba(25, 135, 84, 0.95) 0%, 
-        rgba(20, 108, 67, 0.95) 100%);
-    border-color: rgba(25, 135, 84, 0.5);
-    transform: translateX(-10px) translateY(-3px) scale(1.05);
-    box-shadow: 
-        0 12px 30px rgba(25, 135, 84, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.3);
-}
-
-.fab-list:hover {
-    background: linear-gradient(135deg, 
-        rgba(108, 117, 125, 0.95) 0%, 
-        rgba(73, 80, 87, 0.95) 100%);
-    border-color: rgba(108, 117, 125, 0.5);
-    transform: translateX(-10px) translateY(-3px) scale(1.05);
-    box-shadow: 
-        0 12px 30px rgba(108, 117, 125, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.3);
-}
-
-.fab-cancel:hover {
-    background: linear-gradient(135deg, 
-        rgba(220, 53, 69, 0.95) 0%, 
-        rgba(176, 42, 55, 0.95) 100%);
-    border-color: rgba(220, 53, 69, 0.5);
-    transform: translateX(-10px) translateY(-3px) scale(1.05);
-    box-shadow: 
-        0 12px 30px rgba(220, 53, 69, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.3);
-}
-
-/* Hover nos ícones */
-.fab-item:hover i {
-    opacity: 1;
-    transform: scale(1.2) rotate(5deg);
-}
-
-/* Responsivo para FAB */
-@media (max-width: 768px) {
-    .fab {
-        width: 60px;
-        height: 60px;
-        bottom: 20px;
-        right: 20px;
-        font-size: 1.25rem;
-    }
-    
-    .fab-menu {
-        bottom: 100px;
-        right: 20px;
-    }
-    
-    .fab-item {
-        padding: 12px 16px;
-        min-width: 140px;
-        gap: 10px;
-        font-size: 0.9rem;
-    }
-    
-    .fab-text {
-        font-size: 0.85rem;
-    }
-}
-
-/* Section Headers */
-.section-header {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-    backdrop-filter: blur(10px);
-    border-left: 4px solid #667eea;
-    border-radius: 8px;
-    padding: 1rem 1.5rem;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-.section-header h5 {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    font-weight: 600;
-    color: #2d3748;
-    font-size: 1.1rem;
-}
-
-.section-header i {
-    font-size: 1.25rem;
-}
-
-/* Info Cards */
-.info-card {
-    background: rgba(255,255,255,0.95);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    transition: all 0.3s ease;
-    overflow: hidden;
-}
-
-.info-card:hover {
-    background: rgba(255,255,255,1);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-}
-
-.info-card p, .info-card div {
-    color: #4a5568;
-    line-height: 1.6;
-    margin-bottom: 0.75rem;
-    word-wrap: break-word;
-}
-
-.info-card strong {
-    color: #2d3748;
-    font-weight: 600;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-    .fab {
-        width: 60px;
-        height: 60px;
-        bottom: 20px;
-        right: 20px;
-        font-size: 1.25rem;
-    }
-    
-    .fab-menu {
-        bottom: 100px;
-        right: 20px;
-    }
-    
-    .premium-header {
-        padding: 1.5rem;
-        border-radius: 15px;
-    }
-    
-    .glass-card {
-        border-radius: 15px;
-    }
-    
-    .os-badge {
-        font-size: 1rem;
-        padding: 0.5rem 1rem;
-    }
-}
-
-/* Anexos Preview */
-.anexo-preview img {
-    max-height: 120px;
-    max-width: 100%;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-/* Tabelas */
-.table-glass {
-    background: transparent;
-    --bs-table-bg: transparent;
-}
-
-.table-glass td {
-    border-color: rgba(255,255,255,0.1);
-}
-
-/* Badges Icons */
-.badge-icon {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-/* Animações de Carregamento */
-.loading-time {
-    color: #6c757d;
-    font-style: italic;
-}
-
-/* Hover Effects Melhorados */
-.glass-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 
-        0 25px 50px rgba(31, 38, 135, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
-/* Cards de Estatísticas */
-.glass-card .card-body {
-    transition: all 0.3s ease;
-}
-
-.glass-card:hover .card-body i {
-    transform: scale(1.1);
-    transition: transform 0.3s ease;
-}
-
-/* Progress Bar Melhorado */
-.progress-premium {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.2);
-    overflow: hidden;
-}
-
-.progress-premium .progress-bar {
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #667eea 100%);
-    background-size: 200% 100%;
-    animation: progressShine 2s ease-in-out infinite;
-}
-
-@keyframes progressShine {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}
-
-/* Tooltip Customizado */
-[title] {
-    position: relative;
-}
-
-/* Responsividade Melhorada */
-@media (max-width: 576px) {
-    .valor-total-card .content .row {
-        text-align: center;
-    }
-    
-    .valor-total-card .content .col-4 {
-        display: none;
-    }
-    
-    .glass-card {
-        margin-bottom: 1rem;
-    }
-    
-    .timeline-premium {
-        padding-left: 0;
-        padding-top: 0.5rem;
-    }
-    
-    .timeline-premium::before {
-        left: 14px;
-        top: 25px;
-        width: 2px;
-    }
-    
-    .timeline-item-premium {
-        padding-left: 45px;
-        margin-bottom: 1.5rem;
-    }
-    
-    .timeline-marker-premium {
-        width: 28px;
-        height: 28px;
-        font-size: 0.75rem;
-        border-width: 2px;
-    }
-    
-    .timeline-content-premium {
-        padding: 1rem;
-        font-size: 0.875rem;
-    }
-    
-    .timeline-content-premium h6 {
-        font-size: 0.875rem;
-    }
-    
-    .timeline-content-premium small {
-        font-size: 0.75rem;
-        line-height: 1.3;
-    }
-}
-
-/* Efeitos de Entrada */
-.fade-in {
-    opacity: 0;
-    transform: translateY(30px);
-    transition: all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
-}
-
-.fade-in.visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* Indicador de Status Ativo */
-.status-badge.status-em-andamento {
-    animation: pulseStatus 2s ease-in-out infinite;
-}
-
-@keyframes pulseStatus {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
-    50% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
-}
-
-/* Melhorias na Timeline */
-.timeline-item-premium:hover .timeline-content-premium {
-    background: rgba(255,255,255,1);
-    transform: translateX(5px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-}
-
-.timeline-item-premium:hover .timeline-marker-premium {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-}
-
-/* Cores Dinâmicas para Progresso */
-.progress-bar[style*="width: 100%"] {
-    background: linear-gradient(90deg, #28a745, #20c997) !important;
-}
-
-.progress-bar[style*="width: 75%"] {
-    background: linear-gradient(90deg, #ffc107, #fd7e14) !important;
-}
-
-.progress-bar[style*="width: 50%"] {
-    background: linear-gradient(90deg, #007bff, #6f42c1) !important;
-}
-
-/* Barra de Ações Premium */
-.action-bar {
-    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 20px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-}
-
-.btn-premium {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    border-radius: 15px;
-    padding: 0.75rem 1.5rem;
-    color: white;
-    font-weight: 600;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-}
-
-.btn-premium:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
-    color: white;
-}
-
-.btn-success-premium {
-    background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
-    box-shadow: 0 4px 15px rgba(86, 171, 47, 0.4);
-}
-
-.btn-success-premium:hover {
-    box-shadow: 0 8px 25px rgba(86, 171, 47, 0.6);
-}
-
-.btn-warning-premium {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
-}
-
-.btn-warning-premium:hover {
-    box-shadow: 0 8px 25px rgba(240, 147, 251, 0.6);
-}
-
-.btn-secondary-premium {
-    background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
-    box-shadow: 0 4px 15px rgba(116, 185, 255, 0.4);
-}
-
-.btn-secondary-premium:hover {
-    box-shadow: 0 8px 25px rgba(116, 185, 255, 0.6);
-}
-
-.btn-outline-premium {
-    background: rgba(255, 255, 255, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    backdrop-filter: blur(5px);
-    color: #333;
-}
-
-.btn-outline-premium:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: #333;
-}
-
-/* Responsividade da Barra de Ações */
-@media (max-width: 768px) {
-    .action-bar {
-        padding: 0.75rem;
-        margin-bottom: 1rem;
-    }
-    
-    .action-bar .row {
-        gap: 0.5rem;
-    }
-    
-    .action-bar .d-flex {
-        justify-content: flex-start;
-        gap: 0.5rem !important;
-        flex-wrap: wrap;
-    }
-    
-    .action-bar .col-md-8,
-    .action-bar .col-md-4 {
-        width: 100%;
-        padding: 0;
-    }
-    
-    .btn-premium, .btn-success-premium, .btn-warning-premium, 
-    .btn-secondary-premium, .btn-outline-premium {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.85rem;
-        margin-bottom: 0;
-        min-width: auto;
-        flex: 0 0 auto;
-        white-space: nowrap;
-    }
-    
-    /* Botões de grupo ficam mais compactos */
-    .btn-group {
-        flex: 0 0 auto;
-    }
-    
-    .btn-group .btn {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.85rem;
-    }
-    
-    /* Ícones dos botões ficam menores */
-    .btn-premium i, .btn-success-premium i, .btn-warning-premium i,
-    .btn-secondary-premium i, .btn-outline-premium i {
-        font-size: 0.9rem;
-        margin-right: 0.25rem;
-    }
-    
-    .premium-header {
-        padding: 1.5rem;
-        text-align: center;
-    }
-    
-    .premium-header .row {
-        text-align: center;
-    }
-    
-    .premium-header .col-md-4 {
-        margin-top: 1rem;
-    }
-    
-    /* Ajusta ações de status para mobile */
-    .action-bar .text-end {
-        text-align: left !important;
-        margin-top: 0.5rem;
-    }
-    
-    .action-bar .text-end .d-flex {
-        justify-content: flex-start !important;
-    }
-}
-
-/* Melhorias nos Cards */
-.glass-card {
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.glass-card:hover {
-    transform: translateY(-10px) scale(1.02);
-    box-shadow: 
-        0 25px 50px rgba(31, 38, 135, 0.5),
-        0 0 0 1px rgba(255, 255, 255, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-/* Animação de Loading para botões */
-.btn-premium:active, .btn-success-premium:active, 
-.btn-warning-premium:active, .btn-secondary-premium:active {
-    transform: scale(0.95);
-}
-
-/* Gradientes aprimorados */
-.action-bar {
-    background: linear-gradient(135deg, 
-        rgba(255,255,255,0.15) 0%, 
-        rgba(255,255,255,0.05) 50%,
-        rgba(255,255,255,0.1) 100%);
-    border-image: linear-gradient(135deg, 
-        rgba(255,255,255,0.3), 
-        rgba(255,255,255,0.1)) 1;
-}
-
-.progress-bar[style*="width: 20%"] {
-    background: linear-gradient(90deg, #6c757d, #495057) !important;
-}
-</style>
-{% endblock %}
+{% block title %}Ordem de Serviço {{ ordem.numero }} - {{ ordem.titulo }} - ERP JSP{% endblock %}
 
 {% block content %}
+<!-- v3.1 - Cores JSP Ciano com Contraste Melhorado -->
+<style>
+    /* Cores JSP Ciano - Atualizado */
+    .os-header {
+        background: #06b6d4 !important;
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+        color: white !important;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(6,182,212,0.3);
+    }
+    
+    .os-header h2,
+    .os-header p,
+    .os-header i {
+        color: white !important;
+    }
+    
+    .info-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.2s;
+        margin-bottom: 1.5rem;
+    }
+    .info-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .info-card .card-header {
+        background: #cffafe !important;
+        background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%) !important;
+        border: none;
+        border-radius: 12px 12px 0 0 !important;
+        padding: 1rem 1.5rem;
+    }
+    .info-card .card-header h5 {
+        color: #0e7490 !important;
+        font-weight: bold !important;
+    }
+    .info-card .card-body {
+        background: white !important;
+    }
+    .value-highlight {
+        background: #06b6d4 !important;
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+        color: white !important;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 15px rgba(6,182,212,0.3);
+    }
+    .value-highlight .amount {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 0.5rem 0;
+        color: white !important;
+    }
+    .value-highlight h5,
+    .value-highlight i,
+    .value-highlight span,
+    .value-highlight strong,
+    .value-highlight div {
+        color: white !important;
+    }
+    .stats-box {
+        background: white !important;
+        border: 1px solid #e5e7eb !important;
+        border-left: 4px solid #06b6d4 !important;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    .stats-box i {
+        font-size: 2rem;
+        color: #06b6d4 !important;
+    }
+    .stats-box small,
+    .stats-box .text-muted {
+        color: #4b5563 !important;
+        font-size: 0.875rem !important;
+        font-weight: 500 !important;
+    }
+    .stats-box strong,
+    .stats-box div:not(.small) {
+        color: #000000 !important;
+        font-weight: 700 !important;
+        font-size: 1rem !important;
+    }
+    .stats-box p {
+        color: #1f2937 !important;
+        margin: 0 !important;
+        font-weight: 500 !important;
+    }
+    .stats-box .d-flex strong,
+    .stats-box .d-flex div {
+        color: #000000 !important;
+        font-weight: 700 !important;
+    }
+    .badge-custom {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        border-radius: 20px;
+    }
+    .action-btn {
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+</style>
+
 <div class="container-fluid">
-    <!-- Cabeçalho Premium -->
-    <div class="premium-header">
-        <div class="content">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="company-logo">
-                            <i class="fas fa-tools text-white"></i>
-                        </div>
-                        <div class="ms-3">
-                            <div class="os-badge">
-                                <i class="fas fa-file-alt me-2"></i>
-                                Ordem de Serviço {{ ordem.numero }}
-                            </div>
-                        </div>
-                    </div>
-                    <h1 class="h2 text-white mb-2">{{ ordem.titulo or 'Atendimento Emergencial' }}</h1>
-                    <p class="text-white-50 mb-0">
-                        <i class="fas fa-calendar me-2"></i>
-                        Aberta em {{ ordem.data_abertura.strftime('%d/%m/%Y às %H:%M') if ordem.data_abertura else 'N/A' }}
-                    </p>
+    <!-- Cabeçalho Moderno -->
+    <div class="os-header">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="mb-2">
+                    <i class="fas fa-cogs me-2"></i>
+                    Ordem de Serviço {{ ordem.numero }}
+                </h2>
+                <p class="mb-2 opacity-75">{{ ordem.titulo }}</p>
+                <div class="d-flex gap-2 flex-wrap">
+                    <span class="badge badge-custom bg-{{ ordem.status_cor }}">
+                        {{ ordem.status_formatado }}
+                    </span>
+                    <span class="badge badge-custom bg-{{ ordem.prioridade_cor }}">
+                        {{ ordem.prioridade_formatada }}
+                    </span>
                 </div>
-                <div class="col-md-4 text-end">
-                    <div class="mb-3">
-                        {% if ordem.status == 'aberta' %}
-                            <span class="status-badge status-aberta">
-                                <i class="fas fa-folder-open"></i>
-                                Aberta
-                            </span>
-                        {% elif ordem.status == 'em_andamento' or ordem.status == 'em_execucao' %}
-                            <span class="status-badge status-em-andamento">
-                                <i class="fas fa-cog fa-spin"></i>
-                                Em Andamento
-                            </span>
-                        {% elif ordem.status == 'iniciada' %}
-                            <span class="status-badge status-em-andamento">
-                                <i class="fas fa-play"></i>
-                                Iniciada
-                            </span>
-                        {% elif ordem.status == 'aguardando_cliente' %}
-                            <span class="status-badge status-aguardando-cliente">
-                                <i class="fas fa-clock"></i>
-                                Aguardando Cliente
-                            </span>
-                        {% elif ordem.status == 'concluida' %}
-                            <span class="status-badge status-concluida">
-                                <i class="fas fa-check-circle"></i>
-                                Concluída
-                            </span>
-                        {% elif ordem.status == 'cancelada' %}
-                            <span class="status-badge status-cancelada">
-                                <i class="fas fa-times-circle"></i>
-                                Cancelada
-                            </span>
-                        {% endif %}
-                    </div>
-                    <div>
-                        {% if ordem.prioridade == 'baixa' %}
-                            <span class="status-badge prioridade-baixa">
-                                <i class="fas fa-arrow-down"></i>
-                                Baixa
-                            </span>
-                        {% elif ordem.prioridade == 'normal' %}
-                            <span class="status-badge prioridade-normal">
-                                <i class="fas fa-minus"></i>
-                                Normal
-                            </span>
-                        {% elif ordem.prioridade == 'alta' %}
-                            <span class="status-badge prioridade-alta">
-                                <i class="fas fa-arrow-up"></i>
-                                Alta
-                            </span>
-                        {% elif ordem.prioridade == 'urgente' %}
-                            <span class="status-badge prioridade-urgente">
-                                <i class="fas fa-exclamation-triangle"></i>
-                                Urgente
-                            </span>
-                        {% endif %}
-                    </div>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <div class="btn-group-vertical btn-group-sm w-100" role="group">
+                    <a href="{{ url_for('ordem_servico.listar') }}" class="btn btn-light action-btn mb-2">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar
+                    </a>
+                    <a href="{{ url_for('ordem_servico.editar', id=ordem.id) }}" class="btn btn-light action-btn mb-2">
+                        <i class="fas fa-edit me-2"></i>Editar
+                    </a>
+                    <a href="{{ url_for('ordem_servico.gerar_relatorio_pdf', id=ordem.id) }}" target="_blank" class="btn btn-light action-btn">
+                        <i class="fas fa-file-pdf me-2"></i>PDF Ordem
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Barra de Ações Premium -->
     <div class="row">
-        <div class="col-12">
-            <div class="action-bar">
-                <!-- Grid de Botões Principais (1x2 no mobile) -->
-                <div class="row g-2 mb-3">
-                    <div class="col-6 col-md-auto">
-                        <a href="{{ url_for('ordem_servico.listar') }}" class="btn btn-outline-premium w-100">
-                            <i class="fas fa-arrow-left"></i>
-                            <span class="d-none d-md-inline ms-1">Voltar</span>
-                        </a>
-                    </div>
-                    <div class="col-6 col-md-auto">
-                        <a href="{{ url_for('ordem_servico.editar', id=ordem.id) }}" class="btn btn-premium w-100">
-                            <i class="fas fa-edit"></i>
-                            <span class="d-none d-md-inline ms-1">Editar</span>
-                        </a>
-                    </div>
+        <!-- Coluna Principal -->
+        <div class="col-lg-8">
+            
+            <!-- Informações Básicas - Card Moderno -->
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-info-circle text-primary me-2"></i>
+                        Informações da Ordem de Serviço
+                    </h5>
                 </div>
-                
-                <!-- Linha de Opções Secundárias -->
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <div class="d-flex flex-wrap gap-2">
-                            <!-- Opções Avançadas (dropdown menor) -->
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" 
-                                        data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-cog me-1"></i>Opções PDF
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-dark">
-                                    <li>
-                                        <a class="dropdown-item" href="{{ url_for('ordem_servico.gerar_relatorio_pdf', id=ordem.id) }}" target="_blank">
-                                            <i class="fas fa-file-pdf me-2"></i>PDF Padrão
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="{{ url_for('ordem_servico.gerar_relatorio_pdf', id=ordem.id) }}?com_imagens=1" target="_blank">
-                                            <i class="fas fa-images me-2 text-info"></i>PDF com Imagens
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="{{ url_for('ordem_servico.gerar_relatorio_pdf', id=ordem.id) }}?com_imagens=0" target="_blank">
-                                            <i class="fas fa-file-alt me-2"></i>PDF sem Imagens
-                                        </a>
-                                    </li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li>
-                                        <span class="dropdown-item-text small text-muted">
-                                            <i class="fas fa-info-circle me-1"></i>
-                                            {% if ordem.incluir_imagens_relatorio %}Configurado: Com imagens{% else %}Configurado: Sem imagens{% endif %}
-                                        </span>
-                                    </li>
-                                </ul>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="stats-box">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user me-3"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Cliente</small>
+                                        <strong>{{ ordem.cliente.nome if ordem.cliente else 'N/A' }}</strong>
+                                    </div>
+                                </div>
                             </div>
-                            
-                            <!-- Botão Excluir -->
-                            <a href="{{ url_for('ordem_servico.excluir', id=ordem.id) }}" 
-                               class="btn btn-warning-premium btn-sm" 
-                               onclick="return confirm('Tem certeza que deseja excluir esta OS?')">
-                                <i class="fas fa-trash"></i>
-                                <span class="d-none d-md-inline ms-1">Excluir</span>
-                            </a>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="stats-box">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-user-tie me-3"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Técnico</small>
+                                        <strong>{{ ordem.tecnico.nome if ordem.tecnico else 'Não informado' }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="stats-box">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-calendar me-3"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Data Criação</small>
+                                        <strong>{{ ordem.criado_em.strftime('%d/%m/%Y %H:%M') if ordem.criado_em else 'N/A' }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="stats-box">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-calendar-check me-3"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Prazo de Execução</small>
+                                        <strong>
+                                            {% if ordem.prazo_execucao %}
+                                                {{ ordem.prazo_execucao.strftime('%d/%m/%Y') }}
+                                            {% else %}
+                                                Sem prazo
+                                            {% endif %}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="col-md-4 text-end">
-                        <div class="d-flex justify-content-end gap-2">
-                            <!-- Status Actions -->
-                            {% if ordem.status == 'pendente' or ordem.status == 'aberta' %}
-                            <button class="btn btn-secondary-premium" onclick="updateStatus('em_andamento')">
-                                <i class="fas fa-play"></i>
-                                Iniciar
-                            </button>
-                            {% endif %}
-                            
-                            {% if ordem.status in ['em_andamento', 'em_execucao', 'iniciada'] %}
-                            <button class="btn btn-warning-premium" onclick="updateStatus('concluida')">
-                                <i class="fas fa-check"></i>
-                                Concluir
-                            </button>
-                            {% endif %}
-                            
-                            {% if ordem.status != 'concluida' and ordem.status != 'cancelada' %}
-                            <button class="btn btn-outline-premium" onclick="updateStatus('cancelada')" 
-                                    style="color: #dc3545; border-color: #dc3545;">
-                                <i class="fas fa-times"></i>
-                                Cancelar
-                            </button>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Progress Bar da OS -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="glass-card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h6 class="mb-0">
-                            <i class="fas fa-chart-line text-primary me-2"></i>
-                            Progresso da Ordem de Serviço
+                    {% if ordem.descricao_problema %}
+                    <hr class="my-3">
+                    <div>
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Descrição do Problema
                         </h6>
-                        <span class="badge bg-primary px-3 py-2">
-                            {% if ordem.status == 'aberta' %}20%
-                            {% elif ordem.status == 'iniciada' or ordem.status == 'em_andamento' %}50%
-                            {% elif ordem.status == 'aguardando_cliente' %}75%
-                            {% elif ordem.status == 'concluida' %}100%
-                            {% else %}0%
-                            {% endif %}
-                        </span>
+                        <p class="mb-0 text-muted">{{ ordem.descricao_problema }}</p>
                     </div>
-                    <div class="progress-premium mb-2">
-                        <div class="progress-bar" role="progressbar" 
-                             style="width: {% if ordem.status == 'aberta' %}20%
-                             {% elif ordem.status == 'iniciada' or ordem.status == 'em_andamento' %}50%
-                             {% elif ordem.status == 'aguardando_cliente' %}75%
-                             {% elif ordem.status == 'concluida' %}100%
-                             {% else %}0%
-                             {% endif %}" 
-                             aria-valuemin="0" aria-valuemax="100">
-                        </div>
+                    {% endif %}
+                    
+                    {% if ordem.descricao_servico %}
+                    <hr class="my-3">
+                    <div>
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-tools me-2"></i>Descrição do Serviço
+                        </h6>
+                        <p class="mb-0 text-muted">{{ ordem.descricao_servico }}</p>
                     </div>
-                    <div class="row text-center">
-                        <div class="col-3">
-                            <small class="text-muted">Criada</small>
-                        </div>
-                        <div class="col-3">
-                            <small class="text-muted">Iniciada</small>
-                        </div>
-                        <div class="col-3">
-                            <small class="text-muted">Em Andamento</small>
-                        </div>
-                        <div class="col-3">
-                            <small class="text-muted">Concluída</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                    {% endif %}
 
-    <!-- Cards de Informações Principais -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <div class="glass-card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-user fa-2x text-primary mb-3"></i>
-                    <h6 class="card-subtitle mb-2 text-muted">Cliente</h6>
-                    <h5 class="card-title mb-0">{{ ordem.cliente.nome if ordem.cliente else 'N/A' }}</h5>
-                    {% if ordem.cliente and ordem.cliente.telefone %}
-                    <small class="text-muted">
-                        <i class="fas fa-phone me-1"></i>{{ ordem.cliente.telefone }}
-                    </small>
+                    {% if ordem.solucao %}
+                    <hr class="my-3">
+                    <div>
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-check-circle me-2"></i>Solução
+                        </h6>
+                        <p class="mb-0 text-muted">{{ ordem.solucao }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if ordem.laudo_tecnico %}
+                    <hr class="my-3">
+                    <div>
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-file-medical me-2"></i>Laudo Técnico
+                        </h6>
+                        <p class="mb-0 text-muted">{{ ordem.laudo_tecnico }}</p>
+                    </div>
                     {% endif %}
                 </div>
             </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="glass-card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-user-cog fa-2x text-info mb-3"></i>
-                    <h6 class="card-subtitle mb-2 text-muted">Técnico Responsável</h6>
-                    <h5 class="card-title mb-0">
-                        {{ ordem.tecnico_responsavel or 'Não atribuído' }}
+
+            <!-- Produtos e Serviços -->
+            {% if ordem.itens_produto or ordem.itens_servico %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-clipboard-list text-info me-2"></i>
+                        Itens da OS
                     </h5>
-                    {% if ordem.tecnico_responsavel %}
-                    <small class="text-muted">
-                        <i class="fas fa-wrench me-1"></i>Responsável
-                    </small>
+                </div>
+                <div class="card-body">
+                    <!-- Produtos -->
+                    {% if ordem.itens_produto %}
+                    <h6 class="fw-bold mb-3"><i class="fas fa-box me-2"></i>Produtos</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Produto</th>
+                                    <th class="text-center">Quantidade</th>
+                                    <th class="text-end">Valor Unit.</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in ordem.itens_produto %}
+                                <tr>
+                                    <td>{{ item.produto.nome if item.produto else item.descricao }}</td>
+                                    <td class="text-center">{{ item.quantidade }}</td>
+                                    <td class="text-end">R$ {{ "%.2f"|format(item.valor_unitario|float)|replace('.', ',') }}</td>
+                                    <td class="text-end">R$ {{ "%.2f"|format((item.quantidade * item.valor_unitario)|float)|replace('.', ',') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="glass-card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-calendar-check fa-2x text-warning mb-3"></i>
-                    <h6 class="card-subtitle mb-2 text-muted">Data Prevista</h6>
-                    <h5 class="card-title mb-0">
-                        {% if ordem.data_prevista %}
-                            {{ ordem.data_prevista.strftime('%d/%m/%Y') }}
-                        {% else %}
-                            <span class="text-muted">Não definida</span>
-                        {% endif %}
-                    </h5>
-                    {% if ordem.data_conclusao %}
-                    <small class="text-success">
-                        <i class="fas fa-check me-1"></i>Concluída em {{ ordem.data_conclusao.strftime('%d/%m/%Y') }}
-                    </small>
+                    
+                    <!-- Serviços -->
+                    {% if ordem.itens_servico %}
+                    <h6 class="fw-bold mb-3 mt-4"><i class="fas fa-wrench me-2"></i>Serviços</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Serviço</th>
+                                    <th class="text-center">Quantidade</th>
+                                    <th class="text-end">Valor Unit.</th>
+                                    <th class="text-end">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in ordem.itens_servico %}
+                                <tr>
+                                    <td>{{ item.servico.nome if item.servico else item.descricao }}</td>
+                                    <td class="text-center">{{ item.quantidade }}</td>
+                                    <td class="text-end">R$ {{ "%.2f"|format(item.valor_unitario|float)|replace('.', ',') }}</td>
+                                    <td class="text-end">R$ {{ "%.2f"|format((item.quantidade * item.valor_unitario)|float)|replace('.', ',') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                     {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-3">
-            <div class="glass-card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-clock fa-2x text-success mb-3"></i>
-                    <h6 class="card-subtitle mb-2 text-muted">Tempo Decorrido</h6>
-                    <h5 class="card-title mb-0" id="tempo-decorrido">
-                        {% if ordem.data_abertura %}
-                            <span class="loading-time">Calculando...</span>
-                        {% else %}
-                            N/A
-                        {% endif %}
-                    </h5>
-                    <small class="text-muted">
-                        <i class="fas fa-calendar me-1"></i>Desde abertura
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Valor Total Destacado -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="valor-total-card">
-                <div class="content">
-                    <div class="row align-items-center">
-                        <div class="col-8">
-                            <i class="fas fa-dollar-sign fa-2x mb-2"></i>
-                            <h6 class="mb-1">Valor Total da OS</h6>
-                            <h3 class="mb-0">R$ {{ "{:,.2f}".format(ordem.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</h3>
-                            <small class="opacity-75">
-                                {% if ordem.status_pagamento == 'pago' %}
-                                    <i class="fas fa-check-circle me-1"></i>Pago
-                                {% elif ordem.status_pagamento == 'parcial' %}
-                                    <i class="fas fa-exclamation-circle me-1"></i>Parcial
-                                {% elif ordem.status_pagamento == 'vencido' %}
-                                    <i class="fas fa-times-circle me-1"></i>Vencido
-                                {% else %}
-                                    <i class="fas fa-clock me-1"></i>Pendente
-                                {% endif %}
-                            </small>
-                        </div>
-                        <div class="col-4 text-end">
-                            <div class="h1 mb-0 opacity-25">
-                                <i class="fas fa-money-bill-wave"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Informações de Pagamento -->
-    {% if ordem.condicao_pagamento or ordem.valor_entrada or ordem.parcelas %}
-    <div class="glass-card mb-4">
-        <div class="section-header">
-            <h5>
-                <i class="fas fa-credit-card text-success"></i>
-                Condições de Pagamento
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <!-- Condição de Pagamento -->
-                <div class="col-md-6">
-                    <div class="info-card">
-                        <small class="text-muted d-block mb-1">
-                            <i class="fas fa-handshake me-1"></i>Forma de Pagamento
-                        </small>
-                        <strong>
-                            {% if ordem.condicao_pagamento == 'a_vista' %}
-                                À Vista
-                            {% elif ordem.condicao_pagamento == 'parcelado' %}
-                                Parcelado ({{ ordem.numero_parcelas }}x)
-                            {% else %}
-                                {{ ordem.condicao_pagamento|title }}
-                            {% endif %}
-                        </strong>
-                    </div>
-                </div>
-
-                <!-- Valor de Entrada -->
-                {% if ordem.valor_entrada and ordem.valor_entrada > 0 %}
-                <div class="col-md-6">
-                    <div class="info-card">
-                        <small class="text-muted d-block mb-1">
-                            <i class="fas fa-hand-holding-usd me-1"></i>Entrada
-                        </small>
-                        <strong class="text-success">R$ {{ "{:,.2f}".format(ordem.valor_entrada or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Saldo Restante -->
-                {% if ordem.condicao_pagamento == 'parcelado' and ordem.valor_entrada and ordem.valor_entrada > 0 %}
-                <div class="col-md-6">
-                    <div class="info-card">
-                        <small class="text-muted d-block mb-1">
-                            <i class="fas fa-calculator me-1"></i>Saldo a Parcelar
-                        </small>
-                        <strong>R$ {{ "{:,.2f}".format((ordem.valor_total or 0) - (ordem.valor_entrada or 0)).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
-                    </div>
-                </div>
-                {% endif %}
-
-                <!-- Descrição do Pagamento -->
-                {% if ordem.descricao_pagamento %}
-                <div class="col-12">
-                    <div class="info-card">
-                        <small class="text-muted d-block mb-1">
-                            <i class="fas fa-comment me-1"></i>Observações de Pagamento
-                        </small>
-                        <p class="mb-0">{{ ordem.descricao_pagamento }}</p>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-
-            <!-- Parcelas -->
-            {% if ordem.parcelas and ordem.parcelas|length > 0 %}
-            <div class="mt-3">
-                <h6 class="mb-3">
-                    <i class="fas fa-list-ol me-2"></i>Parcelas ({{ ordem.parcelas|length }})
-                </h6>
-                <div class="table-responsive">
-                    <table class="table table-glass table-hover">
-                        <thead>
-                            <tr>
-                                <th><i class="fas fa-hashtag me-1"></i>Nº</th>
-                                <th><i class="fas fa-calendar me-1"></i>Vencimento</th>
-                                <th><i class="fas fa-dollar-sign me-1"></i>Valor</th>
-                                <th><i class="fas fa-info-circle me-1"></i>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for parcela in ordem.parcelas %}
-                            <tr>
-                                <td><strong>{{ parcela.numero_parcela }}</strong></td>
-                                <td>{{ parcela.data_vencimento.strftime('%d/%m/%Y') if parcela.data_vencimento else 'N/A' }}</td>
-                                <td><strong>R$ {{ "{:,.2f}".format(parcela.valor or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong></td>
-                                <td>
-                                    {% if parcela.pago %}
-                                        <span class="badge bg-success">
-                                            <i class="fas fa-check-circle me-1"></i>Paga
-                                        </span>
-                                    {% elif parcela.status_parcela == 'vencida' %}
-                                        <span class="badge bg-danger">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>Vencida
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-warning">
-                                            <i class="fas fa-clock me-1"></i>Pendente
-                                        </span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                        <tfoot>
-                            <tr class="table-active">
-                                <td colspan="2" class="text-end"><strong>Total das Parcelas:</strong></td>
-                                <td colspan="2"><strong class="text-success">R$ {{ "{:,.2f}".format(ordem.parcelas|sum(attribute='valor') or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong></td>
-                            </tr>
-                        </tfoot>
-                    </table>
                 </div>
             </div>
             {% endif %}
-        </div>
-    </div>
-    {% endif %}
 
-    <!-- Descrição do Serviço -->
-    {% if ordem.descricao %}
-    <div class="glass-card mb-4">
-        <div class="section-header">
-            <h5>
-                <i class="fas fa-align-left text-primary"></i>
-                Descrição do Serviço
-            </h5>
-        </div>
-        <div class="card-body">
-            <p class="mb-0">{{ ordem.descricao }}</p>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Diagnóstico Técnico -->
-    {% if ordem.diagnostico_tecnico %}
-    <div class="glass-card mb-4">
-        <div class="section-header">
-            <h5>
-                <i class="fas fa-stethoscope text-warning"></i>
-                Diagnóstico Técnico
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="info-card">
-                <p class="mb-0">{{ ordem.diagnostico_tecnico }}</p>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Serviços e Materiais -->
-    {% if ordem.itens %}
-    <div class="glass-card mb-4">
-        <div class="section-header">
-            <h5>
-                <i class="fas fa-list text-success"></i>
-                Serviços e Materiais
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-glass table-hover">
-                    <thead>
-                        <tr>
-                            <th><i class="fas fa-hashtag me-1"></i>Item</th>
-                            <th><i class="fas fa-tag me-1"></i>Tipo</th>
-                            <th><i class="fas fa-sort-numeric-up me-1"></i>Qtd</th>
-                            <th><i class="fas fa-dollar-sign me-1"></i>Valor Unit.</th>
-                            <th><i class="fas fa-calculator me-1"></i>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in ordem.itens %}
-                        <tr>
-                            <td>
-                                <strong>{{ item.descricao }}</strong>
-                                {% if item.observacoes %}
-                                <br><small class="text-muted">{{ item.observacoes }}</small>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if item.tipo == 'servico' %}
-                                    <span class="badge bg-primary">
-                                        <i class="fas fa-wrench me-1"></i>Serviço
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-info">
-                                        <i class="fas fa-box me-1"></i>Material
-                                    </span>
-                                {% endif %}
-                            </td>
-                            <td>{{ item.quantidade or 1 }}</td>
-                            <td>R$ {{ "{:,.2f}".format(item.valor_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
-                            <td>
-                                <strong>R$ {{ "{:,.2f}".format((item.quantidade or 1) * (item.valor_unitario or 0)).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="4" class="text-end"><strong>Total Geral:</strong></td>
-                            <td><strong class="text-success">R$ {{ "{:,.2f}".format(ordem.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Timeline de Atividades -->
-    <div class="glass-card mb-4">
-        <div class="section-header">
-            <h5>
-                <i class="fas fa-history text-info"></i>
-                Timeline de Atividades
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="timeline-premium">
-                <div class="timeline-item-premium">
-                    <div class="timeline-marker-premium bg-primary">
-                        <i class="fas fa-plus"></i>
-                    </div>
-                    <div class="timeline-content-premium">
-                        <h6 class="mb-1">OS Criada</h6>
-                        <p class="mb-1">
-                            {{ ordem.data_abertura.strftime('%d/%m/%Y às %H:%M') if ordem.data_abertura else 'N/A' }}
-                        </p>
-                        <small class="text-muted">Ordem de serviço criada no sistema</small>
-                    </div>
-                </div>
-
-                {% if ordem.status != 'aberta' %}
-                <div class="timeline-item-premium">
-                    <div class="timeline-marker-premium bg-warning">
-                        <i class="fas fa-play"></i>
-                    </div>
-                    <div class="timeline-content-premium">
-                        <h6 class="mb-1">Serviço Iniciado</h6>
-                        <p class="mb-1">
-                            {{ ordem.atualizado_em.strftime('%d/%m/%Y às %H:%M') if ordem.atualizado_em else 'N/A' }}
-                        </p>
-                        <small class="text-muted">Início dos trabalhos</small>
-                    </div>
-                </div>
-                {% endif %}
-
-                {% if ordem.diagnostico_tecnico %}
-                <div class="timeline-item-premium">
-                    <div class="timeline-marker-premium bg-info">
-                        <i class="fas fa-stethoscope"></i>
-                    </div>
-                    <div class="timeline-content-premium">
-                        <h6 class="mb-1">Diagnóstico Realizado</h6>
-                        <p class="mb-1">Diagnóstico técnico registrado</p>
-                        <small class="text-muted">{{ ordem.diagnostico_tecnico[:100] }}{% if ordem.diagnostico_tecnico|length > 100 %}...{% endif %}</small>
-                    </div>
-                </div>
-                {% endif %}
-
-                {% if ordem.status == 'concluida' %}
-                <div class="timeline-item-premium">
-                    <div class="timeline-marker-premium bg-success">
-                        <i class="fas fa-check"></i>
-                    </div>
-                    <div class="timeline-content-premium">
-                        <h6 class="mb-1">Serviço Concluído</h6>
-                        <p class="mb-1">
-                            {% if ordem.data_conclusao %}
-                                {{ ordem.data_conclusao.strftime('%d/%m/%Y às %H:%M') }}
-                            {% else %}
-                                {{ ordem.atualizado_em.strftime('%d/%m/%Y às %H:%M') if ordem.atualizado_em else 'N/A' }}
-                            {% endif %}
-                        </p>
-                        <small class="text-muted">Trabalhos finalizados com sucesso</small>
-                    </div>
-                </div>
-                {% elif ordem.status == 'cancelada' %}
-                <div class="timeline-item-premium">
-                    <div class="timeline-marker-premium bg-danger">
-                        <i class="fas fa-times"></i>
-                    </div>
-                    <div class="timeline-content-premium">
-                        <h6 class="mb-1">OS Cancelada</h6>
-                        <p class="mb-1">
-                            {{ ordem.atualizado_em.strftime('%d/%m/%Y às %H:%M') if ordem.atualizado_em else 'N/A' }}
-                        </p>
-                        <small class="text-muted">Ordem de serviço cancelada</small>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <!-- Anexos e Arquivos -->
-    {% if ordem.anexos %}
-    <div class="glass-card mb-4">
-        <div class="section-header">
-            <h5>
-                <i class="fas fa-paperclip text-secondary"></i>
-                Anexos e Documentos ({{ ordem.anexos|length }})
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                {% for anexo in ordem.anexos %}
-                <div class="col-lg-6 col-xl-4">
-                    <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
-                        <div class="d-flex align-items-center mb-2">
-                            <i class="{{ anexo.icone }} me-2 fa-lg"></i>
-                            <div class="flex-grow-1 min-width-0">
-                                <h6 class="mb-0 text-truncate" title="{{ anexo.nome_original }}">
-                                    {{ anexo.nome_original }}
-                                </h6>
-                                <small class="text-muted">{{ anexo.tamanho_formatado }}</small>
-                                {% if anexo.data_upload %}
-                                <small class="text-muted d-block">{{ anexo.data_upload.strftime('%d/%m/%Y %H:%M') }}</small>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <!-- Preview para imagens -->
-                        {% if anexo.tipo_arquivo == 'image' or (anexo.mime_type and 'image' in anexo.mime_type) %}
-                        <div class="mb-2">
-                            <img src="{{ url_for('ordem_servico.visualizar_anexo', anexo_id=anexo.id) }}" 
-                                 class="img-fluid rounded" 
-                                 style="max-height: 120px; width: 100%; object-fit: cover;"
-                                 alt="{{ anexo.nome_original }}">
-                        </div>
-                        {% endif %}
-                        
-                        <div class="d-flex gap-2">
-                            <a href="{{ url_for('ordem_servico.baixar_anexo', anexo_id=anexo.id) }}" 
-                               class="btn btn-outline-primary btn-sm flex-fill">
-                                <i class="fas fa-download me-1"></i> Download
-                            </a>
-                            {% if anexo.tipo_arquivo == 'image' or (anexo.mime_type and 'image' in anexo.mime_type) %}
-                            <a href="{{ url_for('ordem_servico.visualizar_anexo', anexo_id=anexo.id) }}" 
-                               class="btn btn-outline-info btn-sm flex-fill" 
-                               target="_blank">
-                                <i class="fas fa-eye me-1"></i> Ver
-                            </a>
-                            {% endif %}
-                            <button onclick="excluirAnexo({{ anexo.id }}, '{{ anexo.nome_original|replace("'", "\\'") }}')" 
-                                    class="btn btn-outline-danger btn-sm"
-                                    title="Excluir anexo">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Estatísticas Rápidas -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-3">
-            <div class="glass-card text-center">
-                <div class="card-body">
-                    <i class="fas fa-list fa-2x text-primary mb-2"></i>
-                    <h5 class="mb-0">{{ ordem.itens|length if ordem.itens else 0 }}</h5>
-                    <small class="text-muted">Itens</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="glass-card text-center">
-                <div class="card-body">
-                    <i class="fas fa-wrench fa-2x text-info mb-2"></i>
-                    <h5 class="mb-0">{{ ordem.itens|selectattr('tipo', 'equalto', 'servico')|list|length if ordem.itens else 0 }}</h5>
-                    <small class="text-muted">Serviços</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="glass-card text-center">
-                <div class="card-body">
-                    <i class="fas fa-box fa-2x text-warning mb-2"></i>
-                    <h5 class="mb-0">{{ ordem.itens|selectattr('tipo', 'equalto', 'material')|list|length if ordem.itens else 0 }}</h5>
-                    <small class="text-muted">Materiais</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="glass-card text-center">
-                <div class="card-body">
-                    <i class="fas fa-percentage fa-2x text-success mb-2"></i>
-                    <h5 class="mb-0">
-                        {% if ordem.status == 'concluida' %}100
-                        {% elif ordem.status == 'aguardando_cliente' %}75
-                        {% elif ordem.status == 'em_andamento' or ordem.status == 'iniciada' %}50
-                        {% elif ordem.status == 'aberta' %}20
-                        {% else %}0
-                        {% endif %}%
-                    </h5>
-                    <small class="text-muted">Progresso</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Informações Adicionais -->
-    <div class="row g-4 mb-4">
-        {% if ordem.observacoes %}
-        <div class="col-md-6">
-            <div class="glass-card h-100">
-                <div class="section-header">
-                    <h5>
-                        <i class="fas fa-sticky-note text-warning"></i>
+            <!-- Observações -->
+            {% if ordem.observacoes %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-sticky-note text-warning me-2"></i>
                         Observações
                     </h5>
                 </div>
                 <div class="card-body">
-                    <p class="mb-0">{{ ordem.observacoes }}</p>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-
-        <div class="col-md-{% if ordem.observacoes %}6{% else %}12{% endif %}">
-            <div class="glass-card h-100">
-                <div class="section-header">
-                    <h5>
-                        <i class="fas fa-info-circle text-info"></i>
-                        Informações do Sistema
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-6">
-                            <small class="text-muted d-block">Data de Criação</small>
-                            <strong>{{ ordem.criado_em.strftime('%d/%m/%Y %H:%M') if ordem.criado_em else 'N/A' }}</strong>
-                        </div>
-                        <div class="col-6">
-                            <small class="text-muted d-block">Última Atualização</small>
-                            <strong>{{ ordem.atualizado_em.strftime('%d/%m/%Y %H:%M') if ordem.atualizado_em else 'N/A' }}</strong>
-                        </div>
+                    <div class="stats-box">
+                        <p class="mb-0">{{ ordem.observacoes }}</p>
                     </div>
                 </div>
             </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Coluna Lateral -->
+        <div class="col-lg-4">
+
+            <!-- Valores - Card Destacado -->
+            <div class="value-highlight">
+                <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+                <h5 class="mb-2">Valor Total</h5>
+                <div class="amount">R$ {{ "%.2f"|format(ordem.valor_total|float)|replace('.', ',') }}</div>
+                <hr class="my-3 opacity-50">
+                <div class="d-flex justify-content-between mb-2">
+                    <span><i class="fas fa-tools me-1"></i> Serviços:</span>
+                    <strong>R$ {{ "%.2f"|format(ordem.valor_total_servicos|float)|replace('.', ',') }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span><i class="fas fa-box me-1"></i> Produtos:</span>
+                    <strong>R$ {{ "%.2f"|format(ordem.valor_total_produtos|float)|replace('.', ',') }}</strong>
+                </div>
+                {% if ordem.desconto %}
+                <div class="d-flex justify-content-between">
+                    <span><i class="fas fa-percentage me-1"></i> Desconto:</span>
+                    {% set valor_desconto = (ordem.valor_total_produtos + ordem.valor_total_servicos) * (ordem.desconto or 0) / 100 %}
+                    <strong>- R$ {{ "%.2f"|format(valor_desconto|float)|replace('.', ',') }}</strong>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Local e Equipamento -->
+            {% if ordem.local or ordem.equipamento %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                        Local e Equipamento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if ordem.local %}
+                    <div class="stats-box mb-3">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-location-arrow me-3"></i>
+                            <div>
+                                <small class="text-muted d-block">Local</small>
+                                <strong>{{ ordem.local }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if ordem.equipamento %}
+                    <div class="stats-box">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-cog me-3"></i>
+                            <div>
+                                <small class="text-muted d-block">Equipamento</small>
+                                <strong>{{ ordem.equipamento }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Condições de Pagamento -->
+            {% if ordem.condicao_pagamento or ordem.forma_pagamento %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-credit-card text-info me-2"></i>
+                        Pagamento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if ordem.condicao_pagamento %}
+                    <div class="stats-box mb-3">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-money-bill me-3"></i>
+                            <div>
+                                <small class="text-muted d-block">Condição</small>
+                                <strong>
+                                    {% if ordem.condicao_pagamento == 'a_vista' %}
+                                        À Vista
+                                    {% else %}
+                                        {{ ordem.numero_parcelas }}x Parcelado
+                                    {% endif %}
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if ordem.forma_pagamento %}
+                    <div class="stats-box">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-wallet me-3"></i>
+                            <div>
+                                <small class="text-muted d-block">Forma</small>
+                                <strong>{{ ordem.forma_pagamento.title() }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Ações Rápidas -->
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-bolt me-2"></i>Ações Rápidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        {% if ordem.status == 'pendente' %}
+                            <form method="POST" action="{{ url_for('ordem_servico.iniciar_servico', id=ordem.id) }}">
+                                <button type="submit" class="btn btn-primary w-100 action-btn" 
+                                        onclick="return confirm('Confirma o início da execução?')">
+                                    <i class="fas fa-play me-2"></i>Iniciar Execução
+                                </button>
+                            </form>
+                        {% elif ordem.status == 'em_execucao' %}
+                            <form method="POST" action="{{ url_for('ordem_servico.concluir', id=ordem.id) }}">
+                                <button type="submit" class="btn btn-success w-100 action-btn" 
+                                        onclick="return confirm('Confirma a conclusão da OS?')">
+                                    <i class="fas fa-check me-2"></i>Concluir OS
+                                </button>
+                            </form>
+                        {% endif %}
+                        
+                        <form method="POST" action="{{ url_for('ordem_servico.excluir', id=ordem.id) }}">
+                            <button type="submit" class="btn btn-outline-danger w-100 action-btn" 
+                                    onclick="return confirm('Tem certeza que deseja excluir esta OS?')">
+                                <i class="fas fa-trash me-2"></i>Excluir OS
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
 
-<!-- FAB Menu -->
-<div class="fab-menu">
-    <a href="{{ url_for('ordem_servico.editar', id=ordem.id) }}" class="fab-item fab-edit">
-        <i class="fas fa-edit"></i>
-        <span class="fab-text">Editar OS</span>
-    </a>
-    
-    <a href="{{ url_for('ordem_servico.gerar_relatorio_pdf', id=ordem.id) }}" class="fab-item fab-pdf" target="_blank">
-        <i class="fas fa-file-pdf"></i>
-        <span class="fab-text">Gerar PDF</span>
-    </a>
-    
-    <a href="{{ url_for('ordem_servico.novo') }}?duplicar={{ ordem.id }}" class="fab-item fab-duplicate">
-        <i class="fas fa-copy"></i>
-        <span class="fab-text">Duplicar</span>
-    </a>
-    
-    <a href="{{ url_for('ordem_servico.novo') }}" class="fab-item fab-new">
-        <i class="fas fa-plus"></i>
-        <span class="fab-text">Nova OS</span>
-    </a>
-    
-    <a href="{{ url_for('ordem_servico.listar') }}" class="fab-item fab-list">
-        <i class="fas fa-list"></i>
-        <span class="fab-text">Listar OS</span>
-    </a>
-</div>
-
-<button type="button" class="fab fab-main" onclick="toggleFabMenu()">
-    <i class="fas fa-cog"></i>
-</button>
-
-<script>
-let fabMenuVisible = false;
-
-function toggleFabMenu() {
-    const fabMenu = document.querySelector('.fab-menu');
-    const fabMain = document.querySelector('.fab-main');
-    
-    if (fabMenuVisible) {
-        fabMenu.style.display = 'none';
-        fabMain.innerHTML = '<i class="fas fa-cog"></i>';
-        fabMenuVisible = false;
-    } else {
-        fabMenu.style.display = 'flex';
-        fabMain.innerHTML = '<i class="fas fa-times"></i>';
-        fabMenuVisible = true;
-    }
-}
-
-// Fechar menu ao clicar fora
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.fab') && !e.target.closest('.fab-menu') && fabMenuVisible) {
-        toggleFabMenu();
-    }
-});
-
-// Inicializar com menu oculto
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelector('.fab-menu').style.display = 'none';
-    
-    // Calcular tempo decorrido
-    calcularTempoDecorrido();
-    
-    // Atualizar tempo a cada minuto
-    setInterval(calcularTempoDecorrido, 60000);
-    
-    // Animações de entrada
-    animarElementos();
-});
-
-// Função para calcular tempo decorrido
-function calcularTempoDecorrido() {
-    const elementoTempo = document.getElementById('tempo-decorrido');
-    if (!elementoTempo) return;
-    
-    {% if ordem.data_abertura %}
-    const dataAbertura = new Date('{{ ordem.data_abertura.strftime("%Y-%m-%dT%H:%M:%S") }}');
-    const agora = new Date();
-    const diferenca = agora - dataAbertura;
-    
-    const dias = Math.floor(diferenca / (1000 * 60 * 60 * 24));
-    const horas = Math.floor((diferenca % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const minutos = Math.floor((diferenca % (1000 * 60 * 60)) / (1000 * 60));
-    
-    let textoTempo = '';
-    if (dias > 0) {
-        textoTempo += dias + 'd ';
-    }
-    if (horas > 0 || dias > 0) {
-        textoTempo += horas + 'h ';
-    }
-    textoTempo += minutos + 'm';
-    
-    elementoTempo.innerHTML = textoTempo;
-    {% endif %}
-}
-
-// Função para animar elementos na entrada
-function animarElementos() {
-    // Animar cards com delay escalonado
-    const cards = document.querySelectorAll('.glass-card');
-    cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(30px)';
-        
-        setTimeout(() => {
-            card.style.transition = 'all 0.6s cubic-bezier(0.4, 0.0, 0.2, 1)';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
-    
-    // Animar timeline items
-    const timelineItems = document.querySelectorAll('.timeline-item-premium');
-    timelineItems.forEach((item, index) => {
-        item.style.opacity = '0';
-        item.style.transform = 'translateX(-50px)';
-        
-        setTimeout(() => {
-            item.style.transition = 'all 0.5s ease';
-            item.style.opacity = '1';
-            item.style.transform = 'translateX(0)';
-        }, 500 + (index * 200));
-    });
-}
-
-// Função para copiar número da OS
-function copiarNumeroOS() {
-    const numeroOS = '{{ ordem.numero }}';
-    navigator.clipboard.writeText(numeroOS).then(() => {
-        // Mostrar feedback visual
-        const toast = document.createElement('div');
-        toast.innerHTML = '<i class="fas fa-check me-2"></i>Número da OS copiado!';
-        toast.className = 'position-fixed top-0 end-0 m-3 bg-success text-white px-3 py-2 rounded';
-        toast.style.zIndex = '9999';
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.remove();
-        }, 2000);
-    });
-}
-
-// Adicionar evento de clique duplo no número da OS
-document.addEventListener('DOMContentLoaded', function() {
-    const osNumberElement = document.querySelector('.os-badge');
-    if (osNumberElement) {
-        osNumberElement.style.cursor = 'pointer';
-        osNumberElement.title = 'Clique duplo para copiar';
-        osNumberElement.addEventListener('dblclick', copiarNumeroOS);
-    }
-});
-
-// Função para mostrar preview de anexos (quando implementada)
-function mostrarPreviewAnexo(url, tipo) {
-    const modal = document.createElement('div');
-    modal.className = 'modal fade';
-    modal.innerHTML = `
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Preview do Anexo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body text-center">
-                    ${tipo.startsWith('image/') ? 
-                        `<img src="${url}" class="img-fluid" alt="Preview">` :
-                        `<iframe src="${url}" width="100%" height="500px"></iframe>`
-                    }
-                </div>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    new bootstrap.Modal(modal).show();
-    
-    modal.addEventListener('hidden.bs.modal', () => {
-        modal.remove();
-    });
-}
-
-// Função para atualizar status da OS
-async function updateStatus(novoStatus) {
-    try {
-        let url;
-        let method = 'POST';
-        
-        // Usar as rotas existentes
-        if (novoStatus === 'concluida') {
-            url = `/ordem-servico/{{ ordem.id }}/concluir`;
-        } else if (novoStatus === 'cancelada') {
-            url = `/ordem-servico/{{ ordem.id }}/cancelar`;
-        } else if (novoStatus === 'em_andamento') {
-            url = `/ordem-servico/{{ ordem.id }}/iniciar`;
-        } else {
-            showNotification('Ação não implementada ainda', 'warning');
-            return;
-        }
-        
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (response.ok) {
-            showNotification('Status atualizado com sucesso!', 'success');
-            setTimeout(() => window.location.reload(), 1000);
-        } else {
-            showNotification('Erro ao atualizar status', 'error');
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        showNotification('Erro ao atualizar status', 'error');
-    }
-}
-
-// Função para obter CSRF token
-function getCsrfToken() {
-    return document.querySelector('meta[name=csrf-token]')?.getAttribute('content') || '';
-}
-
-// Função para mostrar notificações
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
-    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    notification.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto-remove após 5 segundos
-    setTimeout(() => {
-        if (notification.parentNode) {
-            notification.remove();
-        }
-    }, 5000);
-}
-
-// Melhorar responsividade dos botões em mobile
-document.addEventListener('DOMContentLoaded', function() {
-    // Verificar se é mobile
-    const isMobile = window.innerWidth <= 768;
-    
-    if (isMobile) {
-        // Compactar barra de ações em mobile
-        const actionBar = document.querySelector('.action-bar .row');
-        if (actionBar) {
-            actionBar.className = 'row g-2';
-            
-            // Transformar botões em dropdown em mobile
-            const buttonsContainer = document.querySelector('.action-bar .d-flex');
-            if (buttonsContainer) {
-                buttonsContainer.classList.add('flex-column');
-                buttonsContainer.classList.remove('gap-3');
-                buttonsContainer.classList.add('gap-2');
-            }
-        }
-    }
-});
-
-// Função para excluir anexo
-async function excluirAnexo(anexoId, nomeArquivo) {
-    if (!confirm('Tem certeza que deseja excluir o anexo "' + nomeArquivo + '"?\n\nEsta ação não pode ser desfeita.')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch(`{{ url_for('ordem_servico.excluir_anexo', anexo_id=0) }}`.replace('0', anexoId), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCsrfToken()
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok && data.success) {
-            showNotification('Anexo excluído com sucesso!', 'success');
-            setTimeout(() => window.location.reload(), 1000);
-        } else {
-            showNotification(data.message || 'Erro ao excluir anexo', 'error');
-        }
-    } catch (error) {
-        console.error('Erro:', error);
-        showNotification('Erro ao excluir anexo', 'error');
-    }
-}
-</script>
 {% endblock %}
