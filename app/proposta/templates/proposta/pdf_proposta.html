@@ -375,7 +375,7 @@
         <div class="section-body">
             
             <!-- PRODUTOS -->
-            {% if proposta.produtos %}
+            {% if proposta.itens_produto %}
             <div class="produto-section">
             <h4 style="color: var(--primary-color); margin: 10px 0; padding: 8px; background: #e6f2ff; border-left: 4px solid var(--primary-color);">
                 📦 PRODUTOS
@@ -388,7 +388,7 @@
                     <th style="width:15%; text-align:right;">Valor Unit.</th>
                     <th style="width:15%; text-align:right;">Total</th>
                 </tr>
-                {% for item in proposta.produtos %}
+                {% for item in proposta.itens_produto %}
                 <tr>
                     <td style="text-align:center;">{{ loop.index }}</td>
                     <td>{{ item.descricao }}</td>
@@ -402,7 +402,7 @@
             {% endif %}
             
             <!-- SERVIÇOS -->
-            {% if proposta.servicos %}
+            {% if proposta.itens_servico %}
             <div class="servico-section">
             <h4 style="color: var(--primary-color); margin: 20px 0 10px 0; padding: 8px; background: #e6ffe6; border-left: 4px solid #28a745;">
                 🔧 SERVIÇOS
@@ -410,15 +410,27 @@
             <table class="items">
                 <tr>
                     <th style="width:8%; text-align:center;">Item</th>
-                    <th style="width:50%;">Descrição</th>
-                    <th style="width:12%; text-align:center;">Qtd</th>
+                    <th style="width:40%;">Descrição</th>
+                    <th style="width:12%; text-align:center;">Tipo</th>
+                    <th style="width:10%; text-align:center;">Qtd</th>
                     <th style="width:15%; text-align:right;">Valor Unit.</th>
                     <th style="width:15%; text-align:right;">Total</th>
                 </tr>
-                {% for item in proposta.servicos %}
+                {% for item in proposta.itens_servico %}
                 <tr>
-                    <td style="text-align:center;">{{ loop.index + (proposta.produtos|length if proposta.produtos else 0) }}</td>
+                    <td style="text-align:center;">{{ loop.index + (proposta.itens_produto|length if proposta.itens_produto else 0) }}</td>
                     <td>{{ item.descricao }}</td>
+                    <td style="text-align:center;">
+                        {% if item.tipo_servico == 'hora' %}
+                            Por Hora
+                        {% elif item.tipo_servico == 'dia' %}
+                            Por Dia
+                        {% elif item.tipo_servico == 'fechado' %}
+                            Serv. Fechado
+                        {% else %}
+                            {{ item.tipo_servico|title if item.tipo_servico else 'N/A' }}
+                        {% endif %}
+                    </td>
                     <td style="text-align:center;">{{ item.quantidade }}</td>
                     <td style="text-align:right; white-space: nowrap;">R$ {{ "{:,.2f}".format(item.valor_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                     <td style="text-align:right; white-space: nowrap;">R$ {{ "{:,.2f}".format(item.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
@@ -429,7 +441,7 @@
             {% endif %}
             
             <!-- MENSAGEM SE NÃO HOUVER ITENS -->
-            {% if not proposta.produtos and not proposta.servicos %}
+            {% if not proposta.itens_produto and not proposta.itens_servico %}
             <div style="text-align:center; padding:30px; color:#666666; background: #f9f9f9; border: 2px dashed #ddd; border-radius: 8px;">
                 <p style="font-size: 14px; margin: 0;">⚠️ Nenhum produto ou serviço adicionado à proposta</p>
             </div>

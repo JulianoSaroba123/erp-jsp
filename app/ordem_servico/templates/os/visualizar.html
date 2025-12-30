@@ -170,7 +170,7 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="stats-box">
                                 <div class="d-flex align-items-center">
                                     <i class="fas fa-user me-3"></i>
@@ -181,7 +181,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="stats-box">
                                 <div class="d-flex align-items-center">
                                     <i class="fas fa-user-tie me-3"></i>
@@ -192,7 +192,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="stats-box">
                                 <div class="d-flex align-items-center">
                                     <i class="fas fa-calendar me-3"></i>
@@ -203,7 +203,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="stats-box">
                                 <div class="d-flex align-items-center">
                                     <i class="fas fa-calendar-check me-3"></i>
@@ -222,47 +222,213 @@
                         </div>
                     </div>
                     
-                    {% if ordem.descricao_problema %}
                     <hr class="my-3">
                     <div>
                         <h6 class="fw-bold mb-2">
                             <i class="fas fa-exclamation-triangle me-2"></i>Descrição do Problema
                         </h6>
-                        <p class="mb-0 text-muted">{{ ordem.descricao_problema }}</p>
+                        <p class="mb-0 text-muted">{{ ordem.descricao_problema if ordem.descricao_problema and ordem.descricao_problema != 'None' else 'Não informado' }}</p>
                     </div>
-                    {% endif %}
                     
-                    {% if ordem.descricao_servico %}
                     <hr class="my-3">
                     <div>
                         <h6 class="fw-bold mb-2">
                             <i class="fas fa-tools me-2"></i>Descrição do Serviço
                         </h6>
-                        <p class="mb-0 text-muted">{{ ordem.descricao_servico }}</p>
+                        <p class="mb-0 text-muted">{{ ordem.descricao_servico if ordem.descricao_servico and ordem.descricao_servico != 'None' else 'Não informado' }}</p>
                     </div>
-                    {% endif %}
 
-                    {% if ordem.solucao %}
                     <hr class="my-3">
                     <div>
                         <h6 class="fw-bold mb-2">
                             <i class="fas fa-check-circle me-2"></i>Solução
                         </h6>
-                        <p class="mb-0 text-muted">{{ ordem.solucao }}</p>
+                        <p class="mb-0 text-muted">{{ ordem.solucao if ordem.solucao and ordem.solucao != 'None' else 'Não informado' }}</p>
                     </div>
-                    {% endif %}
 
-                    {% if ordem.laudo_tecnico %}
                     <hr class="my-3">
                     <div>
                         <h6 class="fw-bold mb-2">
                             <i class="fas fa-file-medical me-2"></i>Laudo Técnico
                         </h6>
-                        <p class="mb-0 text-muted">{{ ordem.laudo_tecnico }}</p>
+                        <p class="mb-0 text-muted">{{ ordem.laudo_tecnico if ordem.laudo_tecnico and ordem.laudo_tecnico != 'None' else 'Não informado' }}</p>
                     </div>
-                    {% endif %}
                 </div>
             </div>
+
+            <!-- Equipamento e Diagnóstico -->
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-wrench text-warning me-2"></i>
+                        Equipamento e Diagnóstico
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <div class="stats-box">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-cog me-3"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Equipamento</small>
+                                        <strong>{{ ordem.equipamento if ordem.equipamento and ordem.equipamento != 'None' else 'Não informado' }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="stats-box">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-tag me-3"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Marca/Modelo</small>
+                                        <strong>{{ ordem.marca_modelo if ordem.marca_modelo and ordem.marca_modelo != 'None' else 'Não informado' }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="stats-box">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-hashtag me-3"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Número de Série</small>
+                                        <strong>{{ ordem.numero_serie if ordem.numero_serie and ordem.numero_serie != 'None' else 'Não informado' }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-3">
+                    <div>
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-exclamation-circle me-2"></i>Defeito Relatado
+                        </h6>
+                        <p class="mb-0 text-muted">{{ ordem.defeito_relatado if ordem.defeito_relatado and ordem.defeito_relatado != 'None' else 'Não informado' }}</p>
+                    </div>
+                    
+                    <hr class="my-3">
+                    <div>
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-stethoscope me-2"></i>Diagnóstico
+                        </h6>
+                        <p class="mb-0 text-muted">{{ ordem.diagnostico if ordem.diagnostico and ordem.diagnostico != 'None' else 'Não informado' }}</p>
+                    </div>
+
+                    <hr class="my-3">
+                    <div>
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-clipboard-check me-2"></i>Diagnóstico Técnico
+                        </h6>
+                        <p class="mb-0 text-muted">{{ ordem.diagnostico_tecnico if ordem.diagnostico_tecnico and ordem.diagnostico_tecnico != 'None' else 'Não informado' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Controles de Execução -->
+            {% if ordem.km_inicial or ordem.hora_inicial or ordem.prazo_garantia %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-tachometer-alt text-success me-2"></i>
+                        Controles de Execução
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-3">
+                        {% if ordem.km_inicial and ordem.km_final %}
+                        <div class="col-md-4">
+                            <div class="stats-box">
+                                <i class="fas fa-road mb-2 d-block"></i>
+                                <div class="fw-bold h4 text-primary mb-1">{{ ordem.km_total }} km</div>
+                                <small class="text-muted">Total Percorrido</small>
+                                <div class="mt-2">
+                                    <small class="d-block">Inicial: {{ ordem.km_inicial }} km</small>
+                                    <small class="d-block">Final: {{ ordem.km_final }} km</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if ordem.hora_inicial and ordem.hora_final %}
+                        <div class="col-md-4">
+                            <div class="stats-box">
+                                <i class="fas fa-clock mb-2 d-block"></i>
+                                <div class="fw-bold h4 text-warning mb-1">{{ ordem.total_horas or 'N/A' }}</div>
+                                <small class="text-muted">Tempo de Execução</small>
+                                <div class="mt-2">
+                                    <small class="d-block">Início: {{ ordem.hora_inicial.strftime('%H:%M') if ordem.hora_inicial else 'N/A' }}</small>
+                                    <small class="d-block">Fim: {{ ordem.hora_final.strftime('%H:%M') if ordem.hora_final else 'N/A' }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% if ordem.prazo_garantia and ordem.prazo_garantia > 0 %}
+                        <div class="col-md-4">
+                            <div class="stats-box">
+                                <i class="fas fa-shield-alt mb-2 d-block"></i>
+                                <div class="fw-bold h4 text-success mb-1">{{ ordem.prazo_garantia }} dias</div>
+                                <small class="text-muted">Garantia</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Anexos e Imagens -->
+            {% if ordem.anexos and ordem.anexos|length > 0 %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-paperclip text-danger me-2"></i>
+                        Anexos e Imagens ({{ ordem.anexos|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% for anexo in ordem.anexos %}
+                        <div class="col-md-4">
+                            <div class="stats-box text-center p-3" style="min-height: 300px;">
+                                <!-- Debug: tipo={{ anexo.tipo_arquivo }} -->
+                                {% if anexo.tipo_arquivo and (anexo.tipo_arquivo.startswith('image') or anexo.tipo_arquivo == 'image') %}
+                                <!-- Imagem -->
+                                <a href="{{ url_for('ordem_servico.visualizar_anexo', anexo_id=anexo.id) }}" target="_blank">
+                                    <img src="{{ url_for('ordem_servico.visualizar_anexo', anexo_id=anexo.id) }}" 
+                                         alt="{{ anexo.nome_arquivo }}" 
+                                         class="img-fluid rounded mb-2" 
+                                         style="max-height: 200px; object-fit: cover; width: 100%;">
+                                </a>
+                                {% else %}
+                                <!-- Arquivo não-imagem -->
+                                <i class="fas fa-file fa-4x mb-2 text-muted"></i>
+                                {% endif %}
+                                <div class="mt-2">
+                                    <small class="d-block text-truncate fw-bold">{{ anexo.nome_arquivo }}</small>
+                                    <small class="text-muted d-block">{{ anexo.descricao or 'Sem descrição' }}</small>
+                                </div>
+                                <div class="btn-group btn-group-sm mt-2 w-100" role="group">
+                                    <a href="{{ url_for('ordem_servico.download_anexo', anexo_id=anexo.id) }}" 
+                                       class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-download me-1"></i>Baixar
+                                    </a>
+                                    {% if anexo.tipo_arquivo and (anexo.tipo_arquivo.startswith('image') or anexo.tipo_arquivo == 'image') %}
+                                    <a href="{{ url_for('ordem_servico.visualizar_anexo', anexo_id=anexo.id) }}" 
+                                       target="_blank" 
+                                       class="btn btn-outline-info btn-sm">
+                                        <i class="fas fa-eye me-1"></i>Ver
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
 
             <!-- Produtos e Serviços -->
             {% if ordem.itens_produto or ordem.itens_servico %}
@@ -397,17 +563,15 @@
                         </div>
                     </div>
                     {% endif %}
-                    {% if ordem.equipamento %}
                     <div class="stats-box">
                         <div class="d-flex align-items-center">
                             <i class="fas fa-cog me-3"></i>
                             <div>
                                 <small class="text-muted d-block">Equipamento</small>
-                                <strong>{{ ordem.equipamento }}</strong>
+                                <strong>{{ ordem.equipamento if ordem.equipamento and ordem.equipamento != 'None' else 'Não informado' }}</strong>
                             </div>
                         </div>
                     </div>
-                    {% endif %}
                 </div>
             </div>
             {% endif %}
@@ -454,6 +618,87 @@
             </div>
             {% endif %}
 
+            <!-- Informações Adicionais -->
+            {% if ordem.solicitante or ordem.tipo_servico %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-info text-info me-2"></i>
+                        Informações Adicionais
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if ordem.solicitante %}
+                    <div class="stats-box mb-3">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-circle me-3"></i>
+                            <div>
+                                <small class="text-muted d-block">Solicitante</small>
+                                <strong>{{ ordem.solicitante }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if ordem.tipo_servico %}
+                    <div class="stats-box">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-list me-3"></i>
+                            <div>
+                                <small class="text-muted d-block">Tipo de Serviço</small>
+                                <strong>{{ ordem.tipo_servico }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Status de Pagamento -->
+            {% if ordem.status_pagamento %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-money-check text-success me-2"></i>
+                        Status de Pagamento
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="stats-box">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-receipt me-3"></i>
+                                <div>
+                                    <small class="text-muted d-block">Status</small>
+                                    <strong>{{ ordem.status_pagamento.title() }}</strong>
+                                </div>
+                            </div>
+                            {% if ordem.status_pagamento == 'pendente' %}
+                                <span class="badge bg-warning text-dark">Pendente</span>
+                            {% elif ordem.status_pagamento == 'parcial' %}
+                                <span class="badge bg-info">Parcial</span>
+                            {% elif ordem.status_pagamento == 'pago' %}
+                                <span class="badge bg-success">Pago</span>
+                            {% elif ordem.status_pagamento == 'vencido' %}
+                                <span class="badge bg-danger">Vencido</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if ordem.data_vencimento_pagamento %}
+                    <div class="stats-box mt-2">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-calendar-times me-3"></i>
+                            <div>
+                                <small class="text-muted d-block">Vencimento</small>
+                                <strong>{{ ordem.data_vencimento_pagamento.strftime('%d/%m/%Y') }}</strong>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Ações Rápidas -->
             <div class="card info-card">
                 <div class="card-header">
@@ -471,7 +716,7 @@
                                 </button>
                             </form>
                         {% elif ordem.status == 'em_execucao' %}
-                            <form method="POST" action="{{ url_for('ordem_servico.concluir', id=ordem.id) }}">
+                            <form method="POST" action="{{ url_for('ordem_servico.concluir_servico', id=ordem.id) }}">
                                 <button type="submit" class="btn btn-success w-100 action-btn" 
                                         onclick="return confirm('Confirma a conclusão da OS?')">
                                     <i class="fas fa-check me-2"></i>Concluir OS
