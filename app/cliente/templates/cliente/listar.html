@@ -9,19 +9,73 @@
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">
+<style>
+    /* Cores JSP Ciano */
+    .clientes-header {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(6,182,212,0.3);
+    }
+    .clientes-header h2,
+    .clientes-header p {
+        color: white !important;
+    }
+    .btn-novo-cliente {
+        background: white !important;
+        color: #0891b2 !important;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .btn-novo-cliente:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+        color: #0e7490 !important;
+    }
+    .stats-card {
+        background: white;
+        border: none;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-left: 4px solid #06b6d4;
+    }
+    .main-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Header Moderno Separado -->
+    <div class="clientes-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="mb-2">
                     <i class="fas fa-users me-2"></i>
                     Gerenciamento de Clientes
-                </h4>
-                <a href="{{ url_for('cliente.novo') }}" class="btn btn-primary">
+                </h2>
+                <p class="mb-0 opacity-75">Cadastro e controle de clientes</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="{{ url_for('cliente.novo') }}" class="btn btn-novo-cliente">
                     <i class="fas fa-plus me-2"></i>
                     Novo Cliente
                 </a>
             </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card main-card">
             
             <div class="card-body">
                 <!-- Barra de Busca -->
@@ -58,8 +112,8 @@
                 <!-- Tabela de Clientes -->
                 {% if clientes %}
                 <div class="table-responsive">
-                    <table class="table table-dark table-hover">
-                        <thead>
+                    <table class="table table-hover">
+                        <thead class="table-light">
                             <tr>
                                 <th>Nome</th>
                                 <th>Tipo</th>
@@ -162,6 +216,7 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 {% endblock %}
 

@@ -233,7 +233,7 @@
                     <hr class="my-3">
                     <div>
                         <h6 class="fw-bold mb-2">
-                            <i class="fas fa-tools me-2"></i>Descrição do Serviço
+                            <i class="fas fa-tools me-2"></i>Diagnóstico Técnico
                         </h6>
                         <p class="mb-0 text-muted">{{ ordem.descricao_servico if ordem.descricao_servico and ordem.descricao_servico != 'None' else 'Não informado' }}</p>
                     </div>
@@ -246,13 +246,6 @@
                         <p class="mb-0 text-muted">{{ ordem.solucao if ordem.solucao and ordem.solucao != 'None' else 'Não informado' }}</p>
                     </div>
 
-                    <hr class="my-3">
-                    <div>
-                        <h6 class="fw-bold mb-2">
-                            <i class="fas fa-file-medical me-2"></i>Laudo Técnico
-                        </h6>
-                        <p class="mb-0 text-muted">{{ ordem.laudo_tecnico if ordem.laudo_tecnico and ordem.laudo_tecnico != 'None' else 'Não informado' }}</p>
-                    </div>
                 </div>
             </div>
 
@@ -430,69 +423,78 @@
             </div>
             {% endif %}
 
-            <!-- Produtos e Serviços -->
-            {% if ordem.itens_produto or ordem.itens_servico %}
+            <!-- Produtos -->
+            {% if ordem.itens_produto %}
             <div class="card info-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-clipboard-list text-info me-2"></i>
-                        Itens da OS
+                <div class="card-header" style="background: #e0f2fe !important; background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;">
+                    <h5 class="card-title mb-0 fw-bold" style="color: #0369a1 !important;">
+                        <i class="fas fa-box me-2"></i>
+                        📦 PRODUTOS
                     </h5>
                 </div>
                 <div class="card-body">
-                    <!-- Produtos -->
-                    {% if ordem.itens_produto %}
-                    <h6 class="fw-bold mb-3"><i class="fas fa-box me-2"></i>Produtos</h6>
                     <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Produto</th>
-                                    <th class="text-center">Quantidade</th>
-                                    <th class="text-end">Valor Unit.</th>
-                                    <th class="text-end">Subtotal</th>
+                        <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
+                            <thead>
+                                <tr style="background: #f0f9ff; border-bottom: 2px solid #06b6d4;">
+                                    <th style="width: 8%; text-align: center; padding: 12px; color: #0369a1; font-weight: 600;">Item</th>
+                                    <th style="width: 50%; padding: 12px; color: #0369a1; font-weight: 600;">Descrição</th>
+                                    <th style="width: 12%; text-align: center; padding: 12px; color: #0369a1; font-weight: 600;">Qtd</th>
+                                    <th style="width: 15%; text-align: right; padding: 12px; color: #0369a1; font-weight: 600;">Valor Unit.</th>
+                                    <th style="width: 15%; text-align: right; padding: 12px; color: #0369a1; font-weight: 600;">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for item in ordem.itens_produto %}
-                                <tr>
-                                    <td>{{ item.produto.nome if item.produto else item.descricao }}</td>
-                                    <td class="text-center">{{ item.quantidade }}</td>
-                                    <td class="text-end">R$ {{ "%.2f"|format(item.valor_unitario|float)|replace('.', ',') }}</td>
-                                    <td class="text-end">R$ {{ "%.2f"|format((item.quantidade * item.valor_unitario)|float)|replace('.', ',') }}</td>
+                                <tr style="border-bottom: 1px solid #e5e7eb; transition: background 0.2s;" onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='white'">
+                                    <td style="text-align: center; padding: 12px; font-weight: 600; color: #0891b2;">{{ loop.index }}</td>
+                                    <td style="padding: 12px; color: #1f2937; font-weight: 500;">{{ item.produto.nome if item.produto else item.descricao }}</td>
+                                    <td style="text-align: center; padding: 12px; color: #1f2937; font-weight: 600;">{{ item.quantidade }}</td>
+                                    <td style="text-align: right; padding: 12px; white-space: nowrap; color: #1f2937;">R$ {{ "%.2f"|format(item.valor_unitario|float)|replace('.', ',') }}</td>
+                                    <td style="text-align: right; padding: 12px; white-space: nowrap; font-weight: 600; color: #0891b2;">R$ {{ "%.2f"|format((item.quantidade * item.valor_unitario)|float)|replace('.', ',') }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
-                    {% endif %}
-                    
-                    <!-- Serviços -->
-                    {% if ordem.itens_servico %}
-                    <h6 class="fw-bold mb-3 mt-4"><i class="fas fa-wrench me-2"></i>Serviços</h6>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Serviços -->
+            {% if ordem.itens_servico %}
+            <div class="card info-card">
+                <div class="card-header" style="background: #dcfce7 !important; background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%) !important;">
+                    <h5 class="card-title mb-0 fw-bold" style="color: #15803d !important;">
+                        <i class="fas fa-wrench me-2"></i>
+                        🔧 SERVIÇOS
+                    </h5>
+                </div>
+                <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Serviço</th>
-                                    <th class="text-center">Quantidade</th>
-                                    <th class="text-end">Valor Unit.</th>
-                                    <th class="text-end">Subtotal</th>
+                        <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
+                            <thead>
+                                <tr style="background: #f0fdf4; border-bottom: 2px solid #22c55e;">
+                                    <th style="width: 8%; text-align: center; padding: 12px; color: #15803d; font-weight: 600;">Item</th>
+                                    <th style="width: 50%; padding: 12px; color: #15803d; font-weight: 600;">Descrição</th>
+                                    <th style="width: 12%; text-align: center; padding: 12px; color: #15803d; font-weight: 600;">Qtd</th>
+                                    <th style="width: 15%; text-align: right; padding: 12px; color: #15803d; font-weight: 600;">Valor Unit.</th>
+                                    <th style="width: 15%; text-align: right; padding: 12px; color: #15803d; font-weight: 600;">Total</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for item in ordem.itens_servico %}
-                                <tr>
-                                    <td>{{ item.servico.nome if item.servico else item.descricao }}</td>
-                                    <td class="text-center">{{ item.quantidade }}</td>
-                                    <td class="text-end">R$ {{ "%.2f"|format(item.valor_unitario|float)|replace('.', ',') }}</td>
-                                    <td class="text-end">R$ {{ "%.2f"|format((item.quantidade * item.valor_unitario)|float)|replace('.', ',') }}</td>
+                                <tr style="border-bottom: 1px solid #e5e7eb; transition: background 0.2s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='white'">
+                                    <td style="text-align: center; padding: 12px; font-weight: 600; color: #16a34a;">{{ loop.index + (ordem.itens_produto|length if ordem.itens_produto else 0) }}</td>
+                                    <td style="padding: 12px; color: #1f2937; font-weight: 500;">{{ item.servico.nome if item.servico else item.descricao }}</td>
+                                    <td style="text-align: center; padding: 12px; color: #1f2937; font-weight: 600;">{{ item.quantidade }}</td>
+                                    <td style="text-align: right; padding: 12px; white-space: nowrap; color: #1f2937;">R$ {{ "%.2f"|format(item.valor_unitario|float)|replace('.', ',') }}</td>
+                                    <td style="text-align: right; padding: 12px; white-space: nowrap; font-weight: 600; color: #16a34a;">R$ {{ "%.2f"|format((item.quantidade * item.valor_unitario)|float)|replace('.', ',') }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
-                    {% endif %}
                 </div>
             </div>
             {% endif %}

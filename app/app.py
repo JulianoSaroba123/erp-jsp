@@ -372,7 +372,7 @@ def register_auxiliary_routes(app):
     Args:
         app: Instância da aplicação Flask
     """
-    from flask import send_from_directory
+    from flask import send_from_directory, jsonify
     import os
     
     @app.route('/uploads/<path:filename>')
@@ -380,6 +380,23 @@ def register_auxiliary_routes(app):
         """Serve arquivos de upload."""
         uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
         return send_from_directory(uploads_dir, filename)
+    
+    @app.route('/offline.html')
+    def offline():
+        """Página offline para PWA."""
+        return render_template('offline.html')
+    
+    @app.route('/manifest.json')
+    def manifest():
+        """Serve o manifest.json para PWA."""
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'app', 'static')
+        return send_from_directory(static_dir, 'manifest.json', mimetype='application/manifest+json')
+    
+    @app.route('/service-worker.js')
+    def service_worker():
+        """Serve o service worker para PWA."""
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'app', 'static')
+        return send_from_directory(static_dir, 'service-worker.js', mimetype='application/javascript')
 
 def register_error_handlers(app):
     """
