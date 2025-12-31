@@ -41,7 +41,7 @@
                         </h6>
                         
                         <div class="row">
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <label for="tipo" class="form-label">Tipo *</label>
                                 <select class="form-select" id="tipo" name="tipo" required>
                                     <option value="PF" {% if cliente.tipo == 'PF' %}selected{% endif %}>
@@ -54,14 +54,13 @@
                             </div>
                             
                             <!-- Campos que mudam conforme o tipo -->
-                            <div class="col-md-10">
+                            <div class="col-md-9">
                                 <!-- Para Pessoa Física -->
                                 <div id="campos-pf" style="display: none;">
-                                    <label for="nome" class="form-label">Nome Completo *</label>
+                                    <label for="nome_pf" class="form-label">Nome Completo *</label>
                                     <input type="text" 
                                            class="form-control" 
-                                           id="nome" 
-                                           name="nome" 
+                                           id="nome_pf" 
                                            value="{{ cliente.nome or '' }}" 
                                            maxlength="150">
                                 </div>
@@ -74,7 +73,6 @@
                                             <input type="text" 
                                                    class="form-control" 
                                                    id="nome_fantasia" 
-                                                   name="nome_fantasia" 
                                                    value="{{ cliente.nome_fantasia or '' }}"
                                                    maxlength="150">
                                         </div>
@@ -88,13 +86,19 @@
                                                    maxlength="200">
                                         </div>
                                     </div>
-                                    
-                                    <!-- Campo para nome principal em PJ (será preenchido via JS) -->
-                                    <input type="hidden" 
-                                           id="nome_pj" 
-                                           name="nome" 
-                                           value="{{ cliente.nome or cliente.nome_fantasia or '' }}">
                                 </div>
+                                
+                                <!-- Campo nome real (sempre presente) -->
+                                <input type="hidden" 
+                                       id="nome" 
+                                       name="nome" 
+                                       value="{{ cliente.nome or cliente.nome_fantasia or '' }}">
+                                
+                                <!-- Campo nome_fantasia (para PJ) -->
+                                <input type="hidden" 
+                                       id="nome_fantasia_hidden" 
+                                       name="nome_fantasia" 
+                                       value="{{ cliente.nome_fantasia or '' }}">
                             </div>
                         </div>
                         
@@ -642,6 +646,10 @@
             const extrasPF = document.getElementById('extras-pf');
             const extrasPJ = document.getElementById('extras-pj');
             const campoIM = document.getElementById('campo-im');
+            const nomePF = document.getElementById('nome_pf');
+            const nomeFantasia = document.getElementById('nome_fantasia');
+            const nomeFantasiaHidden = document.getElementById('nome_fantasia_hidden');
+            const nome = document.getElementById('nome');
             
             if (tipoSelect.value === 'PF') {
                 labelDocumento.textContent = 'CPF';
@@ -658,7 +666,21 @@
                 // Esconde o botão de consulta CNPJ para pessoa física
                 btnCnpj.style.display = 'none';
                 
-                // Remove sincronização PJ se estava ativa
+                // Sincroniza o campo nome com nome_pf
+                if (nomePF) {
+                    nomePF.addEventListener('input', function() {
+                        nome.value = this.value;
+                    });
+                    // Se já tem valor, sincroniza imediatamente
+                    if (nomePF.value) {
+                        nome.value = nomePF.value;
+                    }
+                }
+                
+                // Limpa nome_fantasia para PF
+                if (nomeFantasiaHidden) {
+                    nomeFantasiaHidden.value = '';
+                }
                 
             } else {
                 labelDocumento.textContent = 'CNPJ';
@@ -675,37 +697,39 @@
                 // Mostra o botão de consulta CNPJ para pessoa jurídica
                 btnCnpj.style.display = 'inline-block';
                 
-                // Sincroniza nome fantasia com campo nome
-                sincronizarNomePJ();
+                // Sincroniza nome fantasia com campo nome e campo hidden
+                if (nomeFantasia) {
+                    nomeFantasia.addEventListener('input', function() {
+                        nome.value = this.value;
+                        if (nomeFantasiaHidden) {
+                            nomeFantasiaHidden.value = this.value;
+                        }
+                    });
+                    // Se já tem valor, sincroniza imediatamente
+                    if (nomeFantasia.value) {
+                        nome.value = nomeFantasia.value;
+                        if (nomeFantasiaHidden) {
+                            nomeFantasiaHidden.value = nomeFantasia.value;
+                        }
+                    }
+                }
             }
         }
         
-        // Sincroniza nome fantasia com campo nome para PJ
+        // Sincroniza nome fantasia com campo nome para PJ (REMOVIDA - já está em atualizarLabels)
         function sincronizarNomePJ() {
-            const nomeFantasia = document.getElementById('nome_fantasia');
-            const nomePJ = document.getElementById('nome_pj');
-            
-            if (nomeFantasia && nomePJ) {
-                // Atualiza o nome quando nome fantasia mudar
-                nomeFantasia.addEventListener('input', function() {
-                    nomePJ.value = this.value;
-                });
-                
-                // Se já tem valor, sincroniza imediatamente
-                if (nomeFantasia.value) {
-                    nomePJ.value = nomeFantasia.value;
-                }
-            }
+            // Função mantida por compatibilidade mas não usa mais
         }
         
         // Antes de submeter, garante validações
         const form = document.querySelector('form');
         form.addEventListener('submit', function(e) {
             const tipo = tipoSelect.value;
+            const nomeField = document.getElementById('nome');
+            const nomeFantasiaHidden = document.getElementById('nome_fantasia_hidden');
             
             if (tipo === 'PJ') {
                 const nomeFantasia = document.getElementById('nome_fantasia').value.trim();
-                const nomePJ = document.getElementById('nome_pj');
                 
                 if (!nomeFantasia) {
                     e.preventDefault();
@@ -714,22 +738,32 @@
                     return false;
                 }
                 
-                // FORÇA o preenchimento do campo nome antes de submeter
-                nomePJ.value = nomeFantasia;
-                console.log('✅ Nome PJ preenchido:', nomePJ.value);
+                // FORÇA o preenchimento dos campos antes de submeter
+                nomeField.value = nomeFantasia;
+                nomeFantasiaHidden.value = nomeFantasia;
+                console.log('✅ Nome PJ preenchido:', nomeField.value);
+                console.log('✅ Nome Fantasia preenchido:', nomeFantasiaHidden.value);
                 
             } else {
-                const nome = document.getElementById('nome').value.trim();
+                const nomePF = document.getElementById('nome_pf').value.trim();
                 
-                if (!nome) {
+                if (!nomePF) {
                     e.preventDefault();
                     alert('❌ Nome Completo é obrigatório!');
-                    document.getElementById('nome').focus();
+                    document.getElementById('nome_pf').focus();
                     return false;
                 }
+                
+                // FORÇA o preenchimento do campo nome antes de submeter
+                nomeField.value = nomePF;
+                // Limpa nome_fantasia para PF
+                nomeFantasiaHidden.value = '';
+                console.log('✅ Nome PF preenchido:', nomeField.value);
             }
             
             console.log('✅ Formulário válido - enviando...');
+            console.log('📋 Nome final que será enviado:', nomeField.value);
+            console.log('📋 Tipo:', tipo);
             return true;
         });
         
@@ -968,7 +1002,7 @@
 
         // Foco no campo correto baseado no tipo
         if (tipoSelect.value === 'PF') {
-            document.getElementById('nome').focus();
+            document.getElementById('nome_pf').focus();
         } else {
             document.getElementById('nome_fantasia').focus();
         }
