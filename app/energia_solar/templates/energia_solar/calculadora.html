@@ -89,20 +89,166 @@
                         <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Dados de Consumo</h5>
                     </div>
                     <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Consumo Mensal (kWh) *</label>
-                                <input type="number" name="consumo_mensal" class="form-control" 
-                                       step="0.01" required placeholder="Ex: 350">
-                                <small class="text-muted">Consulte a conta de energia</small>
+                        <!-- Método de Entrada do Consumo -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Como deseja informar o consumo?</label>
+                            <div class="row g-2">
+                                <div class="col-md-4">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="metodo_consumo" 
+                                               id="metodo_direto" value="direto" checked>
+                                        <label class="form-check-label" for="metodo_direto">
+                                            <i class="fas fa-bolt text-ciano"></i> Valor Direto (kWh)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="metodo_consumo" 
+                                               id="metodo_historico" value="historico">
+                                        <label class="form-check-label" for="metodo_historico">
+                                            <i class="fas fa-calendar-alt text-amarelo"></i> Histórico 12 Meses
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="metodo_consumo" 
+                                               id="metodo_valor" value="valor">
+                                        <label class="form-check-label" for="metodo_valor">
+                                            <i class="fas fa-dollar-sign text-verde"></i> Valor em R$
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Tarifa de Energia (R$/kWh) *</label>
-                                <input type="number" name="tarifa_energia" class="form-control" 
-                                       step="0.001" required placeholder="Ex: 0.85">
-                                <small class="text-muted">Valor sem impostos</small>
+                        </div>
+
+                        <!-- Método 1: Valor Direto -->
+                        <div id="consumo_direto" class="metodo-consumo">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Consumo Mensal (kWh) *</label>
+                                    <input type="number" id="input_consumo_direto" class="form-control" 
+                                           step="0.01" placeholder="Ex: 350">
+                                    <small class="text-muted">Consulte a conta de energia</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tarifa de Energia (R$/kWh) *</label>
+                                    <input type="number" id="input_tarifa" class="form-control" 
+                                           step="0.001" placeholder="Ex: 0.85">
+                                    <small class="text-muted">Valor sem impostos</small>
+                                </div>
                             </div>
-                            <div class="col-md-4">
+                        </div>
+
+                        <!-- Método 2: Histórico 12 Meses -->
+                        <div id="consumo_historico" class="metodo-consumo" style="display: none;">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Dica:</strong> Insira os valores de consumo (kWh) dos últimos 12 meses. 
+                                O sistema calculará a média automaticamente.
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-2">
+                                    <label class="form-label">Janeiro</label>
+                                    <input type="number" class="form-control historico-mes" step="0.01" placeholder="kWh">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Fevereiro</label>
+                                    <input type="number" class="form-control historico-mes" step="0.01" placeholder="kWh">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Março</label>
+                                    <input type="number" class="form-control historico-mes" step="0.01" placeholder="kWh">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Abril</label>
+                                    <input type="number" class="form-control historico-mes" step="0.01" placeholder="kWh">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Maio</label>
+                                    <input type="number" class="form-control historico-mes" step="0.01" placeholder="kWh">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Junho</label>
+                                    <input type="number" class="form-control historico-mes" step="0.01" placeholder="kWh">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Julho</label>
+                                    <input type="number" class="form-control historico-mes" step="0.01" placeholder="kWh">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Agosto</label>
+                                    <input type="number" class="form-control historico-mes" step="0.01" placeholder="kWh">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Setembro</label>
+                                    <input type="number" class="form-control historico-mes" step="0.01" placeholder="kWh">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Outubro</label>
+                                    <input type="number" class="form-control historico-mes" step="0.01" placeholder="kWh">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Novembro</label>
+                                    <input type="number" class="form-control historico-mes" step="0.01" placeholder="kWh">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Dezembro</label>
+                                    <input type="number" class="form-control historico-mes" step="0.01" placeholder="kWh">
+                                </div>
+                            </div>
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <div class="alert alert-success mb-0">
+                                        <strong>Média Calculada:</strong> <span id="media_historico" class="fs-5">0 kWh/mês</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tarifa de Energia (R$/kWh) *</label>
+                                    <input type="number" id="input_tarifa_historico" class="form-control" 
+                                           step="0.001" placeholder="Ex: 0.85">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Método 3: Valor em R$ -->
+                        <div id="consumo_valor" class="metodo-consumo" style="display: none;">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Dica:</strong> Informe o valor total em R$ da conta de energia. 
+                                O sistema converterá para kWh usando a tarifa.
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Valor da Conta (R$) *</label>
+                                    <input type="number" id="input_valor_reais" class="form-control" 
+                                           step="0.01" placeholder="Ex: 297.50">
+                                    <small class="text-muted">Valor total da fatura</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tarifa de Energia (R$/kWh) *</label>
+                                    <input type="number" id="input_tarifa_valor" class="form-control" 
+                                           step="0.001" placeholder="Ex: 0.85">
+                                    <small class="text-muted">Para converter em kWh</small>
+                                </div>
+                            </div>
+                            <div class="row g-3 mt-2">
+                                <div class="col-md-6">
+                                    <div class="alert alert-success mb-0">
+                                        <strong>Consumo Calculado:</strong> <span id="consumo_convertido" class="fs-5">0 kWh/mês</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campo Hidden para enviar ao backend -->
+                        <input type="hidden" name="consumo_mensal" id="consumo_final">
+                        <input type="hidden" name="tarifa_energia" id="tarifa_final">
+
+                        <!-- Irradiação Solar -->
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-12">
                                 <label class="form-label">Irradiação Solar (kWh/m²/dia)</label>
                                 <input type="number" name="irradiacao" class="form-control" 
                                        id="irradiacao" step="0.01" value="5.0" required>
@@ -168,6 +314,125 @@
 </div>
 
 <script>
+// ========================================
+// CONTROLE DOS MÉTODOS DE CONSUMO
+// ========================================
+
+// Alternar entre métodos de entrada
+document.querySelectorAll('input[name="metodo_consumo"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        // Esconde todos
+        document.querySelectorAll('.metodo-consumo').forEach(div => {
+            div.style.display = 'none';
+        });
+        
+        // Mostra o selecionado
+        if (this.value === 'direto') {
+            document.getElementById('consumo_direto').style.display = 'block';
+        } else if (this.value === 'historico') {
+            document.getElementById('consumo_historico').style.display = 'block';
+        } else if (this.value === 'valor') {
+            document.getElementById('consumo_valor').style.display = 'block';
+        }
+        
+        atualizarConsumoFinal();
+    });
+});
+
+// ========================================
+// MÉTODO 1: VALOR DIRETO
+// ========================================
+document.getElementById('input_consumo_direto')?.addEventListener('input', atualizarConsumoFinal);
+document.getElementById('input_tarifa')?.addEventListener('input', atualizarConsumoFinal);
+
+// ========================================
+// MÉTODO 2: HISTÓRICO 12 MESES
+// ========================================
+document.querySelectorAll('.historico-mes').forEach(input => {
+    input.addEventListener('input', function() {
+        // Calcula média dos meses preenchidos
+        let valores = [];
+        document.querySelectorAll('.historico-mes').forEach(mes => {
+            const valor = parseFloat(mes.value);
+            if (valor > 0) {
+                valores.push(valor);
+            }
+        });
+        
+        if (valores.length > 0) {
+            const media = valores.reduce((a, b) => a + b, 0) / valores.length;
+            document.getElementById('media_historico').textContent = media.toFixed(2) + ' kWh/mês';
+        } else {
+            document.getElementById('media_historico').textContent = '0 kWh/mês';
+        }
+        
+        atualizarConsumoFinal();
+    });
+});
+
+document.getElementById('input_tarifa_historico')?.addEventListener('input', atualizarConsumoFinal);
+
+// ========================================
+// MÉTODO 3: VALOR EM R$
+// ========================================
+document.getElementById('input_valor_reais')?.addEventListener('input', function() {
+    const valorReais = parseFloat(this.value) || 0;
+    const tarifa = parseFloat(document.getElementById('input_tarifa_valor').value) || 0;
+    
+    if (tarifa > 0) {
+        const consumoKwh = valorReais / tarifa;
+        document.getElementById('consumo_convertido').textContent = consumoKwh.toFixed(2) + ' kWh/mês';
+    } else {
+        document.getElementById('consumo_convertido').textContent = '0 kWh/mês';
+    }
+    
+    atualizarConsumoFinal();
+});
+
+document.getElementById('input_tarifa_valor')?.addEventListener('input', function() {
+    // Trigger recalculo
+    document.getElementById('input_valor_reais').dispatchEvent(new Event('input'));
+});
+
+// ========================================
+// ATUALIZAR CAMPOS FINAIS (HIDDEN)
+// ========================================
+function atualizarConsumoFinal() {
+    const metodo = document.querySelector('input[name="metodo_consumo"]:checked').value;
+    let consumo = 0;
+    let tarifa = 0;
+    
+    if (metodo === 'direto') {
+        consumo = parseFloat(document.getElementById('input_consumo_direto').value) || 0;
+        tarifa = parseFloat(document.getElementById('input_tarifa').value) || 0;
+    } else if (metodo === 'historico') {
+        // Pega a média calculada
+        let valores = [];
+        document.querySelectorAll('.historico-mes').forEach(mes => {
+            const valor = parseFloat(mes.value);
+            if (valor > 0) valores.push(valor);
+        });
+        if (valores.length > 0) {
+            consumo = valores.reduce((a, b) => a + b, 0) / valores.length;
+        }
+        tarifa = parseFloat(document.getElementById('input_tarifa_historico').value) || 0;
+    } else if (metodo === 'valor') {
+        const valorReais = parseFloat(document.getElementById('input_valor_reais').value) || 0;
+        tarifa = parseFloat(document.getElementById('input_tarifa_valor').value) || 0;
+        if (tarifa > 0) {
+            consumo = valorReais / tarifa;
+        }
+    }
+    
+    // Atualiza campos hidden
+    document.getElementById('consumo_final').value = consumo.toFixed(2);
+    document.getElementById('tarifa_final').value = tarifa.toFixed(3);
+}
+
+// ========================================
+// OUTRAS FUNCIONALIDADES
+// ========================================
+
 // Atualizar nome quando selecionar cliente
 document.getElementById('cliente_select').addEventListener('change', function() {
     if (this.value) {
@@ -187,5 +452,20 @@ document.getElementById('estado_select').addEventListener('change', function() {
             });
     }
 });
+
+// Validação antes do submit
+document.querySelector('form').addEventListener('submit', function(e) {
+    const consumo = parseFloat(document.getElementById('consumo_final').value);
+    const tarifa = parseFloat(document.getElementById('tarifa_final').value);
+    
+    if (consumo <= 0 || tarifa <= 0) {
+        e.preventDefault();
+        alert('Por favor, preencha o consumo e a tarifa corretamente!');
+        return false;
+    }
+});
+
+// Inicializa com método direto
+atualizarConsumoFinal();
 </script>
 {% endblock %}
