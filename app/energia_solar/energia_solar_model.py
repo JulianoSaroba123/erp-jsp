@@ -12,7 +12,7 @@ class CalculoEnergiaSolar(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     
     # Dados do Cliente
-    cliente_id = db.Column(db.Integer, db.ForeignKey('cliente.id'), nullable=True)
+    cliente_id = db.Column(db.Integer, nullable=True)
     nome_cliente = db.Column(db.String(200))
     
     # Dados de Consumo
@@ -55,12 +55,8 @@ class CalculoEnergiaSolar(db.Model):
     
     # Controle
     data_calculo = db.Column(db.DateTime, default=datetime.utcnow)
-    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'))
+    usuario_id = db.Column(db.Integer, nullable=True)
     status = db.Column(db.String(20), default='calculado')  # calculado, aprovado, instalado
-    
-    # Relacionamentos
-    cliente = db.relationship('Cliente', backref='calculos_solar', foreign_keys=[cliente_id])
-    usuario = db.relationship('Usuario', backref='calculos_solar')
     
     def __repr__(self):
         return f'<CalculoEnergiaSolar {self.nome_cliente} - {self.potencia_sistema}kWp>'
