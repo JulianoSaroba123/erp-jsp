@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Calculadora Solar{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('energia_solar.dashboard') }}" class="breadcrumb-item">Energia Solar</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="breadcrumb-item active">Calculadora</span>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="mb-4">
+                <h2 class="neon-title">
+                    <i class="fas fa-calculator me-2"></i>
+                    Calculadora de Energia Solar
+                </h2>
+                <p class="text-muted">Calcule o sistema fotovoltaico ideal para seu cliente</p>
+            </div>
+
+            <!-- Formulário -->
+            <form method="POST" action="{{ url_for('energia_solar.calcular') }}">
+                <div class="card card-neon">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-user me-2"></i>Dados do Cliente</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Cliente (Opcional)</label>
+                                <select name="cliente_id" class="form-select" id="cliente_select">
+                                    <option value="">Selecione um cliente...</option>
+                                    {% for cliente in clientes %}
+                                    <option value="{{ cliente.id }}">{{ cliente.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Nome do Cliente *</label>
+                                <input type="text" name="nome_cliente" class="form-control" 
+                                       id="nome_cliente" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Cidade</label>
+                                <input type="text" name="cidade" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Estado</label>
+                                <select name="estado" class="form-select" id="estado_select">
+                                    <option value="">Selecione...</option>
+                                    <option value="AC">Acre</option>
+                                    <option value="AL">Alagoas</option>
+                                    <option value="AP">Amapá</option>
+                                    <option value="AM">Amazonas</option>
+                                    <option value="BA">Bahia</option>
+                                    <option value="CE">Ceará</option>
+                                    <option value="DF">Distrito Federal</option>
+                                    <option value="ES">Espírito Santo</option>
+                                    <option value="GO">Goiás</option>
+                                    <option value="MA">Maranhão</option>
+                                    <option value="MT">Mato Grosso</option>
+                                    <option value="MS">Mato Grosso do Sul</option>
+                                    <option value="MG">Minas Gerais</option>
+                                    <option value="PA">Pará</option>
+                                    <option value="PB">Paraíba</option>
+                                    <option value="PR">Paraná</option>
+                                    <option value="PE">Pernambuco</option>
+                                    <option value="PI">Piauí</option>
+                                    <option value="RJ">Rio de Janeiro</option>
+                                    <option value="RN">Rio Grande do Norte</option>
+                                    <option value="RS">Rio Grande do Sul</option>
+                                    <option value="RO">Rondônia</option>
+                                    <option value="RR">Roraima</option>
+                                    <option value="SC">Santa Catarina</option>
+                                    <option value="SP">São Paulo</option>
+                                    <option value="SE">Sergipe</option>
+                                    <option value="TO">Tocantins</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-neon mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Dados de Consumo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Consumo Mensal (kWh) *</label>
+                                <input type="number" name="consumo_mensal" class="form-control" 
+                                       step="0.01" required placeholder="Ex: 350">
+                                <small class="text-muted">Consulte a conta de energia</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tarifa de Energia (R$/kWh) *</label>
+                                <input type="number" name="tarifa_energia" class="form-control" 
+                                       step="0.001" required placeholder="Ex: 0.85">
+                                <small class="text-muted">Valor sem impostos</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Irradiação Solar (kWh/m²/dia)</label>
+                                <input type="number" name="irradiacao" class="form-control" 
+                                       id="irradiacao" step="0.01" value="5.0" required>
+                                <small class="text-muted">Automático por estado</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-neon mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-home me-2"></i>Dados da Instalação</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo de Instalação</label>
+                                <select name="tipo_instalacao" class="form-select">
+                                    <option value="Telhado">Telhado</option>
+                                    <option value="Solo">Solo</option>
+                                    <option value="Carport">Carport</option>
+                                    <option value="Laje">Laje</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Orientação</label>
+                                <select name="orientacao" class="form-select">
+                                    <option value="Norte">Norte (Ideal)</option>
+                                    <option value="Nordeste">Nordeste</option>
+                                    <option value="Noroeste">Noroeste</option>
+                                    <option value="Leste">Leste</option>
+                                    <option value="Oeste">Oeste</option>
+                                    <option value="Sul">Sul</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Inclinação (graus)</label>
+                                <input type="number" name="inclinacao" class="form-control" 
+                                       step="1" value="15" min="0" max="90">
+                                <small class="text-muted">Ideal: latitude local</small>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Observações</label>
+                                <textarea name="observacoes" class="form-control" rows="3" 
+                                          placeholder="Condições do telhado, sombreamento, etc..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botões -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('energia_solar.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar
+                    </a>
+                    <button type="submit" class="btn btn-neon-primary btn-lg">
+                        <i class="fas fa-calculator me-2"></i>Calcular Sistema
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Atualizar nome quando selecionar cliente
+document.getElementById('cliente_select').addEventListener('change', function() {
+    if (this.value) {
+        const nome = this.options[this.selectedIndex].text;
+        document.getElementById('nome_cliente').value = nome;
+    }
+});
+
+// Buscar irradiação por estado
+document.getElementById('estado_select').addEventListener('change', function() {
+    const estado = this.value;
+    if (estado) {
+        fetch(`/energia-solar/api/irradiacao/${estado}`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('irradiacao').value = data.irradiacao;
+            });
+    }
+});
+</script>
+{% endblock %}

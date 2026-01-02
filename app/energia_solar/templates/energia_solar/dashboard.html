@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Energia Solar - Dashboard{% endblock %}
+
+{% block breadcrumb %}
+<span class="breadcrumb-item active">Energia Solar</span>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="neon-title">
+            <i class="fas fa-solar-panel me-2"></i>
+            Cálculo de Energia Solar
+        </h2>
+        <div>
+            <a href="{{ url_for('energia_solar.calculadora') }}" class="btn btn-neon-primary">
+                <i class="fas fa-calculator me-2"></i>Nova Calculadora
+            </a>
+            <a href="{{ url_for('energia_solar.listar') }}" class="btn btn-neon-secondary">
+                <i class="fas fa-list me-2"></i>Ver Todos
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de Estatísticas -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card card-neon">
+                <div class="card-body text-center">
+                    <i class="fas fa-clipboard-list fa-3x mb-3 text-ciano"></i>
+                    <h3 class="neon-text">{{ total_calculos }}</h3>
+                    <p class="text-muted">Cálculos Realizados</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-neon">
+                <div class="card-body text-center">
+                    <i class="fas fa-bolt fa-3x mb-3 text-amarelo"></i>
+                    <h3 class="neon-text">{{ "%.2f"|format(potencia_total) }} kWp</h3>
+                    <p class="text-muted">Potência Total Calculada</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-neon">
+                <div class="card-body text-center">
+                    <i class="fas fa-piggy-bank fa-3x mb-3 text-verde"></i>
+                    <h3 class="neon-text">R$ {{ "%.2f"|format(economia_total) }}</h3>
+                    <p class="text-muted">Economia Anual Estimada</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimos Cálculos -->
+    <div class="card card-neon">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Últimos Cálculos</h5>
+        </div>
+        <div class="card-body p-0">
+            {% if calculos %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Cliente</th>
+                            <th>Consumo</th>
+                            <th>Potência</th>
+                            <th>Painéis</th>
+                            <th>Economia/Mês</th>
+                            <th>Payback</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for calculo in calculos %}
+                        <tr>
+                            <td>{{ calculo.data_calculo.strftime('%d/%m/%Y') }}</td>
+                            <td>{{ calculo.nome_cliente }}</td>
+                            <td>{{ "%.0f"|format(calculo.consumo_mensal) }} kWh</td>
+                            <td><strong class="text-ciano">{{ "%.2f"|format(calculo.potencia_sistema) }} kWp</strong></td>
+                            <td>{{ calculo.numero_paineis }} un</td>
+                            <td class="text-success">R$ {{ "%.2f"|format(calculo.economia_mensal) }}</td>
+                            <td>{{ "%.1f"|format(calculo.payback_anos) }} anos</td>
+                            <td>
+                                <a href="{{ url_for('energia_solar.visualizar', id=calculo.id) }}" 
+                                   class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-solar-panel fa-4x text-muted mb-3"></i>
+                <p class="text-muted">Nenhum cálculo realizado ainda</p>
+                <a href="{{ url_for('energia_solar.calculadora') }}" class="btn btn-neon-primary">
+                    <i class="fas fa-calculator me-2"></i>Fazer Primeiro Cálculo
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

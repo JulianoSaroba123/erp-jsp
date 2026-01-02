@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Cálculo Solar{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('energia_solar.dashboard') }}" class="breadcrumb-item">Energia Solar</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="breadcrumb-item active">Cálculo #{{ calculo.id }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="neon-title">
+            <i class="fas fa-solar-panel me-2"></i>
+            Cálculo de Sistema Solar
+        </h2>
+        <div>
+            <a href="{{ url_for('energia_solar.calculadora') }}" class="btn btn-outline-primary">
+                <i class="fas fa-calculator me-2"></i>Novo Cálculo
+            </a>
+            <a href="{{ url_for('energia_solar.listar') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-list me-2"></i>Ver Todos
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Informações do Cliente -->
+        <div class="col-lg-6">
+            <div class="card card-neon h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Informações do Cliente</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">Nome:</th>
+                            <td><strong>{{ calculo.nome_cliente }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Localização:</th>
+                            <td>{{ calculo.cidade or '-' }}, {{ calculo.estado or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Irradiação Solar:</th>
+                            <td>{{ "%.2f"|format(calculo.irradiacao_media) }} kWh/m²/dia</td>
+                        </tr>
+                        <tr>
+                            <th>Data do Cálculo:</th>
+                            <td>{{ calculo.data_calculo.strftime('%d/%m/%Y às %H:%M') }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dados de Consumo -->
+        <div class="col-lg-6">
+            <div class="card card-neon h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Consumo Atual</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="40%">Consumo Mensal:</th>
+                            <td><strong class="text-warning">{{ "%.0f"|format(calculo.consumo_mensal) }} kWh</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Tarifa de Energia:</th>
+                            <td>R$ {{ "%.3f"|format(calculo.tarifa_energia) }}/kWh</td>
+                        </tr>
+                        <tr>
+                            <th>Gasto Mensal Atual:</th>
+                            <td class="text-danger">R$ {{ "%.2f"|format(calculo.consumo_mensal * calculo.tarifa_energia) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Gasto Anual Atual:</th>
+                            <td class="text-danger">R$ {{ "%.2f"|format(calculo.consumo_mensal * calculo.tarifa_energia * 12) }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sistema Dimensionado -->
+        <div class="col-12">
+            <div class="card card-neon">
+                <div class="card-header bg-gradient-ciano">
+                    <h5 class="mb-0"><i class="fas fa-solar-panel me-2"></i>Sistema Fotovoltaico Dimensionado</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-4">
+                        <div class="col-md-3">
+                            <div class="p-3 border-neon rounded">
+                                <i class="fas fa-charging-station fa-3x text-ciano mb-2"></i>
+                                <h3 class="neon-text mb-1">{{ "%.2f"|format(calculo.potencia_sistema) }} kWp</h3>
+                                <small class="text-muted">Potência do Sistema</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 border-neon rounded">
+                                <i class="fas fa-th fa-3x text-amarelo mb-2"></i>
+                                <h3 class="neon-text mb-1">{{ calculo.numero_paineis }}</h3>
+                                <small class="text-muted">Painéis de {{ calculo.potencia_painel }}W</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 border-neon rounded">
+                                <i class="fas fa-microchip fa-3x text-roxo mb-2"></i>
+                                <h3 class="neon-text mb-1">{{ calculo.numero_inversores }}</h3>
+                                <small class="text-muted">Inversor(es) {{ calculo.tipo_inversor }}</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="p-3 border-neon rounded">
+                                <i class="fas fa-vector-square fa-3x text-verde mb-2"></i>
+                                <h3 class="neon-text mb-1">{{ "%.1f"|format(calculo.area_necessaria) }} m²</h3>
+                                <small class="text-muted">Área Necessária</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estimativas de Geração -->
+        <div class="col-lg-6">
+            <div class="card card-neon h-100">
+                <div class="card-header bg-gradient-verde">
+                    <h5 class="mb-0"><i class="fas fa-sun me-2"></i>Geração Estimada</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="50%">Geração Mensal:</th>
+                            <td><strong class="text-success">{{ "%.0f"|format(calculo.geracao_mensal) }} kWh</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Geração Anual:</th>
+                            <td><strong class="text-success">{{ "%.0f"|format(calculo.geracao_mensal * 12) }} kWh</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Geração em 25 anos:</th>
+                            <td><strong class="text-success">{{ "%.0f"|format(calculo.geracao_mensal * 12 * 25) }} kWh</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Economia e Retorno -->
+        <div class="col-lg-6">
+            <div class="card card-neon h-100">
+                <div class="card-header bg-gradient-amarelo">
+                    <h5 class="mb-0"><i class="fas fa-piggy-bank me-2"></i>Economia e Retorno</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless">
+                        <tr>
+                            <th width="50%">Economia Mensal:</th>
+                            <td><strong class="text-success">R$ {{ "%.2f"|format(calculo.economia_mensal) }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Economia Anual:</th>
+                            <td><strong class="text-success">R$ {{ "%.2f"|format(calculo.economia_anual) }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Economia em 25 anos:</th>
+                            <td><strong class="text-success">R$ {{ "%.2f"|format(calculo.economia_anual * 25) }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Investimento -->
+        <div class="col-12">
+            <div class="card card-neon">
+                <div class="card-header bg-gradient-roxo">
+                    <h5 class="mb-0"><i class="fas fa-wallet me-2"></i>Análise de Investimento</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-4">
+                        <div class="col-md-4">
+                            <div class="p-3 border-neon rounded">
+                                <i class="fas fa-dollar-sign fa-3x text-warning mb-2"></i>
+                                <h3 class="neon-text mb-1">R$ {{ "{:,.2f}".format(calculo.custo_total) }}</h3>
+                                <small class="text-muted">Investimento Total</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border-neon rounded">
+                                <i class="fas fa-clock fa-3x text-info mb-2"></i>
+                                <h3 class="neon-text mb-1">{{ "%.1f"|format(calculo.payback_anos) }} anos</h3>
+                                <small class="text-muted">Payback (Retorno)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border-neon rounded">
+                                <i class="fas fa-chart-line fa-3x text-success mb-2"></i>
+                                <h3 class="neon-text mb-1">{{ "%.0f"|format(calculo.roi_25anos) }}%</h3>
+                                <small class="text-muted">ROI em 25 anos</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detalhes da Instalação -->
+        <div class="col-12">
+            <div class="card card-neon">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-home me-2"></i>Detalhes da Instalação</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <p><strong>Tipo:</strong> {{ calculo.tipo_instalacao or '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Orientação:</strong> {{ calculo.orientacao or '-' }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <p><strong>Inclinação:</strong> {{ calculo.inclinacao or '-' }}°</p>
+                        </div>
+                        {% if calculo.observacoes %}
+                        <div class="col-12 mt-2">
+                            <p><strong>Observações:</strong></p>
+                            <p class="text-muted">{{ calculo.observacoes }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botões de Ação -->
+    <div class="d-flex justify-content-between mt-4">
+        <a href="{{ url_for('energia_solar.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Voltar
+        </a>
+        <div>
+            <button onclick="window.print()" class="btn btn-outline-info">
+                <i class="fas fa-print me-2"></i>Imprimir
+            </button>
+            <form method="POST" action="{{ url_for('energia_solar.excluir', id=calculo.id) }}" 
+                  class="d-inline" onsubmit="return confirm('Confirma exclusão deste cálculo?')">
+                <button type="submit" class="btn btn-outline-danger">
+                    <i class="fas fa-trash me-2"></i>Excluir
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

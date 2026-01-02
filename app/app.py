@@ -352,6 +352,10 @@ def register_blueprints(app):
     from app.prospeccao.prospeccao_routes import prospeccao_bp
     app.register_blueprint(prospeccao_bp, url_prefix='/prospeccao')
 
+    # Blueprint de energia solar
+    from app.energia_solar.energia_solar_routes import energia_solar_bp
+    app.register_blueprint(energia_solar_bp)
+
     # Blueprint de propostas
     from app.proposta.proposta_routes import proposta_bp
     app.register_blueprint(proposta_bp, url_prefix='/propostas')
