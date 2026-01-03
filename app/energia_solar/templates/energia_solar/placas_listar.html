@@ -1,0 +1,302 @@
+{% extends 'base.html' %}
+
+{% block title %}Catálogo de Placas Solares - ERP JSP{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('energia_solar.dashboard') }}">Energia Solar</a></li>
+<li class="breadcrumb-item active">Catálogo de Placas</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header com Botão Adicionar -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="neon-text"><i class="fas fa-solar-panel me-2"></i>Catálogo de Placas Solares</h2>
+            <p class="text-muted mb-0">Gerencie os modelos de placas fotovoltaicas disponíveis</p>
+        </div>
+        <button type="button" class="btn btn-neon-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNovaPlaca">
+            <i class="fas fa-plus me-2"></i>Nova Placa Solar
+        </button>
+    </div>
+
+    <!-- Cards de Placas -->
+    <div class="row g-4">
+        {% if placas %}
+        {% for placa in placas %}
+        <div class="col-lg-4 col-md-6">
+            <div class="card card-neon h-100">
+                <div class="card-header d-flex justify-content-between align-items-center" 
+                     style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(6, 182, 212, 0.05) 100%);">
+                    <h5 class="mb-0 text-ciano">{{ placa.modelo }}</h5>
+                    <span class="badge bg-success">Ativo</span>
+                </div>
+                <div class="card-body">
+                    <!-- Fabricante e Potência -->
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2"><i class="fas fa-industry me-2"></i>{{ placa.fabricante }}</h6>
+                        <h3 class="mb-0" style="color: #fbbf24;">{{ placa.potencia }} W</h3>
+                    </div>
+
+                    <!-- Especificações Técnicas -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="p-2 rounded" style="background: rgba(255, 255, 255, 0.05);">
+                                <small class="text-muted d-block">Eficiência</small>
+                                <strong class="text-ciano">{{ "%.1f"|format(placa.eficiencia) }}%</strong>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 rounded" style="background: rgba(255, 255, 255, 0.05);">
+                                <small class="text-muted d-block">Células</small>
+                                <strong class="text-amarelo">{{ placa.num_celulas }}</strong>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="p-2 rounded" style="background: rgba(255, 255, 255, 0.05);">
+                                <small class="text-muted d-block">Dimensões</small>
+                                <strong>{{ placa.dimensoes }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Garantias -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted"><i class="fas fa-shield-alt me-1"></i>Garantia Produto</small>
+                            <span class="badge bg-info">{{ placa.garantia_produto }} anos</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted"><i class="fas fa-bolt me-1"></i>Garantia Eficiência</small>
+                            <span class="badge bg-success">{{ placa.garantia_eficiencia }} anos</span>
+                        </div>
+                    </div>
+
+                    <!-- Preços -->
+                    <div class="border-top pt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted">Preço Venda:</span>
+                            <strong class="text-verde">R$ {{ "%.2f"|format(placa.preco_venda) if placa.preco_venda else '0.00' }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted">Preço por Watt:</span>
+                            <strong class="text-ciano">R$ {{ "%.2f"|format(placa.preco_venda / placa.potencia) if placa.preco_venda and placa.potencia else '0.00' }}/W</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top">
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="editarPlaca({{ placa.id }})">
+                            <i class="fas fa-edit me-1"></i>Editar
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="excluirPlaca({{ placa.id }})">
+                            <i class="fas fa-trash me-1"></i>Excluir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="col-12">
+            <div class="card card-neon">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-solar-panel fa-5x text-muted mb-4"></i>
+                    <h4 class="text-muted">Nenhuma placa solar cadastrada</h4>
+                    <p class="text-muted mb-4">Adicione os modelos de placas disponíveis no seu catálogo</p>
+                    <button type="button" class="btn btn-neon-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNovaPlaca">
+                        <i class="fas fa-plus me-2"></i>Adicionar Primeira Placa
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Nova Placa Solar -->
+<div class="modal fade" id="modalNovaPlaca" tabindex="-1" aria-labelledby="modalNovaPlacaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="background: #1a1a2e; border: 1px solid rgba(6, 182, 212, 0.3);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(6, 182, 212, 0.3);">
+                <h5 class="modal-title neon-text" id="modalNovaPlacaLabel">
+                    <i class="fas fa-solar-panel me-2"></i>Nova Placa Solar
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('energia_solar.placa_criar') }}" id="formNovaPlaca">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <!-- Seção 1: Informações Básicas -->
+                        <div class="col-12">
+                            <h6 class="text-ciano mb-3"><i class="fas fa-info-circle me-2"></i>Informações Básicas</h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Fabricante *</label>
+                            <input type="text" class="form-control" name="fabricante" placeholder="Ex: BYD, Trina, Canadian" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Modelo *</label>
+                            <input type="text" class="form-control" name="modelo" placeholder="Ex: 335P6K-36-SERIE-5BB" required>
+                        </div>
+
+                        <!-- Seção 2: Especificações Técnicas -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-amarelo mb-3"><i class="fas fa-cogs me-2"></i>Especificações Técnicas</h6>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Potência (Wp) *</label>
+                            <input type="number" class="form-control" name="potencia" id="inputPotencia" 
+                                   placeholder="335" min="1" required 
+                                   onchange="calcularPrecoWatt()">
+                            <small class="text-muted">Watt-pico</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Eficiência (%) *</label>
+                            <input type="number" step="0.1" class="form-control" name="eficiencia" 
+                                   placeholder="20.5" min="1" max="30" required>
+                            <small class="text-muted">Eficiência de conversão</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Nº de Células *</label>
+                            <input type="number" class="form-control" name="num_celulas" 
+                                   placeholder="72" min="1" required>
+                            <small class="text-muted">Total de células</small>
+                        </div>
+
+                        <!-- Dimensões -->
+                        <div class="col-md-4">
+                            <label class="form-label">Comprimento (mm)</label>
+                            <input type="number" class="form-control" name="comprimento" 
+                                   id="inputComprimento" placeholder="1962" min="1"
+                                   onchange="montarDimensoes()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Largura (mm)</label>
+                            <input type="number" class="form-control" name="largura" 
+                                   id="inputLargura" placeholder="993" min="1"
+                                   onchange="montarDimensoes()">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Altura (mm)</label>
+                            <input type="number" class="form-control" name="altura" 
+                                   id="inputAltura" placeholder="35" min="1"
+                                   onchange="montarDimensoes()">
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <label class="form-label">Dimensões Completas</label>
+                            <input type="text" class="form-control bg-dark" name="dimensoes" 
+                                   id="inputDimensoes" placeholder="1962x993x35" readonly>
+                            <small class="text-muted">Gerado automaticamente: Comprimento x Largura x Altura</small>
+                        </div>
+
+                        <!-- Seção 3: Garantias -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-verde mb-3"><i class="fas fa-shield-alt me-2"></i>Garantias</h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Garantia Produto (anos) *</label>
+                            <input type="number" class="form-control" name="garantia_produto" 
+                                   value="12" min="1" max="30" required>
+                            <small class="text-muted">Garantia contra defeitos</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Garantia Eficiência (anos) *</label>
+                            <input type="number" class="form-control" name="garantia_eficiencia" 
+                                   value="25" min="1" max="30" required>
+                            <small class="text-muted">Garantia de performance</small>
+                        </div>
+
+                        <!-- Seção 4: Precificação -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-roxo mb-3"><i class="fas fa-dollar-sign me-2"></i>Precificação</h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Preço Venda (R$) *</label>
+                            <input type="number" step="0.01" class="form-control" name="preco_unitario" 
+                                   id="inputPrecoUnitario" placeholder="1507.50" min="0.01" required
+                                   onchange="calcularPrecoWatt()">
+                            <small class="text-muted">Preço de venda por placa</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Preço por Watt (R$/W)</label>
+                            <input type="number" step="0.01" class="form-control bg-dark" name="preco_por_watt" 
+                                   id="inputPrecoWatt" placeholder="4.50" readonly>
+                            <small class="text-success"><i class="fas fa-calculator me-1"></i>Calculado automaticamente</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid rgba(6, 182, 212, 0.3);">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-neon-primary">
+                        <i class="fas fa-save me-2"></i>Salvar Placa
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Função para calcular preço por watt automaticamente
+function calcularPrecoWatt() {
+    const potencia = parseFloat(document.getElementById('inputPotencia').value);
+    const precoUnitario = parseFloat(document.getElementById('inputPrecoUnitario').value);
+    
+    if (potencia > 0 && precoUnitario > 0) {
+        const precoWatt = precoUnitario / potencia;
+        document.getElementById('inputPrecoWatt').value = precoWatt.toFixed(2);
+    } else {
+        document.getElementById('inputPrecoWatt').value = '';
+    }
+}
+
+// Função para montar dimensões automaticamente
+function montarDimensoes() {
+    const comprimento = document.getElementById('inputComprimento').value;
+    const largura = document.getElementById('inputLargura').value;
+    const altura = document.getElementById('inputAltura').value;
+    
+    if (comprimento && largura && altura) {
+        document.getElementById('inputDimensoes').value = `${comprimento}x${largura}x${altura}`;
+    } else {
+        document.getElementById('inputDimensoes').value = '';
+    }
+}
+
+// Função para editar placa
+function editarPlaca(id) {
+    // TODO: Implementar edição
+    alert('Funcionalidade de edição em desenvolvimento');
+}
+
+// Função para excluir placa
+function excluirPlaca(id) {
+    if (confirm('Tem certeza que deseja excluir esta placa do catálogo?')) {
+        window.location.href = "{{ url_for('energia_solar.placa_excluir', placa_id=0) }}".replace('0', id);
+    }
+}
+
+// Validação do formulário
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formNovaPlaca');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const precoWatt = document.getElementById('inputPrecoWatt').value;
+            if (!precoWatt || parseFloat(precoWatt) <= 0) {
+                e.preventDefault();
+                alert('Por favor, preencha Potência e Preço Unitário para calcular o Preço por Watt.');
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

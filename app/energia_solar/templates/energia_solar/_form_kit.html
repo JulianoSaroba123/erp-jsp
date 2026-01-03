@@ -1,0 +1,92 @@
+<div class="row g-3">
+    <!-- Seção 1: Identificação -->
+    <div class="col-12">
+        <div class="bg-gradient-roxo p-2 rounded mb-3">
+            <h6 class="mb-0"><i class="fas fa-tag me-2"></i>Identificação do Kit</h6>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <label class="form-label">Fabricante *</label>
+        <input type="text" class="form-control" name="fabricante" placeholder="Ex: NEOSOLAR" required>
+        <small class="text-muted">Fabricante ou marca do kit</small>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Potência (kWp) *</label>
+        <input type="number" step="0.01" class="form-control" name="potencia_kwp" placeholder="0.46" required>
+        <small class="text-muted">Potência total do kit</small>
+    </div>
+    <div class="col-12">
+        <label class="form-label">Descrição do Kit *</label>
+        <input type="text" class="form-control" name="descricao" placeholder="KIT GERADOR ENERGIA SOLAR..." required>
+        <small class="text-muted">Descrição completa</small>
+    </div>
+
+    <!-- Seção 2: Placas -->
+    <div class="col-12 mt-4">
+        <div class="bg-gradient-verde p-2 rounded mb-3">
+            <h6 class="mb-0"><i class="fas fa-solar-panel me-2"></i>Placas Solares</h6>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <label class="form-label">Selecione a Placa *</label>
+        <select class="form-select" name="placa_id" required>
+            <option value="">Escolha...</option>
+            {% for placa in placas %}
+            <option value="{{ placa.id }}">{{ placa.fabricante }} / {{ placa.modelo }} / {{ placa.potencia }} Wp</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Quantidade *</label>
+        <input type="number" class="form-control" name="qtd_placas" value="1" min="1" required>
+    </div>
+
+    <!-- Seção 3: Inversores -->
+    <div class="col-12 mt-4">
+        <div class="bg-gradient-amarelo p-2 rounded mb-3">
+            <h6 class="mb-0 text-dark"><i class="fas fa-microchip me-2"></i>Inversores</h6>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <label class="form-label">Selecione o Inversor *</label>
+        <select class="form-select" name="inversor_id" required>
+            <option value="">Escolha...</option>
+            {% for inversor in inversores %}
+            <option value="{{ inversor.id }}">{{ inversor.fabricante }} / {{ inversor.modelo }} / {{ inversor.potencia_nominal }} kW</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Quantidade *</label>
+        <input type="number" class="form-control" name="qtd_inversores" value="1" min="1" required>
+    </div>
+
+    <!-- Seção 4: Outros Componentes -->
+    <div class="col-12 mt-4">
+        <div class="bg-gradient-ciano p-2 rounded mb-3">
+            <h6 class="mb-0"><i class="fas fa-tools me-2"></i>Outros Componentes</h6>
+        </div>
+    </div>
+    
+    <div class="col-12">
+        <label class="form-label">Outras Informações</label>
+        <textarea class="form-control" name="outras_informacoes" rows="4" placeholder="CONECTOR CA&#10;STRING BOX&#10;CABOS..."></textarea>
+        <small class="text-muted">Liste outros componentes (cabos, conectores, etc.)</small>
+    </div>
+
+    <!-- Seção 5: Precificação -->
+    <div class="col-12 mt-4">
+        <div class="bg-gradient-warning p-2 rounded mb-3">
+            <h6 class="mb-0 text-dark"><i class="fas fa-dollar-sign me-2"></i>Precificação</h6>
+        </div>
+    </div>
+    
+    <div class="col-12">
+        <label class="form-label">Preço do Kit (R$) *</label>
+        <input type="number" step="0.01" class="form-control" name="preco" placeholder="0.00" required>
+        <small class="text-muted">Preço total do kit completo</small>
+    </div>
+</div>

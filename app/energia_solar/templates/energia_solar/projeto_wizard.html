@@ -1,0 +1,2684 @@
+{% extends 'base.html' %}
+
+{% block title %}Novo Projeto Solar - Wizard{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('energia_solar.dashboard') }}">Energia Solar</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('energia_solar.projetos_listar') }}">Projetos</a></li>
+<li class="breadcrumb-item active">Novo Projeto</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-solar-panel me-2"></i>Novo Projeto de Energia Solar</h2>
+            <p class="text-muted">Preencha os dados abaixo para criar um projeto completo de energia solar</p>
+            
+            <!-- Botões de teste removidos temporariamente -->
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-3 position-relative">
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-success" id="wizardProgress" role="progressbar" 
+                             style="width: 16.66%;" aria-valuenow="16.66" aria-valuemin="0" aria-valuemax="100">
+                            Aba 1 de 6
+                        </div>
+                    </div>
+                    <!-- Indicador de Auto-Save -->
+                    <div id="indicadorAutoSave" class="position-absolute top-50 end-0 translate-middle-y me-3 d-none">
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle me-1"></i>Salvo automaticamente
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form with Tabs -->
+    <form id="projetoForm" method="POST" action="{{ url_for('energia_solar.projeto_salvar') }}">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <ul class="nav nav-tabs card-header-tabs" id="wizardTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab1-tab" data-bs-toggle="tab" data-bs-target="#tab1" 
+                                type="button" role="tab" aria-controls="tab1" aria-selected="true">
+                            <i class="fas fa-user-tie me-1"></i> 1. Cliente
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab2-tab" data-bs-toggle="tab" data-bs-target="#tab2" 
+                                type="button" role="tab" aria-controls="tab2" aria-selected="false" {% if modo != 'editar' %}disabled{% endif %}>
+                            <i class="fas fa-bolt me-1"></i> 2. Consumo
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab3-tab" data-bs-toggle="tab" data-bs-target="#tab3" 
+                                type="button" role="tab" aria-controls="tab3" aria-selected="false" {% if modo != 'editar' %}disabled{% endif %}>
+                            <i class="fas fa-cogs me-1"></i> 3. Equipamentos
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab4-tab" data-bs-toggle="tab" data-bs-target="#tab4" 
+                                type="button" role="tab" aria-controls="tab4" aria-selected="false" {% if modo != 'editar' %}disabled{% endif %}>
+                            <i class="fas fa-th me-1"></i> 4. Layout
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab5-tab" data-bs-toggle="tab" data-bs-target="#tab5" 
+                                type="button" role="tab" aria-controls="tab5" aria-selected="false" {% if modo != 'editar' %}disabled{% endif %}>
+                            <i class="fas fa-plug me-1"></i> 5. Componentes
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="tab6-tab" data-bs-toggle="tab" data-bs-target="#tab6" 
+                                type="button" role="tab" aria-controls="tab6" aria-selected="false" {% if modo != 'editar' %}disabled{% endif %}>
+                            <i class="fas fa-dollar-sign me-1"></i> 6. Financeiro
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="card-body">
+                <div class="tab-content" id="wizardTabContent">
+                    
+                    <!-- ===== ABA 1: CLIENTE E LOCALIZAÇÃO ===== -->
+                    <div class="tab-pane fade show active" id="tab1" role="tabpanel" aria-labelledby="tab1-tab">
+                        <h4 class="mb-4"><i class="fas fa-map-marker-alt text-primary me-2"></i>Cliente e Localização</h4>
+                        
+                        <div class="row g-3">
+                            <!-- Cliente -->
+                            <div class="col-md-6">
+                                <label for="cliente_id" class="form-label">Cliente Existente</label>
+                                <select class="form-select" id="cliente_id" name="cliente_id">
+                                    <option value="">Selecione um cliente (opcional)</option>
+                                    {% for cliente in clientes %}
+                                    <option value="{{ cliente.id }}" 
+                                            data-nome="{{ cliente.nome }}"
+                                            data-cpf="{{ cliente.cpf_cnpj }}"
+                                            data-telefone="{{ cliente.telefone or '' }}"
+                                            data-email="{{ cliente.email or '' }}"
+                                            data-cep="{{ cliente.cep or '' }}"
+                                            data-endereco="{{ cliente.endereco or '' }}"
+                                            data-cidade="{{ cliente.cidade or '' }}"
+                                            data-estado="{{ cliente.estado or '' }}">
+                                        {{ cliente.nome }} - {{ cliente.cpf_cnpj }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="form-text text-muted">Ou preencha manualmente abaixo</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="nome_cliente" class="form-label">Nome do Cliente *</label>
+                                <input type="text" class="form-control" id="nome_cliente" name="nome_cliente" 
+                                       value="{{ projeto.nome_cliente if projeto else '' }}" required>
+                            </div>
+
+                            <!-- CEP com Auto-Complete -->
+                            <div class="col-md-4">
+                                <label for="cep" class="form-label">CEP *</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="cep" name="cep" 
+                                           placeholder="00000-000" maxlength="9" 
+                                           value="{{ projeto.cep if projeto else '' }}" required>
+                                    <button class="btn btn-outline-secondary" type="button" id="btnBuscarCEP">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-8">
+                                <label for="endereco" class="form-label">Endereço *</label>
+                                <input type="text" class="form-control" id="endereco" name="endereco" 
+                                       value="{{ projeto.endereco if projeto else '' }}" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="cidade" class="form-label">Cidade *</label>
+                                <input type="text" class="form-control" id="cidade" name="cidade" 
+                                       value="{{ projeto.cidade if projeto else '' }}" required>
+                            </div>
+
+                            <div class="col-md-2">
+                                <label for="estado" class="form-label">UF *</label>
+                                <select class="form-select" id="estado" name="estado">
+                                    <option value="">Selecione</option>
+                                    <option value="AC" {% if projeto and projeto.estado == 'AC' %}selected{% endif %}>AC</option>
+                                    <option value="AL" {% if projeto and projeto.estado == 'AL' %}selected{% endif %}>AL</option>
+                                    <option value="AP" {% if projeto and projeto.estado == 'AP' %}selected{% endif %}>AP</option>
+                                    <option value="AM" {% if projeto and projeto.estado == 'AM' %}selected{% endif %}>AM</option>
+                                    <option value="BA" {% if projeto and projeto.estado == 'BA' %}selected{% endif %}>BA</option>
+                                    <option value="CE" {% if projeto and projeto.estado == 'CE' %}selected{% endif %}>CE</option>
+                                    <option value="DF" {% if projeto and projeto.estado == 'DF' %}selected{% endif %}>DF</option>
+                                    <option value="ES" {% if projeto and projeto.estado == 'ES' %}selected{% endif %}>ES</option>
+                                    <option value="GO" {% if projeto and projeto.estado == 'GO' %}selected{% endif %}>GO</option>
+                                    <option value="MA" {% if projeto and projeto.estado == 'MA' %}selected{% endif %}>MA</option>
+                                    <option value="MT" {% if projeto and projeto.estado == 'MT' %}selected{% endif %}>MT</option>
+                                    <option value="MS" {% if projeto and projeto.estado == 'MS' %}selected{% endif %}>MS</option>
+                                    <option value="MG" {% if projeto and projeto.estado == 'MG' %}selected{% endif %}>MG</option>
+                                    <option value="PA" {% if projeto and projeto.estado == 'PA' %}selected{% endif %}>PA</option>
+                                    <option value="PB" {% if projeto and projeto.estado == 'PB' %}selected{% endif %}>PB</option>
+                                    <option value="PR" {% if projeto and projeto.estado == 'PR' %}selected{% endif %}>PR</option>
+                                    <option value="PE" {% if projeto and projeto.estado == 'PE' %}selected{% endif %}>PE</option>
+                                    <option value="PI" {% if projeto and projeto.estado == 'PI' %}selected{% endif %}>PI</option>
+                                    <option value="RJ" {% if projeto and projeto.estado == 'RJ' %}selected{% endif %}>RJ</option>
+                                    <option value="RN" {% if projeto and projeto.estado == 'RN' %}selected{% endif %}>RN</option>
+                                    <option value="RS" {% if projeto and projeto.estado == 'RS' %}selected{% endif %}>RS</option>
+                                    <option value="RO" {% if projeto and projeto.estado == 'RO' %}selected{% endif %}>RO</option>
+                                    <option value="RR" {% if projeto and projeto.estado == 'RR' %}selected{% endif %}>RR</option>
+                                    <option value="SC" {% if projeto and projeto.estado == 'SC' %}selected{% endif %}>SC</option>
+                                    <option value="SP" {% if projeto and projeto.estado == 'SP' %}selected{% endif %}>SP</option>
+                                    <option value="SE" {% if projeto and projeto.estado == 'SE' %}selected{% endif %}>SE</option>
+                                    <option value="TO" {% if projeto and projeto.estado == 'TO' %}selected{% endif %}>TO</option>
+                                </select>
+                            </div>
+
+                            <!-- Irradiação Solar (API CRESESB) -->
+                            <div class="col-md-4">
+                                <label for="latitude" class="form-label">Latitude</label>
+                                <input type="number" step="0.000001" class="form-control" id="latitude" name="latitude" 
+                                       value="{{ projeto.latitude if projeto and projeto.latitude else '' }}" readonly>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="longitude" class="form-label">Longitude</label>
+                                <input type="number" step="0.000001" class="form-control" id="longitude" name="longitude" 
+                                       value="{{ projeto.longitude if projeto and projeto.longitude else '' }}" readonly>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="irradiacao_solar" class="form-label">Irradiação Solar (kWh/m²/dia)</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.01" class="form-control" id="irradiacao_solar" 
+                                           name="irradiacao_solar" placeholder="5.0" value="5.0">
+                                    <button class="btn btn-primary" type="button" id="btnBuscarIrradiacao">
+                                        <i class="fas fa-sun me-1"></i> Buscar API
+                                    </button>
+                                </div>
+                                <small class="text-muted">Média anual da região (auto-preenchida por API)</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== ABA 2: CONSUMO E DIMENSIONAMENTO ===== -->
+                    <div class="tab-pane fade" id="tab2" role="tabpanel" aria-labelledby="tab2-tab">
+                        <h4 class="mb-4"><i class="fas fa-calculator text-warning me-2"></i>Consumo e Dimensionamento</h4>
+                        
+                        <div class="row g-3">
+                            <!-- Método de Cálculo -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Método de Cálculo *</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="metodo_calculo" id="metodo_kwh" 
+                                           value="kwh_direto" checked>
+                                    <label class="btn btn-outline-primary" for="metodo_kwh">
+                                        <i class="fas fa-bolt"></i> kWh Direto
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="metodo_calculo" id="metodo_historico" 
+                                           value="historico_12m">
+                                    <label class="btn btn-outline-primary" for="metodo_historico">
+                                        <i class="fas fa-calendar-alt"></i> Histórico 12 Meses
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="metodo_calculo" id="metodo_valor" 
+                                           value="valor_conta">
+                                    <label class="btn btn-outline-primary" for="metodo_valor">
+                                        <i class="fas fa-dollar-sign"></i> Valor da Conta (R$)
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Painel kWh Direto -->
+                            <div class="col-12" id="painel_kwh_direto">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="consumo_kwh_mes" class="form-label">Consumo Mensal (kWh) *</label>
+                                                <input type="number" step="0.01" class="form-control" 
+                                                       id="consumo_kwh_mes" name="consumo_kwh_mes" 
+                                                       placeholder="Ex: 450" required>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="tarifa_kwh" class="form-label">Tarifa (R$/kWh)</label>
+                                                <input type="number" step="0.01" class="form-control" 
+                                                       id="tarifa_kwh" name="tarifa_kwh" 
+                                                       value="0.85" placeholder="0.85">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Painel Histórico 12 Meses (oculto inicialmente) -->
+                            <div class="col-12 d-none" id="painel_historico">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <label class="form-label fw-bold mb-3">Consumo por Mês (kWh)</label>
+                                        <div class="row g-2">
+                                            {% for mes_nome, mes_key in [('Janeiro', 'jan'), ('Fevereiro', 'fev'), ('Março', 'mar'), 
+                                                                        ('Abril', 'abr'), ('Maio', 'mai'), ('Junho', 'jun'),
+                                                                        ('Julho', 'jul'), ('Agosto', 'ago'), ('Setembro', 'set'),
+                                                                        ('Outubro', 'out'), ('Novembro', 'nov'), ('Dezembro', 'dez')] %}
+                                            <div class="col-md-2">
+                                                <label class="form-label small">{{ mes_nome }}</label>
+                                                <input type="number" class="form-control form-control-sm mes-input" 
+                                                       name="mes_{{ mes_key }}" placeholder="0">
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        <div class="mt-3">
+                                            <strong>Média Mensal: </strong>
+                                            <span id="media_historico" class="text-primary">0 kWh</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Painel Valor da Conta (oculto inicialmente) -->
+                            <div class="col-12 d-none" id="painel_valor_conta">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="valor_conta_luz" class="form-label">Valor da Conta (R$) *</label>
+                                                <input type="number" step="0.01" class="form-control" 
+                                                       id="valor_conta_luz" name="valor_conta_luz" 
+                                                       placeholder="Ex: 382.50">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="tarifa_kwh_valor" class="form-label">Tarifa (R$/kWh)</label>
+                                                <input type="number" step="0.01" class="form-control" 
+                                                       id="tarifa_kwh_valor" name="tarifa_kwh" 
+                                                       value="0.85" placeholder="0.85">
+                                            </div>
+                                        </div>
+                                        <div class="mt-3">
+                                            <strong>Consumo Calculado: </strong>
+                                            <span id="consumo_calculado_valor" class="text-primary">0 kWh/mês</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dimensionamento Automático -->
+                            <div class="col-12 mt-4">
+                                <div class="card border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <h5 class="mb-0"><i class="fas fa-solar-panel me-2"></i>Dimensionamento Automático</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <label for="simultaneidade" class="form-label">Simultaneidade (%)</label>
+                                                <input type="range" class="form-range" id="simultaneidade" name="simultaneidade" 
+                                                       min="0" max="100" value="80" step="5">
+                                                <div class="text-center"><span id="valor_simultaneidade">80</span>%</div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label for="perdas_sistema" class="form-label">Perdas do Sistema (%)</label>
+                                                <input type="range" class="form-range" id="perdas_sistema" name="perdas_sistema" 
+                                                       min="0" max="50" value="20" step="5">
+                                                <div class="text-center"><span id="valor_perdas">20</span>%</div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <button type="button" class="btn btn-success w-100 mt-4" id="btnCalcularPotencia">
+                                                    <i class="fas fa-calculator me-2"></i>Calcular Potência
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mt-4">
+                                            <div class="col-md-6">
+                                                <label for="potencia_kwp" class="form-label fw-bold">Potência Necessária (kWp)</label>
+                                                <input type="number" step="0.01" class="form-control form-control-lg" 
+                                                       id="potencia_kwp" name="potencia_kwp" readonly>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="geracao_estimada_mes" class="form-label fw-bold">Geração Estimada (kWh/mês)</label>
+                                                <input type="number" step="0.01" class="form-control form-control-lg" 
+                                                       id="geracao_estimada_mes" name="geracao_estimada_mes" readonly>
+                                            </div>
+                                        </div>
+
+                                        <!-- Previsão de Quantidade de Placas -->
+                                        <div class="row mt-4 d-none" id="previsaoPlacas">
+                                            <div class="col-12">
+                                                <div class="alert alert-info">
+                                                    <h6 class="alert-heading"><i class="fas fa-solar-panel me-2"></i>Previsão de Quantidade de Placas</h6>
+                                                    <div class="row g-2 mt-2">
+                                                        <div class="col-md-4">
+                                                            <div class="card border-primary">
+                                                                <div class="card-body text-center p-2">
+                                                                    <small class="text-muted d-block">Placa 585W</small>
+                                                                    <h4 class="mb-0 text-primary" id="qtd_585w">-</h4>
+                                                                    <small class="text-muted">unidades</small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <div class="card border-success">
+                                                                <div class="card-body text-center p-2">
+                                                                    <small class="text-muted d-block">Placa 610W</small>
+                                                                    <h4 class="mb-0 text-success" id="qtd_610w">-</h4>
+                                                                    <small class="text-muted">unidades</small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <div class="card border-warning">
+                                                                <div class="card-body text-center p-2">
+                                                                    <small class="text-muted d-block">Placa 700W</small>
+                                                                    <h4 class="mb-0 text-warning" id="qtd_700w">-</h4>
+                                                                    <small class="text-muted">unidades</small>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== ABA 3: EQUIPAMENTOS ===== -->
+                    <div class="tab-pane fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
+                        <h4 class="mb-4"><i class="fas fa-cogs text-info me-2"></i>Seleção de Equipamentos</h4>
+                        
+                        <div class="row g-3">
+                            <!-- Modo de Seleção -->
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Modo de Seleção *</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="modo_equipamento" id="modo_kit" 
+                                           value="kit" checked>
+                                    <label class="btn btn-outline-info" for="modo_kit">
+                                        <i class="fas fa-box"></i> Kit Pronto
+                                    </label>
+
+                                    <input type="radio" class="btn-check" name="modo_equipamento" id="modo_individual" 
+                                           value="individual">
+                                    <label class="btn btn-outline-info" for="modo_individual">
+                                        <i class="fas fa-list"></i> Componentes Individuais
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Painel Kit Pronto -->
+                            <div class="col-12" id="painel_kit">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <label for="kit_id" class="form-label">Selecione o Kit *</label>
+                                        <select class="form-select form-select-lg" id="kit_id" name="kit_id">
+                                            <option value="">Escolha um kit completo...</option>
+                                            {% for kit in kits %}
+                                            <option value="{{ kit.id }}" 
+                                                    data-potencia="{{ kit.potencia_kwp }}"
+                                                    data-preco="{{ kit.preco }}">
+                                                {{ kit.fabricante }} - {{ kit.potencia_kwp }}kWp - R$ {{ "%.2f"|format(kit.preco) }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                        
+                                        <!-- Botão para adicionar kit aos custos -->
+                                        <button type="button" class="btn btn-success mt-3 w-100" id="btnAdicionarKitCustos">
+                                            <i class="fas fa-plus-circle me-2"></i>Adicionar Kit aos Custos (Aba 6)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Painel Componentes Individuais (oculto inicialmente) -->
+                            <div class="col-12 d-none" id="painel_individual">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="placa_id" class="form-label">Placa Solar *</label>
+                                                <select class="form-select" id="placa_id" name="placa_id">
+                                                    <option value="">Selecione a placa...</option>
+                                                    {% for placa in placas %}
+                                                    <option value="{{ placa.id }}" 
+                                                            data-potencia="{{ placa.potencia }}"
+                                                            data-preco="{{ placa.preco_venda }}">
+                                                        {{ placa.fabricante }} {{ placa.modelo }} - {{ placa.potencia }}W - R$ {{ "%.2f"|format(placa.preco_venda) }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label for="qtd_placas" class="form-label">Quantidade de Placas *</label>
+                                                <input type="number" class="form-control" id="qtd_placas" 
+                                                       name="qtd_placas" min="1" value="10">
+                                                <small class="text-muted">Calculado automaticamente baseado na potência</small>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label for="inversor_id" class="form-label">Inversor Solar *</label>
+                                                <select class="form-select" id="inversor_id" name="inversor_id">
+                                                    <option value="">Selecione o inversor...</option>
+                                                    {% for inversor in inversores %}
+                                                    <option value="{{ inversor.id }}" 
+                                                            data-potencia="{{ inversor.potencia_nominal }}"
+                                                            data-preco="{{ inversor.preco_venda }}">
+                                                        {{ inversor.fabricante }} {{ inversor.modelo }} - {{ inversor.potencia_nominal }}kW - R$ {{ "%.2f"|format(inversor.preco_venda) }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label for="qtd_inversores" class="form-label">Quantidade de Inversores *</label>
+                                                <input type="number" class="form-control" id="qtd_inversores" 
+                                                       name="qtd_inversores" min="1" value="1">
+                                            </div>
+                                        </div>
+
+                                        <!-- Validação de Compatibilidade -->
+                                        <div class="alert alert-info mt-3 d-none" id="alertCompatibilidade">
+                                            <i class="fas fa-info-circle me-2"></i>
+                                            <span id="msgCompatibilidade"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== ABA 4: LAYOUT DA INSTALAÇÃO ===== -->
+                    <div class="tab-pane fade" id="tab4" role="tabpanel" aria-labelledby="tab4-tab">
+                        <h4 class="mb-4"><i class="fas fa-th text-secondary me-2"></i>Layout da Instalação</h4>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="orientacao" class="form-label">Orientação *</label>
+                                <select class="form-select" id="orientacao" name="orientacao" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="Norte" selected>Norte (ideal)</option>
+                                    <option value="Nordeste">Nordeste</option>
+                                    <option value="Noroeste">Noroeste</option>
+                                    <option value="Sul">Sul</option>
+                                    <option value="Leste">Leste</option>
+                                    <option value="Oeste">Oeste</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="inclinacao" class="form-label">Inclinação (graus)</label>
+                                <input type="range" class="form-range" id="inclinacao" name="inclinacao" 
+                                       min="0" max="45" value="15" step="1">
+                                <div class="text-center"><span id="valor_inclinacao">15</span>°</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="direcao" class="form-label">Direção (Azimute)</label>
+                                <select class="form-select" id="direcao" name="direcao">
+                                    <option value="">Selecione...</option>
+                                    <option value="0° (Norte)" selected>0° (Norte)</option>
+                                    <option value="45° (Nordeste)">45° (Nordeste)</option>
+                                    <option value="90° (Leste)">90° (Leste)</option>
+                                    <option value="135° (Sudeste)">135° (Sudeste)</option>
+                                    <option value="180° (Sul)">180° (Sul)</option>
+                                    <option value="225° (Sudoeste)">225° (Sudoeste)</option>
+                                    <option value="270° (Oeste)">270° (Oeste)</option>
+                                    <option value="315° (Noroeste)">315° (Noroeste)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="linhas_placas" class="form-label">Linhas de Placas</label>
+                                <input type="number" class="form-control" id="linhas_placas" 
+                                       name="linhas_placas" min="1" value="2">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="colunas_placas" class="form-label">Colunas de Placas</label>
+                                <input type="number" class="form-control" id="colunas_placas" 
+                                       name="colunas_placas" min="1" value="5">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="area_necessaria" class="form-label">Área Necessária (m²)</label>
+                                <input type="number" step="0.01" class="form-control" id="area_necessaria" 
+                                       name="area_necessaria" readonly>
+                            </div>
+
+                            <!-- Visualização do Layout -->
+                            <div class="col-12 mt-4">
+                                <div class="card border-secondary">
+                                    <div class="card-header bg-secondary text-white">
+                                        <h5 class="mb-0"><i class="fas fa-eye me-2"></i>Visualização do Layout</h5>
+                                    </div>
+                                    <div class="card-body bg-light text-center p-5">
+                                        <div id="layoutVisualizacao" class="d-inline-block" style="background: #e9ecef; border: 2px dashed #6c757d; min-width: 300px; min-height: 200px; padding: 20px;">
+                                            <p class="text-muted mb-0">Layout será renderizado aqui</p>
+                                            <p class="text-muted small">Baseado nas linhas e colunas configuradas</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== ABA 5: COMPONENTES ADICIONAIS ===== -->
+                    <div class="tab-pane fade" id="tab5" role="tabpanel" aria-labelledby="tab5-tab">
+                        <h4 class="mb-4"><i class="fas fa-plug text-danger me-2"></i>Componentes Adicionais</h4>
+                        
+                        <div class="row g-3">
+                            <!-- Proteções -->
+                            <div class="col-12">
+                                <h5 class="border-bottom pb-2">Proteções</h5>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="string_box" name="string_box">
+                                    <label class="form-check-label" for="string_box">
+                                        String Box (Caixa de Proteção DC)
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="disjuntor_cc" class="form-label">Disjuntor CC</label>
+                                <input type="text" class="form-control" id="disjuntor_cc" 
+                                       name="disjuntor_cc" placeholder="Ex: 20A, 2 polos">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="disjuntor_ca" class="form-label">Disjuntor CA</label>
+                                <input type="text" class="form-control" id="disjuntor_ca" 
+                                       name="disjuntor_ca" placeholder="Ex: 32A, 3 polos">
+                            </div>
+
+                            <!-- Cabeamento -->
+                            <div class="col-12 mt-4">
+                                <h5 class="border-bottom pb-2">Cabeamento</h5>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="cabo_cc" class="form-label">Cabo CC (Lado Fotovoltaico)</label>
+                                <select class="form-select" id="cabo_cc" name="cabo_cc">
+                                    <option value="">Selecione...</option>
+                                    <option value="4mm²">4mm² (até 30A)</option>
+                                    <option value="6mm²" selected>6mm² (até 50A)</option>
+                                    <option value="10mm²">10mm² (até 70A)</option>
+                                    <option value="16mm²">16mm² (até 100A)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="cabo_ca" class="form-label">Cabo CA (Lado Grid)</label>
+                                <select class="form-select" id="cabo_ca" name="cabo_ca">
+                                    <option value="">Selecione...</option>
+                                    <option value="4mm²">4mm²</option>
+                                    <option value="6mm²" selected>6mm²</option>
+                                    <option value="10mm²">10mm²</option>
+                                    <option value="16mm²">16mm²</option>
+                                    <option value="25mm²">25mm²</option>
+                                </select>
+                            </div>
+
+                            <!-- Estrutura -->
+                            <div class="col-12 mt-4">
+                                <h5 class="border-bottom pb-2">Estrutura de Fixação</h5>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label for="estrutura_fixacao" class="form-label">Tipo de Estrutura</label>
+                                <select class="form-select" id="estrutura_fixacao" name="estrutura_fixacao">
+                                    <option value="">Selecione...</option>
+                                    <option value="Alumínio - Telhado Cerâmico">Alumínio - Telhado Cerâmico</option>
+                                    <option value="Alumínio - Telhado Metálico">Alumínio - Telhado Metálico</option>
+                                    <option value="Alumínio - Laje">Alumínio - Laje</option>
+                                    <option value="Alumínio - Solo">Alumínio - Solo</option>
+                                    <option value="Ferro Galvanizado">Ferro Galvanizado</option>
+                                </select>
+                            </div>
+
+                            <!-- Componentes Extras -->
+                            <div class="col-12 mt-4">
+                                <h5 class="border-bottom pb-2">Outros Componentes</h5>
+                                <button type="button" class="btn btn-sm btn-success" id="btnAddComponente">
+                                    <i class="fas fa-plus me-1"></i> Adicionar Componente Extra
+                                </button>
+                            </div>
+
+                            <div class="col-12">
+                                <div id="componentesExtrasContainer"></div>
+                                <input type="hidden" id="componentes_extras" name="componentes_extras" value="[]">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== ABA 6: FINANCEIRO E LEI 14.300 ===== -->
+                    <div class="tab-pane fade" id="tab6" role="tabpanel" aria-labelledby="tab6-tab">
+                        <h4 class="mb-4"><i class="fas fa-money-bill-wave text-success me-2"></i>Financeiro e Lei 14.300/2022</h4>
+                        
+                        <!-- 🧪 BOTÃO DE TESTE - ADICIONAR KIT MANUALMENTE -->
+                        <div class="alert alert-warning" role="alert">
+                            <h5>🧪 Teste: Adicionar Kit aos Custos</h5>
+                            <p class="mb-2">Clique no botão abaixo para adicionar manualmente o kit selecionado na Aba 3:</p>
+                            <button type="button" class="btn btn-warning" onclick="
+                                const selectKit = document.getElementById('kit_id');
+                                if (!selectKit || !selectKit.value) {
+                                    alert('⚠️ Vá para Aba 3 e selecione um kit primeiro!');
+                                    return;
+                                }
+                                const opt = selectKit.options[selectKit.selectedIndex];
+                                const desc = opt.text.trim();
+                                const preco = parseFloat(opt.getAttribute('data-preco')) || 0;
+                                
+                                // Remover kits antigos
+                                custos = custos.filter(c => !c.descricao.toUpperCase().includes('KIT') && !c.descricao.includes('📦'));
+                                
+                                // Adicionar novo
+                                custos.push({
+                                    descricao: '📦 ' + desc,
+                                    qtd: 1,
+                                    valorUnit: preco,
+                                    lucro: 25,
+                                    unidade: 'un'
+                                });
+                                
+                                atualizarTabelaCustos();
+                                alert('✅ Kit adicionado! Total custos: ' + custos.length + '\\nPreço: R$ ' + preco.toFixed(2));
+                            ">
+                                <i class="fas fa-plus-circle me-2"></i>FORÇAR ADIÇÃO DO KIT AGORA
+                            </button>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <!-- TABELA DE CUSTOS DETALHADA -->
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-gradient text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);">
+                                        <h5 class="mb-0"><i class="fas fa-table me-2"></i>Composição Detalhada de Custos</h5>
+                                        <button type="button" class="btn btn-light btn-sm" id="btnAddCusto">
+                                            <i class="fas fa-plus me-1"></i>Adicionar Custo
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover table-sm mb-0" id="tabelaCustos" style="border-collapse: collapse;">
+                                                <thead style="background-color: #f8f9fa;">
+                                                    <tr>
+                                                        <th style="padding: 8px; border: none; font-weight: 600; color: #495057;" width="28%">Descrição</th>
+                                                        <th style="padding: 8px; border: none; font-weight: 600; color: #495057; text-align: center;" width="8%">Qtd.</th>
+                                                        <th style="padding: 8px; border: none; font-weight: 600; color: #495057; text-align: center;" width="10%">Unidade</th>
+                                                        <th style="padding: 8px; border: none; font-weight: 600; color: #495057; text-align: right;" width="14%">Valor Unit.</th>
+                                                        <th style="padding: 8px; border: none; font-weight: 600; color: #495057; text-align: right;" width="14%">Valor Total</th>
+                                                        <th style="padding: 8px; border: none; font-weight: 600; color: #495057; text-align: center;" width="10%">Lucro</th>
+                                                        <th style="padding: 8px; border: none; font-weight: 600; color: #495057; text-align: center;" width="12%">Faturamento</th>
+                                                        <th style="padding: 8px; border: none; font-weight: 600; color: #495057; text-align: center;" width="4%">Ações</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="custos_tbody">
+                                                    <!-- Custos serão adicionados aqui via JavaScript -->
+                                                </tbody>
+                                                <tfoot style="background-color: #e9ecef;">
+                                                    <tr class="fw-bold">
+                                                        <td colspan="4" style="padding: 8px; border: none; text-align: right; color: #212529; white-space: nowrap;">TOTAL:</td>
+                                                        <td id="total_custos" style="padding: 8px; border: none; text-align: right; color: #198754; font-weight: 700; white-space: nowrap;">R$ 0,00</td>
+                                                        <td id="lucro_medio" style="padding: 8px; border: none; text-align: center; color: #0d6efd; white-space: nowrap;">0%</td>
+                                                        <td id="total_faturamento" style="padding: 8px; border: none; text-align: right; color: #0d6efd; font-weight: 700; white-space: nowrap;">R$ 0,00</td>
+                                                        <td style="padding: 8px; border: none;"></td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="custos_json" name="custos_json" value="[]">
+                                <input type="hidden" id="custo_equipamentos" name="custo_equipamentos" value="0">
+                            </div>
+
+                            <!-- Resumo Financeiro -->
+<div class="col-md-6">
+                <label for="custo_total_resumo" class="form-label fw-bold">Custo Total (R$)</label>
+                <input type="number" step="0.01" class="form-control form-control-lg" 
+                       id="custo_total_resumo" name="custo_total" readonly>
+                <small class="text-muted">Soma de todos os custos sem lucro</small>
+            </div>
+
+            <div class="col-md-6">
+                <label for="valor_venda_final" class="form-label fw-bold text-success">Valor de Venda (R$)</label>
+                <input type="number" step="0.01" class="form-control form-control-lg text-success fw-bold" 
+                       id="valor_venda_final" name="valor_venda" readonly>
+                <small class="text-muted">Valor total com lucros aplicados</small>
+                            </div>
+
+                            <!-- Lei 14.300/2022 -->
+                            <div class="col-12 mt-4">
+                                <h5 class="border-bottom pb-2">Lei 14.300/2022 - Geração Distribuída</h5>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="lei_14300_ano" class="form-label">Ano de Instalação</label>
+                                <select class="form-select" id="lei_14300_ano" name="lei_14300_ano">
+                                    <option value="2023">2023</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2025" selected>2025</option>
+                                    <option value="2026">2026</option>
+                                    <option value="2027">2027</option>
+                                    <option value="2028">2028</option>
+                                    <option value="2029">2029</option>
+                                    <option value="2030">2030</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="modalidade_gd" class="form-label">Modalidade GD</label>
+                                <select class="form-select" id="modalidade_gd" name="modalidade_gd">
+                                    <option value="">Selecione...</option>
+                                    <option value="GD I" selected>GD I (microgeração até 75kW)</option>
+                                    <option value="GD II">GD II (minigeração 75kW a 5MW)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="aliquota_fio_b" class="form-label">Alíquota Fio B (%)</label>
+                                <input type="number" step="0.01" class="form-control" id="aliquota_fio_b" 
+                                       name="aliquota_fio_b" placeholder="0.00">
+                                <small class="text-muted">Conforme Lei 14.300 por ano</small>
+                            </div>
+
+                            <!-- Análise Financeira -->
+                            <div class="col-12 mt-4">
+                                <div class="card border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Análise Financeira</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="economia_anual" class="form-label">Economia Anual (R$)</label>
+                                                <input type="number" step="0.01" class="form-control" id="economia_anual" 
+                                                       name="economia_anual" readonly>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label for="payback_anos" class="form-label fw-bold">Payback (anos)</label>
+                                                <input type="number" step="0.01" class="form-control form-control-lg fw-bold" 
+                                                       id="payback_anos" name="payback_anos" readonly>
+                                            </div>
+                                        </div>
+
+                                        <button type="button" class="btn btn-success w-100 mt-3" id="btnCalcularFinanceiro">
+                                            <i class="fas fa-calculator me-2"></i>Calcular Financeiro
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Observações -->
+                            <div class="col-12 mt-4">
+                                <label for="observacoes" class="form-label">Observações do Projeto</label>
+                                <textarea class="form-control" id="observacoes" name="observacoes" rows="4" 
+                                          placeholder="Informações adicionais sobre o projeto..."></textarea>
+                            </div>
+
+                            <input type="hidden" name="status" value="rascunho">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" id="btnAnterior" {% if modo != 'editar' %}disabled{% endif %}>
+                        <i class="fas fa-arrow-left me-2"></i>Anterior
+                    </button>
+                    
+                    <button type="button" class="btn btn-primary" id="btnProximo">
+                        Próximo<i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                    
+                    <button type="submit" class="btn btn-success d-none" id="btnFinalizar">
+                        <i class="fas fa-check me-2"></i>Criar Projeto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- MODAL: ADICIONAR CUSTO -->
+<div class="modal fade" id="modalAdicionarCusto" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%); color: white;">
+                <h5 class="modal-title"><i class="fas fa-plus-circle me-2"></i>Adicionar Item de Custo</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Descrição do Item</label>
+                        <input type="text" class="form-control" id="modal_descricao" placeholder="Ex: Instalação do Sistema, Projeto Elétrico, etc.">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Quantidade</label>
+                        <input type="number" class="form-control" id="modal_qtd" value="1" min="0.01" step="0.01">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Unidade</label>
+                        <select class="form-select" id="modal_unidade">
+                            <option value="UND">Unidade (UND)</option>
+                            <option value="KIT">Kit (KIT)</option>
+                            <option value="M2">Metro Quadrado (M²)</option>
+                            <option value="ML">Metro Linear (ML)</option>
+                            <option value="H">Hora (H)</option>
+                            <option value="DIA">Dia (DIA)</option>
+                            <option value="SVC">Serviço (SVC)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Valor Unitário (R$)</label>
+                        <input type="number" class="form-control" id="modal_valor" value="0.00" min="0" step="0.01">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Margem de Lucro (%)</label>
+                        <input type="number" class="form-control" id="modal_lucro" value="5" min="0" max="100" step="0.5">
+                        <small class="text-muted">Margem de lucro aplicada sobre este item</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Faturamento</label>
+                        <select class="form-select" id="modal_faturamento">
+                            <option value="EMPRESA">Empresa (Interno)</option>
+                            <option value="CLIENTE">Cliente (Externo)</option>
+                        </select>
+                        <small class="text-muted">Quem recebe o faturamento deste item</small>
+                    </div>
+                    <div class="col-12">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <strong>Valor Total:</strong>
+                                        <div class="h5 text-success mb-0" id="modal_preview_total">R$ 0,00</div>
+                                    </div>
+                                    <div class="col-6">
+                                        <strong>Com Lucro:</strong>
+                                        <div class="h5 text-primary mb-0" id="modal_preview_lucro">R$ 0,00</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarCusto">
+                    <i class="fas fa-check me-1"></i>Adicionar Item
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ========================================
+// VARIÁVEIS GLOBAIS
+// ========================================
+let currentTab = 1;
+const totalTabs = 6;
+let custos = [];
+let componenteExtraCount = 0;
+let editandoCustoIndex = -1; // Índice do custo sendo editado (-1 = modo adicionar)
+
+// Dados do projeto para edição (vindo do backend)
+{% if projeto %}
+const projetoDados = {{ projeto|tojson }};
+{% else %}
+const projetoDados = {};
+{% endif %}
+
+// ========================================
+// INICIALIZAÇÃO QUANDO DOM ESTIVER PRONTO
+// ========================================
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('========================================');
+    console.log('🚀 WIZARD INICIANDO...');
+    console.log('========================================');
+    
+    // Se estiver editando, preencher dados
+    if (projetoDados && projetoDados.id) {
+        console.log('✏️ Modo EDIÇÃO - Projeto #' + projetoDados.id);
+        // Aguardar um pouco para garantir que o DOM está completo
+        setTimeout(() => {
+            preencherDadosProjeto();
+        }, 100);
+    } else {
+        console.log('📝 Modo CRIAÇÃO - Novo projeto');
+    }
+    
+    console.log('⚙️ [1/9] Configurando navegação...');
+    setupWizardNavigation();
+    
+    console.log('⚙️ [1.5/9] Configurando autocomplete cliente...');
+    setupClienteAutocomplete();
+    
+    console.log('⚙️ [2/9] Configurando CEP...');
+    setupCEP();
+    
+    console.log('⚙️ [3/9] Configurando auto-save...');
+    setupAutoSave();
+    
+    console.log('⚙️ [4/9] Configurando cálculos...');
+    setupCalculos();
+    
+    console.log('⚙️ [5/9] Configurando layout...');
+    setupLayout();
+    
+    console.log('⚙️ [6/9] Configurando equipamentos...');
+    setupEquipamentos();
+    
+    console.log('⚙️ [7/9] Configurando custos...');
+    setupCustos();
+    
+    console.log('⚙️ [8/9] Configurando financeiro...');
+    setupFinanceiro();
+    
+    console.log('⚙️ [9/9] Configurando componentes extras...');
+    setupComponentesExtras();
+    
+    console.log('⚙️ [10/10] Configurando submit...');
+    setupFormSubmit();
+    
+    console.log('========================================');
+    console.log('✅ WIZARD TOTALMENTE INICIALIZADO!');
+    console.log('========================================');
+    
+    // Teste manual do botão
+    setTimeout(() => {
+        const btnTest = document.getElementById('btnProximo');
+        console.log('🧪 TESTE: Botão Próximo existe?', !!btnTest);
+        if (btnTest) {
+            console.log('🧪 TESTE: Botão Próximo elemento:', btnTest);
+            console.log('🧪 TESTE: Botão tem evento onclick?', btnTest.onclick);
+        }
+    }, 500);
+});
+
+// ========================================
+// AUTOCOMPLETE DE CLIENTE
+// ========================================
+function setupClienteAutocomplete() {
+    const selectCliente = document.getElementById('cliente_id');
+    
+    if (!selectCliente) {
+        console.error('❌ Select cliente_id não encontrado!');
+        return;
+    }
+    
+    selectCliente.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        
+        if (this.value && selectedOption) {
+            console.log('👤 Cliente selecionado:', selectedOption.text);
+            
+            // Preencher dados do cliente automaticamente
+            const nome = selectedOption.getAttribute('data-nome') || '';
+            const cep = selectedOption.getAttribute('data-cep') || '';
+            const endereco = selectedOption.getAttribute('data-endereco') || '';
+            const cidade = selectedOption.getAttribute('data-cidade') || '';
+            const estado = selectedOption.getAttribute('data-estado') || '';
+            
+            // Preencher campos
+            if (nome) {
+                document.getElementById('nome_cliente').value = nome;
+                console.log('✅ Nome preenchido:', nome);
+            }
+            
+            if (cep) {
+                document.getElementById('cep').value = cep;
+                console.log('✅ CEP preenchido:', cep);
+            }
+            
+            if (endereco) {
+                document.getElementById('endereco').value = endereco;
+                console.log('✅ Endereço preenchido:', endereco);
+            }
+            
+            if (cidade) {
+                document.getElementById('cidade').value = cidade;
+                console.log('✅ Cidade preenchida:', cidade);
+            }
+            
+            if (estado) {
+                document.getElementById('estado').value = estado;
+                console.log('✅ Estado preenchido:', estado);
+            }
+            
+            // Mostrar indicador visual
+            const indicator = document.getElementById('indicadorAutoSave');
+            if (indicator) {
+                const oldText = indicator.innerHTML;
+                indicator.innerHTML = '<span class="badge bg-info"><i class="fas fa-user-check me-1"></i>Dados do cliente carregados</span>';
+                indicator.classList.remove('d-none');
+                setTimeout(() => {
+                    indicator.innerHTML = oldText;
+                    indicator.classList.add('d-none');
+                }, 3000);
+            }
+            
+            console.log('✅ Dados do cliente preenchidos automaticamente!');
+        } else {
+            console.log('ℹ️ Seleção limpa - campos mantidos');
+        }
+    });
+    
+    console.log('✅ Autocomplete de cliente configurado!');
+}
+
+// ========================================
+// NAVEGAÇÃO DO WIZARD
+// ========================================
+function setupWizardNavigation() {
+    console.log('🔧 Iniciando setupWizardNavigation...');
+    const btnProximo = document.getElementById('btnProximo');
+    const btnAnterior = document.getElementById('btnAnterior');
+    
+    console.log('Botão Próximo encontrado?', btnProximo);
+    console.log('Botão Anterior encontrado?', btnAnterior);
+    
+    if (btnProximo) {
+        // Remover eventos anteriores se existirem
+        btnProximo.onclick = null;
+        
+        btnProximo.addEventListener('click', function(e) {
+            console.log('🎯 EVENT LISTENER CHAMADO!');
+            console.log(`🔄 Tentando avançar da aba ${currentTab} para ${currentTab + 1}`);
+            
+            if (currentTab < totalTabs) {
+                const valido = validarAbaAtual();
+                console.log(`✓ Validação aba ${currentTab}:`, valido);
+                if (valido) {
+                    currentTab++;
+                    mudarAba(currentTab);
+                    console.log(`✅ Avançou para aba ${currentTab}`);
+                } else {
+                    console.log('❌ Validação falhou');
+                }
+            } else {
+                console.log('⚠️ Já está na última aba');
+            }
+        }, true);
+        console.log('✅ Botão Próximo configurado com addEventListener');
+    } else {
+        console.error('❌ Botão btnProximo não encontrado!');
+    }
+    
+    if (btnAnterior) {
+        btnAnterior.onclick = null;
+        btnAnterior.addEventListener('click', function() {
+            console.log('⬅️ Botão Anterior clicado via addEventListener');
+            if (currentTab > 1) {
+                currentTab--;
+                mudarAba(currentTab);
+                console.log(`⬅️ Voltou para aba ${currentTab}`);
+            }
+        }, true);
+        console.log('✅ Botão Anterior configurado');
+    } else {
+        console.error('❌ Botão btnAnterior não encontrado!');
+    }
+}
+
+function mudarAba(tabNum) {
+    console.log(`📑 Mudando para aba ${tabNum}`);
+    salvarRascunho();
+    
+    const tabId = `tab${tabNum}`;
+    const tabButton = document.getElementById(`${tabId}-tab`);
+    if (tabButton) {
+        tabButton.disabled = false;
+        tabButton.click();
+        console.log(`✓ Tab button ${tabId}-tab clicado`);
+    } else {
+        console.error(`❌ Tab button ${tabId}-tab não encontrado!`);
+    }
+    
+    const progress = (tabNum / totalTabs) * 100;
+    const progressBar = document.getElementById('wizardProgress');
+    if (progressBar) {
+        progressBar.style.width = progress + '%';
+        progressBar.textContent = `Aba ${tabNum} de ${totalTabs}`;
+    }
+    
+    const btnAnterior = document.getElementById('btnAnterior');
+    const btnProximo = document.getElementById('btnProximo');
+    const btnFinalizar = document.getElementById('btnFinalizar');
+    
+    if (btnAnterior) btnAnterior.disabled = (tabNum === 1);
+    if (btnProximo) btnProximo.classList.toggle('d-none', tabNum === totalTabs);
+    if (btnFinalizar) btnFinalizar.classList.toggle('d-none', tabNum !== totalTabs);
+}
+
+function validarAbaAtual() {
+    console.log(`🔍 Validando aba ${currentTab}`);
+    
+    if (currentTab === 1) {
+        const nomeCliente = document.getElementById('nome_cliente')?.value.trim();
+        console.log('  - Nome cliente:', nomeCliente);
+        if (!nomeCliente) {
+            alert('⚠️ Preencha o nome do cliente!');
+            return false;
+        }
+        
+        const estado = document.getElementById('estado')?.value;
+        console.log('  - Estado:', estado);
+        if (!estado) {
+            alert('⚠️ Selecione o estado (UF)!');
+            return false;
+        }
+    }
+    
+    if (currentTab === 2) {
+        const consumo = document.getElementById('consumo_kwh_mes')?.value;
+        console.log('  - Consumo:', consumo);
+        if (!consumo || parseFloat(consumo) <= 0) {
+            alert('⚠️ Preencha o consumo mensal!');
+            return false;
+        }
+    }
+    
+    console.log(`  ✅ Aba ${currentTab} válida`);
+    return true;
+}
+
+// ========================================
+// BUSCA CEP
+// ========================================
+function setupCEP() {
+    const btnBuscarCEP = document.getElementById('btnBuscarCEP');
+    
+    if (btnBuscarCEP) {
+        btnBuscarCEP.addEventListener('click', buscarCEP);
+        console.log('✅ Botão CEP configurado');
+    }
+    
+    const campoCEP = document.getElementById('cep');
+    if (campoCEP) {
+        campoCEP.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                buscarCEP();
+            }
+        });
+    }
+    
+    const btnBuscarIrradiacao = document.getElementById('btnBuscarIrradiacao');
+    if (btnBuscarIrradiacao) {
+        btnBuscarIrradiacao.addEventListener('click', buscarIrradiacao);
+    }
+}
+
+function buscarCEP() {
+    try {
+        console.log('🔍 Buscando CEP...');
+        const campoCEP = document.getElementById('cep');
+        const btnBuscarCEP = document.getElementById('btnBuscarCEP');
+        
+        if (!campoCEP) {
+            console.error('❌ Campo CEP não encontrado');
+            return;
+        }
+        
+        const cep = campoCEP.value.replace(/\D/g, '');
+        console.log('CEP digitado:', cep);
+        
+        if (cep.length !== 8) {
+            alert('⚠️ CEP inválido! Digite 8 dígitos.');
+            return;
+        }
+        
+        if (btnBuscarCEP) {
+            btnBuscarCEP.disabled = true;
+            btnBuscarCEP.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Buscando...';
+        }
+        
+        fetch(`https://viacep.com.br/ws/${cep}/json/`)
+            .then(response => {
+                console.log('✅ Resposta ViaCEP recebida');
+                return response.json();
+            })
+            .then(data => {
+                console.log('Dados do CEP:', data);
+                
+                if (data.erro) {
+                    alert('❌ CEP não encontrado!');
+                    return;
+                }
+                
+                // Preencher campos
+                const enderecoField = document.getElementById('endereco');
+                const cidadeField = document.getElementById('cidade');
+                const estadoField = document.getElementById('estado');
+                
+                if (enderecoField) enderecoField.value = data.logradouro || '';
+                if (cidadeField) cidadeField.value = data.localidade || '';
+                if (estadoField) estadoField.value = data.uf || '';
+                
+                console.log('✓ Endereço:', data.logradouro);
+                console.log('✓ Cidade:', data.localidade);
+                console.log('✓ UF:', data.uf);
+                
+                // Buscar coordenadas
+                buscarCoordenadas(data.localidade, data.uf);
+                
+                console.log('✅ CEP preenchido com sucesso!');
+                alert('✅ Endereço encontrado!');
+            })
+            .catch(error => {
+                console.error('❌ Erro ao buscar CEP:', error);
+                alert('❌ Erro ao buscar CEP. Verifique sua conexão.');
+            })
+            .finally(() => {
+                if (btnBuscarCEP) {
+                    btnBuscarCEP.disabled = false;
+                    btnBuscarCEP.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
+                }
+            });
+    } catch (error) {
+        console.error('❌ Erro crítico em buscarCEP:', error);
+        alert('❌ Erro ao buscar CEP. Veja o console.');
+    }
+}
+
+function buscarCoordenadas(cidade, uf) {
+    const query = `${cidade}, ${uf}, Brasil`;
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`)
+        .then(response => response.json())
+        .then(data => {
+            if (data && data.length > 0) {
+                document.getElementById('latitude').value = parseFloat(data[0].lat).toFixed(6);
+                document.getElementById('longitude').value = parseFloat(data[0].lon).toFixed(6);
+            }
+        })
+        .catch(error => console.error('Erro coordenadas:', error));
+}
+
+function buscarIrradiacao() {
+    const lat = document.getElementById('latitude')?.value;
+    const lon = document.getElementById('longitude')?.value;
+    
+    if (!lat || !lon) {
+        alert('Preencha o CEP primeiro!');
+        return;
+    }
+    
+    const uf = document.getElementById('estado')?.value;
+    const irradiacoesUF = {
+        'AC': 4.5, 'AL': 5.2, 'AP': 4.8, 'AM': 4.6, 'BA': 5.8, 'CE': 5.7,
+        'DF': 5.6, 'ES': 5.0, 'GO': 5.5, 'MA': 5.3, 'MT': 5.7, 'MS': 5.5,
+        'MG': 5.4, 'PA': 4.9, 'PB': 5.9, 'PR': 4.8, 'PE': 5.8, 'PI': 5.9,
+        'RJ': 4.9, 'RN': 6.0, 'RS': 4.7, 'RO': 4.8, 'RR': 4.7, 'SC': 4.6,
+        'SP': 5.0, 'SE': 5.7, 'TO': 5.5
+    };
+    
+    const irradiacao = irradiacoesUF[uf] || 5.0;
+    document.getElementById('irradiacao_solar').value = irradiacao.toFixed(2);
+    alert(`✅ Irradiação ${uf}: ${irradiacao} kWh/m²/dia`);
+}
+
+// ========================================
+// AUTO-SAVE
+// ========================================
+function setupAutoSave() {
+    console.log('💾 Configurando auto-save...');
+    
+    carregarRascunho();
+    
+    const form = document.getElementById('projetoForm');
+    if (form) {
+        console.log('✅ Formulário encontrado para auto-save');
+        
+        form.addEventListener('input', function(e) {
+            console.log('📝 Input detectado:', e.target.id || e.target.name);
+            clearTimeout(window.autoSaveTimeout);
+            window.autoSaveTimeout = setTimeout(() => {
+                console.log('⏰ Auto-save após 2s...');
+                salvarRascunho();
+            }, 2000);
+        });
+        
+        form.addEventListener('change', function(e) {
+            console.log('🔄 Change detectado:', e.target.id || e.target.name);
+            salvarRascunho();
+        });
+    } else {
+        console.error('❌ Formulário projetoForm não encontrado!');
+    }
+    
+    setInterval(() => {
+        console.log('⏱️ Auto-save automático (30s)');
+        salvarRascunho();
+    }, 30000);
+}
+
+function salvarRascunho() {
+    console.log('💾 Salvando rascunho...');
+    
+    const formData = {
+        timestamp: new Date().toISOString(),
+        aba_atual: currentTab,
+        cliente_id: document.getElementById('cliente_id')?.value || '',
+        nome_cliente: document.getElementById('nome_cliente')?.value || '',
+        cep: document.getElementById('cep')?.value || '',
+        endereco: document.getElementById('endereco')?.value || '',
+        cidade: document.getElementById('cidade')?.value || '',
+        estado: document.getElementById('estado')?.value || '',
+        latitude: document.getElementById('latitude')?.value || '',
+        longitude: document.getElementById('longitude')?.value || '',
+        irradiacao_solar: document.getElementById('irradiacao_solar')?.value || '',
+        tipo_entrada_consumo: document.querySelector('input[name="tipo_entrada_consumo"]:checked')?.value || 'media_kwh',
+        consumo_kwh_mes: document.getElementById('consumo_kwh_mes')?.value || '',
+        media_fatura: document.getElementById('media_fatura')?.value || '',
+        tarifa_kwh: document.getElementById('tarifa_kwh')?.value || '',
+        simultaneidade: document.getElementById('simultaneidade')?.value || '',
+        perdas_sistema: document.getElementById('perdas_sistema')?.value || '',
+        potencia_kwp: document.getElementById('potencia_kwp')?.value || '',
+        geracao_estimada_mes: document.getElementById('geracao_estimada_mes')?.value || '',
+        modo_equipamento: document.querySelector('input[name="modo_equipamento"]:checked')?.value || 'kit',
+        kit_id: document.getElementById('kit_id')?.value || '',
+        placa_id: document.getElementById('placa_id')?.value || '',
+        qtd_placas: document.getElementById('qtd_placas')?.value || '',
+        inversor_id: document.getElementById('inversor_id')?.value || '',
+        qtd_inversores: document.getElementById('qtd_inversores')?.value || '',
+        custo_equipamentos: document.getElementById('custo_equipamentos')?.value || '',
+        custos_salvos: custos, // Salvar array de custos
+        // Componentes Adicionais
+        string_box: document.getElementById('string_box')?.checked || false,
+        disjuntor_cc: document.getElementById('disjuntor_cc')?.value || '',
+        disjuntor_ca: document.getElementById('disjuntor_ca')?.value || '',
+        cabo_cc: document.getElementById('cabo_cc')?.value || '',
+        cabo_ca: document.getElementById('cabo_ca')?.value || '',
+        estrutura_fixacao: document.getElementById('estrutura_fixacao')?.value || '',
+        // Layout
+        orientacao: document.getElementById('orientacao')?.value || '',
+        inclinacao: document.getElementById('inclinacao')?.value || '',
+        direcao: document.getElementById('direcao')?.value || '',
+        linhas_placas: document.getElementById('linhas_placas')?.value || '',
+        colunas_placas: document.getElementById('colunas_placas')?.value || '',
+        area_necessaria: document.getElementById('area_necessaria')?.value || '',
+        // Financeiro
+        lei_14300_ano: document.getElementById('lei_14300_ano')?.value || '',
+        modalidade_gd: document.getElementById('modalidade_gd')?.value || '',
+        aliquota_fio_b: document.getElementById('aliquota_fio_b')?.value || ''
+    };
+    
+    localStorage.setItem('projeto_solar_rascunho', JSON.stringify(formData));
+    console.log('✅ Rascunho salvo!', Object.keys(formData).length, 'campos');
+    mostrarIndicadorSalvo();
+}
+
+function carregarRascunho() {
+    try {
+        console.log('📂 Tentando carregar rascunho...');
+        const rascunho = localStorage.getItem('projeto_solar_rascunho');
+        
+        if (!rascunho) {
+            console.log('ℹ️ Nenhum rascunho encontrado');
+            return;
+        }
+        
+        const dados = JSON.parse(rascunho);
+        const timestamp = new Date(dados.timestamp);
+        const agora = new Date();
+        const diferencaHoras = (agora - timestamp) / (1000 * 60 * 60);
+        
+        console.log(`🗓️ Rascunho encontrado: ${timestamp.toLocaleString('pt-BR')} (${diferencaHoras.toFixed(1)}h atrás)`);
+        
+        if (diferencaHoras >= 24) {
+            console.log('⚠️ Rascunho expirado (> 24h)');
+            limparRascunho();
+            return;
+        }
+        
+        if (confirm(`Rascunho encontrado (${timestamp.toLocaleString('pt-BR')}). Recuperar?`)) {
+            console.log('✅ Usuário aceitou recuperar rascunho');
+            
+            Object.keys(dados).forEach(campo => {
+                if (campo === 'timestamp' || campo === 'aba_atual' || campo === 'custos_salvos') return;
+                
+                const elemento = document.getElementById(campo);
+                if (elemento) {
+                    if (elemento.type === 'checkbox') {
+                        elemento.checked = dados[campo];
+                    } else {
+                        elemento.value = dados[campo];
+                    }
+                }
+            });
+            
+            if (dados.tipo_entrada_consumo) {
+                const radio = document.querySelector(`input[name="tipo_entrada_consumo"][value="${dados.tipo_entrada_consumo}"]`);
+                if (radio) radio.checked = true;
+            }
+            
+            if (dados.modo_equipamento) {
+                const radio = document.querySelector(`input[name="modo_equipamento"][value="${dados.modo_equipamento}"]`);
+                if (radio) radio.checked = true;
+            }
+            
+            // Restaurar custos salvos
+            if (dados.custos_salvos && Array.isArray(dados.custos_salvos)) {
+                custos = dados.custos_salvos;
+                atualizarTabelaCustos();
+                console.log('✅ Custos restaurados:', custos.length, 'itens');
+            }
+            
+            console.log('✅ Rascunho recuperado com sucesso!');
+            alert('✅ Rascunho recuperado!');
+        } else {
+            console.log('❌ Usuário cancelou recuperação');
+            limparRascunho();
+        }
+    } catch (error) {
+        console.error('❌ Erro ao carregar rascunho:', error);
+        alert('❌ Erro ao carregar rascunho. Veja o console.');
+    }
+}
+
+function limparRascunho() {
+    localStorage.removeItem('projeto_solar_rascunho');
+}
+
+function mostrarIndicadorSalvo() {
+    const indicator = document.getElementById('indicadorAutoSave');
+    if (indicator) {
+        indicator.classList.remove('d-none');
+        setTimeout(() => indicator.classList.add('d-none'), 2000);
+    }
+}
+
+// ========================================
+// CÁLCULOS
+// ========================================
+function setupCalculos() {
+    const btnCalcularPotencia = document.getElementById('btnCalcularPotencia');
+    if (btnCalcularPotencia) {
+        btnCalcularPotencia.addEventListener('click', calcularPotencia);
+    }
+    
+    // Atualizar valores dos sliders em tempo real
+    const simultaneidade = document.getElementById('simultaneidade');
+    const valorSimultaneidade = document.getElementById('valor_simultaneidade');
+    
+    if (simultaneidade && valorSimultaneidade) {
+        console.log('✅ Slider simultaneidade encontrado');
+        simultaneidade.addEventListener('input', function() {
+            console.log('Simultaneidade mudou para:', this.value);
+            valorSimultaneidade.textContent = this.value;
+        });
+        // Inicializar com o valor atual
+        valorSimultaneidade.textContent = simultaneidade.value;
+    } else {
+        console.error('❌ Elementos de simultaneidade não encontrados!', {simultaneidade, valorSimultaneidade});
+    }
+    
+    const perdas = document.getElementById('perdas_sistema');
+    const valorPerdas = document.getElementById('valor_perdas');
+    
+    if (perdas && valorPerdas) {
+        console.log('✅ Slider perdas encontrado');
+        perdas.addEventListener('input', function() {
+            console.log('Perdas mudou para:', this.value);
+            valorPerdas.textContent = this.value;
+        });
+        // Inicializar com o valor atual
+        valorPerdas.textContent = perdas.value;
+    } else {
+        console.error('❌ Elementos de perdas não encontrados!', {perdas, valorPerdas});
+    }
+    
+    // ========================================
+    // ALTERNÂNCIA DE PAINÉIS POR MÉTODO
+    // ========================================
+    const painelKwhDireto = document.getElementById('painel_kwh_direto');
+    const painelHistorico = document.getElementById('painel_historico');
+    const painelValorConta = document.getElementById('painel_valor_conta');
+    
+    document.querySelectorAll('input[name="metodo_calculo"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            console.log('📊 Método de cálculo alterado:', this.value);
+            
+            // Ocultar todos
+            painelKwhDireto?.classList.add('d-none');
+            painelHistorico?.classList.add('d-none');
+            painelValorConta?.classList.add('d-none');
+            
+            // Remover required de todos os campos
+            document.getElementById('consumo_kwh_mes')?.removeAttribute('required');
+            document.getElementById('valor_conta_luz')?.removeAttribute('required');
+            inputsMeses.forEach(input => input.removeAttribute('required'));
+            
+            // Mostrar apenas o selecionado e aplicar required
+            if (this.value === 'kwh_direto') {
+                painelKwhDireto?.classList.remove('d-none');
+                document.getElementById('consumo_kwh_mes')?.setAttribute('required', 'required');
+            } else if (this.value === 'historico_12m') {
+                painelHistorico?.classList.remove('d-none');
+                // Não exigir required nos meses individuais (média pode ser de poucos meses)
+            } else if (this.value === 'valor_conta') {
+                painelValorConta?.classList.remove('d-none');
+                document.getElementById('valor_conta_luz')?.setAttribute('required', 'required');
+            }
+        });
+    });
+    
+    // ========================================
+    // CÁLCULO POR VALOR DA CONTA
+    // ========================================
+    const inputValorConta = document.getElementById('valor_conta_luz');
+    const inputTarifaConta = document.getElementById('tarifa_kwh_conta');
+    const spanConsumoCalculado = document.getElementById('consumo_calculado_valor');
+    
+    function calcularConsumoPorValor() {
+        const valor = parseFloat(inputValorConta?.value) || 0;
+        const tarifa = parseFloat(inputTarifaConta?.value) || 0.85;
+        
+        if (valor > 0 && tarifa > 0) {
+            const consumo = (valor / tarifa).toFixed(2);
+            if (spanConsumoCalculado) {
+                spanConsumoCalculado.textContent = consumo + ' kWh/mês';
+            }
+            // Atualizar também o campo principal de consumo
+            const campoConsumo = document.getElementById('consumo_kwh_mes');
+            if (campoConsumo) {
+                campoConsumo.value = consumo;
+            }
+            console.log(`💡 Consumo calculado: R$ ${valor} ÷ R$ ${tarifa}/kWh = ${consumo} kWh`);
+        }
+    }
+    
+    inputValorConta?.addEventListener('input', calcularConsumoPorValor);
+    inputTarifaConta?.addEventListener('input', calcularConsumoPorValor);
+    
+    // ========================================
+    // MÉDIA DO HISTÓRICO 12 MESES
+    // ========================================
+    const inputsMeses = document.querySelectorAll('.mes-input');
+    const spanMediaHistorico = document.getElementById('media_historico');
+    
+    function calcularMediaHistorico() {
+        let soma = 0;
+        let count = 0;
+        
+        inputsMeses.forEach(input => {
+            const valor = parseFloat(input.value) || 0;
+            if (valor > 0) {
+                soma += valor;
+                count++;
+            }
+        });
+        
+        const media = count > 0 ? (soma / count).toFixed(2) : 0;
+        if (spanMediaHistorico) {
+            spanMediaHistorico.textContent = media + ' kWh';
+        }
+        
+        // Atualizar também o campo principal de consumo
+        if (media > 0) {
+            const campoConsumo = document.getElementById('consumo_kwh_mes');
+            if (campoConsumo) {
+                campoConsumo.value = media;
+            }
+        }
+        
+        console.log(`📊 Média histórico: ${soma} kWh ÷ ${count} meses = ${media} kWh`);
+    }
+    
+    inputsMeses.forEach(input => {
+        input.addEventListener('input', calcularMediaHistorico);
+    });
+}
+
+function calcularPotencia() {
+    const consumo = parseFloat(document.getElementById('consumo_kwh_mes')?.value) || 0;
+    const irradiacao = parseFloat(document.getElementById('irradiacao_solar')?.value) || 5.0;
+    const simultaneidade = parseFloat(document.getElementById('simultaneidade')?.value) / 100 || 0.8;
+    const perdas = parseFloat(document.getElementById('perdas_sistema')?.value) / 100 || 0.2;
+    
+    if (consumo <= 0) {
+        alert('⚠️ Preencha o consumo mensal primeiro!');
+        return;
+    }
+    
+    // ========================================
+    // CÁLCULO BASE (sem simultaneidade - dimensionamento puro)
+    // ========================================
+    const potenciaBase = consumo / (irradiacao * 30 * (1 - perdas));
+    const geracaoBase = potenciaBase * irradiacao * 30 * (1 - perdas);
+    
+    // ========================================
+    // ANÁLISE DE SIMULTANEIDADE (indicador técnico)
+    // ========================================
+    const autoconsumo = geracaoBase * simultaneidade; // Energia usada direto
+    const excedente = geracaoBase * (1 - simultaneidade); // Energia injetada na rede
+    
+    // Fator de ajuste recomendado (baseado no perfil)
+    let fatorAjuste = 1.0;
+    let recomendacao = '';
+    let corRecomendacao = 'info';
+    
+    if (simultaneidade < 0.30) {
+        // Baixíssima simultaneidade - cliente usa quase tudo à noite
+        fatorAjuste = 1.15; // Aumentar 15% para compensar perdas de conversão
+        recomendacao = '⚠️ ATENÇÃO: Cliente com baixo consumo diurno. Recomenda-se sistema 15% maior para compensar perdas de créditos e garantir economia.';
+        corRecomendacao = 'warning';
+    } else if (simultaneidade < 0.50) {
+        // Baixa simultaneidade - uso misto
+        fatorAjuste = 1.08; // Aumentar 8%
+        recomendacao = '💡 Cliente com consumo moderado durante o dia. Sistema base adequado com margem de 8% para segurança.';
+        corRecomendacao = 'info';
+    } else if (simultaneidade < 0.70) {
+        // Boa simultaneidade - uso equilibrado
+        fatorAjuste = 1.0; // Sistema base OK
+        recomendacao = '✅ Perfil ideal! Cliente aproveita bem a geração solar. Sistema base é suficiente.';
+        corRecomendacao = 'success';
+    } else {
+        // Alta simultaneidade - uso principalmente diurno
+        fatorAjuste = 0.95; // Pode reduzir 5%
+        recomendacao = '🎯 Excelente! Cliente usa energia durante geração solar. Pode-se otimizar o sistema com redução de 5%.';
+        corRecomendacao = 'success';
+    }
+    
+    // Potência final recomendada
+    const potenciaRecomendada = potenciaBase * fatorAjuste;
+    
+    // ========================================
+    // ATUALIZAR CAMPOS
+    // ========================================
+    document.getElementById('potencia_kwp').value = potenciaRecomendada.toFixed(2);
+    document.getElementById('geracao_estimada_mes').value = geracaoBase.toFixed(2);
+    
+    // ========================================
+    // CALCULAR QUANTIDADE DE MÓDULOS
+    // ========================================
+    const potenciaWatts = potenciaRecomendada * 1000;
+    const qtd585 = Math.ceil(potenciaWatts / 585);
+    const qtd610 = Math.ceil(potenciaWatts / 610);
+    const qtd700 = Math.ceil(potenciaWatts / 700);
+    
+    // ========================================
+    // MOSTRAR ANÁLISE COMPLETA
+    // ========================================
+    const analiseHTML = `
+        <!-- PREVISÃO DE PLACAS -->
+        <div class="alert alert-info mt-3">
+            <h6 class="alert-heading"><i class="fas fa-solar-panel me-2"></i>Previsão de Quantidade de Placas</h6>
+            <div class="row g-2 mt-2">
+                <div class="col-md-4">
+                    <div class="card border-primary">
+                        <div class="card-body text-center p-2">
+                            <small class="text-muted d-block">Placa 585W</small>
+                            <h4 class="mb-0 text-primary">${qtd585}</h4>
+                            <small class="text-muted">unidades</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-success">
+                        <div class="card-body text-center p-2">
+                            <small class="text-muted d-block">Placa 610W</small>
+                            <h4 class="mb-0 text-success">${qtd610}</h4>
+                            <small class="text-muted">unidades</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card border-warning">
+                        <div class="card-body text-center p-2">
+                            <small class="text-muted d-block">Placa 700W</small>
+                            <h4 class="mb-0 text-warning">${qtd700}</h4>
+                            <small class="text-muted">unidades</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ANÁLISE DE SIMULTANEIDADE -->
+        <div class="alert alert-${corRecomendacao} mt-3">
+            <h6 class="alert-heading"><i class="fas fa-chart-pie me-2"></i>Análise de Simultaneidade</h6>
+            <div class="row g-2 mt-2">
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Autoconsumo Diurno</small>
+                    <strong>${autoconsumo.toFixed(0)} kWh/mês (${(simultaneidade * 100).toFixed(0)}%)</strong>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Excedente (Créditos)</small>
+                    <strong>${excedente.toFixed(0)} kWh/mês (${((1 - simultaneidade) * 100).toFixed(0)}%)</strong>
+                </div>
+                <div class="col-md-4">
+                    <small class="text-muted d-block">Fator de Ajuste</small>
+                    <strong class="text-${corRecomendacao}">${(fatorAjuste * 100 - 100).toFixed(0) > 0 ? '+' : ''}${(fatorAjuste * 100 - 100).toFixed(0)}%</strong>
+                </div>
+            </div>
+            <hr>
+            <p class="mb-0"><strong>Recomendação Técnica:</strong> ${recomendacao}</p>
+            <small class="text-muted">
+                <br><strong>Potência Base:</strong> ${potenciaBase.toFixed(2)} kWp 
+                <strong class="ms-3">Potência Recomendada:</strong> ${potenciaRecomendada.toFixed(2)} kWp
+            </small>
+        </div>
+    `;
+    
+    // Remover análise anterior se existir
+    const analiseAnterior = document.getElementById('analiseResultados');
+    if (analiseAnterior) analiseAnterior.remove();
+    
+    // Inserir após os campos de resultado
+    const campoGeracao = document.getElementById('geracao_estimada_mes')?.closest('.row');
+    if (campoGeracao && campoGeracao.parentElement) {
+        const div = document.createElement('div');
+        div.id = 'analiseResultados';
+        div.className = 'mt-4';
+        div.innerHTML = analiseHTML;
+        campoGeracao.parentElement.appendChild(div);
+    }
+    
+    alert(`✅ Potência calculada: ${potenciaRecomendada.toFixed(2)} kWp\n💡 Simultaneidade: ${(simultaneidade * 100).toFixed(0)}%`);
+}
+
+// ========================================
+// LAYOUT
+// ========================================
+function setupLayout() {
+    // Atualizar valor do slider de inclinação
+    const inclinacao = document.getElementById('inclinacao');
+    const valorInclinacao = document.getElementById('valor_inclinacao');
+    
+    if (inclinacao && valorInclinacao) {
+        console.log('✅ Slider inclinação encontrado');
+        inclinacao.addEventListener('input', function() {
+            console.log('Inclinação mudou para:', this.value);
+            valorInclinacao.textContent = this.value;
+        });
+        // Inicializar com o valor atual
+        valorInclinacao.textContent = inclinacao.value;
+    }
+    
+    // Listeners para calcular área e renderizar layout
+    const linhas = document.getElementById('linhas_placas');
+    const colunas = document.getElementById('colunas_placas');
+    
+    if (linhas) {
+        linhas.addEventListener('input', function() {
+            calcularAreaLayout();
+            renderizarLayout();
+        });
+    }
+    
+    if (colunas) {
+        colunas.addEventListener('input', function() {
+            calcularAreaLayout();
+            renderizarLayout();
+        });
+    }
+    
+    // Calcular área inicial
+    calcularAreaLayout();
+    renderizarLayout();
+}
+
+function calcularAreaLayout() {
+    const linhas = parseInt(document.getElementById('linhas_placas')?.value) || 2;
+    const colunas = parseInt(document.getElementById('colunas_placas')?.value) || 5;
+    const inclinacao = parseFloat(document.getElementById('inclinacao')?.value) || 15;
+    
+    // Dimensões típicas de uma placa solar: 2.00m x 1.00m
+    const larguraPlaca = 1.00; // metros
+    const alturaPlaca = 2.00; // metros
+    
+    // Espaçamento entre placas (10cm)
+    const espacamento = 0.10;
+    
+    // Área básica das placas
+    const areaPlacas = (linhas * colunas) * (larguraPlaca * alturaPlaca);
+    
+    // Fator de correção por inclinação (quanto maior o ângulo, mais espaço precisa)
+    // A cada 15° de inclinação, aumenta ~5% de área necessária
+    const fatorInclinacao = 1 + (inclinacao / 15) * 0.05;
+    
+    // Área total com espaçamento e inclinação
+    const larguraTotal = (colunas * larguraPlaca) + ((colunas - 1) * espacamento);
+    const alturaTotal = (linhas * alturaPlaca) + ((linhas - 1) * espacamento);
+    const areaTotalComEspacamento = larguraTotal * alturaTotal * fatorInclinacao;
+    
+    // Margem de segurança de 15%
+    const areaFinal = areaTotalComEspacamento * 1.15;
+    
+    // Atualizar campo
+    const campoArea = document.getElementById('area_necessaria');
+    if (campoArea) {
+        campoArea.value = areaFinal.toFixed(2);
+    }
+    
+    console.log(`📐 Área calculada: ${areaFinal.toFixed(2)} m² (${linhas}x${colunas} placas, ${inclinacao}°)`);
+}
+
+function renderizarLayout() {
+    const linhas = parseInt(document.getElementById('linhas_placas')?.value) || 2;
+    const colunas = parseInt(document.getElementById('colunas_placas')?.value) || 5;
+    const totalPlacas = linhas * colunas;
+    
+    const container = document.getElementById('layoutVisualizacao');
+    if (!container) return;
+    
+    // Dimensões da visualização
+    const escala = 40; // pixels por placa
+    const larguraVis = (colunas * escala) + ((colunas - 1) * 4);
+    const alturaVis = (linhas * escala) + ((linhas - 1) * 4);
+    
+    let html = `
+        <div style="width: ${larguraVis}px; height: ${alturaVis}px; position: relative; margin: 0 auto;">
+    `;
+    
+    // Renderizar cada placa
+    for (let linha = 0; linha < linhas; linha++) {
+        for (let coluna = 0; coluna < colunas; coluna++) {
+            const x = coluna * (escala + 4);
+            const y = linha * (escala + 4);
+            const numeroPlaca = (linha * colunas) + coluna + 1;
+            
+            html += `
+                <div style="
+                    position: absolute;
+                    left: ${x}px;
+                    top: ${y}px;
+                    width: ${escala}px;
+                    height: ${escala}px;
+                    background: linear-gradient(135deg, #1a5490 0%, #2980b9 100%);
+                    border: 2px solid #fff;
+                    border-radius: 4px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-size: 10px;
+                    font-weight: bold;
+                ">
+                    ${numeroPlaca}
+                </div>
+            `;
+        }
+    }
+    
+    html += `</div>`;
+    html += `
+        <div class="mt-3 text-center">
+            <strong>${totalPlacas} módulos</strong> organizados em <strong>${linhas} linhas × ${colunas} colunas</strong>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+    console.log(`🎨 Layout renderizado: ${linhas}x${colunas} = ${totalPlacas} módulos`);
+}
+
+// ========================================
+// EQUIPAMENTOS
+// ========================================
+function setupEquipamentos() {
+    console.log('⚙️ Configurando equipamentos...');
+    
+    // Listener para alternar entre kit e individual
+    document.querySelectorAll('input[name="modo_equipamento"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const usandoKit = this.value === 'kit';
+            document.getElementById('painel_kit')?.classList.toggle('d-none', !usandoKit);
+            document.getElementById('painel_individual')?.classList.toggle('d-none', usandoKit);
+            
+            // Limpar custos de equipamentos quando mudar modo
+            custos = custos.filter(c => !c.descricao.includes('Kit') && 
+                                        !c.descricao.includes('Placa') && 
+                                        !c.descricao.includes('Inversor'));
+            atualizarTabelaCustos();
+        });
+    });
+    
+    // ========================================
+    // LISTENER PARA KIT SELECIONADO
+    // ========================================
+    const selectKit = document.getElementById('kit_id');
+    console.log('🔍 Select kit encontrado?', selectKit ? 'SIM' : 'NÃO');
+    
+    if (selectKit) {
+        console.log('📦 Select kit tem', selectKit.options.length, 'opções');
+        
+        selectKit.addEventListener('change', function() {
+            console.log('🎯 EVENTO CHANGE DO KIT DISPARADO!');
+            console.log('   Value selecionado:', this.value);
+            console.log('   Índice selecionado:', this.selectedIndex);
+            
+            if (this.value) {
+                const option = this.options[this.selectedIndex];
+                const descricao = option.text.trim();
+                const preco = parseFloat(option.getAttribute('data-preco')) || 0;
+                const potencia = parseFloat(option.getAttribute('data-potencia')) || 0;
+                
+                console.log('📋 Dados completos do kit:');
+                console.log('   Descrição:', descricao);
+                console.log('   Preço:', preco);
+                console.log('   Potência:', potencia, 'kWp');
+                console.log('   Custos ANTES de adicionar:', custos.length, 'itens');
+                
+                // Remover kit/placas/inversores antigos se existir
+                const custosAntigos = custos.length;
+                custos = custos.filter(c => {
+                    const desc = c.descricao.toUpperCase();
+                    return !desc.includes('KIT') && 
+                           !desc.includes('PLACA') && 
+                           !desc.includes('INVERSOR') &&
+                           !desc.includes('📦') &&
+                           !desc.includes('☀️') &&
+                           !desc.includes('⚡');
+                });
+                console.log(`   🗑️ Removidos ${custosAntigos - custos.length} equipamentos antigos`);
+                
+                // Adicionar novo kit
+                if (preco > 0) {
+                    const novoCusto = {
+                        descricao: `📦 ${descricao}`,
+                        qtd: 1,
+                        valorUnit: preco,
+                        lucro: 25,
+                        unidade: 'un'
+                    };
+                    
+                    custos.push(novoCusto);
+                    console.log('✅ KIT ADICIONADO AOS CUSTOS!');
+                    console.log('   Total de custos agora:', custos.length);
+                    console.log('   Novo custo:', novoCusto);
+                    
+                    // Atualizar tabela
+                    atualizarTabelaCustos();
+                    console.log('✅ Tabela atualizada!');
+                    
+                    // Mostrar notificação
+                    alert(`✅ Kit adicionado à Aba 6 - Financeiro!\n\n📦 ${descricao}\n💰 Valor: R$ ${preco.toFixed(2)}\n⚡ Potência: ${potencia} kWp`);
+                } else {
+                    console.error('❌ ERRO: Preço do kit é zero!');
+                    console.error('   Verifique o atributo data-preco no HTML');
+                    alert('⚠️ Este kit não possui preço cadastrado!\nVerifique o cadastro do kit.');
+                }
+            } else {
+                console.log('ℹ️ Kit desmarcado, removendo equipamentos');
+                // Se desmarcou kit, remover
+                const custosAntigos = custos.length;
+                custos = custos.filter(c => {
+                    const desc = c.descricao.toUpperCase();
+                    return !desc.includes('KIT') && 
+                           !desc.includes('📦');
+                });
+                console.log(`   Removidos ${custosAntigos - custos.length} kits`);
+                atualizarTabelaCustos();
+            }
+        });
+        console.log('✅ Listener do kit CONFIGURADO COM SUCESSO');
+    } else {
+        console.error('❌ ERRO CRÍTICO: Select kit_id NÃO encontrado no DOM!');
+    }
+    
+    // ========================================
+    // BOTÃO MANUAL PARA ADICIONAR KIT
+    // ========================================
+    const btnAdicionarKit = document.getElementById('btnAdicionarKitCustos');
+    if (btnAdicionarKit) {
+        btnAdicionarKit.addEventListener('click', function() {
+            const selectKit = document.getElementById('kit_id');
+            
+            if (!selectKit || !selectKit.value) {
+                alert('⚠️ Selecione um kit primeiro!');
+                return;
+            }
+            
+            const option = selectKit.options[selectKit.selectedIndex];
+            const descricao = option.text.trim();
+            const preco = parseFloat(option.getAttribute('data-preco')) || 0;
+            const potencia = parseFloat(option.getAttribute('data-potencia')) || 0;
+            
+            console.log('🎯 BOTÃO CLICADO - Adicionando kit:', {descricao, preco, potencia});
+            
+            if (preco <= 0) {
+                alert('❌ Este kit não tem preço cadastrado!');
+                return;
+            }
+            
+            // Remover kits antigos
+            const antes = custos.length;
+            custos = custos.filter(c => {
+                const desc = c.descricao.toUpperCase();
+                return !desc.includes('KIT') && 
+                       !desc.includes('PLACA') && 
+                       !desc.includes('INVERSOR') &&
+                       !desc.includes('📦') &&
+                       !desc.includes('☀️') &&
+                       !desc.includes('⚡');
+            });
+            console.log(`Removidos ${antes - custos.length} equipamentos antigos`);
+            
+            // Adicionar kit
+            custos.push({
+                descricao: `📦 ${descricao}`,
+                qtd: 1,
+                valorUnit: preco,
+                lucro: 25,
+                unidade: 'un'
+            });
+            
+            console.log('✅ Kit adicionado! Total custos:', custos.length);
+            
+            // Atualizar tabela
+            atualizarTabelaCustos();
+            
+            // Feedback visual
+            alert(`✅ Kit adicionado à Aba 6!\n\n📦 ${descricao}\n💰 R$ ${preco.toFixed(2)}\n⚡ ${potencia} kWp\n\n👉 Vá para a Aba 6 - Financeiro para ver!`);
+        });
+        console.log('✅ Botão manual de adicionar kit configurado');
+    }
+    
+    // ========================================
+    // LISTENERS PARA COMPONENTES INDIVIDUAIS
+    // ========================================
+    const selectPlaca = document.getElementById('placa_id');
+    const inputQtdPlacas = document.getElementById('qtd_placas');
+    const selectInversor = document.getElementById('inversor_id');
+    const inputQtdInversores = document.getElementById('qtd_inversores');
+    
+    // Listener para placas
+    if (selectPlaca && inputQtdPlacas) {
+        const atualizarPlacas = () => {
+            const modoIndividual = document.getElementById('modo_individual')?.checked;
+            if (!modoIndividual) return; // Só funciona no modo individual
+            
+            if (selectPlaca.value) {
+                const option = selectPlaca.options[selectPlaca.selectedIndex];
+                const descricao = option.text.trim();
+                const preco = parseFloat(option.getAttribute('data-preco')) || 0;
+                const qtd = parseInt(inputQtdPlacas.value) || 1;
+                
+                // Remover placas antigas
+                custos = custos.filter(c => !c.descricao.includes('Placa'));
+                
+                // Adicionar placas
+                custos.push({
+                    descricao: `☀️ ${descricao}`,
+                    qtd: qtd,
+                    valorUnit: preco,
+                    lucro: 25,
+                    unidade: 'un'
+                });
+                
+                atualizarTabelaCustos();
+                console.log(`✅ ${qtd} placas adicionadas aos custos`);
+            }
+        };
+        
+        selectPlaca.addEventListener('change', atualizarPlacas);
+        inputQtdPlacas.addEventListener('change', atualizarPlacas);
+    }
+    
+    // Listener para inversores
+    if (selectInversor && inputQtdInversores) {
+        const atualizarInversores = () => {
+            const modoIndividual = document.getElementById('modo_individual')?.checked;
+            if (!modoIndividual) return;
+            
+            if (selectInversor.value) {
+                const option = selectInversor.options[selectInversor.selectedIndex];
+                const descricao = option.text.trim();
+                const preco = parseFloat(option.getAttribute('data-preco')) || 0;
+                const qtd = parseInt(inputQtdInversores.value) || 1;
+                
+                // Remover inversores antigos
+                custos = custos.filter(c => !c.descricao.includes('Inversor'));
+                
+                // Adicionar inversores
+                custos.push({
+                    descricao: `⚡ ${descricao}`,
+                    qtd: qtd,
+                    valorUnit: preco,
+                    lucro: 25,
+                    unidade: 'un'
+                });
+                
+                atualizarTabelaCustos();
+                console.log(`✅ ${qtd} inversores adicionados aos custos`);
+            }
+        };
+        
+        selectInversor.addEventListener('change', atualizarInversores);
+        inputQtdInversores.addEventListener('change', atualizarInversores);
+    }
+}
+
+// ========================================
+// FINANCEIRO E ALÍQUOTA FIO B
+// ========================================
+function setupFinanceiro() {
+    // Tabela de alíquotas Fio B por estado (valores aproximados médios 2025)
+    const aliquotasFioB = {
+        'AC': 15.50, 'AL': 18.20, 'AP': 16.80, 'AM': 17.40,
+        'BA': 19.50, 'CE': 18.80, 'DF': 16.20, 'ES': 17.90,
+        'GO': 18.10, 'MA': 19.20, 'MT': 17.60, 'MS': 16.90,
+        'MG': 19.80, 'PA': 18.50, 'PB': 19.10, 'PR': 17.30,
+        'PE': 19.40, 'PI': 18.90, 'RJ': 20.10, 'RN': 18.70,
+        'RS': 19.90, 'RO': 17.10, 'RR': 16.50, 'SC': 18.00,
+        'SP': 20.50, 'SE': 19.30, 'TO': 17.80
+    };
+    
+    // Atualizar alíquota ao selecionar estado
+    const selectEstado = document.getElementById('estado');
+    const inputAliquota = document.getElementById('aliquota_fio_b');
+    
+    if (selectEstado && inputAliquota) {
+        // Função para atualizar alíquota
+        const atualizarAliquota = () => {
+            const uf = selectEstado.value;
+            if (uf && aliquotasFioB[uf]) {
+                inputAliquota.value = aliquotasFioB[uf].toFixed(2);
+                console.log(`💡 Alíquota Fio B ${uf}: ${aliquotasFioB[uf]}%`);
+            }
+        };
+        
+        // Atualizar ao mudar estado
+        selectEstado.addEventListener('change', atualizarAliquota);
+        
+        // Atualizar na carga se já houver estado selecionado
+        if (selectEstado.value) {
+            atualizarAliquota();
+        }
+    }
+    
+    // Botão calcular financeiro
+    const btnCalcularFinanceiro = document.getElementById('btnCalcularFinanceiro');
+    if (btnCalcularFinanceiro) {
+        btnCalcularFinanceiro.addEventListener('click', calcularFinanceiro);
+    }
+}
+
+function calcularFinanceiro() {
+    const valorVenda = parseFloat(document.getElementById('valor_venda_final')?.value) || 0;
+    const geracaoMes = parseFloat(document.getElementById('geracao_estimada_mes')?.value) || 0;
+    const aliquotaFioB = parseFloat(document.getElementById('aliquota_fio_b')?.value) || 0;
+    
+    if (valorVenda <= 0 || geracaoMes <= 0) {
+        alert('⚠️ Calcule primeiro o dimensionamento e adicione custos!');
+        return;
+    }
+    
+    // Estimativa de economia anual (considerando tarifa média de R$ 0.80/kWh)
+    const tarifaMedia = 0.80;
+    const economiaAnual = geracaoMes * 12 * tarifaMedia;
+    
+    // Payback simples
+    const payback = valorVenda / economiaAnual;
+    
+    // Atualizar campos
+    document.getElementById('economia_anual').value = economiaAnual.toFixed(2);
+    document.getElementById('payback_anos').value = payback.toFixed(2);
+    
+    alert(`✅ Análise Financeira Completa!\n💰 Economia Anual: R$ ${economiaAnual.toFixed(2)}\n⏱️ Payback: ${payback.toFixed(1)} anos`);
+}
+
+// ========================================
+// CUSTOS
+// ========================================
+function setupCustos() {
+    const btnAddCusto = document.getElementById('btnAddCusto');
+    if (btnAddCusto) {
+        btnAddCusto.addEventListener('click', adicionarCusto);
+    }
+    
+    const btnConfirmarCusto = document.getElementById('btnConfirmarCusto');
+    if (btnConfirmarCusto) {
+        btnConfirmarCusto.addEventListener('click', confirmarCusto);
+    }
+    
+    // ========================================
+    // CARREGAR CUSTOS FIXOS AUTOMATICAMENTE
+    // ========================================
+    carregarCustosFixos();
+}
+
+function carregarCustosFixos() {
+    // Se já tem custos (editando projeto ou rascunho), não carregar automático
+    if (custos.length > 0) {
+        console.log('ℹ️ Custos já existem, não carregando automáticos');
+        return;
+    }
+    
+    console.log('📥 Carregando custos fixos do catálogo...');
+    
+    fetch('{{ url_for("energia_solar.custos_fixos_api") }}')
+        .then(response => response.json())
+        .then(custosFixos => {
+            if (custosFixos.length > 0) {
+                console.log(`✅ ${custosFixos.length} custos fixos carregados`);
+                
+                // Adicionar custos fixos ao array
+                custos = custosFixos.map(cf => ({
+                    descricao: cf.descricao,
+                    qtd: cf.qtd,
+                    valorUnit: cf.valorUnit,
+                    lucro: cf.lucro,
+                    unidade: cf.unidade
+                }));
+                
+                // Atualizar tabela
+                atualizarTabelaCustos();
+                
+                // Mostrar notificação
+                const indicator = document.getElementById('indicadorAutoSave');
+                if (indicator) {
+                    const oldText = indicator.innerHTML;
+                    indicator.innerHTML = '<span class="badge bg-info"><i class="fas fa-coins me-1"></i>Custos fixos carregados automaticamente</span>';
+                    indicator.classList.remove('d-none');
+                    setTimeout(() => {
+                        indicator.innerHTML = oldText;
+                        indicator.classList.add('d-none');
+                    }, 4000);
+                }
+            } else {
+                console.log('ℹ️ Nenhum custo fixo cadastrado para carregar');
+            }
+        })
+        .catch(error => {
+            console.error('❌ Erro ao carregar custos fixos:', error);
+        });
+}
+
+function adicionarCusto() {
+    // Resetar modo de edição
+    editandoCustoIndex = -1;
+    
+    // Limpar campos do modal
+    document.getElementById('modal_descricao').value = '';
+    document.getElementById('modal_qtd').value = '1';
+    document.getElementById('modal_valor').value = '';
+    document.getElementById('modal_lucro').value = '25';
+    document.getElementById('modal_unidade').value = 'un';
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalAdicionarCusto'));
+    modal.show();
+}
+
+function confirmarCusto() {
+    const descricao = document.getElementById('modal_descricao')?.value;
+    const qtd = parseFloat(document.getElementById('modal_qtd')?.value) || 1;
+    const valorUnit = parseFloat(document.getElementById('modal_valor')?.value) || 0;
+    const lucro = parseFloat(document.getElementById('modal_lucro')?.value) || 0;
+    const unidade = document.getElementById('modal_unidade')?.value || 'un';
+    
+    if (!descricao || valorUnit <= 0) {
+        alert('Preencha todos os campos!');
+        return;
+    }
+    
+    // Verificar se está editando ou adicionando
+    if (editandoCustoIndex >= 0) {
+        // MODO EDIÇÃO: Atualizar custo existente
+        custos[editandoCustoIndex] = {descricao, qtd, valorUnit, lucro, unidade};
+        console.log('✅ Custo editado:', descricao);
+        editandoCustoIndex = -1; // Resetar
+    } else {
+        // MODO ADICIONAR: Adicionar novo custo
+        custos.push({descricao, qtd, valorUnit, lucro, unidade});
+        console.log('✅ Custo adicionado:', descricao);
+    }
+    
+    atualizarTabelaCustos();
+    salvarRascunho(); // Salvar após adicionar/editar custo
+    
+    bootstrap.Modal.getInstance(document.getElementById('modalAdicionarCusto')).hide();
+    document.getElementById('modal_descricao').value = '';
+    document.getElementById('modal_qtd').value = '1';
+    document.getElementById('modal_valor').value = '';
+    document.getElementById('modal_lucro').value = '25';
+}
+
+function atualizarTabelaCustos() {
+    const tbody = document.getElementById('custos_tbody');
+    let html = '';
+    let totalGeral = 0;
+    let totalFaturamento = 0;
+    
+    custos.forEach((custo, index) => {
+        const valorTotal = custo.qtd * custo.valorUnit;
+        const valorComLucro = valorTotal * (1 + custo.lucro / 100);
+        totalGeral += valorTotal;
+        totalFaturamento += valorComLucro;
+        
+        html += `
+            <tr>
+                <td>${custo.descricao}</td>
+                <td class="text-center">${custo.qtd}</td>
+                <td class="text-center">${custo.unidade}</td>
+                <td class="text-end">R$ ${custo.valorUnit.toFixed(2)}</td>
+                <td class="text-end text-success fw-bold">R$ ${valorTotal.toFixed(2)}</td>
+                <td class="text-center">${custo.lucro.toFixed(1)}%</td>
+                <td class="text-end text-primary fw-bold">R$ ${valorComLucro.toFixed(2)}</td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-warning me-1" onclick="editarCusto(${index})" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removerCusto(${index})" title="Remover">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html || '<tr><td colspan="8" class="text-center text-muted">Nenhum custo adicionado</td></tr>';
+    
+    document.getElementById('total_custos').textContent = 'R$ ' + totalGeral.toFixed(2);
+    document.getElementById('total_faturamento').textContent = 'R$ ' + totalFaturamento.toFixed(2);
+    document.getElementById('custo_total_resumo').value = totalGeral.toFixed(2);
+    document.getElementById('valor_venda_final').value = totalFaturamento.toFixed(2);
+    document.getElementById('custos_json').value = JSON.stringify(custos);
+}
+
+window.removerCusto = function(index) {
+    if (confirm('Remover este custo?')) {
+        custos.splice(index, 1);
+        atualizarTabelaCustos();
+    }
+};
+
+window.editarCusto = function(index) {
+    const custo = custos[index];
+    if (!custo) {
+        console.error('❌ Custo não encontrado no índice:', index);
+        return;
+    }
+    
+    console.log('✏️ Editando custo:', custo.descricao);
+    
+    // Marcar que estamos editando este índice
+    editandoCustoIndex = index;
+    
+    // Preencher modal com dados atuais
+    document.getElementById('modal_descricao').value = custo.descricao;
+    document.getElementById('modal_qtd').value = custo.qtd;
+    document.getElementById('modal_valor').value = custo.valorUnit;
+    document.getElementById('modal_lucro').value = custo.lucro;
+    document.getElementById('modal_unidade').value = custo.unidade;
+    
+    // Abrir modal para edição
+    const modal = new bootstrap.Modal(document.getElementById('modalAdicionarCusto'));
+    modal.show();
+};
+
+// ========================================
+// COMPONENTES EXTRAS
+// ========================================
+function setupComponentesExtras() {
+    const btnAddComponente = document.getElementById('btnAddComponente');
+    if (btnAddComponente) {
+        btnAddComponente.addEventListener('click', adicionarComponenteExtra);
+    }
+}
+
+function adicionarComponenteExtra() {
+    componenteExtraCount++;
+    const html = `
+        <div class="card mb-2" id="componente_${componenteExtraCount}">
+            <div class="card-body">
+                <div class="row g-2">
+                    <div class="col-md-5">
+                        <input type="text" class="form-control componente-nome" placeholder="Nome">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control componente-qtd" placeholder="Qtd" min="1" value="1">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" step="0.01" class="form-control componente-preco" placeholder="Preço R$">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-danger w-100" onclick="removerComponente(${componenteExtraCount})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('componentesExtrasContainer').insertAdjacentHTML('beforeend', html);
+}
+
+window.removerComponente = function(id) {
+    document.getElementById(`componente_${id}`)?.remove();
+};
+
+// ========================================
+// SUBMIT FORM
+// ========================================
+function setupFormSubmit() {
+    const form = document.getElementById('projetoForm');
+    const btnFinalizar = document.getElementById('btnFinalizar');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            console.log('📝 Formulário sendo enviado...');
+            
+            // Coletar componentes extras dinâmicos
+            const componentes = [];
+            document.querySelectorAll('#componentesExtrasContainer .card').forEach(card => {
+                const nome = card.querySelector('.componente-nome')?.value;
+                const qtd = card.querySelector('.componente-qtd')?.value;
+                const preco = card.querySelector('.componente-preco')?.value;
+                if (nome && qtd && preco) {
+                    componentes.push({nome, qtd: parseInt(qtd), preco: parseFloat(preco)});
+                }
+            });
+            document.getElementById('componentes_extras').value = JSON.stringify(componentes);
+            
+            // Validações básicas
+            const nomeCliente = document.getElementById('nome_cliente')?.value;
+            const consumo = document.getElementById('consumo_kwh_mes')?.value;
+            
+            if (!nomeCliente || !consumo) {
+                e.preventDefault();
+                alert('⚠️ Preencha pelo menos o nome do cliente e o consumo mensal!');
+                return false;
+            }
+            
+            console.log('✅ Formulário validado! Enviando...');
+            limparRascunho();
+        });
+    }
+    
+    // Garantir que o botão Finalizar submeta o formulário
+    if (btnFinalizar && form) {
+        btnFinalizar.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('🎯 Botão Finalizar clicado');
+            
+            // Consolidar campos duplicados baseado no método ativo
+            const metodoSelecionado = document.querySelector('input[name="metodo_calculo"]:checked')?.value;
+            console.log('📋 Método ativo:', metodoSelecionado);
+            
+            // Criar campo hidden consolidado para tarifa_kwh
+            let tarifaFinal = 0.85; // Valor padrão
+            
+            if (metodoSelecionado === 'kwh_direto') {
+                tarifaFinal = document.getElementById('tarifa_kwh')?.value || 0.85;
+            } else if (metodoSelecionado === 'valor_conta') {
+                tarifaFinal = document.getElementById('tarifa_kwh_conta')?.value || 0.85;
+            }
+            
+            // Remover campos hidden antigos se existirem
+            document.querySelectorAll('input[name="tarifa_kwh_final"]').forEach(el => el.remove());
+            
+            // Criar novo campo hidden com valor consolidado
+            const hiddenTarifa = document.createElement('input');
+            hiddenTarifa.type = 'hidden';
+            hiddenTarifa.name = 'tarifa_kwh_final';
+            hiddenTarifa.value = tarifaFinal;
+            form.appendChild(hiddenTarifa);
+            
+            console.log('✅ Tarifa consolidada:', tarifaFinal);
+            
+            form.submit();
+        });
+    }
+}
+
+// ========================================
+// FUNÇÕES DE TESTE (GLOBAIS)
+// ========================================
+window.testarAutoSave = function() {
+    salvarRascunho();
+    alert('✅ Auto-Save executado!');
+};
+
+window.verRascunho = function() {
+    const rascunho = localStorage.getItem('projeto_solar_rascunho');
+    if (rascunho) {
+        console.log('📋 Rascunho:', JSON.parse(rascunho));
+        alert('📋 Rascunho encontrado! Veja o console (F12).');
+    } else {
+        alert('❌ Nenhum rascunho encontrado.');
+    }
+};
+
+window.limparRascunhoManual = function() {
+    if (confirm('Limpar rascunho?')) {
+        limparRascunho();
+        alert('✅ Rascunho limpo!');
+    }
+};
+
+// ========================================
+// PREENCHER DADOS DO PROJETO (EDIÇÃO)
+// ========================================
+function preencherDadosProjeto() {
+    if (!projetoDados || !projetoDados.id) return;
+    
+    console.log('📝 Preenchendo dados do projeto:', projetoDados);
+    
+    // Não carregar rascunho se estiver editando
+    localStorage.removeItem('projeto_solar_rascunho');
+    
+    try {
+        // Preencher campos básicos (os values do Jinja2 já preencheram nome, cep, endereco, cidade, estado)
+        // Preencher campos numéricos e selects que não foram preenchidos por Jinja2
+        if (projetoDados.consumo_kwh_mes) {
+            document.getElementById('consumo_kwh_mes').value = projetoDados.consumo_kwh_mes;
+            console.log('✓ Consumo:', projetoDados.consumo_kwh_mes);
+        }
+        if (projetoDados.potencia_kwp) {
+            document.getElementById('potencia_kwp').value = projetoDados.potencia_kwp;
+            console.log('✓ Potência:', projetoDados.potencia_kwp);
+        }
+        if (projetoDados.geracao_estimada_mes) {
+            document.getElementById('geracao_estimada_mes').value = projetoDados.geracao_estimada_mes;
+            console.log('✓ Geração:', projetoDados.geracao_estimada_mes);
+        }
+        
+        // Sliders - precisa atualizar valor E display
+        if (projetoDados.simultaneidade) {
+            const simSlider = document.getElementById('simultaneidade');
+            const simValue = document.getElementById('simultaneidadeValue');
+            simSlider.value = projetoDados.simultaneidade;
+            if (simValue) simValue.textContent = (projetoDados.simultaneidade * 100).toFixed(0) + '%';
+            console.log('✓ Simultaneidade:', projetoDados.simultaneidade);
+        }
+        
+        if (projetoDados.perdas_sistema) {
+            const perdaSlider = document.getElementById('perdas_sistema');
+            const perdaValue = document.getElementById('perdasValue');
+            perdaSlider.value = projetoDados.perdas_sistema;
+            if (perdaValue) perdaValue.textContent = (projetoDados.perdas_sistema * 100).toFixed(0) + '%';
+            console.log('✓ Perdas:', projetoDados.perdas_sistema);
+        }
+        
+        if (projetoDados.irradiacao_solar) {
+            document.getElementById('irradiacao_solar').value = projetoDados.irradiacao_solar;
+            console.log('✓ Irradiação:', projetoDados.irradiacao_solar);
+        }
+        
+        if (projetoDados.latitude) {
+            document.getElementById('latitude').value = projetoDados.latitude;
+            console.log('✓ Latitude:', projetoDados.latitude);
+        }
+        
+        if (projetoDados.longitude) {
+            document.getElementById('longitude').value = projetoDados.longitude;
+            console.log('✓ Longitude:', projetoDados.longitude);
+        }
+        
+        // Equipamentos
+        if (projetoDados.kit_id) {
+            document.getElementById('kit_id').value = projetoDados.kit_id;
+            console.log('✓ Kit ID:', projetoDados.kit_id);
+        }
+        if (projetoDados.placa_id) {
+            document.getElementById('placa_id').value = projetoDados.placa_id;
+            console.log('✓ Placa ID:', projetoDados.placa_id);
+        }
+        if (projetoDados.qtd_placas) {
+            document.getElementById('qtd_placas').value = projetoDados.qtd_placas;
+            console.log('✓ Qtd Placas:', projetoDados.qtd_placas);
+        }
+        if (projetoDados.inversor_id) {
+            document.getElementById('inversor_id').value = projetoDados.inversor_id;
+            console.log('✓ Inversor ID:', projetoDados.inversor_id);
+        }
+        if (projetoDados.qtd_inversores) {
+            document.getElementById('qtd_inversores').value = projetoDados.qtd_inversores;
+            console.log('✓ Qtd Inversores:', projetoDados.qtd_inversores);
+        }
+        
+        // Layout
+        if (projetoDados.orientacao) document.getElementById('orientacao').value = projetoDados.orientacao;
+        if (projetoDados.inclinacao) document.getElementById('inclinacao').value = projetoDados.inclinacao;
+        if (projetoDados.linhas_placas) document.getElementById('linhas_placas').value = projetoDados.linhas_placas;
+        if (projetoDados.colunas_placas) document.getElementById('colunas_placas').value = projetoDados.colunas_placas;
+        if (projetoDados.area_necessaria) document.getElementById('area_necessaria').value = projetoDados.area_necessaria;
+        
+        // Componentes adicionais
+        if (projetoDados.string_box) document.getElementById('string_box').checked = projetoDados.string_box;
+        if (projetoDados.disjuntor_cc) document.getElementById('disjuntor_cc').value = projetoDados.disjuntor_cc;
+        if (projetoDados.disjuntor_ca) document.getElementById('disjuntor_ca').value = projetoDados.disjuntor_ca;
+        if (projetoDados.cabo_cc) document.getElementById('cabo_cc').value = projetoDados.cabo_cc;
+        if (projetoDados.cabo_ca) document.getElementById('cabo_ca').value = projetoDados.cabo_ca;
+        if (projetoDados.estrutura_fixacao) document.getElementById('estrutura_fixacao').value = projetoDados.estrutura_fixacao;
+        
+        // Financeiro
+        if (projetoDados.lei_14300_ano) document.getElementById('lei_14300_ano').value = projetoDados.lei_14300_ano;
+        if (projetoDados.modalidade_gd) document.getElementById('modalidade_gd').value = projetoDados.modalidade_gd;
+        if (projetoDados.aliquota_fio_b) document.getElementById('aliquota_fio_b').value = projetoDados.aliquota_fio_b;
+        if (projetoDados.valor_venda) document.getElementById('valor_venda_final').value = projetoDados.valor_venda;
+        
+        console.log('✅ Dados do projeto preenchidos com sucesso!');
+        
+    } catch (error) {
+        console.error('❌ Erro ao preencher dados:', error);
+        alert('⚠️ Erro ao carregar alguns campos. Veja o console (F12).');
+    }
+} // FIM função preencherDadosProjeto
+
+</script>
+{% endblock %}

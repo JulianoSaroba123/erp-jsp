@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ 'Editar' if custo else 'Novo' }} Custo Fixo{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('energia_solar.dashboard') }}">Energia Solar</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('energia_solar.custos_fixos_listar') }}">Custos Fixos</a></li>
+<li class="breadcrumb-item active">{{ 'Editar' if custo else 'Novo' }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">
+        <i class="fas fa-money-bill-wave me-2 text-success"></i>
+        {{ 'Editar' if custo else 'Novo' }} Custo Fixo
+    </h2>
+
+    <form method="POST">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Dados do Custo Fixo</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <!-- Descrição -->
+                    <div class="col-md-6">
+                        <label for="descricao" class="form-label">Descrição *</label>
+                        <input type="text" class="form-control" id="descricao" name="descricao" 
+                               value="{{ custo.descricao if custo else '' }}" required>
+                        <small class="text-muted">Ex: COMISSÃO DE VENDA, DESCONTO MUNICIPAL</small>
+                    </div>
+
+                    <!-- Tipo -->
+                    <div class="col-md-3">
+                        <label for="tipo" class="form-label">Tipo *</label>
+                        <select class="form-select" id="tipo" name="tipo" required>
+                            <option value="">Selecione...</option>
+                            <option value="COMISSAO" {{ 'selected' if custo and custo.tipo == 'COMISSAO' else '' }}>Comissão</option>
+                            <option value="DESCONTO" {{ 'selected' if custo and custo.tipo == 'DESCONTO' else '' }}>Desconto</option>
+                            <option value="CUSTO_FIXO" {{ 'selected' if custo and custo.tipo == 'CUSTO_FIXO' else '' }}>Custo Fixo</option>
+                            <option value="TAXA" {{ 'selected' if custo and custo.tipo == 'TAXA' else '' }}>Taxa</option>
+                            <option value="IMPOSTO" {{ 'selected' if custo and custo.tipo == 'IMPOSTO' else '' }}>Imposto</option>
+                        </select>
+                    </div>
+
+                    <!-- Categoria -->
+                    <div class="col-md-3">
+                        <label for="categoria" class="form-label">Categoria</label>
+                        <select class="form-select" id="categoria" name="categoria">
+                            <option value="">Selecione...</option>
+                            <option value="Vendas" {{ 'selected' if custo and custo.categoria == 'Vendas' else '' }}>Vendas</option>
+                            <option value="Administrativa" {{ 'selected' if custo and custo.categoria == 'Administrativa' else '' }}>Administrativa</option>
+                            <option value="Técnica" {{ 'selected' if custo and custo.categoria == 'Técnica' else '' }}>Técnica</option>
+                            <option value="Logística" {{ 'selected' if custo and custo.categoria == 'Logística' else '' }}>Logística</option>
+                        </select>
+                    </div>
+
+                    <!-- Quantidade -->
+                    <div class="col-md-3">
+                        <label for="quantidade" class="form-label">Quantidade</label>
+                        <input type="number" step="0.01" class="form-control" id="quantidade" name="quantidade" 
+                               value="{{ custo.quantidade if custo else 1 }}">
+                    </div>
+
+                    <!-- Unidade -->
+                    <div class="col-md-3">
+                        <label for="unidade" class="form-label">Unidade</label>
+                        <select class="form-select" id="unidade" name="unidade">
+                            <option value="un" {{ 'selected' if custo and custo.unidade == 'un' else '' }}>un</option>
+                            <option value="%" {{ 'selected' if custo and custo.unidade == '%' else '' }}>%</option>
+                            <option value="m²" {{ 'selected' if custo and custo.unidade == 'm²' else '' }}>m²</option>
+                            <option value="kWp" {{ 'selected' if custo and custo.unidade == 'kWp' else '' }}>kWp</option>
+                            <option value="0,1" {{ 'selected' if custo and custo.unidade == '0,1' else '' }}>0,1</option>
+                            <option value="0,01" {{ 'selected' if custo and custo.unidade == '0,01' else '' }}>0,01</option>
+                        </select>
+                    </div>
+
+                    <!-- Valor Unitário -->
+                    <div class="col-md-3">
+                        <label for="valor_unitario" class="form-label">Valor Unitário (R$)</label>
+                        <input type="number" step="0.01" class="form-control" id="valor_unitario" name="valor_unitario" 
+                               value="{{ custo.valor_unitario if custo else 0 }}">
+                        <small class="text-muted">0 para percentuais</small>
+                    </div>
+
+                    <!-- Lucro -->
+                    <div class="col-md-3">
+                        <label for="lucro_percentual" class="form-label">Lucro (%)</label>
+                        <input type="number" step="0.01" class="form-control" id="lucro_percentual" name="lucro_percentual" 
+                               value="{{ custo.lucro_percentual if custo else 0 }}">
+                    </div>
+
+                    <!-- Faturamento -->
+                    <div class="col-md-4">
+                        <label for="faturamento" class="form-label">Faturamento</label>
+                        <select class="form-select" id="faturamento" name="faturamento">
+                            <option value="EMPRESA" {{ 'selected' if custo and custo.faturamento == 'EMPRESA' else '' }}>EMPRESA</option>
+                            <option value="FORNECEDOR" {{ 'selected' if custo and custo.faturamento == 'FORNECEDOR' else '' }}>FORNECEDOR</option>
+                            <option value="CLIENTE" {{ 'selected' if custo and custo.faturamento == 'CLIENTE' else '' }}>CLIENTE</option>
+                        </select>
+                    </div>
+
+                    <!-- Aplicar Automaticamente -->
+                    <div class="col-md-12">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="aplicar_automaticamente" 
+                                   name="aplicar_automaticamente" {{ 'checked' if custo and custo.aplicar_automaticamente else '' }}>
+                            <label class="form-check-label" for="aplicar_automaticamente">
+                                <strong>Aplicar automaticamente em novos projetos</strong>
+                                <small class="text-muted d-block">Se ativado, este custo aparecerá automaticamente na Aba 6 (Financeiro) ao criar projetos</small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Observações -->
+                    <div class="col-md-12">
+                        <label for="observacoes" class="form-label">Observações</label>
+                        <textarea class="form-control" id="observacoes" name="observacoes" rows="3">{{ custo.observacoes if custo else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-3 d-flex justify-content-between">
+            <a href="{{ url_for('energia_solar.custos_fixos_listar') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Voltar
+            </a>
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-save me-2"></i>{{ 'Atualizar' if custo else 'Salvar' }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

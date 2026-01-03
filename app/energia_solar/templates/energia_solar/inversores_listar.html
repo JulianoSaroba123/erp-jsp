@@ -1,0 +1,374 @@
+{% extends 'base.html' %}
+
+{% block title %}Catálogo de Inversores - ERP JSP{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('energia_solar.dashboard') }}">Energia Solar</a></li>
+<li class="breadcrumb-item active">Catálogo de Inversores</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header com Botão Adicionar -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="neon-text"><i class="fas fa-microchip me-2"></i>Catálogo de Inversores</h2>
+            <p class="text-muted mb-0">Gerencie os modelos de inversores fotovoltaicos disponíveis</p>
+        </div>
+        <button type="button" class="btn btn-neon-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNovoInversor">
+            <i class="fas fa-plus me-2"></i>Novo Inversor
+        </button>
+    </div>
+
+    <!-- Cards de Inversores -->
+    <div class="row g-4">
+        {% if inversores %}
+        {% for inversor in inversores %}
+        <div class="col-lg-6 col-md-12">
+            <div class="card card-neon h-100">
+                <div class="card-header d-flex justify-content-between align-items-center" 
+                     style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%);">
+                    <div>
+                        <h5 class="mb-0 text-roxo">{{ inversor.modelo }}</h5>
+                        <small class="text-muted">{{ inversor.fabricante }}</small>
+                    </div>
+                    <div>
+                        {% if inversor.tipo == 'String' %}
+                        <span class="badge bg-primary">String</span>
+                        {% elif inversor.tipo == 'Microinversor' %}
+                        <span class="badge bg-info">Microinversor</span>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">{{ inversor.tipo }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <!-- Coluna 1: Potência e Tensão -->
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6 class="text-muted mb-2"><i class="fas fa-bolt me-2"></i>Potência</h6>
+                                <h3 class="mb-0" style="color: #fbbf24;">{{ "%.1f"|format(inversor.potencia_nominal) }} kW</h3>
+                            </div>
+
+                            <div class="p-2 rounded mb-2" style="background: rgba(255, 255, 255, 0.05);">
+                                <small class="text-muted d-block">Potência Máxima</small>
+                                <strong class="text-ciano">{{ "%.1f"|format(inversor.potencia_maxima) }} kW</strong>
+                            </div>
+
+                            <div class="p-2 rounded mb-2" style="background: rgba(255, 255, 255, 0.05);">
+                                <small class="text-muted d-block">Tensão Entrada</small>
+                                <strong>{{ inversor.tensao_entrada_min }}-{{ inversor.tensao_entrada_max }} V</strong>
+                            </div>
+
+                            <div class="p-2 rounded" style="background: rgba(255, 255, 255, 0.05);">
+                                <small class="text-muted d-block">Tensão MPPT</small>
+                                <strong>{{ inversor.tensao_mppt_min }}-{{ inversor.tensao_mppt_max }} V</strong>
+                            </div>
+                        </div>
+
+                        <!-- Coluna 2: Características -->
+                        <div class="col-md-6">
+                            <div class="p-2 rounded mb-2" style="background: rgba(255, 255, 255, 0.05);">
+                                <small class="text-muted d-block">Número de MPPTs</small>
+                                <strong class="text-amarelo">{{ inversor.num_mppt }}</strong>
+                            </div>
+
+                            <div class="p-2 rounded mb-2" style="background: rgba(255, 255, 255, 0.05);">
+                                <small class="text-muted d-block">Eficiência Máxima</small>
+                                <strong class="text-verde">{{ "%.1f"|format(inversor.eficiencia_maxima) }}%</strong>
+                            </div>
+
+                            <div class="p-2 rounded mb-2" style="background: rgba(255, 255, 255, 0.05);">
+                                <small class="text-muted d-block">Fases</small>
+                                <strong>
+                                    {% if inversor.fases == 1 %}
+                                    <span class="badge bg-info">Monofásico</span>
+                                    {% elif inversor.fases == 3 %}
+                                    <span class="badge bg-success">Trifásico</span>
+                                    {% else %}
+                                    {{ inversor.fases }} Fases
+                                    {% endif %}
+                                </strong>
+                            </div>
+
+                            <div class="p-2 rounded" style="background: rgba(255, 255, 255, 0.05);">
+                                <small class="text-muted d-block">Garantia</small>
+                                <strong><i class="fas fa-shield-alt text-success me-1"></i>{{ inversor.garantia }} anos</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preços -->
+                    <div class="border-top mt-3 pt-3">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <div class="text-center p-2 rounded" style="background: rgba(16, 185, 129, 0.1);">
+                                    <small class="text-muted d-block mb-1">Preço de Venda</small>
+                                    <strong class="text-verde">R$ {{ "%.2f"|format(inversor.preco_venda) }}</strong>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-2 rounded" style="background: rgba(6, 182, 212, 0.1);">
+                                    <small class="text-muted d-block mb-1">Preço por kW</small>
+                                    <strong class="text-ciano">R$ {{ "%.2f"|format(inversor.preco_venda / inversor.potencia_nominal) }}/kW</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top">
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="editarInversor({{ inversor.id }})">
+                            <i class="fas fa-edit me-1"></i>Editar
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="excluirInversor({{ inversor.id }})">
+                            <i class="fas fa-trash me-1"></i>Excluir
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="col-12">
+            <div class="card card-neon">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-microchip fa-5x text-muted mb-4"></i>
+                    <h4 class="text-muted">Nenhum inversor cadastrado</h4>
+                    <p class="text-muted mb-4">Adicione os modelos de inversores disponíveis no seu catálogo</p>
+                    <button type="button" class="btn btn-neon-primary btn-lg" data-bs-toggle="modal" data-bs-target="#modalNovoInversor">
+                        <i class="fas fa-plus me-2"></i>Adicionar Primeiro Inversor
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Novo Inversor -->
+<div class="modal fade" id="modalNovoInversor" tabindex="-1" aria-labelledby="modalNovoInversorLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="background: #1a1a2e; border: 1px solid rgba(168, 85, 247, 0.3);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(168, 85, 247, 0.3);">
+                <h5 class="modal-title neon-text" id="modalNovoInversorLabel">
+                    <i class="fas fa-microchip me-2"></i>Novo Inversor
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('energia_solar.inversor_criar') }}" id="formNovoInversor">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <!-- Seção 1: Informações Básicas -->
+                        <div class="col-12">
+                            <h6 class="text-roxo mb-3"><i class="fas fa-info-circle me-2"></i>Informações Básicas</h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Fabricante *</label>
+                            <input type="text" class="form-control" name="fabricante" placeholder="Ex: GOODWE, Huawei, Fronius" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Modelo *</label>
+                            <input type="text" class="form-control" name="modelo" placeholder="Ex: GW 3300-XS-30 - AFCI" required>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label">Tipo *</label>
+                            <select class="form-select" name="tipo" required>
+                                <option value="">Selecione...</option>
+                                <option value="String">String (Inversor de String)</option>
+                                <option value="Microinversor">Microinversor</option>
+                                <option value="Híbrido">Híbrido (com bateria)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Fases *</label>
+                            <select class="form-select" name="fases" required>
+                                <option value="">Selecione...</option>
+                                <option value="Monofásico">Monofásico</option>
+                                <option value="Bifásico">Bifásico</option>
+                                <option value="Trifásico">Trifásico</option>
+                            </select>
+                        </div>
+
+                        <!-- Seção 2: Potência -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-amarelo mb-3"><i class="fas fa-bolt me-2"></i>Especificações de Potência</h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Potência Nominal (kW) *</label>
+                            <input type="number" step="0.1" class="form-control" name="potencia_nominal" 
+                                   id="inputPotenciaNominal" placeholder="3.3" min="0.1" required
+                                   onchange="calcularPrecoKw()">
+                            <small class="text-muted">Potência nominal do inversor</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Potência Máxima (kW)</label>
+                            <input type="number" step="0.1" class="form-control" name="potencia_maxima" 
+                                   placeholder="3.6" min="0.1">
+                            <small class="text-muted">Potência máxima de entrada CC</small>
+                        </div>
+
+                        <!-- Seção 3: Tensões de Entrada (CC) -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-ciano mb-3"><i class="fas fa-plug me-2"></i>Tensões de Entrada (CC)</h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Tensão Entrada Mínima (V)</label>
+                            <input type="number" class="form-control" name="tensao_entrada_min" 
+                                   placeholder="80" min="1">
+                            <small class="text-muted">Tensão mínima para iniciar</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tensão Entrada Máxima (V)</label>
+                            <input type="number" class="form-control" name="tensao_entrada_max" 
+                                   placeholder="550" min="1">
+                            <small class="text-muted">Tensão máxima permitida</small>
+                        </div>
+
+                        <!-- Tensões MPPT -->
+                        <div class="col-md-6">
+                            <label class="form-label">Tensão MPPT Mínima (V)</label>
+                            <input type="number" class="form-control" name="tensao_mppt_min" 
+                                   placeholder="150" min="1">
+                            <small class="text-muted">Faixa MPPT início</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tensão MPPT Máxima (V)</label>
+                            <input type="number" class="form-control" name="tensao_mppt_max" 
+                                   placeholder="500" min="1">
+                            <small class="text-muted">Faixa MPPT fim</small>
+                        </div>
+
+                        <!-- Seção 4: MPPTs e Eficiência -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-verde mb-3"><i class="fas fa-tachometer-alt me-2"></i>Rastreamento e Eficiência</h6>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Número de MPPTs</label>
+                            <input type="number" class="form-control" name="num_mppt" 
+                                   placeholder="2" min="1" value="2">
+                            <small class="text-muted">Rastreadores independentes</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Strings por MPPT</label>
+                            <input type="number" class="form-control" name="strings_por_mppt" 
+                                   placeholder="2" min="1">
+                            <small class="text-muted">Quantidade de strings</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Eficiência Máxima (%)</label>
+                            <input type="number" step="0.1" class="form-control" name="eficiencia_maxima" 
+                                   placeholder="97.6" min="80" max="100">
+                            <small class="text-muted">Eficiência de conversão</small>
+                        </div>
+
+                        <!-- Seção 5: Garantia e Proteção -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-info mb-3"><i class="fas fa-shield-alt me-2"></i>Garantia e Proteção</h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Garantia (anos)</label>
+                            <input type="number" class="form-control" name="garantia_anos" 
+                                   value="5" min="1" max="20">
+                            <small class="text-muted">Garantia do fabricante</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Grau de Proteção</label>
+                            <input type="text" class="form-control" name="grau_protecao" 
+                                   placeholder="IP65" maxlength="10">
+                            <small class="text-muted">Ex: IP65, IP67</small>
+                        </div>
+
+                        <!-- Seção 6: Precificação -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-warning mb-3"><i class="fas fa-dollar-sign me-2"></i>Precificação</h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Preço Venda (R$) *</label>
+                            <input type="number" step="0.01" class="form-control" name="preco_venda" 
+                                   id="inputPrecoVenda" placeholder="2500.00" min="0.01" required
+                                   onchange="calcularPrecoKw()">
+                            <small class="text-muted">Preço de venda por inversor</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Preço por kW (R$/kW)</label>
+                            <input type="number" step="0.01" class="form-control bg-dark" name="preco_por_kw" 
+                                   id="inputPrecoKw" placeholder="757.58" readonly>
+                            <small class="text-success"><i class="fas fa-calculator me-1"></i>Calculado automaticamente</small>
+                        </div>
+
+                        <!-- Checkbox Micro Inversor -->
+                        <div class="col-12 mt-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="micro_inversor" id="checkMicroInversor">
+                                <label class="form-check-label" for="checkMicroInversor">
+                                    <i class="fas fa-microchip me-2"></i>Micro Inversor (para sistemas pequenos)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid rgba(168, 85, 247, 0.3);">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-neon-primary">
+                        <i class="fas fa-save me-2"></i>Salvar Inversor
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Função para calcular preço por kW automaticamente
+function calcularPrecoKw() {
+    const potenciaNominal = parseFloat(document.getElementById('inputPotenciaNominal').value);
+    const precoVenda = parseFloat(document.getElementById('inputPrecoVenda').value);
+    
+    if (potenciaNominal > 0 && precoVenda > 0) {
+        const precoKw = precoVenda / potenciaNominal;
+        document.getElementById('inputPrecoKw').value = precoKw.toFixed(2);
+    } else {
+        document.getElementById('inputPrecoKw').value = '';
+    }
+}
+
+// Função para editar inversor
+function editarInversor(id) {
+    // TODO: Implementar edição
+    alert('Funcionalidade de edição em desenvolvimento');
+}
+
+// Função para excluir inversor
+function excluirInversor(id) {
+    if (confirm('Tem certeza que deseja excluir este inversor do catálogo?')) {
+        window.location.href = "{{ url_for('energia_solar.inversor_excluir', inversor_id=0) }}".replace('0', id);
+    }
+}
+
+// Validação do formulário
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('formNovoInversor');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const precoKw = document.getElementById('inputPrecoKw').value;
+            if (!precoKw || parseFloat(precoKw) <= 0) {
+                e.preventDefault();
+                alert('Por favor, preencha Potência Nominal e Preço Venda para calcular o Preço por kW.');
+                return false;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

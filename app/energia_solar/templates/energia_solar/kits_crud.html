@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Kits Solares - Catálogo{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('energia_solar.dashboard') }}">Energia Solar</a></li>
+<li class="breadcrumb-item active">Kits Solares</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-verde mb-1"><i class="fas fa-boxes-stacked me-2"></i>Kits Solares</h2>
+            <p class="text-muted mb-0">Kits completos prontos para orçamento</p>
+        </div>
+        <button class="btn btn-verde" data-bs-toggle="modal" data-bs-target="#modalCRUD" onclick="abrirModalCriar()">
+            <i class="fas fa-plus me-2"></i>Novo Kit
+        </button>
+    </div>
+
+    <!-- Lista de Kits -->
+    {% if kits_obj %}
+    <div class="row g-4">
+        {% for kit in kits_obj %}
+        <div class="col-lg-4 col-md-6">
+            <div class="card bg-dark border-verde h-100">
+                <div class="card-header bg-gradient-verde d-flex justify-content-between">
+                    <h6 class="mb-0">{{ kit.fabricante }}</h6>
+                    <span class="badge bg-success">{{ "%.2f"|format(kit.potencia_kwp) }} kWp</span>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-ciano mb-3">{{ kit.descricao }}</h6>
+                    
+                    <!-- Componentes -->
+                    <div class="border-top pt-2 mb-2">
+                        <small class="text-muted d-block"><i class="fas fa-solar-panel me-1 text-ciano"></i>{{ kit.placa.modelo }}</small>
+                        <small class="text-muted">{{ kit.placa.potencia }}W × {{ kit.qtd_placas }} un</small>
+                    </div>
+                    <div class="border-top pt-2 mb-3">
+                        <small class="text-muted d-block"><i class="fas fa-microchip me-1 text-roxo"></i>{{ kit.inversor.modelo }}</small>
+                        <small class="text-muted">{{ kit.inversor.potencia_nominal }}kW × {{ kit.qtd_inversores }} un</small>
+                    </div>
+
+                    <div class="text-center p-2 rounded" style="background: rgba(16, 185, 129, 0.1);">
+                        <small class="text-muted d-block">Preço do Kit</small>
+                        <strong class="text-verde fs-5">R$ {{ "%.2f"|format(kit.preco) }}</strong>
+                        <small class="text-muted d-block">R$ {{ "%.2f"|format(kit.preco / kit.potencia_kwp) }}/Wp</small>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-info flex-grow-1" onclick="visualizarKit({{ kit.id }})">
+                            <i class="fas fa-eye me-1"></i>Ver
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="editarKit({{ kit.id }})">
+                            <i class="fas fa-edit me-1"></i>Editar
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="excluirKit({{ kit.id }}, '{{ kit.descricao }}')">
+                            <i class="fas fa-trash me-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>Nenhum kit cadastrado. Clique em "Novo Kit" para começar.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal CRUD -->
+<div class="modal fade" id="modalCRUD" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content bg-dark border-verde">
+            <div class="modal-header bg-gradient-verde">
+                <h5 class="modal-title" id="modalTitulo"><i class="fas fa-boxes-stacked me-2"></i>Kit Solar</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Abas -->
+                <ul class="nav nav-tabs mb-4" id="crudTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-criar" data-bs-toggle="tab" data-bs-target="#criar" type="button">
+                            <i class="fas fa-plus me-2"></i>Criar Novo
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation" id="li-visualizar" style="display:none;">
+                        <button class="nav-link" id="tab-visualizar" data-bs-toggle="tab" data-bs-target="#visualizar" type="button">
+                            <i class="fas fa-eye me-2"></i>Visualizar
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation" id="li-editar" style="display:none;">
+                        <button class="nav-link" id="tab-editar" data-bs-toggle="tab" data-bs-target="#editar" type="button">
+                            <i class="fas fa-edit me-2"></i>Editar
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="crudTabsContent">
+                    <!-- CRIAR -->
+                    <div class="tab-pane fade show active" id="criar" role="tabpanel">
+                        <form method="POST" action="{{ url_for('energia_solar.kit_criar') }}" id="formCriar">
+                            {% include 'energia_solar/_form_kit.html' %}
+                            <div class="text-end mt-4">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- VISUALIZAR -->
+                    <div class="tab-pane fade" id="visualizar" role="tabpanel">
+                        <div id="conteudoVisualizar">
+                            <p class="text-center text-muted">Carregando...</p>
+                        </div>
+                    </div>
+
+                    <!-- EDITAR -->
+                    <div class="tab-pane fade" id="editar" role="tabpanel">
+                        <form method="POST" id="formEditar">
+                            <div id="conteudoEditar">
+                                <p class="text-center text-muted">Carregando...</p>
+                            </div>
+                            <div class="text-end mt-4">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-warning"><i class="fas fa-save me-2"></i>Atualizar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const kitsData = {{ kits|tojson|safe }};
+
+function abrirModalCriar() {
+    document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-plus me-2"></i>Novo Kit Solar';
+    document.getElementById('li-visualizar').style.display = 'none';
+    document.getElementById('li-editar').style.display = 'none';
+    document.getElementById('tab-criar').click();
+    document.getElementById('formCriar').reset();
+}
+
+function visualizarKit(id) {
+    const kit = kitsData.find(k => k.id === id);
+    if (!kit) return;
+
+    document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-eye me-2"></i>Visualizar Kit';
+    document.getElementById('li-visualizar').style.display = 'block';
+    document.getElementById('li-editar').style.display = 'block';
+
+    document.getElementById('conteudoVisualizar').innerHTML = `
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card bg-dark border-info">
+                    <div class="card-header bg-gradient-info"><h6 class="mb-0">Identificação do Kit</h6></div>
+                    <div class="card-body">
+                        <p><strong>Fabricante:</strong> ${kit.fabricante}</p>
+                        <p><strong>Descrição:</strong> ${kit.descricao}</p>
+                        <p><strong>Potência:</strong> ${kit.potencia_kwp} kWp</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-dark border-success">
+                    <div class="card-header bg-gradient-success"><h6 class="mb-0">Placas Solares</h6></div>
+                    <div class="card-body">
+                        <p><strong>Modelo:</strong> ${kit.placa.modelo}</p>
+                        <p><strong>Fabricante:</strong> ${kit.placa.fabricante}</p>
+                        <p><strong>Potência:</strong> ${kit.placa.potencia} Wp</p>
+                        <p><strong>Quantidade:</strong> ${kit.qtd_placas} unidades</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-dark border-warning">
+                    <div class="card-header bg-gradient-warning text-dark"><h6 class="mb-0">Inversores</h6></div>
+                    <div class="card-body">
+                        <p><strong>Modelo:</strong> ${kit.inversor.modelo}</p>
+                        <p><strong>Fabricante:</strong> ${kit.inversor.fabricante}</p>
+                        <p><strong>Potência:</strong> ${kit.inversor.potencia_nominal} kW</p>
+                        <p><strong>Quantidade:</strong> ${kit.qtd_inversores} unidades</p>
+                    </div>
+                </div>
+            </div>
+            ${kit.outras_informacoes ? `
+            <div class="col-12">
+                <div class="card bg-dark border-secondary">
+                    <div class="card-header"><h6 class="mb-0">Outros Componentes</h6></div>
+                    <div class="card-body">
+                        <pre class="text-muted mb-0">${kit.outras_informacoes}</pre>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+            <div class="col-12">
+                <div class="card bg-dark border-success">
+                    <div class="card-header bg-gradient-success"><h6 class="mb-0">Precificação</h6></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Preço Total:</strong> <span class="text-success fs-4">R$ ${kit.preco.toFixed(2)}</span></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Preço/Watt:</strong> R$ ${(kit.preco / kit.potencia_kwp).toFixed(2)}/Wp</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('modalCRUD'));
+    modal.show();
+    document.getElementById('tab-visualizar').click();
+}
+
+function editarKit(id) {
+    alert('Função de edição em desenvolvimento. Dados serão carregados aqui para atualização.');
+}
+
+function excluirKit(id, descricao) {
+    if (confirm(`Tem certeza que deseja excluir o kit "${descricao}"?`)) {
+        fetch(`/energia-solar/kits/excluir/${id}`, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Erro ao excluir kit!');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

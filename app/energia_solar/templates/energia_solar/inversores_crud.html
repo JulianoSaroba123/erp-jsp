@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}Inversores Solares - Catálogo{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('energia_solar.dashboard') }}">Energia Solar</a></li>
+<li class="breadcrumb-item active">Inversores Solares</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-roxo mb-1"><i class="fas fa-microchip me-2"></i>Inversores Solares</h2>
+            <p class="text-muted mb-0">Catálogo de inversores fotovoltaicos</p>
+        </div>
+        <button class="btn btn-roxo" data-bs-toggle="modal" data-bs-target="#modalCRUD" onclick="abrirModalCriar()">
+            <i class="fas fa-plus me-2"></i>Novo Inversor
+        </button>
+    </div>
+
+    <!-- Lista de Inversores -->
+    {% if inversores_obj %}
+    <div class="row g-4">
+        {% for inversor in inversores_obj %}
+        <div class="col-lg-4 col-md-6">
+            <div class="card bg-dark border-roxo h-100">
+                <div class="card-header bg-gradient-roxo d-flex justify-content-between">
+                    <h6 class="mb-0">{{ inversor.modelo }}</h6>
+                    <span class="badge bg-success">Ativo</span>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="fas fa-industry me-2"></i>{{ inversor.fabricante }}</h6>
+                    <h3 class="text-amarelo mb-2">{{ inversor.potencia_nominal }} kW</h3>
+                    <p class="text-muted mb-3"><i class="fas fa-bolt me-2"></i>{{ inversor.tipo }} - {{ inversor.fases }}</p>
+                    
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="text-center p-2 rounded" style="background: rgba(139, 92, 246, 0.1);">
+                                <small class="text-muted d-block">Eficiência</small>
+                                <strong class="text-roxo">{{ "%.1f"|format(inversor.eficiencia_maxima if inversor.eficiencia_maxima else 97.0) }}%</strong>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-2 rounded" style="background: rgba(6, 182, 212, 0.1);">
+                                <small class="text-muted d-block">MPPTs</small>
+                                <strong class="text-ciano">{{ inversor.num_mppt }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center p-2 rounded mb-3" style="background: rgba(16, 185, 129, 0.1);">
+                        <small class="text-muted d-block">Preço de Venda</small>
+                        <strong class="text-verde fs-5">R$ {{ "%.2f"|format(inversor.preco_venda) }}</strong>
+                        <small class="text-muted d-block">R$ {{ "%.2f"|format(inversor.preco_venda / inversor.potencia_nominal) }}/kW</small>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-info flex-grow-1" onclick="visualizarInversor({{ inversor.id }})">
+                            <i class="fas fa-eye me-1"></i>Ver
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="editarInversor({{ inversor.id }})">
+                            <i class="fas fa-edit me-1"></i>Editar
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="excluirInversor({{ inversor.id }}, '{{ inversor.modelo }}')">
+                            <i class="fas fa-trash me-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>Nenhum inversor cadastrado. Clique em "Novo Inversor" para começar.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal CRUD -->
+<div class="modal fade" id="modalCRUD" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content bg-dark border-roxo">
+            <div class="modal-header bg-gradient-roxo">
+                <h5 class="modal-title" id="modalTitulo"><i class="fas fa-microchip me-2"></i>Inversor Solar</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Abas -->
+                <ul class="nav nav-tabs mb-4" id="crudTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-criar" data-bs-toggle="tab" data-bs-target="#criar" type="button">
+                            <i class="fas fa-plus me-2"></i>Criar Novo
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation" id="li-visualizar" style="display:none;">
+                        <button class="nav-link" id="tab-visualizar" data-bs-toggle="tab" data-bs-target="#visualizar" type="button">
+                            <i class="fas fa-eye me-2"></i>Visualizar
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation" id="li-editar" style="display:none;">
+                        <button class="nav-link" id="tab-editar" data-bs-toggle="tab" data-bs-target="#editar" type="button">
+                            <i class="fas fa-edit me-2"></i>Editar
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="crudTabsContent">
+                    <!-- CRIAR -->
+                    <div class="tab-pane fade show active" id="criar" role="tabpanel">
+                        <form method="POST" action="{{ url_for('energia_solar.inversor_criar') }}" id="formCriar">
+                            {% include 'energia_solar/_form_inversor.html' %}
+                            <div class="text-end mt-4">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- VISUALIZAR -->
+                    <div class="tab-pane fade" id="visualizar" role="tabpanel">
+                        <div id="conteudoVisualizar">
+                            <p class="text-center text-muted">Carregando...</p>
+                        </div>
+                    </div>
+
+                    <!-- EDITAR -->
+                    <div class="tab-pane fade" id="editar" role="tabpanel">
+                        <form method="POST" id="formEditar">
+                            <div id="conteudoEditar">
+                                <p class="text-center text-muted">Carregando...</p>
+                            </div>
+                            <div class="text-end mt-4">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-warning"><i class="fas fa-save me-2"></i>Atualizar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const inversoresData = {{ inversores|tojson|safe }};
+
+function abrirModalCriar() {
+    document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-plus me-2"></i>Novo Inversor Solar';
+    document.getElementById('li-visualizar').style.display = 'none';
+    document.getElementById('li-editar').style.display = 'none';
+    document.getElementById('tab-criar').click();
+    document.getElementById('formCriar').reset();
+}
+
+function visualizarInversor(id) {
+    const inv = inversoresData.find(i => i.id === id);
+    if (!inv) return;
+
+    document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-eye me-2"></i>Visualizar Inversor';
+    document.getElementById('li-visualizar').style.display = 'block';
+    document.getElementById('li-editar').style.display = 'block';
+
+    document.getElementById('conteudoVisualizar').innerHTML = `
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card bg-dark border-info">
+                    <div class="card-header bg-gradient-info"><h6 class="mb-0">Informações Básicas</h6></div>
+                    <div class="card-body">
+                        <p><strong>Fabricante:</strong> ${inv.fabricante}</p>
+                        <p><strong>Modelo:</strong> ${inv.modelo}</p>
+                        <p><strong>Tipo:</strong> ${inv.tipo}</p>
+                        <p><strong>Fases:</strong> ${inv.fases}</p>
+                        <p><strong>Potência Nominal:</strong> ${inv.potencia_nominal} kW</p>
+                        <p><strong>Potência Máxima:</strong> ${inv.potencia_maxima || 'N/A'} kW</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-dark border-warning">
+                    <div class="card-header bg-gradient-warning text-dark"><h6 class="mb-0">Especificações Técnicas</h6></div>
+                    <div class="card-body">
+                        <p><strong>Eficiência Máxima:</strong> ${inv.eficiencia_maxima || 'N/A'}%</p>
+                        <p><strong>Número de MPPTs:</strong> ${inv.num_mppt}</p>
+                        <p><strong>Strings por MPPT:</strong> ${inv.strings_por_mppt || 'N/A'}</p>
+                        <p><strong>Tensão Entrada:</strong> ${inv.tensao_entrada_min || 'N/A'} - ${inv.tensao_entrada_max || 'N/A'} V</p>
+                        <p><strong>Garantia:</strong> ${inv.garantia_anos} anos</p>
+                        <p><strong>Grau Proteção:</strong> ${inv.grau_protecao || 'N/A'}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card bg-dark border-success">
+                    <div class="card-header bg-gradient-success"><h6 class="mb-0">Precificação</h6></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p><strong>Preço de Venda:</strong> <span class="text-success fs-4">R$ ${inv.preco_venda.toFixed(2)}</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Preço de Custo:</strong> R$ ${inv.preco_custo ? inv.preco_custo.toFixed(2) : '0.00'}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Preço/kW:</strong> R$ ${(inv.preco_venda / inv.potencia_nominal).toFixed(2)}/kW</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('modalCRUD'));
+    modal.show();
+    document.getElementById('tab-visualizar').click();
+}
+
+function editarInversor(id) {
+    alert('Função de edição em desenvolvimento. Dados serão carregados aqui para atualização.');
+}
+
+function excluirInversor(id, modelo) {
+    if (confirm(`Tem certeza que deseja excluir o inversor "${modelo}"?`)) {
+        fetch(`/energia-solar/inversores/excluir/${id}`, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Erro ao excluir inversor!');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -5,6 +5,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from app.extensoes import db
 from app.energia_solar.energia_solar_model import CalculoEnergiaSolar
+from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar, KitSolar, ProjetoSolar
+from app.energia_solar.custo_fixo_model import CustoFixo
 from app.cliente.cliente_model import Cliente
 from datetime import datetime
 import math
@@ -192,3 +194,560 @@ def api_irradiacao(estado):
     
     irradiacao = irradiacao_por_estado.get(estado.upper(), 5.0)
     return jsonify({'irradiacao': irradiacao})
+
+
+# ==================== ROTAS DOS CATÁLOGOS ====================
+
+# ========== Catálogo de Placas Solares ==========
+@energia_solar_bp.route('/placas')
+@login_required
+def placas_listar():
+    """Lista todas as placas solares do catálogo"""
+    placas_obj = PlacaSolar.query.order_by(PlacaSolar.fabricante, PlacaSolar.modelo).all()
+    placas = [p.to_dict() for p in placas_obj]
+    return render_template('energia_solar/placas_crud.html', placas=placas, placas_obj=placas_obj)
+
+
+@energia_solar_bp.route('/placas/criar', methods=['POST'])
+@login_required
+def placa_criar():
+    """Cria uma nova placa solar no catálogo"""
+    try:
+        # Processar campos opcionais
+        comprimento = request.form.get('comprimento')
+        largura = request.form.get('largura')
+        espessura = request.form.get('espessura')
+        eficiencia = request.form.get('eficiencia')
+        num_celulas = request.form.get('num_celulas')
+        garantia_produto = request.form.get('garantia_produto')
+        garantia_desempenho = request.form.get('garantia_desempenho')
+        preco_custo = request.form.get('preco_custo')
+        
+        placa = PlacaSolar(
+            modelo=request.form.get('modelo'),
+            fabricante=request.form.get('fabricante'),
+            potencia=float(request.form.get('potencia')),
+            eficiencia=float(eficiencia) if eficiencia else None,
+            num_celulas=int(num_celulas) if num_celulas else None,
+            comprimento=float(comprimento) if comprimento else None,
+            largura=float(largura) if largura else None,
+            espessura=float(espessura) if espessura else None,
+            garantia_produto=int(garantia_produto) if garantia_produto else 12,
+            garantia_desempenho=int(garantia_desempenho) if garantia_desempenho else 25,
+            preco_venda=float(request.form.get('preco_venda')),
+            preco_custo=float(preco_custo) if preco_custo else None
+        )
+        
+        db.session.add(placa)
+        db.session.commit()
+        flash(f'Placa {placa.modelo} adicionada ao catálogo com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao adicionar placa: {str(e)}', 'error')
+    
+    return redirect(url_for('energia_solar.placas_listar'))
+
+
+@energia_solar_bp.route('/placas/excluir/<int:placa_id>')
+@login_required
+def placa_excluir(placa_id):
+    """Exclui uma placa solar do catálogo"""
+    try:
+        placa = PlacaSolar.query.get_or_404(placa_id)
+        db.session.delete(placa)
+        db.session.commit()
+        flash('Placa excluída do catálogo com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir placa: {str(e)}', 'error')
+    
+    return redirect(url_for('energia_solar.placas_listar'))
+
+
+# ========== Catálogo de Inversores ==========
+@energia_solar_bp.route('/inversores')
+@login_required
+def inversores_listar():
+    """Lista todos os inversores do catálogo"""
+    inversores_obj = InversorSolar.query.order_by(InversorSolar.fabricante, InversorSolar.modelo).all()
+    inversores = [i.to_dict() for i in inversores_obj]
+    return render_template('energia_solar/inversores_crud.html', inversores=inversores, inversores_obj=inversores_obj)
+
+
+@energia_solar_bp.route('/inversores/criar', methods=['POST'])
+@login_required
+def inversor_criar():
+    """Cria um novo inversor no catálogo"""
+    try:
+        # Processar campos opcionais
+        potencia_maxima = request.form.get('potencia_maxima')
+        tensao_entrada_min = request.form.get('tensao_entrada_min')
+        tensao_entrada_max = request.form.get('tensao_entrada_max')
+        tensao_mppt_min = request.form.get('tensao_mppt_min')
+        tensao_mppt_max = request.form.get('tensao_mppt_max')
+        num_mppt = request.form.get('num_mppt')
+        strings_por_mppt = request.form.get('strings_por_mppt')
+        eficiencia_maxima = request.form.get('eficiencia_maxima')
+        garantia_anos = request.form.get('garantia_anos')
+        grau_protecao = request.form.get('grau_protecao')
+        
+        inversor = InversorSolar(
+            modelo=request.form.get('modelo'),
+            fabricante=request.form.get('fabricante'),
+            tipo=request.form.get('tipo'),
+            potencia_nominal=float(request.form.get('potencia_nominal')),
+            potencia_maxima=float(potencia_maxima) if potencia_maxima else None,
+            tensao_entrada_min=float(tensao_entrada_min) if tensao_entrada_min else None,
+            tensao_entrada_max=float(tensao_entrada_max) if tensao_entrada_max else None,
+            tensao_mppt_min=float(tensao_mppt_min) if tensao_mppt_min else None,
+            tensao_mppt_max=float(tensao_mppt_max) if tensao_mppt_max else None,
+            num_mppt=int(num_mppt) if num_mppt else 2,
+            strings_por_mppt=int(strings_por_mppt) if strings_por_mppt else None,
+            eficiencia_maxima=float(eficiencia_maxima) if eficiencia_maxima else None,
+            fases=request.form.get('fases'),
+            garantia_anos=int(garantia_anos) if garantia_anos else 5,
+            grau_protecao=grau_protecao,
+            preco_venda=float(request.form.get('preco_venda'))
+        )
+        
+        db.session.add(inversor)
+        db.session.commit()
+        flash(f'Inversor {inversor.modelo} adicionado ao catálogo com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao adicionar inversor: {str(e)}', 'error')
+    
+    return redirect(url_for('energia_solar.inversores_listar'))
+    
+    return redirect(url_for('energia_solar.inversores_listar'))
+
+
+@energia_solar_bp.route('/inversores/excluir/<int:inversor_id>')
+@login_required
+def inversor_excluir(inversor_id):
+    """Exclui um inversor do catálogo"""
+    try:
+        inversor = InversorSolar.query.get_or_404(inversor_id)
+        db.session.delete(inversor)
+        db.session.commit()
+        flash('Inversor excluído do catálogo com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir inversor: {str(e)}', 'error')
+    
+    return redirect(url_for('energia_solar.inversores_listar'))
+
+
+# ========================================
+# ROTAS DE KITS
+# ========================================
+
+@energia_solar_bp.route('/kits')
+@login_required
+def kits_listar():
+    """Lista todos os kits do catálogo"""
+    from app.energia_solar.catalogo_model import KitSolar, PlacaSolar, InversorSolar
+    
+    kits_obj = KitSolar.query.order_by(KitSolar.fabricante, KitSolar.potencia_kwp).all()
+    kits = [k.to_dict() for k in kits_obj]
+    placas = PlacaSolar.query.filter_by(ativo=True).order_by(PlacaSolar.fabricante, PlacaSolar.modelo).all()
+    inversores = InversorSolar.query.filter_by(ativo=True).order_by(InversorSolar.fabricante, InversorSolar.modelo).all()
+    
+    return render_template('energia_solar/kits_crud.html', kits=kits, kits_obj=kits_obj, placas=placas, inversores=inversores)
+
+
+@energia_solar_bp.route('/kits/criar', methods=['POST'])
+@login_required
+def kit_criar():
+    """Cria um novo kit no catálogo"""
+    from app.energia_solar.catalogo_model import KitSolar
+    
+    try:
+        kit = KitSolar(
+            fabricante=request.form.get('fabricante'),
+            descricao=request.form.get('descricao'),
+            outras_informacoes=request.form.get('outras_informacoes'),
+            potencia_kwp=float(request.form.get('potencia_kwp')),
+            preco=float(request.form.get('preco')),
+            placa_id=int(request.form.get('placa_id')),
+            qtd_placas=int(request.form.get('qtd_placas')),
+            inversor_id=int(request.form.get('inversor_id')),
+            qtd_inversores=int(request.form.get('qtd_inversores'))
+        )
+        
+        db.session.add(kit)
+        db.session.commit()
+        flash(f'Kit {kit.descricao} adicionado ao catálogo com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao adicionar kit: {str(e)}', 'error')
+    
+    return redirect(url_for('energia_solar.kits_listar'))
+
+
+@energia_solar_bp.route('/kits/excluir/<int:kit_id>', methods=['POST'])
+@login_required
+def kit_excluir(kit_id):
+    """Exclui um kit do catálogo"""
+    from app.energia_solar.catalogo_model import KitSolar
+    
+    try:
+        kit = KitSolar.query.get_or_404(kit_id)
+        db.session.delete(kit)
+        db.session.commit()
+        flash('Kit excluído do catálogo com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir kit: {str(e)}', 'error')
+    
+    return redirect(url_for('energia_solar.kits_listar'))
+
+
+# ========================================
+# ROTAS DE PROJETOS SOLARES - WIZARD 6 ABAS
+# ========================================
+
+@energia_solar_bp.route('/projetos')
+@login_required
+def projetos_listar():
+    """Lista todos os projetos solares"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    projetos = ProjetoSolar.query.order_by(ProjetoSolar.data_criacao.desc()).all()
+    
+    # Evitar cache para garantir HTML atualizado
+    from flask import make_response
+    response = make_response(render_template('energia_solar/projetos_lista.html', projetos=projetos))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
+@energia_solar_bp.route('/projetos/criar')
+@login_required
+def projeto_criar():
+    """Renderiza o wizard de criação de projeto (6 abas)"""
+    from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar, KitSolar
+    
+    # Carregar dados para os dropdowns
+    clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+    placas = PlacaSolar.query.filter_by(ativo=True).order_by(PlacaSolar.fabricante, PlacaSolar.modelo).all()
+    inversores = InversorSolar.query.filter_by(ativo=True).order_by(InversorSolar.fabricante, InversorSolar.modelo).all()
+    kits = KitSolar.query.filter_by(ativo=True).order_by(KitSolar.fabricante).all()
+    
+    return render_template('energia_solar/projeto_wizard.html',
+                         clientes=clientes,
+                         placas=placas,
+                         inversores=inversores,
+                         kits=kits)
+
+
+@energia_solar_bp.route('/projetos/salvar', methods=['POST'])
+@login_required
+def projeto_salvar():
+    """Salva o projeto completo das 6 abas"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    import json
+    
+    try:
+        # Criar novo projeto
+        projeto = ProjetoSolar()
+        
+        # Aba 1 - Cliente e Localização
+        projeto.cliente_id = request.form.get('cliente_id') or None
+        projeto.nome_cliente = request.form.get('nome_cliente')
+        projeto.cep = request.form.get('cep')
+        projeto.endereco = request.form.get('endereco')
+        projeto.cidade = request.form.get('cidade')
+        projeto.estado = request.form.get('estado')
+        projeto.latitude = float(request.form.get('latitude', 0)) if request.form.get('latitude') else None
+        projeto.longitude = float(request.form.get('longitude', 0)) if request.form.get('longitude') else None
+        projeto.irradiacao_solar = float(request.form.get('irradiacao_solar', 0)) if request.form.get('irradiacao_solar') else None
+        
+        # Aba 2 - Consumo e Dimensionamento
+        projeto.metodo_calculo = request.form.get('metodo_calculo')
+        projeto.consumo_kwh_mes = float(request.form.get('consumo_kwh_mes', 0)) if request.form.get('consumo_kwh_mes') else None
+        
+        # Histórico (se metodo = historico_12m)
+        if projeto.metodo_calculo == 'historico_12m':
+            historico = {}
+            for mes in ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']:
+                val = request.form.get(f'mes_{mes}', 0)
+                historico[mes] = float(val) if val else 0
+            projeto.historico_consumo = historico
+        
+        projeto.valor_conta_luz = float(request.form.get('valor_conta_luz', 0)) if request.form.get('valor_conta_luz') else None
+        projeto.tarifa_kwh = float(request.form.get('tarifa_kwh', 0.85)) if request.form.get('tarifa_kwh') else 0.85
+        projeto.potencia_kwp = float(request.form.get('potencia_kwp', 0)) if request.form.get('potencia_kwp') else None
+        projeto.geracao_estimada_mes = float(request.form.get('geracao_estimada_mes', 0)) if request.form.get('geracao_estimada_mes') else None
+        projeto.simultaneidade = float(request.form.get('simultaneidade', 0.80)) if request.form.get('simultaneidade') else 0.80
+        projeto.perdas_sistema = float(request.form.get('perdas_sistema', 0.20)) if request.form.get('perdas_sistema') else 0.20
+        
+        # Aba 3 - Equipamentos
+        projeto.modo_equipamento = request.form.get('modo_equipamento')
+        if projeto.modo_equipamento == 'kit':
+            kit_id = int(request.form.get('kit_id')) if request.form.get('kit_id') else None
+            projeto.kit_id = kit_id
+            
+            # Buscar dados do kit e preencher placas/inversores automaticamente
+            if kit_id:
+                from app.energia_solar.catalogo_model import KitSolar
+                kit = KitSolar.query.get(kit_id)
+                if kit:
+                    projeto.placa_id = kit.placa_id
+                    projeto.inversor_id = kit.inversor_id
+                    projeto.qtd_placas = kit.qtd_placas
+                    projeto.qtd_inversores = kit.qtd_inversores
+        else:
+            projeto.placa_id = int(request.form.get('placa_id')) if request.form.get('placa_id') else None
+            projeto.inversor_id = int(request.form.get('inversor_id')) if request.form.get('inversor_id') else None
+            projeto.qtd_placas = int(request.form.get('qtd_placas', 0)) if request.form.get('qtd_placas') else None
+            projeto.qtd_inversores = int(request.form.get('qtd_inversores', 1)) if request.form.get('qtd_inversores') else 1
+        
+        # Aba 4 - Layout
+        projeto.orientacao = request.form.get('orientacao')
+        projeto.inclinacao = float(request.form.get('inclinacao', 0)) if request.form.get('inclinacao') else None
+        projeto.direcao = request.form.get('direcao')
+        projeto.linhas_placas = int(request.form.get('linhas_placas', 0)) if request.form.get('linhas_placas') else None
+        projeto.colunas_placas = int(request.form.get('colunas_placas', 0)) if request.form.get('colunas_placas') else None
+        projeto.area_necessaria = float(request.form.get('area_necessaria', 0)) if request.form.get('area_necessaria') else None
+        
+        # Aba 5 - Componentes Adicionais
+        projeto.string_box = request.form.get('string_box') == 'on'
+        projeto.disjuntor_cc = request.form.get('disjuntor_cc')
+        projeto.disjuntor_ca = request.form.get('disjuntor_ca')
+        projeto.cabo_cc = request.form.get('cabo_cc')
+        projeto.cabo_ca = request.form.get('cabo_ca')
+        projeto.estrutura_fixacao = request.form.get('estrutura_fixacao')
+        
+        # Componentes extras (JSON array)
+        componentes_extras = request.form.get('componentes_extras')
+        if componentes_extras:
+            try:
+                projeto.componentes_extras = json.loads(componentes_extras)
+            except:
+                projeto.componentes_extras = []
+        
+        # Aba 6 - Financeiro
+        projeto.custo_equipamentos = float(request.form.get('custo_equipamentos', 0)) if request.form.get('custo_equipamentos') else None
+        projeto.custo_instalacao = float(request.form.get('custo_instalacao', 0)) if request.form.get('custo_instalacao') else None
+        projeto.custo_projeto = float(request.form.get('custo_projeto', 0)) if request.form.get('custo_projeto') else None
+        projeto.custo_total = float(request.form.get('custo_total', 0)) if request.form.get('custo_total') else None
+        projeto.margem_lucro = float(request.form.get('margem_lucro', 0)) if request.form.get('margem_lucro') else None
+        projeto.valor_venda = float(request.form.get('valor_venda', 0)) if request.form.get('valor_venda') else None
+        
+        # Lei 14.300
+        projeto.lei_14300_ano = int(request.form.get('lei_14300_ano', 2025)) if request.form.get('lei_14300_ano') else 2025
+        projeto.modalidade_gd = request.form.get('modalidade_gd')
+        projeto.aliquota_fio_b = float(request.form.get('aliquota_fio_b', 0)) if request.form.get('aliquota_fio_b') else None
+        projeto.economia_anual = float(request.form.get('economia_anual', 0)) if request.form.get('economia_anual') else None
+        projeto.payback_anos = float(request.form.get('payback_anos', 0)) if request.form.get('payback_anos') else None
+        
+        # Controle
+        projeto.status = request.form.get('status', 'rascunho')
+        projeto.observacoes = request.form.get('observacoes')
+        projeto.usuario_criador = current_user.nome if hasattr(current_user, 'nome') else 'Sistema'
+        
+        # Salvar
+        db.session.add(projeto)
+        db.session.commit()
+        
+        flash('Projeto criado com sucesso!', 'success')
+        return redirect(url_for('energia_solar.projetos_listar'))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao criar projeto: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.projeto_criar'))
+
+
+@energia_solar_bp.route('/projetos/visualizar/<int:projeto_id>')
+@login_required
+def projeto_visualizar(projeto_id):
+    """Visualiza os detalhes completos de um projeto"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    projeto = ProjetoSolar.query.get_or_404(projeto_id)
+    
+    return render_template('energia_solar/projeto_detalhes.html', projeto=projeto)
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/editar')
+@login_required
+def projeto_editar(projeto_id):
+    """Edita um projeto existente usando o wizard"""
+    from app.energia_solar.catalogo_model import ProjetoSolar, PlacaSolar, InversorSolar, KitSolar
+    
+    projeto = ProjetoSolar.query.get_or_404(projeto_id)
+    
+    # Converter projeto para dicionário serializável
+    projeto_dict = {
+        'id': projeto.id,
+        'nome_cliente': projeto.nome_cliente,
+        'cep': projeto.cep,
+        'endereco': projeto.endereco,
+        'cidade': projeto.cidade,
+        'estado': projeto.estado,
+        'latitude': float(projeto.latitude) if projeto.latitude else None,
+        'longitude': float(projeto.longitude) if projeto.longitude else None,
+        'consumo_kwh_mes': float(projeto.consumo_kwh_mes) if projeto.consumo_kwh_mes else None,
+        'tarifa_kwh': float(projeto.tarifa_kwh) if projeto.tarifa_kwh else None,
+        'simultaneidade': float(projeto.simultaneidade) if projeto.simultaneidade else 0.8,
+        'perdas_sistema': float(projeto.perdas_sistema) if projeto.perdas_sistema else 0.2,
+        'irradiacao_solar': float(projeto.irradiacao_solar) if projeto.irradiacao_solar else None,
+        'potencia_kwp': float(projeto.potencia_kwp) if projeto.potencia_kwp else None,
+        'geracao_estimada_mes': float(projeto.geracao_estimada_mes) if projeto.geracao_estimada_mes else None,
+        'kit_id': projeto.kit_id,
+        'placa_id': projeto.placa_id,
+        'qtd_placas': projeto.qtd_placas,
+        'inversor_id': projeto.inversor_id,
+        'qtd_inversores': projeto.qtd_inversores,
+        'orientacao': projeto.orientacao,
+        'inclinacao': float(projeto.inclinacao) if projeto.inclinacao else None,
+        'linhas_placas': projeto.linhas_placas,
+        'colunas_placas': projeto.colunas_placas,
+        'area_necessaria': float(projeto.area_necessaria) if projeto.area_necessaria else None,
+        'string_box': projeto.string_box,
+        'disjuntor_cc': projeto.disjuntor_cc,
+        'disjuntor_ca': projeto.disjuntor_ca,
+        'cabo_cc': projeto.cabo_cc,
+        'cabo_ca': projeto.cabo_ca,
+        'estrutura_fixacao': projeto.estrutura_fixacao,
+        'lei_14300_ano': projeto.lei_14300_ano,
+        'modalidade_gd': projeto.modalidade_gd,
+        'aliquota_fio_b': float(projeto.aliquota_fio_b) if projeto.aliquota_fio_b else None,
+        'valor_venda': float(projeto.valor_venda) if projeto.valor_venda else None,
+    }
+    
+    # Buscar dados para os selects
+    placas = PlacaSolar.query.filter_by(ativo=True).all()
+    inversores = InversorSolar.query.filter_by(ativo=True).all()
+    kits = KitSolar.query.filter_by(ativo=True).all()
+    
+    # Renderizar wizard com dados do projeto para edição
+    return render_template('energia_solar/projeto_wizard.html',
+                         projeto=projeto_dict,
+                         placas=placas,
+                         inversores=inversores,
+                         kits=kits,
+                         modo='editar')
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/excluir', methods=['POST'])
+@login_required
+def projeto_excluir(projeto_id):
+    """Exclui um projeto"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    projeto = ProjetoSolar.query.get_or_404(projeto_id)
+    
+    try:
+        nome_cliente = projeto.nome_cliente
+        db.session.delete(projeto)
+        db.session.commit()
+        flash(f'Projeto do cliente "{nome_cliente}" excluído com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir projeto: {str(e)}', 'error')
+    
+    return redirect(url_for('energia_solar.projetos_listar'))
+
+
+# ========================================
+# CUSTOS FIXOS - Catálogo
+# ========================================
+
+@energia_solar_bp.route('/custos-fixos')
+@login_required
+def custos_fixos_listar():
+    """Lista todos os custos fixos cadastrados"""
+    custos = CustoFixo.query.order_by(CustoFixo.tipo, CustoFixo.descricao).all()
+    return render_template('energia_solar/custos_fixos_lista.html', custos=custos)
+
+
+@energia_solar_bp.route('/custos-fixos/api/listar')
+@login_required
+def custos_fixos_api():
+    """API para listar custos fixos ativos (para carregar no wizard)"""
+    custos = CustoFixo.query.filter_by(ativo=True, aplicar_automaticamente=True).all()
+    return jsonify([custo.to_dict() for custo in custos])
+
+
+@energia_solar_bp.route('/custos-fixos/novo', methods=['GET', 'POST'])
+@login_required
+def custo_fixo_novo():
+    """Criar novo custo fixo"""
+    if request.method == 'POST':
+        try:
+            custo = CustoFixo(
+                descricao=request.form.get('descricao'),
+                unidade=request.form.get('unidade', 'un'),
+                quantidade=float(request.form.get('quantidade', 1)),
+                valor_unitario=float(request.form.get('valor_unitario', 0)),
+                lucro_percentual=float(request.form.get('lucro_percentual', 0)),
+                faturamento=request.form.get('faturamento', 'EMPRESA'),
+                tipo=request.form.get('tipo'),
+                categoria=request.form.get('categoria'),
+                aplicar_automaticamente=request.form.get('aplicar_automaticamente') == 'on',
+                observacoes=request.form.get('observacoes')
+            )
+            
+            db.session.add(custo)
+            db.session.commit()
+            flash(f'Custo fixo "{custo.descricao}" criado com sucesso!', 'success')
+            return redirect(url_for('energia_solar.custos_fixos_listar'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao criar custo fixo: {str(e)}', 'error')
+    
+    return render_template('energia_solar/custo_fixo_form.html', custo=None)
+
+
+@energia_solar_bp.route('/custos-fixos/<int:custo_id>/editar', methods=['GET', 'POST'])
+@login_required
+def custo_fixo_editar(custo_id):
+    """Editar custo fixo existente"""
+    custo = CustoFixo.query.get_or_404(custo_id)
+    
+    if request.method == 'POST':
+        try:
+            custo.descricao = request.form.get('descricao')
+            custo.unidade = request.form.get('unidade', 'un')
+            custo.quantidade = float(request.form.get('quantidade', 1))
+            custo.valor_unitario = float(request.form.get('valor_unitario', 0))
+            custo.lucro_percentual = float(request.form.get('lucro_percentual', 0))
+            custo.faturamento = request.form.get('faturamento', 'EMPRESA')
+            custo.tipo = request.form.get('tipo')
+            custo.categoria = request.form.get('categoria')
+            custo.aplicar_automaticamente = request.form.get('aplicar_automaticamente') == 'on'
+            custo.observacoes = request.form.get('observacoes')
+            
+            db.session.commit()
+            flash(f'Custo fixo "{custo.descricao}" atualizado com sucesso!', 'success')
+            return redirect(url_for('energia_solar.custos_fixos_listar'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao atualizar custo fixo: {str(e)}', 'error')
+    
+    return render_template('energia_solar/custo_fixo_form.html', custo=custo)
+
+
+@energia_solar_bp.route('/custos-fixos/<int:custo_id>/excluir', methods=['POST'])
+@login_required
+def custo_fixo_excluir(custo_id):
+    """Excluir custo fixo"""
+    custo = CustoFixo.query.get_or_404(custo_id)
+    
+    try:
+        descricao = custo.descricao
+        db.session.delete(custo)
+        db.session.commit()
+        flash(f'Custo fixo "{descricao}" excluído com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir custo fixo: {str(e)}', 'error')
+    
+    return redirect(url_for('energia_solar.custos_fixos_listar'))

@@ -8,89 +8,204 @@
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Header -->
+    <!-- Header com Botões -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="neon-title">
-            <i class="fas fa-solar-panel me-2"></i>
-            Cálculo de Energia Solar
-        </h2>
         <div>
+            <h2 class="neon-title mb-1">
+                <i class="fas fa-solar-panel me-2"></i>
+                Dashboard - Energia Solar
+            </h2>
+            <p class="text-muted mb-0">Gestão completa de projetos fotovoltaicos</p>
+        </div>
+        <div class="d-flex gap-2">
             <a href="{{ url_for('energia_solar.calculadora') }}" class="btn btn-neon-primary">
-                <i class="fas fa-calculator me-2"></i>Nova Calculadora
+                <i class="fas fa-plus-circle me-2"></i>Novo Projeto
             </a>
             <a href="{{ url_for('energia_solar.listar') }}" class="btn btn-neon-secondary">
-                <i class="fas fa-list me-2"></i>Ver Todos
+                <i class="fas fa-list me-2"></i>Todos Projetos
             </a>
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-info dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fas fa-cog me-2"></i>Catálogos
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{{ url_for('energia_solar.placas_listar') }}"><i class="fas fa-solar-panel me-2"></i>Placas Solares</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('energia_solar.inversores_listar') }}"><i class="fas fa-microchip me-2"></i>Inversores</a></li>
+                </ul>
+            </div>
         </div>
     </div>
 
-    <!-- Cards de Estatísticas -->
+    <!-- Cards de Estatísticas - Estilo GOORU -->
     <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="card card-neon">
-                <div class="card-body text-center">
-                    <i class="fas fa-clipboard-list fa-3x mb-3 text-ciano"></i>
-                    <h3 class="neon-text">{{ total_calculos }}</h3>
-                    <p class="text-muted">Cálculos Realizados</p>
+        <!-- Card 1: Capacidade do Sistema -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card card-neon h-100" style="border-left: 4px solid #06b6d4;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <p class="text-muted mb-1" style="font-size: 0.85rem;">CAPACIDADE DO SISTEMA</p>
+                            <h3 class="mb-0" style="color: #06b6d4; font-family: 'Orbitron', sans-serif;">
+                                {{ "%.2f"|format(potencia_total) }} kWp
+                            </h3>
+                        </div>
+                        <div class="bg-gradient-ciano rounded-circle p-3" style="background: rgba(6, 182, 212, 0.1);">
+                            <i class="fas fa-charging-station fa-2x" style="color: #06b6d4;"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-arrow-up text-success me-2"></i>
+                        <small class="text-muted">{{ total_calculos }} projetos ativos</small>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card card-neon">
-                <div class="card-body text-center">
-                    <i class="fas fa-bolt fa-3x mb-3 text-amarelo"></i>
-                    <h3 class="neon-text">{{ "%.2f"|format(potencia_total) }} kWp</h3>
-                    <p class="text-muted">Potência Total Calculada</p>
+
+        <!-- Card 2: Consumo Médio Mensal -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card card-neon h-100" style="border-left: 4px solid #fbbf24;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <p class="text-muted mb-1" style="font-size: 0.85rem;">CONSUMO MÉDIO MENSAL</p>
+                            <h3 class="mb-0" style="color: #fbbf24; font-family: 'Orbitron', sans-serif;">
+                                270 kWh/Mês
+                            </h3>
+                        </div>
+                        <div class="rounded-circle p-3" style="background: rgba(251, 191, 36, 0.1);">
+                            <i class="fas fa-bolt fa-2x" style="color: #fbbf24;"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-info-circle text-info me-2"></i>
+                        <small class="text-muted">Média dos últimos projetos</small>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card card-neon">
-                <div class="card-body text-center">
-                    <i class="fas fa-piggy-bank fa-3x mb-3 text-verde"></i>
-                    <h3 class="neon-text">R$ {{ "%.2f"|format(economia_total) }}</h3>
-                    <p class="text-muted">Economia Anual Estimada</p>
+
+        <!-- Card 3: Economia Anual Prevista -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card card-neon h-100" style="border-left: 4px solid #10b981;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <p class="text-muted mb-1" style="font-size: 0.85rem;">ECONOMIA ANUAL PREVISTA</p>
+                            <h3 class="mb-0" style="color: #10b981; font-family: 'Orbitron', sans-serif;">
+                                R$ {{ "%.2f"|format(economia_total) }}
+                            </h3>
+                        </div>
+                        <div class="rounded-circle p-3" style="background: rgba(16, 185, 129, 0.1);">
+                            <i class="fas fa-piggy-bank fa-2x" style="color: #10b981;"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-arrow-up text-success me-2"></i>
+                        <small class="text-muted">Total em projetos ativos</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card 4: Valor do Orçamento -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card card-neon h-100" style="border-left: 4px solid #a855f7;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <p class="text-muted mb-1" style="font-size: 0.85rem;">VALOR DO ORÇAMENTO</p>
+                            <h3 class="mb-0" style="color: #a855f7; font-family: 'Orbitron', sans-serif;">
+                                R$ 10.881,26
+                            </h3>
+                        </div>
+                        <div class="rounded-circle p-3" style="background: rgba(168, 85, 247, 0.1);">
+                            <i class="fas fa-wallet fa-2x" style="color: #a855f7;"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-calculator text-warning me-2"></i>
+                        <small class="text-muted">Média por projeto</small>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Últimos Cálculos -->
+    <!-- Seção de Gráficos - Estilo GOORU -->
+    <div class="row g-4 mb-4">
+        <!-- Gráfico: Consumo vs Geração -->
+        <div class="col-lg-6">
+            <div class="card card-neon h-100">
+                <div class="card-header" style="background: rgba(6, 182, 212, 0.05);">
+                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2 text-ciano"></i>Consumo vs Geração (kWh/Mês)</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartConsumoGeracao" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráfico: Irradiação Solar Mensal -->
+        <div class="col-lg-6">
+            <div class="card card-neon h-100">
+                <div class="card-header" style="background: rgba(251, 191, 36, 0.05);">
+                    <h6 class="mb-0"><i class="fas fa-sun me-2 text-amarelo"></i>Irradiação Solar Mensal (kWh/m²/dia)</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartIrradiacao" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimos Cálculos - Tabela Melhorada -->
     <div class="card card-neon">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Últimos Cálculos</h5>
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-folder-open me-2"></i>Projetos Recentes</h5>
+            <a href="{{ url_for('energia_solar.listar') }}" class="btn btn-sm btn-ciano">
+                <i class="fas fa-list me-2"></i>Ver Todos os Projetos
+            </a>
         </div>
         <div class="card-body p-0">
             {% if calculos %}
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead>
+                <table class="table table-hover mb-0 align-middle">
+                    <thead style="background: rgba(6, 182, 212, 0.05);">
                         <tr>
-                            <th>Data</th>
-                            <th>Cliente</th>
-                            <th>Consumo</th>
-                            <th>Potência</th>
-                            <th>Painéis</th>
-                            <th>Economia/Mês</th>
-                            <th>Payback</th>
-                            <th>Ações</th>
+                            <th><i class="fas fa-calendar me-1"></i>Data</th>
+                            <th><i class="fas fa-user me-1"></i>Cliente</th>
+                            <th><i class="fas fa-bolt me-1"></i>Consumo</th>
+                            <th><i class="fas fa-solar-panel me-1"></i>Potência</th>
+                            <th><i class="fas fa-th me-1"></i>Painéis</th>
+                            <th><i class="fas fa-piggy-bank me-1"></i>Economia/Mês</th>
+                            <th><i class="fas fa-clock me-1"></i>Payback</th>
+                            <th class="text-center"><i class="fas fa-cog me-1"></i>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for calculo in calculos %}
                         <tr>
-                            <td>{{ calculo.data_calculo.strftime('%d/%m/%Y') }}</td>
-                            <td>{{ calculo.nome_cliente }}</td>
-                            <td>{{ "%.0f"|format(calculo.consumo_mensal) }} kWh</td>
-                            <td><strong class="text-ciano">{{ "%.2f"|format(calculo.potencia_sistema) }} kWp</strong></td>
-                            <td>{{ calculo.numero_paineis }} un</td>
-                            <td class="text-success">R$ {{ "%.2f"|format(calculo.economia_mensal) }}</td>
-                            <td>{{ "%.1f"|format(calculo.payback_anos) }} anos</td>
-                            <td>
-                                <a href="{{ url_for('energia_solar.visualizar', id=calculo.id) }}" 
-                                   class="btn btn-sm btn-outline-info">
-                                    <i class="fas fa-eye"></i>
-                                </a>
+                            <td><small>{{ calculo.data_calculo.strftime('%d/%m/%Y') }}</small></td>
+                            <td><strong>{{ calculo.nome_cliente }}</strong></td>
+                            <td><span class="badge bg-warning text-dark">{{ "%.0f"|format(calculo.consumo_mensal) }} kWh</span></td>
+                            <td><span class="badge bg-info">{{ "%.2f"|format(calculo.potencia_sistema) }} kWp</span></td>
+                            <td><span class="badge bg-secondary">{{ calculo.numero_paineis }} un</span></td>
+                            <td class="text-success fw-bold">R$ {{ "%.2f"|format(calculo.economia_mensal) }}</td>
+                            <td><span class="badge" style="background: #a855f7;">{{ "%.1f"|format(calculo.payback_anos) }} anos</span></td>
+                            <td class="text-center">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{{ url_for('energia_solar.visualizar', id=calculo.id) }}" 
+                                       class="btn btn-outline-ciano" title="Visualizar Projeto">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-warning" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" title="Excluir" 
+                                            onclick="confirmarExclusao({{ calculo.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -101,12 +216,136 @@
             <div class="text-center py-5">
                 <i class="fas fa-solar-panel fa-4x text-muted mb-3"></i>
                 <p class="text-muted">Nenhum cálculo realizado ainda</p>
-                <a href="{{ url_for('energia_solar.calculadora') }}" class="btn btn-neon-primary">
+                <a href="{{ url_for('energia_solar.calculadora') }}" class="btn btn-neon-primary btn-lg">
                     <i class="fas fa-calculator me-2"></i>Fazer Primeiro Cálculo
                 </a>
             </div>
             {% endif %}
         </div>
     </div>
+
+    <!-- Scripts Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+    function confirmarExclusao(id) {
+        if (confirm('Tem certeza que deseja excluir este projeto?')) {
+            window.location.href = "{{ url_for('energia_solar.excluir', id=0) }}".replace('0', id);
+        }
+    }
+
+    // Configurações globais Chart.js com tema neon
+    Chart.defaults.color = '#e0e0e0';
+    Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.1)';
+    Chart.defaults.backgroundColor = 'rgba(6, 182, 212, 0.1)';
+
+    // Gráfico 1: Consumo vs Geração
+    const ctxConsumo = document.getElementById('chartConsumoGeracao').getContext('2d');
+    new Chart(ctxConsumo, {
+        type: 'bar',
+        data: {
+            labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+            datasets: [{
+                label: 'Consumo',
+                data: [270, 280, 265, 275, 290, 300, 310, 305, 295, 285, 280, 275],
+                backgroundColor: 'rgba(251, 191, 36, 0.6)',
+                borderColor: '#fbbf24',
+                borderWidth: 2
+            }, {
+                label: 'Geração',
+                data: [280, 290, 295, 285, 280, 270, 275, 280, 290, 295, 285, 280],
+                backgroundColor: 'rgba(16, 185, 129, 0.6)',
+                borderColor: '#10b981',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        color: '#e0e0e0',
+                        font: { size: 12 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y + ' kWh';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { color: '#e0e0e0' },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                x: {
+                    ticks: { color: '#e0e0e0' },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+
+    // Gráfico 2: Irradiação Solar Mensal
+    const ctxIrradiacao = document.getElementById('chartIrradiacao').getContext('2d');
+    new Chart(ctxIrradiacao, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+            datasets: [{
+                label: 'Irradiação (kWh/m²/dia)',
+                data: [5.2, 5.0, 4.8, 4.5, 4.2, 4.0, 4.3, 4.7, 5.0, 5.3, 5.5, 5.4],
+                backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                borderColor: '#06b6d4',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: '#06b6d4',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y.toFixed(1) + ' kWh/m²/dia';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { 
+                        color: '#e0e0e0',
+                        callback: function(value) {
+                            return value.toFixed(1);
+                        }
+                    },
+                    grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                },
+                x: {
+                    ticks: { color: '#e0e0e0' },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+    </script>
 </div>
 {% endblock %}

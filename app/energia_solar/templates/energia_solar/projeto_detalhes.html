@@ -1,0 +1,280 @@
+{% extends 'base.html' %}
+
+{% block title %}Projeto #{{ projeto.id }} - {{ projeto.nome_cliente }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('energia_solar.dashboard') }}">Energia Solar</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('energia_solar.projetos_listar') }}">Projetos</a></li>
+<li class="breadcrumb-item active">Projeto #{{ projeto.id }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-solar-panel me-2"></i>Projeto de Energia Solar #{{ projeto.id }}</h2>
+            <p class="text-muted">{{ projeto.nome_cliente }} - {{ projeto.cidade }}/{{ projeto.estado }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('energia_solar.projetos_listar') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Voltar
+            </a>
+            <a href="{{ url_for('energia_solar.projeto_editar', projeto_id=projeto.id) }}" class="btn btn-warning">
+                <i class="fas fa-edit me-2"></i>Editar
+            </a>
+            <button class="btn btn-danger" disabled title="Em breve">
+                <i class="fas fa-file-pdf me-2"></i>Gerar PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Status Badge -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <span class="badge bg-{{ 'success' if projeto.status == 'aprovado' else 'warning' if projeto.status == 'rascunho' else 'info' }} fs-6">
+                {{ projeto.status.upper() }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Resumo Rápido -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h6>Consumo Mensal</h6>
+                    <h3>{{ "%.0f"|format(projeto.consumo_kwh_mes or 0) }} kWh</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h6>Potência do Sistema</h6>
+                    <h3>{{ "%.2f"|format(projeto.potencia_kwp or 0) }} kWp</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h6>Valor de Venda</h6>
+                    <h3>R$ {{ "%.2f"|format(projeto.valor_venda or 0) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h6>Payback</h6>
+                    <h3>{{ "%.1f"|format(projeto.payback_anos or 0) }} anos</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalhes em Tabs -->
+    <div class="card">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#tabCliente">
+                        <i class="fas fa-user-tie me-1"></i> Cliente
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#tabConsumo">
+                        <i class="fas fa-bolt me-1"></i> Consumo
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#tabEquipamentos">
+                        <i class="fas fa-cogs me-1"></i> Equipamentos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#tabLayout">
+                        <i class="fas fa-th me-1"></i> Layout
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#tabFinanceiro">
+                        <i class="fas fa-dollar-sign me-1"></i> Financeiro
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="tabCliente">
+                    <h5><i class="fas fa-map-marker-alt me-2"></i>Localização</h5>
+                    <table class="table">
+                        <tr>
+                            <th width="30%">CEP:</th>
+                            <td>{{ projeto.cep }}</td>
+                        </tr>
+                        <tr>
+                            <th>Endereço:</th>
+                            <td>{{ projeto.endereco }}</td>
+                        </tr>
+                        <tr>
+                            <th>Cidade/UF:</th>
+                            <td>{{ projeto.cidade }}/{{ projeto.estado }}</td>
+                        </tr>
+                        <tr>
+                            <th>Irradiação Solar:</th>
+                            <td>{{ "%.2f"|format(projeto.irradiacao_solar or 5.0) }} kWh/m²/dia</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="tab-pane fade" id="tabConsumo">
+                    <h5><i class="fas fa-calculator me-2"></i>Dimensionamento</h5>
+                    <table class="table">
+                        <tr>
+                            <th width="30%">Método de Cálculo:</th>
+                            <td>{{ projeto.metodo_calculo }}</td>
+                        </tr>
+                        <tr>
+                            <th>Consumo Mensal:</th>
+                            <td>{{ "%.2f"|format(projeto.consumo_kwh_mes or 0) }} kWh</td>
+                        </tr>
+                        <tr>
+                            <th>Potência Calculada:</th>
+                            <td>{{ "%.2f"|format(projeto.potencia_kwp or 0) }} kWp</td>
+                        </tr>
+                        <tr>
+                            <th>Geração Estimada:</th>
+                            <td>{{ "%.2f"|format(projeto.geracao_estimada_mes or 0) }} kWh/mês</td>
+                        </tr>
+                        <tr>
+                            <th>Simultaneidade:</th>
+                            <td>{{ "%.1f"|format(projeto.simultaneidade or 80.0) }}%</td>
+                        </tr>
+                        <tr>
+                            <th>Perdas do Sistema:</th>
+                            <td>{{ "%.1f"|format(projeto.perdas_sistema or 20.0) }}%</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="tab-pane fade" id="tabEquipamentos">
+                    <h5><i class="fas fa-solar-panel me-2"></i>Componentes</h5>
+                    <table class="table">
+                        <tr>
+                            <th width="30%">Modo:</th>
+                            <td>{{ projeto.modo_equipamento }}</td>
+                        </tr>
+                        <tr>
+                            <th>Placas Solares:</th>
+                            <td>{{ projeto.qtd_placas or 0 }} unidades</td>
+                        </tr>
+                        <tr>
+                            <th>Inversores:</th>
+                            <td>{{ projeto.qtd_inversores or 0 }} unidades</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="tab-pane fade" id="tabLayout">
+                    <h5><i class="fas fa-compass me-2"></i>Instalação</h5>
+                    <table class="table">
+                        <tr>
+                            <th width="30%">Orientação:</th>
+                            <td>{{ projeto.orientacao or 'Norte' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Inclinação:</th>
+                            <td>{{ projeto.inclinacao or 15 }}°</td>
+                        </tr>
+                        <tr>
+                            <th>Área Necessária:</th>
+                            <td>{{ "%.2f"|format(projeto.area_necessaria or 0) }} m²</td>
+                        </tr>
+                        <tr>
+                            <th>Estrutura:</th>
+                            <td>{{ projeto.estrutura_fixacao or '-' }}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="tab-pane fade" id="tabFinanceiro">
+                    <h5><i class="fas fa-money-bill-wave me-2"></i>Valores</h5>
+                    <table class="table">
+                        <tr>
+                            <th width="30%">Custo Equipamentos:</th>
+                            <td>R$ {{ "%.2f"|format(projeto.custo_equipamentos or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Custo Instalação:</th>
+                            <td>R$ {{ "%.2f"|format(projeto.custo_instalacao or 0) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Custo Projeto:</th>
+                            <td>R$ {{ "%.2f"|format(projeto.custo_projeto or 0) }}</td>
+                        </tr>
+                        <tr class="table-primary">
+                            <th>Custo Total:</th>
+                            <td><strong>R$ {{ "%.2f"|format(projeto.custo_total or 0) }}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>Margem de Lucro:</th>
+                            <td>{{ "%.1f"|format(projeto.margem_lucro or 0) }}%</td>
+                        </tr>
+                        <tr class="table-info">
+                            <th>Lucro Obtido:</th>
+                            <td><strong>R$ {{ "%.2f"|format((projeto.valor_venda or 0) - (projeto.custo_total or 0)) }}</strong></td>
+                        </tr>
+                        <tr class="table-success">
+                            <th>Valor de Venda:</th>
+                            <td><strong>R$ {{ "%.2f"|format(projeto.valor_venda or 0) }}</strong></td>
+                        </tr>
+                    </table>
+
+                    <h5 class="mt-4"><i class="fas fa-chart-line me-2"></i>Lei 14.300/2022</h5>
+                    <table class="table">
+                        <tr>
+                            <th width="30%">Ano de Instalação:</th>
+                            <td>{{ projeto.lei_14300_ano or 2025 }}</td>
+                        </tr>
+                        <tr>
+                            <th>Modalidade GD:</th>
+                            <td>{{ projeto.modalidade_gd or 'GD I' }}</td>
+                        </tr>
+                        <tr>
+                            <th>Economia Anual:</th>
+                            <td>R$ {{ "%.2f"|format(projeto.economia_anual or 0) }}</td>
+                        </tr>
+                        <tr class="table-info">
+                            <th>Payback:</th>
+                            <td><strong>{{ "%.1f"|format(projeto.payback_anos or 0) }} anos</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Observações -->
+    {% if projeto.observacoes %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5><i class="fas fa-comment me-2"></i>Observações</h5>
+        </div>
+        <div class="card-body">
+            <p class="mb-0">{{ projeto.observacoes }}</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Metadados -->
+    <div class="card mt-4">
+        <div class="card-footer text-muted">
+            <small>
+                Criado em {{ projeto.data_criacao.strftime('%d/%m/%Y às %H:%M') }}
+                {% if projeto.usuario_criador %} por {{ projeto.usuario_criador }}{% endif %}
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}Placas Solares - Catálogo{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('energia_solar.dashboard') }}">Energia Solar</a></li>
+<li class="breadcrumb-item active">Placas Solares</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="text-ciano mb-1"><i class="fas fa-solar-panel me-2"></i>Placas Solares</h2>
+            <p class="text-muted mb-0">Catálogo de placas fotovoltaicas</p>
+        </div>
+        <button class="btn btn-ciano" data-bs-toggle="modal" data-bs-target="#modalCRUD" onclick="abrirModalCriar()">
+            <i class="fas fa-plus me-2"></i>Nova Placa
+        </button>
+    </div>
+
+    <!-- Lista de Placas -->
+    {% if placas_obj %}
+    <div class="row g-4">
+        {% for placa in placas_obj %}
+        <div class="col-lg-4 col-md-6">
+            <div class="card bg-dark border-ciano h-100">
+                <div class="card-header bg-gradient-ciano d-flex justify-content-between">
+                    <h6 class="mb-0">{{ placa.modelo }}</h6>
+                    <span class="badge bg-success">Ativo</span>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-muted mb-2"><i class="fas fa-industry me-2"></i>{{ placa.fabricante }}</h6>
+                    <h3 class="text-amarelo mb-3">{{ placa.potencia }} Wp</h3>
+                    
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="text-center p-2 rounded" style="background: rgba(6, 182, 212, 0.1);">
+                                <small class="text-muted d-block">Eficiência</small>
+                                <strong class="text-ciano">{{ "%.1f"|format(placa.eficiencia) }}%</strong>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="text-center p-2 rounded" style="background: rgba(251, 191, 36, 0.1);">
+                                <small class="text-muted d-block">Células</small>
+                                <strong class="text-amarelo">{{ placa.num_celulas }}</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center p-2 rounded mb-3" style="background: rgba(16, 185, 129, 0.1);">
+                        <small class="text-muted d-block">Preço de Venda</small>
+                        <strong class="text-verde fs-5">R$ {{ "%.2f"|format(placa.preco_venda) }}</strong>
+                        <small class="text-muted d-block">R$ {{ "%.2f"|format(placa.preco_venda / placa.potencia) }}/Wp</small>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-top">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-info flex-grow-1" onclick="visualizarPlaca({{ placa.id }})">
+                            <i class="fas fa-eye me-1"></i>Ver
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning" onclick="editarPlaca({{ placa.id }})">
+                            <i class="fas fa-edit me-1"></i>Editar
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="excluirPlaca({{ placa.id }}, '{{ placa.modelo }}')">
+                            <i class="fas fa-trash me-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>Nenhuma placa cadastrada. Clique em "Nova Placa" para começar.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal CRUD (Criar/Visualizar/Editar) -->
+<div class="modal fade" id="modalCRUD" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content bg-dark border-ciano">
+            <div class="modal-header bg-gradient-ciano">
+                <h5 class="modal-title" id="modalTitulo"><i class="fas fa-solar-panel me-2"></i>Placa Solar</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Abas de Navegação -->
+                <ul class="nav nav-tabs mb-4" id="crudTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="tab-criar" data-bs-toggle="tab" data-bs-target="#criar" type="button">
+                            <i class="fas fa-plus me-2"></i>Criar Novo
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation" id="li-visualizar" style="display:none;">
+                        <button class="nav-link" id="tab-visualizar" data-bs-toggle="tab" data-bs-target="#visualizar" type="button">
+                            <i class="fas fa-eye me-2"></i>Visualizar
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation" id="li-editar" style="display:none;">
+                        <button class="nav-link" id="tab-editar" data-bs-toggle="tab" data-bs-target="#editar" type="button">
+                            <i class="fas fa-edit me-2"></i>Editar
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Conteúdo das Abas -->
+                <div class="tab-content" id="crudTabsContent">
+                    <!-- ABA: CRIAR -->
+                    <div class="tab-pane fade show active" id="criar" role="tabpanel">
+                        <form method="POST" action="{{ url_for('energia_solar.placa_criar') }}" id="formCriar">
+                            {% include 'energia_solar/_form_placa.html' %}
+                            <div class="text-end mt-4">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- ABA: VISUALIZAR -->
+                    <div class="tab-pane fade" id="visualizar" role="tabpanel">
+                        <div id="conteudoVisualizar">
+                            <p class="text-center text-muted">Carregando...</p>
+                        </div>
+                    </div>
+
+                    <!-- ABA: EDITAR -->
+                    <div class="tab-pane fade" id="editar" role="tabpanel">
+                        <form method="POST" id="formEditar">
+                            <div id="conteudoEditar">
+                                <p class="text-center text-muted">Carregando...</p>
+                            </div>
+                            <div class="text-end mt-4">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-warning"><i class="fas fa-save me-2"></i>Atualizar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Dados das placas (JSON)
+const placasData = {{ placas|tojson|safe }};
+
+// Abrir modal para CRIAR
+function abrirModalCriar() {
+    document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-plus me-2"></i>Nova Placa Solar';
+    document.getElementById('li-visualizar').style.display = 'none';
+    document.getElementById('li-editar').style.display = 'none';
+    document.getElementById('tab-criar').click();
+    document.getElementById('formCriar').reset();
+}
+
+// VISUALIZAR placa
+function visualizarPlaca(id) {
+    const placa = placasData.find(p => p.id === id);
+    if (!placa) return;
+
+    document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-eye me-2"></i>Visualizar Placa';
+    document.getElementById('li-visualizar').style.display = 'block';
+    document.getElementById('li-editar').style.display = 'block';
+
+    document.getElementById('conteudoVisualizar').innerHTML = `
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card bg-dark border-info">
+                    <div class="card-header bg-gradient-info"><h6 class="mb-0">Informações Básicas</h6></div>
+                    <div class="card-body">
+                        <p><strong>Fabricante:</strong> ${placa.fabricante}</p>
+                        <p><strong>Modelo:</strong> ${placa.modelo}</p>
+                        <p><strong>Potência:</strong> ${placa.potencia} Wp</p>
+                        <p><strong>Eficiência:</strong> ${placa.eficiencia}%</p>
+                        <p><strong>Células:</strong> ${placa.num_celulas}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-dark border-success">
+                    <div class="card-header bg-gradient-success"><h6 class="mb-0">Dimensões e Garantias</h6></div>
+                    <div class="card-body">
+                        <p><strong>Dimensões:</strong> ${placa.comprimento} × ${placa.largura} × ${placa.espessura} mm</p>
+                        <p><strong>Garantia Produto:</strong> ${placa.garantia_produto} anos</p>
+                        <p><strong>Garantia Desempenho:</strong> ${placa.garantia_desempenho} anos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="card bg-dark border-warning">
+                    <div class="card-header bg-gradient-warning text-dark"><h6 class="mb-0">Precificação</h6></div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p><strong>Preço de Venda:</strong> <span class="text-success fs-4">R$ ${placa.preco_venda.toFixed(2)}</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Preço de Custo:</strong> R$ ${placa.preco_custo ? placa.preco_custo.toFixed(2) : '0.00'}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Preço/Watt:</strong> R$ ${(placa.preco_venda / placa.potencia).toFixed(2)}/Wp</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('modalCRUD'));
+    modal.show();
+    document.getElementById('tab-visualizar').click();
+}
+
+// EDITAR placa
+function editarPlaca(id) {
+    alert('Função de edição em desenvolvimento. Dados serão carregados aqui para atualização.');
+    // TODO: Carregar dados no formulário de edição
+}
+
+// EXCLUIR placa
+function excluirPlaca(id, modelo) {
+    if (confirm(`Tem certeza que deseja excluir a placa "${modelo}"?`)) {
+        fetch(`/energia-solar/placas/excluir/${id}`, {
+            method: 'POST'
+        })
+        .then(response => {
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Erro ao excluir placa!');
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

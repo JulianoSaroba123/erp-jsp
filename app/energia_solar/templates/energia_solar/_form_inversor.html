@@ -1,0 +1,128 @@
+<div class="row g-3">
+    <!-- Seção 1: Informações Básicas -->
+    <div class="col-12">
+        <div class="bg-gradient-roxo p-2 rounded mb-3">
+            <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informações Básicas</h6>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <label class="form-label">Fabricante *</label>
+        <input type="text" class="form-control" name="fabricante" placeholder="Ex: DEYE, Growatt" required>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Modelo *</label>
+        <input type="text" class="form-control" name="modelo" placeholder="Ex: SUN2000G3" required>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Tipo *</label>
+        <select class="form-select" name="tipo" required>
+            <option value="">Selecione...</option>
+            <option value="String">String</option>
+            <option value="Microinversor">Microinversor</option>
+            <option value="Híbrido">Híbrido</option>
+            <option value="Off-Grid">Off-Grid</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Fases *</label>
+        <select class="form-select" name="fases" required>
+            <option value="">Selecione...</option>
+            <option value="Monofásico">Monofásico</option>
+            <option value="Bifásico">Bifásico</option>
+            <option value="Trifásico">Trifásico</option>
+        </select>
+    </div>
+
+    <!-- Seção 2: Potência -->
+    <div class="col-12 mt-4">
+        <div class="bg-gradient-amarelo p-2 rounded mb-3">
+            <h6 class="mb-0 text-dark"><i class="fas fa-bolt me-2"></i>Potência</h6>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <label class="form-label">Potência Nominal (kW) *</label>
+        <input type="number" step="0.01" class="form-control" name="potencia_nominal" placeholder="2.0" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Potência Máxima (kW)</label>
+        <input type="number" step="0.01" class="form-control" name="potencia_maxima" placeholder="2.2">
+    </div>
+
+    <!-- Seção 3: Tensões CC -->
+    <div class="col-12 mt-4">
+        <div class="bg-gradient-ciano p-2 rounded mb-3">
+            <h6 class="mb-0"><i class="fas fa-plug me-2"></i>Tensões de Entrada CC</h6>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <label class="form-label">Tensão Entrada Mín (V)</label>
+        <input type="number" step="0.1" class="form-control" name="tensao_entrada_min" placeholder="90">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Tensão Entrada Máx (V)</label>
+        <input type="number" step="0.1" class="form-control" name="tensao_entrada_max" placeholder="550">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Tensão MPPT Mín (V)</label>
+        <input type="number" step="0.1" class="form-control" name="tensao_mppt_min" placeholder="140">
+    </div>
+    <div class="col-md-3">
+        <label class="form-label">Tensão MPPT Máx (V)</label>
+        <input type="number" step="0.1" class="form-control" name="tensao_mppt_max" placeholder="500">
+    </div>
+
+    <!-- Seção 4: Rastreamento e Eficiência -->
+    <div class="col-12 mt-4">
+        <div class="bg-gradient-verde p-2 rounded mb-3">
+            <h6 class="mb-0"><i class="fas fa-search-plus me-2"></i>Rastreamento e Eficiência</h6>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <label class="form-label">Número de MPPTs *</label>
+        <input type="number" class="form-control" name="num_mppt" value="2" required>
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Strings por MPPT</label>
+        <input type="number" class="form-control" name="strings_por_mppt" placeholder="2">
+    </div>
+    <div class="col-md-4">
+        <label class="form-label">Eficiência Máxima (%)</label>
+        <input type="number" step="0.1" class="form-control" name="eficiencia_maxima" placeholder="97.6">
+    </div>
+
+    <!-- Seção 5: Garantia e Proteção -->
+    <div class="col-12 mt-4">
+        <div class="bg-gradient-info p-2 rounded mb-3">
+            <h6 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Garantia e Proteção</h6>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <label class="form-label">Garantia (anos)</label>
+        <input type="number" class="form-control" name="garantia_anos" value="5">
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Grau de Proteção</label>
+        <input type="text" class="form-control" name="grau_protecao" placeholder="IP65">
+    </div>
+
+    <!-- Seção 6: Precificação -->
+    <div class="col-12 mt-4">
+        <div class="bg-gradient-warning p-2 rounded mb-3">
+            <h6 class="mb-0 text-dark"><i class="fas fa-dollar-sign me-2"></i>Precificação</h6>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <label class="form-label">Preço de Venda (R$) *</label>
+        <input type="number" step="0.01" class="form-control" name="preco_venda" placeholder="0.00" required>
+    </div>
+    <div class="col-md-6">
+        <label class="form-label">Preço de Custo (R$)</label>
+        <input type="number" step="0.01" class="form-control" name="preco_custo" placeholder="0.00">
+    </div>
+</div>

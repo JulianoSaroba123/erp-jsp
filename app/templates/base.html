@@ -44,6 +44,55 @@
     <!-- Correções críticas para sidebar -->
     <link href="{{ url_for('static', filename='css/fix-sidebar.css') }}" rel="stylesheet">
     
+    <!-- Estilos para submenu Energia Solar -->
+    <style>
+        .nav-submenu {
+            background: rgba(0, 0, 0, 0.3);
+            border-left: 2px solid rgba(6, 182, 212, 0.3);
+            margin-left: 0.5rem;
+            padding: 0.5rem 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-submenu .nav-link {
+            padding: 0.6rem 1rem;
+            font-size: 0.85rem;
+            color: #e0e0e0;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+        }
+        
+        .nav-submenu .nav-link:hover {
+            background: rgba(6, 182, 212, 0.15);
+            color: #06b6d4;
+            border-left-color: #06b6d4;
+            transform: translateX(5px);
+        }
+        
+        .nav-submenu .nav-link i {
+            width: 20px;
+            text-align: center;
+        }
+        
+        .nav-item > .nav-link .fa-chevron-down {
+            transition: transform 0.3s ease;
+            margin-left: auto;
+        }
+        
+        .nav-submenu .dropdown-divider {
+            border-color: rgba(6, 182, 212, 0.2);
+            margin: 0.5rem 0;
+        }
+        
+        /* Garantir que o ícone esteja visível */
+        #chevronEnergiaSolar {
+            display: inline-block;
+        }
+    </style>
+    
     {% block head %}{% endblock %}
 </head>
 
@@ -133,11 +182,45 @@
                     <span class="nav-text">Prospecção</span>
                 </a>
             </div>
+
+            <!-- Energia Solar - Com Submenu -->
             <div class="nav-item">
-                <a href="{{ url_for('energia_solar.dashboard') }}" class="nav-link">
+                <a href="javascript:void(0)" class="nav-link" onclick="toggleEnergiaSolarMenu(event)">
                     <i class="nav-icon fas fa-solar-panel"></i>
                     <span class="nav-text">Energia Solar</span>
+                    <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem; transform: rotate(180deg);" id="chevronEnergiaSolar"></i>
                 </a>
+                <div class="nav-submenu" id="energiaSolarMenu" style="display: block;">
+                    <a href="{{ url_for('energia_solar.dashboard') }}" class="nav-link ps-5">
+                        <i class="fas fa-chart-line me-2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('energia_solar.calculadora') }}" class="nav-link ps-5">
+                        <i class="fas fa-calculator me-2"></i>
+                        <span>Nova Calculadora</span>
+                    </a>
+                    <a href="{{ url_for('energia_solar.projetos_listar') }}" class="nav-link ps-5">
+                        <i class="fas fa-folder-open me-2 text-warning"></i>
+                        <span>Projetos</span>
+                    </a>
+                    <div class="dropdown-divider mx-3"></div>
+                    <a href="{{ url_for('energia_solar.placas_listar') }}" class="nav-link ps-5">
+                        <i class="fas fa-solar-panel me-2 text-ciano"></i>
+                        <span>Placas Solares</span>
+                    </a>
+                    <a href="{{ url_for('energia_solar.inversores_listar') }}" class="nav-link ps-5">
+                        <i class="fas fa-microchip me-2 text-roxo"></i>
+                        <span>Inversores</span>
+                    </a>
+                    <a href="{{ url_for('energia_solar.kits_listar') }}" class="nav-link ps-5">
+                        <i class="fas fa-boxes-stacked me-2 text-verde"></i>
+                        <span>Kits Solares</span>
+                    </a>
+                    <a href="{{ url_for('energia_solar.custos_fixos_listar') }}" class="nav-link ps-5">
+                        <i class="fas fa-money-bill-wave me-2 text-success"></i>
+                        <span>Custos Fixos</span>
+                    </a>
+                </div>
             </div>
 
             <!-- Sistema -->
@@ -230,11 +313,39 @@
     <!-- Script para correção de fundo branco -->
     <script src="{{ url_for('static', filename='js/corrigir-fundo-branco.js') }}"></script>
     
-    <!-- Script para correção dos cliques na sidebar -->
-    <script src="{{ url_for('static', filename='js/fix-sidebar-clicks.js') }}"></script>
+    <!-- Script para correção dos cliques na sidebar - DESABILITADO (conflito com submenu) -->
+    <!-- <script src="{{ url_for('static', filename='js/fix-sidebar-clicks.js') }}"></script> -->
     
     <!-- Scripts Customizados -->
     <script>
+        // Toggle Submenu Energia Solar
+        window.toggleEnergiaSolarMenu = function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            console.log('🔧 Toggle Energia Solar menu chamado!');
+            
+            const menu = document.getElementById('energiaSolarMenu');
+            const chevron = document.getElementById('chevronEnergiaSolar');
+            
+            console.log('Menu encontrado:', menu);
+            console.log('Chevron encontrado:', chevron);
+            console.log('Display atual:', menu.style.display);
+            
+            if (menu.style.display === 'none' || menu.style.display === '') {
+                menu.style.display = 'block';
+                chevron.style.transform = 'rotate(180deg)';
+                console.log('✅ Menu ABERTO');
+            } else {
+                menu.style.display = 'none';
+                chevron.style.transform = 'rotate(0deg)';
+                console.log('❌ Menu FECHADO');
+            }
+        }
+        
+        // Log de inicialização
+        console.log('🚀 Script de menu Energia Solar carregado!');
+        
         // Toggle Sidebar Mobile
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
@@ -363,7 +474,8 @@
     </script>
     
     <!-- PWA Installation Script -->
-    <script src="{{ url_for('static', filename='js/pwa-install.js') }}"></script>
+    <!-- PWA Install (comentado - arquivo não existe) -->
+    <!-- <script src="{{ url_for('static', filename='js/pwa-install.js') }}"></script> -->
     
     {% block scripts %}{% endblock %}
 </body>
