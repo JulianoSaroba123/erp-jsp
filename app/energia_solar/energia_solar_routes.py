@@ -589,59 +589,83 @@ def projeto_editar(projeto_id):
     """Edita um projeto existente usando o wizard"""
     from app.energia_solar.catalogo_model import ProjetoSolar, PlacaSolar, InversorSolar, KitSolar
     
-    projeto = ProjetoSolar.query.get_or_404(projeto_id)
+    try:
+        projeto = ProjetoSolar.query.get_or_404(projeto_id)
+        
+        # Converter projeto para dicionário serializável
+        projeto_dict = {
+            'id': projeto.id,
+            'cliente_id': projeto.cliente_id,
+            'nome_cliente': projeto.nome_cliente,
+            'cep': projeto.cep,
+            'endereco': projeto.endereco,
+            'cidade': projeto.cidade,
+            'estado': projeto.estado,
+            'latitude': float(projeto.latitude) if projeto.latitude else None,
+            'longitude': float(projeto.longitude) if projeto.longitude else None,
+            'irradiacao_solar': float(projeto.irradiacao_solar) if projeto.irradiacao_solar else None,
+            'metodo_calculo': projeto.metodo_calculo,
+            'consumo_kwh_mes': float(projeto.consumo_kwh_mes) if projeto.consumo_kwh_mes else None,
+            'valor_conta_luz': float(projeto.valor_conta_luz) if projeto.valor_conta_luz else None,
+            'tarifa_kwh': float(projeto.tarifa_kwh) if projeto.tarifa_kwh else 0.85,
+            'simultaneidade': float(projeto.simultaneidade) if projeto.simultaneidade else 0.8,
+            'perdas_sistema': float(projeto.perdas_sistema) if projeto.perdas_sistema else 0.2,
+            'potencia_kwp': float(projeto.potencia_kwp) if projeto.potencia_kwp else None,
+            'geracao_estimada_mes': float(projeto.geracao_estimada_mes) if projeto.geracao_estimada_mes else None,
+            'modo_equipamento': projeto.modo_equipamento,
+            'kit_id': projeto.kit_id,
+            'placa_id': projeto.placa_id,
+            'qtd_placas': projeto.qtd_placas,
+            'inversor_id': projeto.inversor_id,
+            'qtd_inversores': projeto.qtd_inversores,
+            'orientacao': projeto.orientacao,
+            'inclinacao': float(projeto.inclinacao) if projeto.inclinacao else None,
+            'direcao': projeto.direcao,
+            'linhas_placas': projeto.linhas_placas,
+            'colunas_placas': projeto.colunas_placas,
+            'area_necessaria': float(projeto.area_necessaria) if projeto.area_necessaria else None,
+            'string_box': projeto.string_box,
+            'disjuntor_cc': projeto.disjuntor_cc,
+            'disjuntor_ca': projeto.disjuntor_ca,
+            'cabo_cc': projeto.cabo_cc,
+            'cabo_ca': projeto.cabo_ca,
+            'estrutura_fixacao': projeto.estrutura_fixacao,
+            'custo_equipamentos': float(projeto.custo_equipamentos) if projeto.custo_equipamentos else None,
+            'custo_instalacao': float(projeto.custo_instalacao) if projeto.custo_instalacao else None,
+            'custo_projeto': float(projeto.custo_projeto) if projeto.custo_projeto else None,
+            'custo_total': float(projeto.custo_total) if projeto.custo_total else None,
+            'margem_lucro': float(projeto.margem_lucro) if projeto.margem_lucro else None,
+            'valor_venda': float(projeto.valor_venda) if projeto.valor_venda else None,
+            'lei_14300_ano': projeto.lei_14300_ano,
+            'modalidade_gd': projeto.modalidade_gd,
+            'aliquota_fio_b': float(projeto.aliquota_fio_b) if projeto.aliquota_fio_b else None,
+            'economia_anual': float(projeto.economia_anual) if projeto.economia_anual else None,
+            'payback_anos': float(projeto.payback_anos) if projeto.payback_anos else None,
+            'status': projeto.status,
+            'observacoes': projeto.observacoes,
+        }
     
-    # Converter projeto para dicionário serializável
-    projeto_dict = {
-        'id': projeto.id,
-        'nome_cliente': projeto.nome_cliente,
-        'cep': projeto.cep,
-        'endereco': projeto.endereco,
-        'cidade': projeto.cidade,
-        'estado': projeto.estado,
-        'latitude': float(projeto.latitude) if projeto.latitude else None,
-        'longitude': float(projeto.longitude) if projeto.longitude else None,
-        'consumo_kwh_mes': float(projeto.consumo_kwh_mes) if projeto.consumo_kwh_mes else None,
-        'tarifa_kwh': float(projeto.tarifa_kwh) if projeto.tarifa_kwh else None,
-        'simultaneidade': float(projeto.simultaneidade) if projeto.simultaneidade else 0.8,
-        'perdas_sistema': float(projeto.perdas_sistema) if projeto.perdas_sistema else 0.2,
-        'irradiacao_solar': float(projeto.irradiacao_solar) if projeto.irradiacao_solar else None,
-        'potencia_kwp': float(projeto.potencia_kwp) if projeto.potencia_kwp else None,
-        'geracao_estimada_mes': float(projeto.geracao_estimada_mes) if projeto.geracao_estimada_mes else None,
-        'kit_id': projeto.kit_id,
-        'placa_id': projeto.placa_id,
-        'qtd_placas': projeto.qtd_placas,
-        'inversor_id': projeto.inversor_id,
-        'qtd_inversores': projeto.qtd_inversores,
-        'orientacao': projeto.orientacao,
-        'inclinacao': float(projeto.inclinacao) if projeto.inclinacao else None,
-        'linhas_placas': projeto.linhas_placas,
-        'colunas_placas': projeto.colunas_placas,
-        'area_necessaria': float(projeto.area_necessaria) if projeto.area_necessaria else None,
-        'string_box': projeto.string_box,
-        'disjuntor_cc': projeto.disjuntor_cc,
-        'disjuntor_ca': projeto.disjuntor_ca,
-        'cabo_cc': projeto.cabo_cc,
-        'cabo_ca': projeto.cabo_ca,
-        'estrutura_fixacao': projeto.estrutura_fixacao,
-        'lei_14300_ano': projeto.lei_14300_ano,
-        'modalidade_gd': projeto.modalidade_gd,
-        'aliquota_fio_b': float(projeto.aliquota_fio_b) if projeto.aliquota_fio_b else None,
-        'valor_venda': float(projeto.valor_venda) if projeto.valor_venda else None,
-    }
+        # Buscar dados para os selects
+        clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+        placas = PlacaSolar.query.filter_by(ativo=True).all()
+        inversores = InversorSolar.query.filter_by(ativo=True).all()
+        kits = KitSolar.query.filter_by(ativo=True).all()
+        
+        # Renderizar wizard com dados do projeto para edição
+        return render_template('energia_solar/projeto_wizard.html',
+                             projeto=projeto_dict,
+                             clientes=clientes,
+                             placas=placas,
+                             inversores=inversores,
+                             kits=kits,
+                             modo='editar')
     
-    # Buscar dados para os selects
-    placas = PlacaSolar.query.filter_by(ativo=True).all()
-    inversores = InversorSolar.query.filter_by(ativo=True).all()
-    kits = KitSolar.query.filter_by(ativo=True).all()
-    
-    # Renderizar wizard com dados do projeto para edição
-    return render_template('energia_solar/projeto_wizard.html',
-                         projeto=projeto_dict,
-                         placas=placas,
-                         inversores=inversores,
-                         kits=kits,
-                         modo='editar')
+    except Exception as e:
+        import traceback
+        print(f"❌ ERRO ao editar projeto {projeto_id}:")
+        print(traceback.format_exc())
+        flash(f'Erro ao carregar projeto: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.projetos_listar'))
 
 
 @energia_solar_bp.route('/projetos/<int:projeto_id>/excluir', methods=['POST'])
