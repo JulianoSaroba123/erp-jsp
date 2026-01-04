@@ -2262,6 +2262,10 @@ function setupCustos() {
 }
 
 function carregarCustosFixos() {
+    console.log('📥 CARREGAR CUSTOS FIXOS - Iniciando...');
+    console.log('   Custos atuais:', custos.length);
+    console.log('   Lista:', custos.map(c => c.descricao).join(', '));
+    
     // Verificar se já tem custos FIXOS (não equipamentos)
     const temCustosFixos = custos.some(c => {
         const desc = c.descricao.toUpperCase();
@@ -2370,6 +2374,10 @@ function confirmarCusto() {
 }
 
 function atualizarTabelaCustos() {
+    console.log('📊 ATUALIZANDO TABELA DE CUSTOS');
+    console.log('   Total de custos no array:', custos.length);
+    console.log('   Custos:', custos.map(c => c.descricao).join(', '));
+    
     const tbody = document.getElementById('custos_tbody');
     let html = '';
     let totalGeral = 0;
