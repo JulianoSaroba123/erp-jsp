@@ -1,7 +1,7 @@
 """
 Rotas para o módulo de Cálculo de Energia Solar
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app.extensoes import db
 from app.energia_solar.energia_solar_model import CalculoEnergiaSolar
@@ -570,14 +570,7 @@ def projeto_visualizar(projeto_id):
     
     projeto = ProjetoSolar.query.get_or_404(projeto_id)
     
-    response = make_response(render_template('energia_solar/projeto_detalhes.html', projeto=projeto))
-    
-    # Headers anti-cache para dados sempre atualizados
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    
-    return response
+    return render_template('energia_solar/projeto_detalhes.html', projeto=projeto)
 
 
 @energia_solar_bp.route('/projetos/<int:projeto_id>/editar')
@@ -633,19 +626,12 @@ def projeto_editar(projeto_id):
     kits = KitSolar.query.filter_by(ativo=True).all()
     
     # Renderizar wizard com dados do projeto para edição
-    response = make_response(render_template('energia_solar/projeto_wizard.html',
+    return render_template('energia_solar/projeto_wizard.html',
                          projeto=projeto_dict,
                          placas=placas,
                          inversores=inversores,
                          kits=kits,
-                         modo='editar'))
-    
-    # Headers anti-cache para garantir dados frescos sempre
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    
-    return response
+                         modo='editar')
 
 
 @energia_solar_bp.route('/projetos/<int:projeto_id>/excluir', methods=['POST'])
