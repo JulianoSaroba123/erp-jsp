@@ -1973,14 +1973,26 @@ function setupEquipamentos() {
             if (this.value) {
                 const option = this.options[this.selectedIndex];
                 const descricao = option.text.trim();
-                const preco = parseFloat(option.getAttribute('data-preco')) || 0;
+                const precoAttr = option.getAttribute('data-preco');
+                const preco = parseFloat(precoAttr) || 0;
                 const potencia = parseFloat(option.getAttribute('data-potencia')) || 0;
                 
                 console.log('📋 Dados completos do kit:');
                 console.log('   Descrição:', descricao);
-                console.log('   Preço:', preco);
+                console.log('   Preço (atributo):', precoAttr);
+                console.log('   Preço (parseado):', preco);
                 console.log('   Potência:', potencia, 'kWp');
                 console.log('   Custos ANTES de adicionar:', custos.length, 'itens');
+                
+                // Verificar se kit tem preço válido
+                if (!preco || preco <= 0) {
+                    console.error('❌ KIT SEM PREÇO CADASTRADO!');
+                    console.error('   Kit ID:', this.value);
+                    console.error('   Descrição:', descricao);
+                    console.error('   data-preco:', precoAttr);
+                    alert(`⚠️ ERRO: Kit sem preço cadastrado!\n\nKit: ${descricao}\n\n💡 Solução: Cadastre o preço deste kit no catálogo antes de usá-lo.`);
+                    return; // Sair sem adicionar
+                }
                 
                 // Remover kit/placas/inversores antigos se existir
                 const custosAntigos = custos.length;
@@ -1995,8 +2007,8 @@ function setupEquipamentos() {
                 });
                 console.log(`   🗑️ Removidos ${custosAntigos - custos.length} equipamentos antigos`);
                 
-                // Adicionar novo kit
-                if (preco > 0) {
+                // Adicionar novo kit (preço já validado acima)
+                if (true) {
                     const novoCusto = {
                         descricao: `📦 ${descricao}`,
                         qtd: 1,
@@ -2015,11 +2027,10 @@ function setupEquipamentos() {
                     console.log('✅ Tabela atualizada!');
                     
                     // Mostrar notificação
-                    alert(`✅ Kit adicionado à Aba 6 - Financeiro!\n\n📦 ${descricao}\n💰 Valor: R$ ${preco.toFixed(2)}\n⚡ Potência: ${potencia} kWp`);
-                } else {
-                    console.error('❌ ERRO: Preço do kit é zero!');
-                    console.error('   Verifique o atributo data-preco no HTML');
-                    alert('⚠️ Este kit não possui preço cadastrado!\nVerifique o cadastro do kit.');
+                    console.log(`✅ KIT ADICIONADO COM SUCESSO À TABELA DE CUSTOS!`);
+                    console.log(`   Descrição: ${descricao}`);
+                    console.log(`   Valor: R$ ${preco.toFixed(2)}`);
+                    console.log(`   Potência: ${potencia} kWp`);
                 }
             } else {
                 console.log('ℹ️ Kit desmarcado, removendo equipamentos');
@@ -2693,6 +2704,13 @@ function preencherDadosProjeto() {
         if (projetoDados.valor_venda) document.getElementById('valor_venda_final').value = projetoDados.valor_venda;
         
         console.log('✅ Dados do projeto preenchidos com sucesso!');
+        
+        // IMPORTANTE: Forçar atualização do layout após carregar todos os dados
+        setTimeout(() => {
+            console.log('🔄 Forçando recálculo do layout...');
+            calcularAreaLayout();
+            renderizarLayout();
+        }, 500); // Delay para garantir que todos os campos foram preenchidos
         
     } catch (error) {
         console.error('❌ Erro ao preencher dados:', error);

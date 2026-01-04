@@ -94,6 +94,7 @@ class PlacaSolar(db.Model):
     preco_custo = db.Column(db.Float)
     preco_venda = db.Column(db.Float)
     fornecedor = db.Column(db.String(200))
+    datasheet = db.Column(db.String(500))  # Caminho ou URL do PDF
     
     # Controle
     ativo = db.Column(db.Boolean, default=True)
@@ -190,6 +191,7 @@ class InversorSolar(db.Model):
     preco_custo = db.Column(db.Float)
     preco_venda = db.Column(db.Float)
     fornecedor = db.Column(db.String(200))
+    datasheet = db.Column(db.String(500))  # Caminho ou URL do PDF
     
     # Controle
     ativo = db.Column(db.Boolean, default=True)

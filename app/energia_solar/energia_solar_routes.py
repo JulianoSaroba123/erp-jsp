@@ -509,8 +509,18 @@ def projeto_salvar():
         projeto.orientacao = request.form.get('orientacao')
         projeto.inclinacao = float(request.form.get('inclinacao', 0)) if request.form.get('inclinacao') else None
         projeto.direcao = request.form.get('direcao')
+        
+        # DEBUG: Verificar valores recebidos do formulário
+        linhas_raw = request.form.get('linhas_placas')
+        colunas_raw = request.form.get('colunas_placas')
+        print(f"🔍 DEBUG Layout - linhas_raw: '{linhas_raw}' (type: {type(linhas_raw)})")
+        print(f"🔍 DEBUG Layout - colunas_raw: '{colunas_raw}' (type: {type(colunas_raw)})")
+        
         projeto.linhas_placas = int(request.form.get('linhas_placas', 0)) if request.form.get('linhas_placas') else None
         projeto.colunas_placas = int(request.form.get('colunas_placas', 0)) if request.form.get('colunas_placas') else None
+        
+        print(f"✅ Layout salvo - {projeto.linhas_placas}x{projeto.colunas_placas} = {(projeto.linhas_placas or 0) * (projeto.colunas_placas or 0)} módulos")
+        
         projeto.area_necessaria = float(request.form.get('area_necessaria', 0)) if request.form.get('area_necessaria') else None
         
         # Aba 5 - Componentes Adicionais
