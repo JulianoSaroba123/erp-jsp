@@ -2262,9 +2262,19 @@ function setupCustos() {
 }
 
 function carregarCustosFixos() {
-    // Se já tem custos (editando projeto ou rascunho), não carregar automático
-    if (custos.length > 0) {
-        console.log('ℹ️ Custos já existem, não carregando automáticos');
+    // Verificar se já tem custos FIXOS (não equipamentos)
+    const temCustosFixos = custos.some(c => {
+        const desc = c.descricao.toUpperCase();
+        return !desc.includes('KIT') && 
+               !desc.includes('PLACA') && 
+               !desc.includes('INVERSOR') &&
+               !desc.includes('📦') &&
+               !desc.includes('☀️') &&
+               !desc.includes('⚡');
+    });
+    
+    if (temCustosFixos) {
+        console.log('ℹ️ Custos fixos já existem, não carregando automáticos');
         return;
     }
     
