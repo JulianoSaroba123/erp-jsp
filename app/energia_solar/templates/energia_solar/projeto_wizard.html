@@ -2276,14 +2276,16 @@ function carregarCustosFixos() {
             if (custosFixos.length > 0) {
                 console.log(`✅ ${custosFixos.length} custos fixos carregados`);
                 
-                // Adicionar custos fixos ao array
-                custos = custosFixos.map(cf => ({
-                    descricao: cf.descricao,
-                    qtd: cf.qtd,
-                    valorUnit: cf.valorUnit,
-                    lucro: cf.lucro,
-                    unidade: cf.unidade
-                }));
+                // ADICIONAR custos fixos ao array existente (não substituir!)
+                custosFixos.forEach(cf => {
+                    custos.push({
+                        descricao: cf.descricao,
+                        qtd: cf.qtd,
+                        valorUnit: cf.valorUnit,
+                        lucro: cf.lucro,
+                        unidade: cf.unidade
+                    });
+                });
                 
                 // Atualizar tabela
                 atualizarTabelaCustos();
