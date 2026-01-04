@@ -199,13 +199,20 @@ def api_irradiacao(estado):
 # ==================== ROTAS DOS CATÁLOGOS ====================
 
 # ========== Catálogo de Placas Solares ==========
-@energia_solar_bp.route('/placas')
+@energia_solar_bp.route('/placas', methods=['GET'])
 @login_required
 def placas_listar():
     """Lista todas as placas solares do catálogo"""
-    placas_obj = PlacaSolar.query.order_by(PlacaSolar.fabricante, PlacaSolar.modelo).all()
-    placas = [p.to_dict() for p in placas_obj]
-    return render_template('energia_solar/placas_crud.html', placas=placas, placas_obj=placas_obj)
+    try:
+        placas_obj = PlacaSolar.query.order_by(PlacaSolar.fabricante, PlacaSolar.modelo).all()
+        placas = [p.to_dict() for p in placas_obj]
+        return render_template('energia_solar/placas_crud.html', placas=placas, placas_obj=placas_obj)
+    except Exception as e:
+        print(f"❌ Erro ao listar placas: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Erro ao carregar placas: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.dashboard'))
 
 
 @energia_solar_bp.route('/placas/criar', methods=['POST'])
