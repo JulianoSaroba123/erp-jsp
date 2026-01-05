@@ -337,6 +337,9 @@ def placa_editar(placa_id):
             placa.preco_custo = float(preco_custo) if preco_custo else None
             
             # Processar datasheet (arquivo ou URL)
+            datasheet_atualizado = False
+            
+            # Verificar se há arquivo enviado
             if 'datasheet_file' in request.files:
                 file = request.files['datasheet_file']
                 if file and file.filename and allowed_file(file.filename):
@@ -353,10 +356,19 @@ def placa_editar(placa_id):
                     filepath = os.path.join(UPLOAD_FOLDER, filename)
                     file.save(filepath)
                     placa.datasheet = f"/static/uploads/datasheets/{filename}"
+                    datasheet_atualizado = True
             
-            # Se não houver arquivo, verificar URL
-            elif request.form.get('datasheet_url'):
-                placa.datasheet = request.form.get('datasheet_url')
+            # Se não enviou arquivo, verificar URL
+            if not datasheet_atualizado:
+                url_fornecida = request.form.get('datasheet_url', '').strip()
+                if url_fornecida:
+                    # Excluir arquivo local antigo se houver
+                    if placa.datasheet and placa.datasheet.startswith('/static/uploads/'):
+                        old_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                              placa.datasheet.lstrip('/'))
+                        if os.path.exists(old_file):
+                            os.remove(old_file)
+                    placa.datasheet = url_fornecida
             
             db.session.commit()
             flash(f'Placa {placa.modelo} atualizada com sucesso!', 'success')
