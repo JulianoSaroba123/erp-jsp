@@ -423,6 +423,28 @@ def inversor_criar():
         garantia_anos = request.form.get('garantia_anos')
         grau_protecao = request.form.get('grau_protecao')
         
+        # Processar datasheet (arquivo ou URL)
+        datasheet = None
+        
+        # No Render, bloquear upload de arquivos (filesystem efêmero)
+        if 'datasheet_file' in request.files and not IS_RENDER:
+            file = request.files['datasheet_file']
+            if file and file.filename and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"{timestamp}_{filename}"
+                filepath = os.path.join(UPLOAD_FOLDER, filename)
+                file.save(filepath)
+                datasheet = f"/static/uploads/datasheets/{filename}"
+        elif 'datasheet_file' in request.files and IS_RENDER:
+            file = request.files['datasheet_file']
+            if file and file.filename:
+                flash('⚠️ Upload de arquivos não disponível no Render. Use um link externo (Google Drive, Dropbox, etc.)', 'warning')
+        
+        # Se não houver arquivo, usar URL
+        if not datasheet:
+            datasheet = request.form.get('datasheet_url') or None
+        
         inversor = InversorSolar(
             modelo=request.form.get('modelo'),
             fabricante=request.form.get('fabricante'),
@@ -439,7 +461,8 @@ def inversor_criar():
             fases=request.form.get('fases'),
             garantia_anos=int(garantia_anos) if garantia_anos else 5,
             grau_protecao=grau_protecao,
-            preco_venda=float(request.form.get('preco_venda'))
+            preco_venda=float(request.form.get('preco_venda')),
+            datasheet=datasheet
         )
         
         db.session.add(inversor)
@@ -468,6 +491,95 @@ def inversor_excluir(inversor_id):
         flash(f'Erro ao excluir inversor: {str(e)}', 'error')
     
     return redirect(url_for('energia_solar.inversores_listar'))
+
+
+@energia_solar_bp.route('/inversores/editar/<int:inversor_id>', methods=['GET', 'POST'])
+@login_required
+def inversor_editar(inversor_id):
+    """Edita um inversor do catálogo"""
+    inversor = InversorSolar.query.get_or_404(inversor_id)
+    
+    if request.method == 'POST':
+        try:
+            # Atualizar dados básicos
+            inversor.modelo = request.form.get('modelo')
+            inversor.fabricante = request.form.get('fabricante')
+            inversor.tipo = request.form.get('tipo')
+            inversor.potencia_nominal = float(request.form.get('potencia_nominal'))
+            inversor.preco_venda = float(request.form.get('preco_venda'))
+            inversor.fases = request.form.get('fases')
+            
+            # Campos opcionais
+            potencia_maxima = request.form.get('potencia_maxima')
+            tensao_entrada_min = request.form.get('tensao_entrada_min')
+            tensao_entrada_max = request.form.get('tensao_entrada_max')
+            tensao_mppt_min = request.form.get('tensao_mppt_min')
+            tensao_mppt_max = request.form.get('tensao_mppt_max')
+            num_mppt = request.form.get('num_mppt')
+            strings_por_mppt = request.form.get('strings_por_mppt')
+            eficiencia_maxima = request.form.get('eficiencia_maxima')
+            garantia_anos = request.form.get('garantia_anos')
+            grau_protecao = request.form.get('grau_protecao')
+            
+            inversor.potencia_maxima = float(potencia_maxima) if potencia_maxima else None
+            inversor.tensao_entrada_min = float(tensao_entrada_min) if tensao_entrada_min else None
+            inversor.tensao_entrada_max = float(tensao_entrada_max) if tensao_entrada_max else None
+            inversor.tensao_mppt_min = float(tensao_mppt_min) if tensao_mppt_min else None
+            inversor.tensao_mppt_max = float(tensao_mppt_max) if tensao_mppt_max else None
+            inversor.num_mppt = int(num_mppt) if num_mppt else 2
+            inversor.strings_por_mppt = int(strings_por_mppt) if strings_por_mppt else None
+            inversor.eficiencia_maxima = float(eficiencia_maxima) if eficiencia_maxima else None
+            inversor.garantia_anos = int(garantia_anos) if garantia_anos else 5
+            inversor.grau_protecao = grau_protecao
+            
+            # Processar datasheet (arquivo ou URL)
+            datasheet_atualizado = False
+            
+            # Verificar se há arquivo enviado (apenas local, não no Render)
+            if 'datasheet_file' in request.files and not IS_RENDER:
+                file = request.files['datasheet_file']
+                if file and file.filename and allowed_file(file.filename):
+                    # Excluir arquivo antigo se existir e for local
+                    if inversor.datasheet and inversor.datasheet.startswith('/static/uploads/'):
+                        old_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                              inversor.datasheet.lstrip('/'))
+                        if os.path.exists(old_file):
+                            os.remove(old_file)
+                    
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    filename = f"{timestamp}_{filename}"
+                    filepath = os.path.join(UPLOAD_FOLDER, filename)
+                    file.save(filepath)
+                    inversor.datasheet = f"/static/uploads/datasheets/{filename}"
+                    datasheet_atualizado = True
+            elif 'datasheet_file' in request.files and IS_RENDER:
+                file = request.files['datasheet_file']
+                if file and file.filename:
+                    flash('⚠️ Upload de arquivos não disponível no Render. Use um link externo na aba "Link Externo".', 'warning')
+            
+            # Se não enviou arquivo, verificar URL
+            if not datasheet_atualizado:
+                url_fornecida = request.form.get('datasheet_url', '').strip()
+                if url_fornecida:
+                    # Excluir arquivo local antigo se houver
+                    if inversor.datasheet and inversor.datasheet.startswith('/static/uploads/'):
+                        old_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                              inversor.datasheet.lstrip('/'))
+                        if os.path.exists(old_file):
+                            os.remove(old_file)
+                    inversor.datasheet = url_fornecida
+            
+            db.session.commit()
+            flash(f'Inversor {inversor.modelo} atualizado com sucesso!', 'success')
+            return redirect(url_for('energia_solar.inversores_listar'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao atualizar inversor: {str(e)}', 'error')
+    
+    # GET: retornar dados em JSON
+    return jsonify(inversor.to_dict())
 
 
 # ========================================
