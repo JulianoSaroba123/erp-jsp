@@ -21,8 +21,12 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static
 ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png', 'webp'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
-# Criar pasta de uploads se não existir
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Detectar se está no Render (filesystem efêmero)
+IS_RENDER = os.getenv('RENDER') is not None
+
+# Criar pasta de uploads se não existir (apenas local)
+if not IS_RENDER:
+    os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 def allowed_file(filename):
     """Verifica se a extensão do arquivo é permitida"""
@@ -246,7 +250,9 @@ def placa_criar():
         
         # Processar datasheet (arquivo ou URL)
         datasheet = None
-        if 'datasheet_file' in request.files:
+        
+        # No Render, bloquear upload de arquivos (filesystem efêmero)
+        if 'datasheet_file' in request.files and not IS_RENDER:
             file = request.files['datasheet_file']
             if file and file.filename and allowed_file(file.filename):
                 filename = secure_filename(file.filename)
@@ -256,6 +262,10 @@ def placa_criar():
                 filepath = os.path.join(UPLOAD_FOLDER, filename)
                 file.save(filepath)
                 datasheet = f"/static/uploads/datasheets/{filename}"
+        elif 'datasheet_file' in request.files and IS_RENDER:
+            file = request.files['datasheet_file']
+            if file and file.filename:
+                flash('⚠️ Upload de arquivos não disponível no Render. Use um link externo (Google Drive, Dropbox, etc.)', 'warning')
         
         # Se não houver arquivo, usar URL
         if not datasheet:
@@ -339,8 +349,8 @@ def placa_editar(placa_id):
             # Processar datasheet (arquivo ou URL)
             datasheet_atualizado = False
             
-            # Verificar se há arquivo enviado
-            if 'datasheet_file' in request.files:
+            # Verificar se há arquivo enviado (apenas local, não no Render)
+            if 'datasheet_file' in request.files and not IS_RENDER:
                 file = request.files['datasheet_file']
                 if file and file.filename and allowed_file(file.filename):
                     # Excluir arquivo antigo se existir e for local
@@ -357,6 +367,10 @@ def placa_editar(placa_id):
                     file.save(filepath)
                     placa.datasheet = f"/static/uploads/datasheets/{filename}"
                     datasheet_atualizado = True
+            elif 'datasheet_file' in request.files and IS_RENDER:
+                file = request.files['datasheet_file']
+                if file and file.filename:
+                    flash('⚠️ Upload de arquivos não disponível no Render. Use um link externo na aba "Link Externo".', 'warning')
             
             # Se não enviou arquivo, verificar URL
             if not datasheet_atualizado:
