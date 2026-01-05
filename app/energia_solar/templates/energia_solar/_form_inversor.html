@@ -127,11 +127,41 @@
     </div>
     
     <div class="col-md-12 mt-3">
-        <label for="datasheet" class="form-label">
-            <i class="fas fa-file-pdf text-danger me-2"></i>Datasheet (PDF ou Link)
+        <label class="form-label">
+            <i class="fas fa-file-pdf text-danger me-2"></i>Datasheet (PDF ou Imagem)
         </label>
-        <input type="text" class="form-control" id="datasheet" name="datasheet" 
-               placeholder="Cole aqui o link do datasheet em PDF">
-        <small class="text-muted">Insira o link do datasheet técnico do inversor</small>
+        
+        <!-- Abas: Upload ou Link -->
+        <ul class="nav nav-tabs mb-2" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="upload-tab-inv" data-bs-toggle="tab" 
+                        data-bs-target="#upload-pane-inv" type="button" role="tab">
+                    <i class="fas fa-upload me-1"></i>Upload Arquivo
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="link-tab-inv" data-bs-toggle="tab" 
+                        data-bs-target="#link-pane-inv" type="button" role="tab">
+                    <i class="fas fa-link me-1"></i>Link Externo
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content">
+            <!-- Aba Upload -->
+            <div class="tab-pane fade show active" id="upload-pane-inv" role="tabpanel">
+                <input type="file" class="form-control" id="datasheet_file_inv" name="datasheet_file" 
+                       accept=".pdf,.jpg,.jpeg,.png,.webp">
+                <small class="text-muted">Formatos aceitos: PDF, JPG, PNG, WEBP (máx. 5MB)</small>
+                <div id="preview-datasheet-inv" class="mt-2"></div>
+            </div>
+            
+            <!-- Aba Link -->
+            <div class="tab-pane fade" id="link-pane-inv" role="tabpanel">
+                <input type="url" class="form-control" id="datasheet_url_inv" name="datasheet_url" 
+                       placeholder="https://exemplo.com/datasheet.pdf">
+                <small class="text-muted">Cole o link direto do datasheet técnico</small>
+            </div>
+        </div>
     </div>
 </div>

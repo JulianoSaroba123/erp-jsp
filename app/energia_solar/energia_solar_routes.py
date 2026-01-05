@@ -1,7 +1,7 @@
 """
 Rotas para o módulo de Cálculo de Energia Solar
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
 from flask_login import login_required, current_user
 from app.extensoes import db
 from app.energia_solar.energia_solar_model import CalculoEnergiaSolar
@@ -9,10 +9,24 @@ from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar, KitSolar
 from app.energia_solar.custo_fixo_model import CustoFixo
 from app.cliente.cliente_model import Cliente
 from datetime import datetime
+from werkzeug.utils import secure_filename
 import math
+import os
 
 energia_solar_bp = Blueprint('energia_solar', __name__, url_prefix='/energia-solar',
                              template_folder='templates')
+
+# Configuração de uploads
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'uploads', 'datasheets')
+ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png', 'webp'}
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
+
+# Criar pasta de uploads se não existir
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    """Verifica se a extensão do arquivo é permitida"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 @energia_solar_bp.route('/')
@@ -230,6 +244,23 @@ def placa_criar():
         garantia_desempenho = request.form.get('garantia_desempenho')
         preco_custo = request.form.get('preco_custo')
         
+        # Processar datasheet (arquivo ou URL)
+        datasheet = None
+        if 'datasheet_file' in request.files:
+            file = request.files['datasheet_file']
+            if file and file.filename and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                # Adicionar timestamp para evitar conflitos
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"{timestamp}_{filename}"
+                filepath = os.path.join(UPLOAD_FOLDER, filename)
+                file.save(filepath)
+                datasheet = f"/static/uploads/datasheets/{filename}"
+        
+        # Se não houver arquivo, usar URL
+        if not datasheet:
+            datasheet = request.form.get('datasheet_url') or None
+        
         placa = PlacaSolar(
             modelo=request.form.get('modelo'),
             fabricante=request.form.get('fabricante'),
@@ -242,7 +273,8 @@ def placa_criar():
             garantia_produto=int(garantia_produto) if garantia_produto else 12,
             garantia_desempenho=int(garantia_desempenho) if garantia_desempenho else 25,
             preco_venda=float(request.form.get('preco_venda')),
-            preco_custo=float(preco_custo) if preco_custo else None
+            preco_custo=float(preco_custo) if preco_custo else None,
+            datasheet=datasheet
         )
         
         db.session.add(placa)
@@ -303,6 +335,28 @@ def placa_editar(placa_id):
             placa.garantia_produto = int(garantia_produto) if garantia_produto else 12
             placa.garantia_desempenho = int(garantia_desempenho) if garantia_desempenho else 25
             placa.preco_custo = float(preco_custo) if preco_custo else None
+            
+            # Processar datasheet (arquivo ou URL)
+            if 'datasheet_file' in request.files:
+                file = request.files['datasheet_file']
+                if file and file.filename and allowed_file(file.filename):
+                    # Excluir arquivo antigo se existir e for local
+                    if placa.datasheet and placa.datasheet.startswith('/static/uploads/'):
+                        old_file = os.path.join(os.path.dirname(os.path.dirname(__file__)), 
+                                              placa.datasheet.lstrip('/'))
+                        if os.path.exists(old_file):
+                            os.remove(old_file)
+                    
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    filename = f"{timestamp}_{filename}"
+                    filepath = os.path.join(UPLOAD_FOLDER, filename)
+                    file.save(filepath)
+                    placa.datasheet = f"/static/uploads/datasheets/{filename}"
+            
+            # Se não houver arquivo, verificar URL
+            elif request.form.get('datasheet_url'):
+                placa.datasheet = request.form.get('datasheet_url')
             
             db.session.commit()
             flash(f'Placa {placa.modelo} atualizada com sucesso!', 'success')

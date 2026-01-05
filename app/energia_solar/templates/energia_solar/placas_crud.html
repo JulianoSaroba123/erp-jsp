@@ -54,6 +54,20 @@
                         <strong class="text-verde fs-5">R$ {{ "%.2f"|format(placa.preco_venda) }}</strong>
                         <small class="text-muted d-block">R$ {{ "%.2f"|format(placa.preco_venda / placa.potencia) }}/Wp</small>
                     </div>
+                    
+                    {% if placa.datasheet %}
+                    <div class="text-center mb-2">
+                        {% if placa.datasheet.endswith(('.jpg', '.jpeg', '.png', '.webp')) %}
+                            <a href="{{ placa.datasheet }}" target="_blank" class="btn btn-sm btn-outline-info w-100">
+                                <i class="fas fa-image me-1"></i>Ver Imagem Técnica
+                            </a>
+                        {% else %}
+                            <a href="{{ placa.datasheet }}" target="_blank" class="btn btn-sm btn-outline-danger w-100">
+                                <i class="fas fa-file-pdf me-1"></i>Ver Datasheet PDF
+                            </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
                 <div class="card-footer bg-transparent border-top">
                     <div class="d-flex gap-2">
@@ -111,7 +125,7 @@
                 <div class="tab-content" id="crudTabsContent">
                     <!-- ABA: CRIAR -->
                     <div class="tab-pane fade show active" id="criar" role="tabpanel">
-                        <form method="POST" action="{{ url_for('energia_solar.placa_criar') }}" id="formCriar">
+                        <form method="POST" action="{{ url_for('energia_solar.placa_criar') }}" id="formCriar" enctype="multipart/form-data">
                             {% include 'energia_solar/_form_placa.html' %}
                             <div class="text-end mt-4">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -129,7 +143,7 @@
 
                     <!-- ABA: EDITAR -->
                     <div class="tab-pane fade" id="editar" role="tabpanel">
-                        <form method="POST" id="formEditar">
+                        <form method="POST" id="formEditar" enctype="multipart/form-data">
                             <div id="conteudoEditar">
                                 <p class="text-center text-muted">Carregando...</p>
                             </div>
@@ -276,6 +290,34 @@ async function editarPlaca(id) {
                     <label class="form-label">Garantia de Desempenho (anos)</label>
                     <input type="number" class="form-control" name="garantia_desempenho" value="${placa.garantia_desempenho || 25}">
                 </div>
+                <div class="col-md-12 mt-3">
+                    <label class="form-label">
+                        <i class="fas fa-file-pdf text-danger me-2"></i>Datasheet (PDF ou Imagem)
+                    </label>
+                    ${placa.datasheet ? `<div class="alert alert-info mb-2"><i class="fas fa-info-circle me-2"></i>Arquivo atual: ${placa.datasheet.split('/').pop()}</div>` : ''}
+                    <ul class="nav nav-tabs mb-2" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" type="button" data-bs-toggle="tab" data-bs-target="#upload-edit">
+                                <i class="fas fa-upload me-1"></i>Upload Novo
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" type="button" data-bs-toggle="tab" data-bs-target="#link-edit">
+                                <i class="fas fa-link me-1"></i>Link Externo
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="upload-edit">
+                            <input type="file" class="form-control" name="datasheet_file" accept=".pdf,.jpg,.jpeg,.png,.webp">
+                            <small class="text-muted">Deixe vazio para manter o arquivo atual</small>
+                        </div>
+                        <div class="tab-pane fade" id="link-edit">
+                            <input type="url" class="form-control" name="datasheet_url" value="${placa.datasheet && !placa.datasheet.startsWith('/static/') ? placa.datasheet : ''}" placeholder="https://exemplo.com/datasheet.pdf">
+                            <small class="text-muted">Cole o link direto do datasheet</small>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
         
@@ -314,5 +356,47 @@ function excluirPlaca(id, modelo) {
         });
     }
 }
+
+// Preview de imagem ao selecionar arquivo
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('datasheet_file');
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const preview = document.getElementById('preview-datasheet');
+            
+            if (file) {
+                // Verificar tamanho
+                if (file.size > 5 * 1024 * 1024) {
+                    preview.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>Arquivo muito grande! Máximo 5MB.</div>';
+                    e.target.value = '';
+                    return;
+                }
+                
+                // Mostrar preview se for imagem
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = `
+                            <div class="text-center">
+                                <img src="${e.target.result}" class="img-thumbnail" style="max-height: 200px;">
+                                <p class="text-muted mt-2">${file.name} (${(file.size / 1024).toFixed(1)} KB)</p>
+                            </div>
+                        `;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.innerHTML = `
+                        <div class="alert alert-success">
+                            <i class="fas fa-file-pdf me-2"></i>${file.name} (${(file.size / 1024).toFixed(1)} KB)
+                        </div>
+                    `;
+                }
+            } else {
+                preview.innerHTML = '';
+            }
+        });
+    }
+});
 </script>
 {% endblock %}
