@@ -255,7 +255,7 @@ def placa_criar():
     return redirect(url_for('energia_solar.placas_listar'))
 
 
-@energia_solar_bp.route('/placas/excluir/<int:placa_id>')
+@energia_solar_bp.route('/placas/excluir/<int:placa_id>', methods=['POST'])
 @login_required
 def placa_excluir(placa_id):
     """Exclui uma placa solar do catálogo"""
@@ -269,6 +269,51 @@ def placa_excluir(placa_id):
         flash(f'Erro ao excluir placa: {str(e)}', 'error')
     
     return redirect(url_for('energia_solar.placas_listar'))
+
+
+@energia_solar_bp.route('/placas/editar/<int:placa_id>', methods=['GET', 'POST'])
+@login_required
+def placa_editar(placa_id):
+    """Edita uma placa solar do catálogo"""
+    placa = PlacaSolar.query.get_or_404(placa_id)
+    
+    if request.method == 'POST':
+        try:
+            # Atualizar dados
+            placa.modelo = request.form.get('modelo')
+            placa.fabricante = request.form.get('fabricante')
+            placa.potencia = float(request.form.get('potencia'))
+            placa.preco_venda = float(request.form.get('preco_venda'))
+            
+            # Campos opcionais
+            comprimento = request.form.get('comprimento')
+            largura = request.form.get('largura')
+            espessura = request.form.get('espessura')
+            eficiencia = request.form.get('eficiencia')
+            num_celulas = request.form.get('num_celulas')
+            garantia_produto = request.form.get('garantia_produto')
+            garantia_desempenho = request.form.get('garantia_desempenho')
+            preco_custo = request.form.get('preco_custo')
+            
+            placa.eficiencia = float(eficiencia) if eficiencia else None
+            placa.num_celulas = int(num_celulas) if num_celulas else None
+            placa.comprimento = float(comprimento) if comprimento else None
+            placa.largura = float(largura) if largura else None
+            placa.espessura = float(espessura) if espessura else None
+            placa.garantia_produto = int(garantia_produto) if garantia_produto else 12
+            placa.garantia_desempenho = int(garantia_desempenho) if garantia_desempenho else 25
+            placa.preco_custo = float(preco_custo) if preco_custo else None
+            
+            db.session.commit()
+            flash(f'Placa {placa.modelo} atualizada com sucesso!', 'success')
+            return redirect(url_for('energia_solar.placas_listar'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao atualizar placa: {str(e)}', 'error')
+    
+    # GET: retornar dados em JSON
+    return jsonify(placa.to_dict())
 
 
 # ========== Catálogo de Inversores ==========
