@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Proposta Comercial - Sistema Solar Fotovoltaico</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        /* CAPA */
+        .capa {
+            height: 100vh;
+            background: linear-gradient(135deg, #002755 0%, #004a9f 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            page-break-after: always;
+            position: relative;
+            padding: 40px;
+        }
+        
+        .capa h1 {
+            font-size: 56px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+        }
+        
+        .capa .subtitulo {
+            font-size: 20px;
+            margin-bottom: 60px;
+            opacity: 0.9;
+        }
+        
+        .capa .info-cliente {
+            background: rgba(255,255,255,0.1);
+            padding: 30px 50px;
+            border-radius: 10px;
+            margin: 40px 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .capa .info-cliente h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+        
+        .capa .validade {
+            font-size: 16px;
+            margin-top: 40px;
+            opacity: 0.8;
+        }
+        
+        .capa .numero-projeto {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            background: rgba(255,255,255,0.2);
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .capa .footer-capa {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 14px;
+        }
+        
+        .capa .footer-capa .empresa {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        /* PÁGINAS INTERNAS */
+        .pagina {
+            padding: 40px 60px;
+            min-height: 100vh;
+            page-break-after: always;
+            position: relative;
+        }
+        
+        .header-pagina {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #002755;
+            margin-bottom: 30px;
+        }
+        
+        .header-pagina .numero {
+            color: #002755;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .header-pagina .data {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        h2 {
+            color: #002755;
+            font-size: 24px;
+            margin-bottom: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        h3 {
+            color: #002755;
+            font-size: 18px;
+            margin: 20px 0 10px;
+            font-weight: 600;
+        }
+        
+        /* BOXES COLORIDOS */
+        .box {
+            background: #f8f9fa;
+            border-left: 5px solid #002755;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        
+        .box.destaque {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left-color: #1976d2;
+        }
+        
+        .box.verde {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-left-color: #4caf50;
+        }
+        
+        .box.laranja {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-left-color: #ff9800;
+        }
+        
+        /* GRID 2 COLUNAS */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 20px 0;
+        }
+        
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .card-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        
+        .card-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        
+        .card-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #002755;
+        }
+        
+        /* TABELAS */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 11px;
+        }
+        
+        table th {
+            background: #002755;
+            color: white;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+        
+        table td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        table tr:hover {
+            background: #e3f2fd;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        /* FOOTER PÁGINA */
+        .footer-pagina {
+            position: absolute;
+            bottom: 30px;
+            left: 60px;
+            right: 60px;
+            padding-top: 15px;
+            border-top: 2px solid #002755;
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .footer-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+        }
+        
+        /* UTILITÁRIOS */
+        .destaque-valor {
+            font-size: 36px;
+            font-weight: 700;
+            color: #4caf50;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge.azul {
+            background: #2196f3;
+        }
+        
+        .badge.laranja {
+            background: #ff9800;
+        }
+        
+        /* LINHA DO TEMPO */
+        .timeline {
+            padding: 20px 0;
+        }
+        
+        .timeline-item {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .timeline-numero {
+            width: 40px;
+            height: 40px;
+            background: #002755;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        
+        .timeline-content {
+            flex: 1;
+            padding-top: 8px;
+        }
+        
+        /* LISTA DE EQUIPAMENTOS */
+        .lista-equipamentos {
+            margin: 20px 0;
+        }
+        
+        .equipamento {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .equipamento-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .equipamento-nome {
+            font-size: 16px;
+            font-weight: 700;
+            color: #002755;
+        }
+        
+        .equipamento-qtd {
+            background: #4caf50;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .equipamento-detalhe {
+            color: #666;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- CAPA -->
+    <div class="capa">
+        <div class="numero-projeto">
+            Número do projeto: {{ projeto.id }}
+        </div>
+        
+        <h1>PROPOSTA<br>COMERCIAL</h1>
+        
+        <div class="subtitulo">
+            A seguinte proposta comercial foi elaborada em {{ projeto.data_criacao.strftime('%d/%m/%y') if projeto.data_criacao else 'hoje' }}
+        </div>
+        
+        <div class="info-cliente">
+            <h2>{{ projeto.nome_cliente }}</h2>
+            <p style="font-size: 16px; margin-top: 10px;">
+                {{ projeto.endereco or '' }}{% if projeto.cidade %}, {{ projeto.cidade }}{% endif %}{% if projeto.estado %}/{{ projeto.estado }}{% endif %}
+            </p>
+        </div>
+        
+        <div class="validade">
+            A proposta é válida por 30 dias.
+        </div>
+        
+        <div class="footer-capa">
+            <div class="empresa">{{ config.nome_fantasia if config else 'JSP ELÉTRICA INDUSTRIAL & SOLAR' }}</div>
+            <div>{{ config.logradouro if config else 'Rua Indalécio Costa, 890' }}{% if config and config.numero %}, {{ config.numero }}{% endif %}{% if config and config.bairro %}, {{ config.bairro }}{% endif %}</div>
+            <div>{{ config.cidade if config else 'Tietê' }}, {{ config.uf if config else 'SP' }}, {{ config.cep if config else '18530-170' }}</div>
+            <div style="margin-top: 10px;">Email: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            <div style="margin-top: 5px; font-weight: 600;">{{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 2: COMO FUNCIONA -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Como Funciona o Sistema</h2>
+        <p style="margin-bottom: 30px; font-size: 14px;">Conheça mais sobre o sistema fotovoltaico.</p>
+        
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-numero">1</div>
+                <div class="timeline-content">
+                    <strong>Os módulos fotovoltaicos transformam a luz do sol em energia elétrica.</strong><br>
+                    <span style="color: #666; font-size: 13px;">As placas solares captam a radiação solar e convertem em energia elétrica (corrente contínua - CC).</span>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-numero">2</div>
+                <div class="timeline-content">
+                    <strong>A energia gerada é processada pelo inversor (CC para CA).</strong><br>
+                    <span style="color: #666; font-size: 13px;">O inversor converte a corrente contínua em corrente alternada, compatível com a rede elétrica.</span>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-numero">3</div>
+                <div class="timeline-content">
+                    <strong>A energia processada (CA) alimenta o estabelecimento.</strong><br>
+                    <span style="color: #666; font-size: 13px;">A energia é distribuída diretamente para o consumo local, reduzindo a conta de luz.</span>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-numero">4</div>
+                <div class="timeline-content">
+                    <strong>Toda energia excedente é injetada na rede local.</strong><br>
+                    <span style="color: #666; font-size: 13px;">O excesso de produção é enviado para a concessionária, gerando créditos de energia.</span>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-numero">5</div>
+                <div class="timeline-content">
+                    <strong>A energia injetada na rede é contabilizada pelo relógio bidirecional.</strong><br>
+                    <span style="color: #666; font-size: 13px;">Os créditos gerados podem ser utilizados em até 60 meses (Lei 14.300/2022).</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">{{ config.site if config else 'www.eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 3: DETALHES DA PROPOSTA -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Detalhes da Proposta</h2>
+        
+        <div class="box destaque">
+            <h3 style="margin-top: 0;">01 - Usina Fotovoltaica</h3>
+            <p>Usina fotovoltaica dimensionada para atender a média mensal de consumo da unidade consumidora.</p>
+        </div>
+        
+        <div class="box">
+            <h3 style="margin-top: 0;">02 - Características do Cliente</h3>
+            <div class="grid-2" style="margin-top: 15px;">
+                <div>
+                    <strong>Grupo:</strong> B (Baixa Tensão)<br>
+                    <strong>Consumo médio mensal:</strong> {{ "%.0f"|format(projeto.consumo_kwh_mes or 0) }} kWh/Mês<br>
+                    <strong>Consumo médio anual:</strong> {{ "%.0f"|format((projeto.consumo_kwh_mes or 0) * 12) }} kWh/Ano
+                </div>
+                <div>
+                    <strong>Preço do kWh:</strong> R$ {{ "%.2f"|format(projeto.tarifa_kwh or 1.04) }}<br>
+                    <strong>Gasto mensal atual:</strong> R$ {{ "%.2f"|format((projeto.consumo_kwh_mes or 0) * (projeto.tarifa_kwh or 1.04)) }}<br>
+                    <strong>Gasto anual atual:</strong> R$ {{ "%.2f"|format((projeto.consumo_kwh_mes or 0) * (projeto.tarifa_kwh or 1.04) * 12) }}
+                </div>
+            </div>
+        </div>
+        
+        <div class="box verde">
+            <h3 style="margin-top: 0;">03 - Dimensionamento</h3>
+            <div style="margin-top: 15px;">
+                <p><strong>Localidade da usina:</strong> {{ projeto.endereco or '' }}{% if projeto.cidade %}, {{ projeto.cidade }}{% endif %}{% if projeto.estado %}/{{ projeto.estado }}{% endif %}</p>
+                <p style="margin-top: 8px;"><strong>Irradiação solar média:</strong> {{ "%.2f"|format(projeto.irradiacao_solar or 4.82) }} kWh/m².dia</p>
+            </div>
+            
+            <div class="grid-3" style="margin-top: 20px;">
+                <div class="card">
+                    <div class="card-icon">⚡</div>
+                    <div class="card-label">Potência do Sistema</div>
+                    <div class="card-value">{{ "%.2f"|format(projeto.potencia_kwp or 0) }} kWp</div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">☀️</div>
+                    <div class="card-label">Geração Estimada</div>
+                    <div class="card-value">{{ "%.0f"|format(projeto.geracao_estimada_mes or 0) }} kWh/mês</div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-icon">📐</div>
+                    <div class="card-label">Área Necessária</div>
+                    <div class="card-value">{{ "%.1f"|format(projeto.area_necessaria or 0) }} m²</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">E-mail: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 4: EQUIPAMENTOS -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Lista de Equipamentos</h2>
+        <p style="margin-bottom: 30px; font-size: 14px;">Produtos e serviços incluídos nesta proposta comercial.</p>
+        
+        {% if projeto.placa %}
+        <div class="grid-2">
+            <div class="card" style="text-align: left; background: #e3f2fd;">
+                <h3 style="color: #1976d2; margin-top: 0;">Painel Solar</h3>
+                <p><strong>Modelo:</strong> {{ projeto.placa.modelo }}</p>
+                <p><strong>Fabricante:</strong> {{ projeto.placa.fabricante }}</p>
+                <p><strong>Potência:</strong> {{ projeto.placa.potencia }} Wp</p>
+                <p><strong>Quantidade:</strong> <span class="badge azul">{{ projeto.qtd_placas or 0 }} unidades</span></p>
+            </div>
+            
+            {% if projeto.inversor %}
+            <div class="card" style="text-align: left; background: #fff3e0;">
+                <h3 style="color: #f57c00; margin-top: 0;">Inversor de Frequência</h3>
+                <p><strong>Modelo:</strong> {{ projeto.inversor.modelo }}</p>
+                <p><strong>Fabricante:</strong> {{ projeto.inversor.fabricante }}</p>
+                <p><strong>Potência:</strong> {{ projeto.inversor.potencia_nominal }} kW</p>
+                <p><strong>Quantidade:</strong> <span class="badge laranja">{{ projeto.qtd_inversores or 0 }} unidade(s)</span></p>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <h3 style="margin-top: 30px;">Componentes Adicionais Inclusos:</h3>
+        
+        <div class="lista-equipamentos">
+            <div class="equipamento">
+                <div class="equipamento-detalhe">
+                    ✅ <strong>String Box CC</strong> - Com proteção 2 entradas/2 saídas (com DPS)
+                </div>
+            </div>
+            
+            <div class="equipamento">
+                <div class="equipamento-detalhe">
+                    ✅ <strong>String Box CA</strong> - Com disjuntor bifásico adequado para o inversor
+                </div>
+            </div>
+            
+            <div class="equipamento">
+                <div class="equipamento-detalhe">
+                    ✅ <strong>Cabeamento Solar</strong> - Cabo CC preto e vermelho 4.00mm² (metragem conforme projeto)
+                </div>
+            </div>
+            
+            <div class="equipamento">
+                <div class="equipamento-detalhe">
+                    ✅ <strong>Estrutura de Fixação</strong> - {{ projeto.estrutura_fixacao or 'Kit estrutura em alumínio para telhado cerâmico' }}
+                </div>
+            </div>
+            
+            <div class="equipamento">
+                <div class="equipamento-detalhe">
+                    ✅ <strong>Conectores MC4</strong> - Par de conectores para cabos 2,5/4/6mm²
+                </div>
+            </div>
+            
+            <div class="equipamento">
+                <div class="equipamento-detalhe">
+                    ✅ <strong>Projeto Elétrico</strong> - Completo conforme normas ANEEL
+                </div>
+            </div>
+            
+            <div class="equipamento">
+                <div class="equipamento-detalhe">
+                    ✅ <strong>Instalação Completa</strong> - Mão de obra especializada com garantia
+                </div>
+            </div>
+            
+            <div class="equipamento">
+                <div class="equipamento-detalhe">
+                    ✅ <strong>Homologação</strong> - Documentação e acompanhamento junto à concessionária
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">E-mail: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 5: VALOR DO INVESTIMENTO -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Valor do Investimento</h2>
+        
+        <div class="box laranja">
+            <h3 style="margin-top: 0;">Composição do Valor</h3>
+            <table style="margin-top: 15px;">
+                <tr style="background: white;">
+                    <td style="font-weight: 600;">Custo Equipamentos</td>
+                    <td class="text-right" style="font-weight: 600;">R$ {{ "{:,.2f}".format(projeto.custo_equipamentos or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                </tr>
+                <tr style="background: white;">
+                    <td style="font-weight: 600;">Custo Instalação</td>
+                    <td class="text-right" style="font-weight: 600;">R$ {{ "{:,.2f}".format(projeto.custo_instalacao or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                </tr>
+                <tr style="background: white;">
+                    <td style="font-weight: 600;">Custo Projeto</td>
+                    <td class="text-right" style="font-weight: 600;">R$ {{ "{:,.2f}".format(projeto.custo_projeto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                </tr>
+                <tr style="background: #4caf50; color: white;">
+                    <td style="font-size: 16px; font-weight: 700; padding: 15px 8px;">VALOR TOTAL DO INVESTIMENTO</td>
+                    <td class="text-right" style="font-size: 20px; font-weight: 700; padding: 15px 8px;">R$ {{ "{:,.2f}".format(projeto.valor_venda or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="box verde">
+            <h3 style="margin-top: 0;">Retorno do Investimento</h3>
+            <div class="grid-3" style="margin-top: 20px;">
+                <div class="card">
+                    <div class="card-label">Economia Mensal Média</div>
+                    <div class="card-value" style="color: #4caf50; font-size: 20px;">
+                        R$ {{ "{:,.2f}".format(((projeto.geracao_estimada_mes or 0) * (projeto.tarifa_kwh or 1.04)) - 100).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                    </div>
+                    <div style="font-size: 11px; color: #666; margin-top: 5px;">por mês</div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-label">Payback (Retorno)</div>
+                    <div class="card-value" style="color: #ff9800; font-size: 20px;">
+                        {{ "%.1f"|format(projeto.payback_anos or 0) }} anos
+                    </div>
+                    <div style="font-size: 11px; color: #666; margin-top: 5px;">tempo para retorno total</div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-label">Economia em 25 anos</div>
+                    <div class="card-value" style="color: #2196f3; font-size: 20px;">
+                        {% set economia_25 = ((projeto.geracao_estimada_mes or 0) * (projeto.tarifa_kwh or 1.04) * 12 * 25) - ((projeto.valor_venda or 0)) %}
+                        R$ {{ "{:,.0f}".format(economia_25 if economia_25 > 0 else 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                    </div>
+                    <div style="font-size: 11px; color: #666; margin-top: 5px;">economia líquida</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="box destaque">
+            <h3 style="margin-top: 0;">Resumo Financeiro</h3>
+            <ul style="margin-top: 15px; line-height: 2; font-size: 14px;">
+                <li><strong>Reajuste anual da tarifa de energia:</strong> 10,00% (média histórica)</li>
+                <li><strong>Vida útil do sistema fotovoltaico:</strong> 25 anos (garantia do fabricante)</li>
+                <li><strong>Retorno do investimento:</strong> {{ "%.1f"|format(projeto.payback_anos or 0) }} ano(s)</li>
+                <li><strong>ROI (Retorno sobre investimento):</strong> Aproximadamente {{ "%.0f"|format((economia_25 / (projeto.valor_venda or 1)) * 100 if projeto.valor_venda and projeto.valor_venda > 0 else 0) }}% em 25 anos</li>
+            </ul>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">E-mail: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 6: CONDIÇÕES E GARANTIAS -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Condições Comerciais e Garantias</h2>
+        
+        <div class="box">
+            <h3 style="margin-top: 0;">Formas de Pagamento Disponíveis</h3>
+            <div style="margin-top: 15px; line-height: 2;">
+                <p>✅ <strong>À Vista:</strong> PIX, Transferência ou Dinheiro (desconto especial)</p>
+                <p>✅ <strong>Parcelado no Cartão:</strong> Até 12x com juros da operadora</p>
+                <p>✅ <strong>Financiamento Solar:</strong> Linhas especiais com taxas reduzidas</p>
+                <p>✅ <strong>Entrada + Parcelas:</strong> Condições personalizadas mediante análise</p>
+            </div>
+        </div>
+        
+        <div class="box verde">
+            <h3 style="margin-top: 0;">Garantias do Sistema</h3>
+            <div style="margin-top: 15px; line-height: 2;">
+                <p>🛡️ <strong>Painéis Solares:</strong> 25 anos de garantia de performance linear (fabricante)</p>
+                <p>🛡️ <strong>Inversor:</strong> 5 a 10 anos de garantia (fabricante) - extensível</p>
+                <p>🛡️ <strong>Estruturas de Fixação:</strong> 10 anos contra defeitos de fabricação</p>
+                <p>🛡️ <strong>Instalação:</strong> 12 meses de garantia contra defeitos de mão de obra</p>
+                <p>🛡️ <strong>Projeto e Homologação:</strong> Garantia total até aprovação da concessionária</p>
+            </div>
+        </div>
+        
+        <div class="box destaque">
+            <h3 style="margin-top: 0;">Prazos e Etapas</h3>
+            <div class="timeline" style="margin-top: 15px;">
+                <div class="timeline-item">
+                    <div class="timeline-numero" style="background: #4caf50;">1</div>
+                    <div class="timeline-content">
+                        <strong>Assinatura do Contrato:</strong> Início do processo após confirmação do pagamento de sinal/entrada
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-numero" style="background: #4caf50;">2</div>
+                    <div class="timeline-content">
+                        <strong>Projeto Elétrico:</strong> 5 a 10 dias úteis para elaboração e envio à concessionária
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-numero" style="background: #4caf50;">3</div>
+                    <div class="timeline-content">
+                        <strong>Aprovação da Concessionária:</strong> 15 a 30 dias (prazo da distribuidora)
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-numero" style="background: #4caf50;">4</div>
+                    <div class="timeline-content">
+                        <strong>Instalação do Sistema:</strong> 2 a 5 dias úteis (após aprovação)
+                    </div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-numero" style="background: #4caf50;">5</div>
+                    <div class="timeline-content">
+                        <strong>Vistoria e Ativação:</strong> 5 a 15 dias (prazo da concessionária)
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top: 15px; padding: 15px; background: white; border-radius: 5px;"><strong>Prazo Total Estimado:</strong> 30 a 60 dias úteis (pode variar conforme a concessionária)</p>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">E-mail: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 7: ASSINATURAS -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Aceitação da Proposta</h2>
+        
+        <div class="box destaque" style="margin-top: 40px;">
+            <p style="font-size: 14px; line-height: 1.8;">
+                Declaro que li e estou de acordo com todos os termos desta proposta comercial, 
+                incluindo as condições de pagamento, prazos de execução, garantias e especificações técnicas do sistema fotovoltaico. 
+                Autorizo o início dos serviços conforme descrito neste documento.
+            </p>
+        </div>
+        
+        <div style="margin-top: 100px;">
+            <div class="grid-2" style="gap: 80px;">
+                <div style="text-align: center;">
+                    <div style="border-top: 2px solid #002755; margin-bottom: 15px; padding-top: 80px;"></div>
+                    <div style="font-weight: 700; font-size: 16px; color: #002755;">{{ projeto.nome_cliente }}</div>
+                    <div style="font-size: 13px; color: #666; margin-top: 5px;">CLIENTE</div>
+                    {% if cliente and cliente.cpf_cnpj %}
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">{{ 'CNPJ' if cliente.tipo == 'PJ' else 'CPF' }}: {{ cliente.cpf_cnpj }}</div>
+                    {% endif %}
+                </div>
+                
+                <div style="text-align: center;">
+                    <div style="border-top: 2px solid #002755; margin-bottom: 15px; padding-top: 80px;"></div>
+                    <div style="font-weight: 700; font-size: 16px; color: #002755;">{{ config.nome_fantasia if config else 'JSP ELÉTRICA INDUSTRIAL & SOLAR' }}</div>
+                    <div style="font-size: 13px; color: #666; margin-top: 5px;">RESPONSÁVEL TÉCNICO</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">CNPJ: {{ config.cnpj if config else '12.345.678/0001-90' }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 80px; text-align: center; padding: 25px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-radius: 10px; border: 2px solid #1976d2;">
+            <p style="font-size: 18px; font-weight: 600; color: #002755; margin-bottom: 10px;">
+                📞 Dúvidas? Entre em contato conosco!
+            </p>
+            <p style="font-size: 14px; color: #666;">
+                Telefone/WhatsApp: <strong>{{ config.telefone if config else '(15) 99670 – 2036' }}</strong><br>
+                E-mail: <strong>{{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</strong>
+            </p>
+        </div>
+        
+        <div class="footer-pagina">
+            <div style="text-align: center; font-size: 11px; color: #666;">
+                <p><strong>{{ config.nome_fantasia if config else 'JSP ELÉTRICA INDUSTRIAL & SOLAR' }}</strong></p>
+                <p style="margin-top: 5px;">Este documento é uma proposta comercial e não representa um contrato. Valores válidos por 30 dias.</p>
+                <p style="margin-top: 10px; font-style: italic; color: #002755;">"Transformando luz solar em economia e sustentabilidade para o seu futuro"</p>
+            </div>
+        </div>
+    </div>
+    
+</body>
+</html>

@@ -1160,7 +1160,7 @@ def projeto_proposta_pdf(projeto_id):
             logo_url = f"file:///{logo_path.replace(os.sep, '/')}"
             
             # Renderizar template HTML
-            html_content = render_template('energia_solar/pdf_proposta_solar.html', 
+            html_content = render_template('energia_solar/pdf_proposta_solar_v2.html', 
                                          projeto=projeto,
                                          cliente=cliente,
                                          logo_url=logo_url,
@@ -1192,7 +1192,7 @@ def projeto_proposta_pdf(projeto_id):
             config = get_config()
             
             # Criar resposta HTML com headers de não-cache
-            html_response = make_response(render_template('energia_solar/pdf_proposta_solar.html', 
+            html_response = make_response(render_template('energia_solar/pdf_proposta_solar_v2.html', 
                                                         projeto=projeto,
                                                         cliente=cliente,
                                                         config=config))
