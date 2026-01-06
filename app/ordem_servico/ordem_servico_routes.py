@@ -1853,6 +1853,62 @@ def api_clientes_refresh():
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@ordem_servico_bp.route('/api/equipamentos-cliente/<int:cliente_id>')
+def api_equipamentos_cliente(cliente_id):
+    """
+    API para buscar histórico de equipamentos de um cliente.
+    Retorna equipamentos únicos com seus detalhes das OS anteriores.
+    """
+    try:
+        # Busca todas as OS do cliente (ativas, concluídas, etc)
+        ordens = OrdemServico.query.filter_by(
+            cliente_id=cliente_id,
+            ativo=True
+        ).order_by(OrdemServico.data_abertura.desc()).all()
+        
+        # Dicionário para armazenar equipamentos únicos
+        # Chave: nome do equipamento (normalizado)
+        # Valor: dados completos do equipamento mais recente
+        equipamentos_dict = {}
+        
+        for ordem in ordens:
+            if ordem.equipamento and ordem.equipamento.strip():
+                # Normaliza o nome para comparação (minúsculas, sem espaços extras)
+                nome_normalizado = ordem.equipamento.strip().lower()
+                
+                # Se ainda não temos este equipamento, ou se esta OS é mais recente
+                if nome_normalizado not in equipamentos_dict:
+                    equipamentos_dict[nome_normalizado] = {
+                        'equipamento': ordem.equipamento.strip(),
+                        'modelo': ordem.modelo or '',
+                        'marca': ordem.marca or '',
+                        'numero_serie': ordem.numero_serie or '',
+                        'ultima_os': ordem.numero,
+                        'data_ultima_os': ordem.data_abertura.strftime('%d/%m/%Y') if ordem.data_abertura else '',
+                        'total_os': 1
+                    }
+                else:
+                    # Incrementa contador de OS para este equipamento
+                    equipamentos_dict[nome_normalizado]['total_os'] += 1
+        
+        # Converte para lista ordenada por nome
+        equipamentos_lista = sorted(
+            equipamentos_dict.values(),
+            key=lambda x: x['equipamento']
+        )
+        
+        return jsonify({
+            'success': True,
+            'equipamentos': equipamentos_lista,
+            'total': len(equipamentos_lista)
+        })
+        
+    except Exception as e:
+        print(f"❌ Erro ao buscar equipamentos do cliente: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 @ordem_servico_bp.route('/<int:id>/relatorio-pdf')
 def gerar_relatorio_pdf(id):
     """

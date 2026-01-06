@@ -142,19 +142,31 @@
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-5">
-                        <label class="form-label text-white">Equipamento *</label>
+                        <label class="form-label text-white">
+                            Equipamento *
+                            <i class="fas fa-history ms-1 text-warning" id="equipamento-historico-icon" style="display: none; cursor: help;" 
+                               title="Equipamentos anteriores deste cliente disponíveis"></i>
+                        </label>
                         <input type="text" class="form-control bg-dark text-white border-secondary" 
-                               name="equipamento" value="{{ ordem.equipamento if ordem else '' }}" required placeholder="Tipo do equipamento">
+                               id="equipamento" name="equipamento" value="{{ ordem.equipamento if ordem else '' }}" 
+                               required placeholder="Digite ou selecione equipamento anterior"
+                               list="equipamentos-historico" autocomplete="off">
+                        <datalist id="equipamentos-historico"></datalist>
+                        <small class="text-muted" id="equipamento-hint" style="display: none;">
+                            <i class="fas fa-info-circle"></i> Selecione para preencher automaticamente
+                        </small>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label text-white">Marca/Modelo</label>
                         <input type="text" class="form-control bg-dark text-white border-secondary" 
-                               name="marca_modelo" value="{{ ordem.marca_modelo if ordem else '' }}" placeholder="Marca e modelo">
+                               id="marca_modelo" name="marca_modelo" value="{{ ordem.marca_modelo if ordem else '' }}" 
+                               placeholder="Marca e modelo">
                     </div>
                     <div class="col-md-3">
                         <label class="form-label text-white">Número de Série</label>
                         <input type="text" class="form-control bg-dark text-white border-secondary" 
-                               name="numero_serie" value="{{ ordem.numero_serie if ordem else '' }}" placeholder="Número de série">
+                               id="numero_serie" name="numero_serie" value="{{ ordem.numero_serie if ordem else '' }}" 
+                               placeholder="Número de série">
                     </div>
                 </div>
             </div>
@@ -1345,6 +1357,91 @@ document.addEventListener('DOMContentLoaded', function() {
             // Não deixar que o clique borbulhe para elementos que poderiam focar o input de arquivos
             e.stopPropagation();
         });
+    }
+
+    // ===== HISTÓRICO DE EQUIPAMENTOS =====
+    const clienteSelect = document.getElementById('cliente_id');
+    const equipamentoInput = document.getElementById('equipamento');
+    const marcaModeloInput = document.getElementById('marca_modelo');
+    const numeroSerieInput = document.getElementById('numero_serie');
+    const historicoIcon = document.getElementById('equipamento-historico-icon');
+    const equipamentoHint = document.getElementById('equipamento-hint');
+    let equipamentosCache = [];
+
+    // Carrega equipamentos quando selecionar cliente
+    if (clienteSelect) {
+        clienteSelect.addEventListener('change', async function() {
+            const clienteId = this.value;
+            if (!clienteId) {
+                limparHistoricoEquipamentos();
+                return;
+            }
+            
+            try {
+                const response = await fetch(`{{ url_for('ordem_servico.api_equipamentos_cliente', cliente_id=0) }}`.replace('0', clienteId));
+                const data = await response.json();
+                
+                if (data.success && data.equipamentos && data.equipamentos.length > 0) {
+                    equipamentosCache = data.equipamentos;
+                    popularHistoricoEquipamentos(data.equipamentos);
+                    historicoIcon.style.display = 'inline';
+                    equipamentoHint.style.display = 'block';
+                    showNotification(`${data.total} equipamento(s) anterior(es) encontrado(s)`, 'info');
+                } else {
+                    limparHistoricoEquipamentos();
+                }
+            } catch (error) {
+                console.error('Erro ao buscar equipamentos:', error);
+                limparHistoricoEquipamentos();
+            }
+        });
+    }
+
+    // Auto-preenche campos ao selecionar equipamento
+    if (equipamentoInput) {
+        equipamentoInput.addEventListener('input', function() {
+            const equipamentoSelecionado = this.value;
+            const equipamento = equipamentosCache.find(e => 
+                e.equipamento.toLowerCase() === equipamentoSelecionado.toLowerCase()
+            );
+            
+            if (equipamento) {
+                marcaModeloInput.value = equipamento.modelo || equipamento.marca || '';
+                numeroSerieInput.value = equipamento.numero_serie || '';
+                
+                // Mostra notificação com info do histórico
+                showNotification(
+                    `📋 Dados preenchidos da última OS (#${equipamento.ultima_os}) - ${equipamento.data_ultima_os}<br>` +
+                    `Total de OS anteriores: ${equipamento.total_os}`,
+                    'success'
+                );
+            }
+        });
+    }
+
+    function popularHistoricoEquipamentos(equipamentos) {
+        const datalist = document.getElementById('equipamentos-historico');
+        datalist.innerHTML = '';
+        
+        equipamentos.forEach(eq => {
+            const option = document.createElement('option');
+            option.value = eq.equipamento;
+            option.textContent = `${eq.equipamento} (${eq.total_os} OS anterior(es))`;
+            datalist.appendChild(option);
+        });
+    }
+
+    function limparHistoricoEquipamentos() {
+        const datalist = document.getElementById('equipamentos-historico');
+        datalist.innerHTML = '';
+        historicoIcon.style.display = 'none';
+        equipamentoHint.style.display = 'none';
+        equipamentosCache = [];
+    }
+
+    // Se já houver cliente selecionado ao carregar, busca equipamentos
+    if (clienteSelect && clienteSelect.value) {
+        clienteSelect.dispatchEvent(new Event('change'));
     }
 });
 
