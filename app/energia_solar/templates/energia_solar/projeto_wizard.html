@@ -2277,9 +2277,10 @@ function carregarCustosFixos() {
     console.log('   Custos atuais:', custos.length);
     console.log('   Lista:', custos.map(c => c.descricao).join(', '));
     
-    // Verificar se já tem custos FIXOS (não equipamentos)
-    const temCustosFixos = custos.some(c => {
+    // Verificar se já tem custos FIXOS cadastrados (excluindo equipamentos)
+    const custosFixosExistentes = custos.filter(c => {
         const desc = c.descricao.toUpperCase();
+        // Custos fixos são os que NÃO são equipamentos
         return !desc.includes('KIT') && 
                !desc.includes('PLACA') && 
                !desc.includes('INVERSOR') &&
@@ -2288,8 +2289,8 @@ function carregarCustosFixos() {
                !desc.includes('⚡');
     });
     
-    if (temCustosFixos) {
-        console.log('ℹ️ Custos fixos já existem, não carregando automáticos');
+    if (custosFixosExistentes.length > 0) {
+        console.log(`ℹ️ Já existem ${custosFixosExistentes.length} custos fixos, não carregando automáticos`);
         return;
     }
     
@@ -2301,7 +2302,18 @@ function carregarCustosFixos() {
             if (custosFixos.length > 0) {
                 console.log(`✅ ${custosFixos.length} custos fixos carregados`);
                 
-                // ADICIONAR custos fixos ao array existente (não substituir!)
+                // IMPORTANTE: Preservar equipamentos já adicionados (Kit, Placa, Inversor)
+                const equipamentosExistentes = custos.filter(c => {
+                    const desc = c.descricao.toUpperCase();
+                    return desc.includes('KIT') || 
+                           desc.includes('PLACA') || 
+                           desc.includes('INVERSOR') ||
+                           desc.includes('📦') ||
+                           desc.includes('☀️') ||
+                           desc.includes('⚡');
+                });
+                
+                // Adicionar custos fixos do catálogo
                 custosFixos.forEach(cf => {
                     custos.push({
                         descricao: cf.descricao,
@@ -2312,6 +2324,8 @@ function carregarCustosFixos() {
                     });
                 });
                 
+                console.log(`📊 Total após carregar: ${custos.length} custos (${equipamentosExistentes.length} equipamentos + ${custosFixos.length} custos fixos)`);
+                
                 // Atualizar tabela
                 atualizarTabelaCustos();
                 
@@ -2319,7 +2333,7 @@ function carregarCustosFixos() {
                 const indicator = document.getElementById('indicadorAutoSave');
                 if (indicator) {
                     const oldText = indicator.innerHTML;
-                    indicator.innerHTML = '<span class="badge bg-info"><i class="fas fa-coins me-1"></i>Custos fixos carregados automaticamente</span>';
+                    indicator.innerHTML = `<span class="badge bg-info"><i class="fas fa-coins me-1"></i>${custosFixos.length} custos fixos + ${equipamentosExistentes.length} equipamento(s)</span>`;
                     indicator.classList.remove('d-none');
                     setTimeout(() => {
                         indicator.innerHTML = oldText;
