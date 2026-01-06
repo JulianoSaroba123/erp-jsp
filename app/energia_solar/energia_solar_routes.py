@@ -1083,3 +1083,44 @@ def projeto_recalcular_custos(projeto_id):
         flash(f'Erro ao recalcular custos: {str(e)}', 'error')
     
     return redirect(url_for('energia_solar.projeto_visualizar', projeto_id=projeto_id))
+
+
+@energia_solar_bp.route('/admin/recalcular-todos-custos', methods=['GET', 'POST'])
+@login_required
+def admin_recalcular_todos_custos():
+    """Recalcula custos de TODOS os projetos (página administrativa)"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    if request.method == 'POST':
+        try:
+            projetos = ProjetoSolar.query.all()
+            atualizados = 0
+            
+            for projeto in projetos:
+                if projeto.custo_total and projeto.custo_total > 0:
+                    # Se os custos estão zerados, recalcular
+                    if not projeto.custo_equipamentos or projeto.custo_equipamentos == 0:
+                        projeto.custo_equipamentos = projeto.custo_total * 0.70
+                        projeto.custo_instalacao = projeto.custo_total * 0.20
+                        projeto.custo_projeto = projeto.custo_total * 0.10
+                        atualizados += 1
+            
+            db.session.commit()
+            flash(f'✅ {atualizados} projetos recalculados com sucesso!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'❌ Erro ao recalcular: {str(e)}', 'error')
+        
+        return redirect(url_for('energia_solar.admin_recalcular_todos_custos'))
+    
+    # GET - Mostrar página com preview
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    projetos = ProjetoSolar.query.filter(
+        ProjetoSolar.custo_total > 0,
+        db.or_(
+            ProjetoSolar.custo_equipamentos == None,
+            ProjetoSolar.custo_equipamentos == 0
+        )
+    ).all()
+    
+    return render_template('energia_solar/admin_recalcular_custos.html', projetos=projetos)
