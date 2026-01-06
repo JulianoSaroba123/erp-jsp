@@ -2273,6 +2273,37 @@ function setupCustos() {
     }
     
     // ========================================
+    // LISTENERS PARA ATUALIZAR PREVIEW DO MODAL
+    // ========================================
+    const inputQtd = document.getElementById('modal_qtd');
+    const inputValor = document.getElementById('modal_valor');
+    const inputLucro = document.getElementById('modal_lucro');
+    
+    function atualizarPreviewModal() {
+        const qtd = parseFloat(inputQtd?.value) || 0;
+        const valorUnit = parseFloat(inputValor?.value) || 0;
+        const lucro = parseFloat(inputLucro?.value) || 0;
+        
+        const valorTotal = qtd * valorUnit;
+        const valorComLucro = valorTotal * (1 + lucro / 100);
+        
+        const previewTotal = document.getElementById('modal_preview_total');
+        const previewLucro = document.getElementById('modal_preview_lucro');
+        
+        if (previewTotal) {
+            previewTotal.textContent = `R$ ${valorTotal.toFixed(2).replace('.', ',')}`;
+        }
+        if (previewLucro) {
+            previewLucro.textContent = `R$ ${valorComLucro.toFixed(2).replace('.', ',')}`;
+        }
+    }
+    
+    // Adicionar listeners
+    if (inputQtd) inputQtd.addEventListener('input', atualizarPreviewModal);
+    if (inputValor) inputValor.addEventListener('input', atualizarPreviewModal);
+    if (inputLucro) inputLucro.addEventListener('input', atualizarPreviewModal);
+    
+    // ========================================
     // CARREGAR CUSTOS FIXOS AUTOMATICAMENTE
     // ========================================
     carregarCustosFixos();
@@ -2475,6 +2506,17 @@ window.editarCusto = function(index) {
     document.getElementById('modal_valor').value = custo.valorUnit;
     document.getElementById('modal_lucro').value = custo.lucro;
     document.getElementById('modal_unidade').value = custo.unidade;
+    
+    // Atualizar preview do modal
+    const qtd = parseFloat(custo.qtd) || 0;
+    const valorUnit = parseFloat(custo.valorUnit) || 0;
+    const lucro = parseFloat(custo.lucro) || 0;
+    
+    const valorTotal = qtd * valorUnit;
+    const valorComLucro = valorTotal * (1 + lucro / 100);
+    
+    document.getElementById('modal_preview_total').textContent = `R$ ${valorTotal.toFixed(2).replace('.', ',')}`;
+    document.getElementById('modal_preview_lucro').textContent = `R$ ${valorComLucro.toFixed(2).replace('.', ',')}`;
     
     // Abrir modal para edição
     const modal = new bootstrap.Modal(document.getElementById('modalAdicionarCusto'));
