@@ -100,8 +100,9 @@ def create_app(config_name=None):
             # Importa todos os modelos para db.create_all() funcionar
             try:
                 from app.kits_distribuidor.kits_model import KitFotovoltaico
-            except ImportError:
-                pass  # Módulo kits ainda não existe
+                print("[OK] Modelo KitFotovoltaico importado")
+            except Exception as e:
+                print(f" ⚠ Modelo KitFotovoltaico não disponível: {e}")
             
             db.create_all()
             print("[OK] Tabelas do banco de dados verificadas/criadas!")
@@ -366,12 +367,15 @@ def register_blueprints(app):
     from app.energia_solar.energia_solar_routes import energia_solar_bp
     app.register_blueprint(energia_solar_bp)
 
-    # Blueprint de kits do distribuidor (opcional - pode não existir em todas as versões)
+    # Blueprint de kits do distribuidor (opcional - requer configuração de API)
     try:
         from app.kits_distribuidor.kits_routes import kits_bp
         app.register_blueprint(kits_bp, url_prefix='/kits-distribuidor')
-    except ImportError:
-        print(" ⚠ Módulo kits_distribuidor não disponível - pulando registro")
+        print("[OK] Blueprint kits_distribuidor registrado")
+    except Exception as e:
+        print(f" ⚠ Módulo kits_distribuidor não disponível: {e}")
+        import traceback
+        traceback.print_exc()
 
     # Blueprint de propostas
     from app.proposta.proposta_routes import proposta_bp
