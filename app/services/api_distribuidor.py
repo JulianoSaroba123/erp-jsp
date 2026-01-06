@@ -29,9 +29,24 @@ class DistribuidorAPIService:
     
     def __init__(self):
         """Inicializa o serviço com configurações do app."""
-        self.base_url = current_app.config.get('DISTRIBUIDOR_API_URL', '')
-        self.token = current_app.config.get('DISTRIBUIDOR_API_TOKEN', '')
-        self.timeout = current_app.config.get('DISTRIBUIDOR_API_TIMEOUT', 30)
+        try:
+            from flask import has_app_context
+            if has_app_context():
+                self.base_url = current_app.config.get('DISTRIBUIDOR_API_URL', '')
+                self.token = current_app.config.get('DISTRIBUIDOR_API_TOKEN', '')
+                self.timeout = current_app.config.get('DISTRIBUIDOR_API_TIMEOUT', 30)
+            else:
+                # Fallback para quando não há contexto de app
+                import os
+                self.base_url = os.environ.get('DISTRIBUIDOR_API_URL', '')
+                self.token = os.environ.get('DISTRIBUIDOR_API_TOKEN', '')
+                self.timeout = int(os.environ.get('DISTRIBUIDOR_API_TIMEOUT', '30'))
+        except Exception:
+            # Fallback seguro se houver qualquer erro
+            import os
+            self.base_url = os.environ.get('DISTRIBUIDOR_API_URL', '')
+            self.token = os.environ.get('DISTRIBUIDOR_API_TOKEN', '')
+            self.timeout = int(os.environ.get('DISTRIBUIDOR_API_TIMEOUT', '30'))
         
         if not self.token:
             logger.warning("⚠️  DISTRIBUIDOR_API_TOKEN não configurado!")
