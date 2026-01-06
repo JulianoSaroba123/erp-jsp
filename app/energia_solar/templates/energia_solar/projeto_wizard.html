@@ -743,6 +743,8 @@
                                 </div>
                                 <input type="hidden" id="custos_json" name="custos_json" value="[]">
                                 <input type="hidden" id="custo_equipamentos" name="custo_equipamentos" value="0">
+                                <input type="hidden" id="custo_instalacao" name="custo_instalacao" value="0">
+                                <input type="hidden" id="custo_projeto" name="custo_projeto" value="0">
                             </div>
 
                             <!-- Resumo Financeiro -->
@@ -2444,12 +2446,28 @@ function atualizarTabelaCustos() {
     let html = '';
     let totalGeral = 0;
     let totalFaturamento = 0;
+    let custoEquipamentos = 0;
+    let custoInstalacao = 0;
+    let custoProjeto = 0;
     
     custos.forEach((custo, index) => {
         const valorTotal = custo.qtd * custo.valorUnit;
         const valorComLucro = valorTotal * (1 + custo.lucro / 100);
         totalGeral += valorTotal;
         totalFaturamento += valorComLucro;
+        
+        // Separar custos por tipo baseado na descrição
+        const desc = custo.descricao.toLowerCase();
+        if (desc.includes('kit') || desc.includes('placa') || desc.includes('inversor') || desc.includes('módulo') || desc.includes('painel')) {
+            custoEquipamentos += valorTotal;
+        } else if (desc.includes('instalação') || desc.includes('mão de obra') || desc.includes('mao de obra')) {
+            custoInstalacao += valorTotal;
+        } else if (desc.includes('projeto') || desc.includes('engenharia') || desc.includes('acompanhamento')) {
+            custoProjeto += valorTotal;
+        } else {
+            // Se não se encaixar em nenhuma categoria, adiciona a equipamentos
+            custoEquipamentos += valorTotal;
+        }
         
         html += `
             <tr>
@@ -2479,6 +2497,16 @@ function atualizarTabelaCustos() {
     document.getElementById('custo_total_resumo').value = totalGeral.toFixed(2);
     document.getElementById('valor_venda_final').value = totalFaturamento.toFixed(2);
     document.getElementById('custos_json').value = JSON.stringify(custos);
+    
+    // Atualizar campos separados por tipo
+    document.getElementById('custo_equipamentos').value = custoEquipamentos.toFixed(2);
+    document.getElementById('custo_instalacao').value = custoInstalacao.toFixed(2);
+    document.getElementById('custo_projeto').value = custoProjeto.toFixed(2);
+    
+    console.log('💰 Custos por tipo:');
+    console.log('   Equipamentos: R$', custoEquipamentos.toFixed(2));
+    console.log('   Instalação: R$', custoInstalacao.toFixed(2));
+    console.log('   Projeto: R$', custoProjeto.toFixed(2));
 }
 
 window.removerCusto = function(index) {
