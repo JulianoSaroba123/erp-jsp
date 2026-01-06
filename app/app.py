@@ -366,9 +366,12 @@ def register_blueprints(app):
     from app.energia_solar.energia_solar_routes import energia_solar_bp
     app.register_blueprint(energia_solar_bp)
 
-    # Blueprint de kits do distribuidor
-    from app.kits_distribuidor.kits_routes import kits_bp
-    app.register_blueprint(kits_bp, url_prefix='/kits-distribuidor')
+    # Blueprint de kits do distribuidor (opcional - pode não existir em todas as versões)
+    try:
+        from app.kits_distribuidor.kits_routes import kits_bp
+        app.register_blueprint(kits_bp, url_prefix='/kits-distribuidor')
+    except ImportError:
+        print(" ⚠ Módulo kits_distribuidor não disponível - pulando registro")
 
     # Blueprint de propostas
     from app.proposta.proposta_routes import proposta_bp
