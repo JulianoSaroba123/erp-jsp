@@ -2075,10 +2075,12 @@ function setupEquipamentos() {
                 return;
             }
             
-            // Remover kits antigos
+            // IMPORTANTE: Remover APENAS kits/placas/inversores antigos
+            // MAS PRESERVAR custos fixos (Instalação, Projeto, Deslocamento, etc)
             const antes = custos.length;
-            custos = custos.filter(c => {
+            const custosFixos = custos.filter(c => {
                 const desc = c.descricao.toUpperCase();
+                // Manter tudo que NÃO é equipamento
                 return !desc.includes('KIT') && 
                        !desc.includes('PLACA') && 
                        !desc.includes('INVERSOR') &&
@@ -2086,9 +2088,12 @@ function setupEquipamentos() {
                        !desc.includes('☀️') &&
                        !desc.includes('⚡');
             });
-            console.log(`Removidos ${antes - custos.length} equipamentos antigos`);
             
-            // Adicionar kit
+            // Limpar array e adicionar custos fixos de volta
+            custos = [...custosFixos];
+            console.log(`🔄 Preservados ${custosFixos.length} custos fixos (removidos ${antes - custosFixos.length} equipamentos antigos)`);
+            
+            // Adicionar novo kit
             custos.push({
                 descricao: `📦 ${descricao}`,
                 qtd: 1,
@@ -2097,7 +2102,8 @@ function setupEquipamentos() {
                 unidade: 'un'
             });
             
-            console.log('✅ Kit adicionado! Total custos:', custos.length);
+            console.log(`✅ Kit adicionado! Total: ${custos.length} custos (${custosFixos.length} fixos + 1 kit)`);
+            console.log('📋 Lista atual:', custos.map(c => c.descricao).join(', '));
             
             // Atualizar tabela
             atualizarTabelaCustos();
@@ -2128,8 +2134,8 @@ function setupEquipamentos() {
                 const preco = parseFloat(option.getAttribute('data-preco')) || 0;
                 const qtd = parseInt(inputQtdPlacas.value) || 1;
                 
-                // Remover placas antigas
-                custos = custos.filter(c => !c.descricao.includes('Placa'));
+                // Preservar tudo exceto placas antigas
+                custos = custos.filter(c => !c.descricao.includes('Placa') && !c.descricao.includes('☀️'));
                 
                 // Adicionar placas
                 custos.push({
@@ -2161,8 +2167,8 @@ function setupEquipamentos() {
                 const preco = parseFloat(option.getAttribute('data-preco')) || 0;
                 const qtd = parseInt(inputQtdInversores.value) || 1;
                 
-                // Remover inversores antigos
-                custos = custos.filter(c => !c.descricao.includes('Inversor'));
+                // Preservar tudo exceto inversores antigos
+                custos = custos.filter(c => !c.descricao.includes('Inversor') && !c.descricao.includes('⚡'));
                 
                 // Adicionar inversores
                 custos.push({
