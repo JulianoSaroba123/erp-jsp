@@ -1,7 +1,7 @@
 """
 Rotas para o módulo de Cálculo de Energia Solar
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, make_response
 from flask_login import login_required, current_user
 from app.extensoes import db
 from app.energia_solar.energia_solar_model import CalculoEnergiaSolar
