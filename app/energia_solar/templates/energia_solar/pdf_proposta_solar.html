@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Proposta Comercial - Sistema Solar Fotovoltaico</title>
+    <style>
+        :root {
+            --primary-color: #002755;
+            --secondary-color: #f49d16;
+            --solar-green: #28a745;
+            --text-color: #333333;
+            --border-color: #dddddd;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .section {
+            page-break-inside: avoid;
+            margin-bottom: 15px;
+            border: 2px solid var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+        }
+
+        .header-logo img {
+            height: 80px;
+            margin-left: 10px;
+        }
+
+        .header-info {
+            width: 80%;
+            text-align: center;
+            background: linear-gradient(135deg, #f8faff, #e6f2ff);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .header-info h1 {
+            margin: 0;
+            font-size: 20px;
+            color: var(--primary-color);
+        }
+
+        .header-info .details {
+            font-size: 10px;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        .title-row {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--solar-green);
+        }
+
+        .ident-row {
+            text-align: center;
+            margin: 5px 0 15px 0;
+            color: var(--primary-color);
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--solar-green);
+            font-weight: bold;
+        }
+
+        .section-header {
+            background: linear-gradient(135deg, var(--primary-color), #1a4480);
+            color: white;
+            padding: 12px;
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+        }
+
+        .section-header .number {
+            background: var(--secondary-color);
+            color: #ffffff;
+            padding: 2px 6px;
+            margin-right: 8px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .section-body {
+            padding: 15px;
+            background: white;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .field-label {
+            font-weight: bold;
+            color: #666;
+            font-size: 10px;
+            margin-bottom: 3px;
+        }
+
+        .field-value {
+            padding: 8px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            border: 2px solid var(--solar-green);
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .highlight-box h3 {
+            margin: 0 0 10px 0;
+            color: var(--solar-green);
+            font-size: 16px;
+        }
+
+        .highlight-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+
+        table.data-table th,
+        table.data-table td {
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            text-align: left;
+        }
+
+        table.data-table th {
+            background: var(--primary-color);
+            color: white;
+            font-weight: bold;
+        }
+
+        .page-break {
+            page-break-before: always;
+        }
+
+        .footer {
+            border-top: 2px solid var(--primary-color);
+            background: linear-gradient(135deg, #f8faff, #e6f2ff);
+            padding: 15px;
+            text-align: center;
+            font-size: 10px;
+            color: var(--primary-color);
+            margin-top: 30px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Cabeçalho -->
+    <div class="header">
+        <div class="header-logo">
+            {% if logo_url %}
+            <img src="{{ logo_url }}" alt="Logo JSP">
+            {% else %}
+            <img src="{{ url_for('static', filename='img/JSP.jpg') }}" alt="Logo JSP">
+            {% endif %}
+        </div>
+        <div class="header-info">
+            <h1>{{ config.nome_fantasia if config else 'JSP Soluções' }}</h1>
+            <div class="details">
+                CNPJ: {{ config.cnpj if config else '12.345.678/0001-90' }}<br>
+                {% if config and config.logradouro %}
+                {{ config.logradouro }}{% if config.numero %}, {{ config.numero }}{% endif %}{% if config.bairro %} – {{ config.bairro }}{% endif %}{% if config.cidade %} – {{ config.cidade }}{% endif %}{% if config.uf %}/{{ config.uf }}{% endif %}<br>
+                {% endif %}
+                Tel: {{ config.telefone if config else '(11) 99999-0000' }} • E-mail: {{ config.email if config else 'contato@jsp.com.br' }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Título -->
+    <div class="title-row">☀️ PROPOSTA COMERCIAL - SISTEMA SOLAR FOTOVOLTAICO</div>
+    <div class="ident-row">
+        <strong>Projeto #{{ projeto.id }}</strong>&nbsp;&nbsp;
+        <strong>Data:</strong> {{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else '' }}&nbsp;&nbsp;
+        <strong>Cliente:</strong> {{ projeto.nome_cliente }}
+    </div>
+
+    <!-- 01 - Dados do Cliente -->
+    <div class="section">
+        <div class="section-header"><span class="number">01</span>Dados do Cliente</div>
+        <div class="section-body">
+            <div class="grid-2">
+                <div>
+                    <div class="field-label">NOME</div>
+                    <div class="field-value">{{ projeto.nome_cliente or 'N/A' }}</div>
+                </div>
+                <div>
+                    <div class="field-label">{% if cliente and cliente.tipo == 'PJ' %}CNPJ{% else %}CPF{% endif %}</div>
+                    <div class="field-value">{{ cliente.cpf_cnpj if cliente else 'N/A' }}</div>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="field-label">TELEFONE</div>
+                    <div class="field-value">{{ cliente.telefone if cliente else 'N/A' }}</div>
+                </div>
+                <div>
+                    <div class="field-label">E-MAIL</div>
+                    <div class="field-value">{{ cliente.email if cliente else 'N/A' }}</div>
+                </div>
+            </div>
+            <div>
+                <div class="field-label">ENDEREÇO DE INSTALAÇÃO</div>
+                <div class="field-value">
+                    {{ projeto.endereco or '' }}{% if projeto.cidade %}, {{ projeto.cidade }}{% endif %}{% if projeto.estado %}/{{ projeto.estado }}{% endif %}{% if projeto.cep %} - CEP {{ projeto.cep }}{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 02 - Sistema Dimensionado -->
+    <div class="section">
+        <div class="section-header"><span class="number">02</span>Sistema Fotovoltaico Dimensionado</div>
+        <div class="section-body">
+            <div class="highlight-box">
+                <h3>⚡ POTÊNCIA DO SISTEMA</h3>
+                <div class="highlight-value">{{ "%.2f"|format(projeto.potencia_kwp or 0) }} kWp</div>
+            </div>
+
+            <div class="grid-3">
+                <div style="text-align: center; padding: 15px; background: #e3f2fd; border-radius: 6px;">
+                    <div style="font-size: 32px; color: var(--primary-color);">☀️</div>
+                    <div class="field-label">GERAÇÃO ESTIMADA</div>
+                    <div style="font-size: 18px; font-weight: bold; color: var(--primary-color);">
+                        {{ "%.0f"|format(projeto.geracao_estimada_mes or 0) }} kWh/mês
+                    </div>
+                </div>
+                <div style="text-align: center; padding: 15px; background: #f3e5f5; border-radius: 6px;">
+                    <div style="font-size: 32px; color: var(--primary-color);">📊</div>
+                    <div class="field-label">CONSUMO MÉDIO</div>
+                    <div style="font-size: 18px; font-weight: bold; color: var(--primary-color);">
+                        {{ "%.0f"|format(projeto.consumo_kwh_mes or 0) }} kWh/mês
+                    </div>
+                </div>
+                <div style="text-align: center; padding: 15px; background: #e8f5e9; border-radius: 6px;">
+                    <div style="font-size: 32px; color: var(--solar-green);">☀️</div>
+                    <div class="field-label">IRRADIAÇÃO SOLAR</div>
+                    <div style="font-size: 18px; font-weight: bold; color: var(--solar-green);">
+                        {{ "%.2f"|format(projeto.irradiacao_solar or 5.0) }} kWh/m²/dia
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 03 - Equipamentos -->
+    <div class="section">
+        <div class="section-header"><span class="number">03</span>Equipamentos do Sistema</div>
+        <div class="section-body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Equipamento</th>
+                        <th style="text-align: center;">Quantidade</th>
+                        <th>Especificação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if projeto.placa %}
+                    <tr>
+                        <td><strong>Placas Solares</strong></td>
+                        <td style="text-align: center;">{{ projeto.qtd_placas or 0 }}</td>
+                        <td>{{ projeto.placa.fabricante }} {{ projeto.placa.modelo }} - {{ projeto.placa.potencia }}W</td>
+                    </tr>
+                    {% endif %}
+                    {% if projeto.inversor %}
+                    <tr>
+                        <td><strong>Inversor Solar</strong></td>
+                        <td style="text-align: center;">{{ projeto.qtd_inversores or 0 }}</td>
+                        <td>{{ projeto.inversor.fabricante }} {{ projeto.inversor.modelo }} - {{ projeto.inversor.potencia_nominal }}kW</td>
+                    </tr>
+                    {% endif %}
+                    {% if projeto.estrutura_fixacao %}
+                    <tr>
+                        <td><strong>Estrutura de Fixação</strong></td>
+                        <td style="text-align: center;">1</td>
+                        <td>{{ projeto.estrutura_fixacao }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td><strong>Cabeamento</strong></td>
+                        <td style="text-align: center;">-</td>
+                        <td>
+                            {% if projeto.cabo_cc %}CC: {{ projeto.cabo_cc }}{% endif %}
+                            {% if projeto.cabo_ca %} • CA: {{ projeto.cabo_ca }}{% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>Proteções</strong></td>
+                        <td style="text-align: center;">-</td>
+                        <td>
+                            {% if projeto.disjuntor_cc %}Disjuntor CC: {{ projeto.disjuntor_cc }}{% endif %}
+                            {% if projeto.disjuntor_ca %} • Disjuntor CA: {{ projeto.disjuntor_ca }}{% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {% if projeto.area_necessaria %}
+            <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-left: 4px solid var(--secondary-color); border-radius: 3px;">
+                <strong>📐 Área Necessária:</strong> {{ "%.1f"|format(projeto.area_necessaria) }} m²
+                {% if projeto.orientacao %} • <strong>Orientação:</strong> {{ projeto.orientacao }}{% endif %}
+                {% if projeto.inclinacao %} • <strong>Inclinação:</strong> {{ projeto.inclinacao }}°{% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 04 - Resumo Financeiro -->
+    <div class="section page-break">
+        <div class="section-header"><span class="number">04</span>Resumo Financeiro</div>
+        <div class="section-body">
+            <table class="data-table">
+                <tr>
+                    <td style="width: 60%; font-weight: bold;">Custo Equipamentos</td>
+                    <td style="text-align: right;">R$ {{ "{:,.2f}".format(projeto.custo_equipamentos or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Custo Instalação</td>
+                    <td style="text-align: right;">R$ {{ "{:,.2f}".format(projeto.custo_instalacao or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Custo Projeto</td>
+                    <td style="text-align: right;">R$ {{ "{:,.2f}".format(projeto.custo_projeto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <td style="font-weight: bold; font-size: 14px;">CUSTO TOTAL</td>
+                    <td style="text-align: right; font-weight: bold; font-size: 14px;">R$ {{ "{:,.2f}".format(projeto.custo_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                </tr>
+                <tr>
+                    <td style="font-weight: bold;">Margem de Lucro ({{ "%.1f"|format(projeto.margem_lucro or 0) }}%)</td>
+                    <td style="text-align: right;">R$ {{ "{:,.2f}".format((projeto.valor_venda or 0) - (projeto.custo_total or 0)).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                </tr>
+                <tr style="background: var(--solar-green); color: white;">
+                    <td style="font-weight: bold; font-size: 16px;">💰 VALOR DE VENDA</td>
+                    <td style="text-align: right; font-weight: bold; font-size: 16px;">R$ {{ "{:,.2f}".format(projeto.valor_venda or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- 05 - Lei 14.300/2022 e Economia -->
+    <div class="section">
+        <div class="section-header"><span class="number">05</span>Lei 14.300/2022 - Geração Distribuída</div>
+        <div class="section-body">
+            <div class="grid-2">
+                <div>
+                    <div class="field-label">ANO DE INSTALAÇÃO</div>
+                    <div class="field-value">{{ projeto.lei_14300_ano or 2025 }}</div>
+                </div>
+                <div>
+                    <div class="field-label">MODALIDADE GD</div>
+                    <div class="field-value">{{ projeto.modalidade_gd or 'GD I (microgeração até 75kW)' }}</div>
+                </div>
+            </div>
+
+            {% if projeto.economia_anual and projeto.economia_anual > 0 %}
+            <div class="grid-2" style="margin-top: 15px;">
+                <div style="text-align: center; padding: 20px; background: #d4edda; border-radius: 6px;">
+                    <div class="field-label">ECONOMIA ANUAL</div>
+                    <div style="font-size: 20px; font-weight: bold; color: var(--solar-green);">
+                        R$ {{ "{:,.2f}".format(projeto.economia_anual).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                    </div>
+                </div>
+                <div style="text-align: center; padding: 20px; background: #cce5ff; border-radius: 6px;">
+                    <div class="field-label">PAYBACK</div>
+                    <div style="font-size: 20px; font-weight: bold; color: var(--primary-color);">
+                        {{ "%.1f"|format(projeto.payback_anos or 0) }} anos
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div style="margin-top: 15px; padding: 15px; background: #f0f8ff; border-left: 4px solid var(--primary-color); border-radius: 3px;">
+                <p style="margin: 0; line-height: 1.6;">
+                    <strong>ℹ️ Informação:</strong> A Lei 14.300/2022 estabelece o marco legal da microgeração e minigeração distribuída,
+                    garantindo a compensação de energia elétrica injetada na rede. O sistema proposto está em conformidade
+                    com as regulamentações da ANEEL para o ano de {{ projeto.lei_14300_ano or 2025 }}.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 06 - Condições Comerciais -->
+    <div class="section">
+        <div class="section-header"><span class="number">06</span>Condições Comerciais</div>
+        <div class="section-body">
+            <div class="grid-2">
+                <div>
+                    <div class="field-label">FORMA DE PAGAMENTO</div>
+                    <div class="field-value">A combinar (PIX, Transferência, Cartão)</div>
+                </div>
+                <div>
+                    <div class="field-label">PRAZO DE INSTALAÇÃO</div>
+                    <div class="field-value">30 a 45 dias úteis após aprovação</div>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div>
+                    <div class="field-label">GARANTIA EQUIPAMENTOS</div>
+                    <div class="field-value">
+                        Placas: 25 anos (linear) • Inversor: 5-10 anos (fabricante)
+                    </div>
+                </div>
+                <div>
+                    <div class="field-label">GARANTIA INSTALAÇÃO</div>
+                    <div class="field-value">12 meses contra defeitos de instalação</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 07 - Escopo do Serviço -->
+    <div class="section">
+        <div class="section-header"><span class="number">07</span>Escopo do Serviço</div>
+        <div class="section-body">
+            <p style="margin-top: 0;"><strong>O projeto inclui:</strong></p>
+            <ul style="line-height: 1.8; margin: 10px 0;">
+                <li>✅ Projeto elétrico completo conforme ANEEL</li>
+                <li>✅ Fornecimento de todos os equipamentos</li>
+                <li>✅ Instalação completa do sistema fotovoltaico</li>
+                <li>✅ Estruturas de fixação adequadas ao tipo de telhado</li>
+                <li>✅ Cabeamento, proteções e aterramento</li>
+                <li>✅ Adequação do padrão de entrada (se necessário)</li>
+                <li>✅ Documentação para homologação junto à concessionária</li>
+                <li>✅ Treinamento de operação do sistema</li>
+                <li>✅ Monitoramento remoto via aplicativo</li>
+            </ul>
+
+            {% if projeto.observacoes %}
+            <div style="margin-top: 15px;">
+                <div class="field-label">OBSERVAÇÕES ADICIONAIS</div>
+                <div class="field-value" style="line-height: 1.6;">{{ projeto.observacoes|replace('\n', '<br>')|safe }}</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Assinaturas -->
+    <div class="section">
+        <div class="section-header"><span class="number">08</span>Assinaturas</div>
+        <div class="section-body">
+            <table style="width: 100%; margin-top: 40px;">
+                <tr>
+                    <td style="width: 45%; text-align: center; vertical-align: top;">
+                        <div style="border-top: 2px solid var(--primary-color); margin: 50px auto 10px; width: 80%;"></div>
+                        <strong>{{ projeto.nome_cliente }}</strong><br>
+                        <span style="font-size: 10px;">Cliente</span><br>
+                        <span style="font-size: 10px;">CPF/CNPJ: {{ cliente.cpf_cnpj if cliente else '_______________' }}</span>
+                    </td>
+                    <td style="width: 10%;"></td>
+                    <td style="width: 45%; text-align: center; vertical-align: top;">
+                        <div style="border-top: 2px solid var(--primary-color); margin: 50px auto 10px; width: 80%;"></div>
+                        <strong>{{ config.nome_fantasia if config else 'JSP Soluções' }}</strong><br>
+                        <span style="font-size: 10px;">Responsável Técnico</span><br>
+                        <span style="font-size: 10px;">{{ config.cnpj if config else 'CNPJ: 12.345.678/0001-90' }}</span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <div class="footer">
+        <p><strong>{{ config.nome_fantasia if config else 'JSP Soluções' }}</strong> - Energia Solar Fotovoltaica</p>
+        <p>Este documento é uma proposta comercial e não representa um contrato. Valores válidos por 30 dias.</p>
+        <p style="margin-top: 8px; font-style: italic;">"Transformando luz solar em economia e sustentabilidade para o seu futuro"</p>
+    </div>
+</body>
+</html>

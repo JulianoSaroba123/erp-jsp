@@ -22,9 +22,9 @@
             <a href="{{ url_for('energia_solar.projeto_editar', projeto_id=projeto.id) }}" class="btn btn-warning">
                 <i class="fas fa-edit me-2"></i>Editar
             </a>
-            <button class="btn btn-danger" disabled title="Em breve">
-                <i class="fas fa-file-pdf me-2"></i>Gerar PDF
-            </button>
+            <a href="{{ url_for('energia_solar.projeto_proposta_pdf', projeto_id=projeto.id) }}" class="btn btn-danger" target="_blank">
+                <i class="fas fa-file-pdf me-2"></i>Gerar Proposta PDF
+            </a>
         </div>
     </div>
 

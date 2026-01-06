@@ -1124,3 +1124,86 @@ def admin_recalcular_todos_custos():
     ).all()
     
     return render_template('energia_solar/admin_recalcular_custos.html', projetos=projetos)
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/proposta-pdf')
+@login_required
+def projeto_proposta_pdf(projeto_id):
+    """Gera PDF da proposta comercial de um projeto solar"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Carregar projeto
+        projeto = ProjetoSolar.query.get_or_404(projeto_id)
+        
+        # Carregar cliente se existir
+        cliente = None
+        if projeto.cliente_id:
+            cliente = Cliente.query.get(projeto.cliente_id)
+        
+        # Tentar importar WeasyPrint
+        try:
+            import weasyprint
+            from flask import current_app
+            import os
+            
+            # Importar configurações da empresa
+            from app.configuracao.configuracao_utils import get_config
+            config = get_config()
+            
+            # Caminho absoluto para a logo
+            project_root = os.path.dirname(current_app.root_path)
+            logo_path = os.path.join(project_root, "static", "img", "JSP.jpg")
+            logo_url = f"file:///{logo_path.replace(os.sep, '/')}"
+            
+            # Renderizar template HTML
+            html_content = render_template('energia_solar/pdf_proposta_solar.html', 
+                                         projeto=projeto,
+                                         cliente=cliente,
+                                         logo_url=logo_url,
+                                         config=config)
+            
+            # Base URL para resolver outros caminhos relativos
+            base_url = f"file:///{project_root.replace(os.sep, '/')}/"
+            
+            # Gerar PDF
+            pdf = weasyprint.HTML(string=html_content, base_url=base_url).write_pdf()
+            
+            # Criar resposta com headers anti-cache
+            response = make_response(pdf)
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = f'inline; filename=proposta_solar_{projeto_id}.pdf'
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            response.headers['Last-Modified'] = 'Wed, 11 Jan 1984 05:00:00 GMT'
+            
+            return response
+            
+        except ImportError:
+            # WeasyPrint não disponível - retornar HTML
+            logger.warning("WeasyPrint não encontrado - retornando HTML")
+            flash('Biblioteca PDF não disponível - exibindo versão HTML', 'warning')
+            
+            from app.configuracao.configuracao_utils import get_config
+            config = get_config()
+            
+            # Criar resposta HTML com headers de não-cache
+            html_response = make_response(render_template('energia_solar/pdf_proposta_solar.html', 
+                                                        projeto=projeto,
+                                                        cliente=cliente,
+                                                        config=config))
+            html_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+            html_response.headers['Pragma'] = 'no-cache'
+            html_response.headers['Expires'] = '0'
+            html_response.headers['Last-Modified'] = 'Wed, 11 Jan 1984 05:00:00 GMT'
+            
+            return html_response
+            
+    except Exception as e:
+        logger.error(f"Erro ao gerar PDF da proposta solar {projeto_id}: {str(e)}")
+        flash(f'Erro ao gerar PDF: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.projeto_visualizar', projeto_id=projeto_id))
