@@ -96,6 +96,13 @@ def create_app(config_name=None):
     with app.app_context():
         try:
             from app.extensoes import db
+            
+            # Importa todos os modelos para db.create_all() funcionar
+            try:
+                from app.kits_distribuidor.kits_model import KitFotovoltaico
+            except ImportError:
+                pass  # Módulo kits ainda não existe
+            
             db.create_all()
             print("[OK] Tabelas do banco de dados verificadas/criadas!")
             
