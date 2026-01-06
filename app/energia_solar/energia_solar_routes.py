@@ -647,6 +647,34 @@ def kit_excluir(kit_id):
     return redirect(url_for('energia_solar.kits_listar'))
 
 
+@energia_solar_bp.route('/kits/editar/<int:kit_id>', methods=['POST'])
+@login_required
+def kit_editar(kit_id):
+    """Edita um kit do catálogo"""
+    from app.energia_solar.catalogo_model import KitSolar
+    
+    try:
+        kit = KitSolar.query.get_or_404(kit_id)
+        
+        kit.fabricante = request.form.get('fabricante')
+        kit.descricao = request.form.get('descricao')
+        kit.outras_informacoes = request.form.get('outras_informacoes')
+        kit.potencia_kwp = float(request.form.get('potencia_kwp'))
+        kit.preco = float(request.form.get('preco'))
+        kit.placa_id = int(request.form.get('placa_id'))
+        kit.qtd_placas = int(request.form.get('qtd_placas'))
+        kit.inversor_id = int(request.form.get('inversor_id'))
+        kit.qtd_inversores = int(request.form.get('qtd_inversores'))
+        
+        db.session.commit()
+        flash(f'Kit {kit.descricao} atualizado com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao atualizar kit: {str(e)}', 'error')
+    
+    return redirect(url_for('energia_solar.kits_listar'))
+
+
 # ========================================
 # ROTAS DE PROJETOS SOLARES - WIZARD 6 ABAS
 # ========================================

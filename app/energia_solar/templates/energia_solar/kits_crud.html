@@ -225,7 +225,41 @@ function visualizarKit(id) {
 }
 
 function editarKit(id) {
-    alert('Função de edição em desenvolvimento. Dados serão carregados aqui para atualização.');
+    const kit = kitsData.find(k => k.id === id);
+    if (!kit) {
+        alert('Kit não encontrado!');
+        return;
+    }
+
+    document.getElementById('modalTitulo').innerHTML = '<i class="fas fa-edit me-2"></i>Editar Kit';
+    document.getElementById('li-visualizar').style.display = 'none';
+    document.getElementById('li-editar').style.display = 'block';
+    
+    // Definir action do form
+    document.getElementById('formEditar').action = `/energia-solar/kits/editar/${id}`;
+    
+    // Preencher form de edição com dados do kit
+    document.getElementById('conteudoEditar').innerHTML = `
+        {% include 'energia_solar/_form_kit.html' %}
+    `;
+    
+    // Popular campos com dados existentes
+    setTimeout(() => {
+        document.querySelector('#editar #fabricante').value = kit.fabricante || '';
+        document.querySelector('#editar #descricao').value = kit.descricao || '';
+        document.querySelector('#editar #potencia_kwp').value = kit.potencia_kwp || '';
+        document.querySelector('#editar #preco').value = kit.preco || '';
+        document.querySelector('#editar #placa_id').value = kit.placa_id || '';
+        document.querySelector('#editar #qtd_placas').value = kit.qtd_placas || '';
+        document.querySelector('#editar #inversor_id').value = kit.inversor_id || '';
+        document.querySelector('#editar #qtd_inversores').value = kit.qtd_inversores || '';
+        document.querySelector('#editar #outras_informacoes').value = kit.outras_informacoes || '';
+    }, 100);
+    
+    // Abrir modal e ir para aba de edição
+    const modal = new bootstrap.Modal(document.getElementById('modalCRUD'));
+    modal.show();
+    document.getElementById('tab-editar').click();
 }
 
 function excluirKit(id, descricao) {
