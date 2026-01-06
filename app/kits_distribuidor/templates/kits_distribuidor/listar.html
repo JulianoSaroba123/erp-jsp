@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}Kits Fotovoltaicos - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Kits Fotovoltaicos</span>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* Tema Futurista Laranja/Azul */
+    .kits-header {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(249,115,22,0.3);
+    }
+    .kits-header h2,
+    .kits-header p {
+        color: white !important;
+    }
+    .btn-sincronizar {
+        background: white !important;
+        color: #ea580c !important;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .btn-sincronizar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+    }
+    .stats-card {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(14,165,233,0.3);
+    }
+    .stats-card h5 {
+        color: rgba(255,255,255,0.8);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    .stats-card .value {
+        color: white;
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    .kit-card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+    }
+    .kit-card:hover {
+        border-color: #f97316;
+        box-shadow: 0 4px 20px rgba(249,115,22,0.3);
+        transform: translateY(-2px);
+    }
+    .kit-card .kit-potencia {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+    .kit-card .kit-nome {
+        color: #f97316;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        padding-right: 120px;
+    }
+    .kit-card .kit-composicao {
+        color: #94a3b8;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    .kit-specs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 1rem 0;
+    }
+    .kit-spec {
+        background: #0f172a;
+        padding: 0.75rem;
+        border-radius: 8px;
+        border-left: 3px solid #0ea5e9;
+    }
+    .kit-spec-label {
+        color: #64748b;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+    .kit-spec-value {
+        color: #e2e8f0;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+    .kit-preco {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px;
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-top: 1rem;
+    }
+    .badge-disponivel {
+        background: #10b981;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+    }
+    .badge-indisponivel {
+        background: #ef4444;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+    }
+    .filter-section {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .btn-filtrar {
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+        color: white;
+        border: none;
+    }
+    .btn-filtrar:hover {
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        color: white;
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Header Futurista -->
+    <div class="kits-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="mb-2">
+                    <i class="fas fa-solar-panel me-2"></i>
+                    Kits Fotovoltaicos
+                </h2>
+                <p class="mb-0 opacity-75">
+                    <i class="fas fa-cloud-download-alt me-1"></i>
+                    Sincronizados via API do Distribuidor
+                </p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <form method="POST" action="{{ url_for('kits_distribuidor.sincronizar') }}" class="d-inline">
+                    <button type="submit" class="btn btn-sincronizar me-2">
+                        <i class="fas fa-sync-alt me-2"></i>
+                        Sincronizar Kits
+                    </button>
+                </form>
+                <a href="{{ url_for('kits_distribuidor.testar_api') }}" class="btn btn-outline-light">
+                    <i class="fas fa-plug me-2"></i>
+                    Testar API
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="stats-card">
+                <h5><i class="fas fa-box me-2"></i>Total de Kits</h5>
+                <div class="value">{{ total_kits }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <h5><i class="fas fa-check-circle me-2"></i>Disponíveis</h5>
+                <div class="value">{{ disponiveis }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <h5><i class="fas fa-sync me-2"></i>Última Sinc.</h5>
+                <div class="value" style="font-size: 1.2rem;">
+                    {% if kits.items %}
+                        {{ kits.items[0].ultima_sincronizacao.strftime('%d/%m %H:%M') if kits.items[0].ultima_sincronizacao else 'Nunca' }}
+                    {% else %}
+                        Nunca
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filter-section">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label text-light">
+                    <i class="fas fa-search me-1"></i> Buscar
+                </label>
+                <input type="text" name="busca" class="form-control" 
+                       placeholder="Nome, código, fabricante..." 
+                       value="{{ busca }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-light">
+                    <i class="fas fa-bolt me-1"></i> Potência Mín. (kWp)
+                </label>
+                <input type="number" step="0.1" name="potencia_min" 
+                       class="form-control" value="{{ potencia_min or '' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-light">
+                    <i class="fas fa-bolt me-1"></i> Potência Máx. (kWp)
+                </label>
+                <input type="number" step="0.1" name="potencia_max" 
+                       class="form-control" value="{{ potencia_max or '' }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label text-light">
+                    <i class="fas fa-layer-group me-1"></i> Categoria
+                </label>
+                <select name="categoria" class="form-select">
+                    <option value="">Todas</option>
+                    <option value="Residencial" {{ 'selected' if categoria == 'Residencial' }}>Residencial</option>
+                    <option value="Comercial" {{ 'selected' if categoria == 'Comercial' }}>Comercial</option>
+                    <option value="Industrial" {{ 'selected' if categoria == 'Industrial' }}>Industrial</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-filtrar w-100">
+                    <i class="fas fa-filter me-2"></i>Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Lista de Kits -->
+    {% if kits.items %}
+        <div class="row">
+            {% for kit in kits.items %}
+            <div class="col-md-6 col-lg-4">
+                <div class="kit-card">
+                    <div class="kit-potencia">{{ kit.potencia_formatada }}</div>
+                    
+                    <h3 class="kit-nome">{{ kit.nome }}</h3>
+                    
+                    <div class="kit-composicao">
+                        <i class="fas fa-cube me-1"></i>
+                        {{ kit.composicao }}
+                    </div>
+
+                    <div class="kit-specs">
+                        <div class="kit-spec">
+                            <div class="kit-spec-label">Módulos</div>
+                            <div class="kit-spec-value">
+                                {{ kit.quantidade_modulos or '-' }}x {{ kit.potencia_modulo or '-' }}W
+                            </div>
+                        </div>
+                        <div class="kit-spec">
+                            <div class="kit-spec-label">Inversor</div>
+                            <div class="kit-spec-value">
+                                {{ kit.potencia_inversor or '-' }} kW
+                            </div>
+                        </div>
+                        <div class="kit-spec">
+                            <div class="kit-spec-label">Categoria</div>
+                            <div class="kit-spec-value">
+                                {{ kit.categoria or 'N/A' }}
+                            </div>
+                        </div>
+                        <div class="kit-spec">
+                            <div class="kit-spec-label">Status</div>
+                            <div class="kit-spec-value">
+                                {% if kit.disponivel %}
+                                    <span class="badge-disponivel">
+                                        <i class="fas fa-check me-1"></i>{{ kit.status_estoque }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge-indisponivel">
+                                        <i class="fas fa-times me-1"></i>Indisponível
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="kit-preco">
+                        <i class="fas fa-tag me-2"></i>{{ kit.preco_formatado }}
+                    </div>
+
+                    <div class="mt-3 d-grid gap-2">
+                        <a href="{{ url_for('kits_distribuidor.visualizar', id=kit.id) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-eye me-2"></i>Ver Detalhes
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Paginação -->
+        {% if kits.pages > 1 %}
+        <nav aria-label="Paginação de kits" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <li class="page-item {{ 'disabled' if not kits.has_prev }}">
+                    <a class="page-link" href="{{ url_for('kits_distribuidor.listar', page=kits.prev_num, busca=busca, categoria=categoria, potencia_min=potencia_min, potencia_max=potencia_max) }}">
+                        Anterior
+                    </a>
+                </li>
+                
+                {% for p in kits.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                    {% if p %}
+                        <li class="page-item {{ 'active' if p == kits.page }}">
+                            <a class="page-link" href="{{ url_for('kits_distribuidor.listar', page=p, busca=busca, categoria=categoria, potencia_min=potencia_min, potencia_max=potencia_max) }}">
+                                {{ p }}
+                            </a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                {% endfor %}
+                
+                <li class="page-item {{ 'disabled' if not kits.has_next }}">
+                    <a class="page-link" href="{{ url_for('kits_distribuidor.listar', page=kits.next_num, busca=busca, categoria=categoria, potencia_min=potencia_min, potencia_max=potencia_max) }}">
+                        Próxima
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-solar-panel fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Nenhum kit encontrado</h5>
+            <p class="text-muted">
+                {% if busca or categoria or potencia_min or potencia_max %}
+                    Tente ajustar os filtros ou 
+                    <a href="{{ url_for('kits_distribuidor.listar') }}">ver todos os kits</a>
+                {% else %}
+                    Clique em "Sincronizar Kits" para importar da API
+                {% endif %}
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -27,6 +27,11 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = os.getenv("SECRET_KEY", "jsp_chave_secreta")
     
+    # API Distribuidor de Kits Fotovoltaicos
+    DISTRIBUIDOR_API_URL = os.getenv("DISTRIBUIDOR_API_URL", "https://api.distribuidor.com/v1")
+    DISTRIBUIDOR_API_TOKEN = os.getenv("DISTRIBUIDOR_API_TOKEN", "")
+    DISTRIBUIDOR_API_TIMEOUT = int(os.getenv("DISTRIBUIDOR_API_TIMEOUT", "30"))
+    
     # Configurações gerais
     DEBUG = False
     TESTING = False

@@ -99,10 +99,59 @@ A aplicação estará disponível em `http://localhost:5000`
 DATABASE_URL=sqlite:///database/database.db
 ```
 
-### PostgreSQL (Produção)
+### PostgreSQL (Produção e Desenvolvimento Local)
 ```env
 DATABASE_URL=postgresql://usuario:senha@localhost:5432/erp_jsp
 ```
+
+## 🔌 Integração com API do Distribuidor
+
+O ERP JSP possui integração nativa com API de distribuidores de kits fotovoltaicos.
+
+### Configuração da API
+
+1. **Obtenha o Token de Acesso**
+   - Entre em contato com seu distribuidor
+   - Solicite um token de API para integração
+   - O distribuidor fornecerá:
+     - URL base da API (ex: `https://api.distribuidor.com/v1`)
+     - Token de autenticação (Bearer Token)
+
+2. **Configure as Variáveis de Ambiente**
+   
+   Adicione ao arquivo `.env`:
+   ```env
+   # API Distribuidor de Kits Fotovoltaicos
+   DISTRIBUIDOR_API_URL=https://api.distribuidor.com/v1
+   DISTRIBUIDOR_API_TOKEN=seu_token_aqui
+   DISTRIBUIDOR_API_TIMEOUT=30
+   ```
+
+3. **Teste a Conexão**
+   - Acesse: Menu **Energia Solar > Kits Distribuidor**
+   - Clique em "Testar API"
+   - Se configurado corretamente, verá mensagem de sucesso
+
+4. **Sincronize os Kits**
+   - Clique em "Sincronizar Kits"
+   - O sistema importará todos os kits disponíveis
+   - Os dados serão salvos localmente no banco de dados
+   - Você pode re-sincronizar a qualquer momento para atualizar preços e disponibilidade
+
+### Funcionalidades da Integração
+
+- ✅ **Sincronização Automática**: Importa kits com um clique
+- ✅ **Filtros Avançados**: Busca por potência, categoria, fabricante
+- ✅ **Atualização em Tempo Real**: Preços e disponibilidade sempre atualizados
+- ✅ **Cache Local**: Kits salvos no banco para acesso offline
+- ✅ **Paginação**: Suporte para grandes catálogos
+- ✅ **Tratamento de Erros**: Mensagens claras em caso de problemas
+
+### Segurança
+
+⚠️ **IMPORTANTE**: Nunca commite o arquivo `.env` com seu token!
+
+O token de API é sensível e deve ser mantido em segredo. O arquivo `.env` já está no `.gitignore` para proteger suas credenciais.
 
 ## 🎨 Tema Visual
 

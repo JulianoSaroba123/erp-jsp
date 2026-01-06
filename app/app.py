@@ -44,8 +44,8 @@ def create_app(config_name=None):
     if config_name is None:
         config_name = os.environ.get('FLASK_ENV', 'development')
 
-    # Aplica a configuração - usa diretamente a classe Config
-    app.config.from_object("app.config.Config")
+    # Aplica a configuração correta baseada no ambiente
+    app.config.from_object(config[config_name])
     
     # Configurações específicas do Jinja2 para desenvolvimento
     if app.config.get('DEBUG'):
@@ -118,17 +118,19 @@ def create_app(config_name=None):
             print(f" ⚠ Aviso na criação de tabelas: {e}")
         
         # Popula banco com dados iniciais se estiver vazio
-        try:
-            popular_banco_se_vazio()
-        except Exception as e:
-            print(f" ⚠ Aviso ao popular banco: {e}")
+        # TEMPORARIAMENTE DESABILITADO PARA CRIAR BANCO LIMPO
+        # try:
+        #     popular_banco_se_vazio()
+        # except Exception as e:
+        #     print(f" ⚠ Aviso ao popular banco: {e}")
         
         # Correção global do campo 'ativo' (todas as tabelas)
-        try:
-            from scripts.corrigir_ativo_global import corrigir_campo_ativo_global
-            corrigir_campo_ativo_global()
-        except Exception as e:
-            print(f" ⚠ Aviso na correção global de 'ativo': {e}")
+        # TEMPORARIAMENTE DESABILITADO PARA CRIAR BANCO LIMPO
+        # try:
+        #     from scripts.corrigir_ativo_global import corrigir_campo_ativo_global
+        #     corrigir_campo_ativo_global()
+        # except Exception as e:
+        #     print(f" ⚠ Aviso na correção global de 'ativo': {e}")
         
         # Migração automática: aumentar tamanho dos campos de proposta
         try:
@@ -198,11 +200,12 @@ def create_app(config_name=None):
             print(f" ⚠ Aviso na migração de precificação: {e}")
         
         # Corrige ordens de serviço (migração automática de status)
-        try:
-            from scripts.corrigir_ordens_servico_render import corrigir_ordens_servico
-            corrigir_ordens_servico()
-        except Exception as e:
-            print(f" ⚠ Aviso na correção de OS: {e}")
+        # TEMPORARIAMENTE DESABILITADO PARA CRIAR BANCO LIMPO
+        # try:
+        #     from scripts.corrigir_ordens_servico_render import corrigir_ordens_servico
+        #     corrigir_ordens_servico()
+        # except Exception as e:
+        #     print(f" ⚠ Aviso na correção de OS: {e}")
 
     return app
 
@@ -355,6 +358,10 @@ def register_blueprints(app):
     # Blueprint de energia solar
     from app.energia_solar.energia_solar_routes import energia_solar_bp
     app.register_blueprint(energia_solar_bp)
+
+    # Blueprint de kits do distribuidor
+    from app.kits_distribuidor.kits_routes import kits_bp
+    app.register_blueprint(kits_bp, url_prefix='/kits-distribuidor')
 
     # Blueprint de propostas
     from app.proposta.proposta_routes import proposta_bp
