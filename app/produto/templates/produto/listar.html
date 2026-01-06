@@ -142,9 +142,13 @@
                                     {% endif %}
                                 </td>
                                 <td>
+                                    {% if produto.status %}
                                     <span class="badge bg-{% if produto.status == 'ativo' %}success{% elif produto.status == 'inativo' %}secondary{% else %}danger{% endif %}">
                                         {{ produto.status.title() }}
                                     </span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">N/A</span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     <div class="btn-group btn-group-sm" role="group">
