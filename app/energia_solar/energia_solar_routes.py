@@ -1057,3 +1057,29 @@ def custo_fixo_excluir(custo_id):
         flash(f'Erro ao excluir custo fixo: {str(e)}', 'error')
     
     return redirect(url_for('energia_solar.custos_fixos_listar'))
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/recalcular-custos', methods=['POST'])
+@login_required
+def projeto_recalcular_custos(projeto_id):
+    """Recalcula custos separados de um projeto (distribuição: 70% equip, 20% inst, 10% proj)"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    projeto = ProjetoSolar.query.get_or_404(projeto_id)
+    
+    try:
+        if projeto.custo_total and projeto.custo_total > 0:
+            # Distribuição padrão: 70% equipamentos, 20% instalação, 10% projeto
+            projeto.custo_equipamentos = projeto.custo_total * 0.70
+            projeto.custo_instalacao = projeto.custo_total * 0.20
+            projeto.custo_projeto = projeto.custo_total * 0.10
+            
+            db.session.commit()
+            flash(f'Custos recalculados com sucesso! Equip: R$ {projeto.custo_equipamentos:.2f}, Inst: R$ {projeto.custo_instalacao:.2f}, Proj: R$ {projeto.custo_projeto:.2f}', 'success')
+        else:
+            flash('Projeto não possui custo total definido', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao recalcular custos: {str(e)}', 'error')
+    
+    return redirect(url_for('energia_solar.projeto_visualizar', projeto_id=projeto_id))

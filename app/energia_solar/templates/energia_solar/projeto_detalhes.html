@@ -199,7 +199,15 @@
                 </div>
 
                 <div class="tab-pane fade" id="tabFinanceiro">
-                    <h5><i class="fas fa-money-bill-wave me-2"></i>Valores</h5>
+                    <h5><i class="fas fa-money-bill-wave me-2"></i>Valores
+                        {% if (projeto.custo_equipamentos or 0) == 0 and (projeto.custo_instalacao or 0) == 0 and (projeto.custo_projeto or 0) == 0 and (projeto.custo_total or 0) > 0 %}
+                        <form method="POST" action="{{ url_for('energia_solar.projeto_recalcular_custos', projeto_id=projeto.id) }}" class="d-inline ms-3">
+                            <button type="submit" class="btn btn-sm btn-warning" title="Recalcular custos separados (70% equip, 20% inst, 10% proj)">
+                                <i class="fas fa-calculator me-1"></i>Recalcular
+                            </button>
+                        </form>
+                        {% endif %}
+                    </h5>
                     <table class="table">
                         <tr>
                             <th width="30%">Custo Equipamentos:</th>
