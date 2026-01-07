@@ -33,6 +33,109 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def calcular_geracao_estimada(qtd_placas, placa_id, irradiacao_solar):
+    """
+    Calcula a geração mensal estimada baseada nas placas
+    
+    Fórmula: Geração (kWh/mês) = Qtd Placas × Potência Placa (kWp) × Irradiação (h/dia) × 30 dias × 0.75 (perdas)
+    
+    Args:
+        qtd_placas: Quantidade de placas solares
+        placa_id: ID da placa solar
+        irradiacao_solar: Irradiação solar média (kWh/m².dia)
+    
+    Returns:
+        float: Geração estimada em kWh/mês
+    """
+    if not qtd_placas or not placa_id or not irradiacao_solar:
+        return 0
+    
+    try:
+        placa = PlacaSolar.query.get(placa_id)
+        if not placa or not placa.potencia:
+            return 0
+        
+        # Potência em kWp (605W = 0.605 kWp)
+        potencia_placa_kwp = placa.potencia / 1000
+        
+        # Potência total do sistema
+        potencia_total_kwp = qtd_placas * potencia_placa_kwp
+        
+        # Geração mensal (com 75% de eficiência devido a perdas)
+        geracao_mensal = potencia_total_kwp * irradiacao_solar * 30 * 0.75
+        
+        return round(geracao_mensal, 2)
+    except Exception as e:
+        print(f"❌ Erro ao calcular geração estimada: {str(e)}")
+        return 0
+
+
+def calcular_balanco_energetico(projeto):
+    """
+    Calcula o balanço energético do projeto para gráficos
+    
+    Returns:
+        dict: {
+            'consumo_mensal': float,
+            'geracao_mensal': float,
+            'consumo_simultaneo': float (kWh usado durante geração solar),
+            'excedente_rede': float (kWh injetado na rede),
+            'consumo_noturno': float (kWh consumido da rede),
+            'economia_mensal': float (R$),
+            'autossuficiencia': float (% de energia própria)
+        }
+    """
+    consumo = projeto.consumo_kwh_mes or 0
+    geracao = projeto.geracao_estimada_mes or 0
+    simultaneidade = projeto.simultaneidade or 0.80  # 80% padrão
+    tarifa = projeto.tarifa_kwh or 1.04
+    
+    # Consumo durante o dia (simultâneo com geração solar)
+    consumo_simultaneo = consumo * simultaneidade
+    
+    # Consumo à noite (da rede)
+    consumo_noturno = consumo * (1 - simultaneidade)
+    
+    # Excedente injetado na rede (créditos)
+    excedente_rede = max(0, geracao - consumo_simultaneo)
+    
+    # Déficit (precisa da rede durante o dia)
+    deficit_dia = max(0, consumo_simultaneo - geracao)
+    
+    # Total consumido da rede
+    total_da_rede = consumo_noturno + deficit_dia
+    
+    # Créditos gerados (compensação)
+    creditos_kwh = excedente_rede
+    
+    # Consumo líquido (após compensação)
+    consumo_liquido = max(0, total_da_rede - creditos_kwh)
+    
+    # Economia mensal
+    custo_sem_solar = consumo * tarifa
+    custo_com_solar = (consumo_liquido * tarifa) + 100  # Taxa mínima R$ 100
+    economia_mensal = custo_sem_solar - custo_com_solar
+    
+    # Autossuficiência (% de energia própria)
+    autossuficiencia = (geracao / consumo * 100) if consumo > 0 else 0
+    
+    return {
+        'consumo_mensal': round(consumo, 2),
+        'geracao_mensal': round(geracao, 2),
+        'consumo_simultaneo': round(consumo_simultaneo, 2),
+        'consumo_noturno': round(consumo_noturno, 2),
+        'excedente_rede': round(excedente_rede, 2),
+        'deficit_dia': round(deficit_dia, 2),
+        'total_da_rede': round(total_da_rede, 2),
+        'creditos_kwh': round(creditos_kwh, 2),
+        'consumo_liquido': round(consumo_liquido, 2),
+        'economia_mensal': round(economia_mensal, 2),
+        'autossuficiencia': round(autossuficiencia, 1),
+        'custo_sem_solar': round(custo_sem_solar, 2),
+        'custo_com_solar': round(custo_com_solar, 2)
+    }
+
+
 @energia_solar_bp.route('/')
 @login_required
 def dashboard():
@@ -752,7 +855,6 @@ def projeto_salvar():
         projeto.valor_conta_luz = float(request.form.get('valor_conta_luz', 0)) if request.form.get('valor_conta_luz') else None
         projeto.tarifa_kwh = float(request.form.get('tarifa_kwh', 0.85)) if request.form.get('tarifa_kwh') else 0.85
         projeto.potencia_kwp = float(request.form.get('potencia_kwp', 0)) if request.form.get('potencia_kwp') else None
-        projeto.geracao_estimada_mes = float(request.form.get('geracao_estimada_mes', 0)) if request.form.get('geracao_estimada_mes') else None
         projeto.simultaneidade = float(request.form.get('simultaneidade', 0.80)) if request.form.get('simultaneidade') else 0.80
         projeto.perdas_sistema = float(request.form.get('perdas_sistema', 0.20)) if request.form.get('perdas_sistema') else 0.20
         
@@ -776,6 +878,22 @@ def projeto_salvar():
             projeto.inversor_id = int(request.form.get('inversor_id')) if request.form.get('inversor_id') else None
             projeto.qtd_placas = int(request.form.get('qtd_placas', 0)) if request.form.get('qtd_placas') else None
             projeto.qtd_inversores = int(request.form.get('qtd_inversores', 1)) if request.form.get('qtd_inversores') else 1
+        
+        # 🔥 CALCULAR GERAÇÃO ESTIMADA AUTOMATICAMENTE
+        if projeto.qtd_placas and projeto.placa_id and projeto.irradiacao_solar:
+            # Calcular potência do sistema
+            placa = PlacaSolar.query.get(projeto.placa_id)
+            if placa and placa.potencia:
+                projeto.potencia_kwp = (projeto.qtd_placas * placa.potencia) / 1000  # Converter Wp para kWp
+                print(f"✅ Potência do sistema: {projeto.potencia_kwp} kWp ({projeto.qtd_placas} × {placa.potencia}Wp)")
+            
+            # Calcular geração estimada
+            projeto.geracao_estimada_mes = calcular_geracao_estimada(
+                projeto.qtd_placas, 
+                projeto.placa_id, 
+                projeto.irradiacao_solar
+            )
+            print(f"✅ Geração calculada: {projeto.geracao_estimada_mes} kWh/mês ({projeto.qtd_placas} placas × {projeto.irradiacao_solar} kWh/m².dia)")
         
         # Aba 4 - Layout
         projeto.orientacao = request.form.get('orientacao')
@@ -1154,6 +1272,9 @@ def projeto_proposta_pdf(projeto_id):
             from app.configuracao.configuracao_utils import get_config
             config = get_config()
             
+            # Calcular balanço energético para gráficos
+            balanco = calcular_balanco_energetico(projeto)
+            
             # Caminho absoluto para a logo
             project_root = os.path.dirname(current_app.root_path)
             logo_path = os.path.join(project_root, "static", "img", "JSP.jpg")
@@ -1164,7 +1285,8 @@ def projeto_proposta_pdf(projeto_id):
                                          projeto=projeto,
                                          cliente=cliente,
                                          logo_url=logo_url,
-                                         config=config)
+                                         config=config,
+                                         balanco=balanco)
             
             # Base URL para resolver outros caminhos relativos
             base_url = f"file:///{project_root.replace(os.sep, '/')}/"
@@ -1191,11 +1313,15 @@ def projeto_proposta_pdf(projeto_id):
             from app.configuracao.configuracao_utils import get_config
             config = get_config()
             
+            # Calcular balanço energético para gráficos
+            balanco = calcular_balanco_energetico(projeto)
+            
             # Criar resposta HTML com headers de não-cache
             html_response = make_response(render_template('energia_solar/pdf_proposta_solar_v2.html', 
                                                         projeto=projeto,
                                                         cliente=cliente,
-                                                        config=config))
+                                                        config=config,
+                                                        balanco=balanco))
             html_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
             html_response.headers['Pragma'] = 'no-cache'
             html_response.headers['Expires'] = '0'

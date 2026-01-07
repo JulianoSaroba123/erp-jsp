@@ -29,40 +29,48 @@
             text-align: center;
             page-break-after: always;
             position: relative;
-            padding: 40px;
+            padding: 40px 40px 180px 40px;
         }
         
         .capa h1 {
             font-size: 56px;
             font-weight: 700;
             letter-spacing: 2px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             text-transform: uppercase;
+            line-height: 1.2;
         }
         
         .capa .subtitulo {
-            font-size: 20px;
-            margin-bottom: 60px;
+            font-size: 18px;
+            margin-bottom: 40px;
             opacity: 0.9;
+            line-height: 1.4;
         }
         
         .capa .info-cliente {
-            background: rgba(255,255,255,0.1);
-            padding: 30px 50px;
+            background: rgba(255,255,255,0.15);
+            padding: 25px 40px;
             border-radius: 10px;
-            margin: 40px 0;
+            margin: 30px auto;
             backdrop-filter: blur(10px);
+            max-width: 600px;
         }
         
         .capa .info-cliente h2 {
-            font-size: 32px;
-            margin-bottom: 15px;
+            font-size: 30px;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+        
+        .capa .info-cliente p {
+            line-height: 1.5;
         }
         
         .capa .validade {
-            font-size: 16px;
-            margin-top: 40px;
-            opacity: 0.8;
+            font-size: 15px;
+            margin-top: 30px;
+            opacity: 0.85;
         }
         
         .capa .numero-projeto {
@@ -70,24 +78,25 @@
             top: 40px;
             right: 40px;
             background: rgba(255,255,255,0.2);
-            padding: 15px 25px;
+            padding: 12px 20px;
             border-radius: 8px;
-            font-size: 14px;
+            font-size: 13px;
         }
         
         .capa .footer-capa {
             position: absolute;
-            bottom: 40px;
-            left: 0;
-            right: 0;
+            bottom: 35px;
+            left: 40px;
+            right: 40px;
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
+            line-height: 1.6;
         }
         
         .capa .footer-capa .empresa {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 600;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         
         /* PÁGINAS INTERNAS */
@@ -394,30 +403,30 @@
             Número do projeto: {{ projeto.id }}
         </div>
         
-        <div style="padding-top: 200px;">
+        <div style="padding-top: 180px; padding-bottom: 60px;">
             <h1>PROPOSTA<br>COMERCIAL</h1>
             
-            <div class="subtitulo">
+            <div class="subtitulo" style="margin-top: 20px;">
                 A seguinte proposta comercial foi elaborada em {{ projeto.data_criacao.strftime('%d/%m/%y') if projeto.data_criacao else 'hoje' }}
             </div>
             
-            <div class="info-cliente">
+            <div class="info-cliente" style="margin-top: 50px; margin-bottom: 50px;">
                 <h2>{{ projeto.nome_cliente }}</h2>
                 <p style="font-size: 16px; margin-top: 10px;">
                     {{ projeto.endereco or '' }}{% if projeto.cidade %}, {{ projeto.cidade }}{% endif %}{% if projeto.estado %}/{{ projeto.estado }}{% endif %}
                 </p>
             </div>
             
-            <div class="validade">
+            <div class="validade" style="margin-top: 40px;">
                 A proposta é válida por 30 dias.
             </div>
         </div>
         
         <div class="footer-capa">
             <div class="empresa">{{ config.nome_fantasia if config else 'JSP ELÉTRICA INDUSTRIAL & SOLAR' }}</div>
-            <div>{{ config.logradouro if config else 'Rua Indalécio Costa, 890' }}{% if config and config.numero %}, {{ config.numero }}{% endif %}{% if config and config.bairro %}, {{ config.bairro }}{% endif %}</div>
-            <div>{{ config.cidade if config else 'Tietê' }}, {{ config.uf if config else 'SP' }}, {{ config.cep if config else '18530-170' }}</div>
-            <div style="margin-top: 10px;">Email: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            <div style="margin-top: 5px;">{{ config.logradouro if config else 'Rua Indalécio Costa, 890' }}{% if config and config.numero %}, {{ config.numero }}{% endif %}{% if config and config.bairro %}, {{ config.bairro }}{% endif %}</div>
+            <div style="margin-top: 5px;">{{ config.cidade if config else 'Tietê' }}, {{ config.uf if config else 'SP' }}, {{ config.cep if config else '18530-170' }}</div>
+            <div style="margin-top: 8px;">Email: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
             <div style="margin-top: 5px; font-weight: 600;">{{ config.telefone if config else '(15) 99670 – 2036' }}</div>
         </div>
     </div>
@@ -550,7 +559,134 @@
         </div>
     </div>
     
-    <!-- PÁGINA 4: EQUIPAMENTOS -->
+    <!-- PÁGINA 4: BALANÇO ENERGÉTICO (GRÁFICO) -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Balanço Energético</h2>
+        <p style="margin-bottom: 30px; font-size: 14px;">Entenda como funciona o consumo e geração de energia solar</p>
+        
+        <!-- GRÁFICO DE BARRAS COMPARATIVO -->
+        <div style="background: white; padding: 30px; border-radius: 10px; border: 2px solid #e0e0e0; margin: 20px 0;">
+            <h3 style="text-align: center; color: #002755; margin-bottom: 30px;">Consumo × Geração Mensal</h3>
+            
+            <div style="width: 100%; margin-bottom: 40px;">
+                {% set max_valor = [balanco.consumo_mensal, balanco.geracao_mensal]|max %}
+                {% set largura_consumo = (balanco.consumo_mensal / max_valor * 100) if max_valor > 0 else 0 %}
+                {% set largura_geracao = (balanco.geracao_mensal / max_valor * 100) if max_valor > 0 else 0 %}
+                
+                <!-- Barra Consumo -->
+                <div style="margin-bottom: 25px;">
+                    <div style="font-size: 14px; font-weight: 600; color: #666; margin-bottom: 8px;">
+                        Consumo Mensal: {{ "%.0f"|format(balanco.consumo_mensal) }} kWh
+                    </div>
+                    <div style="width: 100%; background: #f5f5f5; height: 40px; border-radius: 5px; position: relative;">
+                        <div style="width: {{ "%.1f"|format(largura_consumo) }}%; background: linear-gradient(90deg, #ff5722 0%, #ff9800 100%); height: 100%; border-radius: 5px; text-align: right; padding-right: 10px; line-height: 40px; color: white; font-weight: 700; font-size: 16px;">
+                            {{ "%.0f"|format(balanco.consumo_mensal) }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Barra Geração -->
+                <div style="margin-bottom: 25px;">
+                    <div style="font-size: 14px; font-weight: 600; color: #666; margin-bottom: 8px;">
+                        Geração Solar: {{ "%.0f"|format(balanco.geracao_mensal) }} kWh
+                    </div>
+                    <div style="width: 100%; background: #f5f5f5; height: 40px; border-radius: 5px; position: relative;">
+                        <div style="width: {{ "%.1f"|format(largura_geracao) }}%; background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%); height: 100%; border-radius: 5px; text-align: right; padding-right: 10px; line-height: 40px; color: white; font-weight: 700; font-size: 16px;">
+                            {{ "%.0f"|format(balanco.geracao_mensal) }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Autossuficiência -->
+                <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-radius: 8px; margin-top: 30px;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Autossuficiência Energética</div>
+                    <div style="font-size: 36px; font-weight: 700; color: #002755;">{{ "%.1f"|format(balanco.autossuficiencia) }}%</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">da energia consumida é gerada pelo sistema solar</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- DETALHAMENTO DO FLUXO ENERGÉTICO -->
+        <div class="box verde">
+            <h3 style="margin-top: 0;">📊 Fluxo Energético Detalhado</h3>
+            <table style="margin-top: 15px; font-size: 13px;">
+                <tr style="background: white;">
+                    <td style="font-weight: 600; width: 60%;">⚡ Consumo Total Mensal</td>
+                    <td class="text-right" style="font-weight: 600;">{{ "%.0f"|format(balanco.consumo_mensal) }} kWh</td>
+                </tr>
+                <tr style="background: #f0f7f0;">
+                    <td style="padding-left: 20px;">└ Consumo durante o dia ({{ "%.0f"|format((projeto.simultaneidade or 0.80) * 100) }}% simultaneidade)</td>
+                    <td class="text-right">{{ "%.0f"|format(balanco.consumo_simultaneo) }} kWh</td>
+                </tr>
+                <tr style="background: #f0f7f0;">
+                    <td style="padding-left: 20px;">└ Consumo à noite</td>
+                    <td class="text-right">{{ "%.0f"|format(balanco.consumo_noturno) }} kWh</td>
+                </tr>
+                
+                <tr style="background: white;">
+                    <td style="font-weight: 600; padding-top: 15px;">☀️ Geração Solar Total</td>
+                    <td class="text-right" style="font-weight: 600; padding-top: 15px;">{{ "%.0f"|format(balanco.geracao_mensal) }} kWh</td>
+                </tr>
+                <tr style="background: #e8f5e9;">
+                    <td style="padding-left: 20px;">└ Usado diretamente (autoconsumo)</td>
+                    <td class="text-right">{{ "%.0f"|format([balanco.consumo_simultaneo, balanco.geracao_mensal]|min) }} kWh</td>
+                </tr>
+                <tr style="background: #e8f5e9;">
+                    <td style="padding-left: 20px;">└ Excedente injetado na rede (créditos)</td>
+                    <td class="text-right">{{ "%.0f"|format(balanco.excedente_rede) }} kWh</td>
+                </tr>
+                
+                <tr style="background: white;">
+                    <td style="font-weight: 600; padding-top: 15px;">🔌 Energia da Rede (concessionária)</td>
+                    <td class="text-right" style="font-weight: 600; padding-top: 15px;">{{ "%.0f"|format(balanco.total_da_rede) }} kWh</td>
+                </tr>
+                <tr style="background: #fff3e0;">
+                    <td style="padding-left: 20px;">└ Compensada com créditos</td>
+                    <td class="text-right">{{ "%.0f"|format(balanco.creditos_kwh) }} kWh</td>
+                </tr>
+                <tr style="background: #fff3e0;">
+                    <td style="padding-left: 20px;">└ Consumo líquido (faturado)</td>
+                    <td class="text-right">{{ "%.0f"|format(balanco.consumo_liquido) }} kWh</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- COMPARAÇÃO FINANCEIRA -->
+        <div class="grid-2" style="margin-top: 20px;">
+            <div class="card" style="background: #ffebee; border-color: #f44336;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 10px;">💡 Fatura SEM Sistema Solar</div>
+                <div style="font-size: 28px; font-weight: 700; color: #d32f2f;">R$ {{ "{:,.2f}".format(balanco.custo_sem_solar).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                <div style="font-size: 11px; color: #666; margin-top: 5px;">{{ "%.0f"|format(balanco.consumo_mensal) }} kWh × R$ {{ "%.2f"|format(projeto.tarifa_kwh or 1.04) }}</div>
+            </div>
+            
+            <div class="card" style="background: #e8f5e9; border-color: #4caf50;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 10px;">☀️ Fatura COM Sistema Solar</div>
+                <div style="font-size: 28px; font-weight: 700; color: #388e3c;">R$ {{ "{:,.2f}".format(balanco.custo_com_solar).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                <div style="font-size: 11px; color: #666; margin-top: 5px;">{{ "%.0f"|format(balanco.consumo_liquido) }} kWh + taxa mínima R$ 100</div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px; padding: 25px; background: linear-gradient(135deg, #4caf50 0%, #8bc34a 100%); border-radius: 10px; color: white;">
+            <div style="font-size: 16px; margin-bottom: 10px;">💰 Economia Mensal Estimada</div>
+            <div style="font-size: 42px; font-weight: 700;">R$ {{ "{:,.2f}".format(balanco.economia_mensal).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+            <div style="font-size: 14px; margin-top: 10px; opacity: 0.9;">Economize {{ "%.1f"|format((balanco.economia_mensal / balanco.custo_sem_solar * 100) if balanco.custo_sem_solar > 0 else 0) }}% na conta de luz!</div>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">E-mail: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 5: EQUIPAMENTOS -->
     <div class="pagina">
         <div class="header-pagina">
             <div class="numero">Projeto Nº: {{ projeto.id }}</div>
@@ -643,7 +779,7 @@
         </div>
     </div>
     
-    <!-- PÁGINA 5: VALOR DO INVESTIMENTO -->
+    <!-- PÁGINA 6: VALOR DO INVESTIMENTO -->
     <div class="pagina">
         <div class="header-pagina">
             <div class="numero">Projeto Nº: {{ projeto.id }}</div>
@@ -723,7 +859,7 @@
         </div>
     </div>
     
-    <!-- PÁGINA 6: CONDIÇÕES E GARANTIAS -->
+    <!-- PÁGINA 7: CONDIÇÕES E GARANTIAS -->
     <div class="pagina">
         <div class="header-pagina">
             <div class="numero">Projeto Nº: {{ projeto.id }}</div>
@@ -803,7 +939,7 @@
         </div>
     </div>
     
-    <!-- PÁGINA 7: ASSINATURAS -->
+    <!-- PÁGINA 8: ASSINATURAS -->
     <div class="pagina">
         <div class="header-pagina">
             <div class="numero">Projeto Nº: {{ projeto.id }}</div>
