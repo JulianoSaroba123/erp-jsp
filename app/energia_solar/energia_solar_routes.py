@@ -12,6 +12,9 @@ from datetime import datetime
 from werkzeug.utils import secure_filename
 import math
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 energia_solar_bp = Blueprint('energia_solar', __name__, url_prefix='/energia-solar',
                              template_folder='templates')
@@ -1282,9 +1285,6 @@ def admin_recalcular_todos_custos():
 def projeto_proposta_pdf(projeto_id):
     """Gera PDF da proposta comercial de um projeto solar"""
     from app.energia_solar.catalogo_model import ProjetoSolar
-    import logging
-    
-    logger = logging.getLogger(__name__)
     
     try:
         # Carregar projeto
@@ -1295,18 +1295,17 @@ def projeto_proposta_pdf(projeto_id):
         if projeto.cliente_id:
             cliente = Cliente.query.get(projeto.cliente_id)
         
-        # Tentar importar WeasyPrint
+        # Importar configurações da empresa
+        from app.configuracao.configuracao_utils import get_config
+        config = get_config()
+        
+        # Calcular balanço energético para gráficos
+        balanco = calcular_balanco_energetico(projeto)
+        
+        # Tentar gerar PDF com WeasyPrint
         try:
             import weasyprint
             from flask import current_app
-            import os
-            
-            # Importar configurações da empresa
-            from app.configuracao.configuracao_utils import get_config
-            config = get_config()
-            
-            # Calcular balanço energético para gráficos
-            balanco = calcular_balanco_energetico(projeto)
             
             # Caminho absoluto para a logo
             project_root = os.path.dirname(current_app.root_path)
@@ -1338,29 +1337,27 @@ def projeto_proposta_pdf(projeto_id):
             
             return response
             
-        except ImportError:
-            # WeasyPrint não disponível - retornar HTML
-            logger.warning("WeasyPrint não encontrado - retornando HTML")
-            flash('Biblioteca PDF não disponível - exibindo versão HTML', 'warning')
-            
-            from app.configuracao.configuracao_utils import get_config
-            config = get_config()
-            
-            # Calcular balanço energético para gráficos
-            balanco = calcular_balanco_energetico(projeto)
-            
-            # Criar resposta HTML com headers de não-cache
-            html_response = make_response(render_template('energia_solar/pdf_proposta_solar_v2.html', 
-                                                        projeto=projeto,
-                                                        cliente=cliente,
-                                                        config=config,
-                                                        balanco=balanco))
-            html_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-            html_response.headers['Pragma'] = 'no-cache'
-            html_response.headers['Expires'] = '0'
-            html_response.headers['Last-Modified'] = 'Wed, 11 Jan 1984 05:00:00 GMT'
-            
-            return html_response
+        except ImportError as e:
+            # WeasyPrint não instalado
+            logger.error(f"WeasyPrint não encontrado: {str(e)}")
+            flash(f'Biblioteca PDF não disponível - instale: pip install weasyprint', 'warning')
+        except Exception as e:
+            # Outro erro na geração do PDF
+            logger.error(f"Erro ao gerar PDF: {str(e)}")
+            flash(f'Erro ao gerar PDF: {str(e)} - exibindo HTML', 'warning')
+        
+        # Fallback para HTML em caso de erro
+        html_response = make_response(render_template('energia_solar/pdf_proposta_solar_v2.html', 
+                                                    projeto=projeto,
+                                                    cliente=cliente,
+                                                    config=config,
+                                                    balanco=balanco))
+        html_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        html_response.headers['Pragma'] = 'no-cache'
+        html_response.headers['Expires'] = '0'
+        html_response.headers['Last-Modified'] = 'Wed, 11 Jan 1984 05:00:00 GMT'
+        
+        return html_response
             
     except Exception as e:
         logger.error(f"Erro ao gerar PDF da proposta solar {projeto_id}: {str(e)}")
