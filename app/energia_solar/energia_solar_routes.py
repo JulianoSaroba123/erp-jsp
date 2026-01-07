@@ -1,7 +1,7 @@
 """
 Rotas para o módulo de Cálculo de Energia Solar
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, make_response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, make_response, send_file
 from flask_login import login_required, current_user
 from app.extensoes import db
 from app.energia_solar.energia_solar_model import CalculoEnergiaSolar
@@ -84,6 +84,7 @@ def calcular_balanco_energetico(projeto):
             'consumo_simultaneo': float (kWh usado durante geração solar),
             'excedente_rede': float (kWh injetado na rede),
             'consumo_noturno': float (kWh consumido da rede),
+            'consumo_minimo': float (kWh mínimo obrigatório),
             'economia_mensal': float (R$),
             'autossuficiencia': float (% de energia própria)
         }
@@ -92,6 +93,15 @@ def calcular_balanco_energetico(projeto):
     geracao = projeto.geracao_estimada_mes or 0
     simultaneidade_decimal = (projeto.simultaneidade or 35) / 100  # Converte % para decimal (35% = 0.35)
     tarifa = projeto.tarifa_kwh or 1.04
+    
+    # Consumo mínimo obrigatório da concessionária
+    tipo_instalacao = projeto.tipo_instalacao or 'monofasica'
+    consumo_minimo_map = {
+        'monofasica': 30,
+        'bifasica': 50,
+        'trifasica': 100
+    }
+    consumo_minimo = consumo_minimo_map.get(tipo_instalacao, 30)
     
     # Consumo durante o dia (simultâneo com geração solar)
     consumo_simultaneo = consumo * simultaneidade_decimal
@@ -111,12 +121,12 @@ def calcular_balanco_energetico(projeto):
     # Créditos gerados (compensação)
     creditos_kwh = excedente_rede
     
-    # Consumo líquido (após compensação)
-    consumo_liquido = max(0, total_da_rede - creditos_kwh)
+    # Consumo líquido (após compensação) - nunca menor que o mínimo obrigatório
+    consumo_liquido = max(consumo_minimo, total_da_rede - creditos_kwh)
     
     # Economia mensal
     custo_sem_solar = consumo * tarifa
-    custo_com_solar = (consumo_liquido * tarifa) + 100  # Taxa mínima R$ 100
+    custo_com_solar = consumo_liquido * tarifa
     economia_mensal = custo_sem_solar - custo_com_solar
     
     # Autossuficiência (% de energia própria)
@@ -131,6 +141,8 @@ def calcular_balanco_energetico(projeto):
         'deficit_dia': round(deficit_dia, 2),
         'total_da_rede': round(total_da_rede, 2),
         'creditos_kwh': round(creditos_kwh, 2),
+        'consumo_minimo': consumo_minimo,
+        'tipo_instalacao': tipo_instalacao.capitalize(),
         'consumo_liquido': round(consumo_liquido, 2),
         'economia_mensal': round(economia_mensal, 2),
         'autossuficiencia': round(autossuficiencia, 1),
@@ -1362,4 +1374,86 @@ def projeto_proposta_pdf(projeto_id):
     except Exception as e:
         logger.error(f"Erro ao gerar PDF da proposta solar {projeto_id}: {str(e)}")
         flash(f'Erro ao gerar PDF: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.projetos'))
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/gerar-documento-word', methods=['GET', 'POST'])
+@login_required
+def gerar_documento_word(projeto_id):
+    """Upload de template Word e geração de documento final"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    from app.cliente.cliente_model import Cliente
+    from app.configuracao.configuracao_utils import get_config
+    from app.energia_solar.word_utils import substituir_variaveis_word, gerar_variaveis_projeto
+    from werkzeug.utils import secure_filename
+    import io
+    
+    projeto = ProjetoSolar.query.get_or_404(projeto_id)
+    
+    if request.method == 'POST':
+        # Verificar se arquivo foi enviado
+        if 'template' not in request.files:
+            flash('Nenhum arquivo selecionado', 'error')
+            return redirect(request.url)
+        
+        file = request.files['template']
+        
+        if file.filename == '':
+            flash('Nenhum arquivo selecionado', 'error')
+            return redirect(request.url)
+        
+        if not file.filename.endswith('.docx'):
+            flash('Apenas arquivos .docx são permitidos', 'error')
+            return redirect(request.url)
+        
+        try:
+            # Carregar dados
+            cliente = Cliente.query.get(projeto.cliente_id) if projeto.cliente_id else None
+            config = get_config()
+            balanco = calcular_balanco_energetico(projeto)
+            
+            # Gerar variáveis
+            variaveis = gerar_variaveis_projeto(projeto, cliente, config, balanco)
+            
+            # Processar template
+            template_bytes = file.read()
+            template_stream = io.BytesIO(template_bytes)
+            
+            # Salvar temporariamente
+            temp_path = os.path.join(UPLOAD_FOLDER, 'temp_template.docx')
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            
+            with open(temp_path, 'wb') as f:
+                f.write(template_bytes)
+            
+            # Substituir variáveis
+            doc = substituir_variaveis_word(temp_path, variaveis)
+            
+            # Salvar em memória
+            output = io.BytesIO()
+            doc.save(output)
+            output.seek(0)
+            
+            # Remover arquivo temporário
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+            
+            # Gerar nome do arquivo
+            filename = f"Proposta_Solar_{projeto.id}_{projeto.nome_cliente.replace(' ', '_')}.docx"
+            
+            # Retornar arquivo
+            return send_file(
+                output,
+                as_attachment=True,
+                download_name=filename,
+                mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            )
+            
+        except Exception as e:
+            logger.error(f"Erro ao processar template Word: {str(e)}")
+            flash(f'Erro ao processar template: {str(e)}', 'error')
+            return redirect(request.url)
+    
+    # GET - Mostrar página de upload
+    return render_template('energia_solar/upload_template_word.html', projeto=projeto)
         return redirect(url_for('energia_solar.projeto_visualizar', projeto_id=projeto_id))

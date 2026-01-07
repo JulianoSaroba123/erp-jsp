@@ -247,6 +247,7 @@ class ProjetoSolar(db.Model):
     historico_consumo = db.Column(db.JSON)  # {jan: 300, fev: 280, ...}
     valor_conta_luz = db.Column(db.Float)  # R$
     tarifa_kwh = db.Column(db.Float)  # R$/kWh
+    tipo_instalacao = db.Column(db.String(20), default='monofasica')  # monofasica, bifasica, trifasica
     
     # Dimensionamento
     potencia_kwp = db.Column(db.Float)  # kWp calculado

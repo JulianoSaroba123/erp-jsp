@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Gerar Documento Word - Projeto {{ projeto.id }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>📄 Gerar Documento Word Personalizado</h2>
+            <p class="text-muted">Projeto #{{ projeto.id }} - {{ projeto.nome_cliente }}</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">📤 Upload do Template Word</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <label for="template" class="form-label fw-bold">Selecione o arquivo .docx com as variáveis:</label>
+                            <input type="file" class="form-control" id="template" name="template" accept=".docx" required>
+                            <div class="form-text">
+                                Apenas arquivos .docx são permitidos. Use as variáveis entre colchetes como <code>[nome_cliente]</code>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">💡 Como usar:</h6>
+                            <ol class="mb-0">
+                                <li>Abra seu documento Word</li>
+                                <li>Digite as variáveis entre colchetes, ex: <code>[nome_cliente]</code></li>
+                                <li>Salve o arquivo .docx</li>
+                                <li>Faça upload aqui</li>
+                                <li>Baixe o documento final com os dados reais</li>
+                            </ol>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                ✨ Gerar Documento
+                            </button>
+                            <a href="{{ url_for('energia_solar.projeto_detalhes', projeto_id=projeto.id) }}" class="btn btn-secondary">
+                                ← Voltar ao Projeto
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">📋 Variáveis Disponíveis</h6>
+                </div>
+                <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                    <p class="small text-muted">Copie e cole no Word:</p>
+                    
+                    <div class="accordion accordion-flush" id="accordionVariaveis">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCliente">
+                                    👤 Cliente
+                                </button>
+                            </h2>
+                            <div id="collapseCliente" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    <code>[nome_cliente]</code><br>
+                                    <code>[cidade]</code><br>
+                                    <code>[estado]</code><br>
+                                    <code>[endereco]</code>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSistema">
+                                    🔋 Sistema
+                                </button>
+                            </h2>
+                            <div id="collapseSistema" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    <code>[qtd_placas]</code><br>
+                                    <code>[potencia_kwp]</code><br>
+                                    <code>[geracao_estimada_mes]</code><br>
+                                    <code>[tipo_instalacao]</code>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEconomia">
+                                    💰 Economia
+                                </button>
+                            </h2>
+                            <div id="collapseEconomia" class="accordion-collapse collapse">
+                                <div class="accordion-body">
+                                    <code>[economia_mensal]</code><br>
+                                    <code>[economia_anual]</code><br>
+                                    <code>[consumo_minimo]</code><br>
+                                    <code>[valor_total]</code>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <a href="{{ url_for('static', filename='VARIAVEIS_WORD.md') }}" class="btn btn-sm btn-outline-primary w-100" target="_blank">
+                            📖 Ver Lista Completa
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -248,6 +248,17 @@
                                                        placeholder="Ex: 450" required>
                                             </div>
                                             <div class="col-md-6">
+                                                <label for="tipo_instalacao" class="form-label">Tipo de Instalação *</label>
+                                                <select class="form-select" id="tipo_instalacao" name="tipo_instalacao" required>
+                                                    <option value="monofasica">Monofásica (mín. 30 kWh)</option>
+                                                    <option value="bifasica">Bifásica (mín. 50 kWh)</option>
+                                                    <option value="trifasica">Trifásica (mín. 100 kWh)</option>
+                                                </select>
+                                                <small class="form-text text-muted">Consumo mínimo obrigatório da concessionária</small>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
                                                 <label for="tarifa_kwh" class="form-label">Tarifa (R$/kWh)</label>
                                                 <input type="number" step="0.01" class="form-control" 
                                                        id="tarifa_kwh" name="tarifa_kwh" 
