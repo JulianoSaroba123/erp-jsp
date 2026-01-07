@@ -57,15 +57,20 @@
                     
                     {% if placa.datasheet %}
                     <div class="text-center mb-2">
-                        {% if placa.datasheet.endswith(('.jpg', '.jpeg', '.png', '.webp')) %}
-                            <a href="{{ placa.datasheet }}" target="_blank" class="btn btn-sm btn-outline-info w-100">
-                                <i class="fas fa-image me-1"></i>Ver Imagem Técnica
-                            </a>
-                        {% else %}
-                            <a href="{{ placa.datasheet }}" target="_blank" class="btn btn-sm btn-outline-danger w-100">
-                                <i class="fas fa-file-pdf me-1"></i>Ver Datasheet PDF
-                            </a>
-                        {% endif %}
+                        {% set arquivos = placa.datasheet.split(';') %}
+                        {% for arquivo in arquivos %}
+                            {% if arquivo.strip() %}
+                                {% if arquivo.endswith(('.jpg', '.jpeg', '.png', '.webp')) %}
+                                    <a href="{{ arquivo }}" target="_blank" class="btn btn-sm btn-outline-info w-100 mb-1">
+                                        <i class="fas fa-image me-1"></i>Imagem {{ loop.index }}
+                                    </a>
+                                {% else %}
+                                    <a href="{{ arquivo }}" target="_blank" class="btn btn-sm btn-outline-danger w-100 mb-1">
+                                        <i class="fas fa-file-pdf me-1"></i>PDF {{ loop.index }}
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
                     </div>
                     {% endif %}
                 </div>
@@ -309,7 +314,8 @@ async function editarPlaca(id) {
                     </ul>
                     <div class="tab-content">
                         <div class="tab-pane fade show active" id="upload-edit">
-                            <input type="file" class="form-control" name="datasheet_file" accept=".pdf,.jpg,.jpeg,.png,.webp">
+                            <input type="file" class="form-control" name="datasheet_file" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple>
+                            <small class="text-muted">Você pode selecionar múltiplos arquivos</small>
                             <small class="text-muted">Deixe vazio para manter o arquivo atual</small>
                         </div>
                         <div class="tab-pane fade" id="link-edit">

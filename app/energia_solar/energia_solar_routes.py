@@ -20,7 +20,7 @@ energia_solar_bp = Blueprint('energia_solar', __name__, url_prefix='/energia-sol
                              template_folder='templates')
 
 # Configuração de uploads
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'uploads', 'datasheets')
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'static', 'uploads', 'datasheets')
 ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png', 'webp'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
@@ -390,28 +390,34 @@ def placa_criar():
         garantia_desempenho = request.form.get('garantia_desempenho')
         preco_custo = request.form.get('preco_custo')
         
-        # Processar datasheet (arquivo ou URL)
-        datasheet = None
+        # Processar datasheets (múltiplos arquivos ou URL)
+        datasheets = []
         
         # No Render, bloquear upload de arquivos (filesystem efêmero)
         if 'datasheet_file' in request.files and not IS_RENDER:
-            file = request.files['datasheet_file']
-            if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                # Adicionar timestamp para evitar conflitos
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f"{timestamp}_{filename}"
-                filepath = os.path.join(UPLOAD_FOLDER, filename)
-                file.save(filepath)
-                datasheet = f"/static/uploads/datasheets/{filename}"
+            files = request.files.getlist('datasheet_file')
+            for file in files:
+                if file and file.filename and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    # Adicionar timestamp para evitar conflitos
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    filename = f"{timestamp}_{filename}"
+                    filepath = os.path.join(UPLOAD_FOLDER, filename)
+                    file.save(filepath)
+                    datasheets.append(f"/uploads/datasheets/{filename}")
         elif 'datasheet_file' in request.files and IS_RENDER:
-            file = request.files['datasheet_file']
-            if file and file.filename:
+            files = request.files.getlist('datasheet_file')
+            if any(f.filename for f in files):
                 flash('⚠️ Upload de arquivos não disponível no Render. Use um link externo (Google Drive, Dropbox, etc.)', 'warning')
         
         # Se não houver arquivo, usar URL
-        if not datasheet:
-            datasheet = request.form.get('datasheet_url') or None
+        if not datasheets:
+            url = request.form.get('datasheet_url')
+            if url:
+                datasheets.append(url)
+        
+        # Converter lista para string JSON ou usar primeiro item para compatibilidade
+        datasheet = datasheets[0] if len(datasheets) == 1 else (';'.join(datasheets) if datasheets else None)
         
         placa = PlacaSolar(
             modelo=request.form.get('modelo'),
@@ -568,27 +574,33 @@ def inversor_criar():
         garantia_anos = request.form.get('garantia_anos')
         grau_protecao = request.form.get('grau_protecao')
         
-        # Processar datasheet (arquivo ou URL)
-        datasheet = None
+        # Processar datasheets (múltiplos arquivos ou URL)
+        datasheets = []
         
         # No Render, bloquear upload de arquivos (filesystem efêmero)
         if 'datasheet_file' in request.files and not IS_RENDER:
-            file = request.files['datasheet_file']
-            if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                filename = f"{timestamp}_{filename}"
-                filepath = os.path.join(UPLOAD_FOLDER, filename)
-                file.save(filepath)
-                datasheet = f"/uploads/datasheets/{filename}"
+            files = request.files.getlist('datasheet_file')
+            for file in files:
+                if file and file.filename and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    filename = f"{timestamp}_{filename}"
+                    filepath = os.path.join(UPLOAD_FOLDER, filename)
+                    file.save(filepath)
+                    datasheets.append(f"/uploads/datasheets/{filename}")
         elif 'datasheet_file' in request.files and IS_RENDER:
-            file = request.files['datasheet_file']
-            if file and file.filename:
+            files = request.files.getlist('datasheet_file')
+            if any(f.filename for f in files):
                 flash('⚠️ Upload de arquivos não disponível no Render. Use um link externo (Google Drive, Dropbox, etc.)', 'warning')
         
         # Se não houver arquivo, usar URL
-        if not datasheet:
-            datasheet = request.form.get('datasheet_url') or None
+        if not datasheets:
+            url = request.form.get('datasheet_url')
+            if url:
+                datasheets.append(url)
+        
+        # Converter lista para string separada por ponto-e-vírgula
+        datasheet = ';'.join(datasheets) if datasheets else None
         
         inversor = InversorSolar(
             modelo=request.form.get('modelo'),
