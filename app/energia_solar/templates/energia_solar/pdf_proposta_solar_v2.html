@@ -462,6 +462,124 @@
         </div>
     </div>
     
+    <!-- PÁGINA 2.5: BENEFÍCIOS DO SISTEMA -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Benefícios do Sistema Solar Fotovoltaico</h2>
+        <p style="margin-bottom: 30px; font-size: 14px;">Vantagens de investir em energia solar</p>
+        
+        <div class="grid-2">
+            <div class="box destaque">
+                <h3 style="margin-top: 0;">💰 Economia na Conta de Energia</h3>
+                <p>Reduza sua conta de luz em até <strong>95%</strong>. O sistema gera energia limpa e gratuita direto do sol, diminuindo drasticamente seus custos mensais com eletricidade.</p>
+                <div style="margin-top: 15px; padding: 15px; background: white; border-radius: 5px; text-align: center;">
+                    <div style="font-size: 32px; font-weight: 700; color: #4caf50;">R$ {{ "{:,.2f}".format(balanco.economia_mensal if balanco else 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                    <div style="font-size: 13px; color: #666;">Economia mensal estimada</div>
+                </div>
+            </div>
+            
+            <div class="box destaque">
+                <h3 style="margin-top: 0;">📈 Valorização do Imóvel</h3>
+                <p>Imóveis com sistema solar se valorizam em média <strong>3% a 6%</strong>. É um investimento que agrega valor patrimonial e torna sua propriedade mais atrativa no mercado.</p>
+            </div>
+        </div>
+        
+        <div class="grid-3" style="margin-top: 20px;">
+            <div class="box verde">
+                <h3 style="margin-top: 0;">🛡️ Proteção Contra Reajustes</h3>
+                <p style="font-size: 13px;">Nos últimos 10 anos, a tarifa de energia subiu mais de <strong>150%</strong>. Com energia solar, você se protege das bandeiras tarifárias e dos aumentos anuais.</p>
+            </div>
+            
+            <div class="box verde">
+                <h3 style="margin-top: 0;">🌍 Sustentabilidade</h3>
+                <p style="font-size: 13px;">Sistema 100% limpo e renovável. Reduza sua pegada de carbono e contribua para um planeta mais sustentável para as próximas gerações.</p>
+            </div>
+            
+            <div class="box verde">
+                <h3 style="margin-top: 0;">💳 Linhas de Financiamento</h3>
+                <p style="font-size: 13px;">Financie em até <strong>120 meses</strong> com taxas especiais. Parcelas que cabem no seu bolso, muitas vezes menores que a conta de luz atual.</p>
+            </div>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">{{ config.site if config else 'www.eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 2.6: ETAPAS DO PROJETO -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Passo a Passo do Projeto</h2>
+        <p style="margin-bottom: 30px; font-size: 14px;">Processo completo desde a proposta até a ativação do sistema</p>
+        
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-numero">1</div>
+                <div class="timeline-content">
+                    <strong>Orçamento Preliminar</strong><br>
+                    <span style="color: #666; font-size: 13px;">Análise inicial de consumo, visita técnica e dimensionamento do sistema ideal para sua necessidade.</span>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-numero">2</div>
+                <div class="timeline-content">
+                    <strong>Proposta Comercial</strong><br>
+                    <span style="color: #666; font-size: 13px;">Apresentação da proposta detalhada com equipamentos, valores, condições de pagamento e análise financeira.</span>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-numero">3</div>
+                <div class="timeline-content">
+                    <strong>Vistoria Técnica</strong><br>
+                    <span style="color: #666; font-size: 13px;">Confirmação das condições estruturais, elétricas e verificação de sombreamento para garantir a máxima eficiência.</span>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-numero">4</div>
+                <div class="timeline-content">
+                    <strong>Projeto e Aprovação na Concessionária</strong><br>
+                    <span style="color: #666; font-size: 13px;">Elaboração do projeto elétrico, emissão de ART e protocolo na concessionária local para homologação.</span>
+                </div>
+            </div>
+            
+            <div class="timeline-item">
+                <div class="timeline-numero">5</div>
+                <div class="timeline-content">
+                    <strong>Instalação e Ativação</strong><br>
+                    <span style="color: #666; font-size: 13px;">Instalação dos módulos e inversor, troca do medidor pela concessionária e ativação do sistema.</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="box laranja" style="margin-top: 30px;">
+            <h3 style="margin-top: 0;">⏱️ Prazo Total Estimado</h3>
+            <p>O processo completo, desde a aprovação da proposta até a ativação do sistema, leva em média <strong>60 a 90 dias</strong>, dependendo do prazo de resposta da concessionária local.</p>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">{{ config.site if config else 'www.eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
     <!-- PÁGINA 3: DETALHES DA PROPOSTA -->
     <div class="pagina">
         <div class="header-pagina">
@@ -749,6 +867,245 @@
         </div>
     </div>
     
+    <!-- PÁGINA 5.5: EQUIPAMENTOS ADICIONAIS -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Equipamentos Adicionais</h2>
+        <p style="margin-bottom: 30px; font-size: 14px;">Componentes complementares necessários para o funcionamento do sistema</p>
+        
+        <div class="lista-equipamentos">
+            <div class="equipamento">
+                <div class="equipamento-header">
+                    <div class="equipamento-nome">String Box CC</div>
+                    <div class="equipamento-qtd">1 und</div>
+                </div>
+                <div class="equipamento-detalhe">
+                    • Caixa de proteção para corrente contínua<br>
+                    • Disjuntores e fusíveis de proteção<br>
+                    • DPS (Dispositivo de Proteção contra Surtos)<br>
+                    • Certificação INMETRO
+                </div>
+            </div>
+            
+            <div class="equipamento">
+                <div class="equipamento-header">
+                    <div class="equipamento-nome">Cabos Solares CC</div>
+                    <div class="equipamento-qtd">{{ projeto.qtd_placas * 2 if projeto.qtd_placas else 12 }}m</div>
+                </div>
+                <div class="equipamento-detalhe">
+                    • Cabo solar 4mm² ou 6mm² (conforme projeto)<br>
+                    • Proteção UV e intempéries<br>
+                    • Resistente a altas temperaturas<br>
+                    • Certificação TÜV/INMETRO
+                </div>
+            </div>
+            
+            <div class="equipamento">
+                <div class="equipamento-header">
+                    <div class="equipamento-nome">Conectores MC4</div>
+                    <div class="equipamento-qtd">{{ projeto.qtd_placas * 2 if projeto.qtd_placas else 12 }} pares</div>
+                </div>
+                <div class="equipamento-detalhe">
+                    • Conectores macho e fêmea<br>
+                    • Conexão rápida e segura<br>
+                    • Proteção IP67 (à prova d'água)<br>
+                    • Garantia de 10 anos
+                </div>
+            </div>
+            
+            <div class="equipamento">
+                <div class="equipamento-header">
+                    <div class="equipamento-nome">Estrutura de Fixação</div>
+                    <div class="equipamento-qtd">1 kit</div>
+                </div>
+                <div class="equipamento-detalhe">
+                    • Perfis de alumínio anodizado<br>
+                    • Parafusos e grampos inox<br>
+                    • Adaptável para telha cerâmica, metálica ou laje<br>
+                    • Garantia estrutural de 10 anos
+                </div>
+            </div>
+            
+            <div class="equipamento">
+                <div class="equipamento-header">
+                    <div class="equipamento-nome">Sistema de Proteção CA</div>
+                    <div class="equipamento-qtd">1 kit</div>
+                </div>
+                <div class="equipamento-detalhe">
+                    • Disjuntor de proteção CA<br>
+                    • DPS para lado CA<br>
+                    • Aterramento conforme NBR 5410<br>
+                    • Certificações INMETRO
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">E-mail: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 5.6: INFORMAÇÕES TÉCNICAS DO SISTEMA -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Informações Técnicas do Sistema</h2>
+        
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-label">Potência Total Instalada</div>
+                <div class="card-value">{{ "%.2f"|format(projeto.potencia_kwp or 0) }} kWp</div>
+                <p style="font-size: 12px; color: #666; margin-top: 10px;">{{ projeto.qtd_placas or 0 }} módulos de {{ placa.potencia if placa else 605 }}W cada</p>
+            </div>
+            
+            <div class="card">
+                <div class="card-label">Vida Útil Estimada</div>
+                <div class="card-value">25+ anos</div>
+                <p style="font-size: 12px; color: #666; margin-top: 10px;">Com manutenção adequada e garantia de performance</p>
+            </div>
+        </div>
+        
+        <div class="box destaque" style="margin-top: 20px;">
+            <h3 style="margin-top: 0;">🔋 Entenda: kWp × kWh</h3>
+            <p style="font-size: 14px; line-height: 1.7;">
+                <strong>kWp (kilowatt-pico)</strong> é a potência máxima que o sistema pode gerar em condições ideais de irradiação solar (1000 W/m²). É a "capacidade" do seu sistema.<br><br>
+                
+                <strong>kWh (kilowatt-hora)</strong> é a energia efetivamente gerada ao longo do tempo. É o que aparece na sua conta de luz.<br><br>
+                
+                <strong>Exemplo:</strong> Um sistema de {{ "%.2f"|format(projeto.potencia_kwp or 3.63) }} kWp instalado em uma região com {{ "%.1f"|format(projeto.irradiacao_solar or 5.0) }} horas de sol pleno por dia, gera aproximadamente {{ "%.0f"|format(projeto.geracao_estimada_mes or 408) }} kWh por mês.
+            </p>
+        </div>
+        
+        <div class="grid-3" style="margin-top: 20px;">
+            <div class="box verde">
+                <h3 style="margin-top: 0; font-size: 16px;">📐 Área Ocupada</h3>
+                <p style="font-size: 24px; font-weight: 700; color: #4caf50; margin: 10px 0;">{{ "%.1f"|format((projeto.qtd_placas or 6) * 2.5) }} m²</p>
+                <p style="font-size: 12px; color: #666;">Aproximadamente {{ projeto.qtd_placas or 6 }} módulos × 2,5 m² cada</p>
+            </div>
+            
+            <div class="box verde">
+                <h3 style="margin-top: 0; font-size: 16px;">⚖️ Peso Total</h3>
+                <p style="font-size: 24px; font-weight: 700; color: #4caf50; margin: 10px 0;">{{ "%.0f"|format((projeto.qtd_placas or 6) * 25) }} kg</p>
+                <p style="font-size: 12px; color: #666;">Carga distribuída na estrutura do telhado</p>
+            </div>
+            
+            <div class="box verde">
+                <h3 style="margin-top: 0; font-size: 16px;">🌡️ Fator de Perda</h3>
+                <p style="font-size: 24px; font-weight: 700; color: #4caf50; margin: 10px 0;">{{ "%.0f"|format((projeto.perdas_sistema or 0.25) * 100) }}%</p>
+                <p style="font-size: 12px; color: #666;">Perdas por sombreamento, temperatura e cabeamento</p>
+            </div>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">E-mail: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 5.7: SERVIÇOS INCLUSOS -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Serviços Inclusos na Proposta</h2>
+        <p style="margin-bottom: 30px; font-size: 14px;">Tudo que está incluso no valor do investimento</p>
+        
+        <div class="grid-2">
+            <div class="box destaque">
+                <h3 style="margin-top: 0;">✅ Projeto Elétrico</h3>
+                <p style="font-size: 13px;">
+                    • Projeto elétrico completo conforme NBR 5410 e NBR 16690<br>
+                    • Diagrama unifilar e multifilar<br>
+                    • Memorial descritivo<br>
+                    • Dimensionamento de cabos e proteções
+                </p>
+            </div>
+            
+            <div class="box destaque">
+                <h3 style="margin-top: 0;">📋 ART e Documentação</h3>
+                <p style="font-size: 13px;">
+                    • ART (Anotação de Responsabilidade Técnica)<br>
+                    • Registro no CREA<br>
+                    • Laudo estrutural (se necessário)<br>
+                    • Documentação técnica completa
+                </p>
+            </div>
+        </div>
+        
+        <div class="grid-2" style="margin-top: 20px;">
+            <div class="box verde">
+                <h3 style="margin-top: 0;">🏢 Homologação na Concessionária</h3>
+                <p style="font-size: 13px;">
+                    • Protocolo do projeto na concessionária<br>
+                    • Acompanhamento do processo<br>
+                    • Solicitação de troca de medidor<br>
+                    • Aprovação e conexão à rede
+                </p>
+            </div>
+            
+            <div class="box verde">
+                <h3 style="margin-top: 0;">🔧 Instalação Completa</h3>
+                <p style="font-size: 13px;">
+                    • Instalação dos módulos fotovoltaicos<br>
+                    • Instalação do inversor e string box<br>
+                    • Cabeamento CC e CA<br>
+                    • Teste e comissionamento
+                </p>
+            </div>
+        </div>
+        
+        <div class="grid-3" style="margin-top: 20px;">
+            <div class="box laranja">
+                <h3 style="margin-top: 0; font-size: 16px;">👷 Supervisão Técnica</h3>
+                <p style="font-size: 13px;">Acompanhamento por engenheiro responsável durante toda a instalação</p>
+            </div>
+            
+            <div class="box laranja">
+                <h3 style="margin-top: 0; font-size: 16px;">🚚 Frete e Logística</h3>
+                <p style="font-size: 13px;">Entrega de todos os equipamentos até o local da obra</p>
+            </div>
+            
+            <div class="box laranja">
+                <h3 style="margin-top: 0; font-size: 16px;">📱 Treinamento</h3>
+                <p style="font-size: 13px;">Orientação sobre funcionamento e monitoramento do sistema</p>
+            </div>
+        </div>
+        
+        <div class="box" style="margin-top: 25px; background: #f0f0f0;">
+            <h3 style="margin-top: 0;">⚠️ NÃO INCLUSOS</h3>
+            <p style="font-size: 13px;">
+                • Adequações elétricas no padrão de entrada (se necessário)<br>
+                • Construção de casa de máquinas ou suporte adicional<br>
+                • Terraplanagem ou obras civis extras<br>
+                • Custos com aprovação de projeto em condomínio
+            </p>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">E-mail: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
     <!-- PÁGINA 6: VALOR DO INVESTIMENTO -->
     <div class="pagina">
         <div class="header-pagina">
@@ -818,6 +1175,282 @@
                 <li><strong>Retorno do investimento:</strong> {{ "%.1f"|format(projeto.payback_anos or 0) }} ano(s)</li>
                 <li><strong>ROI (Retorno sobre investimento):</strong> Aproximadamente {{ "%.0f"|format((economia_25 / (projeto.valor_venda or 1)) * 100 if projeto.valor_venda and projeto.valor_venda > 0 else 0) }}% em 25 anos</li>
             </ul>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">E-mail: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 6.5: INDICADORES DE VIABILIDADE -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Indicadores de Viabilidade do Investimento</h2>
+        <p style="margin-bottom: 30px; font-size: 14px;">Análise financeira detalhada do retorno sobre o investimento</p>
+        
+        {% set valor_total = projeto.preco_final or 10153.98 %}
+        {% set economia_mensal = balanco.economia_mensal if balanco else 280 %}
+        {% set economia_anual = economia_mensal * 12 %}
+        {% set payback_anos = (valor_total / economia_anual) if economia_anual > 0 else 0 %}
+        {% set economia_25_anos = (economia_anual * 25) - valor_total %}
+        {% set roi_percentual = ((economia_25_anos / valor_total) * 100) if valor_total > 0 else 0 %}
+        
+        <div class="grid-2">
+            <div class="card" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-color: #1976d2;">
+                <div class="card-icon" style="color: #1976d2;">💰</div>
+                <div class="card-label">Valor Total do Sistema</div>
+                <div class="card-value" style="color: #1976d2;">R$ {{ "{:,.2f}".format(valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                <p style="font-size: 12px; color: #666; margin-top: 10px;">Investimento inicial completo</p>
+            </div>
+            
+            <div class="card" style="background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); border-color: #4caf50;">
+                <div class="card-icon" style="color: #4caf50;">⏱️</div>
+                <div class="card-label">Payback (Retorno)</div>
+                <div class="card-value" style="color: #4caf50;">{{ "%.1f"|format(payback_anos) }} anos</div>
+                <p style="font-size: 12px; color: #666; margin-top: 10px;">Tempo para recuperar o investimento</p>
+            </div>
+        </div>
+        
+        <div class="grid-2" style="margin-top: 20px;">
+            <div class="card" style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-color: #ff9800;">
+                <div class="card-icon" style="color: #ff9800;">📈</div>
+                <div class="card-label">ROI em 25 anos</div>
+                <div class="card-value" style="color: #ff9800;">{{ "%.0f"|format(roi_percentual) }}%</div>
+                <p style="font-size: 12px; color: #666; margin-top: 10px;">Retorno sobre investimento</p>
+            </div>
+            
+            <div class="card" style="background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); border-color: #9c27b0;">
+                <div class="card-icon" style="color: #9c27b0;">💵</div>
+                <div class="card-label">Economia Total em 25 anos</div>
+                <div class="card-value" style="color: #9c27b0;">R$ {{ "{:,.2f}".format(economia_25_anos).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                <p style="font-size: 12px; color: #666; margin-top: 10px;">Valor economizado na vida útil</p>
+            </div>
+        </div>
+        
+        <div class="box destaque" style="margin-top: 30px;">
+            <h3 style="margin-top: 0;">📊 Projeção Financeira Detalhada</h3>
+            <table style="margin-top: 15px; font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">Período</th>
+                        <th style="text-align: right;">Economia Acumulada</th>
+                        <th style="text-align: right;">Saldo Líquido</th>
+                        <th style="text-align: right;">Valorização (%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ano in [1, 3, 5, 10, 15, 20, 25] %}
+                    {% set economia_acum = economia_anual * ano %}
+                    {% set saldo = economia_acum - valor_total %}
+                    {% set percent = ((economia_acum / valor_total) * 100) if valor_total > 0 else 0 %}
+                    <tr>
+                        <td>{{ ano }} ano{{ 's' if ano > 1 else '' }}</td>
+                        <td style="text-align: right; font-weight: 600; color: #4caf50;">R$ {{ "{:,.2f}".format(economia_acum).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td style="text-align: right; font-weight: 600; color: {{ '#d32f2f' if saldo < 0 else '#4caf50' }};">R$ {{ "{:,.2f}".format(saldo).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td style="text-align: right;">{{ "%.0f"|format(percent) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="box verde" style="margin-top: 20px;">
+            <h3 style="margin-top: 0;">✅ Conclusão da Análise</h3>
+            <p style="font-size: 14px; line-height: 1.7;">
+                Com um investimento de <strong>R$ {{ "{:,.2f}".format(valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>, você terá um payback de aproximadamente <strong>{{ "%.1f"|format(payback_anos) }} anos</strong>. 
+                Após este período, toda a economia gerada será lucro líquido. Em 25 anos, a economia total chegará a <strong>R$ {{ "{:,.2f}".format(economia_25_anos).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>, 
+                representando um ROI de <strong>{{ "%.0f"|format(roi_percentual) }}%</strong> sobre o capital investido.
+            </p>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">E-mail: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 6.6: CONDIÇÕES DE PAGAMENTO -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Condições de Pagamento</h2>
+        <p style="margin-bottom: 30px; font-size: 14px;">Escolha a melhor forma de pagamento para seu investimento</p>
+        
+        {% set valor_total = projeto.preco_final or 10153.98 %}
+        {% set desconto_vista = valor_total * 0.05 %}
+        {% set valor_vista = valor_total - desconto_vista %}
+        {% set parcela_12x = valor_total / 12 %}
+        {% set parcela_financ_60 = valor_total * 1.02 / 60 %}
+        {% set parcela_financ_120 = valor_total * 1.05 / 120 %}
+        
+        <div class="grid-2">
+            <div class="box destaque">
+                <h3 style="margin-top: 0; color: #4caf50;">💵 À VISTA (Recomendado)</h3>
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 15px; text-align: center;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">De R$ {{ "{:,.2f}".format(valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') }} por:</div>
+                    <div style="font-size: 36px; font-weight: 700; color: #4caf50; margin: 10px 0;">R$ {{ "{:,.2f}".format(valor_vista).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                    <div style="font-size: 13px; color: #4caf50; font-weight: 600;">Economia de R$ {{ "{:,.2f}".format(desconto_vista).replace(',', 'X').replace('.', ',').replace('X', '.') }} (5%)</div>
+                </div>
+                <div style="margin-top: 15px; font-size: 13px; line-height: 1.6;">
+                    ✅ PIX, Transferência ou Boleto<br>
+                    ✅ Desconto de <strong>5%</strong><br>
+                    ✅ Melhor custo-benefício
+                </div>
+            </div>
+            
+            <div class="box destaque">
+                <h3 style="margin-top: 0; color: #1976d2;">💳 CARTÃO DE CRÉDITO</h3>
+                <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 15px;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 10px;">Parcele em até 12x:</div>
+                    <div style="font-size: 32px; font-weight: 700; color: #1976d2;">{{ "%.0f"|format(parcela_12x // 1) }}x R$ {{ "{:,.2f}".format(parcela_12x).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                    <div style="font-size: 13px; color: #666; margin-top: 5px;">Juros conforme operadora do cartão</div>
+                </div>
+                <div style="margin-top: 15px; font-size: 13px; line-height: 1.6;">
+                    ✅ Aceita principais bandeiras<br>
+                    ✅ Aprovação imediata<br>
+                    ✅ Sem análise de crédito
+                </div>
+            </div>
+        </div>
+        
+        <div class="box laranja" style="margin-top: 25px;">
+            <h3 style="margin-top: 0;">🏦 FINANCIAMENTO SOLAR (Taxas Especiais)</h3>
+            <div class="grid-2" style="margin-top: 20px;">
+                <div style="background: white; padding: 20px; border-radius: 8px;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Financiamento em 60 meses</div>
+                    <div style="font-size: 28px; font-weight: 700; color: #ff9800;">60x R$ {{ "{:,.2f}".format(parcela_financ_60).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Taxa aprox. 1,5% a.m.</div>
+                </div>
+                
+                <div style="background: white; padding: 20px; border-radius: 8px;">
+                    <div style="font-size: 14px; color: #666; margin-bottom: 5px;">Financiamento em 120 meses</div>
+                    <div style="font-size: 28px; font-weight: 700; color: #ff9800;">120x R$ {{ "{:,.2f}".format(parcela_financ_120).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">Taxa aprox. 1,8% a.m.</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; font-size: 13px; line-height: 1.8; background: rgba(255,255,255,0.3); padding: 15px; border-radius: 5px;">
+                ✅ Linhas exclusivas para energia solar<br>
+                ✅ Parcelas muitas vezes <strong>menores que a conta de luz</strong><br>
+                ✅ Aprovação em até 48h úteis<br>
+                ✅ Sem comprometer limite do cartão
+            </div>
+        </div>
+        
+        <div class="box" style="margin-top: 25px; background: #f5f5f5;">
+            <h3 style="margin-top: 0;">📋 Observações Importantes</h3>
+            <div style="font-size: 13px; line-height: 1.8;">
+                • Valores e condições sujeitos a análise e aprovação de crédito<br>
+                • Taxas de financiamento podem variar conforme perfil do cliente<br>
+                • Entrada mínima pode ser exigida conforme instituição financeira<br>
+                • Pagamento à vista tem prioridade no cronograma de instalação<br>
+                • Consulte condições especiais para empresas e produtores rurais
+            </div>
+        </div>
+        
+        <div class="footer-pagina">
+            <div class="footer-grid">
+                <div><strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong></div>
+                <div style="text-align: center;">Telefone: {{ config.telefone if config else '(15) 99670 – 2036' }}</div>
+                <div style="text-align: right;">E-mail: {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- PÁGINA 6.7: CONSIDERAÇÕES FINAIS -->
+    <div class="pagina">
+        <div class="header-pagina">
+            <div class="numero">Projeto Nº: {{ projeto.id }}</div>
+            <div class="data">Data: {{ projeto.data_criacao.strftime('%d-%m-%Y') if projeto.data_criacao else '' }}</div>
+        </div>
+        
+        <h2>Considerações Finais</h2>
+        
+        <div class="box destaque">
+            <h3 style="margin-top: 0;">⏰ Validade da Proposta</h3>
+            <p style="font-size: 14px; line-height: 1.7;">
+                Esta proposta tem validade de <strong>30 dias</strong> a partir da data de emissão. Após este período, valores e condições 
+                estão sujeitos a reajustes conforme variação cambial e disponibilidade de equipamentos.
+            </p>
+        </div>
+        
+        <div class="box verde">
+            <h3 style="margin-top: 0;">🔧 Manutenção e Conservação</h3>
+            <div style="font-size: 13px; line-height: 1.8;">
+                <strong>Manutenção Preventiva Recomendada:</strong><br><br>
+                
+                • <strong>Limpeza dos Módulos:</strong> A cada 6 meses ou quando houver acúmulo visível de sujeira, poeira ou folhas. 
+                  Redução de 15-20% na geração pode indicar necessidade de limpeza.<br><br>
+                
+                • <strong>Inspeção Visual:</strong> Verificação semestral de cabos, conectores, estrutura e fixações.<br><br>
+                
+                • <strong>Verificação de Desempenho:</strong> Monitoramento mensal através do aplicativo do inversor.<br><br>
+                
+                • <strong>Manutenção Profissional:</strong> Recomendada anualmente por técnico qualificado para inspeção completa 
+                  do sistema elétrico e verificação de segurança.<br><br>
+                
+                <strong>⚠️ Importante:</strong> A garantia dos equipamentos pode ser invalidada em caso de manutenção inadequada 
+                ou por pessoal não qualificado.
+            </div>
+        </div>
+        
+        <div class="box laranja">
+            <h3 style="margin-top: 0;">📄 Documentação Necessária do Cliente</h3>
+            <div style="font-size: 13px; line-height: 1.8;">
+                Para dar início ao processo de instalação, solicitamos:<br><br>
+                
+                <strong>Pessoa Física:</strong><br>
+                • RG e CPF (cópia simples)<br>
+                • Comprovante de residência atualizado<br>
+                • Conta de energia recente (últimos 12 meses, se possível)<br>
+                • Documentação do imóvel (escritura ou contrato de locação)<br><br>
+                
+                <strong>Pessoa Jurídica (adicional):</strong><br>
+                • CNPJ e Contrato Social<br>
+                • Últimas alterações contratuais<br>
+                • Comprovante de endereço da empresa<br>
+                • Documentos do representante legal
+            </div>
+        </div>
+        
+        <div class="box">
+            <h3 style="margin-top: 0;">⚠️ Observações Técnicas Importantes</h3>
+            <div style="font-size: 13px; line-height: 1.8;">
+                • A geração de energia está sujeita às condições climáticas e pode variar ao longo do ano.<br>
+                • O sistema não funciona durante quedas de energia (modo anti-ilhamento por segurança).<br>
+                • É necessário espaço adequado sem sombreamento para instalação dos módulos.<br>
+                • A estrutura do telhado deve suportar o peso adicional dos equipamentos.<br>
+                • Pode haver necessidade de adequações elétricas no padrão de entrada.<br>
+                • O processo de homologação na concessionária pode levar de 30 a 60 dias.<br>
+                • Recomenda-se seguro residencial/comercial que cubra o sistema fotovoltaico.
+            </div>
+        </div>
+        
+        <div class="box destaque">
+            <h3 style="margin-top: 0;">📞 Dúvidas e Suporte</h3>
+            <p style="font-size: 14px; line-height: 1.7;">
+                Nossa equipe técnica está à disposição para esclarecer quaisquer dúvidas sobre esta proposta, 
+                realizar visita técnica adicional ou fornecer informações complementares.<br><br>
+                
+                Entre em contato pelos canais:<br>
+                <strong>Telefone/WhatsApp:</strong> {{ config.telefone if config else '(15) 99670 – 2036' }}<br>
+                <strong>E-mail:</strong> {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}<br>
+                <strong>Horário de atendimento:</strong> Segunda a Sexta, 8h às 18h
+            </p>
         </div>
         
         <div class="footer-pagina">
