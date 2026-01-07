@@ -439,6 +439,15 @@ def placa_editar(placa_id):
     
     if request.method == 'POST':
         try:
+            # DEBUG: Ver dados recebidos
+            print("=" * 50)
+            print("DEBUG - Dados recebidos do formulário:")
+            print(f"Comprimento: '{request.form.get('comprimento')}'")
+            print(f"Largura: '{request.form.get('largura')}'")
+            print(f"Espessura: '{request.form.get('espessura')}'")
+            print(f"Preço Custo: '{request.form.get('preco_custo')}'")
+            print("=" * 50)
+            
             # Atualizar dados
             placa.modelo = request.form.get('modelo')
             placa.fabricante = request.form.get('fabricante')
@@ -464,6 +473,14 @@ def placa_editar(placa_id):
             placa.garantia_produto = int(garantia_produto) if garantia_produto and garantia_produto.strip() else 12
             placa.garantia_desempenho = int(garantia_desempenho) if garantia_desempenho and garantia_desempenho.strip() else 25
             placa.preco_custo = float(preco_custo) if preco_custo and preco_custo.strip() else None
+            
+            # DEBUG: Ver valores antes de salvar
+            print("DEBUG - Valores que serão salvos:")
+            print(f"Comprimento: {placa.comprimento}")
+            print(f"Largura: {placa.largura}")
+            print(f"Espessura: {placa.espessura}")
+            print(f"Preço Custo: {placa.preco_custo}")
+            print("=" * 50)
             
             # Processar datasheet (arquivo ou URL)
             datasheet_atualizado = False
