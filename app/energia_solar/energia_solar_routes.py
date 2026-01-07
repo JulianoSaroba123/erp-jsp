@@ -87,14 +87,14 @@ def calcular_balanco_energetico(projeto):
     """
     consumo = projeto.consumo_kwh_mes or 0
     geracao = projeto.geracao_estimada_mes or 0
-    simultaneidade = projeto.simultaneidade or 0.80  # 80% padrão
+    simultaneidade_decimal = (projeto.simultaneidade or 35) / 100  # Converte % para decimal (35% = 0.35)
     tarifa = projeto.tarifa_kwh or 1.04
     
     # Consumo durante o dia (simultâneo com geração solar)
-    consumo_simultaneo = consumo * simultaneidade
+    consumo_simultaneo = consumo * simultaneidade_decimal
     
     # Consumo à noite (da rede)
-    consumo_noturno = consumo * (1 - simultaneidade)
+    consumo_noturno = consumo * (1 - simultaneidade_decimal)
     
     # Excedente injetado na rede (créditos)
     excedente_rede = max(0, geracao - consumo_simultaneo)
@@ -855,7 +855,7 @@ def projeto_salvar():
         projeto.valor_conta_luz = float(request.form.get('valor_conta_luz', 0)) if request.form.get('valor_conta_luz') else None
         projeto.tarifa_kwh = float(request.form.get('tarifa_kwh', 0.85)) if request.form.get('tarifa_kwh') else 0.85
         projeto.potencia_kwp = float(request.form.get('potencia_kwp', 0)) if request.form.get('potencia_kwp') else None
-        projeto.simultaneidade = float(request.form.get('simultaneidade', 0.80)) if request.form.get('simultaneidade') else 0.80
+        projeto.simultaneidade = float(request.form.get('simultaneidade', 35.0)) if request.form.get('simultaneidade') else 35.0  # Porcentagem inteira (35 = 35%)
         projeto.perdas_sistema = float(request.form.get('perdas_sistema', 0.20)) if request.form.get('perdas_sistema') else 0.20
         
         # Aba 3 - Equipamentos
@@ -998,7 +998,7 @@ def projeto_editar(projeto_id):
             'consumo_kwh_mes': float(projeto.consumo_kwh_mes) if projeto.consumo_kwh_mes else None,
             'valor_conta_luz': float(projeto.valor_conta_luz) if projeto.valor_conta_luz else None,
             'tarifa_kwh': float(projeto.tarifa_kwh) if projeto.tarifa_kwh else 0.85,
-            'simultaneidade': float(projeto.simultaneidade) if projeto.simultaneidade else 0.8,
+            'simultaneidade': float(projeto.simultaneidade) if projeto.simultaneidade else 35.0,  # Porcentagem inteira
             'perdas_sistema': float(projeto.perdas_sistema) if projeto.perdas_sistema else 0.2,
             'potencia_kwp': float(projeto.potencia_kwp) if projeto.potencia_kwp else None,
             'geracao_estimada_mes': float(projeto.geracao_estimada_mes) if projeto.geracao_estimada_mes else None,
