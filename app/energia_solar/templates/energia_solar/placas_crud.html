@@ -401,5 +401,27 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// DEBUG: Capturar submit do formulário de edição
+document.addEventListener('DOMContentLoaded', function() {
+    const formEditar = document.getElementById('formEditar');
+    if (formEditar) {
+        formEditar.addEventListener('submit', function(e) {
+            console.log('🚀 FORMULÁRIO DE EDIÇÃO SENDO ENVIADO!');
+            console.log('Action:', formEditar.action);
+            console.log('Method:', formEditar.method);
+            
+            // Capturar todos os dados do form
+            const formData = new FormData(formEditar);
+            console.log('Dados do formulário:');
+            for (let [key, value] of formData.entries()) {
+                console.log(`  ${key}: "${value}"`);
+            }
+            
+            // IMPORTANTE: Não cancelar o evento, deixar o submit acontecer
+            // e.preventDefault(); // NÃO usar isso!
+        });
+    }
+});
 </script>
 {% endblock %}
