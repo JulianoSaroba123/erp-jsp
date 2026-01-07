@@ -1391,26 +1391,27 @@ def projeto_proposta_pdf(projeto_id):
 @login_required
 def gerar_documento_word(projeto_id):
     """Upload de template Word e geração de documento final"""
-    # Verificar se python-docx está disponível
     try:
-        from docx import Document
-    except ImportError:
-        flash('⚠️ Funcionalidade de documentos Word não disponível. O módulo python-docx não está instalado.', 'warning')
-        return redirect(url_for('energia_solar.projeto_detalhes', projeto_id=projeto_id))
-    
-    try:
-        from app.energia_solar.word_utils import substituir_variaveis_word, gerar_variaveis_projeto
-    except Exception as e:
-        flash(f'Erro ao carregar módulo Word: {str(e)}', 'error')
-        return redirect(url_for('energia_solar.projeto_detalhes', projeto_id=projeto_id))
-    
-    from app.energia_solar.catalogo_model import ProjetoSolar
-    from app.cliente.cliente_model import Cliente
-    from app.configuracao.configuracao_utils import get_config
-    from werkzeug.utils import secure_filename
-    import io
-    
-    projeto = ProjetoSolar.query.get_or_404(projeto_id)
+        # Verificar se python-docx está disponível
+        try:
+            from docx import Document
+        except ImportError:
+            flash('⚠️ Funcionalidade de documentos Word não disponível. O módulo python-docx não está instalado.', 'warning')
+            return redirect(url_for('energia_solar.projeto_visualizar', projeto_id=projeto_id))
+        
+        try:
+            from app.energia_solar.word_utils import substituir_variaveis_word, gerar_variaveis_projeto
+        except Exception as e:
+            flash(f'Erro ao carregar módulo Word: {str(e)}', 'error')
+            return redirect(url_for('energia_solar.projeto_visualizar', projeto_id=projeto_id))
+        
+        from app.energia_solar.catalogo_model import ProjetoSolar
+        from app.cliente.cliente_model import Cliente
+        from app.configuracao.configuracao_utils import get_config
+        from werkzeug.utils import secure_filename
+        import io
+        
+        projeto = ProjetoSolar.query.get_or_404(projeto_id)
     
     if request.method == 'POST':
         # Verificar se arquivo foi enviado
@@ -1476,5 +1477,11 @@ def gerar_documento_word(projeto_id):
             flash(f'Erro ao processar template: {str(e)}', 'error')
             return redirect(request.url)
     
-    # GET - Mostrar página de upload
-    return render_template('energia_solar/upload_template_word.html', projeto=projeto)
+        # GET - Mostrar página de upload
+        return render_template('energia_solar/upload_template_word.html', projeto=projeto)
+    
+    except Exception as e:
+        # Captura qualquer erro não tratado
+        logger.error(f"Erro geral em gerar_documento_word: {str(e)}")
+        flash(f'Erro ao acessar funcionalidade Word: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.projeto_visualizar', projeto_id=projeto_id))
