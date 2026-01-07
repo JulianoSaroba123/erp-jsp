@@ -1412,71 +1412,71 @@ def gerar_documento_word(projeto_id):
         import io
         
         projeto = ProjetoSolar.query.get_or_404(projeto_id)
-    
-    if request.method == 'POST':
-        # Verificar se arquivo foi enviado
-        if 'template' not in request.files:
-            flash('Nenhum arquivo selecionado', 'error')
-            return redirect(request.url)
         
-        file = request.files['template']
+        if request.method == 'POST':
+            # Verificar se arquivo foi enviado
+            if 'template' not in request.files:
+                flash('Nenhum arquivo selecionado', 'error')
+                return redirect(request.url)
+            
+            file = request.files['template']
+            
+            if file.filename == '':
+                flash('Nenhum arquivo selecionado', 'error')
+                return redirect(request.url)
+            
+            if not file.filename.endswith('.docx'):
+                flash('Apenas arquivos .docx são permitidos', 'error')
+                return redirect(request.url)
+            
+            try:
+                # Carregar dados
+                cliente = Cliente.query.get(projeto.cliente_id) if projeto.cliente_id else None
+                config = get_config()
+                balanco = calcular_balanco_energetico(projeto)
+                
+                # Gerar variáveis
+                variaveis = gerar_variaveis_projeto(projeto, cliente, config, balanco)
+                
+                # Processar template
+                template_bytes = file.read()
+                template_stream = io.BytesIO(template_bytes)
+                
+                # Salvar temporariamente
+                temp_path = os.path.join(UPLOAD_FOLDER, 'temp_template.docx')
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                
+                with open(temp_path, 'wb') as f:
+                    f.write(template_bytes)
+                
+                # Substituir variáveis
+                doc = substituir_variaveis_word(temp_path, variaveis)
+                
+                # Salvar em memória
+                output = io.BytesIO()
+                doc.save(output)
+                output.seek(0)
+                
+                # Remover arquivo temporário
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+                
+                # Gerar nome do arquivo
+                filename = f"Proposta_Solar_{projeto.id}_{projeto.nome_cliente.replace(' ', '_')}.docx"
+                
+                # Retornar arquivo
+                return send_file(
+                    output,
+                    as_attachment=True,
+                    download_name=filename,
+                    mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                )
+                
+            except Exception as e:
+                logger.error(f"Erro ao processar template Word: {str(e)}")
+                flash(f'Erro ao processar template: {str(e)}', 'error')
+                return redirect(request.url)
         
-        if file.filename == '':
-            flash('Nenhum arquivo selecionado', 'error')
-            return redirect(request.url)
-        
-        if not file.filename.endswith('.docx'):
-            flash('Apenas arquivos .docx são permitidos', 'error')
-            return redirect(request.url)
-        
-        try:
-            # Carregar dados
-            cliente = Cliente.query.get(projeto.cliente_id) if projeto.cliente_id else None
-            config = get_config()
-            balanco = calcular_balanco_energetico(projeto)
-            
-            # Gerar variáveis
-            variaveis = gerar_variaveis_projeto(projeto, cliente, config, balanco)
-            
-            # Processar template
-            template_bytes = file.read()
-            template_stream = io.BytesIO(template_bytes)
-            
-            # Salvar temporariamente
-            temp_path = os.path.join(UPLOAD_FOLDER, 'temp_template.docx')
-            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-            
-            with open(temp_path, 'wb') as f:
-                f.write(template_bytes)
-            
-            # Substituir variáveis
-            doc = substituir_variaveis_word(temp_path, variaveis)
-            
-            # Salvar em memória
-            output = io.BytesIO()
-            doc.save(output)
-            output.seek(0)
-            
-            # Remover arquivo temporário
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-            
-            # Gerar nome do arquivo
-            filename = f"Proposta_Solar_{projeto.id}_{projeto.nome_cliente.replace(' ', '_')}.docx"
-            
-            # Retornar arquivo
-            return send_file(
-                output,
-                as_attachment=True,
-                download_name=filename,
-                mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-            )
-            
-        except Exception as e:
-            logger.error(f"Erro ao processar template Word: {str(e)}")
-            flash(f'Erro ao processar template: {str(e)}', 'error')
-            return redirect(request.url)
-    
         # GET - Mostrar página de upload
         return render_template('energia_solar/upload_template_word.html', projeto=projeto)
     
