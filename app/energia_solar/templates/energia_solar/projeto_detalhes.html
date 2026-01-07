@@ -22,6 +22,11 @@
             <a href="{{ url_for('energia_solar.projeto_editar', projeto_id=projeto.id) }}" class="btn btn-warning">
                 <i class="fas fa-edit me-2"></i>Editar
             </a>
+            <form method="POST" action="{{ url_for('energia_solar.projeto_recalcular_geracao', projeto_id=projeto.id) }}" class="d-inline">
+                <button type="submit" class="btn btn-info" title="Recalcular geração estimada baseado no kit atual">
+                    <i class="fas fa-sync-alt me-2"></i>Recalcular Geração
+                </button>
+            </form>
             <a href="{{ url_for('energia_solar.projeto_proposta_pdf', projeto_id=projeto.id) }}" class="btn btn-danger" target="_blank">
                 <i class="fas fa-file-pdf me-2"></i>Gerar Proposta PDF
             </a>
