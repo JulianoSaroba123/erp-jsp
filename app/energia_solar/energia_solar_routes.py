@@ -521,12 +521,24 @@ def placa_editar(placa_id):
                     placa.datasheet = url_fornecida
             
             db.session.commit()
-            flash(f'Placa {placa.modelo} atualizada com sucesso!', 'success')
+            
+            # DEBUG: Confirmar salvamento
+            print("DEBUG - Dados salvos no banco com sucesso!")
+            print(f"Comprimento salvo: {placa.comprimento}")
+            print(f"Largura salva: {placa.largura}")
+            print(f"Espessura salva: {placa.espessura}")
+            print("=" * 50)
+            
+            flash(f'✅ Placa {placa.modelo} atualizada com sucesso!', 'success')
             return redirect(url_for('energia_solar.placas_listar'))
         
         except Exception as e:
             db.session.rollback()
+            print(f"❌ ERRO ao salvar: {str(e)}")
+            import traceback
+            traceback.print_exc()
             flash(f'Erro ao atualizar placa: {str(e)}', 'error')
+            return redirect(url_for('energia_solar.placas_listar'))
     
     # GET: retornar dados em JSON
     return jsonify(placa.to_dict())
