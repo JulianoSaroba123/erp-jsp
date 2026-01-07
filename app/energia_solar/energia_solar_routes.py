@@ -1078,6 +1078,39 @@ def projeto_excluir(projeto_id):
     return redirect(url_for('energia_solar.projetos_listar'))
 
 
+@energia_solar_bp.route('/projetos/<int:projeto_id>/recalcular-geracao', methods=['POST'])
+@login_required
+def projeto_recalcular_geracao(projeto_id):
+    """Recalcula potência e geração estimada baseado nas placas do projeto"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    projeto = ProjetoSolar.query.get_or_404(projeto_id)
+    
+    try:
+        if projeto.qtd_placas and projeto.placa_id and projeto.irradiacao_solar:
+            # Recalcular potência
+            placa = PlacaSolar.query.get(projeto.placa_id)
+            if placa and placa.potencia:
+                projeto.potencia_kwp = (projeto.qtd_placas * placa.potencia) / 1000
+            
+            # Recalcular geração
+            projeto.geracao_estimada_mes = calcular_geracao_estimada(
+                projeto.qtd_placas,
+                projeto.placa_id,
+                projeto.irradiacao_solar
+            )
+            
+            db.session.commit()
+            flash(f'✅ Geração recalculada! Potência: {projeto.potencia_kwp:.2f} kWp, Geração: {projeto.geracao_estimada_mes:.0f} kWh/mês', 'success')
+        else:
+            flash('⚠️ Projeto não possui dados suficientes para recalcular (placas, quantidade ou irradiação faltando)', 'warning')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Erro ao recalcular geração: {str(e)}', 'error')
+    
+    return redirect(url_for('energia_solar.projeto_visualizar', projeto_id=projeto_id))
+
+
 # ========================================
 # CUSTOS FIXOS - Catálogo
 # ========================================
