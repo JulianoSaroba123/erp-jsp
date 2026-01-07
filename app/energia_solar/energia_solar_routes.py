@@ -393,15 +393,15 @@ def placa_criar():
             modelo=request.form.get('modelo'),
             fabricante=request.form.get('fabricante'),
             potencia=float(request.form.get('potencia')),
-            eficiencia=float(eficiencia) if eficiencia else None,
-            num_celulas=int(num_celulas) if num_celulas else None,
-            comprimento=float(comprimento) if comprimento else None,
-            largura=float(largura) if largura else None,
-            espessura=float(espessura) if espessura else None,
-            garantia_produto=int(garantia_produto) if garantia_produto else 12,
-            garantia_desempenho=int(garantia_desempenho) if garantia_desempenho else 25,
+            eficiencia=float(eficiencia) if eficiencia and eficiencia.strip() else None,
+            num_celulas=int(num_celulas) if num_celulas and num_celulas.strip() else None,
+            comprimento=float(comprimento) if comprimento and comprimento.strip() else None,
+            largura=float(largura) if largura and largura.strip() else None,
+            espessura=float(espessura) if espessura and espessura.strip() else None,
+            garantia_produto=int(garantia_produto) if garantia_produto and garantia_produto.strip() else 12,
+            garantia_desempenho=int(garantia_desempenho) if garantia_desempenho and garantia_desempenho.strip() else 25,
             preco_venda=float(request.form.get('preco_venda')),
-            preco_custo=float(preco_custo) if preco_custo else None,
+            preco_custo=float(preco_custo) if preco_custo and preco_custo.strip() else None,
             datasheet=datasheet
         )
         
@@ -455,14 +455,15 @@ def placa_editar(placa_id):
             garantia_desempenho = request.form.get('garantia_desempenho')
             preco_custo = request.form.get('preco_custo')
             
-            placa.eficiencia = float(eficiencia) if eficiencia else None
-            placa.num_celulas = int(num_celulas) if num_celulas else None
-            placa.comprimento = float(comprimento) if comprimento else None
-            placa.largura = float(largura) if largura else None
-            placa.espessura = float(espessura) if espessura else None
-            placa.garantia_produto = int(garantia_produto) if garantia_produto else 12
-            placa.garantia_desempenho = int(garantia_desempenho) if garantia_desempenho else 25
-            placa.preco_custo = float(preco_custo) if preco_custo else None
+            # Tratar campos numéricos opcionais (aceita vazio ou valor válido)
+            placa.eficiencia = float(eficiencia) if eficiencia and eficiencia.strip() else None
+            placa.num_celulas = int(num_celulas) if num_celulas and num_celulas.strip() else None
+            placa.comprimento = float(comprimento) if comprimento and comprimento.strip() else None
+            placa.largura = float(largura) if largura and largura.strip() else None
+            placa.espessura = float(espessura) if espessura and espessura.strip() else None
+            placa.garantia_produto = int(garantia_produto) if garantia_produto and garantia_produto.strip() else 12
+            placa.garantia_desempenho = int(garantia_desempenho) if garantia_desempenho and garantia_desempenho.strip() else 25
+            placa.preco_custo = float(preco_custo) if preco_custo and preco_custo.strip() else None
             
             # Processar datasheet (arquivo ou URL)
             datasheet_atualizado = False
