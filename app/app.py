@@ -198,6 +198,31 @@ def create_app(config_name=None):
                     db.session.execute(text("ALTER TABLE config_precificacao ADD COLUMN percentual_impostos FLOAT DEFAULT 13.33"))
                     db.session.commit()
                     print("[OK] Coluna percentual_impostos adicionada!")
+        except Exception as e:
+            print(f" ⚠ Aviso na migração de precificação: {e}")
+        
+        # Migração: adicionar coluna tipo_instalacao em projeto_solar
+        try:
+            from sqlalchemy import text, inspect
+            inspector = inspect(db.engine)
+            
+            if 'projeto_solar' in inspector.get_table_names():
+                colunas_existentes = [col['name'] for col in inspector.get_columns('projeto_solar')]
+                
+                if 'tipo_instalacao' not in colunas_existentes:
+                    db.session.execute(text("ALTER TABLE projeto_solar ADD COLUMN tipo_instalacao VARCHAR(20) DEFAULT 'monofasica'"))
+                    db.session.commit()
+                    print("[OK] Coluna tipo_instalacao adicionada em projeto_solar!")
+        except Exception as e:
+            print(f" ⚠ Aviso na migração de tipo_instalacao: {e}")
+        
+        # Migração: adicionar coluna horas_improdutivas_percentual
+        try:
+            from sqlalchemy import text, inspect
+            inspector = inspect(db.engine)
+            
+            if 'config_precificacao' in inspector.get_table_names():
+                colunas_existentes = [col['name'] for col in inspector.get_columns('config_precificacao')]
                 
                 if 'horas_improdutivas_percentual' not in colunas_existentes:
                     db.session.execute(text("ALTER TABLE config_precificacao ADD COLUMN horas_improdutivas_percentual FLOAT DEFAULT 20.0"))
