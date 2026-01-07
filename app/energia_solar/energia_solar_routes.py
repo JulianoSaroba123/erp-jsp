@@ -508,7 +508,7 @@ def placa_editar(placa_id):
                     filename = f"{timestamp}_{filename}"
                     filepath = os.path.join(UPLOAD_FOLDER, filename)
                     file.save(filepath)
-                    placa.datasheet = f"/static/uploads/datasheets/{filename}"
+                    placa.datasheet = f"/uploads/datasheets/{filename}"
                     datasheet_atualizado = True
             elif 'datasheet_file' in request.files and IS_RENDER:
                 file = request.files['datasheet_file']
@@ -580,7 +580,7 @@ def inversor_criar():
                 filename = f"{timestamp}_{filename}"
                 filepath = os.path.join(UPLOAD_FOLDER, filename)
                 file.save(filepath)
-                datasheet = f"/static/uploads/datasheets/{filename}"
+                datasheet = f"/uploads/datasheets/{filename}"
         elif 'datasheet_file' in request.files and IS_RENDER:
             file = request.files['datasheet_file']
             if file and file.filename:
@@ -696,7 +696,7 @@ def inversor_editar(inversor_id):
                     filename = f"{timestamp}_{filename}"
                     filepath = os.path.join(UPLOAD_FOLDER, filename)
                     file.save(filepath)
-                    inversor.datasheet = f"/static/uploads/datasheets/{filename}"
+                    inversor.datasheet = f"/uploads/datasheets/{filename}"
                     datasheet_atualizado = True
             elif 'datasheet_file' in request.files and IS_RENDER:
                 file = request.files['datasheet_file']
