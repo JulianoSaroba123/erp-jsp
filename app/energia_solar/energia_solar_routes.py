@@ -151,6 +151,30 @@ def calcular_balanco_energetico(projeto):
     }
 
 
+@energia_solar_bp.route('/datasheet/<path:filename>')
+@login_required
+def ver_datasheet(filename):
+    """Serve arquivos de datasheet de forma segura"""
+    try:
+        # Validar nome do arquivo
+        if not filename or '..' in filename:
+            flash('❌ Nome de arquivo inválido', 'error')
+            return redirect(request.referrer or url_for('energia_solar.dashboard'))
+        
+        # Verificar se o arquivo existe
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        if not os.path.exists(filepath):
+            flash(f'❌ Arquivo não encontrado: {filename}', 'error')
+            return redirect(request.referrer or url_for('energia_solar.dashboard'))
+        
+        # Servir o arquivo
+        return send_from_directory(UPLOAD_FOLDER, filename)
+    except Exception as e:
+        logger.error(f"Erro ao servir datasheet {filename}: {str(e)}")
+        flash(f'❌ Erro ao abrir PDF: {str(e)}', 'error')
+        return redirect(request.referrer or url_for('energia_solar.dashboard'))
+
+
 @energia_solar_bp.route('/')
 @login_required
 def dashboard():
