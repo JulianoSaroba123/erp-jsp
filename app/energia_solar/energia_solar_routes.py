@@ -985,7 +985,17 @@ def projeto_visualizar(projeto_id):
     
     projeto = ProjetoSolar.query.get_or_404(projeto_id)
     
-    return render_template('energia_solar/projeto_detalhes.html', projeto=projeto)
+    # Verificar se python-docx está disponível
+    word_disponivel = False
+    try:
+        from docx import Document
+        word_disponivel = True
+    except ImportError:
+        pass
+    
+    return render_template('energia_solar/projeto_detalhes.html', 
+                         projeto=projeto,
+                         word_disponivel=word_disponivel)
 
 
 @energia_solar_bp.route('/projetos/<int:projeto_id>/editar')
@@ -1381,10 +1391,17 @@ def projeto_proposta_pdf(projeto_id):
 @login_required
 def gerar_documento_word(projeto_id):
     """Upload de template Word e geração de documento final"""
+    # Verificar se python-docx está disponível
+    try:
+        from docx import Document
+    except ImportError:
+        flash('⚠️ Funcionalidade de documentos Word não disponível. O módulo python-docx não está instalado.', 'warning')
+        return redirect(url_for('energia_solar.projeto_detalhes', projeto_id=projeto_id))
+    
     try:
         from app.energia_solar.word_utils import substituir_variaveis_word, gerar_variaveis_projeto
-    except ImportError:
-        flash('Módulo python-docx não está instalado. Entre em contato com o administrador.', 'error')
+    except Exception as e:
+        flash(f'Erro ao carregar módulo Word: {str(e)}', 'error')
         return redirect(url_for('energia_solar.projeto_detalhes', projeto_id=projeto_id))
     
     from app.energia_solar.catalogo_model import ProjetoSolar
