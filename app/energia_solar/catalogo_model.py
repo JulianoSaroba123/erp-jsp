@@ -127,19 +127,6 @@ class PlacaSolar(db.Model):
         if self.comprimento and self.largura:
             return (self.comprimento * self.largura) / 1000000
         return 2.0  # padrão
-    
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'modelo': self.modelo,
-            'fabricante': self.fabricante,
-            'potencia': self.potencia,
-            'dimensoes': f"{self.comprimento}x{self.largura}mm",
-            'num_celulas': self.num_celulas,
-            'eficiencia': self.eficiencia,
-            'preco_venda': self.preco_venda,
-            'garantia_produto': self.garantia_produto
-        }
 
 
 class InversorSolar(db.Model):
