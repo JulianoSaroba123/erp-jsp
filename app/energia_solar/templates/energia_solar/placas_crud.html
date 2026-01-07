@@ -238,6 +238,9 @@ async function editarPlaca(id) {
         const response = await fetch(`/energia-solar/placas/editar/${id}`);
         const placa = await response.json();
         
+        // DEBUG: Ver dados recebidos
+        console.log('Dados da placa recebidos:', placa);
+        
         // Preencher formulário de edição
         const formHtml = `
             <input type="hidden" name="placa_id" value="${placa.id}">
