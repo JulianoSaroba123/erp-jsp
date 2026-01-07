@@ -1461,4 +1461,3 @@ def gerar_documento_word(projeto_id):
     
     # GET - Mostrar página de upload
     return render_template('energia_solar/upload_template_word.html', projeto=projeto)
-        return redirect(url_for('energia_solar.projeto_visualizar', projeto_id=projeto_id))
