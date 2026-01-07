@@ -220,10 +220,12 @@ class Usuario(BaseModel, UserMixin):
         Returns:
             Usuario: Instância do usuário ou None
         """
+        # Busca case-insensitive usando func.lower()
+        from sqlalchemy import func
         return cls.query.filter(
             db.or_(
-                cls.email == identificador,
-                cls.usuario == identificador
+                func.lower(cls.email) == identificador.lower(),
+                func.lower(cls.usuario) == identificador.lower()
             ),
             cls.ativo == True
         ).first()

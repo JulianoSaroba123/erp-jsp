@@ -1,53 +1,38 @@
-# 📋 Variáveis Disponíveis para Template Word - Proposta Solar
+# 📋 Variáveis para Templates Word - Sistema Solar Fotovoltaico
 
 ## 🎯 Como usar no Word
-Digite as variáveis entre `{{` e `}}` no documento Word.
-Exemplo: `{{nome_cliente}}` será substituído pelo nome real do cliente.
+Digite as variáveis entre colchetes `[variavel]` no documento Word.
+**Exemplo:** `[nome_cliente]` será substituído por "Michel Nunes de Oliveira"
+
+**⚠️ IMPORTANTE:** Use exatamente como mostrado (com colchetes, sem espaços, respeitando maiúsculas/minúsculas)
 
 ---
 
 ## 📊 DADOS DO PROJETO
 
-### Identificação
-```
-{{projeto_id}}              - Número do projeto (ex: 23)
-{{data_criacao}}             - Data de criação (ex: 06/01/2026)
-{{data_criacao_extenso}}     - Data por extenso (ex: 06 de Janeiro de 2026)
-{{status}}                   - Status do projeto
-```
-
-### Cliente
-```
-{{nome_cliente}}             - Nome completo do cliente
-{{cliente_cpf_cnpj}}         - CPF ou CNPJ do cliente
-{{cliente_tipo}}             - PF ou PJ
-{{cliente_email}}            - Email do cliente
-{{cliente_telefone}}         - Telefone do cliente
-{{cliente_celular}}          - Celular do cliente
-```
-
-### Localização
-```
-{{endereco}}                 - Endereço completo
-{{logradouro}}              - Rua/Avenida
-{{numero}}                  - Número
-{{complemento}}             - Complemento
-{{bairro}}                  - Bairro
-{{cidade}}                  - Cidade
-{{estado}}                  - Estado (UF)
-{{cep}}                     - CEP
-{{endereco_completo}}       - Endereço formatado completo
-```
+| Variável | Descrição | Exemplo |
+|----------|-----------|---------|
+| `[id_projeto]` | Número do projeto | 23 |
+| `[projeto_titulo]` | Título/Código do projeto | 506255440 |
+| `[nome_cliente]` | Nome completo do cliente | Michel Nunes de Oliveira |
+| `[data_criacao]` | Data de criação | 06/01/2026 |
+| `[status]` | Status do projeto | Ativo |
 
 ---
 
-## ⚡ DIMENSIONAMENTO DO SISTEMA
+## 📍 ENDEREÇO E LOCALIZAÇÃO
 
-### Potência e Geração
-```
-{{potencia_kwp}}             - Potência em kWp (ex: 3.63)
-{{potencia_kwp_formatado}}   - Potência formatada (ex: 3,63 kWp)
-{{geracao_estimada_mes}}     - Geração mensal em kWh (ex: 426)
+| Variável | Descrição | Exemplo |
+|----------|-----------|---------|
+| `[endereco]` | Endereço completo | Rua Hermes Casarini |
+| `[numero]` | Número | 123 |
+| `[complemento]` | Complemento | Casa |
+| `[bairro]` | Bairro | Centro |
+| `[cidade]` | Cidade | Tatuí |
+| `[estado]` | Estado (UF) | SP |
+| `[cep]` | CEP | 18270-000 |
+| `[latitude]` | Latitude geográfica | -23,3487 |
+| `[longitude]` | Longitude geográfica | -47,8461 |
 {{geracao_estimada_ano}}     - Geração anual em kWh (ex: 5.112)
 {{area_necessaria}}          - Área necessária em m² (ex: 21.5)
 ```
