@@ -235,6 +235,7 @@ class ProjetoSolar(db.Model):
     nome_cliente = db.Column(db.String(200))  # Fallback se não tiver cliente cadastrado
     cep = db.Column(db.String(10))
     endereco = db.Column(db.String(300))
+    numero = db.Column(db.String(20))  # Número do endereço
     cidade = db.Column(db.String(100))
     estado = db.Column(db.String(2))
     latitude = db.Column(db.Float)

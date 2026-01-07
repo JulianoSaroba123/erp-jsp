@@ -849,6 +849,7 @@ def projeto_salvar():
         projeto.nome_cliente = request.form.get('nome_cliente')
         projeto.cep = request.form.get('cep')
         projeto.endereco = request.form.get('endereco')
+        projeto.numero = request.form.get('numero')
         projeto.cidade = request.form.get('cidade')
         projeto.estado = request.form.get('estado')
         projeto.latitude = float(request.form.get('latitude', 0)) if request.form.get('latitude') else None
