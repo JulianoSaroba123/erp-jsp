@@ -461,6 +461,49 @@ def placa_excluir(placa_id):
     return redirect(url_for('energia_solar.placas_listar'))
 
 
+@energia_solar_bp.route('/placas/datasheet/excluir/<int:placa_id>/<int:index>', methods=['POST'])
+@login_required
+def placa_datasheet_excluir(placa_id, index):
+    """Exclui um datasheet específico da placa"""
+    try:
+        placa = PlacaSolar.query.get_or_404(placa_id)
+        
+        if placa.datasheet:
+            # Separar os arquivos
+            arquivos = placa.datasheet.split(';')
+            
+            # Verificar se o índice é válido
+            if 0 <= index < len(arquivos):
+                arquivo_excluir = arquivos[index].strip()
+                
+                # Se for arquivo local, excluir do disco
+                if arquivo_excluir.startswith('/uploads/') and not IS_RENDER:
+                    caminho_arquivo = os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)),
+                        'static',
+                        arquivo_excluir.lstrip('/')
+                    )
+                    if os.path.exists(caminho_arquivo):
+                        os.remove(caminho_arquivo)
+                
+                # Remover da lista
+                arquivos.pop(index)
+                
+                # Atualizar o campo
+                placa.datasheet = ';'.join(arquivos) if arquivos else None
+                db.session.commit()
+                
+                return jsonify({'success': True}), 200
+            else:
+                return jsonify({'error': 'Índice inválido'}), 400
+        else:
+            return jsonify({'error': 'Nenhum datasheet encontrado'}), 404
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @energia_solar_bp.route('/placas/editar/<int:placa_id>', methods=['GET', 'POST'])
 @login_required
 def placa_editar(placa_id):
@@ -648,6 +691,49 @@ def inversor_excluir(inversor_id):
         flash(f'Erro ao excluir inversor: {str(e)}', 'error')
     
     return redirect(url_for('energia_solar.inversores_listar'))
+
+
+@energia_solar_bp.route('/inversores/datasheet/excluir/<int:inversor_id>/<int:index>', methods=['POST'])
+@login_required
+def inversor_datasheet_excluir(inversor_id, index):
+    """Exclui um datasheet específico do inversor"""
+    try:
+        inversor = InversorSolar.query.get_or_404(inversor_id)
+        
+        if inversor.datasheet:
+            # Separar os arquivos
+            arquivos = inversor.datasheet.split(';')
+            
+            # Verificar se o índice é válido
+            if 0 <= index < len(arquivos):
+                arquivo_excluir = arquivos[index].strip()
+                
+                # Se for arquivo local, excluir do disco
+                if arquivo_excluir.startswith('/uploads/') and not IS_RENDER:
+                    caminho_arquivo = os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)),
+                        'static',
+                        arquivo_excluir.lstrip('/')
+                    )
+                    if os.path.exists(caminho_arquivo):
+                        os.remove(caminho_arquivo)
+                
+                # Remover da lista
+                arquivos.pop(index)
+                
+                # Atualizar o campo
+                inversor.datasheet = ';'.join(arquivos) if arquivos else None
+                db.session.commit()
+                
+                return jsonify({'success': True}), 200
+            else:
+                return jsonify({'error': 'Índice inválido'}), 400
+        else:
+            return jsonify({'error': 'Nenhum datasheet encontrado'}), 404
+            
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 
 
 @energia_solar_bp.route('/inversores/editar/<int:inversor_id>', methods=['GET', 'POST'])

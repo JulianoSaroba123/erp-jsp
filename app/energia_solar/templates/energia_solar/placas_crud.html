@@ -60,15 +60,20 @@
                         {% set arquivos = placa.datasheet.split(';') %}
                         {% for arquivo in arquivos %}
                             {% if arquivo.strip() %}
-                                {% if arquivo.endswith(('.jpg', '.jpeg', '.png', '.webp')) %}
-                                    <a href="{{ arquivo }}" target="_blank" class="btn btn-sm btn-outline-info w-100 mb-1">
-                                        <i class="fas fa-image me-1"></i>Imagem {{ loop.index }}
-                                    </a>
-                                {% else %}
-                                    <a href="{{ arquivo }}" target="_blank" class="btn btn-sm btn-outline-danger w-100 mb-1">
-                                        <i class="fas fa-file-pdf me-1"></i>PDF {{ loop.index }}
-                                    </a>
-                                {% endif %}
+                                <div class="d-flex gap-1 mb-1">
+                                    {% if arquivo.endswith(('.jpg', '.jpeg', '.png', '.webp')) %}
+                                        <a href="{{ arquivo }}" target="_blank" class="btn btn-sm btn-outline-info flex-grow-1">
+                                            <i class="fas fa-image me-1"></i>Imagem {{ loop.index }}
+                                        </a>
+                                    {% else %}
+                                        <a href="{{ arquivo }}" target="_blank" class="btn btn-sm btn-outline-danger flex-grow-1">
+                                            <i class="fas fa-file-pdf me-1"></i>PDF {{ loop.index }}
+                                        </a>
+                                    {% endif %}
+                                    <button onclick="excluirDatasheet({{ placa.id }}, {{ loop.index0 }}, 'placa')" class="btn btn-sm btn-outline-danger" title="Excluir arquivo">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
                             {% endif %}
                         {% endfor %}
                     </div>
@@ -426,5 +431,27 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Função para excluir datasheet individual
+async function excluirDatasheet(id, index, tipo) {
+    if (!confirm('Tem certeza que deseja excluir este arquivo?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/energia-solar/placas/datasheet/excluir/${id}/${index}`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Erro ao excluir arquivo');
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao excluir arquivo');
+    }
+}
 </script>
 {% endblock %}
