@@ -259,6 +259,12 @@ class ProjetoSolar(db.Model):
     linhas_placas = db.Column(db.Integer)
     colunas_placas = db.Column(db.Integer)
     area_necessaria = db.Column(db.Float)  # m²
+    largura_area = db.Column(db.Float)  # m (calculado)
+    comprimento_area = db.Column(db.Float)  # m (calculado)
+    
+    # Configurações adicionais
+    perda_eficiencia_anual = db.Column(db.Float, default=0.8)  # %
+    usar_micro_inversor = db.Column(db.Boolean, default=False)
     
     # Aba 5 - Componentes Adicionais
     string_box = db.Column(db.Boolean, default=False)
@@ -267,6 +273,20 @@ class ProjetoSolar(db.Model):
     cabo_cc = db.Column(db.String(50))  # bitola
     cabo_ca = db.Column(db.String(50))  # bitola
     estrutura_fixacao = db.Column(db.String(100))
+    
+    # Proteções String Box
+    protecao_cc_tipo = db.Column(db.String(50))  # fusivel, disjuntor, seccionador
+    protecao_cc_corrente = db.Column(db.String(20))  # corrente nominal
+    protecao_ca_tipo = db.Column(db.String(50))  # disjuntor, dps, ambos
+    protecao_ca_corrente = db.Column(db.String(20))  # corrente nominal
+    
+    # Padrão de Entrada
+    qtd_fases = db.Column(db.Integer)  # 1, 2 ou 3
+    cabo_fase_bitola = db.Column(db.String(20))  # bitola do cabo fase
+    cabo_neutro_bitola = db.Column(db.String(20))  # bitola do cabo neutro
+    qtd_terra = db.Column(db.Integer)  # quantidade de cabos terra
+    cabo_terra_bitola = db.Column(db.String(20))  # bitola do cabo terra
+    padrao_observacoes = db.Column(db.String(200))  # observações
     componentes_extras = db.Column(db.JSON)  # [{nome: '', qtd: 0, preco: 0}]
     
     # Aba 6 - Financeiro e Lei 14.300

@@ -455,105 +455,257 @@
                             </div>
                         </div>
 
-                        <!-- Aba 2: Método (READ-ONLY - Campos calculados) -->
+                        <!-- Aba 2: Método -->
                         <div class="tab-pane fade" id="metodo">
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-2"></i>
-                                Os valores desta aba são calculados automaticamente com base no kit/placas selecionadas.
-                            </div>
-                            
-                            <div class="row g-3 mb-4">
+                            <!-- Resultado do Cálculo no Topo -->
+                            <div class="row mb-4">
                                 <div class="col-md-6">
                                     <label class="fw-bold text-muted small">CAPACIDADE DO SISTEMA</label>
-                                    <h4 class="text-primary">{{ "%.2f"|format(projeto.potencia_kwp or 0) }} kWp</h4>
+                                    <h4 class="text-primary mb-0" id="potencia_display">{{ "%.2f"|format(projeto.potencia_kwp or 0) }} kWp</h4>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="fw-bold text-muted small">GERAÇÃO MENSAL MÉDIA</label>
-                                    <h4 class="text-success">{{ "%.2f"|format(projeto.geracao_estimada_mes or 0) }} kWh</h4>
+                                    <h4 class="text-success mb-0" id="geracao_display">{{ "%.2f"|format(projeto.geracao_estimada_mes or 0) }} kWh</h4>
                                 </div>
                             </div>
 
                             <h6 class="text-primary border-bottom pb-2 mb-3">MÉTODO DE DIMENSIONAMENTO</h6>
-                            <div class="mb-3">
-                                <label class="fw-bold text-muted small">SELECIONADO:</label>
-                                <div class="text-dark">
-                                    {% if projeto.modo_equipamento == 'kit' %}KIT FOTOVOLTAICO
-                                    {% else %}PLACAS SOLARES{% endif %}
+                            
+                            <!-- Escolha do Método -->
+                            <div class="row mb-4">
+                                <div class="col-md-12">
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="modo_equipamento" id="modo_placas" value="individual" onchange="alterarMetodoDimensionamento('individual')" {% if projeto.modo_equipamento != 'kit' %}checked{% endif %}>
+                                        <label class="btn btn-outline-primary" for="modo_placas">
+                                            <i class="fas fa-solar-panel me-2"></i>PLACAS SOLARES
+                                        </label>
+                                        
+                                        <input type="radio" class="btn-check" name="modo_equipamento" id="modo_kit" value="kit" onchange="alterarMetodoDimensionamento('kit')" {% if projeto.modo_equipamento == 'kit' %}checked{% endif %}>
+                                        <label class="btn btn-outline-success" for="modo_kit">
+                                            <i class="fas fa-box me-2"></i>KIT FOTOVOLTAICO
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
 
-                            {% if projeto.kit_id %}
-                            <div class="alert alert-info">
-                                <strong>KIT SELECIONADO:</strong> Kit ID {{ projeto.kit_id }}
+                            <!-- Formulário: Placas Solares -->
+                            <div id="form_placas" style="display: {% if projeto.modo_equipamento != 'kit' %}block{% else %}none{% endif %};">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">PLACA ESCOLHIDA <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="placa_id" name="placa_id" onchange="calcularPotenciaPlacas()">
+                                            <option value="">Selecione uma placa...</option>
+                                            {% for p in placas_disponiveis %}
+                                            <option value="{{ p.id }}" 
+                                                    data-potencia="{{ p.potencia }}"
+                                                    data-modelo="{{ p.modelo }}"
+                                                    data-fabricante="{{ p.fabricante }}"
+                                                    data-largura="{{ p.largura or 992 }}"
+                                                    data-comprimento="{{ p.comprimento or 1650 }}"
+                                                    {% if projeto.placa_id == p.id %}selected{% endif %}>
+                                                {{ p.modelo }} / {{ p.fabricante }} / {{ p.potencia }}W
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">QUANTIDADE DE PLACAS <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control" id="qtd_placas_input" name="qtd_placas" value="{{ projeto.qtd_placas or 0 }}" min="1" oninput="calcularPotenciaPlacas()">
+                                    </div>
+                                </div>
                             </div>
-                            {% endif %}
 
+                            <!-- Formulário: Kit Fotovoltaico -->
+                            <div id="form_kit" style="display: {% if projeto.modo_equipamento == 'kit' %}block{% else %}none{% endif %};">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">SELECIONE O KIT <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="kit_id" name="kit_id" onchange="calcularPotenciaKit()">
+                                            <option value="">Selecione um kit...</option>
+                                            {% for k in kits_disponiveis %}
+                                            <option value="{{ k.id }}"
+                                                    data-potencia="{{ k.potencia_kwp }}"
+                                                    data-qtd-placas="{{ k.qtd_placas }}"
+                                                    data-placa-id="{{ k.placa_id }}"
+                                                    data-descricao="{{ k.descricao }}"
+                                                    {% if projeto.kit_id == k.id %}selected{% endif %}>
+                                                {{ k.descricao }} - {{ k.potencia_kwp }} kWp ({{ k.qtd_placas }} placas)
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Seção PLACAS SOLARES (sempre visível) -->
                             <h6 class="text-primary border-bottom pb-2 mb-3">PLACAS SOLARES</h6>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">QTD. DE PLACAS</label>
-                                    <input type="number" class="form-control" name="qtd_placas" value="{{ projeto.qtd_placas or 0 }}">
+                                    <label class="fw-bold text-muted small">QTD.</label>
+                                    <div class="border rounded p-2 bg-light">
+                                        <span id="qtd_placas_display" class="text-dark fw-bold">{{ projeto.qtd_placas or 0 }}</span>
+                                        <button type="button" class="btn btn-sm btn-link p-0 ms-2" onclick="incrementarPlacas(-1)">
+                                            <i class="fas fa-minus-circle text-danger"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-link p-0 ms-1" onclick="incrementarPlacas(1)">
+                                            <i class="fas fa-plus-circle text-success"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="fw-bold text-muted small">PLACA ESCOLHIDA</label>
-                                    <div class="text-dark">
-                                        {% if placa %}
-                                        {{ placa.modelo }} / {{ placa.fabricante }} / {{ placa.potencia }}W
-                                        {% else %}-{% endif %}
+                                    <div class="border rounded p-2 bg-light">
+                                        <span id="placa_info_display" class="text-dark">
+                                            {% if placa %}
+                                            {{ placa.modelo }} / {{ placa.fabricante }} / {{ placa.potencia }}W
+                                            {% else %}-{% endif %}
+                                        </span>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Campo PERDA DE EFICIÊNCIA ANUAL -->
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">PERDA DE EFICIÊNCIA ANUAL (%) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="perda_eficiencia_anual" name="perda_eficiencia_anual" value="{{ projeto.perda_eficiencia_anual or 0.8 }}" min="0" max="100" step="0.1">
                                 </div>
                             </div>
                         </div>
 
                         <!-- Aba 3: Ajustes -->
                         <div class="tab-pane fade" id="ajustes">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">INVERSORES</h6>
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="fw-bold text-muted small">POTÊNCIA MÍNIMA (calculado)</label>
-                                    <div class="text-dark">{{ "%.2f"|format((projeto.potencia_kwp or 0) * 0.8) }} kW</div>
+                            <!-- INVERSORES -->
+                            <h6 class="text-primary mb-3"><i class="fas fa-microchip me-2"></i>INVERSORES</h6>
+                            
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-4">
+                                    <label class="fw-bold text-muted small">POTÊNCIA MÍNIMA</label>
+                                    <div class="border rounded p-3 bg-light">
+                                        <h5 class="text-dark mb-0" id="potencia_minima_inversor">{{ "%.2f"|format((projeto.potencia_kwp or 0) * 0.8) }} kW</h5>
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="fw-bold text-muted small">INVERSOR</label>
-                                    <div class="text-dark">
-                                        {% if inversor %}
-                                        {{ inversor.modelo }} / {{ inversor.fabricante }} / {{ inversor.potencia }} kW
-                                        {% else %}-{% endif %}
+                                <div class="col-md-4">
+                                    <div class="form-check mt-4">
+                                        <input class="form-check-input" type="checkbox" id="usar_micro_inversor" name="usar_micro_inversor" {% if projeto.usar_micro_inversor %}checked{% endif %}>
+                                        <label class="form-check-label fw-bold" for="usar_micro_inversor">
+                                            USAR MICRO INVERSOR
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <label class="fw-bold text-muted small d-block">&nbsp;</label>
+                                    <button type="button" class="btn btn-success" onclick="buscarInversor()">
+                                        <i class="fas fa-search me-2"></i>BUSCAR
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold">INVERSOR <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="inversor_id" name="inversor_id" onchange="atualizarInfoInversor()">
+                                        <option value="">Selecione um inversor...</option>
+                                        {% for inv in inversores_disponiveis %}
+                                        <option value="{{ inv.id }}"
+                                                data-modelo="{{ inv.modelo }}"
+                                                data-fabricante="{{ inv.fabricante }}"
+                                                data-potencia="{{ inv.potencia }}"
+                                                {% if projeto.inversor_id == inv.id %}selected{% endif %}>
+                                            {{ inv.fabricante }} / {{ inv.modelo }} / {{ inv.potencia }} kW
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">QTD. <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="qtd_inversores" name="qtd_inversores" value="{{ projeto.qtd_inversores or 1 }}" min="1">
+                                </div>
+                            </div>
+
+                            <!-- ÁREA DE INSTALAÇÃO -->
+                            <h6 class="text-primary mb-3"><i class="fas fa-ruler-combined me-2"></i>ÁREA DE INSTALAÇÃO</h6>
+                            
+                            <!-- Card: Distribuição das Placas -->
+                            <div class="card mb-3" style="border-left: 4px solid #3b82f6;">
+                                <div class="card-header bg-light">
+                                    <strong>DISTRIBUIÇÃO DAS PLACAS</strong>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold">LINHAS DE PLACAS <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control form-control-lg" id="linhas_placas" name="linhas_placas" value="{{ projeto.linhas_placas or 1 }}" min="1" oninput="atualizarLayoutVisual()">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold">COLUNAS DE PLACAS <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control form-control-lg" id="colunas_placas" name="colunas_placas" value="{{ projeto.colunas_placas or 1 }}" min="1" oninput="atualizarLayoutVisual()">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold">ÁREA NECESSÁRIA (M²)</label>
+                                            <input type="text" class="form-control form-control-lg bg-light" id="area_total_display" value="{{ '%.2f'|format(projeto.largura_area * projeto.comprimento_area if projeto.largura_area and projeto.comprimento_area else 0) }}" readonly>
+                                        </div>
+                                    </div>
+
+                                    <!-- Visualização do Layout -->
+                                    <div class="border rounded p-4" style="background: linear-gradient(135deg, #0f172a, #1e293b); border: 2px solid #06b6d4 !important;">
+                                        <h6 class="text-info mb-3">
+                                            <i class="fas fa-eye me-2"></i>Visualização do Layout
+                                        </h6>
+                                        <div class="bg-dark rounded p-4 text-center" style="min-height: 200px; display: flex; align-items: center; justify-content: center; border: 1px solid #334155;">
+                                            <div id="layout_preview">
+                                                <div id="layout_grid" class="d-inline-flex flex-wrap justify-content-center gap-2 mb-3" style="max-width: 600px;">
+                                                    <!-- Grid será gerado por JavaScript -->
+                                                </div>
+                                                <p class="text-info mb-0" id="layout_info">
+                                                    <strong><span id="total_modulos">{{ projeto.qtd_placas or 0 }}</span> módulos</strong> organizados em 
+                                                    <strong><span id="info_linhas">{{ projeto.linhas_placas or 1 }}</span> linhas × <span id="info_colunas">{{ projeto.colunas_placas or 1 }}</span> colunas</strong>
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">QTD. DE INVERSORES</label>
-                                <input type="number" class="form-control" name="qtd_inversores" value="{{ projeto.qtd_inversores or 1 }}">
-                            </div>
 
-                            <h6 class="text-primary border-bottom pb-2 mb-3">ÁREA DE INSTALAÇÃO</h6>
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold">ORIENTAÇÃO</label>
-                                    <select class="form-select" name="orientacao">
-                                        <option value="RETRATO" {% if projeto.orientacao == 'RETRATO' %}selected{% endif %}>RETRATO</option>
-                                        <option value="PAISAGEM" {% if projeto.orientacao == 'PAISAGEM' %}selected{% endif %}>PAISAGEM</option>
-                                    </select>
+                            <!-- Card: Área de Instalação Calculada -->
+                            <div class="card mb-3" style="border-left: 4px solid #10b981;">
+                                <div class="card-header bg-light">
+                                    <strong>DIMENSÕES DA ÁREA</strong>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold">LINHAS</label>
-                                    <input type="number" class="form-control" name="linhas_placas" value="{{ projeto.linhas_placas or 0 }}">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label fw-bold">COLUNAS</label>
-                                    <input type="number" class="form-control" name="colunas_placas" value="{{ projeto.colunas_placas or 1 }}">
+                                <div class="card-body">
+                                    <div class="row g-3 mb-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-bold">ORIENTAÇÃO <span class="text-danger">*</span></label>
+                                            <select class="form-select form-select-lg" id="orientacao" name="orientacao" onchange="atualizarLayoutVisual()">
+                                                <option value="RETRATO" {% if projeto.orientacao == 'RETRATO' %}selected{% endif %}>RETRATO</option>
+                                                <option value="PAISAGEM" {% if projeto.orientacao == 'PAISAGEM' %}selected{% endif %}>PAISAGEM</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="fw-bold text-muted small">LARGURA</label>
+                                            <div class="border rounded p-3 bg-light">
+                                                <h5 class="text-success mb-0" id="largura_area">{{ "%.2f"|format(projeto.largura_area or 0) }} m</h5>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="fw-bold text-muted small">COMPRIMENTO</label>
+                                            <div class="border rounded p-3 bg-light">
+                                                <h5 class="text-success mb-0" id="comprimento_area">{{ "%.2f"|format(projeto.comprimento_area or 0) }} m</h5>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Aba 4: Demais Informações -->
                         <div class="tab-pane fade" id="demaisInfo">
-                            <h6 class="text-primary border-bottom pb-2 mb-3">LEI 14.300</h6>
+                            <!-- LEI 14.300 -->
+                            <h6 class="text-primary mb-3"><i class="fas fa-file-contract me-2"></i>LEI 14.300</h6>
                             <div class="row g-3 mb-4">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">ANO DE INSTALAÇÃO</label>
-                                    <select class="form-select" name="lei_14300_ano">
+                                    <label class="form-label fw-bold">ANO DE INSTALAÇÃO <span class="text-danger">*</span></label>
+                                    <select class="form-select form-select-lg" name="lei_14300_ano">
                                         {% for ano in range(2022, 2033) %}
                                         <option value="{{ ano }}" {% if projeto.lei_14300_ano == ano %}selected{% endif %}>{{ ano }}</option>
                                         {% endfor %}
@@ -561,21 +713,132 @@
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">SIMULTANEIDADE (%)</label>
-                                    <input type="number" step="0.1" class="form-control" name="simultaneidade" value="{{ projeto.simultaneidade or 35 }}">
+                                    <input type="number" step="0.1" class="form-control form-control-lg" name="simultaneidade" value="{{ projeto.simultaneidade or 35 }}">
                                 </div>
                             </div>
 
-                            <h6 class="text-primary border-bottom pb-2 mb-3">DISJUNTOR</h6>
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">DISJUNTOR (A)</label>
-                                <input type="text" class="form-control" name="disjuntor_ca" value="{{ projeto.disjuntor_ca or '63' }}">
+                            <!-- PADRÃO DE ENTRADA -->
+                            <h6 class="text-primary mb-3"><i class="fas fa-bolt me-2"></i>PADRÃO DE ENTRADA</h6>
+                            <div class="card mb-4" style="border-left: 4px solid #8b5cf6;">
+                                <div class="card-header bg-light">
+                                    <strong>CONFIGURAÇÃO DO PADRÃO</strong>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold">TIPO DE ENTRADA <span class="text-danger">*</span></label>
+                                            <select class="form-select form-select-lg" name="tipo_entrada" id="tipo_entrada">
+                                                <option value="monofasico" {% if projeto.qtd_fases == 1 or projeto.tipo_instalacao == 'monofasica' or projeto.circuito == 'Monofásico' %}selected{% endif %}>MONOFÁSICO</option>
+                                                <option value="bifasico" {% if projeto.qtd_fases == 2 or projeto.tipo_instalacao == 'bifasica' or projeto.circuito == 'Bifásico' %}selected{% endif %}>BIFÁSICO</option>
+                                                <option value="trifasico" {% if projeto.qtd_fases == 3 or projeto.tipo_instalacao == 'trifasica' or projeto.circuito == 'Trifásico' %}selected{% endif %}>TRIFÁSICO</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold">DISJUNTOR GERAL (A) <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control form-control-lg" name="disjuntor_ca" value="{{ projeto.disjuntor_ca or '63' }}" placeholder="Ex: 20, 32, 63" oninput="atualizarDiagramaUnifilar()">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-bold">FASE - QTD</label>
+                                            <input type="number" class="form-control form-control-lg bg-light" id="qtd_fases" name="qtd_fases" value="{{ projeto.qtd_fases or 2 }}" readonly>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-bold">FASE - BITOLA (MM²)</label>
+                                            <select class="form-select form-select-lg" name="cabo_fase_bitola">
+                                                <option value="4" {% if projeto.cabo_fase_bitola == '4' %}selected{% endif %}>4 mm²</option>
+                                                <option value="6" {% if projeto.cabo_fase_bitola == '6' %}selected{% endif %}>6 mm²</option>
+                                                <option value="10" {% if projeto.cabo_fase_bitola == '10' %}selected{% endif %}>10 mm²</option>
+                                                <option value="16" {% if projeto.cabo_fase_bitola == '16' or not projeto.cabo_fase_bitola %}selected{% endif %}>16 mm²</option>
+                                                <option value="25" {% if projeto.cabo_fase_bitola == '25' %}selected{% endif %}>25 mm²</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-bold">NEUTRO - BITOLA (MM²)</label>
+                                            <select class="form-select form-select-lg" name="cabo_neutro_bitola">
+                                                <option value="4" {% if projeto.cabo_neutro_bitola == '4' %}selected{% endif %}>4 mm²</option>
+                                                <option value="6" {% if projeto.cabo_neutro_bitola == '6' %}selected{% endif %}>6 mm²</option>
+                                                <option value="10" {% if projeto.cabo_neutro_bitola == '10' %}selected{% endif %}>10 mm²</option>
+                                                <option value="16" {% if projeto.cabo_neutro_bitola == '16' or not projeto.cabo_neutro_bitola %}selected{% endif %}>16 mm²</option>
+                                                <option value="25" {% if projeto.cabo_neutro_bitola == '25' %}selected{% endif %}>25 mm²</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row g-3 mt-2">
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold">ATERRAMENTO - QTD</label>
+                                            <input type="number" class="form-control form-control-lg" name="qtd_terra" value="{{ projeto.qtd_terra or 1 }}" min="1">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold">ATERRAMENTO - BITOLA (MM²)</label>
+                                            <select class="form-select form-select-lg" name="cabo_terra_bitola">
+                                                <option value="4" {% if projeto.cabo_terra_bitola == '4' %}selected{% endif %}>4 mm²</option>
+                                                <option value="6" {% if projeto.cabo_terra_bitola == '6' %}selected{% endif %}>6 mm²</option>
+                                                <option value="10" {% if projeto.cabo_terra_bitola == '10' %}selected{% endif %}>10 mm²</option>
+                                                <option value="16" {% if projeto.cabo_terra_bitola == '16' or not projeto.cabo_terra_bitola %}selected{% endif %}>16 mm²</option>
+                                                <option value="25" {% if projeto.cabo_terra_bitola == '25' %}selected{% endif %}>25 mm²</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">OBSERVAÇÕES DO PADRÃO</label>
+                                            <input type="text" class="form-control form-control-lg" name="padrao_observacoes" value="{{ projeto.padrao_observacoes or '' }}" placeholder="Ex: Padrão aéreo, cabo de alumínio">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <h6 class="text-primary border-bottom pb-2 mb-3">CABOS</h6>
-                            <div class="row g-3">
+                            <!-- STRING BOX - PROTEÇÕES -->
+                            <h6 class="text-primary mb-3"><i class="fas fa-shield-alt me-2"></i>STRING BOX - PROTEÇÕES</h6>
+                            <div class="card mb-4" style="border-left: 4px solid #f59e0b;">
+                                <div class="card-header bg-light">
+                                    <strong>PROTEÇÃO CC (CORRENTE CONTÍNUA)</strong>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">TIPO DE PROTEÇÃO</label>
+                                            <select class="form-select" id="protecao_cc_tipo" name="protecao_cc_tipo" onchange="atualizarDiagramaUnifilar()">
+                                                <option value="">Selecione...</option>
+                                                <option value="fusivel" {% if projeto.protecao_cc_tipo == 'fusivel' %}selected{% endif %}>Fusível</option>
+                                                <option value="disjuntor" {% if projeto.protecao_cc_tipo == 'disjuntor' %}selected{% endif %}>Disjuntor CC</option>
+                                                <option value="seccionador" {% if projeto.protecao_cc_tipo == 'seccionador' %}selected{% endif %}>Seccionador</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">CORRENTE NOMINAL (A)</label>
+                                            <input type="text" class="form-control" name="protecao_cc_corrente" value="{{ projeto.protecao_cc_corrente or '' }}" placeholder="Ex: 10, 15, 20" oninput="atualizarDiagramaUnifilar()">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card mb-4" style="border-left: 4px solid #10b981;">
+                                <div class="card-header bg-light">
+                                    <strong>PROTEÇÃO CA (CORRENTE ALTERNADA)</strong>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">TIPO DE PROTEÇÃO</label>
+                                            <select class="form-select" id="protecao_ca_tipo" name="protecao_ca_tipo" onchange="atualizarDiagramaUnifilar()">
+                                                <option value="">Selecione...</option>
+                                                <option value="disjuntor" {% if projeto.protecao_ca_tipo == 'disjuntor' %}selected{% endif %}>Disjuntor CA</option>
+                                                <option value="dps" {% if projeto.protecao_ca_tipo == 'dps' %}selected{% endif %}>DPS (Protetor de Surto)</option>
+                                                <option value="ambos" {% if projeto.protecao_ca_tipo == 'ambos' %}selected{% endif %}>Disjuntor + DPS</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold">CORRENTE NOMINAL (A)</label>
+                                            <input type="text" class="form-control" name="protecao_ca_corrente" value="{{ projeto.protecao_ca_corrente or '' }}" placeholder="Ex: 20, 32, 40" oninput="atualizarDiagramaUnifilar()">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CABOS -->
+                            <h6 class="text-primary mb-3"><i class="fas fa-plug me-2"></i>CABOS</h6>
+                            <div class="row g-3 mb-4">
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">CABO CA - Bitola (mm²)</label>
-                                    <select class="form-select" name="cabo_ca">
+                                    <label class="form-label fw-bold">CABO CA - BITOLA (MM²)</label>
+                                    <select class="form-select form-select-lg" name="cabo_ca" onchange="atualizarDiagramaUnifilar()">
                                         <option value="4" {% if projeto.cabo_ca == '4' %}selected{% endif %}>4 mm²</option>
                                         <option value="6" {% if projeto.cabo_ca == '6' %}selected{% endif %}>6 mm²</option>
                                         <option value="10" {% if projeto.cabo_ca == '10' %}selected{% endif %}>10 mm²</option>
@@ -585,14 +848,115 @@
                                     <small class="text-muted">Usado para Fase, Neutro e Aterramento</small>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-bold">CABO CC - Bitola (mm²)</label>
-                                    <select class="form-select" name="cabo_cc">
+                                    <label class="form-label fw-bold">CABO CC - BITOLA (MM²)</label>
+                                    <select class="form-select form-select-lg" name="cabo_cc" onchange="atualizarDiagramaUnifilar()">
                                         <option value="4" {% if projeto.cabo_cc == '4' %}selected{% endif %}>4 mm²</option>
                                         <option value="6" {% if projeto.cabo_cc == '6' or not projeto.cabo_cc %}selected{% endif %}>6 mm²</option>
                                         <option value="10" {% if projeto.cabo_cc == '10' %}selected{% endif %}>10 mm²</option>
                                         <option value="16" {% if projeto.cabo_cc == '16' %}selected{% endif %}>16 mm²</option>
                                         <option value="25" {% if projeto.cabo_cc == '25' %}selected{% endif %}>25 mm²</option>
                                     </select>
+                                </div>
+                            </div>
+
+                            <!-- DIAGRAMA UNIFILAR -->
+                            <h6 class="text-primary mb-3"><i class="fas fa-project-diagram me-2"></i>DIAGRAMA UNIFILAR</h6>
+                            <div class="card" style="border-left: 4px solid #8b5cf6; background: linear-gradient(135deg, #0f172a, #1e293b);">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center justify-content-between position-relative">
+                                        <!-- Linha conectora -->
+                                        <div class="position-absolute w-100" style="top: 50%; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #f59e0b, #10b981, #06b6d4, #8b5cf6); z-index: 0;"></div>
+                                        
+                                        <!-- Card 1: Módulos -->
+                                        <div class="text-center position-relative" style="z-index: 1; flex: 1;">
+                                            <div class="border rounded p-2" style="background: linear-gradient(135deg, #3b82f6, #2563eb); border: 2px solid #60a5fa !important; min-height: 100px; display: flex; flex-direction: column; justify-content: center;">
+                                                <i class="fas fa-solar-panel fa-lg text-white mb-1"></i>
+                                                <div class="text-white fw-bold small">MÓDULOS FV</div>
+                                                <small class="text-white" style="font-size: 0.7rem;" id="diagrama_qtd_placas">{{ projeto.qtd_placas or 0 }} placas</small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Conector 1 -->
+                                        <div class="text-center position-relative" style="z-index: 1; flex: 0 0 60px;">
+                                            <div class="text-warning" style="font-size: 0.65rem;">
+                                                Cabo CC: <span id="diagrama_cabo_cc">{{ projeto.cabo_cc or '6' }}mm²</span>
+                                            </div>
+                                            <div class="text-warning"><i class="fas fa-exchange-alt"></i></div>
+                                        </div>
+
+                                        <!-- Card 2: String Box CC -->
+                                        <div class="text-center position-relative" style="z-index: 1; flex: 1;">
+                                            <div class="border rounded p-2" style="background: linear-gradient(135deg, #f59e0b, #d97706); border: 2px solid #fbbf24 !important; min-height: 100px; display: flex; flex-direction: column; justify-content: center;">
+                                                <i class="fas fa-shield-alt fa-lg text-white mb-1"></i>
+                                                <div class="text-white fw-bold small">STRING BOX CC</div>
+                                                <small class="text-white" style="font-size: 0.7rem;">
+                                                    <div id="diagrama_protecao_cc">{{ projeto.protecao_cc_tipo|upper or 'N/A' }}</div>
+                                                    <div id="diagrama_protecao_cc_corrente">{{ projeto.protecao_cc_corrente or '-' }}A</div>
+                                                </small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Conector 2 -->
+                                        <div class="text-center position-relative" style="z-index: 1; flex: 0 0 60px;">
+                                            <div class="text-success" style="font-size: 0.65rem;">
+                                                Cabo CA: <span id="diagrama_cabo_ca">{{ projeto.cabo_ca or '16' }}mm²</span>
+                                            </div>
+                                            <div class="text-success"><i class="fas fa-exchange-alt"></i></div>
+                                        </div>
+
+                                        <!-- Card 3: Inversor -->
+                                        <div class="text-center position-relative" style="z-index: 1; flex: 1;">
+                                            <div class="border rounded p-2" style="background: linear-gradient(135deg, #10b981, #059669); border: 2px solid #34d399 !important; min-height: 100px; display: flex; flex-direction: column; justify-content: center;">
+                                                <i class="fas fa-microchip fa-lg text-white mb-1"></i>
+                                                <div class="text-white fw-bold small">INVERSOR</div>
+                                                <small class="text-white" style="font-size: 0.65rem;">
+                                                    <div id="diagrama_inversor" style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0 auto;">{{ inversor.modelo[:15] if inversor else 'N/A' }}</div>
+                                                    <div id="diagrama_qtd_inversores">{{ projeto.qtd_inversores or 1 }}x</div>
+                                                </small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Conector 3 -->
+                                        <div class="text-center position-relative" style="z-index: 1; flex: 0 0 40px;">
+                                            <div class="text-cyan"><i class="fas fa-exchange-alt"></i></div>
+                                        </div>
+
+                                        <!-- Card 4: Proteção CA -->
+                                        <div class="text-center position-relative" style="z-index: 1; flex: 1;">
+                                            <div class="border rounded p-2" style="background: linear-gradient(135deg, #06b6d4, #0891b2); border: 2px solid #22d3ee !important; min-height: 100px; display: flex; flex-direction: column; justify-content: center;">
+                                                <i class="fas fa-shield-alt fa-lg text-white mb-1"></i>
+                                                <div class="text-white fw-bold small">PROTEÇÃO CA</div>
+                                                <small class="text-white" style="font-size: 0.7rem;">
+                                                    <div id="diagrama_protecao_ca">{{ projeto.protecao_ca_tipo|upper or 'N/A' }}</div>
+                                                    <div id="diagrama_protecao_ca_corrente">{{ projeto.protecao_ca_corrente or '-' }}A</div>
+                                                </small>
+                                            </div>
+                                        </div>
+
+                                        <!-- Conector 4 -->
+                                        <div class="text-center position-relative" style="z-index: 1; flex: 0 0 40px;">
+                                            <div class="text-purple"><i class="fas fa-exchange-alt fa-rotate-90"></i></div>
+                                        </div>
+
+                                        <!-- Card 5: Quadro -->
+                                        <div class="text-center position-relative" style="z-index: 1; flex: 1;">
+                                            <div class="border rounded p-2" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); border: 2px solid #a78bfa !important; min-height: 100px; display: flex; flex-direction: column; justify-content: center;">
+                                                <i class="fas fa-th fa-lg text-white mb-1"></i>
+                                                <div class="text-white fw-bold small">QUADRO</div>
+                                                <small class="text-white" style="font-size: 0.7rem;">
+                                                    <div id="diagrama_disjuntor">{{ projeto.disjuntor_ca or '63' }}A</div>
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Legenda -->
+                                    <div class="mt-3 pt-2 border-top border-secondary text-center">
+                                        <small class="text-info">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Diagrama atualizado automaticamente com os dados do projeto
+                                        </small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1881,6 +2245,283 @@ function formatarMoeda(valor) {
     return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
+// Alternar entre método de placas individuais e kit
+function alterarMetodoDimensionamento(modo) {
+    const formPlacas = document.getElementById('form_placas');
+    const formKit = document.getElementById('form_kit');
+    
+    if (modo === 'individual') {
+        formPlacas.style.display = 'block';
+        formKit.style.display = 'none';
+        calcularPotenciaPlacas();
+    } else {
+        formPlacas.style.display = 'none';
+        formKit.style.display = 'block';
+        calcularPotenciaKit();
+    }
+}
+
+// Incrementar/decrementar quantidade de placas
+function incrementarPlacas(delta) {
+    const qtdInput = document.getElementById('qtd_placas_input');
+    const qtdAtual = parseInt(qtdInput.value) || 0;
+    const novaQtd = Math.max(0, qtdAtual + delta);
+    qtdInput.value = novaQtd;
+    
+    // Atualizar display
+    document.getElementById('qtd_placas_display').textContent = novaQtd;
+    
+    // Recalcular potência
+    const modoKit = document.getElementById('modo_kit').checked;
+    if (modoKit) {
+        calcularPotenciaKit();
+    } else {
+        calcularPotenciaPlacas();
+    }
+}
+
+// Calcular potência baseado em placas individuais
+function calcularPotenciaPlacas() {
+    const selectPlaca = document.getElementById('placa_id');
+    const qtdInput = document.getElementById('qtd_placas_input');
+    const qtdPlacas = parseInt(qtdInput.value) || 0;
+    
+    if (!selectPlaca.value || qtdPlacas === 0) {
+        atualizarDisplays(0, 0, '-', 0);
+        return;
+    }
+    
+    const option = selectPlaca.options[selectPlaca.selectedIndex];
+    const potenciaPlaca = parseFloat(option.dataset.potencia) || 0;
+    const modeloPlaca = `${option.dataset.modelo} / ${option.dataset.fabricante} / ${potenciaPlaca}W`;
+    
+    // Cálculo: (Quantidade × Potência da Placa em W) / 1000 = kWp
+    const potenciaKWp = (qtdPlacas * potenciaPlaca) / 1000;
+    
+    // Estimativa de geração mensal (kWp × 4.5h de sol × 30 dias × 0.8 de eficiência)
+    const geracaoMes = potenciaKWp * 4.5 * 30 * 0.8;
+    
+    atualizarDisplays(potenciaKWp, geracaoMes, modeloPlaca, qtdPlacas);
+}
+
+// Calcular potência baseado em kit fotovoltaico
+function calcularPotenciaKit() {
+    const selectKit = document.getElementById('kit_id');
+    
+    if (!selectKit.value) {
+        atualizarDisplays(0, 0, '-', 0);
+        return;
+    }
+    
+    const option = selectKit.options[selectKit.selectedIndex];
+    const potenciaKWp = parseFloat(option.dataset.potencia) || 0;
+    const qtdPlacas = parseInt(option.dataset.qtdPlacas) || 0;
+    
+    // Atualizar input de quantidade
+    const qtdInput = document.getElementById('qtd_placas_input');
+    qtdInput.value = qtdPlacas;
+    
+    // Buscar informação da placa (se disponível)
+    const placaId = option.dataset.placaId;
+    let placaInfo = '-';
+    if (placaId) {
+        const selectPlaca = document.getElementById('placa_id');
+        const placaOption = Array.from(selectPlaca.options).find(opt => opt.value === placaId);
+        if (placaOption) {
+            placaInfo = `${placaOption.dataset.modelo} / ${placaOption.dataset.fabricante} / ${placaOption.dataset.potencia}W`;
+        }
+    }
+    
+    // Estimativa de geração mensal (kWp × 4.5h de sol × 30 dias × 0.8 de eficiência)
+    const geracaoMes = potenciaKWp * 4.5 * 30 * 0.8;
+    
+    atualizarDisplays(potenciaKWp, geracaoMes, placaInfo, qtdPlacas);
+}
+
+// Atualizar todos os displays de uma vez
+function atualizarDisplays(potenciaKWp, geracaoMes, placaInfo, qtdPlacas) {
+    document.getElementById('potencia_display').textContent = potenciaKWp.toFixed(2) + ' kWp';
+    document.getElementById('geracao_display').textContent = geracaoMes.toFixed(2) + ' kWh';
+    document.getElementById('placa_info_display').textContent = placaInfo;
+    document.getElementById('qtd_placas_display').textContent = qtdPlacas;
+    
+    // Atualizar potência mínima do inversor (80% da potência do sistema)
+    const potenciaMinima = potenciaKWp * 0.8;
+    const elemPotenciaMin = document.getElementById('potencia_minima_inversor');
+    if (elemPotenciaMin) {
+        elemPotenciaMin.textContent = potenciaMinima.toFixed(2) + ' kW';
+    }
+}
+
+// Buscar inversor adequado baseado na potência
+function buscarInversor() {
+    const selectPlaca = document.getElementById('placa_id');
+    const qtdInput = document.getElementById('qtd_placas_input');
+    const qtdPlacas = parseInt(qtdInput.value) || 0;
+    
+    if (!selectPlaca.value || qtdPlacas === 0) {
+        alert('Selecione uma placa e quantidade antes de buscar o inversor');
+        return;
+    }
+    
+    const option = selectPlaca.options[selectPlaca.selectedIndex];
+    const potenciaPlaca = parseFloat(option.dataset.potencia) || 0;
+    const potenciaKWp = (qtdPlacas * potenciaPlaca) / 1000;
+    const potenciaMinima = potenciaKWp * 0.8;
+    
+    // Buscar primeiro inversor com potência >= mínima
+    const selectInversor = document.getElementById('inversor_id');
+    let inversorEncontrado = false;
+    
+    for (let i = 0; i < selectInversor.options.length; i++) {
+        const opt = selectInversor.options[i];
+        const potInversor = parseFloat(opt.dataset.potencia);
+        
+        if (potInversor >= potenciaMinima) {
+            selectInversor.selectedIndex = i;
+            inversorEncontrado = true;
+            break;
+        }
+    }
+    
+    if (!inversorEncontrado) {
+        alert(`Nenhum inversor encontrado com potência >= ${potenciaMinima.toFixed(2)} kW`);
+    } else {
+        atualizarInfoInversor();
+    }
+}
+
+// Atualizar informações do inversor selecionado
+function atualizarInfoInversor() {
+    // Placeholder - pode adicionar lógica adicional se necessário
+}
+
+// Atualizar visualização do layout e calcular área de instalação
+function atualizarLayoutVisual() {
+    const selectPlaca = document.getElementById('placa_id');
+    const orientacao = document.getElementById('orientacao').value;
+    const linhas = parseInt(document.getElementById('linhas_placas').value) || 1;
+    const colunas = parseInt(document.getElementById('colunas_placas').value) || 1;
+    
+    // Atualizar informações do texto
+    const totalModulos = linhas * colunas;
+    document.getElementById('total_modulos').textContent = totalModulos;
+    document.getElementById('info_linhas').textContent = linhas;
+    document.getElementById('info_colunas').textContent = colunas;
+    
+    // Gerar grid visual
+    const layoutGrid = document.getElementById('layout_grid');
+    layoutGrid.innerHTML = '';
+    
+    // Criar grid de placas
+    for (let i = 1; i <= totalModulos; i++) {
+        const modulo = document.createElement('div');
+        modulo.className = 'border rounded d-flex align-items-center justify-content-center';
+        modulo.style.cssText = `
+            width: 60px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            border: 2px solid #60a5fa !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        `;
+        modulo.textContent = i;
+        layoutGrid.appendChild(modulo);
+        
+        // Quebrar linha após cada linha completa
+        if (i % colunas === 0 && i < totalModulos) {
+            const br = document.createElement('div');
+            br.style.width = '100%';
+            br.style.height = '0';
+            layoutGrid.appendChild(br);
+        }
+    }
+    
+    // Calcular dimensões da área
+    if (!selectPlaca || !selectPlaca.value) {
+        document.getElementById('largura_area').textContent = '0.00 m';
+        document.getElementById('comprimento_area').textContent = '0.00 m';
+        document.getElementById('area_total_display').value = '0.00';
+        return;
+    }
+    
+    // Obter dimensões reais da placa selecionada (em milímetros no banco)
+    const option = selectPlaca.options[selectPlaca.selectedIndex];
+    let larguraPlacaMM = parseFloat(option.dataset.largura) || 992; // mm
+    let comprimentoPlacaMM = parseFloat(option.dataset.comprimento) || 1650; // mm
+    
+    // Converter para metros
+    let larguraPlaca = larguraPlacaMM / 1000;
+    let comprimentoPlaca = comprimentoPlacaMM / 1000;
+    
+    // Inverter dimensões se orientação for PAISAGEM
+    if (orientacao === 'PAISAGEM') {
+        [larguraPlaca, comprimentoPlaca] = [comprimentoPlaca, larguraPlaca];
+    }
+    
+    // Calcular área total (adicionar 10cm de espaçamento entre placas)
+    const espacamento = 0.10;
+    const largura = (colunas * larguraPlaca) + ((colunas - 1) * espacamento);
+    const comprimento = (linhas * comprimentoPlaca) + ((linhas - 1) * espacamento);
+    const areaTotal = largura * comprimento;
+    
+    document.getElementById('largura_area').textContent = largura.toFixed(2) + ' m';
+    document.getElementById('comprimento_area').textContent = comprimento.toFixed(2) + ' m';
+    document.getElementById('area_total_display').value = areaTotal.toFixed(2);
+}
+
+// Manter compatibilidade com código antigo
+function calcularAreaInstalacao() {
+    atualizarLayoutVisual();
+}
+
+// Atualizar diagrama unifilar em tempo real
+function atualizarDiagramaUnifilar() {
+    // Atualizar cabos
+    const caboCC = document.querySelector('select[name="cabo_cc"]');
+    const caboCA = document.querySelector('select[name="cabo_ca"]');
+    
+    if (caboCC && document.getElementById('diagrama_cabo_cc')) {
+        document.getElementById('diagrama_cabo_cc').textContent = caboCC.value + 'mm²';
+    }
+    
+    if (caboCA && document.getElementById('diagrama_cabo_ca')) {
+        document.getElementById('diagrama_cabo_ca').textContent = caboCA.value + 'mm²';
+    }
+    
+    // Atualizar proteções
+    const protecaoCCTipo = document.querySelector('select[name="protecao_cc_tipo"]');
+    const protecaoCCCorrente = document.querySelector('input[name="protecao_cc_corrente"]');
+    const protecaoCATipo = document.querySelector('select[name="protecao_ca_tipo"]');
+    const protecaoCACorrente = document.querySelector('input[name="protecao_ca_corrente"]');
+    
+    if (protecaoCCTipo && document.getElementById('diagrama_protecao_cc')) {
+        const texto = protecaoCCTipo.options[protecaoCCTipo.selectedIndex].text || 'N/A';
+        document.getElementById('diagrama_protecao_cc').textContent = texto.toUpperCase();
+    }
+    
+    if (protecaoCCCorrente && document.getElementById('diagrama_protecao_cc_corrente')) {
+        document.getElementById('diagrama_protecao_cc_corrente').textContent = (protecaoCCCorrente.value || '-') + 'A';
+    }
+    
+    if (protecaoCATipo && document.getElementById('diagrama_protecao_ca')) {
+        const texto = protecaoCATipo.options[protecaoCATipo.selectedIndex].text || 'N/A';
+        document.getElementById('diagrama_protecao_ca').textContent = texto.toUpperCase();
+    }
+    
+    if (protecaoCACorrente && document.getElementById('diagrama_protecao_ca_corrente')) {
+        document.getElementById('diagrama_protecao_ca_corrente').textContent = (protecaoCACorrente.value || '-') + 'A';
+    }
+    
+    // Atualizar disjuntor
+    const disjuntor = document.querySelector('input[name="disjuntor_ca"]');
+    if (disjuntor && document.getElementById('diagrama_disjuntor')) {
+        document.getElementById('diagrama_disjuntor').textContent = (disjuntor.value || '63') + 'A';
+    }
+}
+
 // Handler para salvar dados técnicos e recarregar página
 function handleSalvarDadosTecnicos(event) {
     event.preventDefault();
@@ -1903,5 +2544,34 @@ function handleSalvarDadosTecnicos(event) {
         alert('Erro ao salvar dados técnicos');
     });
 }
+
+// Inicializar cálculos ao carregar a página
+window.addEventListener('DOMContentLoaded', function() {
+    // Calcular área de instalação e gerar preview do layout se os campos estiverem preenchidos
+    const linhas = document.getElementById('linhas_placas');
+    const colunas = document.getElementById('colunas_placas');
+    if (linhas && colunas && linhas.value && colunas.value) {
+        atualizarLayoutVisual();
+    }
+    
+    // Listener para atualizar qtd_fases automaticamente
+    const tipoEntrada = document.getElementById('tipo_entrada');
+    if (tipoEntrada) {
+        tipoEntrada.addEventListener('change', function() {
+            const qtdFases = document.getElementById('qtd_fases');
+            if (qtdFases) {
+                if (this.value === 'monofasico') {
+                    qtdFases.value = 1;
+                } else if (this.value === 'bifasico') {
+                    qtdFases.value = 2;
+                } else if (this.value === 'trifasico') {
+                    qtdFases.value = 3;
+                } else {
+                    qtdFases.value = '';
+                }
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

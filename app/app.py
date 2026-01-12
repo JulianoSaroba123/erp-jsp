@@ -265,7 +265,21 @@ def create_app(config_name=None):
                     'aliquota_fio_b': "DOUBLE PRECISION",
                     'usuario_criador': "VARCHAR(100)",
                     'data_criacao': "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
-                    'data_atualizacao': "TIMESTAMP"
+                    'data_atualizacao': "TIMESTAMP",
+                    'perda_eficiencia_anual': "DOUBLE PRECISION DEFAULT 0.8",
+                    'usar_micro_inversor': "BOOLEAN DEFAULT FALSE",
+                    'largura_area': "DOUBLE PRECISION",
+                    'comprimento_area': "DOUBLE PRECISION",
+                    'protecao_cc_tipo': "VARCHAR(50)",
+                    'protecao_cc_corrente': "VARCHAR(20)",
+                    'protecao_ca_tipo': "VARCHAR(50)",
+                    'protecao_ca_corrente': "VARCHAR(20)",
+                    'qtd_fases': "INTEGER",
+                    'cabo_fase_bitola': "VARCHAR(20)",
+                    'cabo_neutro_bitola': "VARCHAR(20)",
+                    'qtd_terra': "INTEGER",
+                    'cabo_terra_bitola': "VARCHAR(20)",
+                    'padrao_observacoes': "VARCHAR(200)"
                 }
                 
                 # Adicionar campos que não existem

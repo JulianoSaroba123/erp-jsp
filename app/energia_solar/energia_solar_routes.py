@@ -1069,13 +1069,21 @@ def projeto_dashboard(projeto_id):
     from app.concessionaria.concessionaria_model import Concessionaria
     concessionarias = Concessionaria.query.filter_by(ativo=True).order_by(Concessionaria.nome).all()
     
+    # Buscar placas e kits disponíveis para seleção no método de dimensionamento
+    placas_disponiveis = PlacaSolar.query.filter_by(ativo=True).order_by(PlacaSolar.modelo).all()
+    kits_disponiveis = KitSolar.query.filter_by(ativo=True).order_by(KitSolar.descricao).all()
+    inversores_disponiveis = InversorSolar.query.filter_by(ativo=True).order_by(InversorSolar.fabricante, InversorSolar.modelo).all()
+    
     return render_template('energia_solar/projeto_dashboard.html', 
                          projeto=projeto,
                          placa=placa,
                          inversor=inversor,
                          economia_mensal=economia_mensal,
                          economia_anual=economia_anual,
-                         concessionarias=concessionarias)
+                         concessionarias=concessionarias,
+                         placas_disponiveis=placas_disponiveis,
+                         kits_disponiveis=kits_disponiveis,
+                         inversores_disponiveis=inversores_disponiveis)
 
 
 @energia_solar_bp.route('/projetos/<int:projeto_id>/dados-financeiros', methods=['POST'])
@@ -1136,19 +1144,97 @@ def projeto_salvar_dados_tecnicos(projeto_id):
         projeto.perdas_sistema = float(request.form.get('perdas_sistema', 20)) / 100 if request.form.get('perdas_sistema') else 0.20
         projeto.consumo_kwh_mes = float(request.form.get('consumo_kwh_mes', 0)) if request.form.get('consumo_kwh_mes') else None
         
-        # Aba 2: Método
-        projeto.qtd_placas = int(request.form.get('qtd_placas', 0)) if request.form.get('qtd_placas') else None
+        # Aba 2: Método - processar modo de equipamento
+        modo_equipamento = request.form.get('modo_equipamento', 'individual')
+        projeto.modo_equipamento = modo_equipamento
         
-        # Aba 3: Ajustes
+        if modo_equipamento == 'individual':
+            # Placas individuais
+            projeto.placa_id = int(request.form.get('placa_id')) if request.form.get('placa_id') else None
+            projeto.qtd_placas = int(request.form.get('qtd_placas', 0)) if request.form.get('qtd_placas') else None
+            projeto.kit_id = None  # Limpar kit se existir
+            
+            # Calcular potência baseado nas placas
+            if projeto.placa_id and projeto.qtd_placas:
+                placa = PlacaSolar.query.get(projeto.placa_id)
+                if placa:
+                    projeto.potencia_kwp = (projeto.qtd_placas * placa.potencia) / 1000
+                    projeto.geracao_estimada_mes = projeto.potencia_kwp * 4.5 * 30 * 0.8
+        else:
+            # Kit fotovoltaico
+            projeto.kit_id = int(request.form.get('kit_id')) if request.form.get('kit_id') else None
+            projeto.placa_id = None  # Limpar placa_id se existir
+            
+            # Obter dados do kit
+            if projeto.kit_id:
+                kit = KitSolar.query.get(projeto.kit_id)
+                if kit:
+                    projeto.potencia_kwp = kit.potencia_kwp
+                    projeto.qtd_placas = kit.qtd_placas
+                    projeto.geracao_estimada_mes = projeto.potencia_kwp * 4.5 * 30 * 0.8
+        
+        # Perda de eficiência anual
+        projeto.perda_eficiencia_anual = float(request.form.get('perda_eficiencia_anual', 0.8)) if request.form.get('perda_eficiencia_anual') else 0.8
+        
+        # Aba 3: Ajustes - Inversores
+        projeto.inversor_id = int(request.form.get('inversor_id')) if request.form.get('inversor_id') else None
         projeto.qtd_inversores = int(request.form.get('qtd_inversores', 1)) if request.form.get('qtd_inversores') else 1
-        projeto.orientacao = request.form.get('orientacao')
-        projeto.linhas_placas = int(request.form.get('linhas_placas', 0)) if request.form.get('linhas_placas') else None
-        projeto.colunas_placas = int(request.form.get('colunas_placas', 0)) if request.form.get('colunas_placas') else None
+        projeto.usar_micro_inversor = bool(request.form.get('usar_micro_inversor'))
         
-        # Aba 4: Demais Informações
+        # Aba 3: Ajustes - Área de instalação
+        projeto.orientacao = request.form.get('orientacao')
+        projeto.linhas_placas = int(request.form.get('linhas_placas', 1)) if request.form.get('linhas_placas') else 1
+        projeto.colunas_placas = int(request.form.get('colunas_placas', 1)) if request.form.get('colunas_placas') else 1
+        
+        # Calcular largura e comprimento da área
+        if projeto.placa_id and projeto.linhas_placas and projeto.colunas_placas:
+            placa = PlacaSolar.query.get(projeto.placa_id)
+            if placa:
+                # Obter dimensões reais da placa (em mm no banco, converter para metros)
+                largura_placa = (placa.largura / 1000) if placa.largura else 0.992
+                comprimento_placa = (placa.comprimento / 1000) if placa.comprimento else 1.650
+                
+                # Inverter dimensões se orientação for PAISAGEM
+                if projeto.orientacao == 'PAISAGEM':
+                    largura_placa, comprimento_placa = comprimento_placa, largura_placa
+                
+                # Adicionar espaçamento de 10cm entre placas
+                espacamento = 0.10
+                projeto.largura_area = (projeto.colunas_placas * largura_placa) + ((projeto.colunas_placas - 1) * espacamento)
+                projeto.comprimento_area = (projeto.linhas_placas * comprimento_placa) + ((projeto.linhas_placas - 1) * espacamento)
+        
+        # Aba 4: Demais Informações (campos antigos mantidos)
         projeto.lei_14300_ano = int(request.form.get('lei_14300_ano', 2026)) if request.form.get('lei_14300_ano') else 2026
         projeto.simultaneidade = float(request.form.get('simultaneidade', 35)) if request.form.get('simultaneidade') else 35.0
         projeto.disjuntor_ca = request.form.get('disjuntor_ca')
+        
+        # Proteções String Box
+        projeto.protecao_cc_tipo = request.form.get('protecao_cc_tipo')
+        projeto.protecao_cc_corrente = request.form.get('protecao_cc_corrente')
+        projeto.protecao_ca_tipo = request.form.get('protecao_ca_tipo')
+        projeto.protecao_ca_corrente = request.form.get('protecao_ca_corrente')
+        
+        # Padrão de Entrada
+        tipo_entrada = request.form.get('tipo_entrada')
+        if tipo_entrada == 'monofasico':
+            projeto.qtd_fases = 1
+            projeto.tipo_instalacao = 'monofasica'
+        elif tipo_entrada == 'bifasico':
+            projeto.qtd_fases = 2
+            projeto.tipo_instalacao = 'bifasica'
+        elif tipo_entrada == 'trifasico':
+            projeto.qtd_fases = 3
+            projeto.tipo_instalacao = 'trifasica'
+        else:
+            projeto.qtd_fases = None
+            
+        projeto.cabo_fase_bitola = request.form.get('cabo_fase_bitola')
+        projeto.cabo_neutro_bitola = request.form.get('cabo_neutro_bitola')
+        projeto.qtd_terra = int(request.form.get('qtd_terra', 1)) if request.form.get('qtd_terra') else 1
+        projeto.cabo_terra_bitola = request.form.get('cabo_terra_bitola')
+        projeto.padrao_observacoes = request.form.get('padrao_observacoes')
+        
+        # Cabos
         projeto.cabo_ca = request.form.get('cabo_ca')
         projeto.cabo_cc = request.form.get('cabo_cc')
         
