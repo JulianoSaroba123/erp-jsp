@@ -115,6 +115,35 @@ def create_app(config_name=None):
             db.create_all()
             print("[OK] Tabelas do banco de dados verificadas/criadas!")
             
+            # Migração: Adicionar colunas faltantes em orcamento_itens (v3.0)
+            try:
+                from sqlalchemy import text, inspect
+                inspector = inspect(db.engine)
+                
+                if 'orcamento_itens' in inspector.get_table_names():
+                    colunas = [c['name'] for c in inspector.get_columns('orcamento_itens')]
+                    
+                    # Adiciona coluna 'categoria' se não existir
+                    if 'categoria' not in colunas:
+                        db.session.execute(text("ALTER TABLE orcamento_itens ADD COLUMN categoria VARCHAR(50)"))
+                        db.session.commit()
+                        print("[OK] Coluna 'categoria' adicionada em orcamento_itens")
+                    
+                    # Adiciona coluna 'ordem' se não existir
+                    if 'ordem' not in colunas:
+                        db.session.execute(text("ALTER TABLE orcamento_itens ADD COLUMN ordem INTEGER DEFAULT 0"))
+                        db.session.commit()
+                        print("[OK] Coluna 'ordem' adicionada em orcamento_itens")
+                    
+                    # Adiciona coluna 'criado_em' se não existir
+                    if 'criado_em' not in colunas:
+                        db.session.execute(text("ALTER TABLE orcamento_itens ADD COLUMN criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
+                        db.session.commit()
+                        print("[OK] Coluna 'criado_em' adicionada em orcamento_itens")
+            except Exception as e:
+                db.session.rollback()
+                print(f" ⚠ Aviso na migração orcamento_itens: {e}")
+            
             # Cria usuário admin padrão se não existir nenhum usuário
             from app.auth.usuario_model import Usuario
             if Usuario.query.count() == 0:
