@@ -104,6 +104,14 @@ def create_app(config_name=None):
             except Exception as e:
                 print(f" ⚠ Modelo KitFotovoltaico não disponível: {e}")
             
+            # Importa modelos do Módulo Energia Solar v3.0
+            try:
+                from app.concessionaria.concessionaria_model import Concessionaria
+                from app.energia_solar.orcamento_model import OrcamentoItem
+                print("[OK] Modelos Concessionaria e OrcamentoItem importados")
+            except Exception as e:
+                print(f" ⚠ Erro ao importar modelos Energia Solar v3.0: {e}")
+            
             db.create_all()
             print("[OK] Tabelas do banco de dados verificadas/criadas!")
             
