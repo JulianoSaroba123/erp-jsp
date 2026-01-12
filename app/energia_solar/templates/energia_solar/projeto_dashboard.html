@@ -724,26 +724,26 @@
                                     <strong>CONFIGURAÇÃO DO PADRÃO</strong>
                                 </div>
                                 <div class="card-body">
-                                    <div class="row g-3">
-                                        <div class="col-md-3">
-                                            <label class="form-label fw-bold">TIPO DE ENTRADA <span class="text-danger">*</span></label>
-                                            <select class="form-select form-select-lg" name="tipo_entrada" id="tipo_entrada">
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-bold small">TIPO DE ENTRADA <span class="text-danger">*</span></label>
+                                            <select class="form-select" name="tipo_entrada" id="tipo_entrada">
                                                 <option value="monofasico" {% if projeto.qtd_fases == 1 or projeto.tipo_instalacao == 'monofasica' or projeto.circuito == 'Monofásico' %}selected{% endif %}>MONOFÁSICO</option>
                                                 <option value="bifasico" {% if projeto.qtd_fases == 2 or projeto.tipo_instalacao == 'bifasica' or projeto.circuito == 'Bifásico' %}selected{% endif %}>BIFÁSICO</option>
                                                 <option value="trifasico" {% if projeto.qtd_fases == 3 or projeto.tipo_instalacao == 'trifasica' or projeto.circuito == 'Trifásico' %}selected{% endif %}>TRIFÁSICO</option>
                                             </select>
                                         </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-bold small">DISJ. GERAL (A) <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" name="disjuntor_ca" value="{{ projeto.disjuntor_ca or '63' }}" placeholder="Ex: 20, 32, 63" oninput="atualizarDiagramaUnifilar()">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-bold small">FASE-QTD</label>
+                                            <input type="number" class="form-control bg-light" id="qtd_fases" name="qtd_fases" value="{{ projeto.qtd_fases or 2 }}" readonly>
+                                        </div>
                                         <div class="col-md-3">
-                                            <label class="form-label fw-bold">DISJUNTOR GERAL (A) <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control form-control-lg" name="disjuntor_ca" value="{{ projeto.disjuntor_ca or '63' }}" placeholder="Ex: 20, 32, 63" oninput="atualizarDiagramaUnifilar()">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label fw-bold">FASE - QTD</label>
-                                            <input type="number" class="form-control form-control-lg bg-light" id="qtd_fases" name="qtd_fases" value="{{ projeto.qtd_fases or 2 }}" readonly>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label fw-bold">FASE - BITOLA (MM²)</label>
-                                            <select class="form-select form-select-lg" name="cabo_fase_bitola">
+                                            <label class="form-label fw-bold small">FASE-BITOLA (MM²)</label>
+                                            <select class="form-select" name="cabo_fase_bitola">
                                                 <option value="4" {% if projeto.cabo_fase_bitola == '4' %}selected{% endif %}>4 mm²</option>
                                                 <option value="6" {% if projeto.cabo_fase_bitola == '6' %}selected{% endif %}>6 mm²</option>
                                                 <option value="10" {% if projeto.cabo_fase_bitola == '10' %}selected{% endif %}>10 mm²</option>
@@ -751,9 +751,9 @@
                                                 <option value="25" {% if projeto.cabo_fase_bitola == '25' %}selected{% endif %}>25 mm²</option>
                                             </select>
                                         </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label fw-bold">NEUTRO - BITOLA (MM²)</label>
-                                            <select class="form-select form-select-lg" name="cabo_neutro_bitola">
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-bold small">NEUTRO-BITOLA (MM²)</label>
+                                            <select class="form-select" name="cabo_neutro_bitola">
                                                 <option value="4" {% if projeto.cabo_neutro_bitola == '4' %}selected{% endif %}>4 mm²</option>
                                                 <option value="6" {% if projeto.cabo_neutro_bitola == '6' %}selected{% endif %}>6 mm²</option>
                                                 <option value="10" {% if projeto.cabo_neutro_bitola == '10' %}selected{% endif %}>10 mm²</option>
