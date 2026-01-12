@@ -1444,16 +1444,24 @@ function salvarOrcamento() {
                         </div>
                     </div>
                     
-                    <!-- Preview da Média em Tempo Real -->
-                    <div class="alert alert-info mt-4" style="background: linear-gradient(135deg, #06b6d4, #0891b2); border: none;">
-                        <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <label class="text-white mb-1"><i class="fas fa-chart-line me-2"></i><strong>MÉDIA CALCULADA:</strong></label>
-                                <h3 class="text-white mb-0" id="media_preview">0,00 kWh/mês</h3>
+                    <!-- Campo de Preview da Média -->
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-primary">
+                                <i class="fas fa-chart-line me-2"></i>MÉDIA CALCULADA
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <input type="text" class="form-control text-center fw-bold" id="media_preview" value="0,00" readonly style="font-size: 1.5rem; background: #f0f9ff; color: #0891b2; border: 2px solid #06b6d4;">
+                                <span class="input-group-text bg-primary text-white fw-bold">kWh/mês</span>
                             </div>
-                            <div class="col-md-6">
-                                <label class="text-white mb-1"><i class="fas fa-hashtag me-2"></i><strong>MESES PREENCHIDOS:</strong></label>
-                                <h4 class="text-white mb-0"><span id="meses_preenchidos">0</span> de 12</h4>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted">
+                                <i class="fas fa-hashtag me-2"></i>MESES PREENCHIDOS
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <input type="text" class="form-control text-center fw-bold" id="meses_preenchidos" value="0" readonly style="font-size: 1.5rem; background: #f8fafc; color: #64748b; border: 2px solid #cbd5e1;">
+                                <span class="input-group-text bg-secondary text-white fw-bold">de 12</span>
                             </div>
                         </div>
                     </div>
@@ -1801,20 +1809,28 @@ function atualizarMediaPreview() {
     
     const media = count > 0 ? soma / count : 0;
     
-    // Atualizar display da média
-    document.getElementById('media_preview').textContent = media.toFixed(2).replace('.', ',') + ' kWh/mês';
-    document.getElementById('meses_preenchidos').textContent = count;
+    // Atualizar campos
+    document.getElementById('media_preview').value = media.toFixed(2).replace('.', ',');
+    document.getElementById('meses_preenchidos').value = count;
     
-    // Mudar cor do preview baseado na quantidade de meses
-    const previewBox = document.getElementById('media_preview').closest('.alert');
+    // Mudar cor do campo de média baseado na quantidade de meses
+    const campoMedia = document.getElementById('media_preview');
     if (count === 0) {
-        previewBox.style.background = 'linear-gradient(135deg, #6b7280, #9ca3af)';
+        campoMedia.style.background = '#f8fafc';
+        campoMedia.style.color = '#94a3b8';
+        campoMedia.style.borderColor = '#cbd5e1';
     } else if (count < 6) {
-        previewBox.style.background = 'linear-gradient(135deg, #f59e0b, #f97316)';
+        campoMedia.style.background = '#fef3c7';
+        campoMedia.style.color = '#d97706';
+        campoMedia.style.borderColor = '#f59e0b';
     } else if (count < 12) {
-        previewBox.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+        campoMedia.style.background = '#dbeafe';
+        campoMedia.style.color = '#1d4ed8';
+        campoMedia.style.borderColor = '#3b82f6';
     } else {
-        previewBox.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        campoMedia.style.background = '#d1fae5';
+        campoMedia.style.color = '#047857';
+        campoMedia.style.borderColor = '#10b981';
     }
 }
 
