@@ -241,7 +241,7 @@ def create_app(config_name=None):
         except Exception as e:
             print(f" ⚠ Aviso na migração de precificação: {e}")
         
-        # Migração: adicionar coluna tipo_instalacao em projeto_solar
+        # Migração: adicionar colunas faltantes em projeto_solar (v3.0)
         try:
             from sqlalchemy import text, inspect
             inspector = inspect(db.engine)
@@ -249,12 +249,59 @@ def create_app(config_name=None):
             if 'projeto_solar' in inspector.get_table_names():
                 colunas_existentes = [col['name'] for col in inspector.get_columns('projeto_solar')]
                 
-                if 'tipo_instalacao' not in colunas_existentes:
-                    db.session.execute(text("ALTER TABLE projeto_solar ADD COLUMN tipo_instalacao VARCHAR(20) DEFAULT 'monofasica'"))
+                # Lista de campos necessários com seus tipos
+                campos_necessarios = {
+                    'numero': "VARCHAR(20)",
+                    'tipo_instalacao': "VARCHAR(20) DEFAULT 'monofasica'",
+                    'circuito': "VARCHAR(20)",
+                    'status_orcamento': "VARCHAR(20) DEFAULT 'pendente'",
+                    'taxa_disponibilidade': "DOUBLE PRECISION",
+                    'economia_mensal': "DOUBLE PRECISION",
+                    'tempo_retorno': "DOUBLE PRECISION",
+                    'economia_25_anos': "DOUBLE PRECISION",
+                    'economia_anual': "DOUBLE PRECISION",
+                    'payback_anos': "DOUBLE PRECISION",
+                    'modalidade_gd': "VARCHAR(50)",
+                    'aliquota_fio_b': "DOUBLE PRECISION",
+                    'usuario_criador': "VARCHAR(100)",
+                    'data_criacao': "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
+                    'data_atualizacao': "TIMESTAMP"
+                }
+                
+                # Adicionar campos que não existem
+                campos_adicionados = []
+                for campo, tipo in campos_necessarios.items():
+                    if campo not in colunas_existentes:
+                        try:
+                            db.session.execute(text(f"ALTER TABLE projeto_solar ADD COLUMN {campo} {tipo}"))
+                            campos_adicionados.append(campo)
+                        except Exception:
+                            pass
+                
+                if campos_adicionados:
                     db.session.commit()
-                    print("[OK] Coluna tipo_instalacao adicionada em projeto_solar!")
+                    print(f"[OK] {len(campos_adicionados)} colunas adicionadas em projeto_solar: {', '.join(campos_adicionados)}")
+                
+                # Sincronizar circuito com tipo_instalacao para dados existentes
+                if 'circuito' in campos_adicionados or 'tipo_instalacao' in campos_adicionados:
+                    try:
+                        db.session.execute(text("""
+                            UPDATE projeto_solar 
+                            SET circuito = CASE 
+                                WHEN tipo_instalacao = 'monofasica' THEN 'Monofásico'
+                                WHEN tipo_instalacao = 'bifasica' THEN 'Bifásico'
+                                WHEN tipo_instalacao = 'trifasica' THEN 'Trifásico'
+                                ELSE circuito
+                            END
+                            WHERE circuito IS NULL AND tipo_instalacao IS NOT NULL
+                        """))
+                        db.session.commit()
+                    except Exception:
+                        pass
+                        
         except Exception as e:
-            print(f" ⚠ Aviso na migração de tipo_instalacao: {e}")
+            db.session.rollback()
+            print(f" ⚠ Aviso na migração de projeto_solar: {e}")
         
         # Migração: adicionar coluna horas_improdutivas_percentual
         try:
