@@ -236,6 +236,7 @@ class ProjetoSolar(db.Model):
     valor_conta_luz = db.Column(db.Float)  # R$
     tarifa_kwh = db.Column(db.Float)  # R$/kWh
     tipo_instalacao = db.Column(db.String(20), default='monofasica')  # monofasica, bifasica, trifasica
+    circuito = db.Column(db.String(20))  # Monofásico, Bifásico, Trifásico (compatibilidade com template)
     
     # Dimensionamento
     potencia_kwp = db.Column(db.Float)  # kWp calculado
@@ -275,13 +276,20 @@ class ProjetoSolar(db.Model):
     custo_total = db.Column(db.Float)
     margem_lucro = db.Column(db.Float)  # %
     valor_venda = db.Column(db.Float)
+    status_orcamento = db.Column(db.String(20), default='pendente')  # pendente, em_analise, aprovado, revisao
+    
+    # Análise Financeira Expandida
+    taxa_disponibilidade = db.Column(db.Float)  # R$/mês
+    economia_mensal = db.Column(db.Float)  # R$/mês
+    tempo_retorno = db.Column(db.Float)  # anos (payback)
     
     # Lei 14.300/2022
     lei_14300_ano = db.Column(db.Integer)  # 2023, 2024, 2025, etc
-    modalidade_gd = db.Column(db.String(10))  # 'GD I', 'GD II'
+    modalidade_gd = db.Column(db.String(50))  # 'GD I', 'GD II'
     aliquota_fio_b = db.Column(db.Float)  # %
     economia_anual = db.Column(db.Float)  # R$/ano
     payback_anos = db.Column(db.Float)  # anos
+    economia_25_anos = db.Column(db.Float)  # R$ economia em 25 anos
     
     # Controle
     status = db.Column(db.String(50), default='rascunho')  # rascunho, aprovado, instalado
