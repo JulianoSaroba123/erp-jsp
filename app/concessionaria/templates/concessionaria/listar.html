@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Concessionárias - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Concessionárias</span>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* Cores JSP Ciano */
+    .concessionarias-header {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(6,182,212,0.3);
+    }
+    .concessionarias-header h2,
+    .concessionarias-header p {
+        color: white !important;
+    }
+    .btn-nova-concessionaria {
+        background: white !important;
+        color: #0891b2 !important;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .btn-nova-concessionaria:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+        color: #0e7490 !important;
+    }
+    .main-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .badge-ativo {
+        background-color: #10b981;
+        color: white;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(6,182,212,0.05);
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="concessionarias-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="mb-2">
+                    <i class="fas fa-bolt me-2"></i>
+                    Concessionárias de Energia
+                </h2>
+                <p class="mb-0 opacity-75">Gerenciamento de distribuidoras e tarifas</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="{{ url_for('concessionaria.novo') }}" class="btn btn-nova-concessionaria">
+                    <i class="fas fa-plus me-2"></i>
+                    Nova Concessionária
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card main-card">
+                <div class="card-body">
+                    
+                    <!-- Busca -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <form method="GET" action="{{ url_for('concessionaria.listar') }}" class="input-group">
+                                <input type="text" class="form-control" name="busca" 
+                                       placeholder="Buscar por nome ou região..." 
+                                       value="{{ busca or '' }}">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-search"></i> Buscar
+                                </button>
+                                {% if busca %}
+                                <a href="{{ url_for('concessionaria.listar') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Limpar
+                                </a>
+                                {% endif %}
+                            </form>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <span class="text-muted">
+                                <i class="fas fa-list-ul"></i>
+                                Total: <strong>{{ concessionarias|length }}</strong> concessionária(s)
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if concessionarias %}
+                    <!-- Tabela -->
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>Região</th>
+                                    <th class="text-end">TE (R$/kWh)</th>
+                                    <th class="text-end">TUSD (R$/kWh)</th>
+                                    <th class="text-center">PIS (%)</th>
+                                    <th class="text-center">COFINS (%)</th>
+                                    <th class="text-center">ICMS (%)</th>
+                                    <th class="text-center">Tarifa Final</th>
+                                    <th>Atualização</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for c in concessionarias %}
+                                <tr>
+                                    <td><strong>{{ c.id }}</strong></td>
+                                    <td>
+                                        <strong>{{ c.nome }}</strong>
+                                    </td>
+                                    <td>{{ c.regiao or '-' }}</td>
+                                    <td class="text-end">
+                                        <span class="badge bg-info">R$ {{ "%.4f"|format(c.te or 0) }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="badge bg-info">R$ {{ "%.4f"|format(c.tusd or 0) }}</span>
+                                    </td>
+                                    <td class="text-center">{{ "%.2f"|format(c.pis or 0) }}%</td>
+                                    <td class="text-center">{{ "%.2f"|format(c.cofins or 0) }}%</td>
+                                    <td class="text-center">{{ "%.2f"|format(c.icms or 0) }}%</td>
+                                    <td class="text-center">
+                                        <strong class="text-success">R$ {{ "%.4f"|format(c.tarifa_final) }}</strong>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ c.data_atualizacao.strftime('%d/%m/%Y') if c.data_atualizacao else '-' }}
+                                        </small>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('concessionaria.editar', id=c.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <form method="POST" 
+                                                  action="{{ url_for('concessionaria.excluir', id=c.id) }}" 
+                                                  style="display:inline;" 
+                                                  onsubmit="return confirm('Deseja realmente desativar {{ c.nome }}?');">
+                                                <button type="submit" 
+                                                        class="btn btn-outline-danger" 
+                                                        title="Desativar">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <!-- Sem resultados -->
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle fa-2x mb-3"></i>
+                        <h5>Nenhuma concessionária encontrada</h5>
+                        <p class="mb-0">
+                            {% if busca %}
+                            Sua busca por "{{ busca }}" não retornou resultados.
+                            <a href="{{ url_for('concessionaria.listar') }}">Ver todas</a>
+                            {% else %}
+                            Cadastre a primeira concessionária clicando em "Nova Concessionária".
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

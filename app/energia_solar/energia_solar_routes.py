@@ -925,10 +925,29 @@ def kit_editar(kit_id):
 @energia_solar_bp.route('/projetos')
 @login_required
 def projetos_listar():
-    """Lista todos os projetos solares"""
+    """Lista todos os projetos solares com ordenação"""
     from app.energia_solar.catalogo_model import ProjetoSolar
     
-    projetos = ProjetoSolar.query.order_by(ProjetoSolar.data_criacao.desc()).all()
+    # Pegar parâmetro de ordenação
+    ordem = request.args.get('ordem', 'recente')
+    
+    # Aplicar ordenação
+    query = ProjetoSolar.query
+    
+    if ordem == 'recente':
+        query = query.order_by(ProjetoSolar.data_criacao.desc())
+    elif ordem == 'antigo':
+        query = query.order_by(ProjetoSolar.data_criacao.asc())
+    elif ordem == 'cliente':
+        query = query.order_by(ProjetoSolar.nome_cliente.asc())
+    elif ordem == 'valor':
+        query = query.order_by(ProjetoSolar.valor_venda.desc())
+    elif ordem == 'potencia':
+        query = query.order_by(ProjetoSolar.potencia_kwp.desc())
+    else:
+        query = query.order_by(ProjetoSolar.data_criacao.desc())
+    
+    projetos = query.all()
     
     # Evitar cache para garantir HTML atualizado
     from flask import make_response
@@ -937,6 +956,383 @@ def projetos_listar():
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
     return response
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/duplicar', methods=['POST'])
+@login_required
+def projeto_duplicar(projeto_id):
+    """Duplica um projeto existente"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    try:
+        # Buscar projeto original
+        projeto_original = ProjetoSolar.query.get_or_404(projeto_id)
+        
+        # Criar novo projeto (cópia)
+        novo_projeto = ProjetoSolar()
+        
+        # Copiar todos os atributos relevantes
+        for coluna in ProjetoSolar.__table__.columns:
+            if coluna.name not in ['id', 'data_criacao', 'data_modificacao', 'numero_projeto']:
+                valor = getattr(projeto_original, coluna.name)
+                setattr(novo_projeto, coluna.name, valor)
+        
+        # Modificar nome do cliente para indicar cópia
+        novo_projeto.nome_cliente = f"{projeto_original.nome_cliente} (CÓPIA)"
+        novo_projeto.status = 'rascunho'
+        novo_projeto.status_orcamento = 'pendente'
+        
+        db.session.add(novo_projeto)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'novo_id': novo_projeto.id,
+            'mensagem': 'Projeto duplicado com sucesso!'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/dashboard')
+@login_required
+def projeto_dashboard(projeto_id):
+    """Dashboard completo do projeto com KPIs e ações"""
+    from app.energia_solar.catalogo_model import ProjetoSolar, PlacaSolar, InversorSolar, KitSolar
+    
+    projeto = ProjetoSolar.query.get_or_404(projeto_id)
+    
+    # Buscar equipamentos
+    placa = None
+    inversor = None
+    
+    # Tentar buscar via kit primeiro
+    if projeto.kit_id:
+        kit = KitSolar.query.get(projeto.kit_id)
+        if kit:
+            if kit.placa_id:
+                placa = PlacaSolar.query.get(kit.placa_id)
+            if kit.inversor_id:
+                inversor = InversorSolar.query.get(kit.inversor_id)
+    
+    # Se não encontrou via kit, buscar direto
+    if not placa and projeto.placa_id:
+        placa = PlacaSolar.query.get(projeto.placa_id)
+    if not inversor and projeto.inversor_id:
+        inversor = InversorSolar.query.get(projeto.inversor_id)
+    
+    # Calcular KPIs adicionais se necessário
+    economia_mensal = (projeto.consumo_kwh_mes or 0) * (projeto.tarifa_kwh or 0)
+    economia_anual = economia_mensal * 12
+    
+    # Buscar concessionárias para o select
+    from app.concessionaria.concessionaria_model import Concessionaria
+    concessionarias = Concessionaria.query.filter_by(ativo=True).order_by(Concessionaria.nome).all()
+    
+    return render_template('energia_solar/projeto_dashboard.html', 
+                         projeto=projeto,
+                         placa=placa,
+                         inversor=inversor,
+                         economia_mensal=economia_mensal,
+                         economia_anual=economia_anual,
+                         concessionarias=concessionarias)
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/dados-financeiros', methods=['POST'])
+@login_required
+def projeto_salvar_dados_financeiros(projeto_id):
+    """Salva dados financeiros do projeto"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    try:
+        projeto = ProjetoSolar.query.get_or_404(projeto_id)
+        
+        # Receber dados do formulário
+        concessionaria_id = request.form.get('concessionaria_id')
+        tarifa_final = request.form.get('tarifa_final')
+        economia_anual = request.form.get('economia_anual_prevista')
+        impostos_percentual = request.form.get('impostos_percentual')
+        
+        # Atualizar projeto
+        if concessionaria_id:
+            projeto.concessionaria_id = int(concessionaria_id)
+        
+        if tarifa_final:
+            projeto.tarifa_energia = float(tarifa_final.replace(',', '.'))
+        
+        if economia_anual:
+            projeto.economia_anual_prevista = float(economia_anual.replace(',', '.'))
+        
+        if impostos_percentual:
+            projeto.impostos_percentual = float(impostos_percentual.replace(',', '.'))
+        
+        db.session.commit()
+        
+        flash('Dados financeiros salvos com sucesso!', 'success')
+        return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao salvar dados financeiros: {str(e)}', 'danger')
+        return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/dados-tecnicos', methods=['POST'])
+@login_required
+def projeto_salvar_dados_tecnicos(projeto_id):
+    """Salva dados técnicos do projeto"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    try:
+        projeto = ProjetoSolar.query.get_or_404(projeto_id)
+        
+        # Aba 1: Dados iniciais
+        projeto.cidade = request.form.get('cidade')
+        projeto.estado = request.form.get('estado')
+        projeto.latitude = float(request.form.get('latitude', 0)) if request.form.get('latitude') else None
+        projeto.longitude = float(request.form.get('longitude', 0)) if request.form.get('longitude') else None
+        projeto.irradiacao_solar = float(request.form.get('irradiacao_solar', 0)) if request.form.get('irradiacao_solar') else None
+        projeto.tipo_instalacao = request.form.get('tipo_instalacao')
+        projeto.perdas_sistema = float(request.form.get('perdas_sistema', 20)) / 100 if request.form.get('perdas_sistema') else 0.20
+        projeto.consumo_kwh_mes = float(request.form.get('consumo_kwh_mes', 0)) if request.form.get('consumo_kwh_mes') else None
+        
+        # Aba 2: Método
+        projeto.qtd_placas = int(request.form.get('qtd_placas', 0)) if request.form.get('qtd_placas') else None
+        
+        # Aba 3: Ajustes
+        projeto.qtd_inversores = int(request.form.get('qtd_inversores', 1)) if request.form.get('qtd_inversores') else 1
+        projeto.orientacao = request.form.get('orientacao')
+        projeto.linhas_placas = int(request.form.get('linhas_placas', 0)) if request.form.get('linhas_placas') else None
+        projeto.colunas_placas = int(request.form.get('colunas_placas', 0)) if request.form.get('colunas_placas') else None
+        
+        # Aba 4: Demais Informações
+        projeto.lei_14300_ano = int(request.form.get('lei_14300_ano', 2026)) if request.form.get('lei_14300_ano') else 2026
+        projeto.simultaneidade = float(request.form.get('simultaneidade', 35)) if request.form.get('simultaneidade') else 35.0
+        projeto.disjuntor_ca = request.form.get('disjuntor_ca')
+        projeto.cabo_ca = request.form.get('cabo_ca')
+        projeto.cabo_cc = request.form.get('cabo_cc')
+        
+        db.session.commit()
+        
+        flash('✅ Dados técnicos salvos com sucesso!', 'success')
+        return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+        
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        print(f"❌ ERRO ao salvar dados técnicos:")
+        print(traceback.format_exc())
+        flash(f'Erro ao salvar dados técnicos: {str(e)}', 'danger')
+        return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/orcamento/itens', methods=['GET'])
+@login_required
+def projeto_orcamento_listar(projeto_id):
+    """Lista itens do orçamento do projeto"""
+    from app.energia_solar.orcamento_model import OrcamentoItem
+    
+    itens = OrcamentoItem.query.filter_by(projeto_id=projeto_id).order_by(OrcamentoItem.ordem, OrcamentoItem.id).all()
+    
+    return jsonify({
+        'success': True,
+        'itens': [item.to_dict() for item in itens]
+    })
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/orcamento/itens', methods=['POST'])
+@login_required
+def projeto_orcamento_salvar(projeto_id):
+    """Salva itens do orçamento"""
+    from app.energia_solar.orcamento_model import OrcamentoItem
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    try:
+        # Receber dados JSON
+        data = request.get_json()
+        itens_data = data.get('itens', [])
+        
+        # Deletar itens existentes
+        OrcamentoItem.query.filter_by(projeto_id=projeto_id).delete()
+        
+        # Criar novos itens
+        total_custo = 0
+        total_faturamento = 0
+        
+        for idx, item_data in enumerate(itens_data):
+            item = OrcamentoItem()
+            item.projeto_id = projeto_id
+            item.descricao = item_data.get('descricao', '')
+            item.categoria = item_data.get('categoria', 'outros')
+            item.quantidade = float(item_data.get('quantidade', 1))
+            item.unidade_medida = item_data.get('unidade_medida', 'un')
+            item.preco_unitario = float(item_data.get('preco_unitario', 0))
+            item.lucro_percentual = float(item_data.get('lucro_percentual', 0))
+            item.ordem = idx
+            
+            # Calcular totais
+            item.calcular_totais()
+            
+            db.session.add(item)
+            
+            total_custo += float(item.preco_total)
+            total_faturamento += float(item.faturamento)
+        
+        # Atualizar valores no projeto
+        projeto = ProjetoSolar.query.get(projeto_id)
+        if projeto:
+            projeto.custo_total = total_custo
+            projeto.valor_venda = total_faturamento
+            projeto.valor_orcamento_total = total_faturamento
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'total_custo': total_custo,
+            'total_faturamento': total_faturamento,
+            'mensagem': 'Orçamento salvo com sucesso!'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@energia_solar_bp.route('/orcamento/custos-fixos-template', methods=['GET'])
+@login_required
+def orcamento_custos_fixos_template():
+    """Retorna template de custos fixos"""
+    from app.energia_solar.orcamento_model import db
+    from sqlalchemy import text
+    
+    try:
+        result = db.session.execute(text("""
+            SELECT descricao, quantidade, unidade_medida, preco_unitario, lucro_percentual, faturamento, ordem
+            FROM custos_fixos_template
+            WHERE ativo = true
+            ORDER BY ordem
+        """))
+        
+        custos = []
+        for row in result:
+            custos.append({
+                'descricao': row[0],
+                'quantidade': float(row[1]) if row[1] else 1,
+                'unidade_medida': row[2] or 'un',
+                'preco_unitario': float(row[3]) if row[3] else 0,
+                'lucro_percentual': float(row[4]) if row[4] else 0,
+                'faturamento': float(row[5]) if row[5] else 0
+            })
+        
+        return jsonify({
+            'success': True,
+            'custos': custos
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/financiamento', methods=['POST'])
+@login_required
+def projeto_salvar_financiamento(projeto_id):
+    """Salva dados de financiamento do projeto"""
+    from app.energia_solar.orcamento_model import db
+    from sqlalchemy import text
+    
+    try:
+        data = request.get_json()
+        
+        # Deletar financiamento existente
+        db.session.execute(text("""
+            DELETE FROM projeto_financiamento 
+            WHERE projeto_id = :projeto_id
+        """), {'projeto_id': projeto_id})
+        
+        # Inserir novo financiamento
+        db.session.execute(text("""
+            INSERT INTO projeto_financiamento 
+            (projeto_id, valor_financiado, n_meses, juros_mensal, valor_parcela, total_pagar, total_juros, incluir_em_pdf)
+            VALUES (:projeto_id, :valor_financiado, :n_meses, :juros_mensal, :valor_parcela, :total_pagar, :total_juros, :incluir_em_pdf)
+        """), {
+            'projeto_id': projeto_id,
+            'valor_financiado': float(data.get('valor_financiado', 0)),
+            'n_meses': int(data.get('n_meses', 12)),
+            'juros_mensal': float(data.get('juros_mensal', 0)),
+            'valor_parcela': float(data.get('valor_parcela', 0)),
+            'total_pagar': float(data.get('total_pagar', 0)),
+            'total_juros': float(data.get('total_juros', 0)),
+            'incluir_em_pdf': bool(data.get('incluir_em_pdf', False))
+        })
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'mensagem': 'Financiamento salvo com sucesso!'
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/financiamento', methods=['GET'])
+@login_required
+def projeto_buscar_financiamento(projeto_id):
+    """Busca dados de financiamento do projeto"""
+    from app.energia_solar.orcamento_model import db
+    from sqlalchemy import text
+    
+    try:
+        result = db.session.execute(text("""
+            SELECT valor_financiado, n_meses, juros_mensal, valor_parcela, total_pagar, total_juros, incluir_em_pdf
+            FROM projeto_financiamento
+            WHERE projeto_id = :projeto_id
+            LIMIT 1
+        """), {'projeto_id': projeto_id})
+        
+        row = result.fetchone()
+        
+        if row:
+            return jsonify({
+                'success': True,
+                'financiamento': {
+                    'valor_financiado': float(row[0]) if row[0] else 0,
+                    'n_meses': int(row[1]) if row[1] else 12,
+                    'juros_mensal': float(row[2]) if row[2] else 0,
+                    'valor_parcela': float(row[3]) if row[3] else 0,
+                    'total_pagar': float(row[4]) if row[4] else 0,
+                    'total_juros': float(row[5]) if row[5] else 0,
+                    'incluir_em_pdf': bool(row[6]) if row[6] else False
+                }
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'financiamento': None
+            })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 
 @energia_solar_bp.route('/projetos/criar')
@@ -961,20 +1357,30 @@ def projeto_criar():
 @energia_solar_bp.route('/projetos/salvar', methods=['POST'])
 @login_required
 def projeto_salvar():
-    """Salva o projeto completo das 6 abas"""
+    """Salva ou atualiza o projeto completo das 6 abas"""
     from app.energia_solar.catalogo_model import ProjetoSolar
     import json
     
     try:
-        # Criar novo projeto
-        projeto = ProjetoSolar()
+        # Verificar se é edição ou criação
+        projeto_id = request.form.get('projeto_id')
+        
+        if projeto_id:
+            # ATUALIZAR projeto existente
+            projeto = ProjetoSolar.query.get_or_404(int(projeto_id))
+            print(f"📝 ATUALIZANDO projeto {projeto_id}")
+        else:
+            # CRIAR novo projeto
+            projeto = ProjetoSolar()
+            print(f"✨ CRIANDO novo projeto")
         
         # Aba 1 - Cliente e Localização
         projeto.cliente_id = request.form.get('cliente_id') or None
         projeto.nome_cliente = request.form.get('nome_cliente')
         projeto.cep = request.form.get('cep')
         projeto.endereco = request.form.get('endereco')
-        projeto.numero = request.form.get('numero')
+        projeto.numero = request.form.get('numero')  # 🔥 SALVAR NÚMERO
+        print(f"🏠 Número do endereço: {projeto.numero}")
         projeto.cidade = request.form.get('cidade')
         projeto.estado = request.form.get('estado')
         projeto.latitude = float(request.form.get('latitude', 0)) if request.form.get('latitude') else None
@@ -994,9 +1400,16 @@ def projeto_salvar():
             projeto.historico_consumo = historico
         
         projeto.valor_conta_luz = float(request.form.get('valor_conta_luz', 0)) if request.form.get('valor_conta_luz') else None
-        projeto.tarifa_kwh = float(request.form.get('tarifa_kwh', 0.85)) if request.form.get('tarifa_kwh') else 0.85
+        projeto.tarifa_kwh = float(request.form.get('tarifa_kwh', 0.85)) if request.form.get('tarifa_kwh') else 0.85  # 🔥 SALVAR TARIFA
+        print(f"💰 Tarifa kWh: {projeto.tarifa_kwh}")
+        
+        # 🔥 TIPO DE INSTALAÇÃO - campo que faltava
+        projeto.tipo_instalacao = request.form.get('tipo_instalacao', 'monofasica')  
+        print(f"⚡ Tipo de instalação: {projeto.tipo_instalacao}")
+        
         projeto.potencia_kwp = float(request.form.get('potencia_kwp', 0)) if request.form.get('potencia_kwp') else None
-        projeto.simultaneidade = float(request.form.get('simultaneidade', 35.0)) if request.form.get('simultaneidade') else 35.0  # Porcentagem inteira (35 = 35%)
+        projeto.simultaneidade = float(request.form.get('simultaneidade', 35.0)) if request.form.get('simultaneidade') else 35.0  # 🔥 SALVAR SIMULTANEIDADE
+        print(f"🔄 Simultaneidade: {projeto.simultaneidade}%")
         projeto.perdas_sistema = float(request.form.get('perdas_sistema', 0.20)) if request.form.get('perdas_sistema') else 0.20
         
         # Aba 3 - Equipamentos
@@ -1058,8 +1471,9 @@ def projeto_salvar():
         projeto.string_box = request.form.get('string_box') == 'on'
         projeto.disjuntor_cc = request.form.get('disjuntor_cc')
         projeto.disjuntor_ca = request.form.get('disjuntor_ca')
-        projeto.cabo_cc = request.form.get('cabo_cc')
-        projeto.cabo_ca = request.form.get('cabo_ca')
+        projeto.cabo_cc = request.form.get('cabo_cc')  # 🔥 SALVAR CABO CC
+        projeto.cabo_ca = request.form.get('cabo_ca')  # 🔥 SALVAR CABO CA
+        print(f"🔌 Cabo CC: {projeto.cabo_cc}, Cabo CA: {projeto.cabo_ca}")
         projeto.estrutura_fixacao = request.form.get('estrutura_fixacao')
         
         # Componentes extras (JSON array)
@@ -1088,18 +1502,31 @@ def projeto_salvar():
         # Controle
         projeto.status = request.form.get('status', 'rascunho')
         projeto.observacoes = request.form.get('observacoes')
-        projeto.usuario_criador = current_user.nome if hasattr(current_user, 'nome') else 'Sistema'
+        
+        # Só atualizar usuario_criador se for novo projeto
+        if not projeto_id:
+            projeto.usuario_criador = current_user.nome if hasattr(current_user, 'nome') else 'Sistema'
         
         # Salvar
-        db.session.add(projeto)
+        if not projeto_id:
+            db.session.add(projeto)
+        
         db.session.commit()
         
-        flash('Projeto criado com sucesso!', 'success')
+        # Mensagem de sucesso
+        if projeto_id:
+            flash('✅ Projeto atualizado com sucesso!', 'success')
+        else:
+            flash('✅ Projeto criado com sucesso!', 'success')
+        
         return redirect(url_for('energia_solar.projetos_listar'))
         
     except Exception as e:
         db.session.rollback()
-        flash(f'Erro ao criar projeto: {str(e)}', 'error')
+        import traceback
+        print(f"❌ ERRO ao salvar projeto:")
+        print(traceback.format_exc())
+        flash(f'Erro ao salvar projeto: {str(e)}', 'error')
         return redirect(url_for('energia_solar.projeto_criar'))
 
 
@@ -1140,6 +1567,7 @@ def projeto_editar(projeto_id):
             'nome_cliente': projeto.nome_cliente,
             'cep': projeto.cep,
             'endereco': projeto.endereco,
+            'numero': projeto.numero,  # 🔥 ADICIONAR NÚMERO
             'cidade': projeto.cidade,
             'estado': projeto.estado,
             'latitude': float(projeto.latitude) if projeto.latitude else None,
@@ -1149,6 +1577,7 @@ def projeto_editar(projeto_id):
             'consumo_kwh_mes': float(projeto.consumo_kwh_mes) if projeto.consumo_kwh_mes else None,
             'valor_conta_luz': float(projeto.valor_conta_luz) if projeto.valor_conta_luz else None,
             'tarifa_kwh': float(projeto.tarifa_kwh) if projeto.tarifa_kwh else 0.85,
+            'tipo_instalacao': projeto.tipo_instalacao,  # 🔥 ADICIONAR TIPO INSTALAÇÃO
             'simultaneidade': float(projeto.simultaneidade) if projeto.simultaneidade else 35.0,  # Porcentagem inteira
             'perdas_sistema': float(projeto.perdas_sistema) if projeto.perdas_sistema else 0.2,
             'potencia_kwp': float(projeto.potencia_kwp) if projeto.potencia_kwp else None,

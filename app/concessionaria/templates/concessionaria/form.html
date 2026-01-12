@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if concessionaria %}Editar{% else %}Nova{% endif %} Concessionária - {{ super() }}
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('concessionaria.listar') }}">Concessionárias</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">{% if concessionaria %}Editar{% else %}Nova{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<style>
+    .form-header {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(6,182,212,0.3);
+    }
+    .form-header h2 {
+        color: white !important;
+        margin-bottom: 0;
+    }
+    .form-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .section-title {
+        color: #0891b2;
+        font-weight: 600;
+        border-bottom: 2px solid #e0f2fe;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .form-label {
+        font-weight: 500;
+        color: #0f172a;
+    }
+    .required::after {
+        content: " *";
+        color: #ef4444;
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="form-header">
+        <h2>
+            <i class="fas fa-bolt me-2"></i>
+            {% if concessionaria %}Editar{% else %}Nova{% endif %} Concessionária
+        </h2>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-10 col-xl-8 mx-auto">
+            <div class="card form-card">
+                <div class="card-body p-4">
+                    
+                    <form method="POST" id="formConcessionaria">
+                        
+                        <!-- Dados Principais -->
+                        <h4 class="section-title">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Dados Principais
+                        </h4>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="nome" class="form-label required">Nome da Concessionária</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="nome" 
+                                       name="nome" 
+                                       required
+                                       placeholder="Ex: Neoenergia Elektro"
+                                       value="{{ concessionaria.nome if concessionaria else '' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="regiao" class="form-label">Região/Estado</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="regiao" 
+                                       name="regiao" 
+                                       placeholder="Ex: São Paulo - SP"
+                                       value="{{ concessionaria.regiao if concessionaria else '' }}">
+                            </div>
+                        </div>
+
+                        <!-- Tarifas -->
+                        <h4 class="section-title mt-4">
+                            <i class="fas fa-dollar-sign me-2"></i>
+                            Tarifas (R$/kWh)
+                        </h4>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="te" class="form-label">TE - Tarifa de Energia</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="te" 
+                                           name="te" 
+                                           step="0.0001"
+                                           placeholder="0,0000"
+                                           value="{{ concessionaria.te if concessionaria else '' }}">
+                                    <span class="input-group-text">/kWh</span>
+                                </div>
+                                <small class="text-muted">Valor da energia em si</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tusd" class="form-label">TUSD - Tarifa de Uso</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="tusd" 
+                                           name="tusd" 
+                                           step="0.0001"
+                                           placeholder="0,0000"
+                                           value="{{ concessionaria.tusd if concessionaria else '' }}">
+                                    <span class="input-group-text">/kWh</span>
+                                </div>
+                                <small class="text-muted">Tarifa de distribuição</small>
+                            </div>
+                        </div>
+
+                        <!-- Impostos -->
+                        <h4 class="section-title mt-4">
+                            <i class="fas fa-percent me-2"></i>
+                            Impostos (%)
+                        </h4>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="pis" class="form-label">PIS</label>
+                                <div class="input-group">
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="pis" 
+                                           name="pis" 
+                                           step="0.01"
+                                           placeholder="0,00"
+                                           value="{{ concessionaria.pis if concessionaria else '' }}">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <small class="text-muted">Ex: 0,79</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="cofins" class="form-label">COFINS</label>
+                                <div class="input-group">
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="cofins" 
+                                           name="cofins" 
+                                           step="0.01"
+                                           placeholder="0,00"
+                                           value="{{ concessionaria.cofins if concessionaria else '' }}">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <small class="text-muted">Ex: 3,65</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="icms" class="form-label">ICMS</label>
+                                <div class="input-group">
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="icms" 
+                                           name="icms" 
+                                           step="0.01"
+                                           placeholder="0,00"
+                                           value="{{ concessionaria.icms if concessionaria else '' }}">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <small class="text-muted">Ex: 18,00</small>
+                            </div>
+                        </div>
+
+                        <!-- Informações Calculadas -->
+                        {% if concessionaria and concessionaria.te and concessionaria.tusd %}
+                        <div class="alert alert-info mt-4">
+                            <h6><i class="fas fa-calculator me-2"></i>Tarifas Calculadas:</h6>
+                            <ul class="mb-0">
+                                <li><strong>Tarifa Base (TE + TUSD):</strong> R$ {{ "%.4f"|format(concessionaria.tarifa_total) }}/kWh</li>
+                                <li><strong>Tarifa Final (com impostos):</strong> R$ {{ "%.4f"|format(concessionaria.tarifa_final) }}/kWh</li>
+                            </ul>
+                        </div>
+                        {% endif %}
+
+                        <!-- Botões -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <a href="{{ url_for('concessionaria.listar') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-2"></i>
+                                        Cancelar
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>
+                                        {% if concessionaria %}Atualizar{% else %}Cadastrar{% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Validação do formulário
+document.getElementById('formConcessionaria').addEventListener('submit', function(e) {
+    const nome = document.getElementById('nome').value.trim();
+    
+    if (!nome) {
+        e.preventDefault();
+        alert('Por favor, preencha o nome da concessionária.');
+        document.getElementById('nome').focus();
+        return false;
+    }
+});
+</script>
+{% endblock %}

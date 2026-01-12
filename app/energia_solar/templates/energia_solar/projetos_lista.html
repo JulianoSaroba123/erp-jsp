@@ -8,117 +8,288 @@
 {% endblock %}
 
 {% block content %}
+<style>
+.projeto-header {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    padding: 2rem;
+    border-radius: 12px 12px 0 0;
+    margin-bottom: 0;
+}
+
+.projeto-table {
+    background: white;
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.projeto-table table {
+    margin-bottom: 0;
+}
+
+.projeto-table th {
+    background: #f8fafc;
+    color: #0891b2;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    padding: 1rem 0.75rem;
+    border-bottom: 2px solid #06b6d4;
+}
+
+.projeto-table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+}
+
+.badge-orcamento {
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.badge-conexao {
+    padding: 0.35rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.btn-acao {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-acao:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.dropdown-ordenar .dropdown-toggle {
+    background: white;
+    border: 2px solid #e2e8f0;
+    color: #0891b2;
+    font-weight: 500;
+}
+
+.dropdown-ordenar .dropdown-toggle:hover {
+    background: #f8fafc;
+    border-color: #06b6d4;
+}
+</style>
+
 <div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <h2><i class="fas fa-solar-panel me-2"></i>Projetos de Energia Solar</h2>
-        </div>
-        <div class="col-md-6 text-end">
-            <a href="{{ url_for('energia_solar.projeto_criar') }}" class="btn btn-success btn-lg">
-                <i class="fas fa-plus me-2"></i>Novo Projeto (Wizard)
-            </a>
+    <!-- Header com gradiente -->
+    <div class="projeto-header">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h2 class="text-white mb-0">
+                    <i class="fas fa-solar-panel me-2"></i>
+                    Projetos de Energia Solar
+                </h2>
+                <p class="text-white opacity-75 mb-0 mt-1">
+                    Gerencie todos os seus projetos fotovoltaicos
+                </p>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="btn-group me-2 dropdown-ordenar" role="group">
+                    <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-sort me-2"></i>Ordenar
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="?ordem=recente"><i class="fas fa-clock me-2"></i>Mais Recente</a></li>
+                        <li><a class="dropdown-item" href="?ordem=antigo"><i class="fas fa-history me-2"></i>Mais Antigo</a></li>
+                        <li><a class="dropdown-item" href="?ordem=cliente"><i class="fas fa-user me-2"></i>Nome Cliente</a></li>
+                        <li><a class="dropdown-item" href="?ordem=valor"><i class="fas fa-dollar-sign me-2"></i>Maior Valor</a></li>
+                        <li><a class="dropdown-item" href="?ordem=potencia"><i class="fas fa-bolt me-2"></i>Maior Potência</a></li>
+                    </ul>
+                </div>
+                <a href="{{ url_for('energia_solar.projeto_criar') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-plus me-2"></i>Novo Projeto
+                </a>
+            </div>
         </div>
     </div>
 
     {% if projetos %}
-    <div class="row">
-        {% for projeto in projetos %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-header bg-{{ 'success' if projeto.status == 'aprovado' else 'warning' if projeto.status == 'rascunho' else 'secondary' }}">
-                    <h5 class="mb-0 text-white">
-                        <i class="fas fa-solar-panel me-2"></i>
-                        Projeto #{{ projeto.id }}
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <h6 class="card-title" style="cursor: default;"><i class="fas fa-user me-2"></i>{{ projeto.nome_cliente }}</h6>
-                    <p class="card-text text-muted small">
-                        <i class="fas fa-map-marker-alt me-1"></i>
-                        {{ projeto.cidade }}/{{ projeto.estado }}
-                    </p>
-
-                    <div class="row g-2 mt-2">
-                        <div class="col-6">
-                            <div class="border rounded p-2 text-center">
-                                <small class="text-muted d-block">Consumo</small>
-                                <strong>{{ "%.0f"|format(projeto.consumo_kwh_mes or 0) }} kWh</strong>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-2 text-center">
-                                <small class="text-muted d-block">Potência</small>
-                                <strong>{{ "%.2f"|format(projeto.potencia_kwp or 0) }} kWp</strong>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-2 text-center">
-                                <small class="text-muted d-block">Placas</small>
-                                <strong>{{ projeto.qtd_placas or 0 }} un</strong>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-2 text-center">
-                                <small class="text-muted d-block">Inversores</small>
-                                <strong>{{ projeto.qtd_inversores or 0 }} un</strong>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-2 text-center bg-light">
-                                <small class="text-muted d-block">Valor Venda</small>
-                                <strong class="text-success">R$ {{ "%.2f"|format(projeto.valor_venda or 0) }}</strong>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-2 text-center bg-light">
-                                <small class="text-muted d-block">Payback</small>
-                                <strong class="text-info">{{ "%.1f"|format(projeto.payback_anos or 0) }} anos</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-3">
-                        <span class="badge bg-{{ 'success' if projeto.status == 'aprovado' else 'warning' if projeto.status == 'rascunho' else 'info' }}">
-                            {{ projeto.status.upper() }}
-                        </span>
-                        <small class="text-muted float-end">
-                            {{ projeto.data_criacao.strftime('%d/%m/%Y') }}
-                        </small>
-                    </div>
-                </div>
-                <div class="card-footer bg-transparent">
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ url_for('energia_solar.projeto_visualizar', projeto_id=projeto.id) }}" 
-                           class="btn btn-sm btn-primary">
-                            <i class="fas fa-eye me-1"></i>Visualizar
-                        </a>
+    <!-- Tabela de Projetos -->
+    <div class="projeto-table">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th>CLIENTE</th>
+                    <th style="width: 120px;">CONEXÃO</th>
+                    <th style="width: 150px;">ORÇAMENTO</th>
+                    <th style="width: 120px;">ETAPA</th>
+                    <th style="width: 120px;">POTÊNCIA</th>
+                    <th style="width: 120px;">VALOR</th>
+                    <th style="width: 250px;" class="text-center">AÇÕES</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for projeto in projetos %}
+                <tr>
+                    <!-- ID -->
+                    <td>
+                        <strong class="text-cyan">#{{ projeto.id }}</strong>
+                    </td>
+                    
+                    <!-- Cliente -->
+                    <td>
                         <div>
+                            <strong>{{ projeto.nome_cliente }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fas fa-map-marker-alt me-1"></i>
+                                {{ projeto.cidade }}/{{ projeto.estado }}
+                            </small>
+                        </div>
+                    </td>
+                    
+                    <!-- Conexão -->
+                    <td>
+                        {% if projeto.circuito %}
+                            {% if projeto.circuito == 'Monofásico' %}
+                                <span class="badge badge-conexao bg-info">
+                                    <i class="fas fa-bolt me-1"></i>MONO
+                                </span>
+                            {% elif projeto.circuito == 'Bifásico' %}
+                                <span class="badge badge-conexao bg-warning">
+                                    <i class="fas fa-bolt me-1"></i>BI
+                                </span>
+                            {% elif projeto.circuito == 'Trifásico' %}
+                                <span class="badge badge-conexao bg-success">
+                                    <i class="fas fa-bolt me-1"></i>TRI
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge badge-conexao bg-secondary">
+                                <i class="fas fa-question me-1"></i>N/D
+                            </span>
+                        {% endif %}
+                    </td>
+                    
+                    <!-- Orçamento -->
+                    <td>
+                        {% set status_orc = projeto.status_orcamento if projeto.status_orcamento else 'pendente' %}
+                        {% if status_orc == 'aprovado' %}
+                            <span class="badge badge-orcamento bg-success text-white">
+                                <i class="fas fa-check-circle me-1"></i>APROVADO
+                            </span>
+                        {% elif status_orc == 'em_analise' %}
+                            <span class="badge badge-orcamento bg-warning text-dark">
+                                <i class="fas fa-clock me-1"></i>EM ANÁLISE
+                            </span>
+                        {% elif status_orc == 'revisao' %}
+                            <span class="badge badge-orcamento bg-info text-white">
+                                <i class="fas fa-edit me-1"></i>REVISÃO
+                            </span>
+                        {% else %}
+                            <span class="badge badge-orcamento bg-secondary text-white">
+                                <i class="fas fa-hourglass-start me-1"></i>PENDENTE
+                            </span>
+                        {% endif %}
+                    </td>
+                    
+                    <!-- Etapa -->
+                    <td>
+                        <span class="badge bg-{{ 'success' if projeto.status == 'aprovado' else 'warning' if projeto.status == 'rascunho' else 'info' }}">
+                            {{ projeto.status.upper() if projeto.status else 'RASCUNHO' }}
+                        </span>
+                    </td>
+                    
+                    <!-- Potência -->
+                    <td>
+                        <strong class="text-primary">{{ "%.2f"|format(projeto.potencia_kwp or 0) }} kWp</strong>
+                        <br>
+                        <small class="text-muted">{{ projeto.qtd_placas or 0 }} placas</small>
+                    </td>
+                    
+                    <!-- Valor -->
+                    <td>
+                        <strong class="text-success">R$ {{ "{:,.2f}".format(projeto.valor_venda or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
+                    </td>
+                    
+                    <!-- Ações -->
+                    <td>
+                        <div class="d-flex gap-1 justify-content-center">
+                            <!-- Abrir Projeto (Dashboard) -->
+                            <a href="{{ url_for('energia_solar.projeto_dashboard', projeto_id=projeto.id) }}" 
+                               class="btn btn-sm btn-primary btn-acao" 
+                               title="Abrir Dashboard do Projeto">
+                                <i class="fas fa-folder-open me-1"></i>Abrir
+                            </a>
+                            
+                            <!-- Editar -->
                             <a href="{{ url_for('energia_solar.projeto_editar', projeto_id=projeto.id) }}" 
-                               class="btn btn-sm btn-warning" 
-                               title="Editar">
+                               class="btn btn-sm btn-warning btn-acao" 
+                               title="Editar Projeto">
                                 <i class="fas fa-edit"></i>
                             </a>
-                            <form method="POST" action="{{ url_for('energia_solar.projeto_excluir', projeto_id=projeto.id) }}" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir o projeto do cliente {{ projeto.nome_cliente }}?');">
-                                <button class="btn btn-sm btn-danger" type="submit" title="Excluir">
+                            
+                            <!-- Duplicar -->
+                            <button class="btn btn-sm btn-info btn-acao" 
+                                    onclick="duplicarProjeto({{ projeto.id }})"
+                                    title="Duplicar Projeto">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            
+                            <!-- Excluir -->
+                            <form method="POST" 
+                                  action="{{ url_for('energia_solar.projeto_excluir', projeto_id=projeto.id) }}" 
+                                  style="display: inline;" 
+                                  onsubmit="return confirm('Tem certeza que deseja excluir o projeto de {{ projeto.nome_cliente }}?');">
+                                <button class="btn btn-sm btn-danger btn-acao" type="submit" title="Excluir">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     {% else %}
-    <div class="alert alert-info">
+    <div class="alert alert-info mt-4">
         <h4><i class="fas fa-info-circle me-2"></i>Nenhum projeto cadastrado</h4>
-        <p class="mb-0">Clique em "Novo Projeto" para começar a criar projetos de energia solar com o wizard de 6 abas.</p>
+        <p class="mb-0">Clique em "Novo Projeto" para começar a criar projetos de energia solar.</p>
     </div>
     {% endif %}
 </div>
 
 <script>
+// Função para duplicar projeto
+function duplicarProjeto(projetoId) {
+    if (confirm('Deseja criar uma cópia deste projeto?')) {
+        fetch(`/energia-solar/projetos/${projetoId}/duplicar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Projeto duplicado com sucesso! ID: #' + data.novo_id);
+                window.location.reload();
+            } else {
+                alert('Erro ao duplicar projeto: ' + (data.error || 'Erro desconhecido'));
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao duplicar projeto. Tente novamente.');
+        });
+    }
+}
+
 // Limpar cache do Service Worker ao carregar esta página
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(function(registrations) {

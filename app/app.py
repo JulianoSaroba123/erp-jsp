@@ -392,6 +392,10 @@ def register_blueprints(app):
     from app.energia_solar.energia_solar_routes import energia_solar_bp
     app.register_blueprint(energia_solar_bp)
 
+    # Blueprint de concessionárias
+    from app.concessionaria.concessionaria_routes import concessionaria_bp
+    app.register_blueprint(concessionaria_bp, url_prefix='/concessionarias')
+
     # Blueprint de kits do distribuidor (opcional - requer configuração de API)
     try:
         from app.kits_distribuidor.kits_routes import kits_bp

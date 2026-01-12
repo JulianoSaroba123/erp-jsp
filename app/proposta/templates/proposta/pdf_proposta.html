@@ -392,7 +392,7 @@
                 <tr>
                     <td style="text-align:center;">{{ loop.index }}</td>
                     <td>{{ item.descricao }}</td>
-                    <td style="text-align:center;">{{ item.quantidade }}</td>
+                    <td style="text-align:center;">{{ "{:g}".format(item.quantidade|float) if item.quantidade else '0' }}</td>
                     <td style="text-align:right; white-space: nowrap;">R$ {{ "{:,.2f}".format(item.valor_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                     <td style="text-align:right; white-space: nowrap;">R$ {{ "{:,.2f}".format(item.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                 </tr>
@@ -431,7 +431,7 @@
                             {{ item.tipo_servico|title if item.tipo_servico else 'N/A' }}
                         {% endif %}
                     </td>
-                    <td style="text-align:center;">{{ item.quantidade }}</td>
+                    <td style="text-align:center;">{{ "{:g}".format(item.quantidade|float) if item.quantidade else '0' }}</td>
                     <td style="text-align:right; white-space: nowrap;">R$ {{ "{:,.2f}".format(item.valor_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                     <td style="text-align:right; white-space: nowrap;">R$ {{ "{:,.2f}".format(item.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                 </tr>

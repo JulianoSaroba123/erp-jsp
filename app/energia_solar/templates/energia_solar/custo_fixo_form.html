@@ -66,12 +66,13 @@
                     <div class="col-md-3">
                         <label for="unidade" class="form-label">Unidade</label>
                         <select class="form-select" id="unidade" name="unidade">
-                            <option value="un" {{ 'selected' if custo and custo.unidade == 'un' else '' }}>un</option>
-                            <option value="%" {{ 'selected' if custo and custo.unidade == '%' else '' }}>%</option>
-                            <option value="m²" {{ 'selected' if custo and custo.unidade == 'm²' else '' }}>m²</option>
-                            <option value="kWp" {{ 'selected' if custo and custo.unidade == 'kWp' else '' }}>kWp</option>
-                            <option value="0,1" {{ 'selected' if custo and custo.unidade == '0,1' else '' }}>0,1</option>
-                            <option value="0,01" {{ 'selected' if custo and custo.unidade == '0,01' else '' }}>0,01</option>
+                            <option value="un" {{ 'selected' if custo and custo.unidade == 'un' else '' }}>Unidade (UND)</option>
+                            <option value="kit" {{ 'selected' if custo and custo.unidade == 'kit' else '' }}>Kit (KIT)</option>
+                            <option value="m²" {{ 'selected' if custo and custo.unidade == 'm²' else '' }}>Metro Quadrado (M²)</option>
+                            <option value="ml" {{ 'selected' if custo and custo.unidade == 'ml' else '' }}>Metro Linear (ML)</option>
+                            <option value="h" {{ 'selected' if custo and custo.unidade == 'h' else '' }}>Hora (H)</option>
+                            <option value="dia" {{ 'selected' if custo and custo.unidade == 'dia' else '' }}>Dia (DIA)</option>
+                            <option value="svc" {{ 'selected' if custo and custo.unidade == 'svc' else '' }}>Serviço (SVC)</option>
                         </select>
                     </div>
 

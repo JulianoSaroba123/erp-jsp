@@ -43,6 +43,11 @@
 
     <!-- Form with Tabs -->
     <form id="projetoForm" method="POST" action="{{ url_for('energia_solar.projeto_salvar') }}">
+        <!-- Campo hidden para identificar se é edição -->
+        {% if projeto and projeto.id %}
+        <input type="hidden" name="projeto_id" value="{{ projeto.id }}">
+        {% endif %}
+        
         <div class="card shadow">
             <div class="card-header bg-primary text-white">
                 <ul class="nav nav-tabs card-header-tabs" id="wizardTabs" role="tablist">
@@ -256,9 +261,9 @@
                                             <div class="col-md-6">
                                                 <label for="tipo_instalacao" class="form-label">Tipo de Instalação *</label>
                                                 <select class="form-select" id="tipo_instalacao" name="tipo_instalacao" required>
-                                                    <option value="monofasica">Monofásica (mín. 30 kWh)</option>
-                                                    <option value="bifasica">Bifásica (mín. 50 kWh)</option>
-                                                    <option value="trifasica">Trifásica (mín. 100 kWh)</option>
+                                                    <option value="monofasica" {% if projeto and projeto.tipo_instalacao == 'monofasica' %}selected{% endif %}>Monofásica (mín. 30 kWh)</option>
+                                                    <option value="bifasica" {% if projeto and projeto.tipo_instalacao == 'bifasica' %}selected{% endif %}>Bifásica (mín. 50 kWh)</option>
+                                                    <option value="trifasica" {% if projeto and projeto.tipo_instalacao == 'trifasica' %}selected{% endif %}>Trifásica (mín. 100 kWh)</option>
                                                 </select>
                                                 <small class="form-text text-muted">Consumo mínimo obrigatório da concessionária</small>
                                             </div>
@@ -629,10 +634,10 @@
                                 <label for="cabo_cc" class="form-label">Cabo CC (Lado Fotovoltaico)</label>
                                 <select class="form-select" id="cabo_cc" name="cabo_cc">
                                     <option value="">Selecione...</option>
-                                    <option value="4mm²">4mm² (até 30A)</option>
-                                    <option value="6mm²" selected>6mm² (até 50A)</option>
-                                    <option value="10mm²">10mm² (até 70A)</option>
-                                    <option value="16mm²">16mm² (até 100A)</option>
+                                    <option value="4mm²" {% if projeto and projeto.cabo_cc == '4mm²' %}selected{% endif %}>4mm² (até 30A)</option>
+                                    <option value="6mm²" {% if projeto and projeto.cabo_cc == '6mm²' %}selected{% elif not projeto or not projeto.cabo_cc %}selected{% endif %}>6mm² (até 50A)</option>
+                                    <option value="10mm²" {% if projeto and projeto.cabo_cc == '10mm²' %}selected{% endif %}>10mm² (até 70A)</option>
+                                    <option value="16mm²" {% if projeto and projeto.cabo_cc == '16mm²' %}selected{% endif %}>16mm² (até 100A)</option>
                                 </select>
                             </div>
 
@@ -640,11 +645,11 @@
                                 <label for="cabo_ca" class="form-label">Cabo CA (Lado Grid)</label>
                                 <select class="form-select" id="cabo_ca" name="cabo_ca">
                                     <option value="">Selecione...</option>
-                                    <option value="4mm²">4mm²</option>
-                                    <option value="6mm²" selected>6mm²</option>
-                                    <option value="10mm²">10mm²</option>
-                                    <option value="16mm²">16mm²</option>
-                                    <option value="25mm²">25mm²</option>
+                                    <option value="4mm²" {% if projeto and projeto.cabo_ca == '4mm²' %}selected{% endif %}>4mm²</option>
+                                    <option value="6mm²" {% if projeto and projeto.cabo_ca == '6mm²' %}selected{% elif not projeto or not projeto.cabo_ca %}selected{% endif %}>6mm²</option>
+                                    <option value="10mm²" {% if projeto and projeto.cabo_ca == '10mm²' %}selected{% endif %}>10mm²</option>
+                                    <option value="16mm²" {% if projeto and projeto.cabo_ca == '16mm²' %}selected{% endif %}>16mm²</option>
+                                    <option value="25mm²" {% if projeto and projeto.cabo_ca == '25mm²' %}selected{% endif %}>25mm²</option>
                                 </select>
                             </div>
 
