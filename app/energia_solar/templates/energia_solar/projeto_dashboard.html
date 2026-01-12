@@ -1361,90 +1361,104 @@ function salvarOrcamento() {
                         <div class="col-md-3 col-6">
                             <label class="form-label"><strong>JAN</strong></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="consumo_jan" placeholder="1100">
+                                <input type="number" class="form-control consumo-mes" id="consumo_jan" placeholder="1100" oninput="atualizarMediaPreview()">
                                 <span class="input-group-text">kWh</span>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <label class="form-label"><strong>FEV</strong></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="consumo_fev" placeholder="1252">
+                                <input type="number" class="form-control consumo-mes" id="consumo_fev" placeholder="1252" oninput="atualizarMediaPreview()">
                                 <span class="input-group-text">kWh</span>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <label class="form-label"><strong>MAR</strong></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="consumo_mar" placeholder="1425">
+                                <input type="number" class="form-control consumo-mes" id="consumo_mar" placeholder="1425" oninput="atualizarMediaPreview()">
                                 <span class="input-group-text">kWh</span>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <label class="form-label"><strong>ABR</strong></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="consumo_abr" placeholder="1272">
+                                <input type="number" class="form-control consumo-mes" id="consumo_abr" placeholder="1272" oninput="atualizarMediaPreview()">
                                 <span class="input-group-text">kWh</span>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <label class="form-label"><strong>MAI</strong></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="consumo_mai" placeholder="1092">
+                                <input type="number" class="form-control consumo-mes" id="consumo_mai" placeholder="1092" oninput="atualizarMediaPreview()">
                                 <span class="input-group-text">kWh</span>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <label class="form-label"><strong>JUN</strong></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="consumo_jun" placeholder="1056">
+                                <input type="number" class="form-control consumo-mes" id="consumo_jun" placeholder="1056" oninput="atualizarMediaPreview()">
                                 <span class="input-group-text">kWh</span>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <label class="form-label"><strong>JUL</strong></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="consumo_jul" placeholder="860">
+                                <input type="number" class="form-control consumo-mes" id="consumo_jul" placeholder="860" oninput="atualizarMediaPreview()">
                                 <span class="input-group-text">kWh</span>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <label class="form-label"><strong>AGO</strong></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="consumo_ago" placeholder="1152">
+                                <input type="number" class="form-control consumo-mes" id="consumo_ago" placeholder="1152" oninput="atualizarMediaPreview()">
                                 <span class="input-group-text">kWh</span>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <label class="form-label"><strong>SET</strong></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="consumo_set" placeholder="1116">
+                                <input type="number" class="form-control consumo-mes" id="consumo_set" placeholder="1116" oninput="atualizarMediaPreview()">
                                 <span class="input-group-text">kWh</span>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <label class="form-label"><strong>OUT</strong></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="consumo_out" placeholder="1068">
+                                <input type="number" class="form-control consumo-mes" id="consumo_out" placeholder="1068" oninput="atualizarMediaPreview()">
                                 <span class="input-group-text">kWh</span>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <label class="form-label"><strong>NOV</strong></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="consumo_nov" placeholder="1208">
+                                <input type="number" class="form-control consumo-mes" id="consumo_nov" placeholder="1208" oninput="atualizarMediaPreview()">
                                 <span class="input-group-text">kWh</span>
                             </div>
                         </div>
                         <div class="col-md-3 col-6">
                             <label class="form-label"><strong>DEZ</strong></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="consumo_dez" placeholder="1092">
+                                <input type="number" class="form-control consumo-mes" id="consumo_dez" placeholder="1092" oninput="atualizarMediaPreview()">
                                 <span class="input-group-text">kWh</span>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="mt-4">
+                    <!-- Preview da Média em Tempo Real -->
+                    <div class="alert alert-info mt-4" style="background: linear-gradient(135deg, #06b6d4, #0891b2); border: none;">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <label class="text-white mb-1"><i class="fas fa-chart-line me-2"></i><strong>MÉDIA CALCULADA:</strong></label>
+                                <h3 class="text-white mb-0" id="media_preview">0,00 kWh/mês</h3>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-white mb-1"><i class="fas fa-hashtag me-2"></i><strong>MESES PREENCHIDOS:</strong></label>
+                                <h4 class="text-white mb-0"><span id="meses_preenchidos">0</span> de 12</h4>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
                         <button type="button" class="btn btn-primary w-100" onclick="calcularMediaHistorico()">
                             <i class="fas fa-calculator me-2"></i>Calcular Média e Aplicar
                         </button>
@@ -1769,6 +1783,38 @@ function selecionarMetodoConsumo(metodo) {
         document.getElementById('formValorConta').style.display = 'block';
         document.getElementById('btnMetodoConta').classList.add('active', 'btn-primary');
         document.getElementById('btnMetodoConta').classList.remove('btn-outline-primary');
+    }
+}
+
+function atualizarMediaPreview() {
+    const meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    let soma = 0;
+    let count = 0;
+    
+    meses.forEach(mes => {
+        const valor = parseFloat(document.getElementById(`consumo_${mes}`).value) || 0;
+        if (valor > 0) {
+            soma += valor;
+            count++;
+        }
+    });
+    
+    const media = count > 0 ? soma / count : 0;
+    
+    // Atualizar display da média
+    document.getElementById('media_preview').textContent = media.toFixed(2).replace('.', ',') + ' kWh/mês';
+    document.getElementById('meses_preenchidos').textContent = count;
+    
+    // Mudar cor do preview baseado na quantidade de meses
+    const previewBox = document.getElementById('media_preview').closest('.alert');
+    if (count === 0) {
+        previewBox.style.background = 'linear-gradient(135deg, #6b7280, #9ca3af)';
+    } else if (count < 6) {
+        previewBox.style.background = 'linear-gradient(135deg, #f59e0b, #f97316)';
+    } else if (count < 12) {
+        previewBox.style.background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
+    } else {
+        previewBox.style.background = 'linear-gradient(135deg, #10b981, #059669)';
     }
 }
 
