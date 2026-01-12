@@ -320,14 +320,21 @@ def visualizar(id):
 @login_required
 def listar():
     """Lista todos os cálculos realizados"""
-    page = request.args.get('page', 1, type=int)
-    per_page = 20
-    
-    calculos = CalculoEnergiaSolar.query.order_by(
-        CalculoEnergiaSolar.data_calculo.desc()
-    ).paginate(page=page, per_page=per_page, error_out=False)
-    
-    return render_template('energia_solar/listar.html', calculos=calculos)
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 20
+        
+        calculos = CalculoEnergiaSolar.query.order_by(
+            CalculoEnergiaSolar.data_calculo.desc()
+        ).paginate(page=page, per_page=per_page, error_out=False)
+        
+        return render_template('energia_solar/listar.html', calculos=calculos)
+    except Exception as e:
+        logger.error(f"❌ Erro ao listar cálculos: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Erro ao carregar lista de cálculos: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.dashboard'))
 
 
 @energia_solar_bp.route('/excluir/<int:id>', methods=['POST'])
@@ -602,9 +609,16 @@ def placa_editar(placa_id):
 @login_required
 def inversores_listar():
     """Lista todos os inversores do catálogo"""
-    inversores_obj = InversorSolar.query.order_by(InversorSolar.fabricante, InversorSolar.modelo).all()
-    inversores = [i.to_dict() for i in inversores_obj]
-    return render_template('energia_solar/inversores_crud.html', inversores=inversores, inversores_obj=inversores_obj)
+    try:
+        inversores_obj = InversorSolar.query.order_by(InversorSolar.fabricante, InversorSolar.modelo).all()
+        inversores = [i.to_dict() for i in inversores_obj]
+        return render_template('energia_solar/inversores_crud.html', inversores=inversores, inversores_obj=inversores_obj)
+    except Exception as e:
+        logger.error(f"❌ Erro ao listar inversores: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Erro ao carregar inversores: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.dashboard'))
 
 
 @energia_solar_bp.route('/inversores/criar', methods=['POST'])
@@ -840,14 +854,21 @@ def inversor_editar(inversor_id):
 @login_required
 def kits_listar():
     """Lista todos os kits do catálogo"""
-    from app.energia_solar.catalogo_model import KitSolar, PlacaSolar, InversorSolar
-    
-    kits_obj = KitSolar.query.order_by(KitSolar.fabricante, KitSolar.potencia_kwp).all()
-    kits = [k.to_dict() for k in kits_obj]
-    placas = PlacaSolar.query.filter_by(ativo=True).order_by(PlacaSolar.fabricante, PlacaSolar.modelo).all()
-    inversores = InversorSolar.query.filter_by(ativo=True).order_by(InversorSolar.fabricante, InversorSolar.modelo).all()
-    
-    return render_template('energia_solar/kits_crud.html', kits=kits, kits_obj=kits_obj, placas=placas, inversores=inversores)
+    try:
+        from app.energia_solar.catalogo_model import KitSolar, PlacaSolar, InversorSolar
+        
+        kits_obj = KitSolar.query.order_by(KitSolar.fabricante, KitSolar.potencia_kwp).all()
+        kits = [k.to_dict() for k in kits_obj]
+        placas = PlacaSolar.query.filter_by(ativo=True).order_by(PlacaSolar.fabricante, PlacaSolar.modelo).all()
+        inversores = InversorSolar.query.filter_by(ativo=True).order_by(InversorSolar.fabricante, InversorSolar.modelo).all()
+        
+        return render_template('energia_solar/kits_crud.html', kits=kits, kits_obj=kits_obj, placas=placas, inversores=inversores)
+    except Exception as e:
+        logger.error(f"❌ Erro ao listar kits: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Erro ao carregar kits: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.dashboard'))
 
 
 @energia_solar_bp.route('/kits/criar', methods=['POST'])
@@ -933,36 +954,43 @@ def kit_editar(kit_id):
 @login_required
 def projetos_listar():
     """Lista todos os projetos solares com ordenação"""
-    from app.energia_solar.catalogo_model import ProjetoSolar
-    
-    # Pegar parâmetro de ordenação
-    ordem = request.args.get('ordem', 'recente')
-    
-    # Aplicar ordenação
-    query = ProjetoSolar.query
-    
-    if ordem == 'recente':
-        query = query.order_by(ProjetoSolar.data_criacao.desc())
-    elif ordem == 'antigo':
-        query = query.order_by(ProjetoSolar.data_criacao.asc())
-    elif ordem == 'cliente':
-        query = query.order_by(ProjetoSolar.nome_cliente.asc())
-    elif ordem == 'valor':
-        query = query.order_by(ProjetoSolar.valor_venda.desc())
-    elif ordem == 'potencia':
-        query = query.order_by(ProjetoSolar.potencia_kwp.desc())
-    else:
-        query = query.order_by(ProjetoSolar.data_criacao.desc())
-    
-    projetos = query.all()
-    
-    # Evitar cache para garantir HTML atualizado
-    from flask import make_response
-    response = make_response(render_template('energia_solar/projetos_lista.html', projetos=projetos))
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '0'
-    return response
+    try:
+        from app.energia_solar.catalogo_model import ProjetoSolar
+        
+        # Pegar parâmetro de ordenação
+        ordem = request.args.get('ordem', 'recente')
+        
+        # Aplicar ordenação
+        query = ProjetoSolar.query
+        
+        if ordem == 'recente':
+            query = query.order_by(ProjetoSolar.data_criacao.desc())
+        elif ordem == 'antigo':
+            query = query.order_by(ProjetoSolar.data_criacao.asc())
+        elif ordem == 'cliente':
+            query = query.order_by(ProjetoSolar.nome_cliente.asc())
+        elif ordem == 'valor':
+            query = query.order_by(ProjetoSolar.valor_venda.desc())
+        elif ordem == 'potencia':
+            query = query.order_by(ProjetoSolar.potencia_kwp.desc())
+        else:
+            query = query.order_by(ProjetoSolar.data_criacao.desc())
+        
+        projetos = query.all()
+        
+        # Evitar cache para garantir HTML atualizado
+        from flask import make_response
+        response = make_response(render_template('energia_solar/projetos_lista.html', projetos=projetos))
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+    except Exception as e:
+        logger.error(f"❌ Erro ao listar projetos: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Erro ao carregar lista de projetos: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.dashboard'))
 
 
 @energia_solar_bp.route('/projetos/<int:projeto_id>/duplicar', methods=['POST'])
@@ -1706,8 +1734,15 @@ def projeto_recalcular_geracao(projeto_id):
 @login_required
 def custos_fixos_listar():
     """Lista todos os custos fixos cadastrados"""
-    custos = CustoFixo.query.order_by(CustoFixo.tipo, CustoFixo.descricao).all()
-    return render_template('energia_solar/custos_fixos_lista.html', custos=custos)
+    try:
+        custos = CustoFixo.query.order_by(CustoFixo.tipo, CustoFixo.descricao).all()
+        return render_template('energia_solar/custos_fixos_lista.html', custos=custos)
+    except Exception as e:
+        logger.error(f"❌ Erro ao listar custos fixos: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Erro ao carregar custos fixos: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.dashboard'))
 
 
 @energia_solar_bp.route('/custos-fixos/api/listar')
