@@ -367,7 +367,7 @@
 <div class="modal fade" id="modalDadosTecnicos" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <form method="POST" action="{{ url_for('energia_solar.projeto_salvar_dados_tecnicos', projeto_id=projeto.id) }}">
+            <form method="POST" action="{{ url_for('energia_solar.projeto_salvar_dados_tecnicos', projeto_id=projeto.id) }}" onsubmit="handleSalvarDadosTecnicos(event)">
                 <div class="modal-header" style="background: linear-gradient(135deg, #17a2b8, #20c997);">
                     <h5 class="modal-title text-white">
                         <i class="fas fa-solar-panel me-2"></i>Dados Técnicos
@@ -1852,10 +1852,6 @@ function calcularMediaHistorico() {
     
     // Fechar modal
     bootstrap.Modal.getInstance(document.getElementById('modalHistoricoConsumo')).hide();
-    
-    if (media > 0) {
-        showNotification('success', `Média calculada: ${media.toFixed(2)} kWh/mês`);
-    }
 }
 
 function aplicarValorDireto() {
@@ -1863,7 +1859,6 @@ function aplicarValorDireto() {
     if (valor > 0) {
         document.getElementById('consumo_kwh_mes').value = valor.toFixed(2);
         bootstrap.Modal.getInstance(document.getElementById('modalHistoricoConsumo')).hide();
-        showNotification('success', `Consumo definido: ${valor.toFixed(2)} kWh/mês`);
     } else {
         alert('Por favor, insira um valor válido');
     }
@@ -1877,31 +1872,36 @@ function calcularConsumoDeValor() {
         const consumoEstimado = valorConta / tarifaKwh;
         document.getElementById('consumo_kwh_mes').value = consumoEstimado.toFixed(2);
         bootstrap.Modal.getInstance(document.getElementById('modalHistoricoConsumo')).hide();
-        showNotification('success', `Consumo estimado: ${consumoEstimado.toFixed(2)} kWh/mês (R$ ${valorConta.toFixed(2)} ÷ R$ ${tarifaKwh.toFixed(2)}/kWh)`);
     } else {
         alert('Por favor, preencha o valor da conta e a tarifa');
     }
 }
 
-function showNotification(type, message) {
-    // Criar notificação temporária
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed`;
-    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
-    alertDiv.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.body.appendChild(alertDiv);
-    
-    setTimeout(() => {
-        alertDiv.remove();
-    }, 4000);
-}
-
 function formatarMoeda(valor) {
     return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// Handler para salvar dados técnicos e recarregar página
+function handleSalvarDadosTecnicos(event) {
+    event.preventDefault();
+    const form = event.target;
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form)
+    })
+    .then(response => {
+        if (response.ok) {
+            // Recarregar a página para atualizar os cards
+            window.location.reload();
+        } else {
+            alert('Erro ao salvar dados técnicos');
+        }
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        alert('Erro ao salvar dados técnicos');
+    });
 }
 </script>
 {% endblock %}
