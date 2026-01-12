@@ -179,18 +179,25 @@ def ver_datasheet(filename):
 @login_required
 def dashboard():
     """Dashboard do módulo de Energia Solar"""
-    calculos = CalculoEnergiaSolar.query.order_by(CalculoEnergiaSolar.data_calculo.desc()).limit(10).all()
-    
-    # Estatísticas
-    total_calculos = CalculoEnergiaSolar.query.count()
-    potencia_total = db.session.query(db.func.sum(CalculoEnergiaSolar.potencia_sistema)).scalar() or 0
-    economia_total = db.session.query(db.func.sum(CalculoEnergiaSolar.economia_anual)).scalar() or 0
-    
-    return render_template('energia_solar/dashboard.html',
-                         calculos=calculos,
-                         total_calculos=total_calculos,
-                         potencia_total=potencia_total,
-                         economia_total=economia_total)
+    try:
+        calculos = CalculoEnergiaSolar.query.order_by(CalculoEnergiaSolar.data_calculo.desc()).limit(10).all()
+        
+        # Estatísticas
+        total_calculos = CalculoEnergiaSolar.query.count()
+        potencia_total = db.session.query(db.func.sum(CalculoEnergiaSolar.potencia_sistema)).scalar() or 0
+        economia_total = db.session.query(db.func.sum(CalculoEnergiaSolar.economia_anual)).scalar() or 0
+        
+        return render_template('energia_solar/dashboard.html',
+                             calculos=calculos,
+                             total_calculos=total_calculos,
+                             potencia_total=potencia_total,
+                             economia_total=economia_total)
+    except Exception as e:
+        logger.error(f"❌ Erro no dashboard energia solar: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Erro ao carregar dashboard de Energia Solar: {str(e)}', 'error')
+        return redirect(url_for('painel.dashboard'))
 
 
 @energia_solar_bp.route('/calculadora')
