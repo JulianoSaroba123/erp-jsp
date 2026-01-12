@@ -1091,6 +1091,7 @@ def projeto_dashboard(projeto_id):
 def projeto_salvar_dados_financeiros(projeto_id):
     """Salva dados financeiros do projeto"""
     from app.energia_solar.catalogo_model import ProjetoSolar
+    from flask import jsonify
     
     try:
         projeto = ProjetoSolar.query.get_or_404(projeto_id)
@@ -1106,23 +1107,23 @@ def projeto_salvar_dados_financeiros(projeto_id):
             projeto.concessionaria_id = int(concessionaria_id)
         
         if tarifa_final:
-            projeto.tarifa_energia = float(tarifa_final.replace(',', '.'))
+            projeto.tarifa_kwh = float(tarifa_final.replace(',', '.'))
         
         if economia_anual:
-            projeto.economia_anual_prevista = float(economia_anual.replace(',', '.'))
+            # Remover formatação monetária se houver
+            economia_valor = economia_anual.replace('R$', '').replace('.', '').replace(',', '.').strip()
+            projeto.economia_anual = float(economia_valor)
         
         if impostos_percentual:
-            projeto.impostos_percentual = float(impostos_percentual.replace(',', '.'))
+            projeto.aliquota_fio_b = float(impostos_percentual.replace(',', '.'))
         
         db.session.commit()
         
-        flash('Dados financeiros salvos com sucesso!', 'success')
-        return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+        return jsonify({'success': True, 'message': 'Dados financeiros salvos com sucesso!'})
         
     except Exception as e:
         db.session.rollback()
-        flash(f'Erro ao salvar dados financeiros: {str(e)}', 'danger')
-        return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+        return jsonify({'success': False, 'message': f'Erro ao salvar dados financeiros: {str(e)}'}), 400
 
 
 @energia_solar_bp.route('/projetos/<int:projeto_id>/dados-tecnicos', methods=['POST'])
