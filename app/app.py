@@ -108,7 +108,10 @@ def create_app(config_name=None):
             try:
                 from app.concessionaria.concessionaria_model import Concessionaria
                 from app.energia_solar.orcamento_model import OrcamentoItem
-                print("[OK] Modelos Concessionaria e OrcamentoItem importados")
+                from app.energia_solar.catalogo_model import ProjetoSolar, KitSolar, PlacaSolar, InversorSolar
+                from app.energia_solar.energia_solar_model import CalculoEnergiaSolar
+                from app.energia_solar.custo_fixo_model import CustoFixo
+                print("[OK] Modelos Energia Solar v3.0 importados (7 tabelas)")
             except Exception as e:
                 print(f" ⚠ Erro ao importar modelos Energia Solar v3.0: {e}")
             
