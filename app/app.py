@@ -317,6 +317,36 @@ def create_app(config_name=None):
             db.session.rollback()
             print(f" ⚠ Aviso na migração de projeto_solar: {e}")
         
+        # Migração: adicionar colunas largura e comprimento em placa_solar
+        try:
+            from sqlalchemy import text, inspect
+            inspector = inspect(db.engine)
+            
+            if 'placa_solar' in inspector.get_table_names():
+                colunas_existentes = [col['name'] for col in inspector.get_columns('placa_solar')]
+                
+                campos_dimensoes = {
+                    'largura': 'DOUBLE PRECISION',
+                    'comprimento': 'DOUBLE PRECISION'
+                }
+                
+                campos_adicionados = []
+                for campo, tipo in campos_dimensoes.items():
+                    if campo not in colunas_existentes:
+                        try:
+                            db.session.execute(text(f"ALTER TABLE placa_solar ADD COLUMN {campo} {tipo}"))
+                            campos_adicionados.append(campo)
+                        except Exception:
+                            pass
+                
+                if campos_adicionados:
+                    db.session.commit()
+                    print(f"[OK] {len(campos_adicionados)} colunas de dimensão adicionadas em placa_solar: {', '.join(campos_adicionados)}")
+                        
+        except Exception as e:
+            db.session.rollback()
+            print(f" ⚠ Aviso na migração de placa_solar: {e}")
+        
         # Migração: adicionar coluna horas_improdutivas_percentual
         try:
             from sqlalchemy import text, inspect
