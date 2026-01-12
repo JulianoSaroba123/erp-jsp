@@ -18,7 +18,6 @@ from app.concessionaria.concessionaria_model import Concessionaria
 
 # Cria o blueprint
 concessionaria_bp = Blueprint('concessionaria', __name__, 
-                             url_prefix='/concessionarias',
                              template_folder='templates')
 
 
