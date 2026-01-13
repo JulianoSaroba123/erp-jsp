@@ -10,34 +10,55 @@
 
 {% block content %}
 <style>
-/* Tabela simples */
+/* Tabela simples e clean */
 #tabelaCustosOrcamento {
     font-size: 0.9rem;
+    background: white;
 }
 
 #tabelaCustosOrcamento thead th {
-    background: #343a40;
-    color: white;
-    font-weight: 500;
-    padding: 0.5rem;
-    border: 1px solid #495057;
+    background: white;
+    color: #6c757d;
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 2px solid #dee2e6;
+    border-top: none;
+    text-transform: uppercase;
+}
+
+#tabelaCustosOrcamento tbody tr {
+    border-bottom: 1px solid #e9ecef;
+}
+
+#tabelaCustosOrcamento tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
 }
 
 #tabelaCustosOrcamento tbody td {
-    border: 1px solid #dee2e6;
-    padding: 0.25rem !important;
+    border: none;
+    padding: 0.5rem !important;
+    vertical-align: middle;
 }
 
 #tabelaCustosOrcamento input {
     width: 100%;
-    border: none;
+    border: 1px solid transparent;
     background: transparent;
-    padding: 0.25rem;
+    padding: 0.4rem;
+    transition: all 0.2s;
+}
+
+#tabelaCustosOrcamento input:hover {
+    border-color: #dee2e6;
+    background: white;
 }
 
 #tabelaCustosOrcamento input:focus {
-    outline: 1px solid #0d6efd;
-    background: #fff;
+    outline: none;
+    border-color: #0d6efd;
+    background: white;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.1);
 }
 
 @media (max-width: 768px) {
@@ -1250,38 +1271,38 @@ function handleSalvarDadosFinanceiros(event) {
 <div class="modal fade" id="modalOrcamento" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header bg-warning text-dark">
-                <h5 class="modal-title">
-                    <i class="fas fa-edit me-2"></i>EDITAR ORÇAMENTO
+            <div class="modal-header bg-white border-bottom border-primary border-3">
+                <h5 class="modal-title text-dark fw-bold">
+                    <i class="fas fa-edit me-2 text-primary"></i>EDITAR ORÇAMENTO
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-2 p-md-4">
+            <div class="modal-body p-2 p-md-4 bg-light">
                 <!-- Campos Obrigatórios -->
-                <div class="alert alert-danger d-flex align-items-center mb-3">
+                <div class="alert alert-danger mb-3" style="border-left: 4px solid #dc3545;">
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     <strong>CAMPOS OBRIGATÓRIOS</strong>
                 </div>
 
                 <!-- Impostos -->
                 <div class="row mb-3">
-                    <div class="col-12 col-md-3">
-                        <label class="form-label fw-bold small">IMPOSTOS (%) <span class="text-danger">*</span></label>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label text-muted small">IMPOSTOS (%)</label>
                         <input type="number" class="form-control" id="impostos_orcamento" value="4" step="0.01" onchange="recalcularOrcamento()">
                     </div>
                 </div>
 
-                <!-- Tabela de Custos -->
-                <h6 class="mb-3 fw-bold">CUSTOS</h6>
+                <!-- Título Custos -->
+                <h6 class="mb-3 text-primary fw-bold">CUSTOS</h6>
                 <div class="d-flex gap-2 mb-3">
-                    <button class="btn btn-sm btn-success" onclick="adicionarItemOrcamento()">
-                        <i class="fas fa-plus me-1"></i>
+                    <button class="btn btn-success" onclick="adicionarItemOrcamento()" title="Adicionar item">
+                        <i class="fas fa-plus"></i>
                     </button>
-                    <button class="btn btn-sm btn-secondary">
-                        <i class="fas fa-minus me-1"></i>
+                    <button class="btn btn-secondary" title="Remover item selecionado">
+                        <i class="fas fa-minus"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger">
-                        <i class="fas fa-times me-1"></i>
+                    <button class="btn btn-danger" title="Limpar seleção">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
 
@@ -1305,50 +1326,44 @@ function handleSalvarDadosFinanceiros(event) {
                 </div>
 
                 <!-- Resumo do Orçamento -->
-                <div class="card mt-4" style="background: linear-gradient(135deg, #17a2b8, #20c997);">
-                    <div class="card-body">
-                        <h6 class="text-white mb-3">
-                            <i class="fas fa-calculator me-2"></i>Resumo do Orçamento
-                        </h6>
+                <div class="card mt-4 border-0 shadow-sm">
+                    <div class="card-body bg-white">
                         <div class="row g-3">
                             <div class="col-md-3">
-                                <label class="form-label fw-bold text-white small">CUSTO TOTAL (SEM LUCRO)</label>
+                                <label class="form-label text-muted small">CUSTO TOTAL</label>
                                 <div class="input-group">
                                     <span class="input-group-text">R$</span>
                                     <input type="text" class="form-control fw-bold" id="totalCusto" readonly>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label fw-bold text-white small">LUCRO TOTAL</label>
+                                <label class="form-label text-muted small">LUCRO TOTAL</label>
                                 <div class="input-group">
                                     <span class="input-group-text">R$</span>
-                                    <input type="text" class="form-control fw-bold text-info" id="totalLucro" readonly>
+                                    <input type="text" class="form-control fw-bold text-success" id="totalLucro" readonly>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label fw-bold text-white small">MARGEM MÉDIA</label>
+                                <label class="form-label text-muted small">MARGEM MÉDIA</label>
                                 <div class="input-group">
-                                    <input type="text" class="form-control fw-bold text-primary" id="margemMedia" readonly>
+                                    <input type="text" class="form-control fw-bold" id="margemMedia" readonly>
                                     <span class="input-group-text">%</span>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label fw-bold text-white small">VALOR DE VENDA</label>
+                                <label class="form-label text-muted small">VALOR DE VENDA</label>
                                 <div class="input-group">
-                                    <span class="input-group-text bg-success text-white">R$</span>
-                                    <input type="text" class="form-control fw-bold fs-5 bg-success text-white" id="totalFaturamento" readonly>
+                                    <span class="input-group-text bg-primary text-white">R$</span>
+                                    <input type="text" class="form-control fw-bold fs-5 bg-primary text-white" id="totalFaturamento" readonly>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cancelar
-                </button>
-                <button type="button" class="btn btn-warning" onclick="salvarOrcamento()">
-                    <i class="fas fa-save me-2"></i>Salvar Orçamento
+            <div class="modal-footer bg-white border-top">
+                <button type="button" class="btn btn-primary btn-lg px-5" onclick="salvarOrcamento()">
+                    <i class="fas fa-check me-2"></i>CONCLUIR
                 </button>
             </div>
         </div>
