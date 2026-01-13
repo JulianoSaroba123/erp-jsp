@@ -81,6 +81,56 @@
     background: #f8fafc;
     border-color: #06b6d4;
 }
+
+/* Responsividade mobile */
+@media (max-width: 768px) {
+    .projeto-header {
+        padding: 1rem;
+    }
+    
+    .projeto-header h2 {
+        font-size: 1.25rem;
+    }
+    
+    .projeto-header p {
+        font-size: 0.85rem;
+    }
+    
+    .projeto-header .col-md-6 {
+        text-align: center !important;
+        margin-bottom: 1rem;
+    }
+    
+    .projeto-table {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .projeto-table table {
+        min-width: 1000px;
+    }
+    
+    .projeto-table th,
+    .projeto-table td {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+        white-space: nowrap;
+    }
+    
+    .btn-acao {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.8rem;
+    }
+    
+    .btn-acao i {
+        font-size: 0.75rem;
+    }
+    
+    /* Esconde texto nos botões mobile, só ícones */
+    .btn-acao .me-1 {
+        margin-right: 0 !important;
+    }
+}
 </style>
 
 <div class="container-fluid">
@@ -97,7 +147,7 @@
                 </p>
             </div>
             <div class="col-md-6 text-end">
-                <div class="btn-group me-2 dropdown-ordenar" role="group">
+                <div class="btn-group me-2 dropdown-ordenar d-none d-md-inline-flex" role="group">
                     <button type="button" class="btn dropdown-toggle" data-bs-toggle="dropdown">
                         <i class="fas fa-sort me-2"></i>Ordenar
                     </button>
@@ -110,7 +160,7 @@
                     </ul>
                 </div>
                 <a href="{{ url_for('energia_solar.projeto_criar') }}" class="btn btn-light btn-lg">
-                    <i class="fas fa-plus me-2"></i>Novo Projeto
+                    <i class="fas fa-plus me-2"></i><span class="d-none d-md-inline">Novo Projeto</span><span class="d-md-none">Novo</span>
                 </a>
             </div>
         </div>
@@ -218,12 +268,12 @@
                     
                     <!-- Ações -->
                     <td>
-                        <div class="d-flex gap-1 justify-content-center">
+                        <div class="d-flex gap-1 justify-content-center flex-nowrap">
                             <!-- Abrir Projeto (Dashboard) -->
                             <a href="{{ url_for('energia_solar.projeto_dashboard', projeto_id=projeto.id) }}" 
                                class="btn btn-sm btn-primary btn-acao" 
                                title="Abrir Dashboard do Projeto">
-                                <i class="fas fa-folder-open me-1"></i>Abrir
+                                <i class="fas fa-folder-open me-1"></i><span class="d-none d-lg-inline">Abrir</span>
                             </a>
                             
                             <!-- Editar -->
