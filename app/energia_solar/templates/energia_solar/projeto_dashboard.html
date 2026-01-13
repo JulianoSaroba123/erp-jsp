@@ -10,6 +10,44 @@
 
 {% block content %}
 <style>
+/* Scroll horizontal suave para tabelas no mobile */
+@media (max-width: 768px) {
+    #tabelaCustosOrcamento {
+        display: block;
+        width: 100%;
+    }
+    
+    .table-responsive {
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+    }
+    
+    #modalOrcamento .modal-body {
+        padding: 0.5rem !important;
+    }
+    
+    #modalOrcamento .table-responsive {
+        margin-bottom: 1rem;
+    }
+    
+    /* Inputs menores no mobile */
+    #tabelaCustosOrcamento input {
+        font-size: 0.875rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    /* Botões fixos visíveis */
+    #modalOrcamento .d-flex.gap-2 {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 10;
+        padding: 0.5rem;
+        margin: 0 -0.5rem 0.5rem;
+        border-bottom: 2px solid #dee2e6;
+    }
+}
+
 .dashboard-header {
     background: linear-gradient(135deg, #0891b2 0%, #06b6d4 100%);
     padding: 2rem;
@@ -1203,142 +1241,95 @@ function handleSalvarDadosFinanceiros(event) {
 
 <!-- Modal Orçamento -->
 <div class="modal fade" id="modalOrcamento" tabindex="-1">
-    <div class="modal-dialog modal-fullscreen">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-warning text-dark">
                 <h5 class="modal-title">
-                    <i class="fas fa-edit me-2"></i>Orçamento Detalhado - Projeto #{{ projeto.id }}
+                    <i class="fas fa-edit me-2"></i>EDITAR ORÇAMENTO
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
-                <!-- Tabs de Categorias -->
-                <ul class="nav nav-tabs mb-4" id="orcamentoTabs" role="tablist">
-                    <li class="nav-item">
-                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabModulos" type="button">
-                            <i class="fas fa-solar-panel me-2"></i>Módulos Solares
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabInversor" type="button">
-                            <i class="fas fa-microchip me-2"></i>Inversores
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabEstrutura" type="button">
-                            <i class="fas fa-warehouse me-2"></i>Estrutura
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabCustosFixos" type="button">
-                            <i class="fas fa-money-bill-wave me-2"></i>Custos Fixos
-                        </button>
-                    </li>
-                    <li class="nav-item">
-                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabOutros" type="button">
-                            <i class="fas fa-ellipsis-h me-2"></i>Outros
-                        </button>
-                    </li>
-                </ul>
+            <div class="modal-body p-2 p-md-4">
+                <!-- Campos Obrigatórios -->
+                <div class="alert alert-danger d-flex align-items-center mb-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>CAMPOS OBRIGATÓRIOS</strong>
+                </div>
 
-                <!-- Tab Content -->
-                <div class="tab-content" id="orcamentoTabContent">
-                    <!-- Módulos -->
-                    <div class="tab-pane fade show active" id="tabModulos">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">Módulos Solares</h6>
-                            <button class="btn btn-sm btn-primary" onclick="adicionarItem('modulos')">
-                                <i class="fas fa-plus me-1"></i>Adicionar Módulo
-                            </button>
-                        </div>
-                        <div id="tabelaModulos"></div>
-                    </div>
-
-                    <!-- Inversores -->
-                    <div class="tab-pane fade" id="tabInversor">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">Inversores</h6>
-                            <button class="btn btn-sm btn-primary" onclick="adicionarItem('inversor')">
-                                <i class="fas fa-plus me-1"></i>Adicionar Inversor
-                            </button>
-                        </div>
-                        <div id="tabelaInversor"></div>
-                    </div>
-
-                    <!-- Estrutura -->
-                    <div class="tab-pane fade" id="tabEstrutura">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">Estrutura e Instalação</h6>
-                            <button class="btn btn-sm btn-primary" onclick="adicionarItem('estrutura')">
-                                <i class="fas fa-plus me-1"></i>Adicionar Item
-                            </button>
-                        </div>
-                        <div id="tabelaEstrutura"></div>
-                    </div>
-
-                    <!-- Custos Fixos -->
-                    <div class="tab-pane fade" id="tabCustosFixos">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">Custos Fixos</h6>
-                            <button class="btn btn-sm btn-success" onclick="carregarCustosFixosTemplate()">
-                                <i class="fas fa-download me-1"></i>Carregar Template
-                            </button>
-                            <button class="btn btn-sm btn-primary" onclick="adicionarItem('custos_fixos')">
-                                <i class="fas fa-plus me-1"></i>Adicionar Item
-                            </button>
-                        </div>
-                        <div id="tabelaCustosFixos"></div>
-                    </div>
-
-                    <!-- Outros -->
-                    <div class="tab-pane fade" id="tabOutros">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0">Outros Itens</h6>
-                            <button class="btn btn-sm btn-primary" onclick="adicionarItem('outros')">
-                                <i class="fas fa-plus me-1"></i>Adicionar Item
-                            </button>
-                        </div>
-                        <div id="tabelaOutros"></div>
+                <!-- Impostos -->
+                <div class="row mb-3">
+                    <div class="col-12 col-md-3">
+                        <label class="form-label fw-bold small">IMPOSTOS (%) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="impostos_orcamento" value="4" step="0.01" onchange="recalcularOrcamento()">
                     </div>
                 </div>
 
-                <!-- Resumo Financeiro -->
-                <div class="row mt-4">
-                    <div class="col-md-12">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h5 class="card-title mb-3">
-                                    <i class="fas fa-calculator me-2"></i>Resumo do Orçamento
-                                </h5>
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <label class="form-label fw-bold">Custo Total (sem lucro)</label>
-                                        <div class="input-group input-group-lg">
-                                            <span class="input-group-text">R$</span>
-                                            <input type="text" class="form-control fw-bold" id="totalCusto" readonly>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label fw-bold">Lucro Total</label>
-                                        <div class="input-group input-group-lg">
-                                            <span class="input-group-text">R$</span>
-                                            <input type="text" class="form-control fw-bold text-info" id="totalLucro" readonly>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label fw-bold">Margem Média</label>
-                                        <div class="input-group input-group-lg">
-                                            <input type="text" class="form-control fw-bold text-primary" id="margemMedia" readonly>
-                                            <span class="input-group-text">%</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label class="form-label fw-bold">Valor de Venda</label>
-                                        <div class="input-group input-group-lg">
-                                            <span class="input-group-text bg-success text-white">R$</span>
-                                            <input type="text" class="form-control fw-bold fs-4 bg-success text-white" id="totalFaturamento" readonly>
-                                        </div>
-                                    </div>
+                <!-- Tabela de Custos -->
+                <h6 class="mb-3 fw-bold">CUSTOS</h6>
+                <div class="d-flex gap-2 mb-3">
+                    <button class="btn btn-sm btn-success" onclick="adicionarItemOrcamento()">
+                        <i class="fas fa-plus me-1"></i>
+                    </button>
+                    <button class="btn btn-sm btn-secondary">
+                        <i class="fas fa-minus me-1"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger">
+                        <i class="fas fa-times me-1"></i>
+                    </button>
+                </div>
+
+                <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <table class="table table-bordered table-hover table-sm" id="tabelaCustosOrcamento" style="min-width: 900px;">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="min-width: 200px;">DESCRIÇÃO</th>
+                                <th style="min-width: 80px;">QTD.</th>
+                                <th style="min-width: 70px;">UND.</th>
+                                <th style="min-width: 120px;">VALOR UNIT.</th>
+                                <th style="min-width: 120px;">VALOR TOTAL</th>
+                                <th style="min-width: 100px;">LUCRO</th>
+                                <th style="min-width: 100px;">TIPO</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itensOrcamento">
+                            <!-- Itens serão adicionados via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Resumo do Orçamento -->
+                <div class="card mt-4" style="background: linear-gradient(135deg, #17a2b8, #20c997);">
+                    <div class="card-body">
+                        <h6 class="text-white mb-3">
+                            <i class="fas fa-calculator me-2"></i>Resumo do Orçamento
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-white small">CUSTO TOTAL (SEM LUCRO)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="text" class="form-control fw-bold" id="totalCusto" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-white small">LUCRO TOTAL</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="text" class="form-control fw-bold text-info" id="totalLucro" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-white small">MARGEM MÉDIA</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control fw-bold text-primary" id="margemMedia" readonly>
+                                    <span class="input-group-text">%</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold text-white small">VALOR DE VENDA</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-success text-white">R$</span>
+                                    <input type="text" class="form-control fw-bold fs-5 bg-success text-white" id="totalFaturamento" readonly>
                                 </div>
                             </div>
                         </div>
@@ -1358,311 +1349,118 @@ function handleSalvarDadosFinanceiros(event) {
 </div>
 
 <script>
-// Array para armazenar itens do orçamento
+// Dados do orçamento
 let itensOrcamento = [];
 
-// Carregar itens ao abrir o modal
+// Carregar itens ao abrir modal
 document.getElementById('modalOrcamento').addEventListener('show.bs.modal', function() {
     carregarItensOrcamento();
 });
 
-// Carregar itens do banco
+// Carregar itens do orçamento
 function carregarItensOrcamento() {
-    fetch(`/energia-solar/projetos/{{ projeto.id }}/orcamento/itens`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                itensOrcamento = data.itens;
-                
-                // Se orçamento vazio, popular automaticamente com dados do kit e custos fixos
-                if (itensOrcamento.length === 0) {
-                    popularOrcamentoAutomatico();
-                } else {
-                    renderizarTodosItens();
-                    calcularTotais();
-                }
-            }
-        });
+    itensOrcamento = [
+        {id: 1, descricao: 'KIT GERADOR ENERGIA SOLAR 10,53 KWP - INVERSOR CRESCER', qtd: 1, und: 'UND', valorUnit: 14548.85, lucro: 0, tipo: 'EMPRESA'},
+        {id: 2, descricao: 'COMISSÃO DE VENDEDORA', qtd: 1, und: '0,1', valorUnit: 1454.90, lucro: 0, tipo: 'EMPRESA'},
+        {id: 3, descricao: 'COMISSÃO DE INDICAÇÃO', qtd: 1, und: '0,03', valorUnit: 872.00, lucro: 0, tipo: 'EMPRESA'},
+        {id: 4, descricao: 'COMISSÃO DE VENDA', qtd: 1, und: '0,05', valorUnit: 0.00, lucro: 0, tipo: 'EMPRESA'},
+        {id: 5, descricao: 'DESCONTO ESTADUAL', qtd: 1, und: '0,06', valorUnit: 0.00, lucro: 0, tipo: 'EMPRESA'},
+        {id: 6, descricao: 'DESCONTO MUNICIPAL', qtd: 1, und: '0,02', valorUnit: 261.00, lucro: 0, tipo: 'EMPRESA'},
+        {id: 7, descricao: 'DESCONTO PARA FECHAMENTO', qtd: 1, und: '0,03', valorUnit: 0.00, lucro: 0, tipo: 'EMPRESA'},
+        {id: 8, descricao: 'DESLOCAMENTO', qtd: 1, und: 'UND', valorUnit: 80.00, lucro: 0, tipo: 'EMPRESA'},
+        {id: 9, descricao: 'INSTALAÇÃO DOS MÓDULOS', qtd: 18, und: 'UND', valorUnit: 90.00, lucro: 5, tipo: 'EMPRESA'},
+        {id: 10, descricao: 'INSTALAÇÃO INVERSORES', qtd: 1, und: 'UND', valorUnit: 90.00, lucro: 5, tipo: 'EMPRESA'},
+        {id: 11, descricao: 'MATERIAL CA', qtd: 1, und: 'KIT', valorUnit: 1500.00, lucro: 3, tipo: 'EMPRESA'},
+        {id: 12, descricao: 'PROJETO', qtd: 1, und: 'UND', valorUnit: 200.00, lucro: 0, tipo: 'EMPRESA'},
+        {id: 13, descricao: 'TRT', qtd: 1, und: 'UND', valorUnit: 150.00, lucro: 5, tipo: 'EMPRESA'}
+    ];
+    
+    renderizarItensOrcamento();
+    recalcularOrcamento();
 }
 
-// Popular orçamento automaticamente com dados do kit + custos fixos
-function popularOrcamentoAutomatico() {
-    let itensAdicionados = 0;
+// Renderizar tabela
+function renderizarItensOrcamento() {
+    const tbody = document.getElementById('itensOrcamento');
+    tbody.innerHTML = '';
     
-    // 1. Adicionar MÓDULOS (placas solares)
-    {% if projeto.qtd_placas and placa %}
-    itensOrcamento.push({
-        id: Date.now() + Math.random(),
-        descricao: '{{ placa.modelo }} - {{ placa.fabricante }} ({{ placa.potencia }}W)',
-        categoria: 'modulos',
-        quantidade: {{ projeto.qtd_placas }},
-        unidade_medida: 'un',
-        preco_unitario: 0, // Usuário deve preencher
-        lucro_percentual: 0,
-        preco_total: 0,
-        faturamento: 0,
-        ordem: 1
+    itensOrcamento.forEach((item, index) => {
+        const valorTotal = item.qtd * item.valorUnit;
+        const lucroValor = valorTotal * (item.lucro / 100);
+        const faturamento = valorTotal + lucroValor;
+        
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="text" class="form-control form-control-sm" value="${item.descricao}" onchange="atualizarItem(${item.id}, 'descricao', this.value)"></td>
+            <td><input type="number" class="form-control form-control-sm text-end" value="${item.qtd}" onchange="atualizarItem(${item.id}, 'qtd', this.value)"></td>
+            <td><input type="text" class="form-control form-control-sm text-center" value="${item.und}" onchange="atualizarItem(${item.id}, 'und', this.value)"></td>
+            <td><input type="number" class="form-control form-control-sm text-end" value="${item.valorUnit.toFixed(2)}" step="0.01" onchange="atualizarItem(${item.id}, 'valorUnit', this.value)"></td>
+            <td><input type="text" class="form-control form-control-sm text-end bg-light" value="R$ ${valorTotal.toFixed(2)}" readonly></td>
+            <td><input type="number" class="form-control form-control-sm text-end" value="${item.lucro.toFixed(2)}" step="0.01" onchange="atualizarItem(${item.id}, 'lucro', this.value)"> %</td>
+            <td><input type="text" class="form-control form-control-sm text-center bg-light" value="${item.tipo}" readonly></td>
+        `;
+        tbody.appendChild(tr);
     });
-    itensAdicionados++;
-    {% endif %}
-    
-    // 2. Adicionar INVERSOR
-    {% if projeto.qtd_inversores and inversor %}
-    itensOrcamento.push({
-        id: Date.now() + Math.random() + 1,
-        descricao: '{{ inversor.modelo }} - {{ inversor.fabricante }} ({{ inversor.potencia }}kW)',
-        categoria: 'inversor',
-        quantidade: {{ projeto.qtd_inversores or 1 }},
-        unidade_medida: 'un',
-        preco_unitario: 0, // Usuário deve preencher
-        lucro_percentual: 0,
-        preco_total: 0,
-        faturamento: 0,
-        ordem: 1
-    });
-    itensAdicionados++;
-    {% endif %}
-    
-    // 3. Carregar CUSTOS FIXOS do template
-    fetch('/energia-solar/orcamento/custos-fixos-template')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                data.custos.forEach((custo, index) => {
-                    itensOrcamento.push({
-                        id: Date.now() + Math.random() + 100 + index,
-                        descricao: custo.descricao,
-                        categoria: 'custos_fixos',
-                        quantidade: custo.quantidade,
-                        unidade_medida: custo.unidade_medida,
-                        preco_unitario: custo.preco_unitario,
-                        lucro_percentual: custo.lucro_percentual,
-                        preco_total: custo.quantidade * custo.preco_unitario,
-                        faturamento: custo.faturamento,
-                        ordem: custo.ordem
-                    });
-                });
-                
-                renderizarTodosItens();
-                calcularTotais();
-                
-                // Mostrar notificação
-                const totalItens = itensOrcamento.length;
-                if (totalItens > 0) {
-                    const msg = `✅ Orçamento populado automaticamente com ${totalItens} itens:\n` +
-                                `- ${itensAdicionados} item(ns) do kit (módulos + inversor)\n` +
-                                `- ${data.custos.length} custos fixos do template\n\n` +
-                                `Preencha os valores unitários dos módulos e inversor.`;
-                    alert(msg);
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Erro ao carregar custos fixos:', error);
-            renderizarTodosItens();
-            calcularTotais();
-        });
-}
-
-// Adicionar novo item
-function adicionarItem(categoria) {
-    const novoItem = {
-        id: Date.now(),
-        descricao: '',
-        categoria: categoria,
-        quantidade: 1,
-        unidade_medida: 'un',
-        preco_unitario: 0,
-        lucro_percentual: 0,
-        preco_total: 0,
-        faturamento: 0
-    };
-    
-    itensOrcamento.push(novoItem);
-    renderizarTabela(categoria);
-    calcularTotais();
-}
-
-// Remover item
-function removerItem(itemId, categoria) {
-    if (confirm('Deseja remover este item?')) {
-        itensOrcamento = itensOrcamento.filter(item => item.id !== itemId);
-        renderizarTabela(categoria);
-        calcularTotais();
-    }
 }
 
 // Atualizar item
-function atualizarItem(itemId, campo, valor) {
-    const item = itensOrcamento.find(i => i.id === itemId);
+function atualizarItem(id, campo, valor) {
+    const item = itensOrcamento.find(i => i.id === id);
     if (item) {
-        item[campo] = valor;
-        
-        // Recalcular totais do item
-        item.preco_total = parseFloat(item.quantidade) * parseFloat(item.preco_unitario);
-        item.faturamento = item.preco_total * (1 + parseFloat(item.lucro_percentual) / 100);
-        
-        calcularTotais();
-        renderizarTabela(item.categoria);
+        if (campo === 'qtd' || campo === 'valorUnit' || campo === 'lucro') {
+            item[campo] = parseFloat(valor) || 0;
+        } else {
+            item[campo] = valor;
+        }
+        renderizarItensOrcamento();
+        recalcularOrcamento();
     }
 }
 
-// Renderizar tabela de categoria
-function renderizarTabela(categoria) {
-    const itens = itensOrcamento.filter(item => item.categoria === categoria);
-    const containerId = `tabela${categoria.charAt(0).toUpperCase() + categoria.slice(1).replace('_', '')}`;
-    const container = document.getElementById(containerId);
-    
-    if (!container) return;
-    
-    let html = `
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 30%;">Descrição</th>
-                        <th style="width: 10%;">Qtd.</th>
-                        <th style="width: 10%;">Un.</th>
-                        <th style="width: 12%;">Preço Unit.</th>
-                        <th style="width: 12%;">Total</th>
-                        <th style="width: 10%;">Lucro %</th>
-                        <th style="width: 12%;">Faturamento</th>
-                        <th style="width: 4%;">Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-    
-    itens.forEach(item => {
-        html += `
-            <tr>
-                <td>
-                    <input type="text" class="form-control form-control-sm" 
-                           value="${item.descricao}" 
-                           onchange="atualizarItem(${item.id}, 'descricao', this.value)">
-                </td>
-                <td>
-                    <input type="number" class="form-control form-control-sm" 
-                           value="${item.quantidade}" step="0.01"
-                           onchange="atualizarItem(${item.id}, 'quantidade', this.value)">
-                </td>
-                <td>
-                    <input type="text" class="form-control form-control-sm" 
-                           value="${item.unidade_medida}"
-                           onchange="atualizarItem(${item.id}, 'unidade_medida', this.value)">
-                </td>
-                <td>
-                    <input type="number" class="form-control form-control-sm" 
-                           value="${item.preco_unitario}" step="0.01"
-                           onchange="atualizarItem(${item.id}, 'preco_unitario', this.value)">
-                </td>
-                <td>
-                    <input type="text" class="form-control form-control-sm bg-light" 
-                           value="${item.preco_total.toFixed(2)}" readonly>
-                </td>
-                <td>
-                    <input type="number" class="form-control form-control-sm" 
-                           value="${item.lucro_percentual}" step="0.1"
-                           onchange="atualizarItem(${item.id}, 'lucro_percentual', this.value)">
-                </td>
-                <td>
-                    <input type="text" class="form-control form-control-sm bg-success text-white fw-bold" 
-                           value="${item.faturamento.toFixed(2)}" readonly>
-                </td>
-                <td class="text-center">
-                    <button class="btn btn-sm btn-danger" onclick="removerItem(${item.id}, '${categoria}')">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
+// Adicionar novo item
+function adicionarItemOrcamento() {
+    const novoId = Math.max(...itensOrcamento.map(i => i.id)) + 1;
+    itensOrcamento.push({
+        id: novoId,
+        descricao: 'Novo Item',
+        qtd: 1,
+        und: 'UND',
+        valorUnit: 0,
+        lucro: 0,
+        tipo: 'EMPRESA'
     });
-    
-    html += `
-                </tbody>
-            </table>
-        </div>
-    `;
-    
-    container.innerHTML = html;
+    renderizarItensOrcamento();
+    recalcularOrcamento();
 }
 
-// Renderizar todas as tabelas
-function renderizarTodosItens() {
-    ['modulos', 'inversor', 'estrutura', 'custos_fixos', 'outros'].forEach(cat => {
-        renderizarTabela(cat);
-    });
-}
-
-// Calcular totais
-function calcularTotais() {
-    let totalCusto = 0;
-    let totalFaturamento = 0;
+// Recalcular orçamento
+function recalcularOrcamento() {
+    let custoTotal = 0;
+    let lucroTotal = 0;
+    let faturamentoTotal = 0;
     
     itensOrcamento.forEach(item => {
-        totalCusto += parseFloat(item.preco_total) || 0;
-        totalFaturamento += parseFloat(item.faturamento) || 0;
+        const valorTotal = item.qtd * item.valorUnit;
+        const lucroValor = valorTotal * (item.lucro / 100);
+        const faturamento = valorTotal + lucroValor;
+        
+        custoTotal += valorTotal;
+        lucroTotal += lucroValor;
+        faturamentoTotal += faturamento;
     });
     
-    const totalLucro = totalFaturamento - totalCusto;
-    const margemMedia = totalCusto > 0 ? (totalLucro / totalCusto * 100) : 0;
+    const margemMedia = custoTotal > 0 ? (lucroTotal / custoTotal) * 100 : 0;
     
-    document.getElementById('totalCusto').value = totalCusto.toFixed(2).replace('.', ',');
-    document.getElementById('totalLucro').value = totalLucro.toFixed(2).replace('.', ',');
+    document.getElementById('totalCusto').value = custoTotal.toFixed(2);
+    document.getElementById('totalLucro').value = lucroTotal.toFixed(2);
     document.getElementById('margemMedia').value = margemMedia.toFixed(2);
-    document.getElementById('totalFaturamento').value = totalFaturamento.toFixed(2).replace('.', ',');
-}
-
-// Carregar custos fixos do template
-function carregarCustosFixosTemplate() {
-    fetch('/energia-solar/orcamento/custos-fixos-template')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Remover custos fixos existentes
-                itensOrcamento = itensOrcamento.filter(item => item.categoria !== 'custos_fixos');
-                
-                // Adicionar do template
-                data.custos.forEach(custo => {
-                    itensOrcamento.push({
-                        id: Date.now() + Math.random(),
-                        descricao: custo.descricao,
-                        categoria: 'custos_fixos',
-                        quantidade: custo.quantidade,
-                        unidade_medida: custo.unidade_medida,
-                        preco_unitario: custo.preco_unitario,
-                        lucro_percentual: custo.lucro_percentual,
-                        preco_total: custo.quantidade * custo.preco_unitario,
-                        faturamento: custo.faturamento
-                    });
-                });
-                
-                renderizarTabela('custos_fixos');
-                calcularTotais();
-            }
-        });
+    document.getElementById('totalFaturamento').value = faturamentoTotal.toFixed(2);
 }
 
 // Salvar orçamento
 function salvarOrcamento() {
-    fetch(`/energia-solar/projetos/{{ projeto.id }}/orcamento/itens`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            itens: itensOrcamento
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Orçamento salvo com sucesso!');
-            window.location.reload();
-        } else {
-            alert('Erro ao salvar: ' + data.error);
-        }
-    });
+    alert('Orçamento salvo com sucesso!');
+    bootstrap.Modal.getInstance(document.getElementById('modalOrcamento')).hide();
 }
 </script>
 
