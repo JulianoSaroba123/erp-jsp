@@ -20,24 +20,26 @@
     color: #495057;
     font-weight: 600;
     font-size: 0.85rem;
-    padding: 0.75rem;
+    padding: 0.5rem;
     border: 1px solid #dee2e6;
 }
 
 #tabelaCustosOrcamento tbody td {
     border: 1px solid #dee2e6;
-    padding: 0.5rem;
+    padding: 0;
 }
 
 #tabelaCustosOrcamento input {
     width: 100%;
     border: none;
-    padding: 0.5rem;
+    border-radius: 0;
+    padding: 0.4rem;
     font-size: 0.9rem;
 }
 
 #tabelaCustosOrcamento input:focus {
-    outline: 1px solid #0d6efd;
+    outline: none;
+    background: #f0f8ff;
 }
 
 #tabelaCustosOrcamento .text-end {
@@ -46,6 +48,11 @@
 
 #tabelaCustosOrcamento .text-center {
     text-align: center;
+}
+
+#tabelaCustosOrcamento .bg-light {
+    background: #f8f9fa;
+    padding: 0.4rem;
 }
 
 @media (max-width: 768px) {
@@ -1294,16 +1301,16 @@ function handleSalvarDadosFinanceiros(event) {
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-bordered" id="tabelaCustosOrcamento">
+                    <table class="table table-bordered table-sm" id="tabelaCustosOrcamento">
                         <thead>
                             <tr>
                                 <th>DESCRIÇÃO</th>
-                                <th width="100">QTD.</th>
-                                <th width="80">UND.</th>
-                                <th width="120">VALOR UNIT.</th>
-                                <th width="120">VALOR TOTAL</th>
-                                <th width="100">LUCRO %</th>
-                                <th width="120">TIPO</th>
+                                <th width="80">QTD.</th>
+                                <th width="60">UND.</th>
+                                <th width="100">VALOR UNIT.</th>
+                                <th width="100">VALOR TOTAL</th>
+                                <th width="80">LUCRO %</th>
+                                <th width="100">TIPO</th>
                             </tr>
                         </thead>
                         <tbody id="itensOrcamento">
