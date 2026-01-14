@@ -10,55 +10,42 @@
 
 {% block content %}
 <style>
-/* Tabela simples e clean */
+/* Tabela normal simples */
 #tabelaCustosOrcamento {
     font-size: 0.9rem;
-    background: white;
 }
 
 #tabelaCustosOrcamento thead th {
-    background: white;
-    color: #6c757d;
+    background: #f8f9fa;
+    color: #495057;
     font-weight: 600;
-    font-size: 0.75rem;
-    padding: 0.75rem 0.5rem;
-    border-bottom: 2px solid #dee2e6;
-    border-top: none;
-    text-transform: uppercase;
-}
-
-#tabelaCustosOrcamento tbody tr {
-    border-bottom: 1px solid #e9ecef;
-}
-
-#tabelaCustosOrcamento tbody tr:nth-child(even) {
-    background-color: #f8f9fa;
+    font-size: 0.85rem;
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
 }
 
 #tabelaCustosOrcamento tbody td {
-    border: none;
-    padding: 0.5rem !important;
-    vertical-align: middle;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem;
 }
 
 #tabelaCustosOrcamento input {
     width: 100%;
-    border: 1px solid transparent;
-    background: transparent;
-    padding: 0.4rem;
-    transition: all 0.2s;
-}
-
-#tabelaCustosOrcamento input:hover {
-    border-color: #dee2e6;
-    background: white;
+    border: none;
+    padding: 0.5rem;
+    font-size: 0.9rem;
 }
 
 #tabelaCustosOrcamento input:focus {
-    outline: none;
-    border-color: #0d6efd;
-    background: white;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.1);
+    outline: 1px solid #0d6efd;
+}
+
+#tabelaCustosOrcamento .text-end {
+    text-align: right;
+}
+
+#tabelaCustosOrcamento .text-center {
+    text-align: center;
 }
 
 @media (max-width: 768px) {
@@ -1307,16 +1294,16 @@ function handleSalvarDadosFinanceiros(event) {
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table" id="tabelaCustosOrcamento">
+                    <table class="table table-bordered" id="tabelaCustosOrcamento">
                         <thead>
                             <tr>
-                                <th width="30%">DESCRIÇÃO</th>
-                                <th width="8%">QTD.</th>
-                                <th width="8%">UND.</th>
-                                <th width="12%">VALOR UNIT.</th>
-                                <th width="14%">VALOR TOTAL</th>
-                                <th width="12%">LUCRO</th>
-                                <th width="16%">TIPO</th>
+                                <th>DESCRIÇÃO</th>
+                                <th width="100">QTD.</th>
+                                <th width="80">UND.</th>
+                                <th width="120">VALOR UNIT.</th>
+                                <th width="120">VALOR TOTAL</th>
+                                <th width="100">LUCRO %</th>
+                                <th width="120">TIPO</th>
                             </tr>
                         </thead>
                         <tbody id="itensOrcamento">
@@ -1417,9 +1404,9 @@ function renderizarItensOrcamento() {
             <td><input type="number" class="text-end" value="${item.qtd}" onchange="atualizarItem(${item.id}, 'qtd', this.value)"></td>
             <td><input type="text" class="text-center" value="${item.und}" onchange="atualizarItem(${item.id}, 'und', this.value)"></td>
             <td><input type="number" class="text-end" value="${item.valorUnit.toFixed(2)}" step="0.01" onchange="atualizarItem(${item.id}, 'valorUnit', this.value)"></td>
-            <td class="text-end" style="background: #f8f9fa; font-weight: 500;">R$ ${valorTotal.toFixed(2)}</td>
-            <td><input type="number" class="text-end" value="${item.lucro.toFixed(2)}" step="0.01" onchange="atualizarItem(${item.id}, 'lucro', this.value)"><span class="ms-1">%</span></td>
-            <td class="text-center" style="background: #f8f9fa;">${item.tipo}</td>
+            <td class="text-end bg-light">R$ ${valorTotal.toFixed(2)}</td>
+            <td><input type="number" class="text-end" value="${item.lucro.toFixed(2)}" step="0.01" onchange="atualizarItem(${item.id}, 'lucro', this.value)"></td>
+            <td class="text-center bg-light">${item.tipo}</td>
         `;
         tbody.appendChild(tr);
     });
