@@ -441,6 +441,12 @@ def api_resumo_mes():
         }), 500
 
 
+@bp_financeiro.route('/chaves-documentos')
+def chaves_documentos():
+    """Página de chaves de documentos fiscais e tributários."""
+    return render_template('financeiro/chaves_documentos.html')
+
+
 @bp_financeiro.route('/api/indicadores')
 def api_indicadores():
     """API para indicadores financeiros."""

@@ -334,6 +334,12 @@
                 <i class="fas fa-credit-card me-2"></i>Financiamento
             </button>
             
+            <button class="btn btn-secondary action-button"
+                    data-bs-toggle="modal" 
+                    data-bs-target="#modalChavesDocumentos">
+                <i class="fas fa-key me-2"></i>Chaves de Documentos
+            </button>
+            
             <div class="ms-auto">
                 <div class="btn-group">
                     <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
@@ -416,100 +422,6 @@
         </div>
     </div>
 
-    <!-- Chaves de Documentos -->
-    <div class="row g-4 mt-2">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header text-white" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                    <h5 class="mb-0"><i class="fas fa-key me-2"></i>Chaves de Documentos</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-hashtag me-2"></i>ID Projeto:</span>
-                                <span class="info-value fw-bold text-primary">#{{ projeto.id }}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-user me-2"></i>Cliente:</span>
-                                <span class="info-value">{{ projeto.nome_cliente or 'N/D' }}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-id-card me-2"></i>CPF/CNPJ:</span>
-                                <span class="info-value">{% if projeto.cliente_id %}{{ cliente.cpf_cnpj or 'N/D' }}{% else %}N/D{% endif %}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-envelope me-2"></i>Email:</span>
-                                <span class="info-value">{% if projeto.cliente_id %}{{ cliente.email or 'N/D' }}{% else %}N/D{% endif %}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-3">
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-phone me-2"></i>Telefone:</span>
-                                <span class="info-value">{% if projeto.cliente_id %}{{ cliente.telefone or 'N/D' }}{% else %}N/D{% endif %}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-map-marker-alt me-2"></i>CEP:</span>
-                                <span class="info-value">{{ projeto.cep or 'N/D' }}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-home me-2"></i>Endereço:</span>
-                                <span class="info-value">{{ projeto.endereco or 'N/D' }}{% if projeto.numero %}, {{ projeto.numero }}{% endif %}</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-3">
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-city me-2"></i>Cidade/UF:</span>
-                                <span class="info-value">{{ projeto.cidade or 'N/D' }}/{{ projeto.estado or 'N/D' }}</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-bolt me-2"></i>kWh/mês:</span>
-                                <span class="info-value">{{ "%.0f"|format(projeto.consumo_kwh_mes or 0) }} kWh</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-solar-panel me-2"></i>Potência:</span>
-                                <span class="info-value">{{ "%.2f"|format(projeto.potencia_kwp or 0) }} kWp</span>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-row">
-                                <span class="info-label"><i class="fas fa-flag me-2"></i>Status:</span>
-                                <span class="info-value">
-                                    {% if projeto.status == 'rascunho' %}
-                                        <span class="badge bg-secondary">Rascunho</span>
-                                    {% elif projeto.status == 'aprovado' %}
-                                        <span class="badge bg-success">Aprovado</span>
-                                    {% elif projeto.status == 'instalado' %}
-                                        <span class="badge bg-primary">Instalado</span>
-                                    {% else %}
-                                        <span class="badge bg-warning text-dark">{{ projeto.status or 'N/D' }}</span>
-                                    {% endif %}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Modal Dados Técnicos -->
