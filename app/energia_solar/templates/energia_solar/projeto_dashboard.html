@@ -10,7 +10,7 @@
 
 {% block content %}
 <style>
-/* Tabela normal simples */
+/* Tabela normal simples sem bordas coloridas */
 #tabelaCustosOrcamento {
     font-size: 0.9rem;
 }
@@ -21,27 +21,34 @@
     font-weight: 600;
     font-size: 0.85rem;
     padding: 0.5rem;
-    border: 1px solid #dee2e6;
+    border: 1px solid #dee2e6 !important;
 }
 
 #tabelaCustosOrcamento tbody td {
-    border: 1px solid #dee2e6;
+    border: 1px solid #dee2e6 !important;
     padding: 0;
     vertical-align: middle;
 }
 
-#tabelaCustosOrcamento input {
+#tabelaCustosOrcamento input,
+#tabelaCustosOrcamento input[type="text"],
+#tabelaCustosOrcamento input[type="number"] {
     width: 100%;
-    border: none;
-    border-radius: 0;
+    border: none !important;
+    border-radius: 0 !important;
     padding: 0.4rem;
     font-size: 0.85rem;
     background: transparent;
+    box-shadow: none !important;
 }
 
-#tabelaCustosOrcamento input:focus {
-    outline: none;
+#tabelaCustosOrcamento input:focus,
+#tabelaCustosOrcamento input[type="text"]:focus,
+#tabelaCustosOrcamento input[type="number"]:focus {
+    outline: none !important;
     background: #fff;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 #tabelaCustosOrcamento .text-end {
