@@ -362,15 +362,15 @@
                 <div class="card-body">
                     <div class="info-row">
                         <span class="info-label"><i class="fas fa-solar-panel me-2"></i>Módulos:</span>
-                        <span class="info-value">{{ projeto.qtd_placas or 0 }} x {{ projeto.placa_modelo or 'N/D' }}</span>
+                        <span class="info-value">{{ projeto.qtd_placas or 0 }} x {{ placa.modelo if placa else 'N/D' }}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label"><i class="fas fa-microchip me-2"></i>Inversor:</span>
-                        <span class="info-value">{{ projeto.qtd_inversores or 0 }} x {{ projeto.inversor_modelo or 'N/D' }}</span>
+                        <span class="info-value">{{ projeto.qtd_inversores or 0 }} x {{ inversor.modelo if inversor else 'N/D' }}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label"><i class="fas fa-bolt me-2"></i>Conexão:</span>
-                        <span class="info-value">{{ projeto.circuito or 'Não definido' }} - {{ projeto.tensao or 'N/D' }}</span>
+                        <span class="info-value">{{ projeto.circuito or projeto.tipo_instalacao or 'Não definido' }}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label"><i class="fas fa-ruler-combined me-2"></i>Área Necessária:</span>
@@ -1443,6 +1443,27 @@ document.getElementById('modalOrcamento').addEventListener('show.bs.modal', func
     carregarItensOrcamento();
 });
 
+// Formatar número como moeda brasileira
+function formatarMoeda(valor) {
+    return parseFloat(valor).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// Remover formatação ao focar no input
+function removerFormatacao(input) {
+    const valor = input.value.replace(/\./g, '').replace(',', '.');
+    input.value = parseFloat(valor) || 0;
+    input.type = 'number';
+    input.step = '0.01';
+}
+
+// Aplicar formatação ao sair do input
+function aplicarFormatacao(input, itemId) {
+    const valor = parseFloat(input.value) || 0;
+    input.type = 'text';
+    input.value = formatarMoeda(valor);
+    atualizarItem(itemId, 'valorUnit', valor);
+}
+
 // Carregar itens do orçamento
 function carregarItensOrcamento() {
     itensOrcamento = [
@@ -1480,8 +1501,8 @@ function renderizarItensOrcamento() {
             <td><input type="text" value="${item.descricao}" onchange="atualizarItem(${item.id}, 'descricao', this.value)"></td>
             <td><input type="number" class="text-end" value="${item.qtd}" onchange="atualizarItem(${item.id}, 'qtd', this.value)"></td>
             <td><input type="text" class="text-center" value="${item.und}" onchange="atualizarItem(${item.id}, 'und', this.value)"></td>
-            <td><input type="number" class="text-end" value="${item.valorUnit.toFixed(2)}" step="0.01" onchange="atualizarItem(${item.id}, 'valorUnit', this.value)"></td>
-            <td class="text-end bg-light">R$ ${valorTotal.toFixed(2)}</td>
+            <td><input type="text" class="text-end" value="${formatarMoeda(item.valorUnit)}" onfocus="removerFormatacao(this)" onblur="aplicarFormatacao(this, ${item.id})"></td>
+            <td class="text-end bg-light">R$ ${formatarMoeda(valorTotal)}</td>
             <td><input type="number" class="text-end" value="${item.lucro.toFixed(2)}" step="0.01" onchange="atualizarItem(${item.id}, 'lucro', this.value)"></td>
             <td class="text-center bg-light">${item.tipo}</td>
             <td class="text-center">
@@ -1545,10 +1566,10 @@ function recalcularOrcamento() {
     
     const margemMedia = custoTotal > 0 ? (lucroTotal / custoTotal) * 100 : 0;
     
-    document.getElementById('totalCusto').value = custoTotal.toFixed(2);
-    document.getElementById('totalLucro').value = lucroTotal.toFixed(2);
+    document.getElementById('totalCusto').value = formatarMoeda(custoTotal);
+    document.getElementById('totalLucro').value = formatarMoeda(lucroTotal);
     document.getElementById('margemMedia').value = margemMedia.toFixed(2);
-    document.getElementById('totalFaturamento').value = faturamentoTotal.toFixed(2);
+    document.getElementById('totalFaturamento').value = formatarMoeda(faturamentoTotal);
 }
 
 // Abrir modal de edição
