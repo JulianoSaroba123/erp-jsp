@@ -1373,6 +1373,66 @@ function handleSalvarDadosFinanceiros(event) {
     </div>
 </div>
 
+<!-- Modal Editar Custo -->
+<div class="modal fade" id="modalEditarCusto" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">EDITAR CUSTO</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger mb-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>CAMPOS OBRIGATÓRIOS</strong>
+                </div>
+                
+                <input type="hidden" id="editItemId">
+                
+                <div class="mb-3">
+                    <label class="form-label">DESCRIÇÃO <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="editDescricao" required>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">QTD. <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="editQtd" step="0.01" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">UNIDADE DE MEDIDA <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editUnd" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">PREÇO UNITÁRIO (R$) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="editValorUnit" step="0.01" required>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">FATURAMENTO <span class="text-danger">*</span></label>
+                        <select class="form-select" id="editTipo">
+                            <option value="EMPRESA">EMPRESA</option>
+                            <option value="PARCEIRO">PARCEIRO</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">LUCRO (%) <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="editLucro" step="0.01" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="salvarEdicaoCusto()">
+                    <i class="fas fa-check me-2"></i>EDITAR
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Dados do orçamento
 let itensOrcamento = [];
@@ -1415,6 +1475,8 @@ function renderizarItensOrcamento() {
         const faturamento = valorTotal + lucroValor;
         
         const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.ondblclick = () => abrirModalEdicao(item.id);
         tr.innerHTML = `
             <td><input type="text" value="${item.descricao}" onchange="atualizarItem(${item.id}, 'descricao', this.value)"></td>
             <td><input type="number" class="text-end" value="${item.qtd}" onchange="atualizarItem(${item.id}, 'qtd', this.value)"></td>
@@ -1480,6 +1542,41 @@ function recalcularOrcamento() {
     document.getElementById('totalLucro').value = lucroTotal.toFixed(2);
     document.getElementById('margemMedia').value = margemMedia.toFixed(2);
     document.getElementById('totalFaturamento').value = faturamentoTotal.toFixed(2);
+}
+
+// Abrir modal de edição
+function abrirModalEdicao(itemId) {
+    const item = itensOrcamento.find(i => i.id === itemId);
+    if (!item) return;
+    
+    document.getElementById('editItemId').value = item.id;
+    document.getElementById('editDescricao').value = item.descricao;
+    document.getElementById('editQtd').value = item.qtd;
+    document.getElementById('editUnd').value = item.und;
+    document.getElementById('editValorUnit').value = item.valorUnit.toFixed(2);
+    document.getElementById('editLucro').value = item.lucro.toFixed(2);
+    document.getElementById('editTipo').value = item.tipo;
+    
+    new bootstrap.Modal(document.getElementById('modalEditarCusto')).show();
+}
+
+// Salvar edição
+function salvarEdicaoCusto() {
+    const itemId = parseInt(document.getElementById('editItemId').value);
+    const item = itensOrcamento.find(i => i.id === itemId);
+    
+    if (item) {
+        item.descricao = document.getElementById('editDescricao').value;
+        item.qtd = parseFloat(document.getElementById('editQtd').value) || 0;
+        item.und = document.getElementById('editUnd').value;
+        item.valorUnit = parseFloat(document.getElementById('editValorUnit').value) || 0;
+        item.lucro = parseFloat(document.getElementById('editLucro').value) || 0;
+        item.tipo = document.getElementById('editTipo').value;
+        
+        renderizarItensOrcamento();
+        recalcularOrcamento();
+        bootstrap.Modal.getInstance(document.getElementById('modalEditarCusto')).hide();
+    }
 }
 
 // Salvar orçamento
