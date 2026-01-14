@@ -1039,8 +1039,14 @@ def projeto_duplicar(projeto_id):
 def projeto_dashboard(projeto_id):
     """Dashboard completo do projeto com KPIs e ações"""
     from app.energia_solar.catalogo_model import ProjetoSolar, PlacaSolar, InversorSolar, KitSolar
+    from app.cliente.cliente_model import Cliente
     
     projeto = ProjetoSolar.query.get_or_404(projeto_id)
+    
+    # Buscar dados do cliente
+    cliente = None
+    if projeto.cliente_id:
+        cliente = Cliente.query.get(projeto.cliente_id)
     
     # Buscar equipamentos
     placa = None
@@ -1076,6 +1082,7 @@ def projeto_dashboard(projeto_id):
     
     return render_template('energia_solar/projeto_dashboard.html', 
                          projeto=projeto,
+                         cliente=cliente,
                          placa=placa,
                          inversor=inversor,
                          economia_mensal=economia_mensal,
