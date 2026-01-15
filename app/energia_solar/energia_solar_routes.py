@@ -1190,6 +1190,9 @@ def projeto_dashboard(projeto_id):
     unidades_consumidoras = UnidadeConsumidora.query.filter_by(projeto_id=projeto_id).all()
     unidades_json = [u.to_dict() for u in unidades_consumidoras]
     
+    # Buscar clientes para vincular ao projeto
+    clientes_disponiveis = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+    
     return render_template('energia_solar/projeto_dashboard.html', 
                          projeto=projeto,
                          cliente=cliente,
@@ -1201,7 +1204,8 @@ def projeto_dashboard(projeto_id):
                          placas_disponiveis=placas_disponiveis,
                          kits_disponiveis=kits_disponiveis,
                          inversores_disponiveis=inversores_disponiveis,
-                         unidades_consumidoras_json=unidades_json)
+                         unidades_consumidoras_json=unidades_json,
+                         clientes_disponiveis=clientes_disponiveis)
 
 
 @energia_solar_bp.route('/projetos/<int:projeto_id>/dados-financeiros', methods=['POST'])
