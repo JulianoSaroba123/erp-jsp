@@ -186,19 +186,19 @@
                         {% for projeto in projetos %}
                         <tr>
                             <td><small>{{ projeto.data_criacao.strftime('%d/%m/%Y') }}</small></td>
-                            <td><strong>{{ projeto.cliente.nome if projeto.cliente else 'Cliente não informado' }}</strong></td>
-                            <td><span class="badge bg-warning text-dark">{{ "%.0f"|format(projeto.consumo_mensal) }} kWh</span></td>
-                            <td><span class="badge bg-info">{{ "%.2f"|format(projeto.potencia_sistema) }} kWp</span></td>
-                            <td><span class="badge bg-secondary">{{ projeto.quantidade_placas }} un</span></td>
+                            <td><strong>{{ projeto.cliente.nome if projeto.cliente else projeto.nome_cliente or 'Cliente não informado' }}</strong></td>
+                            <td><span class="badge bg-warning text-dark">{{ "%.0f"|format(projeto.consumo_kwh_mes or 0) }} kWh</span></td>
+                            <td><span class="badge bg-info">{{ "%.2f"|format(projeto.potencia_kwp or 0) }} kWp</span></td>
+                            <td><span class="badge bg-secondary">{{ projeto.qtd_placas or 0 }} un</span></td>
                             <td class="text-success fw-bold">R$ {{ "%.2f"|format(projeto.economia_mensal or 0) }}</td>
                             <td><span class="badge" style="background: #a855f7;">{{ "%.1f"|format(projeto.payback_anos or 0) }} anos</span></td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{{ url_for('energia_solar.projeto_dashboard', numero_projeto=projeto.numero_projeto) }}" 
+                                    <a href="{{ url_for('energia_solar.projeto_dashboard', projeto_id=projeto.id) }}" 
                                        class="btn btn-outline-ciano" title="Visualizar Projeto">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{{ url_for('energia_solar.projeto_dashboard', numero_projeto=projeto.numero_projeto) }}" 
+                                    <a href="{{ url_for('energia_solar.projeto_dashboard', projeto_id=projeto.id) }}" 
                                        class="btn btn-outline-warning" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>

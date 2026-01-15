@@ -216,23 +216,23 @@ def migrate_add_numero_projeto():
 def dashboard():
     """Dashboard do módulo de Energia Solar"""
     try:
-        # Buscar projetos ativos (ProjetoSolar v3.0)
-        projetos = ProjetoSolar.query.filter_by(ativo=True).order_by(ProjetoSolar.data_criacao.desc()).limit(10).all()
+        # Buscar projetos recentes (ProjetoSolar v3.0) - TODOS, pois não há coluna 'ativo'
+        projetos = ProjetoSolar.query.order_by(ProjetoSolar.data_criacao.desc()).limit(10).all()
         
         # Estatísticas dos PROJETOS (não dos cálculos antigos)
-        total_projetos = ProjetoSolar.query.filter_by(ativo=True).count()
+        total_projetos = ProjetoSolar.query.count()
         
-        # Potência total: soma de potencia_sistema de todos os projetos ativos
-        potencia_total = db.session.query(db.func.sum(ProjetoSolar.potencia_sistema)).filter(ProjetoSolar.ativo == True).scalar() or 0
+        # Potência total: soma de potencia_kwp (NÃO potencia_sistema)
+        potencia_total = db.session.query(db.func.sum(ProjetoSolar.potencia_kwp)).scalar() or 0
         
-        # Economia total: soma de economia_anual de todos os projetos ativos
-        economia_total = db.session.query(db.func.sum(ProjetoSolar.economia_anual)).filter(ProjetoSolar.ativo == True).scalar() or 0
+        # Economia total: soma de economia_anual
+        economia_total = db.session.query(db.func.sum(ProjetoSolar.economia_anual)).scalar() or 0
         
-        # Consumo médio: média de consumo_mensal dos projetos ativos
-        consumo_medio = db.session.query(db.func.avg(ProjetoSolar.consumo_mensal)).filter(ProjetoSolar.ativo == True).scalar() or 0
+        # Consumo médio: média de consumo_kwh_mes (NÃO consumo_mensal)
+        consumo_medio = db.session.query(db.func.avg(ProjetoSolar.consumo_kwh_mes)).scalar() or 0
         
-        # Valor médio do orçamento
-        valor_medio = db.session.query(db.func.avg(ProjetoSolar.valor_orcamento)).filter(ProjetoSolar.ativo == True).scalar() or 0
+        # Valor médio: média de valor_venda (NÃO valor_orcamento)
+        valor_medio = db.session.query(db.func.avg(ProjetoSolar.valor_venda)).scalar() or 0
         
         return render_template('energia_solar/dashboard.html',
                              projetos=projetos,
