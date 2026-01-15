@@ -3215,6 +3215,50 @@ window.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
+
+    // AUTO-PREENCHIMENTO ao vincular cliente
+    {% if projeto.cliente_id %}
+    carregarDadosCliente({{ projeto.cliente_id }});
+    {% endif %}
 });
+
+// Função para carregar dados do cliente automaticamente
+async function carregarDadosCliente(clienteId) {
+    try {
+        const response = await fetch(`/energia-solar/api/cliente/${clienteId}`);
+        if (!response.ok) throw new Error('Erro ao buscar dados do cliente');
+        
+        const dados = await response.json();
+        
+        // Preencher campos se estiverem vazios
+        const campoCidade = document.querySelector('input[name="cidade"]');
+        if (campoCidade && !campoCidade.value) {
+            campoCidade.value = dados.cidade || '';
+        }
+        
+        const campoEstado = document.querySelector('input[name="estado"]');
+        if (campoEstado && !campoEstado.value) {
+            campoEstado.value = dados.estado || '';
+            
+            // Buscar irradiação automática se estado foi preenchido
+            if (dados.estado) {
+                try {
+                    const respIrr = await fetch(`/energia-solar/api/irradiacao/${dados.estado}`);
+                    const dadosIrr = await respIrr.json();
+                    const campoIrradiacao = document.querySelector('input[name="irradiacao_solar"]');
+                    if (campoIrradiacao && !campoIrradiacao.value) {
+                        campoIrradiacao.value = dadosIrr.irradiacao;
+                    }
+                } catch (e) {
+                    console.error('Erro ao buscar irradiação:', e);
+                }
+            }
+        }
+        
+        console.log('✅ Dados do cliente carregados automaticamente:', dados.nome);
+    } catch (error) {
+        console.error('❌ Erro ao carregar dados do cliente:', error);
+    }
+}
 </script>
 {% endblock %}

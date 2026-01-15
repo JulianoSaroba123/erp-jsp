@@ -419,6 +419,30 @@ def api_irradiacao(estado):
     return jsonify({'irradiacao': irradiacao})
 
 
+@energia_solar_bp.route('/api/cliente/<int:cliente_id>')
+@login_required
+def api_cliente_dados(cliente_id):
+    """Retorna dados do cliente para auto-preenchimento"""
+    try:
+        cliente = Cliente.query.get(cliente_id)
+        if not cliente:
+            return jsonify({'error': 'Cliente não encontrado'}), 404
+        
+        return jsonify({
+            'nome': cliente.nome,
+            'cidade': cliente.cidade or '',
+            'estado': cliente.estado or '',
+            'cep': cliente.cep or '',
+            'endereco': cliente.endereco or '',
+            'numero': cliente.numero or '',
+            'bairro': cliente.bairro or '',
+            'complemento': cliente.complemento or ''
+        })
+    except Exception as e:
+        logger.error(f"❌ Erro ao buscar dados do cliente: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 # ==================== ROTAS DOS CATÁLOGOS ====================
 
 # ========== Catálogo de Placas Solares ==========
