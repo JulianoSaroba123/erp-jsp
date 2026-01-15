@@ -436,7 +436,9 @@ def api_cliente_dados(cliente_id):
             'endereco': cliente.endereco or '',
             'numero': cliente.numero or '',
             'bairro': cliente.bairro or '',
-            'complemento': cliente.complemento or ''
+            'complemento': cliente.complemento or '',
+            'latitude': getattr(cliente, 'latitude', None),
+            'longitude': getattr(cliente, 'longitude', None)
         })
     except Exception as e:
         logger.error(f"❌ Erro ao buscar dados do cliente: {e}")

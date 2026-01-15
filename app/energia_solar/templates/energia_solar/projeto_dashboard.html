@@ -509,11 +509,11 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">LATITUDE</label>
-                                    <input type="number" step="0.00001" class="form-control" name="latitude" value="{{ projeto.latitude or '' }}">
+                                    <input type="number" step="0.00001" class="form-control" id="campo_latitude" name="latitude" value="{{ projeto.latitude or '' }}">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">LONGITUDE</label>
-                                    <input type="number" step="0.00001" class="form-control" name="longitude" value="{{ projeto.longitude or '' }}">
+                                    <input type="number" step="0.00001" class="form-control" id="campo_longitude" name="longitude" value="{{ projeto.longitude or '' }}">
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">IRRADIAÇÃO SOLAR (kWh/m².dia)</label>
@@ -3291,6 +3291,17 @@ async function carregarDadosCliente(clienteId) {
                     console.error('Erro ao buscar irradiação:', e);
                 }
             }
+        }
+        
+        // Preencher latitude e longitude se disponíveis
+        const campoLatitude = document.getElementById('campo_latitude');
+        if (campoLatitude && dados.latitude) {
+            campoLatitude.value = dados.latitude;
+        }
+        
+        const campoLongitude = document.getElementById('campo_longitude');
+        if (campoLongitude && dados.longitude) {
+            campoLongitude.value = dados.longitude;
         }
         
         console.log('✅ Dados do cliente carregados:', dados.nome);
