@@ -463,14 +463,43 @@
                     <div class="tab-content">
                         <!-- Aba 1: Dados iniciais -->
                         <div class="tab-pane fade show active" id="dadosIniciais">
+                            <!-- Seleção de Cliente -->
+                            <div class="alert alert-info mb-4">
+                                <div class="row g-3 align-items-end">
+                                    <div class="col-md-8">
+                                        <label class="form-label fw-bold mb-1">
+                                            <i class="fas fa-user me-2"></i>VINCULAR CLIENTE AO PROJETO
+                                        </label>
+                                        <select class="form-select" id="select_cliente" name="cliente_id" onchange="selecionarCliente(this.value)">
+                                            <option value="">Selecione um cliente...</option>
+                                            {% if clientes_disponiveis %}
+                                                {% for c in clientes_disponiveis %}
+                                                <option value="{{ c.id }}" 
+                                                        data-cidade="{{ c.cidade or '' }}"
+                                                        data-estado="{{ c.estado or '' }}"
+                                                        {% if projeto.cliente_id == c.id %}selected{% endif %}>
+                                                    {{ c.nome }} - {{ c.cidade or 'Sem cidade' }}/{{ c.estado or 'UF' }}
+                                                </option>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <a href="{{ url_for('cliente.novo') }}" target="_blank" class="btn btn-success w-100">
+                                            <i class="fas fa-plus me-2"></i>Novo Cliente
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="row g-3 mb-3">
                                 <div class="col-6">
                                     <label class="form-label fw-bold">CIDADE:</label>
-                                    <input type="text" class="form-control" name="cidade" value="{{ projeto.cidade or '' }}">
+                                    <input type="text" class="form-control" id="campo_cidade" name="cidade" value="{{ projeto.cidade or '' }}">
                                 </div>
                                 <div class="col-6">
                                     <label class="form-label fw-bold">ESTADO:</label>
-                                    <input type="text" class="form-control" name="estado" value="{{ projeto.estado or '' }}">
+                                    <input type="text" class="form-control" id="campo_estado" name="estado" value="{{ projeto.estado or '' }}">
                                 </div>
                             </div>
 
@@ -3222,6 +3251,13 @@ window.addEventListener('DOMContentLoaded', function() {
     {% endif %}
 });
 
+// Função chamada quando seleciona cliente no dropdown
+function selecionarCliente(clienteId) {
+    if (clienteId) {
+        carregarDadosCliente(clienteId);
+    }
+}
+
 // Função para carregar dados do cliente automaticamente
 async function carregarDadosCliente(clienteId) {
     try {
@@ -3230,14 +3266,14 @@ async function carregarDadosCliente(clienteId) {
         
         const dados = await response.json();
         
-        // Preencher campos se estiverem vazios
-        const campoCidade = document.querySelector('input[name="cidade"]');
-        if (campoCidade && !campoCidade.value) {
+        // Preencher campos (sempre sobrescreve para manter sincronizado com o cliente)
+        const campoCidade = document.getElementById('campo_cidade');
+        if (campoCidade) {
             campoCidade.value = dados.cidade || '';
         }
         
-        const campoEstado = document.querySelector('input[name="estado"]');
-        if (campoEstado && !campoEstado.value) {
+        const campoEstado = document.getElementById('campo_estado');
+        if (campoEstado) {
             campoEstado.value = dados.estado || '';
             
             // Buscar irradiação automática se estado foi preenchido
@@ -3255,7 +3291,7 @@ async function carregarDadosCliente(clienteId) {
             }
         }
         
-        console.log('✅ Dados do cliente carregados automaticamente:', dados.nome);
+        console.log('✅ Dados do cliente carregados:', dados.nome);
     } catch (error) {
         console.error('❌ Erro ao carregar dados do cliente:', error);
     }
