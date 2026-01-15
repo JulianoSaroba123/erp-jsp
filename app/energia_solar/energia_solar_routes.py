@@ -1829,7 +1829,18 @@ def projeto_visualizar(projeto_id):
 @energia_solar_bp.route('/projetos/<int:projeto_id>/editar')
 @login_required
 def projeto_editar(projeto_id):
-    """Edita um projeto existente usando o wizard"""
+    """Redireciona para o dashboard do projeto para edição"""
+    # Editar agora é feito no dashboard através dos botões:
+    # - Cadastrar Cliente
+    # - Dados Técnicos  
+    # - Dados Financeiros
+    return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/editar-wizard')
+@login_required
+def projeto_editar_wizard(projeto_id):
+    """Edita um projeto existente usando o wizard - MODO ANTIGO"""
     from app.energia_solar.catalogo_model import ProjetoSolar, PlacaSolar, InversorSolar, KitSolar
     
     try:
