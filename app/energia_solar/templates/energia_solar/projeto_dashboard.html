@@ -3297,11 +3297,17 @@ async function carregarDadosCliente(clienteId) {
         const campoLatitude = document.getElementById('campo_latitude');
         if (campoLatitude && dados.latitude) {
             campoLatitude.value = dados.latitude;
+            console.log('✅ Latitude preenchida:', dados.latitude);
+        } else {
+            console.log('⚠️ Latitude não disponível no cliente');
         }
         
         const campoLongitude = document.getElementById('campo_longitude');
         if (campoLongitude && dados.longitude) {
             campoLongitude.value = dados.longitude;
+            console.log('✅ Longitude preenchida:', dados.longitude);
+        } else {
+            console.log('⚠️ Longitude não disponível no cliente');
         }
         
         console.log('✅ Dados do cliente carregados:', dados.nome);
