@@ -118,6 +118,35 @@ def create_app(config_name=None):
             db.create_all()
             print("[OK] Tabelas do banco de dados verificadas/criadas!")
             
+            # === MIGRAÇÕES AUTOMÁTICAS ===
+            print("\n🔧 Executando migrações automáticas...")
+            
+            # Migração: Adicionar coluna numero_projeto em calculo_energia_solar (PRIORIDADE MÁXIMA)
+            try:
+                from sqlalchemy import text, inspect
+                inspector = inspect(db.engine)
+                
+                print("📋 Verificando tabela calculo_energia_solar...")
+                if 'calculo_energia_solar' in inspector.get_table_names():
+                    colunas = [c['name'] for c in inspector.get_columns('calculo_energia_solar')]
+                    print(f"   Colunas existentes: {len(colunas)}")
+                    
+                    # Adiciona coluna 'numero_projeto' se não existir
+                    if 'numero_projeto' not in colunas:
+                        print("   🔧 Adicionando coluna 'numero_projeto'...")
+                        db.session.execute(text("ALTER TABLE calculo_energia_solar ADD COLUMN numero_projeto VARCHAR(50)"))
+                        db.session.commit()
+                        print("   ✅ Coluna 'numero_projeto' adicionada em calculo_energia_solar")
+                    else:
+                        print("   ✓ Coluna 'numero_projeto' já existe")
+                else:
+                    print("   ⚠️ Tabela calculo_energia_solar não encontrada")
+            except Exception as e:
+                db.session.rollback()
+                print(f"   ❌ ERRO na migração calculo_energia_solar: {e}")
+                import traceback
+                traceback.print_exc()
+            
             # Migração: Adicionar colunas faltantes em orcamento_itens (v3.0)
             try:
                 from sqlalchemy import text, inspect
@@ -147,24 +176,7 @@ def create_app(config_name=None):
                 db.session.rollback()
                 print(f"⚠️ Aviso na migração orcamento_itens: {e}")
             
-            # Migração: Adicionar coluna numero_projeto em calculo_energia_solar
-            try:
-                from sqlalchemy import text, inspect
-                inspector = inspect(db.engine)
-                
-                if 'calculo_energia_solar' in inspector.get_table_names():
-                    colunas = [c['name'] for c in inspector.get_columns('calculo_energia_solar')]
-                    
-                    # Adiciona coluna 'numero_projeto' se não existir
-                    if 'numero_projeto' not in colunas:
-                        db.session.execute(text("ALTER TABLE calculo_energia_solar ADD COLUMN numero_projeto VARCHAR(50)"))
-                        db.session.commit()
-                        print("[OK] Coluna 'numero_projeto' adicionada em calculo_energia_solar")
-                    else:
-                        print("[OK] Coluna 'numero_projeto' já existe em calculo_energia_solar")
-            except Exception as e:
-                db.session.rollback()
-                print(f"⚠️ Aviso na migração calculo_energia_solar: {e}")
+            print("✅ Migrações automáticas concluídas!\n")
             
             # Cria usuário admin padrão se não existir nenhum usuário
             from app.auth.usuario_model import Usuario
