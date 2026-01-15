@@ -338,3 +338,51 @@ class ProjetoSolar(db.Model):
     
     def __repr__(self):
         return f'<ProjetoSolar {self.id} - {self.nome_cliente} - {self.potencia_kwp}kWp>'
+
+
+class UnidadeConsumidora(db.Model):
+    """Modelo para múltiplas unidades consumidoras de um projeto solar"""
+    __tablename__ = 'unidade_consumidora'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Relacionamento com projeto
+    projeto_id = db.Column(db.Integer, db.ForeignKey('projeto_solar.id'), nullable=False)
+    
+    # Identificação da unidade
+    nome = db.Column(db.String(200), nullable=False)  # Ex: Casa Principal, Apartamento 101
+    numero_uc = db.Column(db.String(50))  # Número da Unidade Consumidora
+    endereco = db.Column(db.String(300))  # Endereço da unidade
+    
+    # Modo de entrada dos dados
+    modo_consumo = db.Column(db.String(20), default='faturas')  # 'faturas' ou '12meses'
+    
+    # Histórico de consumo (JSON)
+    # Para 'faturas': {consumo1: 320, consumo2: 350, consumo3: 250}
+    # Para '12meses': {mes_01: 300, mes_02: 280, ..., mes_12: 310}
+    consumos = db.Column(db.JSON, nullable=False)
+    
+    # Consumo médio calculado
+    media_consumo = db.Column(db.Float, nullable=False)  # kWh/mês
+    
+    # Metadados
+    data_criacao = db.Column(db.DateTime, default=datetime.utcnow)
+    data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relacionamento reverso
+    projeto = db.relationship('ProjetoSolar', backref=db.backref('unidades_consumidoras', lazy=True, cascade='all, delete-orphan'))
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'projeto_id': self.projeto_id,
+            'nome': self.nome,
+            'numero_uc': self.numero_uc,
+            'endereco': self.endereco,
+            'modo_consumo': self.modo_consumo,
+            'consumos': self.consumos,
+            'media_consumo': self.media_consumo
+        }
+    
+    def __repr__(self):
+        return f'<UnidadeConsumidora {self.id} - {self.nome} - {self.media_consumo}kWh/mês>'

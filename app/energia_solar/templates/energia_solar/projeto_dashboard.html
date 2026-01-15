@@ -514,6 +514,48 @@
                                     <small class="text-muted">Clique no botão para calcular</small>
                                 </div>
                             </div>
+
+                            <!-- Seção: Múltiplas Unidades Consumidoras -->
+                            <div class="mt-4 p-3" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 10px; border-left: 4px solid #28a745;">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div>
+                                        <h6 class="mb-1 fw-bold" style="color: #28a745;">
+                                            <i class="fas fa-building me-2"></i>MÚLTIPLAS UNIDADES CONSUMIDORAS
+                                        </h6>
+                                        <small style="color: #495057; font-weight: 500;">Adicione todas as residências/empresas que farão parte do sistema</small>
+                                    </div>
+                                    <button type="button" class="btn btn-success btn-sm" onclick="abrirModalAdicionarUnidade()">
+                                        <i class="fas fa-plus me-1"></i>ADICIONAR UNIDADE
+                                    </button>
+                                </div>
+                                
+                                <!-- Lista de Unidades Adicionadas -->
+                                <div id="listaUnidades" class="mt-3">
+                                    <!-- Será preenchido via JavaScript -->
+                                </div>
+                                
+                                <!-- Resumo do Consumo Total -->
+                                <div class="mt-3 p-2" style="background: white; border-radius: 8px; border: 2px dashed #28a745;">
+                                    <div class="row text-center">
+                                        <div class="col-md-3">
+                                            <small class="d-block fw-bold" style="color: #495057;">TOTAL DE UNIDADES</small>
+                                            <strong id="totalUnidades" style="color: #28a745; font-size: 1.2rem;">0</strong>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="d-block fw-bold" style="color: #495057;">CONSUMO TOTAL (kWh/mês)</small>
+                                            <strong id="consumoTotalUnidades" style="color: #007bff; font-size: 1.2rem;">0.00</strong>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="d-block fw-bold" style="color: #495057;">CONSUMO MÉDIO POR UNIDADE</small>
+                                            <strong id="consumoMedioPorUnidade" style="color: #212529; font-size: 1.2rem;">0.00</strong>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="d-block fw-bold" style="color: #495057;">SISTEMA DIMENSIONADO PARA</small>
+                                            <strong id="consumoParaDimensionamento" style="color: #28a745; font-size: 1.2rem;">0 kWh</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Aba 2: Método -->
@@ -1023,6 +1065,10 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Campo hidden para enviar dados das unidades consumidoras -->
+                <input type="hidden" id="unidades_consumidoras_json" name="unidades_consumidoras_json" value="">
+                
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="fas fa-times me-2"></i>Cancelar
@@ -1409,7 +1455,24 @@ function handleSalvarDadosFinanceiros(event) {
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">UNIDADE DE MEDIDA <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="editUnd" required>
+                        <select class="form-select" id="editUnd" required>
+                            <option value="UN">UN - Unidade</option>
+                            <option value="PC">PC - Peça</option>
+                            <option value="CJ">CJ - Conjunto</option>
+                            <option value="KIT">KIT - Kit</option>
+                            <option value="M">M - Metro</option>
+                            <option value="M²">M² - Metro Quadrado</option>
+                            <option value="M³">M³ - Metro Cúbico</option>
+                            <option value="KG">KG - Quilograma</option>
+                            <option value="L">L - Litro</option>
+                            <option value="H">H - Hora</option>
+                            <option value="DIA">DIA - Dia</option>
+                            <option value="MÊS">MÊS - Mês</option>
+                            <option value="%">% - Percentual</option>
+                            <option value="KWH">KWH - Quilowatt-hora</option>
+                            <option value="KWP">KWP - Quilowatt-pico</option>
+                            <option value="SVC">SVC - Serviço</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -1848,6 +1911,200 @@ function salvarOrcamento() {
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adicionar Unidade Consumidora -->
+<div class="modal fade" id="modalAdicionarUnidade" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-building me-2"></i>
+                    <span id="tituloModalUnidade">Adicionar Unidade Consumidora</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Informações da Unidade -->
+                <h6 class="text-primary mb-3"><i class="fas fa-info-circle me-2"></i>Dados da Unidade</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Identificação/Nome <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="unidade_nome" placeholder="Ex: Casa Principal, Apartamento 101">
+                        <small class="text-muted">Nome para identificar esta unidade</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Número da UC</label>
+                        <input type="text" class="form-control" id="unidade_numero_uc" placeholder="Ex: 12345678">
+                        <small class="text-muted">Número da Unidade Consumidora (opcional)</small>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Endereço</label>
+                        <input type="text" class="form-control" id="unidade_endereco" placeholder="Ex: Rua das Flores, 123">
+                        <small class="text-muted">Endereço da unidade (opcional)</small>
+                    </div>
+                </div>
+
+                <!-- Consumos (Faturas) -->
+                <h6 class="text-primary mb-3">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>Histórico de Consumo
+                </h6>
+                
+                <!-- Botões para escolher modo -->
+                <div class="btn-group w-100 mb-3" role="group">
+                    <input type="radio" class="btn-check" name="modo_consumo_unidade" id="modo_faturas" value="faturas" checked onchange="alterarModoConsumoUnidade('faturas')">
+                    <label class="btn btn-outline-primary" for="modo_faturas">
+                        <i class="fas fa-file-invoice me-2"></i>3 FATURAS
+                    </label>
+                    <input type="radio" class="btn-check" name="modo_consumo_unidade" id="modo_12meses" value="12meses" onchange="alterarModoConsumoUnidade('12meses')">
+                    <label class="btn btn-outline-success" for="modo_12meses">
+                        <i class="fas fa-calendar-alt me-2"></i>12 MESES
+                    </label>
+                </div>
+
+                <!-- Modo: 3 Faturas -->
+                <div id="consumo_faturas" class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">
+                            Fatura 1 (kWh) <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_consumo1" step="0.01" min="0" placeholder="Digite o consumo">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Fatura 2 (kWh)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_consumo2" step="0.01" min="0" placeholder="Digite o consumo">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Fatura 3 (kWh)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_consumo3" step="0.01" min="0" placeholder="Digite o consumo">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modo: 12 Meses -->
+                <div id="consumo_12meses" class="row g-3" style="display: none;">
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold">JAN</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_mes_01" step="0.01" min="0" placeholder="0">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold">FEV</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_mes_02" step="0.01" min="0" placeholder="0">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold">MAR</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_mes_03" step="0.01" min="0" placeholder="0">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold">ABR</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_mes_04" step="0.01" min="0" placeholder="0">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold">MAI</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_mes_05" step="0.01" min="0" placeholder="0">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold">JUN</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_mes_06" step="0.01" min="0" placeholder="0">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold">JUL</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_mes_07" step="0.01" min="0" placeholder="0">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold">AGO</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_mes_08" step="0.01" min="0" placeholder="0">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold">SET</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_mes_09" step="0.01" min="0" placeholder="0">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold">OUT</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_mes_10" step="0.01" min="0" placeholder="0">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold">NOV</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_mes_11" step="0.01" min="0" placeholder="0">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <label class="form-label fw-bold">DEZ</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="unidade_mes_12" step="0.01" min="0" placeholder="0">
+                            <span class="input-group-text">kWh</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview da Média -->
+                <div class="mt-3 p-3" id="previewMediaUnidade" style="display: none; background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border-radius: 8px; border-left: 4px solid #28a745;">
+                    <div class="row text-center">
+                        <div class="col-md-6">
+                            <small class="d-block fw-bold" style="color: #2e7d32;">
+                                <i class="fas fa-file-invoice me-1"></i>MEDIÇÕES INFORMADAS
+                            </small>
+                            <strong id="qtdFaturas" style="font-size: 1.8rem; color: #1b5e20;">0</strong>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="d-block fw-bold" style="color: #2e7d32;">
+                                <i class="fas fa-calculator me-1"></i>CONSUMO MÉDIO CALCULADO
+                            </small>
+                            <strong id="mediaUnidade" style="font-size: 1.8rem; color: #1b5e20;">0.00 kWh/mês</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-success" onclick="salvarUnidadeConsumidora()">
+                    <i class="fas fa-save me-2"></i>Salvar Unidade
                 </button>
             </div>
         </div>
@@ -2499,6 +2756,10 @@ function handleSalvarDadosTecnicos(event) {
     event.preventDefault();
     const form = event.target;
     
+    // Adicionar dados das unidades consumidoras ao campo hidden
+    const unidadesJSON = JSON.stringify(unidadesConsumidoras);
+    document.getElementById('unidades_consumidoras_json').value = unidadesJSON;
+    
     fetch(form.action, {
         method: 'POST',
         body: new FormData(form)
@@ -2517,8 +2778,392 @@ function handleSalvarDadosTecnicos(event) {
     });
 }
 
+// ========================================
+// SISTEMA DE MÚLTIPLAS UNIDADES CONSUMIDORAS
+// ========================================
+
+// Array para armazenar as unidades
+let unidadesConsumidoras = [];
+let unidadeEditandoId = null;
+
+// Abrir modal para adicionar unidade
+window.abrirModalAdicionarUnidade = function() {
+    try {
+        console.log('🔍 Abrindo modal de unidade consumidora...');
+        unidadeEditandoId = null;
+        
+        // Limpar título
+        const tituloElement = document.getElementById('tituloModalUnidade');
+        if (tituloElement) tituloElement.textContent = 'Adicionar Unidade Consumidora';
+        
+        // Limpar campos básicos
+        const nomeEl = document.getElementById('unidade_nome');
+        const numeroUcEl = document.getElementById('unidade_numero_uc');
+        const enderecoEl = document.getElementById('unidade_endereco');
+        if (nomeEl) nomeEl.value = '';
+        if (numeroUcEl) numeroUcEl.value = '';
+        if (enderecoEl) enderecoEl.value = '';
+        
+        // Limpar modo faturas
+        for (let i = 1; i <= 3; i++) {
+            const el = document.getElementById('unidade_consumo' + i);
+            if (el) el.value = '';
+        }
+        
+        // Limpar modo 12 meses
+        for (let i = 1; i <= 12; i++) {
+            const mes = i < 10 ? '0' + i : '' + i;
+            const el = document.getElementById('unidade_mes_' + mes);
+            if (el) el.value = '';
+        }
+        
+        // Resetar para modo faturas
+        const modoFaturasEl = document.getElementById('modo_faturas');
+        if (modoFaturasEl) modoFaturasEl.checked = true;
+        alterarModoConsumoUnidade('faturas');
+        
+        // Esconder preview
+        const previewEl = document.getElementById('previewMediaUnidade');
+        if (previewEl) previewEl.style.display = 'none';
+        
+        const modalElement = document.getElementById('modalAdicionarUnidade');
+        if (!modalElement) {
+            console.error('❌ Modal modalAdicionarUnidade não encontrado!');
+            alert('Erro: Modal não encontrado. Recarregue a página.');
+            return;
+        }
+        
+        console.log('✅ Modal encontrado, abrindo...');
+        const modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    } catch (error) {
+        console.error('❌ Erro ao abrir modal:', error);
+        alert('Erro ao abrir modal: ' + error.message);
+    }
+}
+
+// Alternar modo de consumo (3 faturas ou 12 meses)
+window.alterarModoConsumoUnidade = function(modo) {
+    const faturasDiv = document.getElementById('consumo_faturas');
+    const mesesDiv = document.getElementById('consumo_12meses');
+    
+    if (modo === 'faturas') {
+        if (faturasDiv) faturasDiv.style.display = 'flex';
+        if (mesesDiv) mesesDiv.style.display = 'none';
+    } else {
+        if (faturasDiv) faturasDiv.style.display = 'none';
+        if (mesesDiv) mesesDiv.style.display = 'flex';
+    }
+    
+    calcularMediaUnidade();
+}
+
+// Calcular média dos consumos da unidade
+window.calcularMediaUnidade = function() {
+    try {
+        // Verificar qual modo está ativo
+        const modoFaturas = document.getElementById('modo_faturas');
+        const modo12Meses = document.getElementById('modo_12meses');
+        
+        let valores = [];
+        
+        if (modoFaturas && modoFaturas.checked) {
+            // Modo: 3 Faturas
+            for (let i = 1; i <= 3; i++) {
+                const el = document.getElementById('unidade_consumo' + i);
+                if (el) {
+                    const valor = parseFloat(el.value) || 0;
+                    if (valor > 0) valores.push(valor);
+                }
+            }
+        } else if (modo12Meses && modo12Meses.checked) {
+            // Modo: 12 Meses
+            for (let i = 1; i <= 12; i++) {
+                const mes = i < 10 ? '0' + i : '' + i;
+                const el = document.getElementById('unidade_mes_' + mes);
+                if (el) {
+                    const valor = parseFloat(el.value) || 0;
+                    if (valor > 0) valores.push(valor);
+                }
+            }
+        }
+        
+        const qtdMedicoes = valores.length;
+        const mediaUnidade = qtdMedicoes > 0 ? valores.reduce((a, b) => a + b, 0) / qtdMedicoes : 0;
+        
+        const previewEl = document.getElementById('previewMediaUnidade');
+        const qtdFaturasEl = document.getElementById('qtdFaturas');
+        const mediaUnidadeEl = document.getElementById('mediaUnidade');
+        
+        if (qtdMedicoes > 0 && previewEl && qtdFaturasEl && mediaUnidadeEl) {
+            previewEl.style.display = 'block';
+            qtdFaturasEl.textContent = qtdMedicoes;
+            mediaUnidadeEl.textContent = mediaUnidade.toFixed(2) + ' kWh/mês';
+        } else if (previewEl) {
+            previewEl.style.display = 'none';
+        }
+        
+        return mediaUnidade;
+    } catch (error) {
+        console.error('Erro ao calcular média:', error);
+        return 0;
+    }
+}
+
+// Salvar unidade consumidora
+window.salvarUnidadeConsumidora = function() {
+    try {
+        const nome = document.getElementById('unidade_nome').value.trim();
+        const numeroUC = document.getElementById('unidade_numero_uc').value.trim();
+        const endereco = document.getElementById('unidade_endereco').value.trim();
+        
+        if (!nome) {
+            alert('⚠️ Informe o nome/identificação da unidade');
+            return;
+        }
+        
+        // Coletar valores baseado no modo ativo
+        const modoFaturas = document.getElementById('modo_faturas');
+        let valores = [];
+        
+        if (modoFaturas && modoFaturas.checked) {
+            // Modo: 3 Faturas
+            for (let i = 1; i <= 3; i++) {
+                const el = document.getElementById('unidade_consumo' + i);
+                if (el) {
+                    const valor = parseFloat(el.value) || 0;
+                    if (valor > 0) valores.push(valor);
+                }
+            }
+        } else {
+            // Modo: 12 Meses
+            for (let i = 1; i <= 12; i++) {
+                const mes = i < 10 ? '0' + i : '' + i;
+                const el = document.getElementById('unidade_mes_' + mes);
+                if (el) {
+                    const valor = parseFloat(el.value) || 0;
+                    if (valor > 0) valores.push(valor);
+                }
+            }
+        }
+        
+        if (valores.length === 0) {
+            alert('⚠️ Informe pelo menos 1 medição de consumo');
+            return;
+        }
+        
+        const mediaConsumo = valores.reduce((a, b) => a + b, 0) / valores.length;
+        
+        const unidade = {
+            id: unidadeEditandoId || Date.now(),
+            nome: nome,
+            numeroUC: numeroUC,
+            endereco: endereco,
+            consumos: valores,
+            mediaConsumo: mediaConsumo,
+            modo: modoFaturas && modoFaturas.checked ? 'faturas' : '12meses'
+        };
+        
+        if (unidadeEditandoId) {
+            // Editar unidade existente
+            const index = unidadesConsumidoras.findIndex(u => u.id === unidadeEditandoId);
+            if (index !== -1) {
+                unidadesConsumidoras[index] = unidade;
+            }
+        } else {
+            // Adicionar nova unidade
+            unidadesConsumidoras.push(unidade);
+        }
+        
+        atualizarListaUnidades();
+        
+        const modalElement = document.getElementById('modalAdicionarUnidade');
+        if (modalElement) {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) modal.hide();
+        }
+    } catch (error) {
+        console.error('Erro ao salvar unidade:', error);
+        alert('Erro ao salvar unidade: ' + error.message);
+    }
+    
+    atualizarListaUnidades();
+    bootstrap.Modal.getInstance(document.getElementById('modalAdicionarUnidade')).hide();
+}
+
+// Atualizar lista de unidades na interface
+function atualizarListaUnidades() {
+    const listaContainer = document.getElementById('listaUnidades');
+    
+    if (unidadesConsumidoras.length === 0) {
+        listaContainer.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Nenhuma unidade adicionada. Clique em <strong>"ADICIONAR UNIDADE"</strong> para começar.
+            </div>
+        `;
+    } else {
+        let html = '<div class="row g-2">';
+        
+        unidadesConsumidoras.forEach((unidade, index) => {
+            html += `
+                <div class="col-md-12">
+                    <div class="card shadow-sm">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1" style="color: #28a745;">
+                                        <i class="fas fa-building me-2"></i>${unidade.nome}
+                                    </h6>
+                                    <div class="row mt-2">
+                                        <div class="col-md-3">
+                                            <small class="text-muted d-block">Nº UC</small>
+                                            <strong>${unidade.numeroUC || 'Não informado'}</strong>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted d-block">Endereço</small>
+                                            <strong>${unidade.endereco || 'Não informado'}</strong>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted d-block">Medições informadas</small>
+                                            <strong>${unidade.consumos.length} mês(es)</strong>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <small class="text-muted d-block">Média de Consumo</small>
+                                            <strong style="color: #007bff;">${unidade.mediaConsumo.toFixed(2)} kWh</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="btn-group ms-2">
+                                    <button class="btn btn-sm btn-outline-primary" onclick="editarUnidade(${unidade.id})" title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="removerUnidade(${unidade.id})" title="Remover">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        listaContainer.innerHTML = html;
+    }
+    
+    atualizarResumoUnidades();
+}
+
+// Atualizar resumo (totais)
+function atualizarResumoUnidades() {
+    const totalUnidades = unidadesConsumidoras.length;
+    const consumoTotal = unidadesConsumidoras.reduce((sum, u) => sum + u.mediaConsumo, 0);
+    const consumoMedio = totalUnidades > 0 ? consumoTotal / totalUnidades : 0;
+    
+    document.getElementById('totalUnidades').textContent = totalUnidades;
+    document.getElementById('consumoTotalUnidades').textContent = consumoTotal.toFixed(2);
+    document.getElementById('consumoMedioPorUnidade').textContent = consumoMedio.toFixed(2);
+    document.getElementById('consumoParaDimensionamento').textContent = consumoTotal.toFixed(2) + ' kWh';
+    
+    // Atualizar campo de consumo mensal principal
+    const campoConsumo = document.getElementById('consumo_kwh_mes');
+    if (campoConsumo && totalUnidades > 0) {
+        campoConsumo.value = consumoTotal.toFixed(2);
+    }
+}
+
+// Editar unidade
+window.editarUnidade = function(id) {
+    try {
+        const unidade = unidadesConsumidoras.find(u => u.id === id);
+        if (!unidade) return;
+        
+        unidadeEditandoId = id;
+        
+        const tituloEl = document.getElementById('tituloModalUnidade');
+        if (tituloEl) tituloEl.textContent = 'Editar Unidade Consumidora';
+        
+        const nomeEl = document.getElementById('unidade_nome');
+        const numeroUcEl = document.getElementById('unidade_numero_uc');
+        const enderecoEl = document.getElementById('unidade_endereco');
+        
+        if (nomeEl) nomeEl.value = unidade.nome;
+        if (numeroUcEl) numeroUcEl.value = unidade.numeroUC || '';
+        if (enderecoEl) enderecoEl.value = unidade.endereco || '';
+        
+        // Definir modo correto
+        if (unidade.modo === '12meses' && unidade.consumos.length > 3) {
+            const modo12El = document.getElementById('modo_12meses');
+            if (modo12El) modo12El.checked = true;
+            alterarModoConsumoUnidade('12meses');
+            
+            // Preencher 12 meses
+            for (let i = 0; i < unidade.consumos.length && i < 12; i++) {
+                const mes = (i + 1) < 10 ? '0' + (i + 1) : '' + (i + 1);
+                const el = document.getElementById('unidade_mes_' + mes);
+                if (el) el.value = unidade.consumos[i];
+            }
+        } else {
+            const modoFaturasEl = document.getElementById('modo_faturas');
+            if (modoFaturasEl) modoFaturasEl.checked = true;
+            alterarModoConsumoUnidade('faturas');
+            
+            // Preencher até 3 faturas
+            for (let i = 0; i < Math.min(3, unidade.consumos.length); i++) {
+                const el = document.getElementById('unidade_consumo' + (i + 1));
+                if (el) el.value = unidade.consumos[i];
+            }
+        }
+        
+        calcularMediaUnidade();
+        
+        const modalElement = document.getElementById('modalAdicionarUnidade');
+        if (modalElement) {
+            new bootstrap.Modal(modalElement).show();
+        }
+    } catch (error) {
+        console.error('Erro ao editar unidade:', error);
+        alert('Erro ao editar unidade: ' + error.message);
+    }
+}
+
+// Remover unidade
+window.removerUnidade = function(id) {
+    if (confirm('❌ Tem certeza que deseja remover esta unidade?')) {
+        unidadesConsumidoras = unidadesConsumidoras.filter(u => u.id !== id);
+        atualizarListaUnidades();
+    }
+}
+
+// ========================================
+// FIM DO SISTEMA DE UNIDADES CONSUMIDORAS
+// ========================================
+
 // Inicializar cálculos ao carregar a página
 window.addEventListener('DOMContentLoaded', function() {
+    // Carregar unidades consumidoras salvas no banco
+    {% if unidades_consumidoras_json %}
+    const unidadesSalvas = {{ unidades_consumidoras_json | tojson }};
+    if (unidadesSalvas && unidadesSalvas.length > 0) {
+        unidadesConsumidoras = unidadesSalvas.map(u => ({
+            id: u.id,
+            nome: u.nome,
+            numeroUC: u.numero_uc || '',
+            endereco: u.endereco || '',
+            modo: u.modo_consumo || 'faturas',
+            consumos: u.consumos || [],
+            mediaConsumo: u.media_consumo || 0
+        }));
+        atualizarListaUnidades();
+        atualizarResumoUnidades();
+    }
+    {% endif %}
+    
+    // Inicializar lista de unidades consumidoras
+    atualizarListaUnidades();
+    
     // Calcular área de instalação e gerar preview do layout se os campos estiverem preenchidos
     const linhas = document.getElementById('linhas_placas');
     const colunas = document.getElementById('colunas_placas');
@@ -2543,6 +3188,32 @@ window.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+    }
+    
+    // Adicionar event listeners para calcular média automaticamente
+    // 3 Faturas
+    for (let i = 1; i <= 3; i++) {
+        const input = document.getElementById('unidade_consumo' + i);
+        if (input) {
+            input.addEventListener('input', function() {
+                if (window.calcularMediaUnidade) {
+                    window.calcularMediaUnidade();
+                }
+            });
+        }
+    }
+    
+    // 12 Meses
+    for (let i = 1; i <= 12; i++) {
+        const mes = i < 10 ? '0' + i : '' + i;
+        const input = document.getElementById('unidade_mes_' + mes);
+        if (input) {
+            input.addEventListener('input', function() {
+                if (window.calcularMediaUnidade) {
+                    window.calcularMediaUnidade();
+                }
+            });
+        }
     }
 });
 </script>

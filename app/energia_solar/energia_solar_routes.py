@@ -1034,11 +1034,44 @@ def projeto_duplicar(projeto_id):
         }), 500
 
 
+@energia_solar_bp.route('/chaves-documentos')
+def chaves_documentos():
+    """Exibe todas as variáveis disponíveis para templates de documentos."""
+    from app.energia_solar.word_utils import gerar_variaveis_projeto
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    from app.configuracao.configuracao_model import Configuracao
+    
+    # Pegar um projeto de exemplo (o mais recente ou primeiro disponível)
+    projeto = ProjetoSolar.query.order_by(ProjetoSolar.data_criacao.desc()).first()
+    
+    # Pegar configuração da empresa
+    config = Configuracao.query.first()
+    
+    # Gerar variáveis de exemplo
+    if projeto:
+        variaveis = gerar_variaveis_projeto(projeto, None, config, None)
+    else:
+        # Se não há projeto, mostrar estrutura vazia
+        variaveis = {
+            'id_projeto': 'ID do projeto',
+            'projeto_titulo': 'Título do Projeto',
+            'nome_cliente': 'Nome do Cliente',
+            'latitude': 'Latitude do local de instalação',
+            'longitude': 'Longitude do local de instalação',
+            'irradiacao_solar_media': 'Irradiação solar média',
+            'irradiacao_solar_min': 'Irradiação solar mínima',
+            'irradiacao_solar_max': 'Irradiação solar máxima',
+            # ... outras variáveis
+        }
+    
+    return render_template('energia_solar/chaves_documentos.html', variaveis=variaveis, projeto=projeto)
+
+
 @energia_solar_bp.route('/projetos/<int:projeto_id>/dashboard')
 @login_required
 def projeto_dashboard(projeto_id):
     """Dashboard completo do projeto com KPIs e ações"""
-    from app.energia_solar.catalogo_model import ProjetoSolar, PlacaSolar, InversorSolar, KitSolar
+    from app.energia_solar.catalogo_model import ProjetoSolar, PlacaSolar, InversorSolar, KitSolar, UnidadeConsumidora
     from app.cliente.cliente_model import Cliente
     
     projeto = ProjetoSolar.query.get_or_404(projeto_id)
@@ -1080,6 +1113,10 @@ def projeto_dashboard(projeto_id):
     kits_disponiveis = KitSolar.query.filter_by(ativo=True).order_by(KitSolar.descricao).all()
     inversores_disponiveis = InversorSolar.query.filter_by(ativo=True).order_by(InversorSolar.fabricante, InversorSolar.modelo).all()
     
+    # Buscar unidades consumidoras do projeto
+    unidades_consumidoras = UnidadeConsumidora.query.filter_by(projeto_id=projeto_id).all()
+    unidades_json = [u.to_dict() for u in unidades_consumidoras]
+    
     return render_template('energia_solar/projeto_dashboard.html', 
                          projeto=projeto,
                          cliente=cliente,
@@ -1090,7 +1127,8 @@ def projeto_dashboard(projeto_id):
                          concessionarias=concessionarias,
                          placas_disponiveis=placas_disponiveis,
                          kits_disponiveis=kits_disponiveis,
-                         inversores_disponiveis=inversores_disponiveis)
+                         inversores_disponiveis=inversores_disponiveis,
+                         unidades_consumidoras_json=unidades_json)
 
 
 @energia_solar_bp.route('/projetos/<int:projeto_id>/dados-financeiros', methods=['POST'])
@@ -1245,6 +1283,34 @@ def projeto_salvar_dados_tecnicos(projeto_id):
         # Cabos
         projeto.cabo_ca = request.form.get('cabo_ca')
         projeto.cabo_cc = request.form.get('cabo_cc')
+        
+        # Salvar múltiplas unidades consumidoras
+        from app.energia_solar.catalogo_model import UnidadeConsumidora
+        import json
+        
+        unidades_json = request.form.get('unidades_consumidoras_json')
+        if unidades_json:
+            try:
+                unidades_data = json.loads(unidades_json)
+                
+                # Remover unidades antigas
+                UnidadeConsumidora.query.filter_by(projeto_id=projeto_id).delete()
+                
+                # Criar novas unidades
+                for unidade_dict in unidades_data:
+                    nova_unidade = UnidadeConsumidora(
+                        projeto_id=projeto_id,
+                        nome=unidade_dict.get('nome'),
+                        numero_uc=unidade_dict.get('numeroUC', ''),
+                        endereco=unidade_dict.get('endereco', ''),
+                        modo_consumo=unidade_dict.get('modo', 'faturas'),
+                        consumos=unidade_dict.get('consumos', []),
+                        media_consumo=unidade_dict.get('mediaConsumo', 0)
+                    )
+                    db.session.add(nova_unidade)
+                
+            except json.JSONDecodeError as e:
+                print(f"⚠️ Erro ao processar JSON das unidades: {e}")
         
         db.session.commit()
         

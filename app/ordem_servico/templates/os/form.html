@@ -1498,5 +1498,49 @@ function showNotification(message, type = 'info') {
         }
     }, 5000);
 }
+
+// ===== AUTOCOMPLETE PARA CAMPOS QUE SE REPETEM =====
+async function carregarAutocomplete(campo, inputId, listId) {
+    try {
+        const response = await fetch(`/ordem-servico/autocomplete/${campo}`);
+        const valores = await response.json();
+        
+        // Cria ou atualiza o datalist
+        let datalist = document.getElementById(listId);
+        if (!datalist) {
+            datalist = document.createElement('datalist');
+            datalist.id = listId;
+            document.body.appendChild(datalist);
+        }
+        
+        // Limpa e adiciona opções
+        datalist.innerHTML = '';
+        valores.forEach(valor => {
+            const option = document.createElement('option');
+            option.value = valor;
+            datalist.appendChild(option);
+        });
+        
+        // Vincula ao input
+        const input = document.querySelector(`[name="${inputId}"]`);
+        if (input) {
+            input.setAttribute('list', listId);
+            input.setAttribute('autocomplete', 'off'); // Desabilita autocomplete do navegador
+        }
+        
+    } catch (error) {
+        console.error(`Erro ao carregar autocomplete para ${campo}:`, error);
+    }
+}
+
+// Carrega autocomplete ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+    // Campos com autocomplete
+    carregarAutocomplete('solicitante', 'solicitante', 'lista_solicitantes');
+    carregarAutocomplete('tecnico_responsavel', 'tecnico_responsavel', 'lista_tecnicos');
+    carregarAutocomplete('titulo', 'titulo', 'lista_titulos');
+    carregarAutocomplete('equipamento', 'equipamento', 'lista_equipamentos');
+    carregarAutocomplete('marca_modelo', 'marca_modelo', 'lista_marcas');
+});
 </script>
 {% endblock %}

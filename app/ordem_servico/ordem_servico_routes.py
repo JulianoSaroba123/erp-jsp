@@ -146,6 +146,51 @@ ALLOWED_EXTENSIONS = {
 }
 MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
 
+# ===== ROTA DE AUTOCOMPLETE =====
+@ordem_servico_bp.route('/autocomplete/<campo>')
+def autocomplete_campo(campo):
+    """
+    Retorna valores únicos já usados para autocomplete.
+    
+    Campos suportados:
+    - solicitante
+    - tecnico_responsavel
+    - titulo
+    - equipamento
+    - marca_modelo
+    """
+    from sqlalchemy import distinct
+    
+    campos_permitidos = {
+        'solicitante': OrdemServico.solicitante,
+        'tecnico_responsavel': OrdemServico.tecnico_responsavel,
+        'titulo': OrdemServico.titulo,
+        'equipamento': OrdemServico.equipamento,
+        'marca_modelo': OrdemServico.marca_modelo
+    }
+    
+    if campo not in campos_permitidos:
+        return jsonify({'error': 'Campo não permitido'}), 400
+    
+    try:
+        coluna = campos_permitidos[campo]
+        
+        # Busca valores únicos e remove nulos/vazios
+        valores = db.session.query(distinct(coluna))\
+            .filter(coluna.isnot(None), coluna != '')\
+            .order_by(coluna)\
+            .limit(50)\
+            .all()
+        
+        # Extrai os valores da tupla
+        resultado = [v[0] for v in valores if v[0]]
+        
+        return jsonify(resultado)
+        
+    except Exception as e:
+        print(f"Erro ao buscar autocomplete para {campo}: {e}")
+        return jsonify([])
+
 def get_logo_base64():
     """Retorna o logo configurado no sistema em base64 para o PDF"""
     try:
