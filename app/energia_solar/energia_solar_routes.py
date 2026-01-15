@@ -1582,7 +1582,38 @@ def projeto_buscar_financiamento(projeto_id):
 @energia_solar_bp.route('/projetos/criar')
 @login_required
 def projeto_criar():
-    """Renderiza o wizard de criação de projeto (6 abas)"""
+    """Cria um projeto em branco e redireciona para o dashboard"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    try:
+        # Criar novo projeto em branco
+        projeto = ProjetoSolar()
+        projeto.nome_cliente = "Novo Projeto"
+        projeto.status = 'rascunho'
+        projeto.status_orcamento = 'pendente'
+        projeto.usuario_criador = current_user.username if hasattr(current_user, 'username') else 'admin'
+        
+        db.session.add(projeto)
+        db.session.commit()
+        
+        flash('Novo projeto criado! Preencha os dados técnicos e financeiros.', 'success')
+        
+        # Redirecionar para o dashboard do projeto
+        return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto.id))
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"❌ Erro ao criar projeto: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f'Erro ao criar projeto: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.listar'))
+
+
+@energia_solar_bp.route('/projetos/criar-wizard')
+@login_required
+def projeto_criar_wizard():
+    """Renderiza o wizard de criação de projeto (6 abas) - MODO ANTIGO"""
     from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar, KitSolar
     
     # Carregar dados para os dropdowns
