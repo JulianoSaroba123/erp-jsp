@@ -145,7 +145,26 @@ def create_app(config_name=None):
                         print("[OK] Coluna 'criado_em' adicionada em orcamento_itens")
             except Exception as e:
                 db.session.rollback()
-                print(f" ⚠ Aviso na migração orcamento_itens: {e}")
+                print(f"⚠️ Aviso na migração orcamento_itens: {e}")
+            
+            # Migração: Adicionar coluna numero_projeto em calculo_energia_solar
+            try:
+                from sqlalchemy import text, inspect
+                inspector = inspect(db.engine)
+                
+                if 'calculo_energia_solar' in inspector.get_table_names():
+                    colunas = [c['name'] for c in inspector.get_columns('calculo_energia_solar')]
+                    
+                    # Adiciona coluna 'numero_projeto' se não existir
+                    if 'numero_projeto' not in colunas:
+                        db.session.execute(text("ALTER TABLE calculo_energia_solar ADD COLUMN numero_projeto VARCHAR(50)"))
+                        db.session.commit()
+                        print("[OK] Coluna 'numero_projeto' adicionada em calculo_energia_solar")
+                    else:
+                        print("[OK] Coluna 'numero_projeto' já existe em calculo_energia_solar")
+            except Exception as e:
+                db.session.rollback()
+                print(f"⚠️ Aviso na migração calculo_energia_solar: {e}")
             
             # Cria usuário admin padrão se não existir nenhum usuário
             from app.auth.usuario_model import Usuario
