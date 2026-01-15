@@ -216,18 +216,31 @@ def migrate_add_numero_projeto():
 def dashboard():
     """Dashboard do módulo de Energia Solar"""
     try:
-        calculos = CalculoEnergiaSolar.query.order_by(CalculoEnergiaSolar.data_calculo.desc()).limit(10).all()
+        # Buscar projetos ativos (ProjetoSolar v3.0)
+        projetos = ProjetoSolar.query.filter_by(ativo=True).order_by(ProjetoSolar.data_criacao.desc()).limit(10).all()
         
-        # Estatísticas
-        total_calculos = CalculoEnergiaSolar.query.count()
-        potencia_total = db.session.query(db.func.sum(CalculoEnergiaSolar.potencia_sistema)).scalar() or 0
-        economia_total = db.session.query(db.func.sum(CalculoEnergiaSolar.economia_anual)).scalar() or 0
+        # Estatísticas dos PROJETOS (não dos cálculos antigos)
+        total_projetos = ProjetoSolar.query.filter_by(ativo=True).count()
+        
+        # Potência total: soma de potencia_sistema de todos os projetos ativos
+        potencia_total = db.session.query(db.func.sum(ProjetoSolar.potencia_sistema)).filter(ProjetoSolar.ativo == True).scalar() or 0
+        
+        # Economia total: soma de economia_anual de todos os projetos ativos
+        economia_total = db.session.query(db.func.sum(ProjetoSolar.economia_anual)).filter(ProjetoSolar.ativo == True).scalar() or 0
+        
+        # Consumo médio: média de consumo_mensal dos projetos ativos
+        consumo_medio = db.session.query(db.func.avg(ProjetoSolar.consumo_mensal)).filter(ProjetoSolar.ativo == True).scalar() or 0
+        
+        # Valor médio do orçamento
+        valor_medio = db.session.query(db.func.avg(ProjetoSolar.valor_orcamento)).filter(ProjetoSolar.ativo == True).scalar() or 0
         
         return render_template('energia_solar/dashboard.html',
-                             calculos=calculos,
-                             total_calculos=total_calculos,
+                             projetos=projetos,
+                             total_calculos=total_projetos,
                              potencia_total=potencia_total,
-                             economia_total=economia_total)
+                             economia_total=economia_total,
+                             consumo_medio=consumo_medio,
+                             valor_medio=valor_medio)
     except Exception as e:
         logger.error(f"❌ Erro no dashboard energia solar: {e}")
         import traceback
