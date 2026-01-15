@@ -464,30 +464,32 @@
                         <!-- Aba 1: Dados iniciais -->
                         <div class="tab-pane fade show active" id="dadosIniciais">
                             <!-- Seleção de Cliente -->
-                            <div class="alert alert-info mb-4">
-                                <div class="row g-3 align-items-end">
-                                    <div class="col-md-8">
-                                        <label class="form-label fw-bold mb-1">
-                                            <i class="fas fa-user me-2"></i>VINCULAR CLIENTE AO PROJETO
-                                        </label>
-                                        <select class="form-select" id="select_cliente" name="cliente_id" onchange="selecionarCliente(this.value)">
-                                            <option value="">Selecione um cliente...</option>
-                                            {% if clientes_disponiveis %}
-                                                {% for c in clientes_disponiveis %}
-                                                <option value="{{ c.id }}" 
-                                                        data-cidade="{{ c.cidade or '' }}"
-                                                        data-estado="{{ c.estado or '' }}"
-                                                        {% if projeto.cliente_id == c.id %}selected{% endif %}>
-                                                    {{ c.nome }} - {{ c.cidade or 'Sem cidade' }}/{{ c.estado or 'UF' }}
-                                                </option>
-                                                {% endfor %}
-                                            {% endif %}
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <a href="{{ url_for('cliente.novo') }}" target="_blank" class="btn btn-success w-100">
-                                            <i class="fas fa-plus me-2"></i>Novo Cliente
-                                        </a>
+                            <div class="card mb-3 border-primary">
+                                <div class="card-body bg-light">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-md-8">
+                                            <label class="form-label fw-bold mb-1">
+                                                <i class="fas fa-user me-2 text-primary"></i>VINCULAR CLIENTE AO PROJETO
+                                            </label>
+                                            <select class="form-select" id="select_cliente" name="cliente_id" onchange="selecionarCliente(this.value)">
+                                                <option value="">Selecione um cliente...</option>
+                                                {% if clientes_disponiveis %}
+                                                    {% for c in clientes_disponiveis %}
+                                                    <option value="{{ c.id }}" 
+                                                            data-cidade="{{ c.cidade or '' }}"
+                                                            data-estado="{{ c.estado or '' }}"
+                                                            {% if projeto.cliente_id == c.id %}selected{% endif %}>
+                                                        {{ c.nome }} - {{ c.cidade or 'Sem cidade' }}/{{ c.estado or 'UF' }}
+                                                    </option>
+                                                    {% endfor %}
+                                                {% endif %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <a href="{{ url_for('cliente.novo') }}" target="_blank" class="btn btn-success w-100">
+                                                <i class="fas fa-plus me-2"></i>Novo Cliente
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
