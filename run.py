@@ -43,8 +43,8 @@ try:
         
         print(" INICIANDO ERP JSP...")
         
-        # Porta do servidor (mudando para 5001 para evitar conflito)
-        port = int(os.environ.get('PORT', 5001))
+        # Porta do servidor
+        port = int(os.environ.get('PORT', 5000))
         
         # Configurar debug
         app.config['DEBUG'] = True

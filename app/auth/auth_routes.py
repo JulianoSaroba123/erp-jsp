@@ -98,7 +98,19 @@ def login():
                 
             else:
                 # Login bem-sucedido
-                login_user(usuario, remember=lembrar)
+                print(f"🔐 Tentando login_user para: {usuario.usuario} (ID: {usuario.id})")
+                print(f"🔐 Usuario ativo: {usuario.ativo}")
+                print(f"🔐 Usuario pode_fazer_login: {usuario.pode_fazer_login}")
+                
+                # Define sessão como permanente
+                from flask import session
+                session.permanent = True
+                
+                resultado = login_user(usuario, remember=lembrar)
+                print(f"🔐 Resultado login_user: {resultado}")
+                print(f"🔐 current_user.is_authenticated: {current_user.is_authenticated}")
+                print(f"🔐 current_user.id: {current_user.id if current_user.is_authenticated else 'N/A'}")
+                
                 usuario.registrar_login()
                 sucesso = True
                 

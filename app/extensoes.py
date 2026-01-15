@@ -38,15 +38,25 @@ def init_extensions(app):
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Por favor, faça login para acessar esta página.'
     login_manager.login_message_category = 'info'
+    login_manager.session_protection = 'strong'  # Proteção forte de sessão
+    login_manager.refresh_view = 'auth.login'
     
     # User loader para Flask-Login
     @login_manager.user_loader
     def load_user(user_id):
         try:
             from app.auth.usuario_model import Usuario
-            return Usuario.query.get(int(user_id))
+            print(f"🔍 Carregando user ID: {user_id}")
+            user = Usuario.query.get(int(user_id))
+            if user:
+                print(f"✅ Usuário encontrado: {user.usuario} (ID: {user.id}, Ativo: {user.ativo})")
+            else:
+                print(f"❌ Usuário ID {user_id} NÃO encontrado no banco")
+            return user
         except Exception as e:
-            print(f"⚠️ Erro no load_user: {e}")
+            print(f"⚠️ ERRO no load_user: {e}")
+            import traceback
+            traceback.print_exc()
             return None
     
     # Cria diretório do banco se necessário (para SQLite)

@@ -86,7 +86,7 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'projeto_titulo': projeto.nome_cliente or '',
         'nome_cliente': projeto.nome_cliente or '',
         'data_criacao': projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else '',
-        'status': 'Ativo' if projeto.ativo else 'Inativo',
+        'status': projeto.status or 'rascunho',
         
         # Endereço
         'endereco': projeto.endereco or '',
@@ -115,26 +115,26 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         # Placas
         'placa_fabricante': placa.fabricante if placa else '',
         'placa_modelo': placa.modelo if placa else '',
-        'placa_potencia': f"{placa.potencia}W" if placa else '',
-        'placa_tensao': f"{placa.tensao_max}V" if placa and placa.tensao_max else '',
-        'placa_corrente': f"{placa.corrente_max}A" if placa and placa.corrente_max else '',
-        'placa_eficiencia': f"{placa.eficiencia}%" if placa and placa.eficiencia else '',
+        'placa_potencia': f"{placa.potencia}W" if placa and placa.potencia else '',
+        'placa_tensao': f"{placa.tensao_maxima_potencia}V" if placa and hasattr(placa, 'tensao_maxima_potencia') and placa.tensao_maxima_potencia else '',
+        'placa_corrente': f"{placa.corrente_maxima_potencia}A" if placa and hasattr(placa, 'corrente_maxima_potencia') and placa.corrente_maxima_potencia else '',
+        'placa_eficiencia': f"{placa.eficiencia}%" if placa and hasattr(placa, 'eficiencia') and placa.eficiencia else '',
         'placa_garantia': '25 anos',
-        'placa_tecnologia': placa.tecnologia if placa else '',
+        'placa_tecnologia': placa.tecnologia if placa and hasattr(placa, 'tecnologia') else '',
         
         # Inversor
         'inversor_fabricante': inversor.fabricante if inversor else '',
         'inversor_modelo': inversor.modelo if inversor else '',
-        'inversor_potencia': f"{inversor.potencia}W" if inversor else '',
-        'inversor_tensao_entrada': f"{inversor.tensao_min_mppt}-{inversor.tensao_max_mppt}V" if inversor and inversor.tensao_min_mppt else '',
-        'inversor_tensao_saida': '220V',
-        'inversor_eficiencia': f"{inversor.eficiencia}%" if inversor and inversor.eficiencia else '',
+        'inversor_potencia': f"{inversor.potencia_nominal}W" if inversor and hasattr(inversor, 'potencia_nominal') and inversor.potencia_nominal else '',
+        'inversor_tensao_entrada': f"{inversor.tensao_mppt_min}-{inversor.tensao_mppt_max}V" if inversor and hasattr(inversor, 'tensao_mppt_min') and inversor.tensao_mppt_min else '',
+        'inversor_tensao_saida': inversor.tensao_saida if inversor and hasattr(inversor, 'tensao_saida') else '220V',
+        'inversor_eficiencia': f"{inversor.eficiencia}%" if inversor and hasattr(inversor, 'eficiencia') and inversor.eficiencia else '',
         'inversor_garantia': '10 anos',
         'inversor_monitoramento': 'WiFi/App',
         
         # Valores
-        'valor_total': f"{projeto.preco_final:.2f}" if projeto.preco_final else '',
-        'valor_vista': f"{projeto.preco_final * 0.95:.2f}" if projeto.preco_final else '',
+        'valor_total': f"{projeto.valor_venda:.2f}" if projeto.valor_venda else '',
+        'valor_vista': f"{projeto.valor_venda * 0.95:.2f}" if projeto.valor_venda else '',
         
         # Empresa
         'empresa_nome': config.nome_fantasia if config else 'JSP Elétrica & Solar',

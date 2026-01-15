@@ -175,6 +175,42 @@ def ver_datasheet(filename):
         return redirect(request.referrer or url_for('energia_solar.dashboard'))
 
 
+@energia_solar_bp.route('/migrate/add-numero-projeto')
+@login_required
+def migrate_add_numero_projeto():
+    """Migração: adiciona coluna numero_projeto se não existir"""
+    from sqlalchemy import text
+    
+    try:
+        # Verifica se a coluna já existe
+        result = db.session.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name='calculo_energia_solar' 
+            AND column_name='numero_projeto'
+        """))
+        
+        if result.fetchone():
+            flash('✅ Coluna numero_projeto já existe!', 'success')
+            return redirect(url_for('energia_solar.dashboard'))
+        
+        # Adiciona a coluna
+        db.session.execute(text("""
+            ALTER TABLE calculo_energia_solar 
+            ADD COLUMN IF NOT EXISTS numero_projeto VARCHAR(50) UNIQUE
+        """))
+        db.session.commit()
+        flash('✅ Coluna numero_projeto adicionada com sucesso!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Erro ao adicionar coluna: {str(e)}', 'error')
+        import traceback
+        traceback.print_exc()
+    
+    return redirect(url_for('energia_solar.dashboard'))
+
+
 @energia_solar_bp.route('/')
 @login_required
 def dashboard():

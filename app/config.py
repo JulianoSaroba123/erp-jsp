@@ -25,7 +25,8 @@ class Config:
         print("⚠️  DATABASE_URL não encontrada. Usando SQLite local: erp.db")
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECRET_KEY = os.getenv("SECRET_KEY", "jsp_chave_secreta")
+    # Chave secreta FIXA - crítica para manter sessões entre reinicializações
+    SECRET_KEY = os.getenv("SECRET_KEY", "jsp_chave_secreta_local_fixa_2026")
     
     # API Distribuidor de Kits Fotovoltaicos
     DISTRIBUIDOR_API_URL = os.getenv("DISTRIBUIDOR_API_URL", "https://api.distribuidor.com/v1")
