@@ -298,7 +298,7 @@
     <div class="toolbar mb-4">
         <div class="d-flex flex-wrap gap-2 align-items-center">
             {% if projeto.cliente_id %}
-            <a href="{{ url_for('cliente.editar', cliente_id=projeto.cliente_id) }}" 
+            <a href="{{ url_for('cliente.editar', id=projeto.cliente_id) }}" 
                class="btn btn-primary action-button">
                 <i class="fas fa-user-edit me-2"></i>Editar Cliente
             </a>
