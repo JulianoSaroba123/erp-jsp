@@ -1259,7 +1259,12 @@ def projeto_salvar_dados_tecnicos(projeto_id):
     try:
         projeto = ProjetoSolar.query.get_or_404(projeto_id)
         
-        # Aba 1: Dados iniciais
+        # Aba 1: Dados iniciais - Cliente vinculado
+        cliente_id = request.form.get('cliente_id')
+        if cliente_id:
+            projeto.cliente_id = int(cliente_id)
+        
+        # Aba 1: Dados iniciais - Localização
         projeto.cidade = request.form.get('cidade')
         projeto.estado = request.form.get('estado')
         projeto.latitude = float(request.form.get('latitude', 0)) if request.form.get('latitude') else None
