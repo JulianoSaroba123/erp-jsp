@@ -1257,9 +1257,11 @@ def projeto_salvar_dados_tecnicos(projeto_id):
     from app.energia_solar.catalogo_model import ProjetoSolar
     
     try:
+        print(f"🔍 Iniciando salvamento de dados técnicos - Projeto ID: {projeto_id}")
         projeto = ProjetoSolar.query.get_or_404(projeto_id)
         
         # Aba 1: Dados iniciais - Cliente vinculado
+        print("📍 Etapa 1: Cliente e Localização")
         cliente_id = request.form.get('cliente_id')
         if cliente_id:
             projeto.cliente_id = int(cliente_id)
@@ -1275,6 +1277,7 @@ def projeto_salvar_dados_tecnicos(projeto_id):
         projeto.consumo_kwh_mes = float(request.form.get('consumo_kwh_mes', 0)) if request.form.get('consumo_kwh_mes') else None
         
         # Aba 2: Método - processar modo de equipamento
+        print("📍 Etapa 2: Modo Equipamento")
         modo_equipamento = request.form.get('modo_equipamento', 'individual')
         projeto.modo_equipamento = modo_equipamento
         
@@ -1304,6 +1307,7 @@ def projeto_salvar_dados_tecnicos(projeto_id):
                     projeto.geracao_estimada_mes = projeto.potencia_kwp * 4.5 * 30 * 0.8
         
         # Perda de eficiência anual
+        print("📍 Etapa 3: Perda de Eficiência e Inversores")
         projeto.perda_eficiencia_anual = float(request.form.get('perda_eficiencia_anual', 0.8)) if request.form.get('perda_eficiencia_anual') else 0.8
         
         # Aba 3: Ajustes - Inversores
@@ -1334,6 +1338,7 @@ def projeto_salvar_dados_tecnicos(projeto_id):
                 projeto.comprimento_area = (projeto.linhas_placas * comprimento_placa) + ((projeto.linhas_placas - 1) * espacamento)
         
         # Aba 4: Demais Informações (campos antigos mantidos)
+        print("📍 Etapa 4: Demais Informações")
         projeto.lei_14300_ano = int(request.form.get('lei_14300_ano', 2026)) if request.form.get('lei_14300_ano') else 2026
         projeto.simultaneidade = float(request.form.get('simultaneidade', 35)) if request.form.get('simultaneidade') else 35.0
         projeto.disjuntor_ca = request.form.get('disjuntor_ca')
@@ -1345,6 +1350,7 @@ def projeto_salvar_dados_tecnicos(projeto_id):
         projeto.protecao_ca_corrente = request.form.get('protecao_ca_corrente')
         
         # Padrão de Entrada
+        print("📍 Etapa 5: Padrão de Entrada")
         tipo_entrada = request.form.get('tipo_entrada')
         if tipo_entrada == 'monofasico':
             projeto.qtd_fases = 1
@@ -1377,6 +1383,7 @@ def projeto_salvar_dados_tecnicos(projeto_id):
         projeto.cabo_cc = request.form.get('cabo_cc')
         
         # Salvar múltiplas unidades consumidoras
+        print("📍 Etapa 6: Unidades Consumidoras")
         from app.energia_solar.catalogo_model import UnidadeConsumidora
         import json
         
@@ -1404,7 +1411,9 @@ def projeto_salvar_dados_tecnicos(projeto_id):
             except json.JSONDecodeError as e:
                 print(f"⚠️ Erro ao processar JSON das unidades: {e}")
         
+        print("📍 Etapa 7: Commit no banco de dados")
         db.session.commit()
+        print("✅ Dados salvos com sucesso!")
         
         return jsonify({'success': True, 'message': '✅ Dados técnicos salvos com sucesso!'})
         
