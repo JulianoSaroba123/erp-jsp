@@ -2128,7 +2128,10 @@ def gerar_relatorio_pdf(id):
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '-1'
         # Sugere nome do arquivo para quando o usuário escolher "Salvar como PDF"
-        response.headers['Content-Disposition'] = f'inline; filename="OS_{ordem.numero}_{dt.now().strftime("%Y%m%d")}.pdf"'
+        # Formato: "Ordem de Serviço OS16012026007" (data + número da OS)
+        data_str = dt.now().strftime("%d%m%Y")  # Formato: 16012026
+        numero_str = str(ordem.numero).zfill(4)  # Formato: 0007
+        response.headers['Content-Disposition'] = f'inline; filename="Ordem de Servico OS{data_str}{numero_str}.pdf"'
         
         print(f" DEBUG PDF: HTML retornado com sucesso (com auto-print)")
         return response
