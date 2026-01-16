@@ -1398,16 +1398,15 @@ def projeto_salvar_dados_tecnicos(projeto_id):
         
         db.session.commit()
         
-        flash('✅ Dados técnicos salvos com sucesso!', 'success')
-        return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+        return jsonify({'success': True, 'message': '✅ Dados técnicos salvos com sucesso!'})
         
     except Exception as e:
         db.session.rollback()
         import traceback
+        erro_completo = traceback.format_exc()
         print(f"❌ ERRO ao salvar dados técnicos:")
-        print(traceback.format_exc())
-        flash(f'Erro ao salvar dados técnicos: {str(e)}', 'danger')
-        return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+        print(erro_completo)
+        return jsonify({'success': False, 'message': f'Erro ao salvar: {str(e)}'}), 400
 
 
 @energia_solar_bp.route('/projetos/<int:projeto_id>/orcamento/itens', methods=['GET'])

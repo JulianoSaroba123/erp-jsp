@@ -2795,17 +2795,19 @@ function handleSalvarDadosTecnicos(event) {
         method: 'POST',
         body: new FormData(form)
     })
-    .then(response => {
-        if (response.ok) {
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
             // Recarregar a página para atualizar os cards
             window.location.reload();
         } else {
-            alert('Erro ao salvar dados técnicos');
+            alert('Erro ao salvar dados técnicos: ' + (data.message || 'Erro desconhecido'));
+            console.error('❌ Erro:', data);
         }
     })
     .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro ao salvar dados técnicos');
+        console.error('❌ Erro:', error);
+        alert('Erro ao salvar dados técnicos: ' + error.message);
     });
 }
 
