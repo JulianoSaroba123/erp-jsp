@@ -338,25 +338,36 @@ class OrdemServico(BaseModel):
     @classmethod
     def estatisticas_dashboard(cls):
         """Retorna estatísticas para o dashboard (PADRONIZADO)."""
+        # Total de OS ativas
         total = cls.query.filter_by(ativo=True).count()
         
-        # Pendentes (status padrão)
-        pendentes = cls.query.filter_by(status='pendente', ativo=True).count()
+        # Abertas/Pendentes (status='pendente')
+        abertas = cls.query.filter_by(status='pendente', ativo=True).count()
         
         # Em execução
         em_andamento = cls.query.filter_by(status='em_execucao', ativo=True).count()
         
-        # Finalizadas este mês
+        # Finalizadas/Concluídas este mês
+        from datetime import date
+        mes_atual = date.today().month
+        ano_atual = date.today().year
+        
         concluidas_mes = cls.query.filter(
             cls.status == 'finalizada',
             cls.ativo == True,
-            func.extract('month', cls.data_conclusao) == date.today().month,
-            func.extract('year', cls.data_conclusao) == date.today().year
+            db.func.extract('month', cls.data_conclusao) == mes_atual,
+            db.func.extract('year', cls.data_conclusao) == ano_atual
         ).count()
+        
+        print(f"📊 DEBUG Estatísticas:")
+        print(f"   Total ativo=True: {total}")
+        print(f"   Abertas (pendente): {abertas}")
+        print(f"   Em andamento (em_execucao): {em_andamento}")
+        print(f"   Concluídas no mês {mes_atual}/{ano_atual}: {concluidas_mes}")
         
         return {
             'total': total,
-            'abertas': pendentes,  # Compatibilidade com template
+            'abertas': abertas,
             'em_andamento': em_andamento,
             'concluidas_mes': concluidas_mes
         }
