@@ -1229,18 +1229,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const [horaIni, minIni] = horaInicial.split(':').map(Number);
             const [horaFin, minFin] = horaFinal.split(':').map(Number);
             
-            const inicialMinutos = horaIni * 60 + minIni;
-            const finalMinutos = horaFin * 60 + minFin;
+            let inicialMinutos = horaIni * 60 + minIni;
+            let finalMinutos = horaFin * 60 + minFin;
             
-            if (finalMinutos > inicialMinutos) {
-                const diffMinutos = finalMinutos - inicialMinutos;
-                const horas = Math.floor(diffMinutos / 60);
-                const minutos = diffMinutos % 60;
-                
-                totalHorasField.value = `${horas}h ${minutos.toString().padStart(2, '0')}min`;
-            } else {
-                totalHorasField.value = '';
+            // Se hora final for menor que inicial, assumir que passou da meia-noite
+            if (finalMinutos < inicialMinutos) {
+                finalMinutos += 24 * 60; // Adiciona 24 horas em minutos
             }
+            
+            const diffMinutos = finalMinutos - inicialMinutos;
+            const horas = Math.floor(diffMinutos / 60);
+            const minutos = diffMinutos % 60;
+            
+            totalHorasField.value = `${horas}h ${minutos.toString().padStart(2, '0')}min`;
         } else {
             totalHorasField.value = '';
         }
