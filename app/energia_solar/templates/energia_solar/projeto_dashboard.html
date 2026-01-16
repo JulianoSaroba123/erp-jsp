@@ -3295,19 +3295,46 @@ async function carregarDadosCliente(clienteId) {
         
         // Preencher latitude e longitude se disponíveis
         const campoLatitude = document.getElementById('campo_latitude');
-        if (campoLatitude && dados.latitude) {
-            campoLatitude.value = dados.latitude;
-            console.log('✅ Latitude preenchida:', dados.latitude);
-        } else {
-            console.log('⚠️ Latitude não disponível no cliente');
-        }
-        
         const campoLongitude = document.getElementById('campo_longitude');
-        if (campoLongitude && dados.longitude) {
-            campoLongitude.value = dados.longitude;
-            console.log('✅ Longitude preenchida:', dados.longitude);
+        
+        if (dados.latitude && dados.longitude) {
+            // Cliente tem lat/long cadastrados
+            if (campoLatitude) {
+                campoLatitude.value = dados.latitude;
+                console.log('✅ Latitude preenchida:', dados.latitude);
+            }
+            if (campoLongitude) {
+                campoLongitude.value = dados.longitude;
+                console.log('✅ Longitude preenchida:', dados.longitude);
+            }
+        } else if (dados.cidade && dados.estado) {
+            // Tentar buscar lat/long via API de geolocalização
+            console.log('🔍 Buscando coordenadas para:', `${dados.cidade}, ${dados.estado}`);
+            try {
+                const geoUrl = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(dados.cidade)}&state=${encodeURIComponent(dados.estado)}&country=Brazil&format=json&limit=1`;
+                const geoResp = await fetch(geoUrl);
+                const geoData = await geoResp.json();
+                
+                if (geoData && geoData.length > 0) {
+                    const lat = parseFloat(geoData[0].lat).toFixed(5);
+                    const lon = parseFloat(geoData[0].lon).toFixed(5);
+                    
+                    if (campoLatitude && !campoLatitude.value) {
+                        campoLatitude.value = lat;
+                        console.log('✅ Latitude obtida via geolocalização:', lat);
+                    }
+                    if (campoLongitude && !campoLongitude.value) {
+                        campoLongitude.value = lon;
+                        console.log('✅ Longitude obtida via geolocalização:', lon);
+                    }
+                } else {
+                    console.log('⚠️ Coordenadas não encontradas para esta cidade');
+                }
+            } catch (e) {
+                console.error('⚠️ Erro ao buscar coordenadas:', e);
+            }
         } else {
-            console.log('⚠️ Longitude não disponível no cliente');
+            console.log('⚠️ Latitude/Longitude não disponível e cidade/estado insuficientes');
         }
         
         console.log('✅ Dados do cliente carregados:', dados.nome);
