@@ -1352,22 +1352,30 @@ def projeto_salvar_dados_tecnicos(projeto_id):
         # Padrão de Entrada
         print("📍 Etapa 5: Padrão de Entrada")
         tipo_entrada = request.form.get('tipo_entrada')
+        print(f"   📌 Valor recebido em 'tipo_entrada': {tipo_entrada}")
+        print(f"   📌 Valor atual tipo_instalacao: {projeto.tipo_instalacao}")
+        print(f"   📌 Valor atual qtd_fases: {projeto.qtd_fases}")
+        
         if tipo_entrada == 'monofasico':
             projeto.qtd_fases = 1
             projeto.tipo_instalacao = 'monofasica'
             if hasattr(projeto, 'circuito'):
                 projeto.circuito = 'Monofásico'
+            print("   ✅ Definido como MONOFÁSICO")
         elif tipo_entrada == 'bifasico':
             projeto.qtd_fases = 2
             projeto.tipo_instalacao = 'bifasica'
             if hasattr(projeto, 'circuito'):
                 projeto.circuito = 'Bifásico'
+            print("   ✅ Definido como BIFÁSICO")
         elif tipo_entrada == 'trifasico':
             projeto.qtd_fases = 3
             projeto.tipo_instalacao = 'trifasica'
             if hasattr(projeto, 'circuito'):
                 projeto.circuito = 'Trifásico'
+            print("   ✅ Definido como TRIFÁSICO")
         else:
+            print(f"   ⚠️ Tipo de entrada não reconhecido ou vazio: '{tipo_entrada}'")
             projeto.qtd_fases = None
             if hasattr(projeto, 'circuito'):
                 projeto.circuito = None
