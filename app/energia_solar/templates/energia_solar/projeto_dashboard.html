@@ -2797,6 +2797,11 @@ function handleSalvarDadosTecnicos(event) {
     const unidadesJSON = JSON.stringify(unidadesConsumidoras);
     document.getElementById('unidades_consumidoras_json').value = unidadesJSON;
     
+    // DEBUG: Verificar valor do tipo_entrada antes de enviar
+    const tipoEntradaField = form.querySelector('[name="tipo_entrada"]');
+    console.log('🔍 ENVIANDO tipo_entrada:', tipoEntradaField ? tipoEntradaField.value : 'CAMPO NÃO ENCONTRADO');
+    console.log('🔍 Todos os campos name=tipo_entrada:', form.querySelectorAll('[name="tipo_entrada"]').length);
+    
     fetch(form.action, {
         method: 'POST',
         body: new FormData(form)
