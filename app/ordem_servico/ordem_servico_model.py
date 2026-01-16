@@ -341,29 +341,47 @@ class OrdemServico(BaseModel):
         # Total de OS ativas
         total = cls.query.filter_by(ativo=True).count()
         
-        # Abertas/Pendentes (status='pendente')
-        abertas = cls.query.filter_by(status='pendente', ativo=True).count()
+        # Abertas/Pendentes (aceita ambos: 'pendente' e 'Aberta')
+        abertas = cls.query.filter(
+            cls.ativo == True,
+            db.or_(
+                cls.status == 'pendente',
+                cls.status == 'Aberta',
+                cls.status == 'aberta'
+            )
+        ).count()
         
-        # Em execução
-        em_andamento = cls.query.filter_by(status='em_execucao', ativo=True).count()
+        # Em execução/andamento (aceita: 'em_execucao', 'Em Andamento', 'em andamento')
+        em_andamento = cls.query.filter(
+            cls.ativo == True,
+            db.or_(
+                cls.status == 'em_execucao',
+                cls.status == 'Em Andamento',
+                cls.status == 'em andamento'
+            )
+        ).count()
         
-        # Finalizadas/Concluídas este mês
+        # Finalizadas/Concluídas este mês (aceita: 'finalizada', 'Concluída', 'concluida')
         from datetime import date
         mes_atual = date.today().month
         ano_atual = date.today().year
         
         concluidas_mes = cls.query.filter(
-            cls.status == 'finalizada',
             cls.ativo == True,
+            db.or_(
+                cls.status == 'finalizada',
+                cls.status == 'Concluída',
+                cls.status == 'concluida'
+            ),
             db.func.extract('month', cls.data_conclusao) == mes_atual,
             db.func.extract('year', cls.data_conclusao) == ano_atual
         ).count()
         
         print(f"📊 DEBUG Estatísticas:")
         print(f"   Total ativo=True: {total}")
-        print(f"   Abertas (pendente): {abertas}")
-        print(f"   Em andamento (em_execucao): {em_andamento}")
-        print(f"   Concluídas no mês {mes_atual}/{ano_atual}: {concluidas_mes}")
+        print(f"   Abertas (pendente/Aberta/aberta): {abertas}")
+        print(f"   Em andamento (em_execucao/Em Andamento): {em_andamento}")
+        print(f"   Concluídas no mês {mes_atual}/{ano_atual} (finalizada/Concluída): {concluidas_mes}")
         
         return {
             'total': total,
