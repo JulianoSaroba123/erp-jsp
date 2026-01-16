@@ -1349,14 +1349,18 @@ def projeto_salvar_dados_tecnicos(projeto_id):
         if tipo_entrada == 'monofasico':
             projeto.qtd_fases = 1
             projeto.tipo_instalacao = 'monofasica'
+            projeto.circuito = 'Monofásico'
         elif tipo_entrada == 'bifasico':
             projeto.qtd_fases = 2
             projeto.tipo_instalacao = 'bifasica'
+            projeto.circuito = 'Bifásico'
         elif tipo_entrada == 'trifasico':
             projeto.qtd_fases = 3
             projeto.tipo_instalacao = 'trifasica'
+            projeto.circuito = 'Trifásico'
         else:
             projeto.qtd_fases = None
+            projeto.circuito = None
             
         projeto.cabo_fase_bitola = request.form.get('cabo_fase_bitola')
         projeto.cabo_neutro_bitola = request.form.get('cabo_neutro_bitola')
