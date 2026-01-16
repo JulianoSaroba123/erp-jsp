@@ -376,7 +376,13 @@
                     </div>
                     <div class="info-row">
                         <span class="info-label"><i class="fas fa-bolt me-2"></i>Conexão:</span>
-                        <span class="info-value">{{ projeto.circuito or projeto.tipo_instalacao or 'Não definido' }}</span>
+                        <span class="info-value">
+                            {% if projeto.tipo_instalacao == 'monofasica' %}Monofásico
+                            {% elif projeto.tipo_instalacao == 'bifasica' %}Bifásico
+                            {% elif projeto.tipo_instalacao == 'trifasica' %}Trifásico
+                            {% elif projeto.circuito %}{{ projeto.circuito }}
+                            {% else %}Não definido{% endif %}
+                        </span>
                     </div>
                     <div class="info-row">
                         <span class="info-label"><i class="fas fa-ruler-combined me-2"></i>Área Necessária:</span>
