@@ -886,7 +886,7 @@
                                         </div>
                                         <div class="col-12 col-md-3">
                                             <label class="form-label fw-bold small">FASE-BITOLA (MM²)</label>
-                                            <select class="form-select" name="cabo_fase_bitola">
+                                            <select class="form-select" name="cabo_fase_bitola" onchange="atualizarDiagramaUnifilar()">
                                                 <option value="4" {% if projeto.cabo_fase_bitola == '4' %}selected{% endif %}>4 mm²</option>
                                                 <option value="6" {% if projeto.cabo_fase_bitola == '6' %}selected{% endif %}>6 mm²</option>
                                                 <option value="10" {% if projeto.cabo_fase_bitola == '10' %}selected{% endif %}>10 mm²</option>
@@ -1085,7 +1085,7 @@
                                         <div class="text-center position-relative" style="z-index: 1; flex: 0 0 90px;">
                                             <div class="text-purple" style="font-size: 0.65rem; line-height: 1.2;">
                                                 Rede Entrada<br>
-                                                <span id="diagrama_cabo_entrada">{{ projeto.cabo_entrada or '10' }}mm²</span>
+                                                <span id="diagrama_cabo_entrada">{{ projeto.cabo_fase_bitola or '16' }}mm²</span>
                                             </div>
                                             <div class="text-purple"><i class="fas fa-exchange-alt fa-rotate-90"></i></div>
                                         </div>
@@ -2868,6 +2868,7 @@ function atualizarDiagramaUnifilar() {
     // Atualizar cabos
     const caboCC = document.querySelector('select[name="cabo_cc"]');
     const caboCA = document.querySelector('select[name="cabo_ca"]');
+    const caboFase = document.querySelector('select[name="cabo_fase_bitola"]');
     
     if (caboCC && document.getElementById('diagrama_cabo_cc')) {
         document.getElementById('diagrama_cabo_cc').textContent = caboCC.value + 'mm²';
@@ -2875,6 +2876,16 @@ function atualizarDiagramaUnifilar() {
     
     if (caboCA && document.getElementById('diagrama_cabo_ca')) {
         document.getElementById('diagrama_cabo_ca').textContent = caboCA.value + 'mm²';
+        // Atualizar também o segundo cabo CA
+        const diagramaCaboCA2 = document.getElementById('diagrama_cabo_ca_2');
+        if (diagramaCaboCA2) {
+            diagramaCaboCA2.textContent = caboCA.value + 'mm²';
+        }
+    }
+    
+    // Atualizar cabo de entrada da rede (usa cabo de fase)
+    if (caboFase && document.getElementById('diagrama_cabo_entrada')) {
+        document.getElementById('diagrama_cabo_entrada').textContent = caboFase.value + 'mm²';
     }
     
     // Atualizar proteções
