@@ -2666,9 +2666,13 @@ function configurarLayoutAutomatico(qtdPlacas, placaId) {
         const selectPlaca = document.getElementById('placa_id');
         const placaOption = Array.from(selectPlaca.options).find(opt => opt.value === placaId);
         
+        console.log(`   🔍 Buscando placa ID: ${placaId}`);
+        
         if (placaOption) {
             const largura = parseFloat(placaOption.dataset.largura) || 992; // mm
             const comprimento = parseFloat(placaOption.dataset.comprimento) || 1650; // mm
+            
+            console.log(`   📏 Dimensões da placa: ${largura}mm x ${comprimento}mm`);
             
             // Converter para metros
             const larguraM = largura / 1000;
