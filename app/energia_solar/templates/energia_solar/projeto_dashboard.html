@@ -2600,6 +2600,10 @@ function calcularPotenciaKit() {
         const selectPlaca = document.getElementById('placa_id');
         const placaOption = Array.from(selectPlaca.options).find(opt => opt.value === placaId);
         if (placaOption) {
+            // Selecionar a placa no SELECT
+            selectPlaca.value = placaId;
+            console.log(`   🔧 Placa selecionada automaticamente: ${placaOption.dataset.modelo}`);
+            
             placaInfo = `${placaOption.dataset.modelo} / ${placaOption.dataset.fabricante} / ${placaOption.dataset.potencia}W`;
         }
     }
@@ -2823,6 +2827,12 @@ function atualizarLayoutVisual() {
     document.getElementById('largura_area').textContent = largura.toFixed(2) + ' m';
     document.getElementById('comprimento_area').textContent = comprimento.toFixed(2) + ' m';
     document.getElementById('area_total_display').value = areaTotal.toFixed(2);
+    
+    // Atualizar campos hidden para salvar no banco
+    const larguraHidden = document.getElementById('largura_area');
+    const comprimentoHidden = document.getElementById('comprimento_area');
+    if (larguraHidden) larguraHidden.value = largura.toFixed(2);
+    if (comprimentoHidden) comprimentoHidden.value = comprimento.toFixed(2);
 }
 
 // Manter compatibilidade com código antigo
