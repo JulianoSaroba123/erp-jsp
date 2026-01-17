@@ -827,13 +827,13 @@
                                         <div class="col-md-4">
                                             <label class="fw-bold text-muted small">LARGURA</label>
                                             <div class="border rounded p-3 bg-light">
-                                                <h5 class="text-success mb-0" id="largura_area">{{ "%.2f"|format(projeto.largura_area or 0) }} m</h5>
+                                                <h5 class="text-success mb-0" id="largura_display">{{ "%.2f"|format(projeto.largura_area or 0) }} m</h5>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
                                             <label class="fw-bold text-muted small">COMPRIMENTO</label>
                                             <div class="border rounded p-3 bg-light">
-                                                <h5 class="text-success mb-0" id="comprimento_area">{{ "%.2f"|format(projeto.comprimento_area or 0) }} m</h5>
+                                                <h5 class="text-success mb-0" id="comprimento_display">{{ "%.2f"|format(projeto.comprimento_area or 0) }} m</h5>
                                             </div>
                                         </div>
                                     </div>
@@ -2807,8 +2807,9 @@ function atualizarLayoutVisual() {
     
     // Calcular dimensões da área
     if (!selectPlaca || !selectPlaca.value) {
-        document.getElementById('largura_area').textContent = '0.00 m';
-        document.getElementById('comprimento_area').textContent = '0.00 m';
+        console.log('⚠️ Nenhuma placa selecionada');
+        document.getElementById('largura_display').textContent = '0.00 m';
+        document.getElementById('comprimento_display').textContent = '0.00 m';
         document.getElementById('area_total_display').value = '0.00';
         return;
     }
@@ -2818,6 +2819,9 @@ function atualizarLayoutVisual() {
     let larguraPlacaMM = parseFloat(option.dataset.largura) || 992; // mm
     let comprimentoPlacaMM = parseFloat(option.dataset.comprimento) || 1650; // mm
     
+    console.log(`📏 Placa: ${option.text}`);
+    console.log(`📏 Dimensões originais: ${larguraPlacaMM}mm × ${comprimentoPlacaMM}mm`);
+    
     // Converter para metros
     let larguraPlaca = larguraPlacaMM / 1000;
     let comprimentoPlaca = comprimentoPlacaMM / 1000;
@@ -2825,6 +2829,7 @@ function atualizarLayoutVisual() {
     // Inverter dimensões se orientação for PAISAGEM
     if (orientacao === 'PAISAGEM') {
         [larguraPlaca, comprimentoPlaca] = [comprimentoPlaca, larguraPlaca];
+        console.log(`🔄 Orientação PAISAGEM: ${larguraPlaca}m × ${comprimentoPlaca}m`);
     }
     
     // Calcular área total (adicionar 10cm de espaçamento entre placas)
@@ -2833,15 +2838,19 @@ function atualizarLayoutVisual() {
     const comprimento = (linhas * comprimentoPlaca) + ((linhas - 1) * espacamento);
     const areaTotal = largura * comprimento;
     
-    document.getElementById('largura_area').textContent = largura.toFixed(2) + ' m';
-    document.getElementById('comprimento_area').textContent = comprimento.toFixed(2) + ' m';
+    console.log(`📐 Layout: ${linhas} linhas × ${colunas} colunas`);
+    console.log(`📏 Área total: ${largura.toFixed(2)}m × ${comprimento.toFixed(2)}m = ${areaTotal.toFixed(2)}m²`);
+    
+    // Atualizar elementos de display (H5)
+    document.getElementById('largura_display').textContent = largura.toFixed(2) + ' m';
+    document.getElementById('comprimento_display').textContent = comprimento.toFixed(2) + ' m';
     document.getElementById('area_total_display').value = areaTotal.toFixed(2);
     
     // Atualizar campos hidden para salvar no banco
-    const larguraHidden = document.getElementById('largura_area');
-    const comprimentoHidden = document.getElementById('comprimento_area');
-    if (larguraHidden) larguraHidden.value = largura.toFixed(2);
-    if (comprimentoHidden) comprimentoHidden.value = comprimento.toFixed(2);
+    document.getElementById('largura_area').value = largura.toFixed(2);
+    document.getElementById('comprimento_area').value = comprimento.toFixed(2);
+    
+    console.log('✅ Área atualizada com sucesso!');
 }
 
 // Manter compatibilidade com código antigo
