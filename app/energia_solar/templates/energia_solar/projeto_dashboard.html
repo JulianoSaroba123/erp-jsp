@@ -2587,6 +2587,9 @@ function calcularPotenciaKit() {
     const qtdInput = document.getElementById('qtd_placas_input');
     qtdInput.value = qtdPlacas;
     
+    // 🆕 CONFIGURAR LAYOUT AUTOMATICAMENTE
+    configurarLayoutAutomatico(qtdPlacas, option.dataset.placaId);
+    
     // Buscar informação da placa (se disponível)
     const placaId = option.dataset.placaId;
     let placaInfo = '-';
@@ -2616,6 +2619,77 @@ function atualizarDisplays(potenciaKWp, geracaoMes, placaInfo, qtdPlacas) {
     const elemPotenciaMin = document.getElementById('potencia_minima_inversor');
     if (elemPotenciaMin) {
         elemPotenciaMin.textContent = potenciaMinima.toFixed(2) + ' kW';
+    }
+}
+
+// 🆕 Configurar layout automaticamente com base na quantidade de placas
+function configurarLayoutAutomatico(qtdPlacas, placaId) {
+    console.log(`🔧 Configurando layout automático: ${qtdPlacas} placas`);
+    
+    if (!qtdPlacas || qtdPlacas <= 0) {
+        return;
+    }
+    
+    // Calcular melhor distribuição (preferência por mais colunas que linhas)
+    let linhas = 1;
+    let colunas = qtdPlacas;
+    
+    // Otimizar para layouts mais compactos
+    // Ex: 6 placas → 1x6 | 8 placas → 2x4 | 12 placas → 2x6 ou 3x4
+    if (qtdPlacas >= 8) {
+        linhas = 2;
+        colunas = Math.ceil(qtdPlacas / 2);
+    }
+    if (qtdPlacas >= 15) {
+        linhas = 3;
+        colunas = Math.ceil(qtdPlacas / 3);
+    }
+    if (qtdPlacas >= 24) {
+        linhas = 4;
+        colunas = Math.ceil(qtdPlacas / 4);
+    }
+    
+    // Atualizar campos de linhas e colunas
+    const linhasInput = document.getElementById('linhas_placas');
+    const colunasInput = document.getElementById('colunas_placas');
+    
+    if (linhasInput) linhasInput.value = linhas;
+    if (colunasInput) colunasInput.value = colunas;
+    
+    console.log(`   📐 Layout configurado: ${linhas} linhas x ${colunas} colunas`);
+    
+    // Buscar dimensões da placa para calcular área
+    if (placaId) {
+        const selectPlaca = document.getElementById('placa_id');
+        const placaOption = Array.from(selectPlaca.options).find(opt => opt.value === placaId);
+        
+        if (placaOption) {
+            const largura = parseFloat(placaOption.dataset.largura) || 992; // mm
+            const comprimento = parseFloat(placaOption.dataset.comprimento) || 1650; // mm
+            
+            // Converter para metros
+            const larguraM = largura / 1000;
+            const comprimentoM = comprimento / 1000;
+            
+            // Calcular área total (com 10cm de espaçamento)
+            const espacamento = 0.10;
+            const larguraTotal = (colunas * larguraM) + ((colunas - 1) * espacamento);
+            const comprimentoTotal = (linhas * comprimentoM) + ((linhas - 1) * espacamento);
+            const areaTotal = larguraTotal * comprimentoTotal;
+            
+            // Atualizar display de área
+            const areaDisplay = document.getElementById('area_total_display');
+            if (areaDisplay) {
+                areaDisplay.value = areaTotal.toFixed(2);
+            }
+            
+            console.log(`   📏 Área calculada: ${areaTotal.toFixed(2)} m²`);
+        }
+    }
+    
+    // Atualizar visualização do layout
+    if (typeof atualizarLayoutVisual === 'function') {
+        atualizarLayoutVisual();
     }
 }
 
