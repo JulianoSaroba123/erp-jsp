@@ -529,7 +529,7 @@
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold">TIPO DE CONEXÃO</label>
-                                    <select class="form-select" name="tipo_instalacao">
+                                    <select class="form-select" id="tipo_instalacao_aba1" name="tipo_instalacao">
                                         <option value="monofasica" {% if projeto.tipo_instalacao == 'monofasica' %}selected{% endif %}>MONOFÁSICA</option>
                                         <option value="bifasica" {% if projeto.tipo_instalacao == 'bifasica' %}selected{% endif %}>BIFÁSICA</option>
                                         <option value="trifasica" {% if projeto.tipo_instalacao == 'trifasica' %}selected{% endif %}>TRIFÁSICA</option>
@@ -3230,6 +3230,36 @@ window.addEventListener('DOMContentLoaded', function() {
                 } else {
                     qtdFases.value = '';
                 }
+            }
+        });
+    }
+    
+    // Sincronizar tipo de instalação da Aba 1 (Dados Iniciais) com Aba 4 (Demais Informações)
+    const tipoInstalacaoAba1 = document.getElementById('tipo_instalacao_aba1');
+    if (tipoInstalacaoAba1 && tipoEntrada) {
+        // Sincronizar de Aba 1 → Aba 4
+        tipoInstalacaoAba1.addEventListener('change', function() {
+            console.log('🔄 Sincronizando tipo de instalação: Aba 1 → Aba 4');
+            if (this.value === 'monofasica') {
+                tipoEntrada.value = 'monofasico';
+            } else if (this.value === 'bifasica') {
+                tipoEntrada.value = 'bifasico';
+            } else if (this.value === 'trifasica') {
+                tipoEntrada.value = 'trifasico';
+            }
+            // Disparar evento change no tipo_entrada para atualizar qtd_fases
+            tipoEntrada.dispatchEvent(new Event('change'));
+        });
+        
+        // Sincronizar de Aba 4 → Aba 1 (caso usuário mude na Aba 4)
+        tipoEntrada.addEventListener('change', function() {
+            console.log('🔄 Sincronizando tipo de entrada: Aba 4 → Aba 1');
+            if (this.value === 'monofasico') {
+                tipoInstalacaoAba1.value = 'monofasica';
+            } else if (this.value === 'bifasico') {
+                tipoInstalacaoAba1.value = 'bifasica';
+            } else if (this.value === 'trifasico') {
+                tipoInstalacaoAba1.value = 'trifasica';
             }
         });
     }
