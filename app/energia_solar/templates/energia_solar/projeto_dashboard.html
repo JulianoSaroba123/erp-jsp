@@ -2764,10 +2764,15 @@ function atualizarInfoInversor() {
 
 // Atualizar visualização do layout e calcular área de instalação
 function atualizarLayoutVisual() {
+    console.log('🎨 === INICIANDO atualizarLayoutVisual() ===');
+    
     const selectPlaca = document.getElementById('placa_id');
     const orientacao = document.getElementById('orientacao').value;
     const linhas = parseInt(document.getElementById('linhas_placas').value) || 1;
     const colunas = parseInt(document.getElementById('colunas_placas').value) || 1;
+    
+    console.log(`   📊 Parâmetros: ${linhas} linhas × ${colunas} colunas, orientação: ${orientacao}`);
+    console.log(`   🔍 Placa selecionada: ${selectPlaca ? selectPlaca.value : 'NULO'}`);
     
     // Atualizar informações do texto
     const totalModulos = linhas * colunas;
@@ -3322,6 +3327,13 @@ window.addEventListener('DOMContentLoaded', function() {
     
     // Inicializar lista de unidades consumidoras
     atualizarListaUnidades();
+    
+    // 🆕 Se um kit já estiver selecionado, calcular potência e layout
+    const kitSelect = document.getElementById('kit_id');
+    if (kitSelect && kitSelect.value) {
+        console.log('🔄 Kit pré-selecionado detectado, recalculando...');
+        calcularPotenciaKit();
+    }
     
     // Calcular área de instalação e gerar preview do layout se os campos estiverem preenchidos
     const linhas = document.getElementById('linhas_placas');
