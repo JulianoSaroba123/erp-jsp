@@ -2599,10 +2599,7 @@ function calcularPotenciaKit() {
     const qtdInput = document.getElementById('qtd_placas_input');
     qtdInput.value = qtdPlacas;
     
-    // 🆕 CONFIGURAR LAYOUT AUTOMATICAMENTE
-    configurarLayoutAutomatico(qtdPlacas, option.dataset.placaId);
-    
-    // Buscar informação da placa (se disponível)
+    // 🆕 SELECIONAR PLACA ANTES DE CONFIGURAR LAYOUT
     const placaId = option.dataset.placaId;
     let placaInfo = '-';
     if (placaId) {
@@ -2616,6 +2613,9 @@ function calcularPotenciaKit() {
             placaInfo = `${placaOption.dataset.modelo} / ${placaOption.dataset.fabricante} / ${placaOption.dataset.potencia}W`;
         }
     }
+    
+    // 🆕 CONFIGURAR LAYOUT AUTOMATICAMENTE (DEPOIS de selecionar a placa)
+    configurarLayoutAutomatico(qtdPlacas, placaId);
     
     // Estimativa de geração mensal (kWp × 4.5h de sol × 30 dias × 0.8 de eficiência)
     const geracaoMes = potenciaKWp * 4.5 * 30 * 0.8;
