@@ -784,6 +784,9 @@
                                         <div class="col-md-4">
                                             <label class="form-label fw-bold">ÁREA NECESSÁRIA (M²)</label>
                                             <input type="text" class="form-control form-control-lg bg-light" id="area_total_display" value="{{ '%.2f'|format(projeto.largura_area * projeto.comprimento_area if projeto.largura_area and projeto.comprimento_area else 0) }}" readonly>
+                                            <!-- Campos hidden para salvar largura e comprimento -->
+                                            <input type="hidden" name="largura_area" id="largura_area" value="{{ projeto.largura_area or 0 }}">
+                                            <input type="hidden" name="comprimento_area" id="comprimento_area" value="{{ projeto.comprimento_area or 0 }}">
                                         </div>
                                     </div>
 
@@ -2683,7 +2686,13 @@ function configurarLayoutAutomatico(qtdPlacas, placaId) {
                 areaDisplay.value = areaTotal.toFixed(2);
             }
             
-            console.log(`   📏 Área calculada: ${areaTotal.toFixed(2)} m²`);
+            // Atualizar campos hidden para salvar no banco
+            const larguraHidden = document.getElementById('largura_area');
+            const comprimentoHidden = document.getElementById('comprimento_area');
+            if (larguraHidden) larguraHidden.value = larguraTotal.toFixed(2);
+            if (comprimentoHidden) comprimentoHidden.value = comprimentoTotal.toFixed(2);
+            
+            console.log(`   📏 Área calculada: ${areaTotal.toFixed(2)} m² (${larguraTotal.toFixed(2)}m x ${comprimentoTotal.toFixed(2)}m)`);
         }
     }
     
