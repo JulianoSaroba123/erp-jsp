@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Conciliação Bancária - ERP JSP{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
+<li class="breadcrumb-item active">Conciliação Bancária</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-handshake"></i> Conciliação Bancária</h2>
+        <div>
+            <a href="{{ url_for('financeiro.upload_extrato') }}" class="btn btn-primary">
+                <i class="fas fa-upload"></i> Importar Extrato
+            </a>
+            <a href="{{ url_for('financeiro.historico_conciliacao') }}" class="btn btn-info">
+                <i class="fas fa-history"></i> Histórico
+            </a>
+        </div>
+    </div>
+
+    <!-- Seleção de Conta -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title"><i class="fas fa-university"></i> Selecione a Conta Bancária</h5>
+            <form method="GET" class="row g-3">
+                <div class="col-md-8">
+                    <select name="conta_id" class="form-select" required>
+                        <option value="">-- Selecione uma conta --</option>
+                        {% for conta in contas %}
+                        <option value="{{ conta.id }}" {% if conta_selecionada and conta.id == conta_selecionada.id %}selected{% endif %}>
+                            {{ conta.nome }} - {{ conta.banco }} ({{ conta.numero_conta }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-search"></i> Carregar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if conta_selecionada %}
+    <!-- Informações da Conta -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Saldo em Sistema</h6>
+                    <h4 class="card-title text-primary">{{ conta_selecionada.saldo_formatado }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Extratos Pendentes</h6>
+                    <h4 class="card-title text-warning">{{ extratos_pendentes|length }}</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-success">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 text-muted">Lançamentos Não Conciliados</h6>
+                    <h4 class="card-title text-success">{{ lancamentos_pendentes|length }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Área de Conciliação -->
+    <div class="row">
+        <!-- Extratos Pendentes -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-invoice-dollar"></i> Extratos Bancários Pendentes</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if extratos_pendentes %}
+                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Descrição</th>
+                                    <th>Tipo</th>
+                                    <th>Valor</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for extrato in extratos_pendentes %}
+                                <tr id="extrato-{{ extrato.id }}" class="extrato-row" data-extrato-id="{{ extrato.id }}">
+                                    <td>{{ extrato.data_movimento.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <small>{{ extrato.descricao }}</small>
+                                        {% if extrato.documento %}
+                                        <br><span class="badge bg-secondary">Doc: {{ extrato.documento }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if extrato.tipo_movimento == 'credito' %}
+                                        <span class="badge bg-success">Crédito</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Débito</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if extrato.tipo_movimento == 'credito' %}
+                                        <span class="text-success fw-bold">{{ extrato.valor_formatado }}</span>
+                                        {% else %}
+                                        <span class="text-danger fw-bold">{{ extrato.valor_formatado }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-info" onclick="selecionarExtrato({{ extrato.id }})">
+                                            <i class="fas fa-hand-pointer"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-check-circle fa-3x mb-3"></i>
+                        <p>Nenhum extrato pendente de conciliação.</p>
+                        <a href="{{ url_for('financeiro.upload_extrato') }}" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Importar Extrato
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Lançamentos Pendentes -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-file-alt"></i> Lançamentos do Sistema</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if lancamentos_pendentes %}
+                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Descrição</th>
+                                    <th>Tipo</th>
+                                    <th>Valor</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lanc in lancamentos_pendentes %}
+                                <tr id="lancamento-{{ lanc.id }}" class="lancamento-row" data-lancamento-id="{{ lanc.id }}">
+                                    <td>{{ lanc.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <small>{{ lanc.descricao }}</small>
+                                        {% if lanc.categoria %}
+                                        <br><span class="badge bg-info">{{ lanc.categoria.nome }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if lanc.tipo in ['receita', 'conta_receber'] %}
+                                        <span class="badge bg-success">{{ lanc.tipo.replace('_', ' ').title() }}</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">{{ lanc.tipo.replace('_', ' ').title() }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if lanc.tipo in ['receita', 'conta_receber'] %}
+                                        <span class="text-success fw-bold">{{ lanc.valor_formatado }}</span>
+                                        {% else %}
+                                        <span class="text-danger fw-bold">{{ lanc.valor_formatado }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-success" onclick="conciliar({{ lanc.id }})" id="btn-lanc-{{ lanc.id }}" disabled>
+                                            <i class="fas fa-link"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-check-circle fa-3x mb-3"></i>
+                        <p>Nenhum lançamento pendente de conciliação.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.extrato-row.selected {
+    background-color: #fff3cd !important;
+    border-left: 4px solid #ffc107;
+}
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+</style>
+
+<script>
+let extratoSelecionado = null;
+
+function selecionarExtrato(extratoId) {
+    // Remover seleção anterior
+    document.querySelectorAll('.extrato-row').forEach(row => {
+        row.classList.remove('selected');
+    });
+    
+    // Selecionar novo
+    const row = document.getElementById('extrato-' + extratoId);
+    row.classList.add('selected');
+    extratoSelecionado = extratoId;
+    
+    // Habilitar botões de conciliação
+    document.querySelectorAll('[id^="btn-lanc-"]').forEach(btn => {
+        btn.disabled = false;
+    });
+}
+
+function conciliar(lancamentoId) {
+    if (!extratoSelecionado) {
+        alert('Selecione um extrato primeiro!');
+        return;
+    }
+    
+    if (!confirm('Confirma a conciliação deste lançamento com o extrato selecionado?')) {
+        return;
+    }
+    
+    // Criar formulário e enviar
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/financeiro/conciliacao-bancaria/conciliar/${extratoSelecionado}/${lancamentoId}`;
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+
+{% endblock %}

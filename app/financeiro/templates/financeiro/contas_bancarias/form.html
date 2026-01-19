@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}{% if conta %}Editar{% else %}Nova{% endif %} Conta Bancária{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.listar_contas_bancarias') }}">Contas Bancárias</a></li>
+        <li class="breadcrumb-item active">{% if conta %}Editar{% else %}Nova{% endif %}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            
+            <!-- Header -->
+            <div class="mb-4">
+                <h2>
+                    <i class="fas fa-university text-primary me-2"></i>
+                    {% if conta %}Editar Conta Bancária{% else %}Nova Conta Bancária{% endif %}
+                </h2>
+                <p class="text-muted">Preencha os dados da conta bancária</p>
+            </div>
+
+            <!-- Formulário -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="POST" action="{% if conta %}{{ url_for('financeiro.atualizar_conta_bancaria', id=conta.id) }}{% else %}{{ url_for('financeiro.criar_conta_bancaria') }}{% endif %}">
+                        
+                        <!-- Informações Básicas -->
+                        <h5 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-info-circle text-primary me-2"></i>Informações Básicas
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="nome" class="form-label">
+                                    Nome da Conta <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="nome" name="nome" 
+                                       value="{% if conta %}{{ conta.nome }}{% endif %}" 
+                                       placeholder="Ex: Conta Corrente Banco do Brasil" required>
+                                <small class="text-muted">Nome descritivo para identificar a conta</small>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="tipo" class="form-label">
+                                    Tipo <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="tipo" name="tipo" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="conta_corrente" {% if conta and conta.tipo == 'conta_corrente' %}selected{% endif %}>
+                                        Conta Corrente
+                                    </option>
+                                    <option value="poupanca" {% if conta and conta.tipo == 'poupanca' %}selected{% endif %}>
+                                        Poupança
+                                    </option>
+                                    <option value="caixa" {% if conta and conta.tipo == 'caixa' %}selected{% endif %}>
+                                        Caixa
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Dados Bancários -->
+                        <h5 class="border-bottom pb-2 mb-3 mt-4">
+                            <i class="fas fa-building text-primary me-2"></i>Dados Bancários
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="banco" class="form-label">Banco</label>
+                                <input type="text" class="form-control" id="banco" name="banco" 
+                                       value="{% if conta %}{{ conta.banco }}{% endif %}" 
+                                       placeholder="Ex: Banco do Brasil">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label for="agencia" class="form-label">Agência</label>
+                                <input type="text" class="form-control" id="agencia" name="agencia" 
+                                       value="{% if conta %}{{ conta.agencia }}{% endif %}" 
+                                       placeholder="Ex: 1234-5">
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label for="numero_conta" class="form-label">Número da Conta</label>
+                                <input type="text" class="form-control" id="numero_conta" name="numero_conta" 
+                                       value="{% if conta %}{{ conta.numero_conta }}{% endif %}" 
+                                       placeholder="Ex: 12345-6">
+                            </div>
+                        </div>
+
+                        <!-- Valores -->
+                        <h5 class="border-bottom pb-2 mb-3 mt-4">
+                            <i class="fas fa-dollar-sign text-primary me-2"></i>Valores
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="saldo_inicial" class="form-label">
+                                    Saldo Inicial
+                                    {% if conta %}
+                                    <small class="text-warning">(ajustará o saldo atual)</small>
+                                    {% endif %}
+                                </label>
+                                <input type="text" class="form-control" id="saldo_inicial" name="saldo_inicial" 
+                                       value="{% if conta %}{{ '{:,.2f}'.format(conta.saldo_inicial).replace(',', 'X').replace('.', ',').replace('X', '.') }}{% else %}0,00{% endif %}" 
+                                       placeholder="R$ 0,00">
+                                <small class="text-muted">Saldo da conta no momento do cadastro</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="limite_credito" class="form-label">Limite de Crédito</label>
+                                <input type="text" class="form-control" id="limite_credito" name="limite_credito" 
+                                       value="{% if conta %}{{ '{:,.2f}'.format(conta.limite_credito).replace(',', 'X').replace('.', ',').replace('X', '.') if conta.limite_credito else '0,00' }}{% else %}0,00{% endif %}" 
+                                       placeholder="R$ 0,00">
+                                <small class="text-muted">Cheque especial ou limite rotativo</small>
+                            </div>
+                        </div>
+
+                        <!-- Configurações -->
+                        <h5 class="border-bottom pb-2 mb-3 mt-4">
+                            <i class="fas fa-cog text-primary me-2"></i>Configurações
+                        </h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="principal" name="principal" 
+                                           {% if conta and conta.principal %}checked{% endif %}>
+                                    <label class="form-check-label" for="principal">
+                                        <i class="fas fa-star text-warning me-1"></i>
+                                        Conta Principal
+                                    </label>
+                                    <small class="d-block text-muted">Marca como conta principal da empresa</small>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="ativa" name="ativa" 
+                                           {% if not conta or conta.ativa %}checked{% endif %}>
+                                    <label class="form-check-label" for="ativa">
+                                        <i class="fas fa-check-circle text-success me-1"></i>
+                                        Conta Ativa
+                                    </label>
+                                    <small class="d-block text-muted">Permite movimentações nesta conta</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="observacoes" class="form-label">Observações</label>
+                            <textarea class="form-control" id="observacoes" name="observacoes" 
+                                      rows="3" placeholder="Informações adicionais sobre a conta">{% if conta %}{{ conta.observacoes }}{% endif %}</textarea>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                            <a href="{{ url_for('financeiro.listar_contas_bancarias') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>
+                                {% if conta %}Atualizar{% else %}Criar{% endif %} Conta
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Formatação de valores monetários
+document.querySelectorAll('#saldo_inicial, #limite_credito').forEach(input => {
+    input.addEventListener('blur', function() {
+        let valor = this.value.replace(/\D/g, '');
+        if (valor) {
+            valor = (parseInt(valor) / 100).toFixed(2);
+            valor = valor.replace('.', ',');
+            valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+            this.value = valor;
+        }
+    });
+});
+</script>
+{% endblock %}

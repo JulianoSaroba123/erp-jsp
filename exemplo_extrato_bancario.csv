@@ -1,0 +1,9 @@
+data,descricao,documento,valor,tipo
+01/01/2025,Pagamento Fornecedor ABC Ltda,DOC123,1500.00,debito
+02/01/2025,Recebimento Cliente XYZ,TED456,3250.50,credito
+03/01/2025,TED Recebida - Projeto Solar,TED789,5000.00,credito
+05/01/2025,Pagamento Energia Elétrica,BOL001,450.75,debito
+07/01/2025,Recebimento Proposta #123,,2800.00,credito
+10/01/2025,Transferência entre contas,TRF001,1000.00,debito
+12/01/2025,Depósito em dinheiro,,500.00,credito
+15/01/2025,Pagamento Fornecedor Material,DOC456,2300.00,debito

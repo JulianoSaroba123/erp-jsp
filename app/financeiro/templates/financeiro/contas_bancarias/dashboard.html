@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Contas Bancárias{% endblock %}
+
+{% block extra_css %}
+<style>
+.conta-mini-card {
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.conta-mini-card.conta_corrente { border-left-color: #007bff; }
+.conta-mini-card.poupanca { border-left-color: #28a745; }
+.conta-mini-card.caixa { border-left-color: #6c757d; }
+
+.saldo-display {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.movimentacao-item {
+    border-left: 3px solid;
+    padding-left: 10px;
+    margin-bottom: 8px;
+}
+
+.movimentacao-item.receita { border-left-color: #28a745; }
+.movimentacao-item.despesa { border-left-color: #dc3545; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.listar_contas_bancarias') }}">Contas Bancárias</a></li>
+        <li class="breadcrumb-item active">Dashboard</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="fas fa-chart-line text-primary me-2"></i>
+                Dashboard de Contas
+            </h2>
+            <p class="text-muted mb-0">Visão geral dos saldos e movimentações</p>
+        </div>
+        <div>
+            <a href="{{ url_for('financeiro.nova_transferencia') }}" class="btn btn-warning me-2">
+                <i class="fas fa-exchange-alt me-2"></i>Nova Transferência
+            </a>
+            <a href="{{ url_for('financeiro.listar_contas_bancarias') }}" class="btn btn-outline-primary">
+                <i class="fas fa-list me-2"></i>Listar Contas
+            </a>
+        </div>
+    </div>
+
+    <!-- KPIs Resumo -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75 mb-2">Saldo Total Disponível</h6>
+                    <h2 class="mb-0">
+                        {{ "R$ {:,.2f}".format(saldo_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                    </h2>
+                    <small class="opacity-75">em {{ contas|length }} conta(s)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-success text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75 mb-2">Saldo + Limite de Crédito</h6>
+                    <h2 class="mb-0">
+                        {{ "R$ {:,.2f}".format(saldo_com_limite).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                    </h2>
+                    <small class="opacity-75">disponível para uso</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm bg-info text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75 mb-2">Projeção 30 Dias</h6>
+                    <h2 class="mb-0">
+                        {{ "R$ {:,.2f}".format(fluxo_projetado.saldo_projetado).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                    </h2>
+                    <small class="opacity-75">até {{ fluxo_projetado.data_referencia }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detalhamento de Fluxo Projetado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-area text-info me-2"></i>
+                        Fluxo de Caixa Projetado (30 dias)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <p class="text-muted mb-1">Saldo Atual</p>
+                            <h4 class="text-primary">
+                                {{ "R$ {:,.2f}".format(fluxo_projetado.saldo_atual).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </h4>
+                        </div>
+                        <div class="col-md-3">
+                            <p class="text-muted mb-1">A Receber</p>
+                            <h4 class="text-success">
+                                <i class="fas fa-plus-circle me-1"></i>
+                                {{ "R$ {:,.2f}".format(fluxo_projetado.a_receber).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </h4>
+                        </div>
+                        <div class="col-md-3">
+                            <p class="text-muted mb-1">A Pagar</p>
+                            <h4 class="text-danger">
+                                <i class="fas fa-minus-circle me-1"></i>
+                                {{ "R$ {:,.2f}".format(fluxo_projetado.a_pagar).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </h4>
+                        </div>
+                        <div class="col-md-3">
+                            <p class="text-muted mb-1">Saldo Projetado</p>
+                            <h4 class="{% if fluxo_projetado.saldo_projetado >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ "R$ {:,.2f}".format(fluxo_projetado.saldo_projetado).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contas e Movimentações -->
+    <div class="row g-4">
+        {% for conta in contas %}
+        <div class="col-lg-6">
+            <div class="card conta-mini-card {{ conta.tipo }} border-0 shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">
+                                {% if conta.tipo == 'conta_corrente' %}
+                                    <i class="fas fa-university text-primary me-2"></i>
+                                {% elif conta.tipo == 'poupanca' %}
+                                    <i class="fas fa-piggy-bank text-success me-2"></i>
+                                {% else %}
+                                    <i class="fas fa-cash-register text-secondary me-2"></i>
+                                {% endif %}
+                                {{ conta.nome }}
+                            </h5>
+                            {% if conta.banco %}
+                            <small class="text-muted">{{ conta.banco }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="text-end">
+                            <div class="saldo-display {% if conta.saldo_atual >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                {{ conta.saldo_formatado }}
+                            </div>
+                            {% if conta.limite_credito and conta.limite_credito > 0 %}
+                            <small class="text-muted">
+                                Disponível: {{ "R$ {:,.2f}".format(conta.saldo_com_limite).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">
+                        <i class="fas fa-history me-2"></i>Últimas Movimentações
+                    </h6>
+                    
+                    {% if movimentacoes[conta.id] %}
+                    <div class="movimentacoes-list">
+                        {% for mov in movimentacoes[conta.id] %}
+                        <div class="movimentacao-item {{ mov.tipo }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong class="d-block">{{ mov.descricao|truncate(40) }}</strong>
+                                    <small class="text-muted">
+                                        {{ mov.data_lancamento.strftime('%d/%m/%Y') }}
+                                        {% if mov.categoria %} | {{ mov.categoria }}{% endif %}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <strong class="{% if mov.tipo in ['receita', 'conta_receber'] %}text-success{% else %}text-danger{% endif %}">
+                                        {% if mov.tipo in ['receita', 'conta_receber'] %}+{% else %}-{% endif %}
+                                        {{ mov.valor_formatado }}
+                                    </strong>
+                                    <br>
+                                    <span class="badge bg-{{ mov.status_cor }} badge-sm">
+                                        {{ mov.status_formatado }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3 text-muted">
+                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                        <p class="mb-0">Nenhuma movimentação registrada</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not contas %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-university fa-4x text-muted mb-3"></i>
+            <h5 class="text-muted">Nenhuma conta bancária cadastrada</h5>
+            <p class="text-muted">Cadastre uma conta para visualizar o dashboard</p>
+            <a href="{{ url_for('financeiro.nova_conta_bancaria') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Criar Conta
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

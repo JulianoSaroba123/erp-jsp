@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Importar Extrato Bancário - ERP JSP{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.conciliacao_bancaria') }}">Conciliação Bancária</a></li>
+<li class="breadcrumb-item active">Importar Extrato</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Card de Upload -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-upload"></i> Importar Extrato Bancário</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <!-- Conta Bancária -->
+                        <div class="mb-3">
+                            <label for="conta_bancaria_id" class="form-label">Conta Bancária *</label>
+                            <select name="conta_bancaria_id" id="conta_bancaria_id" class="form-select" required>
+                                <option value="">-- Selecione a conta --</option>
+                                {% for conta in contas %}
+                                <option value="{{ conta.id }}">{{ conta.nome }} - {{ conta.banco }} ({{ conta.numero_conta }})</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">Selecione a conta bancária correspondente ao extrato.</div>
+                        </div>
+
+                        <!-- Arquivo CSV -->
+                        <div class="mb-3">
+                            <label for="arquivo" class="form-label">Arquivo CSV *</label>
+                            <input type="file" name="arquivo" id="arquivo" class="form-control" accept=".csv" required>
+                            <div class="form-text">Selecione o arquivo CSV exportado do seu banco.</div>
+                        </div>
+
+                        <!-- Informações sobre formato -->
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading"><i class="fas fa-info-circle"></i> Formato do Arquivo CSV</h6>
+                            <p class="mb-2">O arquivo CSV deve conter as seguintes colunas:</p>
+                            <ul class="mb-0">
+                                <li><strong>data</strong>: Data do movimento (DD/MM/YYYY)</li>
+                                <li><strong>descricao</strong>: Descrição do lançamento</li>
+                                <li><strong>documento</strong>: Número do documento (opcional)</li>
+                                <li><strong>valor</strong>: Valor do movimento (ex: 1.234,56)</li>
+                                <li><strong>tipo</strong>: Tipo do movimento (credito ou debito)</li>
+                            </ul>
+                        </div>
+
+                        <!-- Exemplo de CSV -->
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="fas fa-file-csv"></i> Exemplo de arquivo CSV</h6>
+                            </div>
+                            <div class="card-body">
+                                <code style="font-size: 0.85em;">
+                                    data,descricao,documento,valor,tipo<br>
+                                    01/01/2025,Pagamento Fornecedor ABC,DOC123,1500.00,debito<br>
+                                    02/01/2025,Recebimento Cliente XYZ,,3250.50,credito<br>
+                                    03/01/2025,TED Recebida,TED456,5000.00,credito
+                                </code>
+                            </div>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('financeiro.conciliacao_bancaria') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload"></i> Importar Extrato
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Dicas -->
+            <div class="card mt-4 border-warning">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Dicas Importantes</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li>Exporte o extrato diretamente do site do seu banco</li>
+                        <li>Certifique-se de que o arquivo está no formato CSV (separado por vírgula)</li>
+                        <li>Mantenha os nomes das colunas exatamente como no exemplo</li>
+                        <li>Valores devem estar no formato brasileiro (1.234,56)</li>
+                        <li>O tipo deve ser "credito" ou "debito"</li>
+                        <li>Arquivos com erros terão linhas ignoradas automaticamente</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

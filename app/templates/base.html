@@ -191,12 +191,83 @@
             </div>
 
             <!-- Módulos -->
+            <!-- Financeiro - Com Submenu -->
             <div class="nav-item">
-                <a href="{{ url_for('financeiro.dashboard') }}" class="nav-link">
+                <a href="javascript:void(0)" class="nav-link" onclick="toggleFinanceiroMenu(event)">
                     <i class="nav-icon fas fa-dollar-sign"></i>
                     <span class="nav-text">Financeiro</span>
+                    <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem; transform: rotate(180deg);" id="chevronFinanceiro"></i>
                 </a>
+                <div class="nav-submenu" id="financeiroMenu" style="display: block;">
+                    <!-- Dashboard -->
+                    <a href="{{ url_for('financeiro.dashboard') }}" class="nav-link ps-5">
+                        <i class="fas fa-chart-line me-2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    
+                    <!-- Lançamentos -->
+                    <a href="{{ url_for('financeiro.listar_lancamentos') }}" class="nav-link ps-5">
+                        <i class="fas fa-list me-2"></i>
+                        <span>Lançamentos</span>
+                    </a>
+                    
+                    <div class="dropdown-divider mx-3"></div>
+                    
+                    <!-- Contas a Pagar -->
+                    <a href="{{ url_for('financeiro.contas_pagar') }}" class="nav-link ps-5">
+                        <i class="fas fa-file-invoice-dollar me-2 text-danger"></i>
+                        <span>Contas a Pagar</span>
+                    </a>
+                    
+                    <!-- Contas a Receber -->
+                    <a href="{{ url_for('financeiro.contas_receber') }}" class="nav-link ps-5">
+                        <i class="fas fa-hand-holding-usd me-2 text-success"></i>
+                        <span>Contas a Receber</span>
+                    </a>
+                    
+                    <div class="dropdown-divider mx-3"></div>
+                    
+                    <!-- GESTÃO BANCÁRIA -->
+                    <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
+                        <i class="fas fa-university me-2"></i>
+                        <span>GESTÃO BANCÁRIA</span>
+                    </div>
+                    
+                    <a href="{{ url_for('financeiro.listar_contas_bancarias') }}" class="nav-link ps-6">
+                        <i class="fas fa-wallet me-2 text-primary"></i>
+                        <span>Contas Bancárias</span>
+                    </a>
+                    
+                    <a href="{{ url_for('financeiro.dashboard_contas') }}" class="nav-link ps-6">
+                        <i class="fas fa-chart-area me-2 text-info"></i>
+                        <span>Dashboard Contas</span>
+                    </a>
+                    
+                    <a href="{{ url_for('financeiro.nova_transferencia') }}" class="nav-link ps-6">
+                        <i class="fas fa-exchange-alt me-2 text-warning"></i>
+                        <span>Transferências</span>
+                    </a>
+                    
+                    <a href="{{ url_for('financeiro.conciliacao_bancaria') }}" class="nav-link ps-6">
+                        <i class="fas fa-handshake me-2 text-success"></i>
+                        <span>Conciliação Bancária</span>
+                    </a>
+                    
+                    <div class="dropdown-divider mx-3"></div>
+                    
+                    <!-- GESTÃO DE CUSTOS -->
+                    <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
+                        <i class="fas fa-sitemap me-2"></i>
+                        <span>GESTÃO DE CUSTOS</span>
+                    </div>
+                    
+                    <a href="{{ url_for('financeiro.listar_centros_custo') }}" class="nav-link ps-6">
+                        <i class="fas fa-building me-2 text-success"></i>
+                        <span>Centros de Custo</span>
+                    </a>
+                </div>
             </div>
+            
             <div class="nav-item">
                 <a href="{{ url_for('precificacao.calculadora') }}" class="nav-link">
                     <i class="nav-icon fas fa-calculator"></i>
@@ -403,6 +474,29 @@
                 menu.style.display = 'none';
                 chevron.style.transform = 'rotate(0deg)';
                 console.log('❌ Menu FECHADO');
+            }
+        }
+        
+        // Toggle Submenu Financeiro
+        window.toggleFinanceiroMenu = function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            console.log('🔧 Toggle Financeiro menu chamado!');
+            
+            const menu = document.getElementById('financeiroMenu');
+            const chevron = document.getElementById('chevronFinanceiro');
+            
+            if (menu && chevron) {
+                if (menu.style.display === 'none' || menu.style.display === '') {
+                    menu.style.display = 'block';
+                    chevron.style.transform = 'rotate(180deg)';
+                    console.log('✅ Menu Financeiro ABERTO');
+                } else {
+                    menu.style.display = 'none';
+                    chevron.style.transform = 'rotate(0deg)';
+                    console.log('❌ Menu Financeiro FECHADO');
+                }
             }
         }
         

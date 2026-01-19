@@ -2,18 +2,126 @@
 
 {% block title %}Dashboard Financeiro{% endblock %}
 
+{% block extra_css %}
+<style>
+.text-neon {
+    color: #00d4ff !important;
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.card {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-kpi {
+    border-left: 4px solid;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+.card-kpi.receita { border-left-color: #28a745; }
+.card-kpi.despesa { border-left-color: #dc3545; }
+.card-kpi.saldo { border-left-color: #17a2b8; }
+.card-kpi.pendente { border-left-color: #ffc107; }
+
+.kpi-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.kpi-icon.receita { background: rgba(40, 167, 69, 0.1); color: #28a745; }
+.kpi-icon.despesa { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
+.kpi-icon.saldo { background: rgba(23, 162, 184, 0.1); color: #17a2b8; }
+.kpi-icon.pendente { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
+
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+.badge-neon {
+    background: linear-gradient(135deg, #00d4ff, #0099cc);
+    color: white;
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.section-title {
+    border-left: 4px solid #00d4ff;
+    padding-left: 15px;
+    margin-bottom: 20px;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 40px;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0;
+}
+
+.stat-change {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.stat-change.positive { color: #28a745; }
+.stat-change.negative { color: #dc3545; }
+
+.quick-action-card {
+    text-align: center;
+    padding: 20px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    height: 100%;
+}
+
+.quick-action-card:hover {
+    background-color: #f8f9fa;
+    border-color: #00d4ff;
+}
+
+.quick-action-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid py-4">
     <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div>
-                    <h1 class="h3 mb-1 text-neon">
+                    <h1 class="h2 mb-1 text-neon">
                         <i class="fas fa-chart-line me-2"></i>
                         Dashboard Financeiro
                     </h1>
-                    <p class="text-muted">Visão geral das finanças da empresa</p>
+                    <p class="text-muted mb-0">
+                        <i class="far fa-calendar-alt me-1"></i>
+                        Visão geral • {{ "now" | date("d/m/Y") }}
+                    </p>
                 </div>
                 <div>
                     <a href="{{ url_for('financeiro.novo_lancamento') }}" class="btn btn-primary">
@@ -25,175 +133,256 @@
         </div>
     </div>
 
-    <!-- Cards de Indicadores -->
+    <!-- KPIs Principais -->
     <div class="row g-4 mb-4">
         <!-- Receitas do Mês -->
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-kpi receita">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">Receitas do Mês</h6>
-                            <h4 class="mb-0">
+                    <div class="d-flex align-items-center">
+                        <div class="kpi-icon receita me-3">
+                            <i class="fas fa-arrow-trend-up"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="stat-label">Receitas do Mês</p>
+                            <h3 class="stat-value text-success mb-1" id="valor-receitas">
                                 {% if resumo and resumo.total_receitas %}
                                     R$ {{ "{:,.2f}".format(resumo.total_receitas).replace(',', 'X').replace('.', ',').replace('X', '.') }}
                                 {% else %}
                                     R$ 0,00
                                 {% endif %}
-                            </h4>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-arrow-up fa-2x opacity-50"></i>
+                            </h3>
+                            <small class="text-muted">
+                                <i class="fas fa-file-invoice me-1"></i>
+                                {{ resumo.qtd_receitas if resumo and resumo.qtd_receitas else 0 }} lançamento(s)
+                            </small>
                         </div>
                     </div>
-                    <small class="opacity-75">
-                        {% if resumo and resumo.qtd_receitas %}
-                            {{ resumo.qtd_receitas }} lançamento(s)
-                        {% else %}
-                            0 lançamentos
-                        {% endif %}
-                    </small>
                 </div>
             </div>
         </div>
 
         <!-- Despesas do Mês -->
-        <div class="col-md-3">
-            <div class="card bg-danger text-white">
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-kpi despesa">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">Despesas do Mês</h6>
-                            <h4 class="mb-0">
+                    <div class="d-flex align-items-center">
+                        <div class="kpi-icon despesa me-3">
+                            <i class="fas fa-arrow-trend-down"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="stat-label">Despesas do Mês</p>
+                            <h3 class="stat-value text-danger mb-1" id="valor-despesas">
                                 {% if resumo and resumo.total_despesas %}
                                     R$ {{ "{:,.2f}".format(resumo.total_despesas).replace(',', 'X').replace('.', ',').replace('X', '.') }}
                                 {% else %}
                                     R$ 0,00
                                 {% endif %}
-                            </h4>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-arrow-down fa-2x opacity-50"></i>
+                            </h3>
+                            <small class="text-muted">
+                                <i class="fas fa-file-invoice me-1"></i>
+                                {{ resumo.qtd_despesas if resumo and resumo.qtd_despesas else 0 }} lançamento(s)
+                            </small>
                         </div>
                     </div>
-                    <small class="opacity-75">
-                        {% if resumo and resumo.qtd_despesas %}
-                            {{ resumo.qtd_despesas }} lançamento(s)
-                        {% else %}
-                            0 lançamentos
-                        {% endif %}
-                    </small>
                 </div>
             </div>
         </div>
 
         <!-- Saldo do Mês -->
-        <div class="col-md-3">
-            <div class="card bg-{% if resumo and resumo.saldo >= 0 %}info{% else %}warning{% endif %} text-white">
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-kpi saldo">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">Saldo do Mês</h6>
-                            <h4 class="mb-0">
+                    <div class="d-flex align-items-center">
+                        <div class="kpi-icon saldo me-3">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="stat-label">Saldo do Mês</p>
+                            <h3 class="stat-value mb-1" id="valor-saldo"
+                                style="color: {% if resumo and resumo.saldo >= 0 %}#28a745{% else %}#dc3545{% endif %}">
                                 {% if resumo and resumo.saldo is not none %}
                                     R$ {{ "{:,.2f}".format(resumo.saldo).replace(',', 'X').replace('.', ',').replace('X', '.') }}
                                 {% else %}
                                     R$ 0,00
                                 {% endif %}
-                            </h4>
-                        </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-balance-scale fa-2x opacity-50"></i>
+                            </h3>
+                            <small class="stat-change {% if resumo and resumo.saldo >= 0 %}positive{% else %}negative{% endif %}">
+                                <i class="fas fa-{% if resumo and resumo.saldo >= 0 %}arrow-up{% else %}arrow-down{% endif %} me-1"></i>
+                                {% if resumo and resumo.saldo >= 0 %}Positivo{% else %}Negativo{% endif %}
+                            </small>
                         </div>
                     </div>
-                    <small class="opacity-75">
-                        {% if resumo and resumo.saldo >= 0 %}
-                            Resultado positivo
-                        {% else %}
-                            Resultado negativo
-                        {% endif %}
-                    </small>
                 </div>
             </div>
         </div>
 
         <!-- Pendências -->
-        <div class="col-md-3">
-            <div class="card bg-warning text-dark">
+        <div class="col-xl-3 col-md-6">
+            <div class="card card-kpi pendente">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title">Pendências</h6>
-                            <h4 class="mb-0">{{ pendentes or 0 }}</h4>
+                    <div class="d-flex align-items-center">
+                        <div class="kpi-icon pendente me-3">
+                            <i class="fas fa-clock"></i>
                         </div>
-                        <div class="align-self-center">
-                            <i class="fas fa-clock fa-2x opacity-50"></i>
+                        <div class="flex-grow-1">
+                            <p class="stat-label">Pendências</p>
+                            <h3 class="stat-value text-warning mb-1">{{ pendentes or 0 }}</h3>
+                            <small class="text-muted">
+                                {% if vencidos and vencidos > 0 %}
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    {{ vencidos }} vencido(s)
+                                {% else %}
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    Nenhum vencido
+                                {% endif %}
+                            </small>
                         </div>
                     </div>
-                    <small class="opacity-75">
-                        {% if vencidos %}
-                            {{ vencidos }} vencido(s)
-                        {% else %}
-                            Nenhum vencido
-                        {% endif %}
-                    </small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Navegação Rápida -->
+    <!-- Gráficos -->
     <div class="row g-4 mb-4">
-        <div class="col-md-3">
+        <!-- Gráfico de Pizza: Receitas vs Despesas -->
+        <div class="col-lg-4">
             <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-list fa-3x text-primary mb-3"></i>
-                    <h5 class="card-title">Lançamentos</h5>
-                    <p class="card-text text-muted">Gerencie todos os lançamentos financeiros</p>
-                    <a href="{{ url_for('financeiro.listar_lancamentos') }}" class="btn btn-outline-primary">
-                        Visualizar
-                    </a>
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2 text-primary"></i>
+                        Receitas vs Despesas
+                    </h5>
+                    <small class="text-muted">Distribuição do mês atual</small>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="graficoPizza"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-3">
+        <!-- Gráfico de Barras: Evolução Mensal -->
+        <div class="col-lg-8">
             <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-file-invoice-dollar fa-3x text-danger mb-3"></i>
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2 text-success"></i>
+                        Evolução Mensal
+                    </h5>
+                    <small class="text-muted">Últimos 6 meses</small>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="graficoBarras"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mais Gráficos -->
+    <div class="row g-4 mb-4">
+        <!-- Gráfico de Fluxo de Caixa -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2 text-info"></i>
+                        Fluxo de Caixa Acumulado
+                    </h5>
+                    <small class="text-muted">Evolução do saldo</small>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="graficoFluxoCaixa"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Categorias de Despesas -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-layer-group me-2 text-danger"></i>
+                        Top Categorias
+                    </h5>
+                    <small class="text-muted">Maiores despesas</small>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="graficoCategorias"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ações Rápidas -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <h4 class="section-title">
+                <i class="fas fa-bolt me-2"></i>
+                Ações Rápidas
+            </h4>
+        </div>
+        
+        <div class="col-lg-3 col-md-6">
+            <a href="{{ url_for('financeiro.listar_lancamentos') }}" class="text-decoration-none">
+                <div class="card quick-action-card">
+                    <div class="quick-action-icon text-primary">
+                        <i class="fas fa-list-ul"></i>
+                    </div>
+                    <h5 class="card-title">Todos os Lançamentos</h5>
+                    <p class="card-text text-muted">Visualize e gerencie lançamentos</p>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <a href="{{ url_for('financeiro.contas_pagar') }}" class="text-decoration-none">
+                <div class="card quick-action-card">
+                    <div class="quick-action-icon text-danger">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
                     <h5 class="card-title">Contas a Pagar</h5>
-                    <p class="card-text text-muted">{{ contas_pagar or 0 }} conta(s) neste mês</p>
-                    <a href="{{ url_for('financeiro.contas_pagar') }}" class="btn btn-outline-danger">
-                        Visualizar
-                    </a>
+                    <p class="card-text text-muted">
+                        <span class="badge badge-neon">{{ contas_pagar or 0 }}</span>
+                        neste mês
+                    </p>
                 </div>
-            </div>
+            </a>
         </div>
 
-        <div class="col-md-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-receipt fa-3x text-success mb-3"></i>
+        <div class="col-lg-3 col-md-6">
+            <a href="{{ url_for('financeiro.contas_receber') }}" class="text-decoration-none">
+                <div class="card quick-action-card">
+                    <div class="quick-action-icon text-success">
+                        <i class="fas fa-receipt"></i>
+                    </div>
                     <h5 class="card-title">Contas a Receber</h5>
-                    <p class="card-text text-muted">{{ contas_receber or 0 }} conta(s) neste mês</p>
-                    <a href="{{ url_for('financeiro.contas_receber') }}" class="btn btn-outline-success">
-                        Visualizar
-                    </a>
+                    <p class="card-text text-muted">
+                        <span class="badge badge-neon">{{ contas_receber or 0 }}</span>
+                        neste mês
+                    </p>
                 </div>
-            </div>
+            </a>
         </div>
 
-        <div class="col-md-3">
-            <div class="card h-100">
-                <div class="card-body text-center">
-                    <i class="fas fa-plus fa-3x text-info mb-3"></i>
+        <div class="col-lg-3 col-md-6">
+            <a href="{{ url_for('financeiro.novo_lancamento') }}" class="text-decoration-none">
+                <div class="card quick-action-card">
+                    <div class="quick-action-icon text-info">
+                        <i class="fas fa-plus-circle"></i>
+                    </div>
                     <h5 class="card-title">Novo Lançamento</h5>
-                    <p class="card-text text-muted">Cadastre receitas, despesas e contas</p>
-                    <a href="{{ url_for('financeiro.novo_lancamento') }}" class="btn btn-outline-info">
-                        Criar
-                    </a>
+                    <p class="card-text text-muted">Cadastre receitas e despesas</p>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
@@ -202,41 +391,65 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-history me-2"></i>
-                        Últimos Lançamentos
-                    </h5>
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">
+                            <i class="fas fa-history me-2"></i>
+                            Últimos Lançamentos
+                        </h5>
+                        <small class="text-muted">Atividades recentes</small>
+                    </div>
                     <a href="{{ url_for('financeiro.listar_lancamentos') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt me-1"></i>
                         Ver Todos
                     </a>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-dark">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
                                 <tr>
                                     <th>Data</th>
                                     <th>Descrição</th>
+                                    <th>Categoria</th>
                                     <th>Tipo</th>
-                                    <th>Valor</th>
-                                    <th>Status</th>
+                                    <th class="text-end">Valor</th>
+                                    <th class="text-center">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for lancamento in ultimos_lancamentos %}
                                 <tr>
-                                    <td>{{ lancamento.data_lancamento.strftime('%d/%m/%Y') }}</td>
-                                    <td>{{ lancamento.descricao }}</td>
+                                    <td>
+                                        <small class="text-muted">
+                                            <i class="far fa-calendar me-1"></i>
+                                            {{ lancamento.data_lancamento.strftime('%d/%m/%Y') }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ lancamento.descricao[:50] }}</strong>
+                                        {% if lancamento.observacoes %}
+                                        <br><small class="text-muted">{{ lancamento.observacoes[:40] }}...</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if lancamento.categoria %}
+                                        <span class="badge bg-secondary">{{ lancamento.categoria }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         <span class="badge bg-{{ lancamento.tipo_cor }}">
                                             {{ lancamento.tipo_formatado }}
                                         </span>
                                     </td>
-                                    <td class="{% if lancamento.tipo in ['receita', 'conta_receber'] %}text-success{% else %}text-danger{% endif %}">
-                                        {{ lancamento.valor_formatado }}
+                                    <td class="text-end">
+                                        <strong class="{% if lancamento.tipo in ['receita', 'conta_receber'] %}text-success{% else %}text-danger{% endif %}">
+                                            {{ lancamento.valor_formatado }}
+                                        </strong>
                                     </td>
-                                    <td>
+                                    <td class="text-center">
                                         <span class="badge bg-{{ lancamento.status_cor }}">
                                             {{ lancamento.status_formatado }}
                                         </span>
@@ -250,39 +463,36 @@
             </div>
         </div>
     </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Nenhum lançamento encontrado</h5>
+                    <p class="text-muted">Comece cadastrando seu primeiro lançamento financeiro</p>
+                    <a href="{{ url_for('financeiro.novo_lancamento') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        Criar Lançamento
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
     {% endif %}
 </div>
+{% endblock %}
 
-<style>
-.text-neon {
-    color: #00d4ff !important;
-    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
-}
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-.card {
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
-}
+<!-- Script de Gráficos Financeiros -->
+<script src="{{ url_for('static', filename='js/financeiro_charts.js') }}"></script>
 
-.card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.bg-success {
-    background: linear-gradient(135deg, #28a745, #20c997) !important;
-}
-
-.bg-danger {
-    background: linear-gradient(135deg, #dc3545, #e74c3c) !important;
-}
-
-.bg-info {
-    background: linear-gradient(135deg, #17a2b8, #00d4ff) !important;
-}
-
-.bg-warning {
-    background: linear-gradient(135deg, #ffc107, #ffeb3b) !important;
-}
-</style>
+<script>
+// Mensagens de boas-vindas
+console.log('%c💰 Dashboard Financeiro JSP v3.0 ', 'background: #00d4ff; color: #fff; padding: 5px 10px; border-radius: 3px;');
+console.log('Gráficos carregados com Chart.js 4.4.0');
+</script>
 {% endblock %}

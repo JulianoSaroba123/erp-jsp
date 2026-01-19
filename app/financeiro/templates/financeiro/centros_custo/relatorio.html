@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Relatório - {{ centro.codigo }} {{ centro.nome }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.stat-card {
+    border-left: 4px solid;
+    background: #fff;
+}
+.stat-card.receita { border-left-color: #28a745; }
+.stat-card.despesa { border-left-color: #dc3545; }
+.stat-card.saldo { border-left-color: #007bff; }
+.stat-card.orcamento { border-left-color: #ffc107; }
+
+.categoria-item {
+    padding: 10px;
+    border-left: 3px solid #007bff;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+}
+
+.lancamento-row:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.listar_centros_custo') }}">Centros de Custo</a></li>
+        <li class="breadcrumb-item active">{{ centro.codigo }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <span class="badge bg-dark me-2">{{ centro.codigo }}</span>
+                {{ centro.nome }}
+            </h2>
+            <p class="text-muted mb-0">
+                {% if centro.tipo %}
+                <i class="fas {% if centro.tipo == 'departamento' %}fa-building{% elif centro.tipo == 'projeto' %}fa-project-diagram{% elif centro.tipo == 'filial' %}fa-map-marker-alt{% else %}fa-box{% endif %} me-1"></i>
+                {{ centro.tipo|title }}
+                {% endif %}
+                {% if centro.responsavel %} | Responsável: <strong>{{ centro.responsavel }}</strong>{% endif %}
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('financeiro.editar_centro_custo', id=centro.id) }}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-edit me-2"></i>Editar
+            </a>
+            <a href="{{ url_for('financeiro.listar_centros_custo') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Voltar
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtro de Período -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('financeiro.relatorio_centro_custo', id=centro.id) }}" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="mes" class="form-label">Mês</label>
+                    <select class="form-select" id="mes" name="mes">
+                        {% for m in range(1, 13) %}
+                        <option value="{{ m }}" {% if m == mes %}selected{% endif %}>
+                            {{ ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][m-1] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="ano" class="form-label">Ano</label>
+                    <select class="form-select" id="ano" name="ano">
+                        {% for a in range(2020, 2030) %}
+                        <option value="{{ a }}" {% if a == ano %}selected{% endif %}>{{ a }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-filter me-2"></i>Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- KPIs do Período -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card receita border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Receitas</h6>
+                    <h3 class="mb-0 text-success">
+                        {{ "R$ {:,.2f}".format(total_receitas).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card stat-card despesa border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Despesas</h6>
+                    <h3 class="mb-0 text-danger">
+                        {{ "R$ {:,.2f}".format(total_despesas).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card stat-card saldo border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Saldo</h6>
+                    <h3 class="mb-0 {% if saldo >= 0 %}text-primary{% else %}text-danger{% endif %}">
+                        {{ "R$ {:,.2f}".format(saldo).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card stat-card orcamento border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Orçamento</h6>
+                    {% if centro.orcamento_mensal %}
+                    <h3 class="mb-0 text-warning">
+                        {{ "%.1f"|format(percentual_orcamento) }}%
+                    </h3>
+                    <small class="text-muted">
+                        de {{ "R$ {:,.2f}".format(centro.orcamento_mensal).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                    </small>
+                    {% else %}
+                    <p class="mb-0 text-muted">Não definido</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Despesas por Categoria -->
+    {% if despesas_por_categoria %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-chart-pie text-primary me-2"></i>
+                Despesas por Categoria
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for categoria, valor in despesas_por_categoria.items() %}
+                <div class="col-md-6 mb-3">
+                    <div class="categoria-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ categoria }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {{ "%.1f"|format((valor / total_despesas * 100) if total_despesas > 0 else 0) }}% do total
+                                </small>
+                            </div>
+                            <h5 class="mb-0 text-danger">
+                                {{ "R$ {:,.2f}".format(valor).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </h5>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Lançamentos do Período -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">
+                <i class="fas fa-list text-primary me-2"></i>
+                Lançamentos ({{ lancamentos|length }})
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if lancamentos %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Descrição</th>
+                            <th>Tipo</th>
+                            <th>Categoria</th>
+                            <th>Status</th>
+                            <th class="text-end">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lanc in lancamentos %}
+                        <tr class="lancamento-row">
+                            <td>
+                                <small>{{ lanc.data_lancamento.strftime('%d/%m/%Y') }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ lanc.descricao|truncate(50) }}</strong>
+                                {% if lanc.observacoes %}
+                                <br><small class="text-muted">{{ lanc.observacoes|truncate(60) }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ lanc.tipo_cor }}">
+                                    {{ lanc.tipo_formatado }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if lanc.categoria %}
+                                <small>{{ lanc.categoria }}</small>
+                                {% else %}
+                                <small class="text-muted">-</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ lanc.status_cor }}">
+                                    {{ lanc.status_formatado }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <strong class="{% if lanc.tipo in ['receita', 'conta_receber'] %}text-success{% else %}text-danger{% endif %}">
+                                    {% if lanc.tipo in ['receita', 'conta_receber'] %}+{% else %}-{% endif %}
+                                    {{ lanc.valor_formatado }}
+                                </strong>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th colspan="5" class="text-end">Total Receitas:</th>
+                            <th class="text-end text-success">
+                                +{{ "R$ {:,.2f}".format(total_receitas).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </th>
+                        </tr>
+                        <tr>
+                            <th colspan="5" class="text-end">Total Despesas:</th>
+                            <th class="text-end text-danger">
+                                -{{ "R$ {:,.2f}".format(total_despesas).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </th>
+                        </tr>
+                        <tr>
+                            <th colspan="5" class="text-end">Saldo do Período:</th>
+                            <th class="text-end {% if saldo >= 0 %}text-primary{% else %}text-danger{% endif %}">
+                                {{ "R$ {:,.2f}".format(saldo).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Nenhum lançamento neste período</h5>
+                <p class="text-muted">Não há movimentações para este centro de custo no período selecionado</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

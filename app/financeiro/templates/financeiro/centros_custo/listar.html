@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Centros de Custo{% endblock %}
+
+{% block extra_css %}
+<style>
+.centro-card {
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+}
+
+.centro-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.centro-card.departamento { border-left-color: #007bff; }
+.centro-card.projeto { border-left-color: #28a745; }
+.centro-card.filial { border-left-color: #ffc107; }
+.centro-card.produto { border-left-color: #dc3545; }
+
+.orcamento-bar {
+    height: 8px;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.orcamento-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #28a745, #ffc107, #dc3545);
+    transition: width 0.3s ease;
+}
+
+.orcamento-bar-fill.success { background: #28a745; }
+.orcamento-bar-fill.warning { background: #ffc107; }
+.orcamento-bar-fill.danger { background: #dc3545; }
+
+.badge-tipo {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+}
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
+        <li class="breadcrumb-item active">Centros de Custo</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="fas fa-sitemap text-primary me-2"></i>
+                Centros de Custo
+            </h2>
+            <p class="text-muted mb-0">Organize despesas e receitas por departamento, projeto ou filial</p>
+        </div>
+        <div>
+            <a href="{{ url_for('financeiro.novo_centro_custo') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Novo Centro de Custo
+            </a>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Total de Centros</p>
+                            <h3 class="mb-0 text-primary">{{ centros|length }}</h3>
+                        </div>
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(0, 123, 255, 0.1); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-sitemap fa-lg text-primary"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Com Orçamento</p>
+                            <h3 class="mb-0 text-success">
+                                {{ centros|selectattr('orcamento_mensal')|list|length }}
+                            </h3>
+                        </div>
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(40, 167, 69, 0.1); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-dollar-sign fa-lg text-success"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Departamentos</p>
+                            <h3 class="mb-0 text-info">
+                                {{ centros|selectattr('tipo', 'equalto', 'departamento')|list|length }}
+                            </h3>
+                        </div>
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(23, 162, 184, 0.1); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-building fa-lg text-info"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Projetos</p>
+                            <h3 class="mb-0 text-warning">
+                                {{ centros|selectattr('tipo', 'equalto', 'projeto')|list|length }}
+                            </h3>
+                        </div>
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(255, 193, 7, 0.1); display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-project-diagram fa-lg text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Centros de Custo -->
+    {% if centros %}
+    <div class="row g-3">
+        {% for centro in centros %}
+        <div class="col-md-6">
+            <div class="card centro-card {{ centro.tipo or 'departamento' }} border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="mb-1">
+                                <span class="badge bg-dark me-2">{{ centro.codigo }}</span>
+                                {{ centro.nome }}
+                            </h5>
+                            {% if centro.tipo %}
+                            <span class="badge badge-tipo {% if centro.tipo == 'departamento' %}bg-primary{% elif centro.tipo == 'projeto' %}bg-success{% elif centro.tipo == 'filial' %}bg-warning{% else %}bg-danger{% endif %}">
+                                <i class="fas {% if centro.tipo == 'departamento' %}fa-building{% elif centro.tipo == 'projeto' %}fa-project-diagram{% elif centro.tipo == 'filial' %}fa-map-marker-alt{% else %}fa-box{% endif %} me-1"></i>
+                                {{ centro.tipo|title }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <a href="{{ url_for('financeiro.relatorio_centro_custo', id=centro.id) }}" 
+                           class="btn btn-sm btn-outline-info" title="Ver Relatório">
+                            <i class="fas fa-chart-bar"></i>
+                        </a>
+                    </div>
+
+                    {% if centro.descricao %}
+                    <p class="text-muted small mb-3">
+                        <i class="fas fa-info-circle me-1"></i>{{ centro.descricao|truncate(100) }}
+                    </p>
+                    {% endif %}
+
+                    {% if centro.responsavel %}
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            <i class="fas fa-user me-1"></i>Responsável: <strong>{{ centro.responsavel }}</strong>
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <!-- Orçamento e Gastos -->
+                    {% if centro.orcamento_mensal %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Orçamento Mensal:</small>
+                            <strong class="text-primary">
+                                {{ "R$ {:,.2f}".format(centro.orcamento_mensal).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </strong>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">Gasto no Mês:</small>
+                            <strong class="{% if despesas_por_centro[centro.id] > float(centro.orcamento_mensal) %}text-danger{% else %}text-success{% endif %}">
+                                {{ "R$ {:,.2f}".format(despesas_por_centro[centro.id]).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </strong>
+                        </div>
+
+                        <!-- Barra de Progresso -->
+                        <div class="orcamento-bar">
+                            {% set percentual = centro.percentual_usado|default(0) %}
+                            <div class="orcamento-bar-fill 
+                                {% if percentual < 70 %}success
+                                {% elif percentual < 90 %}warning
+                                {% else %}danger{% endif %}" 
+                                 style="width: {{ [percentual, 100]|min }}%">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1">
+                            <small class="text-muted">{{ "%.1f"|format(percentual) }}% utilizado</small>
+                            {% if percentual >= 100 %}
+                            <small class="text-danger"><i class="fas fa-exclamation-triangle"></i> Estouro!</small>
+                            {% elif percentual >= 90 %}
+                            <small class="text-warning"><i class="fas fa-exclamation-circle"></i> Atenção</small>
+                            {% else %}
+                            <small class="text-success"><i class="fas fa-check-circle"></i> OK</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="mb-3">
+                        <div class="alert alert-light mb-0 py-2">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Orçamento não definido
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Ações -->
+                    <div class="d-flex gap-2 pt-2 border-top">
+                        <a href="{{ url_for('financeiro.editar_centro_custo', id=centro.id) }}" 
+                           class="btn btn-sm btn-outline-primary flex-fill">
+                            <i class="fas fa-edit me-1"></i>Editar
+                        </a>
+                        <form method="POST" action="{{ url_for('financeiro.excluir_centro_custo', id=centro.id) }}" 
+                              class="flex-fill" onsubmit="return confirm('Tem certeza que deseja excluir este centro de custo?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                <i class="fas fa-trash me-1"></i>Excluir
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-sitemap fa-4x text-muted mb-3"></i>
+            <h5 class="text-muted">Nenhum centro de custo cadastrado</h5>
+            <p class="text-muted">Organize suas despesas criando centros de custo por departamento, projeto ou filial</p>
+            <a href="{{ url_for('financeiro.novo_centro_custo') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Criar Primeiro Centro de Custo
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

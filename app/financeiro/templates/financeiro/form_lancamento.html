@@ -223,6 +223,44 @@
                                 </select>
                             </div>
 
+                            <!-- Conta Bancária -->
+                            <div class="col-md-6">
+                                <label for="conta_bancaria_id" class="form-label">
+                                    <i class="fas fa-university me-1"></i>
+                                    Conta Bancária
+                                </label>
+                                <select class="form-select" id="conta_bancaria_id" name="conta_bancaria_id">
+                                    <option value="">Nenhuma</option>
+                                    {% if contas_bancarias %}
+                                    {% for conta in contas_bancarias %}
+                                    <option value="{{ conta.id }}" {% if lancamento and lancamento.conta_bancaria_id == conta.id %}selected{% endif %}>
+                                        {{ conta.nome }} - {{ conta.saldo_formatado }}
+                                    </option>
+                                    {% endfor %}
+                                    {% endif %}
+                                </select>
+                                <small class="text-muted">Vincula o lançamento a uma conta bancária</small>
+                            </div>
+
+                            <!-- Centro de Custo -->
+                            <div class="col-md-6">
+                                <label for="centro_custo_id" class="form-label">
+                                    <i class="fas fa-sitemap me-1"></i>
+                                    Centro de Custo
+                                </label>
+                                <select class="form-select" id="centro_custo_id" name="centro_custo_id">
+                                    <option value="">Nenhum</option>
+                                    {% if centros_custo %}
+                                    {% for centro in centros_custo %}
+                                    <option value="{{ centro.id }}" {% if lancamento and lancamento.centro_custo_id == centro.id %}selected{% endif %}>
+                                        {{ centro.codigo }} - {{ centro.nome }}
+                                    </option>
+                                    {% endfor %}
+                                    {% endif %}
+                                </select>
+                                <small class="text-muted">Classifica o lançamento por departamento/projeto</small>
+                            </div>
+
                             <!-- Recorrência -->
                             <div class="col-md-6">
                                 <div class="form-check form-switch">

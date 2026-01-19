@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Contas Bancárias{% endblock %}
+
+{% block extra_css %}
+<style>
+.conta-card {
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.conta-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
+
+.conta-card.principal {
+    border-left-color: #ffc107;
+    background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+}
+
+.conta-card.conta_corrente { border-left-color: #007bff; }
+.conta-card.poupanca { border-left-color: #28a745; }
+.conta-card.caixa { border-left-color: #6c757d; }
+
+.saldo-positivo { color: #28a745; font-weight: 700; }
+.saldo-negativo { color: #dc3545; font-weight: 700; }
+
+.badge-principal {
+    background: linear-gradient(135deg, #ffc107, #ff9800);
+    color: white;
+}
+
+.icon-conta {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.icon-conta.conta_corrente { background: rgba(0, 123, 255, 0.1); color: #007bff; }
+.icon-conta.poupanca { background: rgba(40, 167, 69, 0.1); color: #28a745; }
+.icon-conta.caixa { background: rgba(108, 117, 125, 0.1); color: #6c757d; }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
+        <li class="breadcrumb-item active">Contas Bancárias</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="fas fa-university text-primary me-2"></i>
+                Contas Bancárias
+            </h2>
+            <p class="text-muted mb-0">Gerencie suas contas bancárias e saldos</p>
+        </div>
+        <div>
+            <a href="{{ url_for('financeiro.dashboard_contas') }}" class="btn btn-info me-2">
+                <i class="fas fa-chart-line me-2"></i>Dashboard
+            </a>
+            <a href="{{ url_for('financeiro.nova_transferencia') }}" class="btn btn-warning me-2">
+                <i class="fas fa-exchange-alt me-2"></i>Transferir
+            </a>
+            <a href="{{ url_for('financeiro.nova_conta_bancaria') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Nova Conta
+            </a>
+        </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Saldo Total</p>
+                            <h4 class="mb-0 {% if saldo_total >= 0 %}saldo-positivo{% else %}saldo-negativo{% endif %}">
+                                {{ "R$ {:,.2f}".format(saldo_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </h4>
+                        </div>
+                        <div class="icon-conta conta_corrente">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Com Limite</p>
+                            <h4 class="mb-0 text-info">
+                                {{ "R$ {:,.2f}".format(saldo_com_limite).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </h4>
+                        </div>
+                        <div class="icon-conta poupanca">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Contas Ativas</p>
+                            <h4 class="mb-0 text-success">{{ contas_ativas }}</h4>
+                        </div>
+                        <div class="icon-conta caixa">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted mb-1 small">Total de Contas</p>
+                            <h4 class="mb-0 text-primary">{{ contas|length }}</h4>
+                        </div>
+                        <div class="icon-conta conta_corrente">
+                            <i class="fas fa-university"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Contas -->
+    {% if contas %}
+    <div class="row g-3">
+        {% for conta in contas %}
+        <div class="col-md-6">
+            <div class="card conta-card {{ conta.tipo }} {% if conta.principal %}principal{% endif %} shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-conta {{ conta.tipo }} me-3">
+                                {% if conta.tipo == 'conta_corrente' %}
+                                    <i class="fas fa-university"></i>
+                                {% elif conta.tipo == 'poupanca' %}
+                                    <i class="fas fa-piggy-bank"></i>
+                                {% else %}
+                                    <i class="fas fa-cash-register"></i>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <h5 class="mb-0">{{ conta.nome }}</h5>
+                                <small class="text-muted">
+                                    {% if conta.tipo == 'conta_corrente' %}Conta Corrente
+                                    {% elif conta.tipo == 'poupanca' %}Poupança
+                                    {% else %}Caixa
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        <div>
+                            {% if conta.principal %}
+                            <span class="badge badge-principal">
+                                <i class="fas fa-star me-1"></i>Principal
+                            </span>
+                            {% endif %}
+                            {% if not conta.ativa %}
+                            <span class="badge bg-secondary">Inativa</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if conta.banco %}
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <i class="fas fa-building me-1"></i>{{ conta.banco }}
+                            {% if conta.agencia %} | Ag: {{ conta.agencia }}{% endif %}
+                            {% if conta.numero_conta %} | CC: {{ conta.numero_conta }}{% endif %}
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small">Saldo Atual:</span>
+                            <h4 class="mb-0 {% if conta.saldo_atual >= 0 %}saldo-positivo{% else %}saldo-negativo{% endif %}">
+                                {{ conta.saldo_formatado }}
+                            </h4>
+                        </div>
+                        {% if conta.limite_credito and conta.limite_credito > 0 %}
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span class="text-muted small">Limite de Crédito:</span>
+                            <span class="text-info">
+                                {{ "R$ {:,.2f}".format(conta.limite_credito).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-1">
+                            <span class="text-muted small">Disponível Total:</span>
+                            <strong class="text-success">
+                                {{ "R$ {:,.2f}".format(conta.saldo_com_limite).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </strong>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if conta.observacoes %}
+                    <div class="mb-3">
+                        <small class="text-muted">
+                            <i class="fas fa-comment me-1"></i>{{ conta.observacoes|truncate(80) }}
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('financeiro.editar_conta_bancaria', id=conta.id) }}" 
+                           class="btn btn-sm btn-outline-primary flex-fill">
+                            <i class="fas fa-edit me-1"></i>Editar
+                        </a>
+                        <form method="POST" action="{{ url_for('financeiro.excluir_conta_bancaria', id=conta.id) }}" 
+                              class="flex-fill" onsubmit="return confirm('Tem certeza que deseja excluir esta conta?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                <i class="fas fa-trash me-1"></i>Excluir
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-university fa-4x text-muted mb-3"></i>
+            <h5 class="text-muted">Nenhuma conta bancária cadastrada</h5>
+            <p class="text-muted">Cadastre sua primeira conta bancária para começar a gerenciar suas finanças</p>
+            <a href="{{ url_for('financeiro.nova_conta_bancaria') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Criar Primeira Conta
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

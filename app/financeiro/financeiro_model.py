@@ -557,3 +557,89 @@ class HistoricoFinanceiro(BaseModel):
     
     def __repr__(self):
         return f'<HistoricoFinanceiro L:{self.lancamento_id} - {self.acao}>'
+
+class ExtratoBancario(BaseModel):
+    """
+    Model para Extratos Bancários Importados.
+    
+    Armazena linhas de extratos bancários para conciliação.
+    """
+    
+    __tablename__ = 'extratos_bancarios'
+    
+    # Conta bancária relacionada
+    conta_bancaria_id = db.Column(db.Integer, db.ForeignKey('contas_bancarias.id'), nullable=False)
+    
+    # Dados do extrato
+    data_movimento = db.Column(db.Date, nullable=False)
+    descricao = db.Column(db.String(255), nullable=False)
+    documento = db.Column(db.String(50))  # Número do documento/cheque
+    valor = db.Column(db.Numeric(12, 2), nullable=False)
+    tipo_movimento = db.Column(db.String(10), nullable=False)  # debito, credito
+    
+    # Saldo após movimento
+    saldo = db.Column(db.Numeric(12, 2))
+    
+    # Conciliação
+    conciliado = db.Column(db.Boolean, default=False)
+    data_conciliacao = db.Column(db.DateTime)
+    lancamento_id = db.Column(db.Integer, db.ForeignKey('lancamentos_financeiros.id'))
+    
+    # Importação
+    arquivo_origem = db.Column(db.String(255))
+    data_importacao = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Observações
+    observacoes = db.Column(db.Text)
+    
+    # Relacionamentos
+    conta_bancaria = db.relationship('ContaBancaria', backref='extratos', foreign_keys=[conta_bancaria_id])
+    lancamento = db.relationship('LancamentoFinanceiro', backref='extrato_conciliado', foreign_keys=[lancamento_id])
+    
+    def __repr__(self):
+        return f'<ExtratoBancario {self.data_movimento}: {self.descricao}>'
+    
+    @property
+    def valor_formatado(self):
+        """Retorna valor formatado em reais."""
+        return f"R$ {abs(self.valor):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    
+    @property
+    def tipo_formatado(self):
+        """Retorna tipo formatado."""
+        return 'Crédito' if self.tipo_movimento == 'credito' else 'Débito'
+    
+    @property
+    def status_conciliacao(self):
+        """Retorna status da conciliação."""
+        return 'Conciliado' if self.conciliado else 'Pendente'
+    
+    @classmethod
+    def get_pendentes(cls, conta_id=None):
+        """Retorna extratos pendentes de conciliação."""
+        query = cls.query.filter_by(conciliado=False, ativo=True)
+        if conta_id:
+            query = query.filter_by(conta_bancaria_id=conta_id)
+        return query.order_by(cls.data_movimento.desc())
+    
+    @classmethod
+    def get_conciliados(cls, conta_id=None):
+        """Retorna extratos já conciliados."""
+        query = cls.query.filter_by(conciliado=True, ativo=True)
+        if conta_id:
+            query = query.filter_by(conta_bancaria_id=conta_id)
+        return query.order_by(cls.data_movimento.desc())
+    
+    def conciliar_com_lancamento(self, lancamento_id):
+        """Marca extrato como conciliado com um lançamento."""
+        self.conciliado = True
+        self.lancamento_id = lancamento_id
+        self.data_conciliacao = datetime.utcnow()
+        db.session.commit()
+    
+    def desconciliar(self):
+        """Remove conciliação do extrato."""
+        self.conciliado = False
+        self.lancamento_id = None
+        self.data_conciliacao = None
+        db.session.commit()

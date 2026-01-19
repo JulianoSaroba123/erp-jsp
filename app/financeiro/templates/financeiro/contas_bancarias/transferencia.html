@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}Transferência entre Contas{% endblock %}
+
+{% block extra_css %}
+<style>
+.transfer-flow {
+    position: relative;
+    padding: 20px 0;
+}
+
+.transfer-arrow {
+    font-size: 2rem;
+    color: #28a745;
+    text-align: center;
+    margin: 20px 0;
+}
+
+.conta-select {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    transition: all 0.3s ease;
+}
+
+.conta-select:hover {
+    border-color: #007bff;
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.1);
+}
+
+.conta-select.selected {
+    border-color: #28a745;
+    background-color: #f8fff9;
+}
+
+.valor-input {
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+}
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.index') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.listar_contas_bancarias') }}">Contas Bancárias</a></li>
+        <li class="breadcrumb-item active">Transferência</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            
+            <!-- Header -->
+            <div class="mb-4">
+                <h2>
+                    <i class="fas fa-exchange-alt text-warning me-2"></i>
+                    Transferência entre Contas
+                </h2>
+                <p class="text-muted">Realize transferências de valores entre suas contas bancárias</p>
+            </div>
+
+            {% if contas|length < 2 %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Atenção!</strong> Você precisa ter pelo menos 2 contas bancárias cadastradas para realizar transferências.
+                <a href="{{ url_for('financeiro.nova_conta_bancaria') }}" class="alert-link">Cadastrar nova conta</a>
+            </div>
+            {% else %}
+
+            <!-- Formulário -->
+            <form method="POST" action="{{ url_for('financeiro.executar_transferencia') }}" id="formTransferencia">
+                
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        
+                        <!-- Conta Origem -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-sign-out-alt text-danger me-2"></i>
+                                De: Conta de Origem
+                            </label>
+                            <select class="form-select form-select-lg" id="conta_origem_id" name="conta_origem_id" required>
+                                <option value="">Selecione a conta de origem...</option>
+                                {% for conta in contas %}
+                                <option value="{{ conta.id }}" 
+                                        data-saldo="{{ conta.saldo_atual }}"
+                                        data-nome="{{ conta.nome }}">
+                                    {{ conta.nome }} - Saldo: {{ conta.saldo_formatado }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div id="saldo_origem_display" class="mt-2 text-muted" style="display: none;">
+                                <small>Saldo disponível: <strong id="saldo_origem_valor"></strong></small>
+                            </div>
+                        </div>
+
+                        <!-- Seta de Transferência -->
+                        <div class="transfer-arrow">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+
+                        <!-- Valor -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-dollar-sign text-success me-2"></i>
+                                Valor da Transferência
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-success text-white">R$</span>
+                                <input type="text" class="form-control valor-input" id="valor" name="valor" 
+                                       placeholder="0,00" required>
+                            </div>
+                            <div id="alerta_saldo" class="mt-2" style="display: none;">
+                                <small class="text-danger">
+                                    <i class="fas fa-exclamation-circle me-1"></i>
+                                    Saldo insuficiente!
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Seta de Transferência -->
+                        <div class="transfer-arrow">
+                            <i class="fas fa-arrow-down"></i>
+                        </div>
+
+                        <!-- Conta Destino -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-sign-in-alt text-success me-2"></i>
+                                Para: Conta de Destino
+                            </label>
+                            <select class="form-select form-select-lg" id="conta_destino_id" name="conta_destino_id" required>
+                                <option value="">Selecione a conta de destino...</option>
+                                {% for conta in contas %}
+                                <option value="{{ conta.id }}" data-nome="{{ conta.nome }}">
+                                    {{ conta.nome }} - Saldo: {{ conta.saldo_formatado }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Dados Adicionais -->
+                        <div class="border-top pt-4 mt-4">
+                            <h6 class="mb-3">Informações Adicionais</h6>
+                            
+                            <div class="mb-3">
+                                <label for="data_transferencia" class="form-label">Data da Transferência</label>
+                                <input type="date" class="form-control" id="data_transferencia" name="data_transferencia" 
+                                       value="{{ data_hoje.strftime('%Y-%m-%d') }}" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="descricao" class="form-label">Descrição (opcional)</label>
+                                <textarea class="form-control" id="descricao" name="descricao" 
+                                          rows="2" placeholder="Ex: Transferência para pagamento de fornecedor"></textarea>
+                                <small class="text-muted">
+                                    Se não preencher, será gerado automaticamente baseado nas contas
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Preview da Transferência -->
+                        <div id="preview_transferencia" class="alert alert-info" style="display: none;">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-info-circle me-2"></i>Resumo da Transferência
+                            </h6>
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-4 text-center">
+                                    <small class="text-muted">De:</small>
+                                    <p class="mb-0 fw-bold" id="preview_origem">-</p>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <small class="text-muted">Valor:</small>
+                                    <p class="mb-0 fw-bold text-success" id="preview_valor">R$ 0,00</p>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <small class="text-muted">Para:</small>
+                                    <p class="mb-0 fw-bold" id="preview_destino">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Botões -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('financeiro.listar_contas_bancarias') }}" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-times me-2"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-success btn-lg" id="btnTransferir" disabled>
+                        <i class="fas fa-exchange-alt me-2"></i>Executar Transferência
+                    </button>
+                </div>
+
+            </form>
+
+            {% endif %}
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validação e Preview
+const formTransferencia = document.getElementById('formTransferencia');
+const contaOrigem = document.getElementById('conta_origem_id');
+const contaDestino = document.getElementById('conta_destino_id');
+const valorInput = document.getElementById('valor');
+const btnTransferir = document.getElementById('btnTransferir');
+const previewDiv = document.getElementById('preview_transferencia');
+const alertaSaldo = document.getElementById('alerta_saldo');
+const saldoOrigemDisplay = document.getElementById('saldo_origem_display');
+const saldoOrigemValor = document.getElementById('saldo_origem_valor');
+
+// Formatação de valor monetário
+valorInput.addEventListener('blur', function() {
+    let valor = this.value.replace(/\D/g, '');
+    if (valor) {
+        valor = (parseInt(valor) / 100).toFixed(2);
+        valor = valor.replace('.', ',');
+        valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+        this.value = valor;
+    }
+    validarFormulario();
+});
+
+// Validar quando seleciona conta origem
+contaOrigem.addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    if (this.value) {
+        const saldo = selectedOption.getAttribute('data-saldo');
+        saldoOrigemValor.textContent = formatarMoeda(parseFloat(saldo));
+        saldoOrigemDisplay.style.display = 'block';
+    } else {
+        saldoOrigemDisplay.style.display = 'none';
+    }
+    validarFormulario();
+});
+
+// Validar quando seleciona conta destino ou muda valor
+contaDestino.addEventListener('change', validarFormulario);
+valorInput.addEventListener('input', validarFormulario);
+
+function validarFormulario() {
+    const origem = contaOrigem.value;
+    const destino = contaDestino.value;
+    const valor = parseFloat(valorInput.value.replace(/\./g, '').replace(',', '.')) || 0;
+    
+    // Verificar se todas as campos estão preenchidos
+    if (!origem || !destino || valor <= 0) {
+        btnTransferir.disabled = true;
+        previewDiv.style.display = 'none';
+        alertaSaldo.style.display = 'none';
+        return;
+    }
+    
+    // Verificar se origem e destino são diferentes
+    if (origem === destino) {
+        btnTransferir.disabled = true;
+        previewDiv.style.display = 'none';
+        alert('As contas de origem e destino devem ser diferentes!');
+        contaDestino.value = '';
+        return;
+    }
+    
+    // Verificar saldo
+    const selectedOption = contaOrigem.options[contaOrigem.selectedIndex];
+    const saldoDisponivel = parseFloat(selectedOption.getAttribute('data-saldo'));
+    
+    if (valor > saldoDisponivel) {
+        btnTransferir.disabled = true;
+        alertaSaldo.style.display = 'block';
+        previewDiv.style.display = 'none';
+        return;
+    }
+    
+    // Tudo OK - habilitar botão e mostrar preview
+    btnTransferir.disabled = false;
+    alertaSaldo.style.display = 'none';
+    
+    // Atualizar preview
+    const nomeOrigem = contaOrigem.options[contaOrigem.selectedIndex].getAttribute('data-nome');
+    const nomeDestino = contaDestino.options[contaDestino.selectedIndex].getAttribute('data-nome');
+    
+    document.getElementById('preview_origem').textContent = nomeOrigem;
+    document.getElementById('preview_destino').textContent = nomeDestino;
+    document.getElementById('preview_valor').textContent = 'R$ ' + valorInput.value;
+    
+    previewDiv.style.display = 'block';
+}
+
+function formatarMoeda(valor) {
+    return 'R$ ' + valor.toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+}
+
+// Confirmação antes de enviar
+formTransferencia.addEventListener('submit', function(e) {
+    if (!confirm('Confirma a execução desta transferência?')) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}
