@@ -200,6 +200,43 @@ def create_app(config_name=None):
             
             print("✅ Migrações automáticas concluídas!\n")
             
+            # Migração: Adicionar colunas de auditoria em lancamentos_financeiros
+            try:
+                from sqlalchemy import text, inspect
+                inspector = inspect(db.engine)
+                
+                if 'lancamentos_financeiros' in inspector.get_table_names():
+                    colunas = [c['name'] for c in inspector.get_columns('lancamentos_financeiros')]
+                    print("📋 Verificando colunas de auditoria em lancamentos_financeiros...")
+                    
+                    # Adiciona colunas de auditoria se não existirem
+                    if 'usuario_criador' not in colunas:
+                        print("   🔧 Adicionando coluna 'usuario_criador'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN usuario_criador VARCHAR(100)"))
+                        db.session.commit()
+                    
+                    if 'usuario_editor' not in colunas:
+                        print("   🔧 Adicionando coluna 'usuario_editor'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN usuario_editor VARCHAR(100)"))
+                        db.session.commit()
+                    
+                    if 'data_criacao_auditoria' not in colunas:
+                        print("   🔧 Adicionando coluna 'data_criacao_auditoria'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN data_criacao_auditoria TIMESTAMP DEFAULT CURRENT_TIMESTAMP"))
+                        db.session.commit()
+                    
+                    if 'data_edicao_auditoria' not in colunas:
+                        print("   🔧 Adicionando coluna 'data_edicao_auditoria'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN data_edicao_auditoria TIMESTAMP"))
+                        db.session.commit()
+                    
+                    print("   ✅ Colunas de auditoria verificadas/criadas!")
+            except Exception as e:
+                db.session.rollback()
+                print(f"   ⚠️ Erro na migração de auditoria: {e}")
+            
+            print("✅ Todas as migrações concluídas!\n")
+            
             # Cria usuário admin padrão se não existir nenhum usuário
             from app.auth.usuario_model import Usuario
             if Usuario.query.count() == 0:
