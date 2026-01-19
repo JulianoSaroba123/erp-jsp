@@ -122,6 +122,20 @@ def create_app(config_name=None):
             except Exception as e:
                 print(f" ⚠ Erro ao importar modelo Equipamento: {e}")
             
+            # Importa modelos Financeiros Avançados
+            try:
+                from app.financeiro.financeiro_model import (
+                    LancamentoFinanceiro, 
+                    CategoriaFinanceira, 
+                    PlanoContas,
+                    ContaBancaria,
+                    CentroCusto,
+                    HistoricoFinanceiro
+                )
+                print("[OK] Modelos Financeiros Avançados importados (6 tabelas)")
+            except Exception as e:
+                print(f" ⚠ Erro ao importar modelos Financeiros: {e}")
+            
             db.create_all()
             print("[OK] Tabelas do banco de dados verificadas/criadas!")
             
