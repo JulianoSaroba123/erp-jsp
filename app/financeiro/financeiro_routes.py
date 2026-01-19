@@ -43,6 +43,23 @@ def converter_valor_monetario(valor_str):
 def dashboard():
     """Dashboard financeiro com resumo e indicadores."""
     try:
+        # Verificar se as tabelas existem antes de consultar
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        tabelas = inspector.get_table_names()
+        
+        # Se tabelas não existem, mostrar mensagem amigável
+        if 'lancamentos_financeiros' not in tabelas:
+            flash('⚠️ Tabelas financeiras não encontradas. Execute o script de criação.', 'warning')
+            return render_template('financeiro/dashboard.html',
+                                 resumo=None,
+                                 vencidos=0,
+                                 pendentes=0,
+                                 contas_receber=0,
+                                 contas_pagar=0,
+                                 ultimos_lancamentos=[],
+                                 data_atual=date.today())
+        
         # Resumo do mês atual
         resumo = LancamentoFinanceiro.get_resumo_mes()
         
@@ -77,8 +94,18 @@ def dashboard():
                              data_atual=date.today())
     
     except Exception as e:
+        print(f"❌ Erro no dashboard financeiro: {str(e)}")
+        import traceback
+        traceback.print_exc()
         flash(f'Erro ao carregar dashboard: {str(e)}', 'danger')
-        return render_template('financeiro/dashboard.html')
+        return render_template('financeiro/dashboard.html',
+                             resumo=None,
+                             vencidos=0,
+                             pendentes=0,
+                             contas_receber=0,
+                             contas_pagar=0,
+                             ultimos_lancamentos=[],
+                             data_atual=date.today())
 
 
 @bp_financeiro.route('/lancamentos')
