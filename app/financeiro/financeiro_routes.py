@@ -62,9 +62,9 @@ def dashboard():
             db.extract('month', LancamentoFinanceiro.data_vencimento) == date.today().month
         ).count()
         
-        # Últimos lançamentos
+        # Últimos lançamentos (usando data_criacao_auditoria ou data_lancamento)
         ultimos_lancamentos = LancamentoFinanceiro.query.filter_by(ativo=True).order_by(
-            LancamentoFinanceiro.criado_em.desc()
+            LancamentoFinanceiro.data_lancamento.desc()
         ).limit(10).all()
         
         return render_template('financeiro/dashboard.html',
