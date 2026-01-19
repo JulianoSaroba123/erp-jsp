@@ -73,7 +73,8 @@ def dashboard():
                              pendentes=pendentes,
                              contas_receber=contas_receber,
                              contas_pagar=contas_pagar,
-                             ultimos_lancamentos=ultimos_lancamentos)
+                             ultimos_lancamentos=ultimos_lancamentos,
+                             data_atual=date.today())
     
     except Exception as e:
         flash(f'Erro ao carregar dashboard: {str(e)}', 'danger')
