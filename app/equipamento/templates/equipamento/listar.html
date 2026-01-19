@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Equipamentos - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Equipamentos</span>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* Cores JSP Laranja */
+    .equipamentos-header {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(249,115,22,0.3);
+    }
+    .equipamentos-header h2,
+    .equipamentos-header p {
+        color: white !important;
+    }
+    .btn-novo-equipamento {
+        background: white !important;
+        color: #ea580c !important;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .btn-novo-equipamento:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+        color: #c2410c !important;
+    }
+    .main-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .badge-equipamento {
+        background: #f97316;
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(249,115,22,0.05);
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Header Moderno -->
+    <div class="equipamentos-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="mb-2">
+                    <i class="fas fa-tools me-2"></i>
+                    Gerenciamento de Equipamentos
+                </h2>
+                <p class="mb-0 opacity-75">Cadastro e controle de equipamentos dos clientes</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="{{ url_for('equipamento.novo') }}" class="btn btn-novo-equipamento">
+                    <i class="fas fa-plus me-2"></i>
+                    Novo Equipamento
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card main-card">
+            
+            <div class="card-body">
+                <!-- Barra de Busca e Filtros -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <form method="GET" class="d-flex">
+                            <input type="text" 
+                                   name="busca" 
+                                   class="form-control me-2" 
+                                   placeholder="Buscar por nome, marca, modelo ou série..."
+                                   value="{{ busca }}"
+                                   autocomplete="off">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            {% if busca %}
+                            <a href="{{ url_for('equipamento.listar') }}" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-times"></i>
+                            </a>
+                            {% endif %}
+                        </form>
+                    </div>
+                    <div class="col-md-6">
+                        <form method="GET" class="d-flex">
+                            <select name="cliente_id" class="form-select me-2" onchange="this.form.submit()">
+                                <option value="">Todos os Clientes</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente.id }}" {% if cliente_id_filtro == cliente.id|string %}selected{% endif %}>
+                                    {{ cliente.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            {% if cliente_id_filtro %}
+                            <a href="{{ url_for('equipamento.listar') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times"></i>
+                            </a>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tabela de Equipamentos -->
+                {% if equipamentos %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-tools me-2"></i>Equipamento</th>
+                                <th><i class="fas fa-tag me-2"></i>Marca/Modelo</th>
+                                <th><i class="fas fa-barcode me-2"></i>Nº Série</th>
+                                <th><i class="fas fa-user me-2"></i>Cliente</th>
+                                <th><i class="fas fa-map-marker-alt me-2"></i>Localização</th>
+                                <th class="text-center"><i class="fas fa-cog me-2"></i>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for equipamento in equipamentos %}
+                            <tr>
+                                <td>
+                                    <strong>{{ equipamento.nome }}</strong>
+                                    {% if equipamento.tipo %}
+                                    <br><small class="text-muted">{{ equipamento.tipo }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ equipamento.marca or '-' }}
+                                    {% if equipamento.modelo %}
+                                    <br><small class="text-muted">{{ equipamento.modelo }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <code>{{ equipamento.numero_serie or '-' }}</code>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('cliente.editar', id=equipamento.cliente_id) }}" 
+                                       class="text-decoration-none">
+                                        {{ equipamento.cliente.nome }}
+                                    </a>
+                                </td>
+                                <td>{{ equipamento.localizacao or '-' }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('equipamento.detalhes', id=equipamento.id) }}" 
+                                           class="btn btn-outline-info"
+                                           title="Ver Detalhes">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('equipamento.editar', id=equipamento.id) }}" 
+                                           class="btn btn-outline-primary"
+                                           title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-outline-danger"
+                                                onclick="confirmarExclusao({{ equipamento.id }}, '{{ equipamento.nome }}')"
+                                                title="Excluir">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3 text-muted">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Total de {{ equipamentos|length }} equipamento(s) cadastrado(s)
+                </div>
+                {% else %}
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    {% if busca or cliente_id_filtro %}
+                    Nenhum equipamento encontrado com os filtros aplicados.
+                    {% else %}
+                    Nenhum equipamento cadastrado ainda. 
+                    <a href="{{ url_for('equipamento.novo') }}" class="alert-link">Cadastre o primeiro equipamento</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="modalExclusao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o equipamento <strong id="nomeEquipamento"></strong>?</p>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Esta ação não pode ser desfeita.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" id="formExclusao" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Excluir Equipamento</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarExclusao(id, nome) {
+    document.getElementById('nomeEquipamento').textContent = nome;
+    document.getElementById('formExclusao').action = '{{ url_for("equipamento.excluir", id=0) }}'.replace('0', id);
+    new bootstrap.Modal(document.getElementById('modalExclusao')).show();
+}
+</script>
+{% endblock %}

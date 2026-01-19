@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if equipamento %}Editar Equipamento{% else %}Novo Equipamento{% endif %} - {{ super() }}
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('equipamento.listar') }}">Equipamentos</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">{% if equipamento %}Editar{% else %}Novo{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<style>
+    .form-section {
+        background: #f8f9fa;
+        border-left: 4px solid #f97316;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-radius: 8px;
+    }
+    .section-title {
+        color: #f97316;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #fed7aa;
+    }
+    .btn-salvar {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        font-weight: 600;
+    }
+    .btn-salvar:hover {
+        background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+        color: white;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-tools me-2 text-orange-500"></i>
+                        {% if equipamento %}
+                            Editar Equipamento: {{ equipamento.nome }}
+                        {% else %}
+                            Novo Equipamento
+                        {% endif %}
+                    </h4>
+                </div>
+                
+                <div class="card-body">
+                    <form method="POST">
+                        <!-- Seção: Cliente -->
+                        <div class="form-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-user me-2"></i>
+                                Cliente Proprietário
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label for="cliente_id" class="form-label">Cliente *</label>
+                                    <select class="form-select" id="cliente_id" name="cliente_id" required>
+                                        <option value="">Selecione um cliente...</option>
+                                        {% for cliente in clientes %}
+                                        <option value="{{ cliente.id }}" 
+                                                {% if equipamento and equipamento.cliente_id == cliente.id %}selected{% endif %}>
+                                            {{ cliente.nome }}
+                                            {% if cliente.cpf_cnpj %}
+                                            - {{ cliente.cpf_cnpj }}
+                                            {% endif %}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Equipamento ficará vinculado a este cliente
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seção: Dados do Equipamento -->
+                        <div class="form-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-tools me-2"></i>
+                                Dados do Equipamento
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="nome" class="form-label">Nome do Equipamento *</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="nome" 
+                                           name="nome" 
+                                           value="{{ equipamento.nome if equipamento else '' }}"
+                                           placeholder="Ex: Calandra Termográfica M3"
+                                           required
+                                           maxlength="200">
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="tipo" class="form-label">Tipo/Categoria</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="tipo" 
+                                           name="tipo" 
+                                           value="{{ equipamento.tipo if equipamento else '' }}"
+                                           placeholder="Ex: Calandra, Prensa, Máquina Industrial"
+                                           maxlength="100">
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-12">
+                                    <label for="descricao" class="form-label">Descrição</label>
+                                    <textarea class="form-control" 
+                                              id="descricao" 
+                                              name="descricao" 
+                                              rows="3"
+                                              placeholder="Descrição detalhada do equipamento...">{{ equipamento.descricao if equipamento else '' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seção: Identificação -->
+                        <div class="form-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-barcode me-2"></i>
+                                Identificação
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="marca" class="form-label">Marca</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="marca" 
+                                           name="marca" 
+                                           value="{{ equipamento.marca if equipamento else '' }}"
+                                           placeholder="NDA"
+                                           maxlength="100">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="modelo" class="form-label">Modelo</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="modelo" 
+                                           name="modelo" 
+                                           value="{{ equipamento.modelo if equipamento else '' }}"
+                                           placeholder="NDA"
+                                           maxlength="100">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="numero_serie" class="form-label">Número de Série</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="numero_serie" 
+                                           name="numero_serie" 
+                                           value="{{ equipamento.numero_serie if equipamento else '' }}"
+                                           placeholder="NDA"
+                                           maxlength="100">
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <label for="localizacao" class="form-label">Localização</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="localizacao" 
+                                           name="localizacao" 
+                                           value="{{ equipamento.localizacao if equipamento else '' }}"
+                                           placeholder="Ex: Galpão 2, Setor A"
+                                           maxlength="200">
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label for="ano_fabricacao" class="form-label">Ano de Fabricação</label>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="ano_fabricacao" 
+                                           name="ano_fabricacao" 
+                                           value="{{ equipamento.ano_fabricacao if equipamento else '' }}"
+                                           placeholder="2024"
+                                           min="1900"
+                                           max="2100">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seção: Especificações Técnicas -->
+                        <div class="form-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-cogs me-2"></i>
+                                Especificações Técnicas
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="capacidade" class="form-label">Capacidade</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="capacidade" 
+                                           name="capacidade" 
+                                           value="{{ equipamento.capacidade if equipamento else '' }}"
+                                           placeholder="Ex: 500kg, 2000W"
+                                           maxlength="100">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="tensao" class="form-label">Tensão</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="tensao" 
+                                           name="tensao" 
+                                           value="{{ equipamento.tensao if equipamento else '' }}"
+                                           placeholder="Ex: 220V, 380V Trifásico"
+                                           maxlength="50">
+                                </div>
+                                
+                                <div class="col-md-4">
+                                    <label for="potencia" class="form-label">Potência</label>
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="potencia" 
+                                           name="potencia" 
+                                           value="{{ equipamento.potencia if equipamento else '' }}"
+                                           placeholder="Ex: 15kW, 3cv"
+                                           maxlength="50">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Seção: Observações -->
+                        <div class="form-section">
+                            <h6 class="section-title">
+                                <i class="fas fa-sticky-note me-2"></i>
+                                Observações
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label for="observacoes" class="form-label">Observações Gerais</label>
+                                    <textarea class="form-control" 
+                                              id="observacoes" 
+                                              name="observacoes" 
+                                              rows="4"
+                                              placeholder="Informações adicionais sobre o equipamento...">{{ equipamento.observacoes if equipamento else '' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botões -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('equipamento.listar') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Voltar
+                            </a>
+                            
+                            <button type="submit" class="btn btn-salvar">
+                                <i class="fas fa-save me-2"></i>
+                                {% if equipamento %}Salvar Alterações{% else %}Cadastrar Equipamento{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

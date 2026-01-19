@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Equipamento - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('equipamento.listar') }}">Equipamentos</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">{{ equipamento.nome }}</span>
+{% endblock %}
+
+{% block content %}
+<style>
+    .info-card {
+        background: white;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid #f97316;
+    }
+    .info-row {
+        display: flex;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    .info-label {
+        font-weight: 600;
+        color: #64748b;
+        width: 180px;
+        flex-shrink: 0;
+    }
+    .info-value {
+        color: #1e293b;
+        flex-grow: 1;
+    }
+    .section-header {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Informações Principais -->
+        <div class="col-lg-8">
+            <div class="info-card">
+                <div class="section-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tools me-2"></i>
+                        Informações do Equipamento
+                    </h5>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-tag me-2"></i>Nome:
+                    </div>
+                    <div class="info-value">
+                        <strong>{{ equipamento.nome }}</strong>
+                    </div>
+                </div>
+
+                {% if equipamento.tipo %}
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-layer-group me-2"></i>Tipo/Categoria:
+                    </div>
+                    <div class="info-value">{{ equipamento.tipo }}</div>
+                </div>
+                {% endif %}
+
+                {% if equipamento.descricao %}
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-align-left me-2"></i>Descrição:
+                    </div>
+                    <div class="info-value">{{ equipamento.descricao }}</div>
+                </div>
+                {% endif %}
+
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-building me-2"></i>Marca:
+                    </div>
+                    <div class="info-value">{{ equipamento.marca or 'NDA' }}</div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-cube me-2"></i>Modelo:
+                    </div>
+                    <div class="info-value">{{ equipamento.modelo or 'NDA' }}</div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-barcode me-2"></i>Número de Série:
+                    </div>
+                    <div class="info-value">
+                        <code>{{ equipamento.numero_serie or 'NDA' }}</code>
+                    </div>
+                </div>
+
+                {% if equipamento.localizacao %}
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-map-marker-alt me-2"></i>Localização:
+                    </div>
+                    <div class="info-value">{{ equipamento.localizacao }}</div>
+                </div>
+                {% endif %}
+
+                {% if equipamento.ano_fabricacao %}
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-calendar me-2"></i>Ano Fabricação:
+                    </div>
+                    <div class="info-value">{{ equipamento.ano_fabricacao }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Especificações Técnicas -->
+            {% if equipamento.capacidade or equipamento.tensao or equipamento.potencia %}
+            <div class="info-card">
+                <div class="section-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>
+                        Especificações Técnicas
+                    </h5>
+                </div>
+
+                {% if equipamento.capacidade %}
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-weight me-2"></i>Capacidade:
+                    </div>
+                    <div class="info-value">{{ equipamento.capacidade }}</div>
+                </div>
+                {% endif %}
+
+                {% if equipamento.tensao %}
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-bolt me-2"></i>Tensão:
+                    </div>
+                    <div class="info-value">{{ equipamento.tensao }}</div>
+                </div>
+                {% endif %}
+
+                {% if equipamento.potencia %}
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-tachometer-alt me-2"></i>Potência:
+                    </div>
+                    <div class="info-value">{{ equipamento.potencia }}</div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Observações -->
+            {% if equipamento.observacoes %}
+            <div class="info-card">
+                <div class="section-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-sticky-note me-2"></i>
+                        Observações
+                    </h5>
+                </div>
+                <div class="p-3">
+                    {{ equipamento.observacoes }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Cliente -->
+            <div class="info-card">
+                <div class="section-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user me-2"></i>
+                        Cliente Proprietário
+                    </h5>
+                </div>
+
+                <div class="text-center py-3">
+                    <div class="mb-3">
+                        <i class="fas fa-user-circle fa-4x text-orange-500"></i>
+                    </div>
+                    <h6>{{ equipamento.cliente.nome }}</h6>
+                    {% if equipamento.cliente.cpf_cnpj %}
+                    <p class="text-muted mb-2">{{ equipamento.cliente.cpf_cnpj }}</p>
+                    {% endif %}
+                    <a href="{{ url_for('cliente.editar', id=equipamento.cliente_id) }}" 
+                       class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye me-1"></i>
+                        Ver Cliente
+                    </a>
+                </div>
+            </div>
+
+            <!-- Ações -->
+            <div class="info-card">
+                <div class="section-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tools me-2"></i>
+                        Ações
+                    </h5>
+                </div>
+
+                <div class="d-grid gap-2 p-3">
+                    <a href="{{ url_for('equipamento.editar', id=equipamento.id) }}" 
+                       class="btn btn-primary">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar Equipamento
+                    </a>
+                    
+                    <a href="{{ url_for('equipamento.listar') }}" 
+                       class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Voltar para Lista
+                    </a>
+                    
+                    <hr>
+                    
+                    <button type="button" 
+                            class="btn btn-outline-danger"
+                            onclick="confirmarExclusao()">
+                        <i class="fas fa-trash me-2"></i>
+                        Excluir Equipamento
+                    </button>
+                </div>
+            </div>
+
+            <!-- Informações do Sistema -->
+            <div class="info-card">
+                <div class="section-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Informações do Sistema
+                    </h5>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-label">Cadastrado em:</div>
+                    <div class="info-value">
+                        {% if equipamento.criado_em %}
+                        {{ equipamento.criado_em.strftime('%d/%m/%Y %H:%M') }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="info-row">
+                    <div class="info-label">Última atualização:</div>
+                    <div class="info-value">
+                        {% if equipamento.atualizado_em %}
+                        {{ equipamento.atualizado_em.strftime('%d/%m/%Y %H:%M') }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="modalExclusao" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o equipamento <strong>{{ equipamento.nome }}</strong>?</p>
+                <p class="text-muted mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Esta ação não pode ser desfeita.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" action="{{ url_for('equipamento.excluir', id=equipamento.id) }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Excluir Equipamento</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarExclusao() {
+    new bootstrap.Modal(document.getElementById('modalExclusao')).show();
+}
+</script>
+{% endblock %}

@@ -115,6 +115,13 @@ def create_app(config_name=None):
             except Exception as e:
                 print(f" ⚠ Erro ao importar modelos Energia Solar v3.0: {e}")
             
+            # Importa modelo de Equipamentos
+            try:
+                from app.equipamento.equipamento_model import Equipamento
+                print("[OK] Modelo Equipamento importado")
+            except Exception as e:
+                print(f" ⚠ Erro ao importar modelo Equipamento: {e}")
+            
             db.create_all()
             print("[OK] Tabelas do banco de dados verificadas/criadas!")
             
@@ -524,6 +531,10 @@ def register_blueprints(app):
     # Blueprint de produtos
     from app.produto.produto_routes import produto_bp
     app.register_blueprint(produto_bp, url_prefix='/produto')
+
+    # Blueprint de equipamentos
+    from app.equipamento.equipamento_routes import equipamento_bp
+    app.register_blueprint(equipamento_bp)
 
     # Blueprint de ordens de serviço
     from app.ordem_servico.ordem_servico_routes import ordem_servico_bp

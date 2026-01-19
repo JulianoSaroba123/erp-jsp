@@ -141,20 +141,32 @@
         <div class="card bg-dark border-secondary mb-4">
             <div class="card-body">
                 <div class="row g-3">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label text-white">
+                            <i class="fas fa-database me-2"></i>Selecionar Equipamento Cadastrado
+                        </label>
+                        <select class="form-select bg-dark text-white border-secondary" 
+                                id="equipamento_cadastrado" 
+                                name="equipamento_cadastrado">
+                            <option value="">Selecione um equipamento (ou preencha manualmente abaixo)</option>
+                        </select>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            Ao selecionar, os campos abaixo serão preenchidos automaticamente. 
+                            <a href="{{ url_for('equipamento.novo') }}" target="_blank" class="text-warning">
+                                <i class="fas fa-plus-circle"></i> Cadastrar novo equipamento
+                            </a>
+                        </small>
+                    </div>
+                    
                     <div class="col-md-5">
                         <label class="form-label text-white">
                             Equipamento *
-                            <i class="fas fa-history ms-1 text-warning" id="equipamento-historico-icon" style="display: none; cursor: help;" 
-                               title="Equipamentos anteriores deste cliente disponíveis"></i>
                         </label>
                         <input type="text" class="form-control bg-dark text-white border-secondary" 
                                id="equipamento" name="equipamento" value="{{ ordem.equipamento if ordem else '' }}" 
-                               required placeholder="Digite ou selecione equipamento anterior"
-                               list="equipamentos-historico" autocomplete="off">
-                        <datalist id="equipamentos-historico"></datalist>
-                        <small class="text-muted" id="equipamento-hint" style="display: none;">
-                            <i class="fas fa-info-circle"></i> Selecione para preencher automaticamente
-                        </small>
+                               required placeholder="Digite o nome do equipamento"
+                               autocomplete="off">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label text-white">Marca/Modelo</label>
@@ -1542,6 +1554,99 @@ document.addEventListener('DOMContentLoaded', function() {
     carregarAutocomplete('titulo', 'titulo', 'lista_titulos');
     carregarAutocomplete('equipamento', 'equipamento', 'lista_equipamentos');
     carregarAutocomplete('marca_modelo', 'marca_modelo', 'lista_marcas');
+
+    // ===== INTEGRAÇÃO COM EQUIPAMENTOS CADASTRADOS =====
+    const clienteSelectElement = document.getElementById('cliente_id');
+    const equipamentoCadastradoSelect = document.getElementById('equipamento_cadastrado');
+    const equipamentoInput = document.getElementById('equipamento');
+    const marcaModeloInput = document.getElementById('marca_modelo');
+    const numeroSerieInput = document.getElementById('numero_serie');
+
+    // Carrega equipamentos do cliente quando seleciona
+    if (clienteSelectElement && equipamentoCadastradoSelect) {
+        clienteSelectElement.addEventListener('change', async function() {
+            const clienteId = this.value;
+            
+            // Limpa dropdown de equipamentos
+            equipamentoCadastradoSelect.innerHTML = '<option value="">Selecione um equipamento (ou preencha manualmente abaixo)</option>';
+            
+            if (!clienteId) {
+                return;
+            }
+            
+            try {
+                // Chama API para buscar equipamentos do cliente
+                const response = await fetch(`/equipamentos/api/por-cliente/${clienteId}`);
+                const data = await response.json();
+                
+                if (data.success && data.equipamentos.length > 0) {
+                    // Adiciona opções ao dropdown
+                    data.equipamentos.forEach(eq => {
+                        const option = document.createElement('option');
+                        option.value = eq.id;
+                        option.textContent = `${eq.nome}${eq.marca ? ' - ' + eq.marca : ''}${eq.modelo ? ' ' + eq.modelo : ''}`;
+                        option.dataset.equipamento = JSON.stringify(eq);
+                        equipamentoCadastradoSelect.appendChild(option);
+                    });
+                    
+                    console.log(`✅ ${data.equipamentos.length} equipamentos carregados para o cliente`);
+                } else {
+                    console.log('ℹ️ Nenhum equipamento cadastrado para este cliente');
+                }
+            } catch (error) {
+                console.error('❌ Erro ao carregar equipamentos:', error);
+            }
+        });
+    }
+
+    // Preenche campos automaticamente quando seleciona equipamento
+    if (equipamentoCadastradoSelect) {
+        equipamentoCadastradoSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            
+            if (!selectedOption.value) {
+                return;
+            }
+            
+            try {
+                const equipamento = JSON.parse(selectedOption.dataset.equipamento);
+                
+                // Preenche os campos
+                equipamentoInput.value = equipamento.nome || '';
+                
+                // Combina marca e modelo
+                let marcaModelo = '';
+                if (equipamento.marca && equipamento.modelo) {
+                    marcaModelo = `${equipamento.marca} ${equipamento.modelo}`;
+                } else if (equipamento.marca) {
+                    marcaModelo = equipamento.marca;
+                } else if (equipamento.modelo) {
+                    marcaModelo = equipamento.modelo;
+                } else {
+                    marcaModelo = 'NDA';
+                }
+                marcaModeloInput.value = marcaModelo;
+                
+                numeroSerieInput.value = equipamento.numero_serie || 'NDA';
+                
+                console.log('✅ Campos preenchidos com equipamento:', equipamento.nome);
+                
+                // Feedback visual
+                equipamentoInput.classList.add('border-success');
+                marcaModeloInput.classList.add('border-success');
+                numeroSerieInput.classList.add('border-success');
+                
+                setTimeout(() => {
+                    equipamentoInput.classList.remove('border-success');
+                    marcaModeloInput.classList.remove('border-success');
+                    numeroSerieInput.classList.remove('border-success');
+                }, 2000);
+                
+            } catch (error) {
+                console.error('❌ Erro ao processar equipamento:', error);
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

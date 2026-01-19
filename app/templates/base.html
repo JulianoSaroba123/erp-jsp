@@ -163,11 +163,17 @@
                     <span class="nav-text">Produtos</span>
                 </a>
             </div>
+            <div class="nav-item">
+                <a href="{{ url_for('equipamento.listar') }}" class="nav-link">
+                    <i class="nav-icon fas fa-tools"></i>
+                    <span class="nav-text">Equipamentos</span>
+                </a>
+            </div>
 
             <!-- Operações -->
             <div class="nav-item">
                 <a href="{{ url_for('ordem_servico.listar') }}" class="nav-link">
-                    <i class="nav-icon fas fa-tools"></i>
+                    <i class="nav-icon fas fa-wrench"></i>
                     <span class="nav-text">Ordens de Serviço</span>
                 </a>
             </div>
