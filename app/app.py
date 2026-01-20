@@ -320,6 +320,11 @@ def create_app(config_name=None):
                         db.session.execute(text("ALTER TABLE plano_contas ADD COLUMN aceita_lancamento BOOLEAN DEFAULT true"))
                         db.session.commit()
                     
+                    if 'ativa' not in colunas_plano:
+                        print("   🔧 Adicionando coluna 'ativa'...")
+                        db.session.execute(text("ALTER TABLE plano_contas ADD COLUMN ativa BOOLEAN DEFAULT true"))
+                        db.session.commit()
+                    
                     if 'natureza' not in colunas_plano:
                         print("   🔧 Adicionando coluna 'natureza'...")
                         db.session.execute(text("ALTER TABLE plano_contas ADD COLUMN natureza VARCHAR(20)"))
