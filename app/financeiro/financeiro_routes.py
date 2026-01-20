@@ -1906,3 +1906,374 @@ def exportar_fluxo_excel():
     except Exception as e:
         flash(f'Erro ao exportar: {str(e)}', 'danger')
         return redirect(url_for('financeiro.fluxo_caixa'))
+
+
+# ==================== ROTAS DE DRE ====================
+
+@bp_financeiro.route('/dre')
+def dre():
+    """Demonstrativo de Resultados do Exercício."""
+    try:
+        from datetime import datetime
+        from calendar import monthrange
+        
+        # Filtros
+        ano = request.args.get('ano', type=int, default=date.today().year)
+        mes = request.args.get('mes', type=int)
+        comparacao = request.args.get('comparacao', 'mensal')  # mensal ou anual
+        
+        # Definir período
+        if mes:
+            # DRE mensal
+            data_inicio = date(ano, mes, 1)
+            ultimo_dia = monthrange(ano, mes)[1]
+            data_fim = date(ano, mes, ultimo_dia)
+            titulo_periodo = f"{data_inicio.strftime('%B/%Y').capitalize()}"
+        else:
+            # DRE anual
+            data_inicio = date(ano, 1, 1)
+            data_fim = date(ano, 12, 31)
+            titulo_periodo = f"Ano {ano}"
+        
+        # Buscar lançamentos do período
+        lancamentos = LancamentoFinanceiro.query.filter(
+            LancamentoFinanceiro.data_lancamento >= data_inicio,
+            LancamentoFinanceiro.data_lancamento <= data_fim,
+            LancamentoFinanceiro.ativo == True
+        ).all()
+        
+        # Calcular DRE
+        dre_data = calcular_dre(lancamentos)
+        
+        # Comparação com período anterior
+        if comparacao == 'mensal' and mes:
+            # Mês anterior
+            if mes == 1:
+                mes_anterior = 12
+                ano_anterior = ano - 1
+            else:
+                mes_anterior = mes - 1
+                ano_anterior = ano
+            
+            data_inicio_ant = date(ano_anterior, mes_anterior, 1)
+            ultimo_dia_ant = monthrange(ano_anterior, mes_anterior)[1]
+            data_fim_ant = date(ano_anterior, mes_anterior, ultimo_dia_ant)
+            
+            lancamentos_ant = LancamentoFinanceiro.query.filter(
+                LancamentoFinanceiro.data_lancamento >= data_inicio_ant,
+                LancamentoFinanceiro.data_lancamento <= data_fim_ant,
+                LancamentoFinanceiro.ativo == True
+            ).all()
+            
+            dre_anterior = calcular_dre(lancamentos_ant)
+            titulo_comparacao = f"{data_inicio_ant.strftime('%B/%Y').capitalize()}"
+            
+        elif comparacao == 'anual':
+            # Ano anterior
+            data_inicio_ant = date(ano - 1, 1, 1)
+            data_fim_ant = date(ano - 1, 12, 31)
+            
+            lancamentos_ant = LancamentoFinanceiro.query.filter(
+                LancamentoFinanceiro.data_lancamento >= data_inicio_ant,
+                LancamentoFinanceiro.data_lancamento <= data_fim_ant,
+                LancamentoFinanceiro.ativo == True
+            ).all()
+            
+            dre_anterior = calcular_dre(lancamentos_ant)
+            titulo_comparacao = f"Ano {ano - 1}"
+        else:
+            dre_anterior = None
+            titulo_comparacao = None
+        
+        # Calcular variações
+        variacoes = {}
+        if dre_anterior:
+            for key in dre_data.keys():
+                valor_atual = dre_data[key]
+                valor_anterior = dre_anterior[key]
+                
+                if valor_anterior != 0:
+                    variacao_percentual = ((valor_atual - valor_anterior) / abs(valor_anterior)) * 100
+                else:
+                    variacao_percentual = 100 if valor_atual > 0 else 0
+                
+                variacoes[key] = {
+                    'valor': valor_atual - valor_anterior,
+                    'percentual': variacao_percentual
+                }
+        
+        # DRE mensal (todos os meses do ano)
+        dre_mensal = []
+        if not mes:
+            for m in range(1, 13):
+                data_ini_mes = date(ano, m, 1)
+                ultimo_dia_mes = monthrange(ano, m)[1]
+                data_fim_mes = date(ano, m, ultimo_dia_mes)
+                
+                lanc_mes = LancamentoFinanceiro.query.filter(
+                    LancamentoFinanceiro.data_lancamento >= data_ini_mes,
+                    LancamentoFinanceiro.data_lancamento <= data_fim_mes,
+                    LancamentoFinanceiro.ativo == True
+                ).all()
+                
+                dre_mes = calcular_dre(lanc_mes)
+                dre_mes['mes'] = m
+                dre_mes['mes_nome'] = data_ini_mes.strftime('%B').capitalize()
+                dre_mensal.append(dre_mes)
+        
+        return render_template('financeiro/dre/dashboard.html',
+                             dre=dre_data,
+                             dre_anterior=dre_anterior,
+                             variacoes=variacoes,
+                             dre_mensal=dre_mensal,
+                             ano=ano,
+                             mes=mes,
+                             comparacao=comparacao,
+                             titulo_periodo=titulo_periodo,
+                             titulo_comparacao=titulo_comparacao)
+    
+    except Exception as e:
+        flash(f'Erro ao gerar DRE: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.dashboard'))
+
+
+def calcular_dre(lancamentos):
+    """Calcula DRE a partir de uma lista de lançamentos."""
+    
+    # Categorias de receitas
+    categorias_receita = ['Vendas', 'Serviços', 'Receitas Diversas', 'Receitas Financeiras']
+    
+    # Categorias de deduções
+    categorias_deducoes = ['Impostos sobre Vendas', 'Devoluções', 'Descontos Concedidos']
+    
+    # Categorias de custos
+    categorias_custos = ['Custo de Mercadorias', 'Custo de Serviços', 'Matéria-Prima']
+    
+    # Categorias de despesas operacionais
+    categorias_despesas = ['Aluguel', 'Salários', 'Encargos', 'Energia', 'Água', 
+                          'Internet', 'Telefone', 'Software', 'Manutenção', 
+                          'Marketing', 'Contabilidade', 'Administrativas']
+    
+    # Categorias financeiras
+    categorias_financeiras = ['Juros Pagos', 'Juros Recebidos', 'Despesas Bancárias']
+    
+    # Inicializar valores
+    receita_bruta = Decimal('0.00')
+    deducoes = Decimal('0.00')
+    custos = Decimal('0.00')
+    despesas_operacionais = Decimal('0.00')
+    receitas_financeiras = Decimal('0.00')
+    despesas_financeiras = Decimal('0.00')
+    
+    # Processar lançamentos
+    for lanc in lancamentos:
+        valor = lanc.valor
+        categoria = lanc.categoria or ''
+        
+        if lanc.tipo == 'RECEITA':
+            if categoria in categorias_deducoes:
+                deducoes += valor
+            elif categoria in categorias_financeiras or 'Juros Recebidos' in categoria:
+                receitas_financeiras += valor
+            else:
+                receita_bruta += valor
+        
+        elif lanc.tipo == 'DESPESA':
+            if categoria in categorias_custos:
+                custos += valor
+            elif categoria in categorias_financeiras or 'Juros' in categoria or 'Bancár' in categoria:
+                despesas_financeiras += valor
+            elif categoria in categorias_despesas or categoria in categorias_deducoes:
+                if categoria in categorias_deducoes:
+                    deducoes += valor
+                else:
+                    despesas_operacionais += valor
+            else:
+                despesas_operacionais += valor
+    
+    # Cálculos do DRE
+    receita_liquida = receita_bruta - deducoes
+    lucro_bruto = receita_liquida - custos
+    lucro_operacional = lucro_bruto - despesas_operacionais
+    resultado_financeiro = receitas_financeiras - despesas_financeiras
+    lucro_liquido = lucro_operacional + resultado_financeiro
+    
+    # Margens (%)
+    margem_bruta = (lucro_bruto / receita_liquida * 100) if receita_liquida > 0 else 0
+    margem_operacional = (lucro_operacional / receita_liquida * 100) if receita_liquida > 0 else 0
+    margem_liquida = (lucro_liquido / receita_liquida * 100) if receita_liquida > 0 else 0
+    
+    return {
+        'receita_bruta': receita_bruta,
+        'deducoes': deducoes,
+        'receita_liquida': receita_liquida,
+        'custos': custos,
+        'lucro_bruto': lucro_bruto,
+        'despesas_operacionais': despesas_operacionais,
+        'lucro_operacional': lucro_operacional,
+        'receitas_financeiras': receitas_financeiras,
+        'despesas_financeiras': despesas_financeiras,
+        'resultado_financeiro': resultado_financeiro,
+        'lucro_liquido': lucro_liquido,
+        'margem_bruta': margem_bruta,
+        'margem_operacional': margem_operacional,
+        'margem_liquida': margem_liquida
+    }
+
+
+@bp_financeiro.route('/dre/exportar-excel')
+def exportar_dre_excel():
+    """Exportar DRE para Excel."""
+    try:
+        from io import BytesIO
+        import openpyxl
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+        from calendar import monthrange
+        
+        # Filtros
+        ano = request.args.get('ano', type=int, default=date.today().year)
+        mes = request.args.get('mes', type=int)
+        
+        # Definir período
+        if mes:
+            data_inicio = date(ano, mes, 1)
+            ultimo_dia = monthrange(ano, mes)[1]
+            data_fim = date(ano, mes, ultimo_dia)
+            titulo_periodo = f"{data_inicio.strftime('%B/%Y').capitalize()}"
+        else:
+            data_inicio = date(ano, 1, 1)
+            data_fim = date(ano, 12, 31)
+            titulo_periodo = f"Ano {ano}"
+        
+        # Buscar lançamentos
+        lancamentos = LancamentoFinanceiro.query.filter(
+            LancamentoFinanceiro.data_lancamento >= data_inicio,
+            LancamentoFinanceiro.data_lancamento <= data_fim,
+            LancamentoFinanceiro.ativo == True
+        ).all()
+        
+        dre_data = calcular_dre(lancamentos)
+        
+        # Criar Excel
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "DRE"
+        
+        # Estilos
+        titulo_font = Font(size=14, bold=True)
+        header_fill = PatternFill(start_color='0066CC', end_color='0066CC', fill_type='solid')
+        header_font = Font(color='FFFFFF', bold=True)
+        subtotal_fill = PatternFill(start_color='E6E6E6', end_color='E6E6E6', fill_type='solid')
+        total_fill = PatternFill(start_color='0066CC', end_color='0066CC', fill_type='solid')
+        total_font = Font(color='FFFFFF', bold=True, size=12)
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        
+        # Cabeçalho
+        ws['A1'] = 'DEMONSTRATIVO DE RESULTADOS DO EXERCÍCIO (DRE)'
+        ws['A1'].font = titulo_font
+        ws['A2'] = f'Período: {titulo_periodo}'
+        ws.merge_cells('A1:C1')
+        ws.merge_cells('A2:C2')
+        ws.append([])
+        
+        # Colunas
+        ws.append(['Descrição', 'Valor (R$)', '% s/ Rec. Líq.'])
+        for cell in ws[4]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+            cell.border = border
+        
+        # Dados
+        def add_linha(descricao, valor, percentual=None, estilo=None):
+            row = [descricao, float(valor)]
+            if percentual is not None:
+                row.append(f"{percentual:.2f}%")
+            else:
+                row.append('')
+            ws.append(row)
+            
+            if estilo == 'subtotal':
+                for cell in ws[ws.max_row]:
+                    cell.fill = subtotal_fill
+                    cell.font = Font(bold=True)
+                    cell.border = border
+            elif estilo == 'total':
+                for cell in ws[ws.max_row]:
+                    cell.fill = total_fill
+                    cell.font = total_font
+                    cell.border = border
+            else:
+                for cell in ws[ws.max_row]:
+                    cell.border = border
+        
+        # Receitas
+        perc_rec_bruta = (dre_data['receita_bruta'] / dre_data['receita_liquida'] * 100) if dre_data['receita_liquida'] > 0 else 0
+        add_linha('RECEITA BRUTA', dre_data['receita_bruta'], perc_rec_bruta)
+        
+        perc_deducoes = (dre_data['deducoes'] / dre_data['receita_liquida'] * 100) if dre_data['receita_liquida'] > 0 else 0
+        add_linha('(-) Deduções', -dre_data['deducoes'], perc_deducoes)
+        
+        add_linha('RECEITA LÍQUIDA', dre_data['receita_liquida'], 100, 'subtotal')
+        ws.append([])
+        
+        # Custos e Lucro Bruto
+        perc_custos = (dre_data['custos'] / dre_data['receita_liquida'] * 100) if dre_data['receita_liquida'] > 0 else 0
+        add_linha('(-) Custos', -dre_data['custos'], perc_custos)
+        
+        add_linha('LUCRO BRUTO', dre_data['lucro_bruto'], dre_data['margem_bruta'], 'subtotal')
+        ws.append([])
+        
+        # Despesas Operacionais
+        perc_desp = (dre_data['despesas_operacionais'] / dre_data['receita_liquida'] * 100) if dre_data['receita_liquida'] > 0 else 0
+        add_linha('(-) Despesas Operacionais', -dre_data['despesas_operacionais'], perc_desp)
+        
+        add_linha('LUCRO OPERACIONAL', dre_data['lucro_operacional'], dre_data['margem_operacional'], 'subtotal')
+        ws.append([])
+        
+        # Resultado Financeiro
+        perc_rec_fin = (dre_data['receitas_financeiras'] / dre_data['receita_liquida'] * 100) if dre_data['receita_liquida'] > 0 else 0
+        add_linha('(+) Receitas Financeiras', dre_data['receitas_financeiras'], perc_rec_fin)
+        
+        perc_desp_fin = (dre_data['despesas_financeiras'] / dre_data['receita_liquida'] * 100) if dre_data['receita_liquida'] > 0 else 0
+        add_linha('(-) Despesas Financeiras', -dre_data['despesas_financeiras'], perc_desp_fin)
+        
+        add_linha('RESULTADO FINANCEIRO', dre_data['resultado_financeiro'], None, 'subtotal')
+        ws.append([])
+        
+        # Lucro Líquido
+        add_linha('LUCRO LÍQUIDO', dre_data['lucro_liquido'], dre_data['margem_liquida'], 'total')
+        
+        # Ajustar larguras
+        ws.column_dimensions['A'].width = 35
+        ws.column_dimensions['B'].width = 18
+        ws.column_dimensions['C'].width = 15
+        
+        # Formatar números
+        for row in range(5, ws.max_row + 1):
+            ws[f'B{row}'].number_format = 'R$ #,##0.00'
+            ws[f'B{row}'].alignment = Alignment(horizontal='right')
+            ws[f'C{row}'].alignment = Alignment(horizontal='center')
+        
+        # Salvar
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        filename = f'dre_{titulo_periodo.replace("/", "-")}.xlsx'
+        
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+    
+    except Exception as e:
+        flash(f'Erro ao exportar DRE: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.dre'))
