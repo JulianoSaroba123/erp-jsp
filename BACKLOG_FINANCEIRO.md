@@ -24,11 +24,29 @@
 - [x] Histórico de conciliações
 - [x] Desfazer conciliações
 
+### 4. Custos Fixos ✅ **NOVO!**
+- [x] CRUD completo (criar, listar, editar, excluir)
+- [x] Geração automática de lançamentos mensais
+- [x] Dashboard analítico com Chart.js
+- [x] Próximos vencimentos com alertas
+- [x] Integração com Contas e Centros
+- [x] Controle de data início/fim
+- [x] Categorização flexível
+- [x] Totais mensais e anuais
+- [x] Filtros por categoria e status
+
+**Documentação**: `MODULO_CUSTOS_FIXOS.md`  
+**Arquivos**: 
+- Model: `app/financeiro/financeiro_model.py` (classe CustoFixo)
+- Rotas: `app/financeiro/financeiro_routes.py` (7 rotas)
+- Templates: `app/financeiro/templates/financeiro/custos_fixos/` (3 arquivos)
+- SQL: `scripts/criar_tabela_custos_fixos.sql`
+
 ---
 
 ## 🔴 MUST HAVE - Prioridade Máxima
 
-### 4. Fluxo de Caixa Projetado ❌
+### 5. Fluxo de Caixa Projetado ❌
 **Descrição**: Projeção de entradas e saídas futuras para planejamento financeiro.
 
 **Funcionalidades**:
@@ -46,7 +64,7 @@
 
 ---
 
-### 5. DRE - Demonstrativo de Resultados do Exercício ❌
+### 6. DRE - Demonstrativo de Resultados do Exercício ❌
 **Descrição**: Relatório contábil estruturado de receitas, despesas e resultado líquido.
 
 **Funcionalidades**:
@@ -66,7 +84,7 @@
 
 ## 🟡 SHOULD HAVE - Alta Prioridade
 
-### 6. Plano de Contas (Interface) ❌
+### 7. Plano de Contas (Interface) ❌
 **Descrição**: CRUD completo para gerenciamento do plano de contas contábil.
 
 **Funcionalidades**:
@@ -85,7 +103,7 @@
 
 ---
 
-### 7. Orçamento Anual ❌
+### 8. Orçamento Anual ❌
 **Descrição**: Planejamento financeiro por categorias e períodos.
 
 **Funcionalidades**:
@@ -97,7 +115,7 @@
 - [ ] Histórico de orçamentos
 - [ ] Dashboard visual
 
-**Complexidade**: Média  
+**Complexidade**: Média
 **Impacto**: Médio  
 **Tempo Estimado**: 5-6 horas
 
