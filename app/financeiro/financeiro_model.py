@@ -84,6 +84,7 @@ class LancamentoFinanceiro(BaseModel):
     ordem_servico = db.relationship('OrdemServico', backref='lancamentos_financeiros', foreign_keys=[ordem_servico_id])
     conta_bancaria = db.relationship('ContaBancaria', backref='lancamentos', foreign_keys=[conta_bancaria_id])
     centro_custo = db.relationship('CentroCusto', backref='lancamentos', foreign_keys=[centro_custo_id])
+    plano_conta = db.relationship('PlanoContas', backref='lancamentos', foreign_keys=[plano_conta_id])
     historico = db.relationship('HistoricoFinanceiro', backref='lancamento', cascade='all, delete-orphan')
     
     def __repr__(self):
@@ -802,9 +803,6 @@ class PlanoContas(BaseModel):
     # Relacionamentos
     conta_pai = db.relationship('PlanoContas', remote_side='PlanoContas.id', 
                                 backref='contas_filhas')
-    lancamentos = db.relationship('LancamentoFinanceiro', 
-                                  backref='plano_conta',
-                                  foreign_keys='LancamentoFinanceiro.plano_conta_id')
     
     def __repr__(self):
         return f'<PlanoContas {self.codigo}: {self.nome}>'
