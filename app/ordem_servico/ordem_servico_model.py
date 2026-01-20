@@ -14,7 +14,7 @@ from app.extensoes import db
 from app.models import BaseModel
 from decimal import Decimal
 from datetime import datetime, date
-from sqlalchemy import func
+from sqlalchemy import func, event
 
 # Constantes para padronização
 STATUS_CHOICES = [
@@ -744,3 +744,19 @@ class OrdemServicoAnexo(BaseModel):
                 return 'fas fa-file-alt text-secondary'
         
         return 'fas fa-file text-muted'
+
+
+# ===== EVENTOS PARA RECÁLCULO AUTOMÁTICO =====
+
+@event.listens_for(OrdemServico, 'before_insert')
+@event.listens_for(OrdemServico, 'before_update')
+def recalcular_valor_total(mapper, connection, target):
+    """
+    Recalcula automaticamente o valor_total antes de salvar.
+    Garante que o valor exibido esteja sempre atualizado.
+    """
+    # Usar os valores já calculados pelas properties
+    servicos = Decimal(str(target.valor_total_servicos or 0))
+    produtos = Decimal(str(target.valor_total_produtos or 0))
+    desconto = Decimal(str(target.valor_desconto or 0))
+    target.valor_total = float(servicos + produtos - desconto)
