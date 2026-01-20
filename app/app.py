@@ -207,7 +207,7 @@ def create_app(config_name=None):
                 
                 if 'lancamentos_financeiros' in inspector.get_table_names():
                     colunas = [c['name'] for c in inspector.get_columns('lancamentos_financeiros')]
-                    print("📋 Verificando colunas de auditoria em lancamentos_financeiros...")
+                    print("📋 Verificando colunas em lancamentos_financeiros...")
                     
                     # Adiciona colunas de auditoria se não existirem
                     if 'usuario_criador' not in colunas:
@@ -230,10 +230,51 @@ def create_app(config_name=None):
                         db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN data_edicao_auditoria TIMESTAMP"))
                         db.session.commit()
                     
-                    print("   ✅ Colunas de auditoria verificadas/criadas!")
+                    # Adiciona colunas de gestão financeira avançada
+                    if 'conta_bancaria_id' not in colunas:
+                        print("   🔧 Adicionando coluna 'conta_bancaria_id'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN conta_bancaria_id INTEGER REFERENCES contas_bancarias(id)"))
+                        db.session.commit()
+                    
+                    if 'centro_custo_id' not in colunas:
+                        print("   🔧 Adicionando coluna 'centro_custo_id'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN centro_custo_id INTEGER REFERENCES centros_custo(id)"))
+                        db.session.commit()
+                    
+                    if 'comprovante_anexo' not in colunas:
+                        print("   🔧 Adicionando coluna 'comprovante_anexo'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN comprovante_anexo VARCHAR(255)"))
+                        db.session.commit()
+                    
+                    if 'numero_parcela' not in colunas:
+                        print("   🔧 Adicionando coluna 'numero_parcela'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN numero_parcela VARCHAR(20)"))
+                        db.session.commit()
+                    
+                    if 'valor_original' not in colunas:
+                        print("   🔧 Adicionando coluna 'valor_original'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN valor_original NUMERIC(12, 2)"))
+                        db.session.commit()
+                    
+                    if 'juros' not in colunas:
+                        print("   🔧 Adicionando coluna 'juros'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN juros NUMERIC(12, 2) DEFAULT 0"))
+                        db.session.commit()
+                    
+                    if 'desconto' not in colunas:
+                        print("   🔧 Adicionando coluna 'desconto'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN desconto NUMERIC(12, 2) DEFAULT 0"))
+                        db.session.commit()
+                    
+                    if 'multa' not in colunas:
+                        print("   🔧 Adicionando coluna 'multa'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN multa NUMERIC(12, 2) DEFAULT 0"))
+                        db.session.commit()
+                    
+                    print("   ✅ Colunas verificadas/criadas!")
             except Exception as e:
                 db.session.rollback()
-                print(f"   ⚠️ Erro na migração de auditoria: {e}")
+                print(f"   ⚠️ Erro na migração de colunas financeiras: {e}")
             
             print("✅ Todas as migrações concluídas!\n")
             
