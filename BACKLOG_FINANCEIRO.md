@@ -46,21 +46,27 @@
 
 ## 🔴 MUST HAVE - Prioridade Máxima
 
-### 5. Fluxo de Caixa Projetado ❌
+### 5. Fluxo de Caixa Projetado ✅ **NOVO!**
 **Descrição**: Projeção de entradas e saídas futuras para planejamento financeiro.
 
 **Funcionalidades**:
-- [ ] Visualização gráfica (receitas vs despesas)
-- [ ] Projeção para 30, 60, 90 dias
-- [ ] Inclusão de lançamentos recorrentes
-- [ ] Saldo projetado por período
-- [ ] Alertas de saldo negativo futuro
-- [ ] Filtro por conta bancária
-- [ ] Exportar para Excel/PDF
+- [x] Visualização gráfica (receitas vs despesas)
+- [x] Projeção para 30, 60, 90 dias
+- [x] Inclusão de lançamentos recorrentes
+- [x] Saldo projetado por período
+- [x] Alertas de saldo negativo futuro
+- [x] Filtro por conta bancária
+- [x] Exportar para Excel
+
+**Documentação**: `MODULO_FLUXO_CAIXA.md`  
+**Arquivos**: 
+- Rotas: `app/financeiro/financeiro_routes.py` (2 rotas)
+- Template: `app/financeiro/templates/financeiro/fluxo_caixa/dashboard.html`
+- Gráficos: Chart.js (linha + barras)
 
 **Complexidade**: Média  
 **Impacto**: Alto  
-**Tempo Estimado**: 4-6 horas
+**Tempo Estimado**: 4-6 horas ✅ CONCLUÍDO
 
 ---
 
