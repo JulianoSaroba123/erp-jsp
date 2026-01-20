@@ -2277,3 +2277,208 @@ def exportar_dre_excel():
     except Exception as e:
         flash(f'Erro ao exportar DRE: {str(e)}', 'danger')
         return redirect(url_for('financeiro.dre'))
+
+
+# ============================================================
+# PLANO DE CONTAS
+# ============================================================
+
+@bp_financeiro.route('/plano-contas')
+def plano_contas():
+    """Lista o plano de contas hierárquico."""
+    from app.financeiro.financeiro_model import PlanoContas
+    
+    # Buscar todas as contas
+    contas = PlanoContas.query.filter_by(ativa=True).order_by(PlanoContas.codigo).all()
+    
+    # Organizar por tipo
+    contas_por_tipo = {
+        'ATIVO': [],
+        'PASSIVO': [],
+        'RECEITA': [],
+        'DESPESA': []
+    }
+    
+    for conta in contas:
+        if conta.tipo in contas_por_tipo:
+            contas_por_tipo[conta.tipo].append(conta)
+    
+    return render_template('financeiro/plano_contas/listar.html',
+                          contas_por_tipo=contas_por_tipo,
+                          total_contas=len(contas))
+
+
+@bp_financeiro.route('/plano-contas/nova', methods=['GET', 'POST'])
+def plano_contas_nova():
+    """Criar nova conta contábil."""
+    from app.financeiro.financeiro_model import PlanoContas
+    
+    if request.method == 'POST':
+        try:
+            # Buscar conta pai se informada
+            conta_pai_id = request.form.get('conta_pai_id')
+            conta_pai = None
+            nivel = 1
+            
+            if conta_pai_id:
+                conta_pai = PlanoContas.query.get(conta_pai_id)
+                if conta_pai:
+                    nivel = conta_pai.nivel + 1
+            
+            # Criar conta
+            conta = PlanoContas(
+                codigo=request.form['codigo'],
+                nome=request.form['nome'],
+                descricao=request.form.get('descricao'),
+                tipo=request.form['tipo'],
+                nivel=nivel,
+                conta_pai_id=conta_pai.id if conta_pai else None,
+                aceita_lancamento=request.form.get('aceita_lancamento') == 'on',
+                natureza=request.form.get('natureza'),
+                ordem=int(request.form.get('ordem', 0))
+            )
+            
+            db.session.add(conta)
+            db.session.commit()
+            
+            flash(f'✅ Conta {conta.codigo} - {conta.nome} criada com sucesso!', 'success')
+            return redirect(url_for('financeiro.plano_contas'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'❌ Erro ao criar conta: {str(e)}', 'danger')
+    
+    # Buscar contas para serem pai
+    contas_pai = PlanoContas.query.filter_by(ativa=True).order_by(PlanoContas.codigo).all()
+    
+    return render_template('financeiro/plano_contas/form.html',
+                          contas_pai=contas_pai)
+
+
+@bp_financeiro.route('/plano-contas/<int:id>/editar', methods=['GET', 'POST'])
+def plano_contas_editar(id):
+    """Editar conta contábil."""
+    from app.financeiro.financeiro_model import PlanoContas
+    
+    conta = PlanoContas.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        try:
+            conta.codigo = request.form['codigo']
+            conta.nome = request.form['nome']
+            conta.descricao = request.form.get('descricao')
+            conta.tipo = request.form['tipo']
+            conta.aceita_lancamento = request.form.get('aceita_lancamento') == 'on'
+            conta.natureza = request.form.get('natureza')
+            conta.ordem = int(request.form.get('ordem', 0))
+            
+            # Atualizar conta pai
+            conta_pai_id = request.form.get('conta_pai_id')
+            if conta_pai_id:
+                conta_pai = PlanoContas.query.get(conta_pai_id)
+                conta.conta_pai_id = conta_pai.id
+                conta.nivel = conta_pai.nivel + 1
+            else:
+                conta.conta_pai_id = None
+                conta.nivel = 1
+            
+            db.session.commit()
+            
+            flash(f'✅ Conta {conta.codigo} atualizada com sucesso!', 'success')
+            return redirect(url_for('financeiro.plano_contas'))
+        
+        except Exception as e:
+            db.session.rollback()
+            flash(f'❌ Erro ao atualizar conta: {str(e)}', 'danger')
+    
+    # Buscar contas para serem pai (excluir a própria e suas filhas)
+    contas_pai = PlanoContas.query.filter(
+        PlanoContas.id != id,
+        PlanoContas.ativa == True
+    ).order_by(PlanoContas.codigo).all()
+    
+    return render_template('financeiro/plano_contas/form.html',
+                          conta=conta,
+                          contas_pai=contas_pai)
+
+
+@bp_financeiro.route('/plano-contas/<int:id>/excluir', methods=['POST'])
+def plano_contas_excluir(id):
+    """Desativar conta contábil."""
+    from app.financeiro.financeiro_model import PlanoContas
+    
+    try:
+        conta = PlanoContas.query.get_or_404(id)
+        
+        # Verificar se tem lançamentos
+        if len(conta.lancamentos) > 0:
+            flash(f'❌ Não é possível excluir conta com lançamentos vinculados!', 'danger')
+            return redirect(url_for('financeiro.plano_contas'))
+        
+        # Desativar
+        conta.ativa = False
+        db.session.commit()
+        
+        flash(f'✅ Conta {conta.codigo} desativada com sucesso!', 'success')
+    
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Erro ao excluir conta: {str(e)}', 'danger')
+    
+    return redirect(url_for('financeiro.plano_contas'))
+
+
+@bp_financeiro.route('/plano-contas/criar-padrao', methods=['POST'])
+def plano_contas_criar_padrao():
+    """Cria estrutura padrão de plano de contas."""
+    from app.financeiro.financeiro_model import PlanoContas
+    
+    try:
+        total = PlanoContas.criar_plano_padrao()
+        flash(f'✅ {total} contas criadas no plano padrão!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'❌ Erro ao criar plano padrão: {str(e)}', 'danger')
+    
+    return redirect(url_for('financeiro.plano_contas'))
+
+
+@bp_financeiro.route('/plano-contas/<int:id>/detalhes')
+def plano_contas_detalhes(id):
+    """Visualizar detalhes de uma conta."""
+    from app.financeiro.financeiro_model import PlanoContas
+    
+    conta = PlanoContas.query.get_or_404(id)
+    
+    # Calcular saldo atual
+    saldo_atual = conta.get_saldo()
+    
+    # Buscar últimos lançamentos
+    lancamentos = LancamentoFinanceiro.query.filter_by(
+        plano_conta_id=id
+    ).order_by(LancamentoFinanceiro.data_lancamento.desc()).limit(20).all()
+    
+    return render_template('financeiro/plano_contas/detalhes.html',
+                          conta=conta,
+                          saldo_atual=saldo_atual,
+                          lancamentos=lancamentos)
+
+
+@bp_financeiro.route('/api/plano-contas/analiticas')
+def api_plano_contas_analiticas():
+    """API: Retorna apenas contas analíticas (que aceitam lançamento)."""
+    from app.financeiro.financeiro_model import PlanoContas
+    
+    tipo = request.args.get('tipo')  # Filtrar por tipo se necessário
+    
+    query = PlanoContas.query.filter_by(ativa=True, aceita_lancamento=True)
+    
+    if tipo:
+        query = query.filter_by(tipo=tipo)
+    
+    contas = query.order_by(PlanoContas.codigo).all()
+    
+    return jsonify({
+        'success': True,
+        'contas': [conta.to_dict() for conta in contas]
+    })

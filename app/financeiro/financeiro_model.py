@@ -70,6 +70,7 @@ class LancamentoFinanceiro(BaseModel):
     # ✨ GESTÃO FINANCEIRA AVANÇADA
     conta_bancaria_id = db.Column(db.Integer, db.ForeignKey('contas_bancarias.id'), nullable=True)
     centro_custo_id = db.Column(db.Integer, db.ForeignKey('centros_custo.id'), nullable=True)
+    plano_conta_id = db.Column(db.Integer, db.ForeignKey('plano_contas.id'), nullable=True)
     comprovante_anexo = db.Column(db.String(255))  # Path do arquivo
     numero_parcela = db.Column(db.String(20))  # Ex: 1/12
     valor_original = db.Column(db.Numeric(12, 2))  # Antes de juros/descontos
@@ -374,33 +375,6 @@ class CategoriaFinanceira(BaseModel):
 CategoriaFinanceira.categoria_pai = db.relationship('CategoriaFinanceira', 
                                                    remote_side=[CategoriaFinanceira.id], 
                                                    backref='subcategorias')
-
-
-class PlanoContas(BaseModel):
-    """
-    Model para Plano de Contas.
-    
-    Estrutura contábil básica do sistema.
-    """
-    
-    __tablename__ = 'plano_contas'
-    
-    codigo = db.Column(db.String(20), unique=True, nullable=False)
-    nome = db.Column(db.String(200), nullable=False)
-    tipo = db.Column(db.String(20), nullable=False)  # ativo, passivo, receita, despesa
-    natureza = db.Column(db.String(20), nullable=False)  # debito, credito
-    
-    # Hierarquia
-    conta_pai_id = db.Column(db.Integer, db.ForeignKey('plano_contas.id'))
-    nivel = db.Column(db.Integer, default=1)
-    
-    def __repr__(self):
-        return f'<PlanoContas {self.codigo}: {self.nome}>'
-
-# Configurar relacionamento após definição da classe
-PlanoContas.conta_pai = db.relationship('PlanoContas', 
-                                       remote_side=[PlanoContas.id], 
-                                       backref='contas_filhas')
 
 
 class ContaBancaria(BaseModel):
@@ -786,3 +760,196 @@ class CustoFixo(BaseModel):
                     lancamentos_gerados.append(lancamento)
         
         return lancamentos_gerados
+
+
+# ============================================================
+# PLANO DE CONTAS
+# ============================================================
+
+class PlanoContas(BaseModel):
+    """
+    Model para Plano de Contas Contábil.
+    
+    Estrutura hierárquica para classificação contábil dos lançamentos.
+    Segue padrão contábil: Ativo, Passivo, Receitas, Despesas.
+    """
+    
+    __tablename__ = 'plano_contas'
+    __table_args__ = {'extend_existing': True}
+    
+    # Informações Básicas
+    codigo = db.Column(db.String(20), unique=True, nullable=False, index=True)
+    nome = db.Column(db.String(200), nullable=False)
+    descricao = db.Column(db.Text)
+    
+    # Hierarquia
+    tipo = db.Column(db.String(20), nullable=False)
+    # Tipos: ATIVO, PASSIVO, RECEITA, DESPESA
+    
+    nivel = db.Column(db.Integer, default=1)  # 1=Pai, 2=Filho, 3=Neto, etc
+    conta_pai_id = db.Column(db.Integer, db.ForeignKey('plano_contas.id'), nullable=True)
+    
+    # Configurações
+    aceita_lancamento = db.Column(db.Boolean, default=True)  # Contas analíticas vs sintéticas
+    ativa = db.Column(db.Boolean, default=True)
+    
+    # Natureza (para DRE)
+    natureza = db.Column(db.String(20))  # DEBITO ou CREDITO
+    
+    # Ordenação
+    ordem = db.Column(db.Integer, default=0)
+    
+    # Relacionamentos
+    conta_pai = db.relationship('PlanoContas', remote_side='PlanoContas.id', 
+                                backref='contas_filhas')
+    lancamentos = db.relationship('LancamentoFinanceiro', 
+                                  backref='plano_conta',
+                                  foreign_keys='LancamentoFinanceiro.plano_conta_id')
+    
+    def __repr__(self):
+        return f'<PlanoContas {self.codigo}: {self.nome}>'
+    
+    @property
+    def codigo_completo(self):
+        """Retorna código com hierarquia completa."""
+        if self.conta_pai:
+            return f"{self.conta_pai.codigo_completo}.{self.codigo}"
+        return self.codigo
+    
+    @property
+    def nome_completo(self):
+        """Retorna nome com hierarquia completa."""
+        if self.conta_pai:
+            return f"{self.conta_pai.nome} > {self.nome}"
+        return self.nome
+    
+    @property
+    def tipo_icone(self):
+        """Retorna ícone baseado no tipo."""
+        icones = {
+            'ATIVO': 'fas fa-coins text-success',
+            'PASSIVO': 'fas fa-hand-holding-usd text-danger',
+            'RECEITA': 'fas fa-arrow-up text-success',
+            'DESPESA': 'fas fa-arrow-down text-danger'
+        }
+        return icones.get(self.tipo, 'fas fa-file-invoice-dollar')
+    
+    @property
+    def tipo_cor(self):
+        """Retorna cor baseada no tipo."""
+        cores = {
+            'ATIVO': 'success',
+            'PASSIVO': 'danger',
+            'RECEITA': 'success',
+            'DESPESA': 'danger'
+        }
+        return cores.get(self.tipo, 'secondary')
+    
+    @property
+    def eh_sintetica(self):
+        """Verifica se é conta sintética (tem filhas)."""
+        return len(self.contas_filhas) > 0
+    
+    @property
+    def eh_analitica(self):
+        """Verifica se é conta analítica (não tem filhas)."""
+        return not self.eh_sintetica
+    
+    def get_saldo(self, data_inicio=None, data_fim=None):
+        """Calcula saldo da conta no período."""
+        query = LancamentoFinanceiro.query.filter_by(plano_conta_id=self.id)
+        
+        if data_inicio:
+            query = query.filter(LancamentoFinanceiro.data_lancamento >= data_inicio)
+        if data_fim:
+            query = query.filter(LancamentoFinanceiro.data_lancamento <= data_fim)
+        
+        total = sum(Decimal(str(lanc.valor or 0)) for lanc in query.all())
+        
+        # Se tem filhas, somar saldo delas também
+        if self.eh_sintetica:
+            for filha in self.contas_filhas:
+                total += filha.get_saldo(data_inicio, data_fim)
+        
+        return total
+    
+    def to_dict(self):
+        """Converte para dicionário."""
+        return {
+            'id': self.id,
+            'codigo': self.codigo,
+            'codigo_completo': self.codigo_completo,
+            'nome': self.nome,
+            'nome_completo': self.nome_completo,
+            'descricao': self.descricao,
+            'tipo': self.tipo,
+            'nivel': self.nivel,
+            'conta_pai_id': self.conta_pai_id,
+            'aceita_lancamento': self.aceita_lancamento,
+            'ativa': self.ativa,
+            'natureza': self.natureza,
+            'ordem': self.ordem,
+            'eh_sintetica': self.eh_sintetica,
+            'eh_analitica': self.eh_analitica
+        }
+    
+    @classmethod
+    def criar_plano_padrao(cls):
+        """Cria estrutura padrão de plano de contas."""
+        contas_padrao = [
+            # ATIVO
+            {'codigo': '1', 'nome': 'ATIVO', 'tipo': 'ATIVO', 'nivel': 1, 'aceita_lancamento': False},
+            {'codigo': '1.1', 'nome': 'Ativo Circulante', 'tipo': 'ATIVO', 'nivel': 2, 'pai': '1', 'aceita_lancamento': False},
+            {'codigo': '1.1.1', 'nome': 'Caixa e Bancos', 'tipo': 'ATIVO', 'nivel': 3, 'pai': '1.1'},
+            {'codigo': '1.1.2', 'nome': 'Contas a Receber', 'tipo': 'ATIVO', 'nivel': 3, 'pai': '1.1'},
+            {'codigo': '1.1.3', 'nome': 'Estoque', 'tipo': 'ATIVO', 'nivel': 3, 'pai': '1.1'},
+            
+            # PASSIVO
+            {'codigo': '2', 'nome': 'PASSIVO', 'tipo': 'PASSIVO', 'nivel': 1, 'aceita_lancamento': False},
+            {'codigo': '2.1', 'nome': 'Passivo Circulante', 'tipo': 'PASSIVO', 'nivel': 2, 'pai': '2', 'aceita_lancamento': False},
+            {'codigo': '2.1.1', 'nome': 'Fornecedores', 'tipo': 'PASSIVO', 'nivel': 3, 'pai': '2.1'},
+            {'codigo': '2.1.2', 'nome': 'Contas a Pagar', 'tipo': 'PASSIVO', 'nivel': 3, 'pai': '2.1'},
+            {'codigo': '2.1.3', 'nome': 'Impostos a Recolher', 'tipo': 'PASSIVO', 'nivel': 3, 'pai': '2.1'},
+            
+            # RECEITAS
+            {'codigo': '3', 'nome': 'RECEITAS', 'tipo': 'RECEITA', 'nivel': 1, 'aceita_lancamento': False},
+            {'codigo': '3.1', 'nome': 'Receita de Serviços', 'tipo': 'RECEITA', 'nivel': 2, 'pai': '3'},
+            {'codigo': '3.2', 'nome': 'Receita de Vendas', 'tipo': 'RECEITA', 'nivel': 2, 'pai': '3'},
+            {'codigo': '3.3', 'nome': 'Outras Receitas', 'tipo': 'RECEITA', 'nivel': 2, 'pai': '3'},
+            
+            # DESPESAS
+            {'codigo': '4', 'nome': 'DESPESAS', 'tipo': 'DESPESA', 'nivel': 1, 'aceita_lancamento': False},
+            {'codigo': '4.1', 'nome': 'Despesas Operacionais', 'tipo': 'DESPESA', 'nivel': 2, 'pai': '4', 'aceita_lancamento': False},
+            {'codigo': '4.1.1', 'nome': 'Salários e Encargos', 'tipo': 'DESPESA', 'nivel': 3, 'pai': '4.1'},
+            {'codigo': '4.1.2', 'nome': 'Aluguel', 'tipo': 'DESPESA', 'nivel': 3, 'pai': '4.1'},
+            {'codigo': '4.1.3', 'nome': 'Energia Elétrica', 'tipo': 'DESPESA', 'nivel': 3, 'pai': '4.1'},
+            {'codigo': '4.1.4', 'nome': 'Telefone e Internet', 'tipo': 'DESPESA', 'nivel': 3, 'pai': '4.1'},
+            {'codigo': '4.2', 'nome': 'Despesas Administrativas', 'tipo': 'DESPESA', 'nivel': 2, 'pai': '4', 'aceita_lancamento': False},
+            {'codigo': '4.2.1', 'nome': 'Material de Escritório', 'tipo': 'DESPESA', 'nivel': 3, 'pai': '4.2'},
+            {'codigo': '4.2.2', 'nome': 'Material de Limpeza', 'tipo': 'DESPESA', 'nivel': 3, 'pai': '4.2'},
+        ]
+        
+        contas_criadas = {}
+        
+        for conta_data in contas_padrao:
+            # Buscar conta pai se existir
+            conta_pai = None
+            if 'pai' in conta_data:
+                conta_pai = contas_criadas.get(conta_data['pai'])
+            
+            conta = cls(
+                codigo=conta_data['codigo'],
+                nome=conta_data['nome'],
+                tipo=conta_data['tipo'],
+                nivel=conta_data['nivel'],
+                conta_pai_id=conta_pai.id if conta_pai else None,
+                aceita_lancamento=conta_data.get('aceita_lancamento', True),
+                ativa=True
+            )
+            
+            db.session.add(conta)
+            db.session.flush()
+            contas_criadas[conta_data['codigo']] = conta
+        
+        db.session.commit()
+        return len(contas_criadas)

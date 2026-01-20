@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Plano de Contas - ERP JSP{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb bg-dark">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.index') }}" class="text-info"><i class="fas fa-home"></i> Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}" class="text-info">Financeiro</a></li>
+        <li class="breadcrumb-item active text-white">Plano de Contas</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="text-white mb-1">
+            <i class="fas fa-sitemap text-info"></i> Plano de Contas
+        </h2>
+        <p class="text-muted mb-0">
+            <i class="fas fa-info-circle"></i> Estrutura hierárquica para classificação contábil
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('financeiro.plano_contas_nova') }}" class="btn btn-success">
+            <i class="fas fa-plus"></i> Nova Conta
+        </a>
+        {% if total_contas == 0 %}
+        <form action="{{ url_for('financeiro.plano_contas_criar_padrao') }}" method="POST" style="display: inline;">
+            <button type="submit" class="btn btn-warning" onclick="return confirm('Criar estrutura padrão de plano de contas?')">
+                <i class="fas fa-magic"></i> Criar Plano Padrão
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Cards de Resumo -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success bg-gradient text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-coins fa-2x me-3"></i>
+                    <div>
+                        <h6 class="mb-0">Ativo</h6>
+                        <h4 class="mb-0">{{ contas_por_tipo['ATIVO']|length }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger bg-gradient text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-hand-holding-usd fa-2x me-3"></i>
+                    <div>
+                        <h6 class="mb-0">Passivo</h6>
+                        <h4 class="mb-0">{{ contas_por_tipo['PASSIVO']|length }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-primary bg-gradient text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-arrow-up fa-2x me-3"></i>
+                    <div>
+                        <h6 class="mb-0">Receitas</h6>
+                        <h4 class="mb-0">{{ contas_por_tipo['RECEITA']|length }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning bg-gradient text-dark">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-arrow-down fa-2x me-3"></i>
+                    <div>
+                        <h6 class="mb-0">Despesas</h6>
+                        <h4 class="mb-0">{{ contas_por_tipo['DESPESA']|length }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if total_contas == 0 %}
+<!-- Mensagem quando vazio -->
+<div class="card bg-dark border-secondary">
+    <div class="card-body text-center py-5">
+        <i class="fas fa-sitemap fa-4x text-muted mb-3"></i>
+        <h4 class="text-white">Nenhum Plano de Contas Cadastrado</h4>
+        <p class="text-muted">Crie o plano padrão ou cadastre suas próprias contas contábeis</p>
+        <div class="mt-4">
+            <form action="{{ url_for('financeiro.plano_contas_criar_padrao') }}" method="POST" style="display: inline;">
+                <button type="submit" class="btn btn-warning btn-lg" onclick="return confirm('Criar estrutura padrão de plano de contas?')">
+                    <i class="fas fa-magic"></i> Criar Plano Padrão
+                </button>
+            </form>
+            <a href="{{ url_for('financeiro.plano_contas_nova') }}" class="btn btn-success btn-lg">
+                <i class="fas fa-plus"></i> Criar Manualmente
+            </a>
+        </div>
+    </div>
+</div>
+{% else %}
+
+<!-- Tabs por Tipo -->
+<ul class="nav nav-tabs mb-3" id="planoTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="ativo-tab" data-bs-toggle="tab" data-bs-target="#ativo" type="button">
+            <i class="fas fa-coins text-success"></i> Ativo ({{ contas_por_tipo['ATIVO']|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="passivo-tab" data-bs-toggle="tab" data-bs-target="#passivo" type="button">
+            <i class="fas fa-hand-holding-usd text-danger"></i> Passivo ({{ contas_por_tipo['PASSIVO']|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="receita-tab" data-bs-toggle="tab" data-bs-target="#receita" type="button">
+            <i class="fas fa-arrow-up text-success"></i> Receitas ({{ contas_por_tipo['RECEITA']|length }})
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="despesa-tab" data-bs-toggle="tab" data-bs-target="#despesa" type="button">
+            <i class="fas fa-arrow-down text-danger"></i> Despesas ({{ contas_por_tipo['DESPESA']|length }})
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="planoTabContent">
+    <!-- Ativo -->
+    <div class="tab-pane fade show active" id="ativo" role="tabpanel">
+        {% include 'financeiro/plano_contas/_tabela_contas.html' with context %}
+    </div>
+    
+    <!-- Passivo -->
+    <div class="tab-pane fade" id="passivo" role="tabpanel">
+        {% set contas = contas_por_tipo['PASSIVO'] %}
+        {% include 'financeiro/plano_contas/_tabela_contas.html' with context %}
+    </div>
+    
+    <!-- Receita -->
+    <div class="tab-pane fade" id="receita" role="tabpanel">
+        {% set contas = contas_por_tipo['RECEITA'] %}
+        {% include 'financeiro/plano_contas/_tabela_contas.html' with context %}
+    </div>
+    
+    <!-- Despesa -->
+    <div class="tab-pane fade" id="despesa" role="tabpanel">
+        {% set contas = contas_por_tipo['DESPESA'] %}
+        {% include 'financeiro/plano_contas/_tabela_contas.html' with context %}
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}

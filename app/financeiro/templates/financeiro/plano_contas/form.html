@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if conta else 'Nova' }} Conta - Plano de Contas{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb bg-dark">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.index') }}" class="text-info"><i class="fas fa-home"></i> Home</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}" class="text-info">Financeiro</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('financeiro.plano_contas') }}" class="text-info">Plano de Contas</a></li>
+        <li class="breadcrumb-item active text-white">{{ 'Editar' if conta else 'Nova' }} Conta</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card bg-dark border-secondary">
+            <div class="card-header bg-secondary">
+                <h5 class="mb-0 text-white">
+                    <i class="fas fa-sitemap"></i> {{ 'Editar' if conta else 'Nova' }} Conta Contábil
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <!-- Código e Nome -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label text-white">Código *</label>
+                            <input type="text" class="form-control bg-dark text-white border-secondary" 
+                                   name="codigo" value="{{ conta.codigo if conta else '' }}" required
+                                   placeholder="Ex: 1.1.1">
+                            <small class="text-muted">Hierarquia: 1.1.1</small>
+                        </div>
+                        <div class="col-md-9">
+                            <label class="form-label text-white">Nome da Conta *</label>
+                            <input type="text" class="form-control bg-dark text-white border-secondary" 
+                                   name="nome" value="{{ conta.nome if conta else '' }}" required
+                                   placeholder="Ex: Caixa e Bancos">
+                        </div>
+                    </div>
+
+                    <!-- Tipo e Conta Pai -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-white">Tipo *</label>
+                            <select class="form-select bg-dark text-white border-secondary" name="tipo" required>
+                                <option value="">Selecione...</option>
+                                <option value="ATIVO" {% if conta and conta.tipo == 'ATIVO' %}selected{% endif %}>
+                                    <i class="fas fa-coins"></i> Ativo
+                                </option>
+                                <option value="PASSIVO" {% if conta and conta.tipo == 'PASSIVO' %}selected{% endif %}>
+                                    Passivo
+                                </option>
+                                <option value="RECEITA" {% if conta and conta.tipo == 'RECEITA' %}selected{% endif %}>
+                                    Receita
+                                </option>
+                                <option value="DESPESA" {% if conta and conta.tipo == 'DESPESA' %}selected{% endif %}>
+                                    Despesa
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-white">Conta Pai (opcional)</label>
+                            <select class="form-select bg-dark text-white border-secondary" name="conta_pai_id">
+                                <option value="">Nenhuma (Conta Raiz)</option>
+                                {% for cp in contas_pai %}
+                                    <option value="{{ cp.id }}" 
+                                            {% if conta and conta.conta_pai_id == cp.id %}selected{% endif %}>
+                                        {{ cp.codigo }} - {{ cp.nome }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Define hierarquia</small>
+                        </div>
+                    </div>
+
+                    <!-- Descrição -->
+                    <div class="mb-3">
+                        <label class="form-label text-white">Descrição</label>
+                        <textarea class="form-control bg-dark text-white border-secondary" 
+                                  name="descricao" rows="3" 
+                                  placeholder="Descrição detalhada da conta...">{{ conta.descricao if conta else '' }}</textarea>
+                    </div>
+
+                    <!-- Aceita Lançamento -->
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="aceita_lancamento" 
+                                   id="aceita_lancamento"
+                                   {% if not conta or conta.aceita_lancamento %}checked{% endif %}>
+                            <label class="form-check-label text-white" for="aceita_lancamento">
+                                Aceita Lançamentos (Conta Analítica)
+                            </label>
+                            <small class="d-block text-muted mt-1">
+                                Contas sintéticas agrupam outras contas, mas não recebem lançamentos diretos
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Natureza e Ordem -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-white">Natureza</label>
+                            <select class="form-select bg-dark text-white border-secondary" name="natureza">
+                                <option value="">Selecione...</option>
+                                <option value="DEBITO" {% if conta and conta.natureza == 'DEBITO' %}selected{% endif %}>
+                                    Débito
+                                </option>
+                                <option value="CREDITO" {% if conta and conta.natureza == 'CREDITO' %}selected{% endif %}>
+                                    Crédito
+                                </option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-white">Ordem de Exibição</label>
+                            <input type="number" class="form-control bg-dark text-white border-secondary" 
+                                   name="ordem" value="{{ conta.ordem if conta else 0 }}" min="0">
+                            <small class="text-muted">Para ordenar nas listagens</small>
+                        </div>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="d-flex gap-2 justify-content-end">
+                        <a href="{{ url_for('financeiro.plano_contas') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
