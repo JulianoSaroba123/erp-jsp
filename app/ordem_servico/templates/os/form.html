@@ -145,14 +145,19 @@
                         <label class="form-label text-white">
                             <i class="fas fa-database me-2"></i>Selecionar Equipamento Cadastrado
                         </label>
-                        <select class="form-select bg-dark text-white border-secondary" 
-                                id="equipamento_cadastrado" 
-                                name="equipamento_cadastrado">
-                            <option value="">Selecione um equipamento (ou preencha manualmente abaixo)</option>
-                        </select>
+                        <div class="input-group">
+                            <select class="form-select bg-dark text-white border-secondary" 
+                                    id="equipamento_cadastrado" 
+                                    name="equipamento_cadastrado">
+                                <option value="">Primeiro selecione um cliente acima</option>
+                            </select>
+                            <button type="button" class="btn btn-outline-warning" id="btn_recarregar_equipamentos" title="Recarregar equipamentos">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
                         <small class="text-muted">
                             <i class="fas fa-info-circle"></i> 
-                            Ao selecionar, os campos abaixo serão preenchidos automaticamente. 
+                            Selecione um cliente acima, depois escolha o equipamento aqui. 
                             <a href="{{ url_for('equipamento.novo') }}" target="_blank" class="text-warning">
                                 <i class="fas fa-plus-circle"></i> Cadastrar novo equipamento
                             </a>
@@ -1562,39 +1567,83 @@ document.addEventListener('DOMContentLoaded', function() {
     const marcaModeloInput = document.getElementById('marca_modelo');
     const numeroSerieInput = document.getElementById('numero_serie');
 
+    // Função para carregar equipamentos do cliente
+    async function carregarEquipamentosCliente(clienteId) {
+        console.log('[DEBUG] 🔍 Carregando equipamentos para cliente ID:', clienteId);
+        
+        if (!clienteId || !equipamentoCadastradoSelect) {
+            equipamentoCadastradoSelect.innerHTML = '<option value="">Primeiro selecione um cliente acima</option>';
+            return;
+        }
+        
+        // Mostra loading
+        equipamentoCadastradoSelect.innerHTML = '<option value="">🔄 Carregando equipamentos...</option>';
+        
+        try {
+            const url = `/equipamentos/api/por-cliente/${clienteId}`;
+            console.log('[DEBUG] 📡 Fazendo requisição para:', url);
+            
+            const response = await fetch(url);
+            console.log('[DEBUG] 📊 Status da resposta:', response.status);
+            
+            const data = await response.json();
+            console.log('[DEBUG] 📦 Dados recebidos:', data);
+            
+            // Limpa dropdown
+            equipamentoCadastradoSelect.innerHTML = '<option value="">-- Selecione um equipamento --</option>';
+            
+            if (data.success && data.equipamentos && data.equipamentos.length > 0) {
+                // Adiciona opções ao dropdown
+                data.equipamentos.forEach(eq => {
+                    const option = document.createElement('option');
+                    option.value = eq.id;
+                    // Monta texto descritivo
+                    let texto = eq.nome || eq.tipo || 'Equipamento';
+                    if (eq.marca) texto += ' - ' + eq.marca;
+                    if (eq.modelo) texto += ' ' + eq.modelo;
+                    if (eq.numero_serie) texto += ' (S/N: ' + eq.numero_serie + ')';
+                    
+                    option.textContent = texto;
+                    option.dataset.equipamento = JSON.stringify(eq);
+                    equipamentoCadastradoSelect.appendChild(option);
+                });
+                
+                console.log(`[DEBUG] ✅ ${data.equipamentos.length} equipamentos carregados com sucesso`);
+            } else {
+                equipamentoCadastradoSelect.innerHTML = '<option value="">❌ Nenhum equipamento cadastrado para este cliente</option>';
+                console.log('[DEBUG] ⚠️ Nenhum equipamento encontrado para o cliente');
+            }
+        } catch (error) {
+            console.error('[DEBUG] ❌ Erro ao carregar equipamentos:', error);
+            equipamentoCadastradoSelect.innerHTML = '<option value="">❌ Erro ao carregar equipamentos</option>';
+        }
+    }
+
     // Carrega equipamentos do cliente quando seleciona
     if (clienteSelectElement && equipamentoCadastradoSelect) {
-        clienteSelectElement.addEventListener('change', async function() {
+        clienteSelectElement.addEventListener('change', function() {
             const clienteId = this.value;
-            
-            // Limpa dropdown de equipamentos
-            equipamentoCadastradoSelect.innerHTML = '<option value="">Selecione um equipamento (ou preencha manualmente abaixo)</option>';
-            
-            if (!clienteId) {
-                return;
-            }
-            
-            try {
-                // Chama API para buscar equipamentos do cliente
-                const response = await fetch(`/equipamentos/api/por-cliente/${clienteId}`);
-                const data = await response.json();
-                
-                if (data.success && data.equipamentos.length > 0) {
-                    // Adiciona opções ao dropdown
-                    data.equipamentos.forEach(eq => {
-                        const option = document.createElement('option');
-                        option.value = eq.id;
-                        option.textContent = `${eq.nome}${eq.marca ? ' - ' + eq.marca : ''}${eq.modelo ? ' ' + eq.modelo : ''}`;
-                        option.dataset.equipamento = JSON.stringify(eq);
-                        equipamentoCadastradoSelect.appendChild(option);
-                    });
-                    
-                    console.log(`✅ ${data.equipamentos.length} equipamentos carregados para o cliente`);
-                } else {
-                    console.log('ℹ️ Nenhum equipamento cadastrado para este cliente');
-                }
-            } catch (error) {
-                console.error('❌ Erro ao carregar equipamentos:', error);
+            console.log('[DEBUG] 👤 Cliente selecionado, ID:', clienteId);
+            carregarEquipamentosCliente(clienteId);
+        });
+        
+        // Se já tem cliente selecionado ao carregar a página, carregar equipamentos
+        if (clienteSelectElement.value) {
+            console.log('[DEBUG] 🔄 Cliente já selecionado ao carregar página:', clienteSelectElement.value);
+            carregarEquipamentosCliente(clienteSelectElement.value);
+        }
+    }
+    
+    // Botão para recarregar equipamentos manualmente
+    const btnRecarregar = document.getElementById('btn_recarregar_equipamentos');
+    if (btnRecarregar) {
+        btnRecarregar.addEventListener('click', function() {
+            const clienteId = clienteSelectElement ? clienteSelectElement.value : null;
+            if (clienteId) {
+                console.log('[DEBUG] 🔄 Recarregando equipamentos manualmente');
+                carregarEquipamentosCliente(clienteId);
+            } else {
+                alert('⚠️ Selecione um cliente primeiro!');
             }
         });
     }

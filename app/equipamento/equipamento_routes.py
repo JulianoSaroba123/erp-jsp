@@ -186,13 +186,21 @@ def api_por_cliente(cliente_id):
     Usada para popular dropdown de equipamentos ao selecionar cliente na OS.
     """
     try:
+        print(f"\n[DEBUG API] 🔍 Buscando equipamentos para cliente ID: {cliente_id}")
         equipamentos = Equipamento.buscar_por_cliente(cliente_id, apenas_ativos=True)
+        print(f"[DEBUG API] 📦 Encontrados {len(equipamentos)} equipamentos")
+        
+        equipamentos_dict = [eq.to_dict() for eq in equipamentos]
+        print(f"[DEBUG API] 📋 Dados dos equipamentos: {equipamentos_dict}")
         
         return jsonify({
             'success': True,
-            'equipamentos': [eq.to_dict() for eq in equipamentos]
+            'equipamentos': equipamentos_dict
         })
     except Exception as e:
+        print(f"[DEBUG API] ❌ Erro ao buscar equipamentos: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
             'error': str(e)
