@@ -282,6 +282,59 @@ def create_app(config_name=None):
                 db.session.rollback()
                 print(f"   ⚠️ Erro na migração de colunas financeiras: {e}")
             
+            # Migração completa para PlanoContas
+            try:
+                print("\n🔍 Verificando tabela plano_contas...")
+                
+                # Verifica se a tabela existe
+                resultado_plano = db.session.execute(text("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'plano_contas'
+                """))
+                colunas_plano = {row[0] for row in resultado_plano}
+                
+                if not colunas_plano:
+                    print("   ⚠️ Tabela plano_contas não existe, será criada pelo create_all()")
+                else:
+                    print(f"   📊 Tabela encontrada com {len(colunas_plano)} colunas")
+                    
+                    # Adiciona colunas faltantes
+                    if 'descricao' not in colunas_plano:
+                        print("   🔧 Adicionando coluna 'descricao'...")
+                        db.session.execute(text("ALTER TABLE plano_contas ADD COLUMN descricao TEXT"))
+                        db.session.commit()
+                    
+                    if 'nivel' not in colunas_plano:
+                        print("   🔧 Adicionando coluna 'nivel'...")
+                        db.session.execute(text("ALTER TABLE plano_contas ADD COLUMN nivel INTEGER DEFAULT 1"))
+                        db.session.commit()
+                    
+                    if 'conta_pai_id' not in colunas_plano:
+                        print("   🔧 Adicionando coluna 'conta_pai_id'...")
+                        db.session.execute(text("ALTER TABLE plano_contas ADD COLUMN conta_pai_id INTEGER REFERENCES plano_contas(id)"))
+                        db.session.commit()
+                    
+                    if 'aceita_lancamento' not in colunas_plano:
+                        print("   🔧 Adicionando coluna 'aceita_lancamento'...")
+                        db.session.execute(text("ALTER TABLE plano_contas ADD COLUMN aceita_lancamento BOOLEAN DEFAULT true"))
+                        db.session.commit()
+                    
+                    if 'natureza' not in colunas_plano:
+                        print("   🔧 Adicionando coluna 'natureza'...")
+                        db.session.execute(text("ALTER TABLE plano_contas ADD COLUMN natureza VARCHAR(20)"))
+                        db.session.commit()
+                    
+                    if 'ordem' not in colunas_plano:
+                        print("   🔧 Adicionando coluna 'ordem'...")
+                        db.session.execute(text("ALTER TABLE plano_contas ADD COLUMN ordem INTEGER DEFAULT 0"))
+                        db.session.commit()
+                    
+                    print("   ✅ Colunas do plano_contas verificadas/criadas!")
+            except Exception as e:
+                db.session.rollback()
+                print(f"   ⚠️ Erro na migração de plano_contas: {e}")
+            
             print("✅ Todas as migrações concluídas!\n")
             
             # Cria usuário admin padrão se não existir nenhum usuário
