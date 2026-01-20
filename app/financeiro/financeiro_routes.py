@@ -14,7 +14,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from datetime import datetime, date
 from decimal import Decimal
 from app.extensoes import db
-from app.financeiro.financeiro_model import LancamentoFinanceiro, CategoriaFinanceira, ContaBancaria, CentroCusto
+from app.financeiro.financeiro_model import LancamentoFinanceiro, CategoriaFinanceira, ContaBancaria, CentroCusto, CustoFixo
 from app.cliente.cliente_model import Cliente
 from app.fornecedor.fornecedor_model import Fornecedor
 
@@ -1458,3 +1458,231 @@ def historico_conciliacao():
     except Exception as e:
         flash(f'Erro ao carregar histórico: {str(e)}', 'danger')
         return redirect(url_for('financeiro.dashboard'))
+
+
+# ==================== ROTAS DE CUSTOS FIXOS ====================
+
+@bp_financeiro.route('/custos-fixos')
+def listar_custos_fixos():
+    """Lista todos os custos fixos."""
+    try:
+        from app.financeiro.financeiro_model import CustoFixo
+        
+        # Filtros
+        categoria = request.args.get('categoria')
+        status = request.args.get('status', 'ativo')
+        
+        # Query base
+        query = CustoFixo.query
+        
+        if status == 'ativo':
+            query = query.filter_by(ativo=True)
+        elif status == 'inativo':
+            query = query.filter_by(ativo=False)
+        
+        if categoria:
+            query = query.filter_by(categoria=categoria)
+        
+        custos = query.order_by(CustoFixo.dia_vencimento).all()
+        
+        # Calcular total mensal
+        total_mensal = CustoFixo.get_total_mensal()
+        
+        # Buscar categorias únicas
+        categorias = db.session.query(CustoFixo.categoria).distinct().all()
+        categorias = [c[0] for c in categorias if c[0]]
+        
+        return render_template('financeiro/custos_fixos/listar.html',
+                             custos=custos,
+                             total_mensal=total_mensal,
+                             categorias=categorias,
+                             categoria_filtro=categoria,
+                             status_filtro=status)
+    
+    except Exception as e:
+        flash(f'Erro ao listar custos fixos: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.dashboard'))
+
+
+@bp_financeiro.route('/custos-fixos/novo', methods=['GET', 'POST'])
+def novo_custo_fixo():
+    """Formulário para criar novo custo fixo."""
+    try:
+        from app.financeiro.financeiro_model import CustoFixo
+        
+        if request.method == 'POST':
+            # Criar custo fixo
+            custo = CustoFixo(
+                nome=request.form['nome'],
+                descricao=request.form.get('descricao', ''),
+                valor_mensal=converter_valor_monetario(request.form['valor_mensal']),
+                categoria=request.form['categoria'],
+                tipo=request.form.get('tipo', 'DESPESA'),
+                dia_vencimento=int(request.form['dia_vencimento']),
+                gerar_automaticamente=bool(request.form.get('gerar_automaticamente')),
+                data_inicio=datetime.strptime(request.form['data_inicio'], '%Y-%m-%d').date(),
+                data_fim=datetime.strptime(request.form['data_fim'], '%Y-%m-%d').date() if request.form.get('data_fim') else None,
+                conta_bancaria_id=int(request.form['conta_bancaria_id']) if request.form.get('conta_bancaria_id') else None,
+                centro_custo_id=int(request.form['centro_custo_id']) if request.form.get('centro_custo_id') else None,
+                ativo=True
+            )
+            
+            db.session.add(custo)
+            db.session.commit()
+            
+            flash(f'Custo fixo "{custo.nome}" criado com sucesso!', 'success')
+            return redirect(url_for('financeiro.listar_custos_fixos'))
+        
+        # GET - exibir formulário
+        contas = ContaBancaria.query.filter_by(ativo=True).all()
+        centros = CentroCusto.query.filter_by(ativo=True).all()
+        
+        # Categorias padrão
+        categorias_padrao = [
+            'Aluguel', 'Salários', 'Encargos', 'Energia', 'Água',
+            'Internet', 'Telefone', 'Software', 'Manutenção', 'Seguros',
+            'Impostos', 'Contabilidade', 'Marketing', 'Outros'
+        ]
+        
+        return render_template('financeiro/custos_fixos/form.html',
+                             custo=None,
+                             contas=contas,
+                             centros=centros,
+                             categorias=categorias_padrao,
+                             data_hoje=date.today())
+    
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao criar custo fixo: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.listar_custos_fixos'))
+
+
+@bp_financeiro.route('/custos-fixos/<int:id>/editar', methods=['GET', 'POST'])
+def editar_custo_fixo(id):
+    """Editar custo fixo existente."""
+    try:
+        from app.financeiro.financeiro_model import CustoFixo
+        
+        custo = CustoFixo.query.get_or_404(id)
+        
+        if request.method == 'POST':
+            # Atualizar custo
+            custo.nome = request.form['nome']
+            custo.descricao = request.form.get('descricao', '')
+            custo.valor_mensal = converter_valor_monetario(request.form['valor_mensal'])
+            custo.categoria = request.form['categoria']
+            custo.tipo = request.form.get('tipo', 'DESPESA')
+            custo.dia_vencimento = int(request.form['dia_vencimento'])
+            custo.gerar_automaticamente = bool(request.form.get('gerar_automaticamente'))
+            custo.data_inicio = datetime.strptime(request.form['data_inicio'], '%Y-%m-%d').date()
+            custo.data_fim = datetime.strptime(request.form['data_fim'], '%Y-%m-%d').date() if request.form.get('data_fim') else None
+            custo.conta_bancaria_id = int(request.form['conta_bancaria_id']) if request.form.get('conta_bancaria_id') else None
+            custo.centro_custo_id = int(request.form['centro_custo_id']) if request.form.get('centro_custo_id') else None
+            
+            db.session.commit()
+            
+            flash(f'Custo fixo "{custo.nome}" atualizado com sucesso!', 'success')
+            return redirect(url_for('financeiro.listar_custos_fixos'))
+        
+        # GET - exibir formulário
+        contas = ContaBancaria.query.filter_by(ativo=True).all()
+        centros = CentroCusto.query.filter_by(ativo=True).all()
+        
+        categorias_padrao = [
+            'Aluguel', 'Salários', 'Encargos', 'Energia', 'Água',
+            'Internet', 'Telefone', 'Software', 'Manutenção', 'Seguros',
+            'Impostos', 'Contabilidade', 'Marketing', 'Outros'
+        ]
+        
+        return render_template('financeiro/custos_fixos/form.html',
+                             custo=custo,
+                             contas=contas,
+                             centros=centros,
+                             categorias=categorias_padrao,
+                             data_hoje=date.today())
+    
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao editar custo fixo: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.listar_custos_fixos'))
+
+
+@bp_financeiro.route('/custos-fixos/<int:id>/excluir', methods=['POST'])
+def excluir_custo_fixo(id):
+    """Excluir (desativar) custo fixo."""
+    try:
+        from app.financeiro.financeiro_model import CustoFixo
+        
+        custo = CustoFixo.query.get_or_404(id)
+        custo.ativo = False
+        
+        db.session.commit()
+        
+        flash(f'Custo fixo "{custo.nome}" desativado com sucesso!', 'success')
+    
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir custo fixo: {str(e)}', 'danger')
+    
+    return redirect(url_for('financeiro.listar_custos_fixos'))
+
+
+@bp_financeiro.route('/custos-fixos/dashboard')
+def dashboard_custos_fixos():
+    """Dashboard de custos fixos."""
+    try:
+        from app.financeiro.financeiro_model import CustoFixo
+        
+        custos = CustoFixo.get_custos_ativos()
+        total_mensal = CustoFixo.get_total_mensal()
+        
+        # Próximos vencimentos (próximos 30 dias)
+        proximos_vencimentos = []
+        for custo in custos:
+            vencimento = custo.proximo_vencimento
+            dias_restantes = (vencimento - date.today()).days
+            if dias_restantes <= 30:
+                proximos_vencimentos.append({
+                    'custo': custo,
+                    'vencimento': vencimento,
+                    'dias_restantes': dias_restantes
+                })
+        
+        proximos_vencimentos.sort(key=lambda x: x['vencimento'])
+        
+        # Totais por categoria
+        totais_categoria = {}
+        for custo in custos:
+            if custo.categoria not in totais_categoria:
+                totais_categoria[custo.categoria] = Decimal('0.00')
+            totais_categoria[custo.categoria] += custo.valor_mensal
+        
+        return render_template('financeiro/custos_fixos/dashboard.html',
+                             custos=custos,
+                             total_mensal=total_mensal,
+                             proximos_vencimentos=proximos_vencimentos,
+                             totais_categoria=totais_categoria)
+    
+    except Exception as e:
+        flash(f'Erro ao carregar dashboard: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.dashboard'))
+
+
+@bp_financeiro.route('/custos-fixos/gerar-lancamentos', methods=['POST'])
+def gerar_lancamentos_mes():
+    """Gera lançamentos automáticos para o mês atual."""
+    try:
+        from app.financeiro.financeiro_model import CustoFixo
+        
+        lancamentos = CustoFixo.gerar_lancamentos_automaticos()
+        
+        if lancamentos:
+            flash(f'{len(lancamentos)} lançamento(s) gerado(s) com sucesso!', 'success')
+        else:
+            flash('Nenhum lançamento novo para gerar.', 'info')
+    
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao gerar lançamentos: {str(e)}', 'danger')
+    
+    return redirect(url_for('financeiro.dashboard_custos_fixos'))

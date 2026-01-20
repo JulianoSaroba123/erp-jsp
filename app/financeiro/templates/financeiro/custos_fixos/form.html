@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if custo else 'Novo' }} Custo Fixo - ERP JSP{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.listar_custos_fixos') }}">Custos Fixos</a></li>
+<li class="breadcrumb-item active">{{ 'Editar' if custo else 'Novo' }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-{{ 'edit' if custo else 'plus' }}"></i>
+                    {{ 'Editar' if custo else 'Novo' }} Custo Fixo
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <!-- Dados Básicos -->
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Nome do Custo <span class="text-danger">*</span></label>
+                            <input type="text" name="nome" class="form-control" 
+                                   value="{{ custo.nome if custo else '' }}" 
+                                   placeholder="Ex: Aluguel do Galpão" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Tipo <span class="text-danger">*</span></label>
+                            <select name="tipo" class="form-select" required>
+                                <option value="DESPESA" {% if custo and custo.tipo == 'DESPESA' %}selected{% endif %}>Despesa</option>
+                                <option value="RECEITA" {% if custo and custo.tipo == 'RECEITA' %}selected{% endif %}>Receita</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Descrição</label>
+                        <textarea name="descricao" class="form-control" rows="2" 
+                                  placeholder="Detalhes adicionais sobre este custo">{{ custo.descricao if custo else '' }}</textarea>
+                    </div>
+
+                    <!-- Valores -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Valor Mensal <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="text" name="valor_mensal" class="form-control" 
+                                       value="{{ '{:,.2f}'.format(custo.valor_mensal).replace(',', '_').replace('.', ',').replace('_', '.') if custo else '' }}"
+                                       placeholder="0,00" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Categoria <span class="text-danger">*</span></label>
+                            <select name="categoria" class="form-select" required>
+                                <option value="">Selecione...</option>
+                                {% for cat in categorias %}
+                                <option value="{{ cat }}" {% if custo and custo.categoria == cat %}selected{% endif %}>
+                                    {{ cat }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Recorrência -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Dia do Vencimento <span class="text-danger">*</span></label>
+                            <select name="dia_vencimento" class="form-select" required>
+                                {% for dia in range(1, 32) %}
+                                <option value="{{ dia }}" {% if custo and custo.dia_vencimento == dia %}selected{% endif %}>
+                                    Dia {{ dia }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Dia do mês em que vence este custo</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Data Início <span class="text-danger">*</span></label>
+                            <input type="date" name="data_inicio" class="form-control" 
+                                   value="{{ custo.data_inicio.strftime('%Y-%m-%d') if custo else data_hoje.strftime('%Y-%m-%d') }}" 
+                                   required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Data Fim</label>
+                            <input type="date" name="data_fim" class="form-control" 
+                                   value="{{ custo.data_fim.strftime('%Y-%m-%d') if custo and custo.data_fim else '' }}">
+                            <small class="text-muted">Deixe vazio para indeterminado</small>
+                        </div>
+                    </div>
+
+                    <!-- Relacionamentos -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Conta Bancária</label>
+                            <select name="conta_bancaria_id" class="form-select">
+                                <option value="">Nenhuma</option>
+                                {% for conta in contas %}
+                                <option value="{{ conta.id }}" {% if custo and custo.conta_bancaria_id == conta.id %}selected{% endif %}>
+                                    {{ conta.nome }} - {{ conta.banco }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Centro de Custo</label>
+                            <select name="centro_custo_id" class="form-select">
+                                <option value="">Nenhum</option>
+                                {% for centro in centros %}
+                                <option value="{{ centro.id }}" {% if custo and custo.centro_custo_id == centro.id %}selected{% endif %}>
+                                    {{ centro.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Geração Automática -->
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input type="checkbox" name="gerar_automaticamente" class="form-check-input" 
+                                   id="gerar_auto" value="1" 
+                                   {% if not custo or custo.gerar_automaticamente %}checked{% endif %}>
+                            <label class="form-check-label" for="gerar_auto">
+                                <strong>Gerar lançamento automaticamente todo mês</strong>
+                                <br>
+                                <small class="text-muted">
+                                    Se marcado, o sistema irá criar automaticamente um lançamento a pagar/receber 
+                                    todo mês na data de vencimento configurada.
+                                </small>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('financeiro.listar_custos_fixos') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Card de Ajuda -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h6><i class="fas fa-info-circle text-info"></i> Como funciona?</h6>
+                <ul class="mb-0">
+                    <li><strong>Custos Fixos</strong> são despesas ou receitas recorrentes mensais (ex: aluguel, salários, assinaturas)</li>
+                    <li>Ao marcar <strong>"Gerar automaticamente"</strong>, o sistema cria um lançamento todo mês na data de vencimento</li>
+                    <li>O <strong>Dia do Vencimento</strong> define quando o lançamento será criado (ex: dia 5, dia 15)</li>
+                    <li>Você pode vincular a uma <strong>Conta Bancária</strong> e <strong>Centro de Custo</strong> para melhor controle</li>
+                    <li>Use <strong>Data Fim</strong> para custos temporários (ex: contrato de 12 meses)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Formatação automática do valor monetário
+document.querySelector('input[name="valor_mensal"]').addEventListener('blur', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value) {
+        value = (parseInt(value) / 100).toFixed(2);
+        value = value.replace('.', ',');
+        value = value.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        e.target.value = value;
+    }
+});
+</script>
+{% endblock %}

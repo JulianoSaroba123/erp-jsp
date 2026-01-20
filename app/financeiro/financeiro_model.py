@@ -643,3 +643,146 @@ class ExtratoBancario(BaseModel):
         self.lancamento_id = None
         self.data_conciliacao = None
         db.session.commit()
+
+
+class CustoFixo(BaseModel):
+    """Modelo para Custos Fixos Recorrentes."""
+    __tablename__ = 'custos_fixos'
+    
+    # Dados Básicos
+    nome = db.Column(db.String(100), nullable=False)
+    descricao = db.Column(db.Text)
+    
+    # Valores
+    valor_mensal = db.Column(db.Numeric(10, 2), nullable=False)
+    categoria = db.Column(db.String(50), nullable=False)  # Ex: Aluguel, Salários, Energia, Internet
+    tipo = db.Column(db.String(20), nullable=False, default='DESPESA')  # DESPESA ou RECEITA
+    
+    # Configuração de Recorrência
+    dia_vencimento = db.Column(db.Integer, nullable=False)  # 1-31
+    gerar_automaticamente = db.Column(db.Boolean, default=True)
+    data_inicio = db.Column(db.Date, nullable=False)
+    data_fim = db.Column(db.Date)  # Null = indeterminado
+    
+    # Relacionamentos
+    conta_bancaria_id = db.Column(db.Integer, db.ForeignKey('contas_bancarias.id'))
+    centro_custo_id = db.Column(db.Integer, db.ForeignKey('centros_custo.id'))
+    
+    # Controle
+    ativo = db.Column(db.Boolean, default=True)
+    ultimo_mes_gerado = db.Column(db.String(7))  # Formato: YYYY-MM
+    
+    # Relationships
+    conta_bancaria = db.relationship('ContaBancaria', backref='custos_fixos')
+    centro_custo = db.relationship('CentroCusto', backref='custos_fixos')
+    
+    @property
+    def valor_formatado(self):
+        """Retorna valor formatado em R$."""
+        return f"R$ {self.valor_mensal:,.2f}".replace(',', '_').replace('.', ',').replace('_', '.')
+    
+    @property
+    def proximo_vencimento(self):
+        """Calcula próximo vencimento baseado na data atual."""
+        from datetime import date
+        from calendar import monthrange
+        
+        hoje = date.today()
+        ano = hoje.year
+        mes = hoje.month
+        
+        # Ajustar dia se não existir no mês
+        ultimo_dia_mes = monthrange(ano, mes)[1]
+        dia = min(self.dia_vencimento, ultimo_dia_mes)
+        
+        proxima_data = date(ano, mes, dia)
+        
+        # Se já passou, pega próximo mês
+        if proxima_data < hoje:
+            if mes == 12:
+                mes = 1
+                ano += 1
+            else:
+                mes += 1
+            ultimo_dia_mes = monthrange(ano, mes)[1]
+            dia = min(self.dia_vencimento, ultimo_dia_mes)
+            proxima_data = date(ano, mes, dia)
+        
+        return proxima_data
+    
+    def gerar_lancamento_mes(self, ano, mes):
+        """Gera lançamento financeiro para o mês especificado."""
+        from datetime import date
+        from calendar import monthrange
+        
+        # Verificar se já foi gerado
+        mes_key = f"{ano}-{mes:02d}"
+        if self.ultimo_mes_gerado == mes_key:
+            return None
+        
+        # Criar lançamento
+        ultimo_dia_mes = monthrange(ano, mes)[1]
+        dia = min(self.dia_vencimento, ultimo_dia_mes)
+        data_vencimento = date(ano, mes, dia)
+        
+        lancamento = LancamentoFinanceiro(
+            descricao=f"{self.nome} - {mes_key}",
+            valor=self.valor_mensal,
+            tipo=self.tipo,
+            data_lancamento=data_vencimento,
+            data_vencimento=data_vencimento,
+            categoria=self.categoria,
+            status='PENDENTE',
+            conta_bancaria_id=self.conta_bancaria_id,
+            centro_custo_id=self.centro_custo_id,
+            origem='CUSTO_FIXO'
+        )
+        
+        db.session.add(lancamento)
+        self.ultimo_mes_gerado = mes_key
+        db.session.commit()
+        
+        return lancamento
+    
+    @classmethod
+    def get_custos_ativos(cls):
+        """Retorna todos os custos fixos ativos."""
+        from datetime import date
+        hoje = date.today()
+        
+        return cls.query.filter(
+            cls.ativo == True,
+            cls.data_inicio <= hoje,
+            db.or_(cls.data_fim == None, cls.data_fim >= hoje)
+        ).all()
+    
+    @classmethod
+    def get_total_mensal(cls):
+        """Calcula total mensal de custos fixos ativos."""
+        from datetime import date
+        hoje = date.today()
+        
+        total = db.session.query(db.func.sum(cls.valor_mensal)).filter(
+            cls.ativo == True,
+            cls.data_inicio <= hoje,
+            db.or_(cls.data_fim == None, cls.data_fim >= hoje)
+        ).scalar()
+        
+        return total or 0
+    
+    @classmethod
+    def gerar_lancamentos_automaticos(cls):
+        """Gera lançamentos para todos os custos fixos do mês atual."""
+        from datetime import date
+        
+        hoje = date.today()
+        custos = cls.get_custos_ativos()
+        lancamentos_gerados = []
+        
+        for custo in custos:
+            if custo.gerar_automaticamente:
+                lancamento = custo.gerar_lancamento_mes(hoje.year, hoje.month)
+                if lancamento:
+                    lancamentos_gerados.append(lancamento)
+        
+        return lancamentos_gerados

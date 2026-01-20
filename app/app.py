@@ -131,7 +131,8 @@ def create_app(config_name=None):
                     ContaBancaria,
                     CentroCusto,
                     HistoricoFinanceiro,
-                    ExtratoBancario
+                    ExtratoBancario,
+                    CustoFixo
                 )
                 print("[OK] Modelos Financeiros Avançados importados (7 tabelas)")
             except Exception as e:
