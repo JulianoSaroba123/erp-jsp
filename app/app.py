@@ -272,6 +272,11 @@ def create_app(config_name=None):
                         db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN multa NUMERIC(12, 2) DEFAULT 0"))
                         db.session.commit()
                     
+                    if 'plano_conta_id' not in colunas:
+                        print("   🔧 Adicionando coluna 'plano_conta_id'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN plano_conta_id INTEGER REFERENCES plano_contas(id)"))
+                        db.session.commit()
+                    
                     print("   ✅ Colunas verificadas/criadas!")
             except Exception as e:
                 db.session.rollback()
