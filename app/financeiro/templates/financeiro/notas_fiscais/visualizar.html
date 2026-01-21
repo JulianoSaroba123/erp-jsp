@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}NF {{ nota.numero_completo }}{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.index') }}">Financeiro</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.notas_fiscais_listar') }}">Notas Fiscais</a></li>
+<li class="breadcrumb-item active">NF {{ nota.numero_completo }}</li>
+{% endblock %}
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="fas fa-file-invoice"></i> Nota Fiscal {{ nota.numero_completo }}</h2>
+        <p class="text-muted">{{ nota.empresa_nome }}</p>
+    </div>
+    <div class="col-md-4 text-end">
+        {% if not nota.lancamento_id %}
+        <form method="POST" action="{{ url_for('financeiro.notas_fiscais_criar_lancamento', id=nota.id) }}" style="display: inline;">
+            <button type="submit" class="btn btn-success" onclick="return confirm('Criar lançamento financeiro?')">
+                <i class="fas fa-plus"></i> Criar Lançamento
+            </button>
+        </form>
+        {% endif %}
+        <a href="{{ url_for('financeiro.notas_fiscais_editar', id=nota.id) }}" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Editar
+        </a>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="fas fa-info-circle"></i> Informações Básicas</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr><th>Número:</th><td>{{ nota.numero_completo }}</td></tr>
+                    <tr><th>Tipo:</th><td><span class="badge bg-{{ 'danger' if nota.tipo == 'ENTRADA' else 'success' }}">{{ nota.tipo }}</span></td></tr>
+                    <tr><th>Status:</th><td><span class="badge bg-{{ nota.status_badge }}">{{ nota.status }}</span></td></tr>
+                    <tr><th>Data Emissão:</th><td>{{ nota.data_emissao.strftime('%d/%m/%Y') if nota.data_emissao else '-' }}</td></tr>
+                    <tr><th>Chave de Acesso:</th><td><small>{{ nota.chave_acesso or '-' }}</small></td></tr>
+                    <tr><th>Natureza:</th><td>{{ nota.natureza_operacao or '-' }}</td></tr>
+                    <tr><th>CFOP:</th><td>{{ nota.cfop or '-' }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5><i class="fas fa-dollar-sign"></i> Valores</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr><th>Valor Total:</th><td class="text-end"><strong>R$ {{ "{:,.2f}".format(nota.valor_total) }}</strong></td></tr>
+                    <tr><th>Produtos:</th><td class="text-end">R$ {{ "{:,.2f}".format(nota.valor_produtos) }}</td></tr>
+                    <tr><th>Frete:</th><td class="text-end">R$ {{ "{:,.2f}".format(nota.valor_frete) }}</td></tr>
+                    <tr><th>Desconto:</th><td class="text-end">R$ {{ "{:,.2f}".format(nota.valor_desconto) }}</td></tr>
+                    <tr><th>ICMS:</th><td class="text-end">R$ {{ "{:,.2f}".format(nota.valor_icms) }}</td></tr>
+                    <tr><th>PIS:</th><td class="text-end">R$ {{ "{:,.2f}".format(nota.valor_pis) }}</td></tr>
+                    <tr><th>COFINS:</th><td class="text-end">R$ {{ "{:,.2f}".format(nota.valor_cofins) }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5><i class="fas fa-file"></i> Arquivos</h5>
+            </div>
+            <div class="card-body">
+                {% if nota.possui_xml %}
+                <a href="{{ url_for('financeiro.notas_fiscais_download', id=nota.id, tipo='xml') }}" class="btn btn-outline-info me-2">
+                    <i class="fas fa-code"></i> Download XML
+                </a>
+                {% endif %}
+                {% if nota.possui_pdf %}
+                <a href="{{ url_for('financeiro.notas_fiscais_download', id=nota.id, tipo='pdf') }}" class="btn btn-outline-danger">
+                    <i class="fas fa-file-pdf"></i> Download PDF
+                </a>
+                {% endif %}
+                {% if not nota.possui_xml and not nota.possui_pdf %}
+                <p class="text-muted">Nenhum arquivo anexado</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% if nota.lancamento %}
+<div class="alert alert-success">
+    <i class="fas fa-check-circle"></i> Lançamento financeiro vinculado: 
+    <a href="{{ url_for('financeiro.lancamento_editar', id=nota.lancamento.id) }}" class="alert-link">
+        #{{ nota.lancamento.id }} - R$ {{ "{:,.2f}".format(nota.lancamento.valor) }}
+    </a>
+</div>
+{% endif %}
+{% if nota.observacoes %}
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-comment"></i> Observações</h5>
+    </div>
+    <div class="card-body">
+        {{ nota.observacoes }}
+    </div>
+</div>
+{% endif %}
+{% endblock %}

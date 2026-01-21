@@ -255,6 +255,19 @@
                     
                     <div class="dropdown-divider mx-3"></div>
                     
+                    <!-- DOCUMENTOS FISCAIS -->
+                    <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        <span>DOCUMENTOS FISCAIS</span>
+                    </div>
+                    
+                    <a href="{{ url_for('financeiro.notas_fiscais_listar') }}" class="nav-link ps-6">
+                        <i class="fas fa-file-invoice-dollar me-2 text-danger"></i>
+                        <span>Notas Fiscais</span>
+                    </a>
+                    
+                    <div class="dropdown-divider mx-3"></div>
+                    
                     <!-- RELATÓRIOS E ANÁLISES -->
                     <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
                         <i class="fas fa-chart-line me-2"></i>

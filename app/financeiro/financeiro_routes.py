@@ -10,9 +10,10 @@ Autor: JSP Soluções
 Data: 2025
 """
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file
 from datetime import datetime, date
 from decimal import Decimal
+import io
 from app.extensoes import db
 from app.financeiro.financeiro_model import LancamentoFinanceiro, CategoriaFinanceira, ContaBancaria, CentroCusto, CustoFixo
 from app.cliente.cliente_model import Cliente
@@ -2809,3 +2810,352 @@ def orcamento_anual_comparacao():
                          ano_selecionado=ano,
                          mes_selecionado=mes,
                          anos_disponiveis=anos_disponiveis)
+
+
+# ============================================================================
+# NOTAS FISCAIS
+# ============================================================================
+
+@bp_financeiro.route('/notas-fiscais')
+def notas_fiscais_listar():
+    """Listar notas fiscais."""
+    from app.financeiro.financeiro_model import NotaFiscal
+    from datetime import datetime, timedelta
+    
+    # Filtros
+    tipo = request.args.get('tipo', '')
+    status = request.args.get('status', '')
+    data_inicio = request.args.get('data_inicio', '')
+    data_fim = request.args.get('data_fim', '')
+    busca = request.args.get('busca', '')
+    
+    # Query base
+    query = NotaFiscal.query
+    
+    if tipo:
+        query = query.filter_by(tipo=tipo)
+    if status:
+        query = query.filter_by(status=status)
+    if data_inicio:
+        query = query.filter(NotaFiscal.data_emissao >= datetime.strptime(data_inicio, '%Y-%m-%d').date())
+    if data_fim:
+        query = query.filter(NotaFiscal.data_emissao <= datetime.strptime(data_fim, '%Y-%m-%d').date())
+    if busca:
+        query = query.filter(
+            db.or_(
+                NotaFiscal.numero.like(f'%{busca}%'),
+                NotaFiscal.chave_acesso.like(f'%{busca}%'),
+                NotaFiscal.emitente_nome.like(f'%{busca}%'),
+                NotaFiscal.destinatario_nome.like(f'%{busca}%')
+            )
+        )
+    
+    notas = query.order_by(NotaFiscal.data_emissao.desc()).all()
+    
+    # Estatísticas
+    total_valor = sum(n.valor_total for n in notas)
+    total_entrada = sum(n.valor_total for n in notas if n.tipo == 'ENTRADA')
+    total_saida = sum(n.valor_total for n in notas if n.tipo == 'SAIDA')
+    
+    # Status count
+    status_count = {
+        'PENDENTE': len([n for n in notas if n.status == 'PENDENTE']),
+        'PROCESSADA': len([n for n in notas if n.status == 'PROCESSADA']),
+        'PAGA': len([n for n in notas if n.status == 'PAGA']),
+        'CANCELADA': len([n for n in notas if n.status == 'CANCELADA']),
+    }
+    
+    return render_template('financeiro/notas_fiscais/listar.html',
+                         notas=notas,
+                         tipo_selecionado=tipo,
+                         status_selecionado=status,
+                         data_inicio=data_inicio,
+                         data_fim=data_fim,
+                         busca=busca,
+                         total_valor=total_valor,
+                         total_entrada=total_entrada,
+                         total_saida=total_saida,
+                         status_count=status_count)
+
+
+@bp_financeiro.route('/notas-fiscais/nova', methods=['GET', 'POST'])
+def notas_fiscais_nova():
+    """Criar nova nota fiscal."""
+    from app.financeiro.financeiro_model import NotaFiscal
+    from app.cliente.cliente_model import Cliente
+    from app.fornecedor.fornecedor_model import Fornecedor
+    from datetime import datetime
+    import base64
+    
+    if request.method == 'POST':
+        try:
+            # Upload de XML
+            arquivo_xml = request.files.get('arquivo_xml')
+            arquivo_pdf = request.files.get('arquivo_pdf')
+            
+            dados_nota = {}
+            
+            # Parse XML se fornecido
+            if arquivo_xml and arquivo_xml.filename:
+                xml_content = arquivo_xml.read()
+                
+                # Tenta fazer parse
+                dados_xml = NotaFiscal.parse_xml_nfe(xml_content.decode('utf-8'))
+                
+                if 'error' in dados_xml:
+                    flash(f'Erro ao processar XML: {dados_xml["error"]}', 'warning')
+                else:
+                    dados_nota = dados_xml
+                    # Salva XML em base64
+                    dados_nota['arquivo_xml'] = base64.b64encode(xml_content).decode('utf-8')
+                    dados_nota['arquivo_xml_nome'] = arquivo_xml.filename
+                    
+                    # Determina tipo baseado no CNPJ
+                    # Se destinatário é a empresa, é ENTRADA
+                    # Aqui você pode ajustar com o CNPJ da sua empresa
+                    dados_nota['tipo'] = request.form.get('tipo', 'ENTRADA')
+            
+            # Sobrescreve com dados do formulário (manual)
+            nota = NotaFiscal(
+                numero=request.form.get('numero') or dados_nota.get('numero'),
+                serie=request.form.get('serie') or dados_nota.get('serie'),
+                modelo=request.form.get('modelo') or dados_nota.get('modelo', '55'),
+                tipo=request.form.get('tipo'),
+                chave_acesso=request.form.get('chave_acesso') or dados_nota.get('chave_acesso'),
+                data_emissao=datetime.strptime(request.form.get('data_emissao'), '%Y-%m-%d').date() if request.form.get('data_emissao') else dados_nota.get('data_emissao'),
+                valor_total=float(request.form.get('valor_total', '0').replace(',', '.')) if request.form.get('valor_total') else dados_nota.get('valor_total', 0),
+                valor_produtos=float(request.form.get('valor_produtos', '0').replace(',', '.')) if request.form.get('valor_produtos') else dados_nota.get('valor_produtos', 0),
+                natureza_operacao=request.form.get('natureza_operacao') or dados_nota.get('natureza_operacao'),
+                cfop=request.form.get('cfop') or dados_nota.get('cfop'),
+                status=request.form.get('status', 'PENDENTE'),
+                observacoes=request.form.get('observacoes', ''),
+                cliente_id=request.form.get('cliente_id') or None,
+                fornecedor_id=request.form.get('fornecedor_id') or None,
+                arquivo_xml=dados_nota.get('arquivo_xml'),
+                arquivo_xml_nome=dados_nota.get('arquivo_xml_nome'),
+            )
+            
+            # Dados de emitente/destinatário
+            if dados_nota:
+                nota.emitente_nome = dados_nota.get('emitente_nome')
+                nota.emitente_cnpj = dados_nota.get('emitente_cnpj')
+                nota.destinatario_nome = dados_nota.get('destinatario_nome')
+                nota.destinatario_cnpj = dados_nota.get('destinatario_cnpj')
+                nota.valor_frete = dados_nota.get('valor_frete', 0)
+                nota.valor_desconto = dados_nota.get('valor_desconto', 0)
+                nota.valor_icms = dados_nota.get('valor_icms', 0)
+                nota.valor_pis = dados_nota.get('valor_pis', 0)
+                nota.valor_cofins = dados_nota.get('valor_cofins', 0)
+            
+            # Upload de PDF
+            if arquivo_pdf and arquivo_pdf.filename:
+                pdf_content = arquivo_pdf.read()
+                nota.arquivo_pdf = base64.b64encode(pdf_content).decode('utf-8')
+                nota.arquivo_pdf_nome = arquivo_pdf.filename
+            
+            db.session.add(nota)
+            db.session.commit()
+            
+            # Criar lançamento automático se solicitado
+            if request.form.get('criar_lancamento') == 'on':
+                nota.criar_lancamento_automatico()
+                db.session.commit()
+                flash('Nota fiscal criada e lançamento financeiro gerado!', 'success')
+            else:
+                flash('Nota fiscal criada com sucesso!', 'success')
+            
+            return redirect(url_for('financeiro.notas_fiscais_visualizar', id=nota.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao criar nota fiscal: {str(e)}', 'danger')
+            import traceback
+            print(traceback.format_exc())
+    
+    # GET
+    clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+    fornecedores = Fornecedor.query.filter_by(ativo=True).order_by(Fornecedor.nome).all()
+    
+    return render_template('financeiro/notas_fiscais/form.html',
+                         clientes=clientes,
+                         fornecedores=fornecedores)
+
+
+@bp_financeiro.route('/notas-fiscais/<int:id>')
+def notas_fiscais_visualizar(id):
+    """Visualizar nota fiscal."""
+    from app.financeiro.financeiro_model import NotaFiscal
+    
+    nota = NotaFiscal.query.get_or_404(id)
+    
+    return render_template('financeiro/notas_fiscais/visualizar.html',
+                         nota=nota)
+
+
+@bp_financeiro.route('/notas-fiscais/<int:id>/editar', methods=['GET', 'POST'])
+def notas_fiscais_editar(id):
+    """Editar nota fiscal."""
+    from app.financeiro.financeiro_model import NotaFiscal
+    from app.cliente.cliente_model import Cliente
+    from app.fornecedor.fornecedor_model import Fornecedor
+    from datetime import datetime
+    
+    nota = NotaFiscal.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        try:
+            nota.numero = request.form['numero']
+            nota.serie = request.form.get('serie', '')
+            nota.modelo = request.form.get('modelo', '55')
+            nota.tipo = request.form['tipo']
+            nota.data_emissao = datetime.strptime(request.form['data_emissao'], '%Y-%m-%d').date()
+            nota.valor_total = float(request.form['valor_total'].replace(',', '.'))
+            nota.natureza_operacao = request.form.get('natureza_operacao', '')
+            nota.status = request.form['status']
+            nota.observacoes = request.form.get('observacoes', '')
+            nota.cliente_id = request.form.get('cliente_id') or None
+            nota.fornecedor_id = request.form.get('fornecedor_id') or None
+            
+            db.session.commit()
+            flash('Nota fiscal atualizada com sucesso!', 'success')
+            return redirect(url_for('financeiro.notas_fiscais_visualizar', id=nota.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao atualizar nota: {str(e)}', 'danger')
+    
+    # GET
+    clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+    fornecedores = Fornecedor.query.filter_by(ativo=True).order_by(Fornecedor.nome).all()
+    
+    return render_template('financeiro/notas_fiscais/form.html',
+                         nota=nota,
+                         clientes=clientes,
+                         fornecedores=fornecedores)
+
+
+@bp_financeiro.route('/notas-fiscais/<int:id>/excluir', methods=['POST'])
+def notas_fiscais_excluir(id):
+    """Excluir nota fiscal."""
+    from app.financeiro.financeiro_model import NotaFiscal
+    
+    nota = NotaFiscal.query.get_or_404(id)
+    
+    try:
+        # Verifica se tem lançamento vinculado
+        if nota.lancamento_id:
+            flash('Não é possível excluir nota com lançamento financeiro vinculado!', 'danger')
+            return redirect(url_for('financeiro.notas_fiscais_visualizar', id=id))
+        
+        db.session.delete(nota)
+        db.session.commit()
+        flash('Nota fiscal excluída com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir nota: {str(e)}', 'danger')
+    
+    return redirect(url_for('financeiro.notas_fiscais_listar'))
+
+
+@bp_financeiro.route('/notas-fiscais/<int:id>/criar-lancamento', methods=['POST'])
+def notas_fiscais_criar_lancamento(id):
+    """Criar lançamento financeiro da nota."""
+    from app.financeiro.financeiro_model import NotaFiscal
+    
+    nota = NotaFiscal.query.get_or_404(id)
+    
+    try:
+        if nota.lancamento_id:
+            flash('Esta nota já possui lançamento financeiro!', 'warning')
+        else:
+            lancamento = nota.criar_lancamento_automatico()
+            db.session.commit()
+            flash(f'Lançamento financeiro criado com sucesso! (#{lancamento.id})', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao criar lançamento: {str(e)}', 'danger')
+    
+    return redirect(url_for('financeiro.notas_fiscais_visualizar', id=id))
+
+
+@bp_financeiro.route('/notas-fiscais/<int:id>/download/<tipo>')
+def notas_fiscais_download(id, tipo):
+    """Download de arquivo XML ou PDF."""
+    from app.financeiro.financeiro_model import NotaFiscal
+    import base64
+    
+    nota = NotaFiscal.query.get_or_404(id)
+    
+    try:
+        if tipo == 'xml':
+            if not nota.arquivo_xml:
+                flash('Nota não possui arquivo XML!', 'warning')
+                return redirect(url_for('financeiro.notas_fiscais_visualizar', id=id))
+            
+            arquivo_bytes = base64.b64decode(nota.arquivo_xml)
+            filename = nota.arquivo_xml_nome or f'NF_{nota.numero_completo}.xml'
+            
+            return send_file(
+                io.BytesIO(arquivo_bytes),
+                mimetype='application/xml',
+                as_attachment=True,
+                download_name=filename
+            )
+        
+        elif tipo == 'pdf':
+            if not nota.arquivo_pdf:
+                flash('Nota não possui arquivo PDF!', 'warning')
+                return redirect(url_for('financeiro.notas_fiscais_visualizar', id=id))
+            
+            arquivo_bytes = base64.b64decode(nota.arquivo_pdf)
+            filename = nota.arquivo_pdf_nome or f'NF_{nota.numero_completo}.pdf'
+            
+            return send_file(
+                io.BytesIO(arquivo_bytes),
+                mimetype='application/pdf',
+                as_attachment=True,
+                download_name=filename
+            )
+        
+    except Exception as e:
+        flash(f'Erro ao fazer download: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.notas_fiscais_visualizar', id=id))
+
+
+@bp_financeiro.route('/notas-fiscais/galeria')
+def notas_fiscais_galeria():
+    """Galeria de notas fiscais com thumbnails."""
+    from app.financeiro.financeiro_model import NotaFiscal
+    from datetime import datetime, timedelta
+    
+    # Filtros
+    mes = request.args.get('mes', type=int)
+    ano = request.args.get('ano', datetime.now().year, type=int)
+    tipo = request.args.get('tipo', '')
+    
+    query = NotaFiscal.query
+    
+    if mes:
+        data_inicio = datetime(ano, mes, 1).date()
+        if mes == 12:
+            data_fim = datetime(ano + 1, 1, 1).date()
+        else:
+            data_fim = datetime(ano, mes + 1, 1).date()
+        
+        query = query.filter(
+            NotaFiscal.data_emissao >= data_inicio,
+            NotaFiscal.data_emissao < data_fim
+        )
+    else:
+        query = query.filter(db.extract('year', NotaFiscal.data_emissao) == ano)
+    
+    if tipo:
+        query = query.filter_by(tipo=tipo)
+    
+    notas = query.order_by(NotaFiscal.data_emissao.desc()).all()
+    
+    return render_template('financeiro/notas_fiscais/galeria.html',
+                         notas=notas,
+                         mes_selecionado=mes,
+                         ano_selecionado=ano,
+                         tipo_selecionado=tipo)

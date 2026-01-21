@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if nota else 'Nova' }} Nota Fiscal{% endblock %}
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.index') }}">Financeiro</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.notas_fiscais_listar') }}">Notas Fiscais</a></li>
+<li class="breadcrumb-item active">{{ 'Editar' if nota else 'Nova' }}</li>
+{% endblock %}
+{% block content %}
+<h2><i class="fas fa-{{ 'edit' if nota else 'upload' }}"></i> {{ 'Editar' if nota else 'Upload de' }} Nota Fiscal</h2>
+<div class="card">
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            {% if not nota %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Faça upload do XML da NF-e para preencher automaticamente os campos.
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label"><i class="fas fa-code"></i> Arquivo XML (NF-e)</label>
+                    <input type="file" name="arquivo_xml" class="form-control" accept=".xml">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label"><i class="fas fa-file-pdf"></i> Arquivo PDF (Opcional)</label>
+                    <input type="file" name="arquivo_pdf" class="form-control" accept=".pdf">
+                </div>
+            </div>
+            <hr>
+            {% endif %}
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Número *</label>
+                    <input type="text" name="numero" class="form-control" value="{{ nota.numero if nota else '' }}" required>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Série</label>
+                    <input type="text" name="serie" class="form-control" value="{{ nota.serie if nota else '' }}">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Tipo *</label>
+                    <select name="tipo" class="form-select" required>
+                        <option value="ENTRADA" {% if nota and nota.tipo == 'ENTRADA' %}selected{% endif %}>Entrada</option>
+                        <option value="SAIDA" {% if nota and nota.tipo == 'SAIDA' %}selected{% endif %}>Saída</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Data Emissão *</label>
+                    <input type="date" name="data_emissao" class="form-control" value="{{ nota.data_emissao if nota else '' }}" required>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="PENDENTE" {% if nota and nota.status == 'PENDENTE' %}selected{% endif %}>Pendente</option>
+                        <option value="PROCESSADA" {% if nota and nota.status == 'PROCESSADA' %}selected{% endif %}>Processada</option>
+                        <option value="PAGA" {% if nota and nota.status == 'PAGA' %}selected{% endif %}>Paga</option>
+                        <option value="CANCELADA" {% if nota and nota.status == 'CANCELADA' %}selected{% endif %}>Cancelada</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Chave de Acesso</label>
+                    <input type="text" name="chave_acesso" class="form-control" value="{{ nota.chave_acesso if nota else '' }}" maxlength="44">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Valor Total *</label>
+                    <input type="text" name="valor_total" class="form-control" value="{{ nota.valor_total if nota else '' }}" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Valor Produtos</label>
+                    <input type="text" name="valor_produtos" class="form-control" value="{{ nota.valor_produtos if nota else '' }}">
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Natureza Operação</label>
+                    <input type="text" name="natureza_operacao" class="form-control" value="{{ nota.natureza_operacao if nota else '' }}">
+                </div>
+                <div class="col-md-2 mb-3">
+                    <label class="form-label">CFOP</label>
+                    <input type="text" name="cfop" class="form-control" value="{{ nota.cfop if nota else '' }}">
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Cliente (se saída)</label>
+                    <select name="cliente_id" class="form-select">
+                        <option value="">Nenhum</option>
+                        {% for c in clientes %}
+                        <option value="{{ c.id }}" {% if nota and nota.cliente_id == c.id %}selected{% endif %}>{{ c.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Fornecedor (se entrada)</label>
+                    <select name="fornecedor_id" class="form-select">
+                        <option value="">Nenhum</option>
+                        {% for f in fornecedores %}
+                        <option value="{{ f.id }}" {% if nota and nota.fornecedor_id == f.id %}selected{% endif %}>{{ f.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Observações</label>
+                <textarea name="observacoes" class="form-control" rows="3">{{ nota.observacoes if nota else '' }}</textarea>
+            </div>
+            {% if not nota %}
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" name="criar_lancamento" id="criar_lancamento" checked>
+                <label class="form-check-label" for="criar_lancamento">
+                    Criar lançamento financeiro automaticamente
+                </label>
+            </div>
+            {% endif %}
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('financeiro.notas_fiscais_listar') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> {{ 'Atualizar' if nota else 'Cadastrar' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

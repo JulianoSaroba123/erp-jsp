@@ -1130,3 +1130,290 @@ class OrcamentoAnual(BaseModel):
         
         db.session.commit()
         return orcamentos_criados
+
+
+class NotaFiscal(BaseModel):
+    """
+    Model para Gestão de Notas Fiscais.
+    
+    Armazena informações de notas fiscais de entrada e saída,
+    com upload de arquivos XML/PDF e integração com lançamentos.
+    """
+    
+    __tablename__ = 'notas_fiscais'
+    __table_args__ = {'extend_existing': True}
+    
+    # Informações Básicas
+    numero = db.Column(db.String(20), nullable=False, index=True)
+    serie = db.Column(db.String(10))
+    modelo = db.Column(db.String(10))  # 55=NF-e, 65=NFC-e, etc
+    tipo = db.Column(db.String(10), nullable=False)  # ENTRADA ou SAIDA
+    
+    # Chave de Acesso (NF-e)
+    chave_acesso = db.Column(db.String(44), unique=True, index=True)
+    
+    # Datas
+    data_emissao = db.Column(db.Date, nullable=False, index=True)
+    data_entrada_saida = db.Column(db.Date)
+    
+    # Valores
+    valor_total = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    valor_produtos = db.Column(db.Numeric(12, 2), default=0)
+    valor_servicos = db.Column(db.Numeric(12, 2), default=0)
+    valor_frete = db.Column(db.Numeric(12, 2), default=0)
+    valor_seguro = db.Column(db.Numeric(12, 2), default=0)
+    valor_desconto = db.Column(db.Numeric(12, 2), default=0)
+    valor_outras_despesas = db.Column(db.Numeric(12, 2), default=0)
+    
+    # Impostos
+    valor_icms = db.Column(db.Numeric(12, 2), default=0)
+    valor_ipi = db.Column(db.Numeric(12, 2), default=0)
+    valor_pis = db.Column(db.Numeric(12, 2), default=0)
+    valor_cofins = db.Column(db.Numeric(12, 2), default=0)
+    
+    # Emitente/Destinatário
+    emitente_nome = db.Column(db.String(200))
+    emitente_cnpj = db.Column(db.String(18))
+    emitente_ie = db.Column(db.String(20))
+    
+    destinatario_nome = db.Column(db.String(200))
+    destinatario_cnpj = db.Column(db.String(18))
+    destinatario_ie = db.Column(db.String(20))
+    
+    # Natureza da Operação
+    natureza_operacao = db.Column(db.String(100))
+    cfop = db.Column(db.String(10))
+    
+    # Status
+    status = db.Column(db.String(20), default='PENDENTE')
+    # Status: PENDENTE, PROCESSADA, PAGA, CANCELADA
+    
+    # Arquivos
+    arquivo_xml = db.Column(db.Text)  # Caminho ou conteúdo base64
+    arquivo_pdf = db.Column(db.Text)  # Caminho ou conteúdo base64
+    arquivo_xml_nome = db.Column(db.String(255))
+    arquivo_pdf_nome = db.Column(db.String(255))
+    
+    # Observações
+    observacoes = db.Column(db.Text)
+    
+    # Relacionamentos
+    cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=True)
+    fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedores.id'), nullable=True)
+    lancamento_id = db.Column(db.Integer, db.ForeignKey('lancamentos_financeiros.id'), nullable=True)
+    
+    # Relacionamentos
+    cliente = db.relationship('Cliente', backref='notas_fiscais', foreign_keys=[cliente_id])
+    fornecedor = db.relationship('Fornecedor', backref='notas_fiscais', foreign_keys=[fornecedor_id])
+    lancamento = db.relationship('LancamentoFinanceiro', backref='nota_fiscal', foreign_keys=[lancamento_id])
+    
+    def __repr__(self):
+        return f'<NotaFiscal {self.numero}/{self.serie} - R$ {self.valor_total}>'
+    
+    @property
+    def numero_completo(self):
+        """Retorna número completo da nota."""
+        if self.serie:
+            return f"{self.numero}/{self.serie}"
+        return self.numero
+    
+    @property
+    def tipo_icone(self):
+        """Retorna ícone baseado no tipo."""
+        if self.tipo == 'ENTRADA':
+            return 'fas fa-arrow-down text-danger'
+        return 'fas fa-arrow-up text-success'
+    
+    @property
+    def status_badge(self):
+        """Retorna classe CSS do badge de status."""
+        badges = {
+            'PENDENTE': 'warning',
+            'PROCESSADA': 'info',
+            'PAGA': 'success',
+            'CANCELADA': 'danger'
+        }
+        return badges.get(self.status, 'secondary')
+    
+    @property
+    def possui_xml(self):
+        """Verifica se possui arquivo XML."""
+        return bool(self.arquivo_xml)
+    
+    @property
+    def possui_pdf(self):
+        """Verifica se possui arquivo PDF."""
+        return bool(self.arquivo_pdf)
+    
+    @property
+    def empresa(self):
+        """Retorna cliente ou fornecedor relacionado."""
+        if self.tipo == 'SAIDA' and self.cliente:
+            return self.cliente
+        elif self.tipo == 'ENTRADA' and self.fornecedor:
+            return self.fornecedor
+        return None
+    
+    @property
+    def empresa_nome(self):
+        """Retorna nome da empresa relacionada."""
+        empresa = self.empresa
+        if empresa:
+            return empresa.nome
+        # Fallback para dados do XML
+        if self.tipo == 'ENTRADA':
+            return self.emitente_nome
+        return self.destinatario_nome
+    
+    @property
+    def empresa_cnpj(self):
+        """Retorna CNPJ da empresa relacionada."""
+        empresa = self.empresa
+        if empresa:
+            return empresa.cnpj
+        # Fallback para dados do XML
+        if self.tipo == 'ENTRADA':
+            return self.emitente_cnpj
+        return self.destinatario_cnpj
+    
+    def validar_cnpj(self, cnpj):
+        """
+        Valida CNPJ básico (apenas formato).
+        
+        Args:
+            cnpj: CNPJ para validar
+            
+        Returns:
+            bool: True se válido
+        """
+        if not cnpj:
+            return False
+        
+        # Remove caracteres não numéricos
+        cnpj_numeros = ''.join(filter(str.isdigit, cnpj))
+        
+        # Verifica se tem 14 dígitos
+        return len(cnpj_numeros) == 14
+    
+    def criar_lancamento_automatico(self):
+        """
+        Cria lançamento financeiro automaticamente baseado na nota.
+        
+        Returns:
+            LancamentoFinanceiro: Lançamento criado
+        """
+        if self.lancamento_id:
+            return self.lancamento  # Já tem lançamento
+        
+        # Determina tipo do lançamento
+        tipo_lancamento = 'DESPESA' if self.tipo == 'ENTRADA' else 'RECEITA'
+        
+        # Cria lançamento
+        lancamento = LancamentoFinanceiro(
+            tipo=tipo_lancamento,
+            descricao=f"NF {self.numero_completo} - {self.empresa_nome or self.natureza_operacao}",
+            valor=self.valor_total,
+            data_vencimento=self.data_emissao,
+            data_emissao=self.data_emissao,
+            cliente_id=self.cliente_id if self.tipo == 'SAIDA' else None,
+            fornecedor_id=self.fornecedor_id if self.tipo == 'ENTRADA' else None,
+            status='PENDENTE',
+            categoria=self.natureza_operacao or 'Nota Fiscal',
+            observacoes=f"Gerado automaticamente da NF {self.numero_completo}"
+        )
+        
+        db.session.add(lancamento)
+        db.session.flush()
+        
+        self.lancamento_id = lancamento.id
+        
+        return lancamento
+    
+    @classmethod
+    def parse_xml_nfe(cls, xml_content):
+        """
+        Faz parse de XML de NF-e e extrai dados principais.
+        
+        Args:
+            xml_content: Conteúdo do XML
+            
+        Returns:
+            dict: Dicionário com dados extraídos
+        """
+        import xml.etree.ElementTree as ET
+        from datetime import datetime
+        
+        try:
+            # Parse XML
+            root = ET.fromstring(xml_content)
+            
+            # Namespaces comuns de NF-e
+            ns = {'nfe': 'http://www.portalfiscal.inf.br/nfe'}
+            
+            # Tenta sem namespace também
+            inf_nfe = root.find('.//infNFe') or root.find('.//{http://www.portalfiscal.inf.br/nfe}infNFe')
+            
+            if not inf_nfe:
+                return {'error': 'XML inválido - tag infNFe não encontrada'}
+            
+            # Extrai chave de acesso
+            chave = inf_nfe.get('Id', '').replace('NFe', '')
+            
+            # Função auxiliar para pegar texto
+            def get_text(parent, tag, default=''):
+                elem = parent.find(f'.//{tag}') or parent.find(f'.//{{{ns["nfe"]}}}{tag}')
+                return elem.text if elem is not None else default
+            
+            # Identificação
+            ide = inf_nfe.find('.//ide') or inf_nfe.find('.//{http://www.portalfiscal.inf.br/nfe}ide')
+            
+            # Emitente
+            emit = inf_nfe.find('.//emit') or inf_nfe.find('.//{http://www.portalfiscal.inf.br/nfe}emit')
+            
+            # Destinatário
+            dest = inf_nfe.find('.//dest') or inf_nfe.find('.//{http://www.portalfiscal.inf.br/nfe}dest')
+            
+            # Totais
+            total = inf_nfe.find('.//total') or inf_nfe.find('.//{http://www.portalfiscal.inf.br/nfe}total')
+            icms_tot = total.find('.//ICMSTot') or total.find('.//{http://www.portalfiscal.inf.br/nfe}ICMSTot') if total else None
+            
+            # Monta dados
+            dados = {
+                'chave_acesso': chave,
+                'numero': get_text(ide, 'nNF'),
+                'serie': get_text(ide, 'serie'),
+                'modelo': get_text(ide, 'mod'),
+                'natureza_operacao': get_text(ide, 'natOp'),
+                'cfop': get_text(ide, 'CFOP'),
+                'data_emissao': datetime.strptime(get_text(ide, 'dhEmi')[:10], '%Y-%m-%d').date() if get_text(ide, 'dhEmi') else None,
+                
+                # Emitente
+                'emitente_nome': get_text(emit, 'xNome'),
+                'emitente_cnpj': get_text(emit, 'CNPJ'),
+                'emitente_ie': get_text(emit, 'IE'),
+                
+                # Destinatário
+                'destinatario_nome': get_text(dest, 'xNome'),
+                'destinatario_cnpj': get_text(dest, 'CNPJ'),
+                'destinatario_ie': get_text(dest, 'IE'),
+            }
+            
+            # Valores
+            if icms_tot is not None:
+                dados.update({
+                    'valor_produtos': float(get_text(icms_tot, 'vProd') or 0),
+                    'valor_frete': float(get_text(icms_tot, 'vFrete') or 0),
+                    'valor_seguro': float(get_text(icms_tot, 'vSeg') or 0),
+                    'valor_desconto': float(get_text(icms_tot, 'vDesc') or 0),
+                    'valor_outras_despesas': float(get_text(icms_tot, 'vOutro') or 0),
+                    'valor_total': float(get_text(icms_tot, 'vNF') or 0),
+                    'valor_icms': float(get_text(icms_tot, 'vICMS') or 0),
+                    'valor_ipi': float(get_text(icms_tot, 'vIPI') or 0),
+                    'valor_pis': float(get_text(icms_tot, 'vPIS') or 0),
+                    'valor_cofins': float(get_text(icms_tot, 'vCOFINS') or 0),
+                })
+            
+            return dados
+            
+        except Exception as e:
+            return {'error': f'Erro ao fazer parse do XML: {str(e)}'}
