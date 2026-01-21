@@ -1417,3 +1417,816 @@ class NotaFiscal(BaseModel):
             
         except Exception as e:
             return {'error': f'Erro ao fazer parse do XML: {str(e)}'}
+
+
+# ============================================================
+# NOTIFICAÇÕES E ALERTAS
+# ============================================================
+
+class Notificacao(BaseModel):
+    """
+    Model para Notificações e Alertas do Sistema.
+    
+    Gerencia alertas automáticos de vencimentos, estouros,
+    saldo negativo, etc.
+    """
+    
+    __tablename__ = 'notificacoes'
+    __table_args__ = {'extend_existing': True}
+    
+    # Informações Básicas
+    titulo = db.Column(db.String(200), nullable=False)
+    mensagem = db.Column(db.Text, nullable=False)
+    tipo = db.Column(db.String(30), nullable=False)
+    # Tipos: VENCIMENTO, SALDO_NEGATIVO, ESTOURO_ORCAMENTO, CONCILIACAO_PENDENTE, CUSTO_FIXO
+    
+    # Prioridade
+    prioridade = db.Column(db.String(20), default='MEDIA')
+    # Prioridades: BAIXA, MEDIA, ALTA, URGENTE
+    
+    # Status
+    lida = db.Column(db.Boolean, default=False)
+    data_leitura = db.Column(db.DateTime)
+    
+    # Relacionamento com entidade
+    entidade_tipo = db.Column(db.String(50))  # LancamentoFinanceiro, ContaBancaria, etc
+    entidade_id = db.Column(db.Integer)
+    
+    # Ação sugerida
+    acao_url = db.Column(db.String(255))  # URL para resolver o problema
+    acao_texto = db.Column(db.String(100))  # Texto do botão de ação
+    
+    # Usuário destinatário
+    usuario = db.Column(db.String(100))
+    
+    # Email enviado?
+    email_enviado = db.Column(db.Boolean, default=False)
+    data_envio_email = db.Column(db.DateTime)
+    
+    def __repr__(self):
+        return f'<Notificacao {self.id}: {self.titulo}>'
+    
+    @property
+    def tipo_icone(self):
+        """Retorna ícone baseado no tipo."""
+        icones = {
+            'VENCIMENTO': 'fas fa-calendar-times text-warning',
+            'SALDO_NEGATIVO': 'fas fa-exclamation-triangle text-danger',
+            'ESTOURO_ORCAMENTO': 'fas fa-chart-line text-danger',
+            'CONCILIACAO_PENDENTE': 'fas fa-handshake text-info',
+            'CUSTO_FIXO': 'fas fa-sync text-primary',
+            'PAGAMENTO_APROVADO': 'fas fa-check-circle text-success',
+            'PAGAMENTO_REJEITADO': 'fas fa-times-circle text-danger'
+        }
+        return icones.get(self.tipo, 'fas fa-bell text-secondary')
+    
+    @property
+    def tipo_cor(self):
+        """Retorna cor do badge baseado no tipo."""
+        cores = {
+            'VENCIMENTO': 'warning',
+            'SALDO_NEGATIVO': 'danger',
+            'ESTOURO_ORCAMENTO': 'danger',
+            'CONCILIACAO_PENDENTE': 'info',
+            'CUSTO_FIXO': 'primary',
+            'PAGAMENTO_APROVADO': 'success',
+            'PAGAMENTO_REJEITADO': 'danger'
+        }
+        return cores.get(self.tipo, 'secondary')
+    
+    @property
+    def prioridade_cor(self):
+        """Retorna cor da prioridade."""
+        cores = {
+            'BAIXA': 'secondary',
+            'MEDIA': 'info',
+            'ALTA': 'warning',
+            'URGENTE': 'danger'
+        }
+        return cores.get(self.prioridade, 'secondary')
+    
+    def marcar_como_lida(self):
+        """Marca notificação como lida."""
+        self.lida = True
+        self.data_leitura = datetime.utcnow()
+        db.session.commit()
+    
+    @classmethod
+    def criar_notificacao(cls, titulo, mensagem, tipo, prioridade='MEDIA', 
+                         entidade_tipo=None, entidade_id=None, 
+                         acao_url=None, acao_texto=None, usuario=None):
+        """
+        Cria uma nova notificação.
+        
+        Args:
+            titulo: Título da notificação
+            mensagem: Mensagem detalhada
+            tipo: Tipo (VENCIMENTO, SALDO_NEGATIVO, etc)
+            prioridade: BAIXA, MEDIA, ALTA, URGENTE
+            entidade_tipo: Tipo da entidade relacionada
+            entidade_id: ID da entidade
+            acao_url: URL para ação
+            acao_texto: Texto do botão
+            usuario: Usuário destinatário
+        
+        Returns:
+            Notificacao: Instância criada
+        """
+        notif = cls(
+            titulo=titulo,
+            mensagem=mensagem,
+            tipo=tipo,
+            prioridade=prioridade,
+            entidade_tipo=entidade_tipo,
+            entidade_id=entidade_id,
+            acao_url=acao_url,
+            acao_texto=acao_texto,
+            usuario=usuario
+        )
+        
+        db.session.add(notif)
+        db.session.commit()
+        
+        return notif
+    
+    @classmethod
+    def get_nao_lidas(cls, usuario=None):
+        """Retorna notificações não lidas."""
+        query = cls.query.filter_by(lida=False, ativo=True)
+        if usuario:
+            query = query.filter_by(usuario=usuario)
+        return query.order_by(cls.data_criacao.desc())
+    
+    @classmethod
+    def get_por_prioridade(cls, prioridade, usuario=None):
+        """Retorna notificações por prioridade."""
+        query = cls.query.filter_by(prioridade=prioridade, lida=False, ativo=True)
+        if usuario:
+            query = query.filter_by(usuario=usuario)
+        return query.order_by(cls.data_criacao.desc())
+    
+    @classmethod
+    def contar_nao_lidas(cls, usuario=None):
+        """Conta notificações não lidas."""
+        query = cls.query.filter_by(lida=False, ativo=True)
+        if usuario:
+            query = query.filter_by(usuario=usuario)
+        return query.count()
+    
+    @classmethod
+    def verificar_vencimentos(cls):
+        """
+        Verifica lançamentos vencendo e cria notificações.
+        Executa verificação de:
+        - Vencimentos hoje
+        - Vencimentos próximos 3 dias
+        - Vencimentos próximos 7 dias
+        """
+        from datetime import timedelta
+        
+        hoje = date.today()
+        em_3_dias = hoje + timedelta(days=3)
+        em_7_dias = hoje + timedelta(days=7)
+        
+        notificacoes_criadas = []
+        
+        # Vencendo hoje
+        vencendo_hoje = LancamentoFinanceiro.query.filter(
+            LancamentoFinanceiro.data_vencimento == hoje,
+            LancamentoFinanceiro.status == 'pendente',
+            LancamentoFinanceiro.ativo == True
+        ).all()
+        
+        for lanc in vencendo_hoje:
+            # Verifica se já existe notificação
+            existe = cls.query.filter_by(
+                entidade_tipo='LancamentoFinanceiro',
+                entidade_id=lanc.id,
+                tipo='VENCIMENTO',
+                lida=False
+            ).first()
+            
+            if not existe:
+                notif = cls.criar_notificacao(
+                    titulo=f'💰 Vencimento HOJE: {lanc.descricao}',
+                    mensagem=f'O lançamento "{lanc.descricao}" vence hoje! Valor: {lanc.valor_formatado}',
+                    tipo='VENCIMENTO',
+                    prioridade='URGENTE',
+                    entidade_tipo='LancamentoFinanceiro',
+                    entidade_id=lanc.id,
+                    acao_url=f'/financeiro/lancamentos/{lanc.id}/pagar',
+                    acao_texto='Pagar Agora'
+                )
+                notificacoes_criadas.append(notif)
+        
+        # Vencendo em 3 dias
+        vencendo_3dias = LancamentoFinanceiro.query.filter(
+            LancamentoFinanceiro.data_vencimento == em_3_dias,
+            LancamentoFinanceiro.status == 'pendente',
+            LancamentoFinanceiro.ativo == True
+        ).all()
+        
+        for lanc in vencendo_3dias:
+            existe = cls.query.filter_by(
+                entidade_tipo='LancamentoFinanceiro',
+                entidade_id=lanc.id,
+                tipo='VENCIMENTO',
+                lida=False
+            ).first()
+            
+            if not existe:
+                notif = cls.criar_notificacao(
+                    titulo=f'⏰ Vence em 3 dias: {lanc.descricao}',
+                    mensagem=f'O lançamento "{lanc.descricao}" vence em 3 dias. Valor: {lanc.valor_formatado}',
+                    tipo='VENCIMENTO',
+                    prioridade='ALTA',
+                    entidade_tipo='LancamentoFinanceiro',
+                    entidade_id=lanc.id,
+                    acao_url=f'/financeiro/lancamentos/{lanc.id}/editar',
+                    acao_texto='Ver Detalhes'
+                )
+                notificacoes_criadas.append(notif)
+        
+        return notificacoes_criadas
+    
+    @classmethod
+    def verificar_saldo_negativo(cls):
+        """Verifica contas com saldo negativo."""
+        contas_negativas = ContaBancaria.query.filter(
+            ContaBancaria.saldo_atual < 0,
+            ContaBancaria.ativo == True,
+            ContaBancaria.ativa == True
+        ).all()
+        
+        notificacoes_criadas = []
+        
+        for conta in contas_negativas:
+            # Verifica se já existe notificação recente (últimas 24h)
+            ontem = datetime.utcnow() - timedelta(days=1)
+            existe = cls.query.filter(
+                cls.entidade_tipo == 'ContaBancaria',
+                cls.entidade_id == conta.id,
+                cls.tipo == 'SALDO_NEGATIVO',
+                cls.lida == False,
+                cls.data_criacao >= ontem
+            ).first()
+            
+            if not existe:
+                notif = cls.criar_notificacao(
+                    titulo=f'⚠️ Saldo Negativo: {conta.nome}',
+                    mensagem=f'A conta "{conta.nome}" está com saldo negativo: {conta.saldo_formatado}',
+                    tipo='SALDO_NEGATIVO',
+                    prioridade='URGENTE',
+                    entidade_tipo='ContaBancaria',
+                    entidade_id=conta.id,
+                    acao_url=f'/financeiro/contas-bancarias',
+                    acao_texto='Ver Conta'
+                )
+                notificacoes_criadas.append(notif)
+        
+        return notificacoes_criadas
+    
+    @classmethod
+    def verificar_estouro_orcamento(cls):
+        """Verifica orçamentos estourados."""
+        from datetime import date
+        
+        mes_atual = date.today().month
+        ano_atual = date.today().year
+        
+        # Buscar orçamentos do mês atual
+        orcamentos = OrcamentoAnual.query.filter_by(
+            ano=ano_atual,
+            mes=mes_atual,
+            ativo=True
+        ).all()
+        
+        notificacoes_criadas = []
+        
+        for orc in orcamentos:
+            perc = orc.percentual_executado
+            
+            # Alerta se passar de 100%
+            if perc > 100:
+                existe = cls.query.filter_by(
+                    entidade_tipo='OrcamentoAnual',
+                    entidade_id=orc.id,
+                    tipo='ESTOURO_ORCAMENTO',
+                    lida=False
+                ).first()
+                
+                if not existe:
+                    notif = cls.criar_notificacao(
+                        titulo=f'🚨 Orçamento Estourado: {orc.categoria}',
+                        mensagem=f'O orçamento de "{orc.categoria}" está {perc:.1f}% executado (estouro de {perc-100:.1f}%)',
+                        tipo='ESTOURO_ORCAMENTO',
+                        prioridade='URGENTE',
+                        entidade_tipo='OrcamentoAnual',
+                        entidade_id=orc.id,
+                        acao_url='/financeiro/orcamento-anual/dashboard',
+                        acao_texto='Ver Orçamento'
+                    )
+                    notificacoes_criadas.append(notif)
+            
+            # Alerta se passar de 90%
+            elif perc > 90:
+                existe = cls.query.filter_by(
+                    entidade_tipo='OrcamentoAnual',
+                    entidade_id=orc.id,
+                    tipo='ESTOURO_ORCAMENTO',
+                    lida=False
+                ).first()
+                
+                if not existe:
+                    notif = cls.criar_notificacao(
+                        titulo=f'⚠️ Atenção: {orc.categoria} em {perc:.1f}%',
+                        mensagem=f'O orçamento de "{orc.categoria}" está próximo do limite ({perc:.1f}% executado)',
+                        tipo='ESTOURO_ORCAMENTO',
+                        prioridade='ALTA',
+                        entidade_tipo='OrcamentoAnual',
+                        entidade_id=orc.id,
+                        acao_url='/financeiro/orcamento-anual/dashboard',
+                        acao_texto='Ver Orçamento'
+                    )
+                    notificacoes_criadas.append(notif)
+        
+        return notificacoes_criadas
+    
+    @classmethod
+    def verificar_conciliacao_pendente(cls):
+        """Verifica extratos pendentes de conciliação."""
+        # Contar extratos não conciliados
+        pendentes = ExtratoBancario.query.filter_by(
+            conciliado=False,
+            ativo=True
+        ).count()
+        
+        notificacoes_criadas = []
+        
+        if pendentes > 0:
+            # Verifica se já existe notificação recente
+            ontem = datetime.utcnow() - timedelta(days=1)
+            existe = cls.query.filter(
+                cls.tipo == 'CONCILIACAO_PENDENTE',
+                cls.lida == False,
+                cls.data_criacao >= ontem
+            ).first()
+            
+            if not existe:
+                notif = cls.criar_notificacao(
+                    titulo=f'📋 {pendentes} Extrato(s) Pendente(s) de Conciliação',
+                    mensagem=f'Existem {pendentes} lançamentos de extrato bancário aguardando conciliação.',
+                    tipo='CONCILIACAO_PENDENTE',
+                    prioridade='MEDIA',
+                    acao_url='/financeiro/conciliacao-bancaria',
+                    acao_texto='Conciliar Agora'
+                )
+                notificacoes_criadas.append(notif)
+        
+        return notificacoes_criadas
+    
+    @classmethod
+    def verificar_todas(cls):
+        """
+        Executa todas as verificações de alertas.
+        Deve ser chamado por CRON ou scheduler.
+        """
+        notificacoes = []
+        
+        notificacoes.extend(cls.verificar_vencimentos())
+        notificacoes.extend(cls.verificar_saldo_negativo())
+        notificacoes.extend(cls.verificar_estouro_orcamento())
+        notificacoes.extend(cls.verificar_conciliacao_pendente())
+        
+        return notificacoes
+
+
+# ============================================================
+# RATEIO DE DESPESAS
+# ============================================================
+
+class RateioDespesa(BaseModel):
+    """
+    Model para Rateio de Despesas.
+    
+    Permite dividir uma despesa entre múltiplos centros de custo,
+    projetos ou departamentos.
+    """
+    
+    __tablename__ = 'rateios_despesas'
+    __table_args__ = {'extend_existing': True}
+    
+    # Lançamento principal
+    lancamento_id = db.Column(db.Integer, db.ForeignKey('lancamentos_financeiros.id'), nullable=False)
+    
+    # Centro de custo destino
+    centro_custo_id = db.Column(db.Integer, db.ForeignKey('centros_custo.id'), nullable=False)
+    
+    # Valores
+    percentual = db.Column(db.Numeric(5, 2), nullable=False)  # 0 a 100
+    valor_rateado = db.Column(db.Numeric(12, 2), nullable=False)
+    
+    # Observações
+    observacoes = db.Column(db.Text)
+    
+    # Relacionamentos
+    lancamento = db.relationship('LancamentoFinanceiro', backref='rateios', foreign_keys=[lancamento_id])
+    centro_custo = db.relationship('CentroCusto', backref='rateios_recebidos', foreign_keys=[centro_custo_id])
+    
+    def __repr__(self):
+        return f'<RateioDespesa L:{self.lancamento_id} -> CC:{self.centro_custo_id} ({self.percentual}%)>'
+    
+    @property
+    def percentual_formatado(self):
+        """Retorna percentual formatado."""
+        return f"{self.percentual}%"
+    
+    @property
+    def valor_formatado(self):
+        """Retorna valor formatado."""
+        return f"R$ {self.valor_rateado:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+    
+    @classmethod
+    def criar_rateio(cls, lancamento_id, distribuicao):
+        """
+        Cria rateio de despesa.
+        
+        Args:
+            lancamento_id: ID do lançamento a ratear
+            distribuicao: Lista de dicts com {'centro_custo_id': X, 'percentual': Y}
+            
+        Returns:
+            list: Lista de rateios criados
+            
+        Raises:
+            ValueError: Se percentuais não somam 100%
+        """
+        # Validar soma de percentuais
+        total_perc = sum(float(d['percentual']) for d in distribuicao)
+        if abs(total_perc - 100) > 0.01:  # Tolerância para arredondamento
+            raise ValueError(f'Percentuais devem somar 100%. Total: {total_perc}%')
+        
+        # Buscar lançamento
+        lancamento = LancamentoFinanceiro.query.get(lancamento_id)
+        if not lancamento:
+            raise ValueError('Lançamento não encontrado')
+        
+        # Remover rateios antigos se existirem
+        cls.query.filter_by(lancamento_id=lancamento_id).delete()
+        
+        # Criar novos rateios
+        rateios_criados = []
+        valor_total = float(lancamento.valor)
+        
+        for dist in distribuicao:
+            percentual = float(dist['percentual'])
+            valor_rateado = (valor_total * percentual) / 100
+            
+            rateio = cls(
+                lancamento_id=lancamento_id,
+                centro_custo_id=dist['centro_custo_id'],
+                percentual=percentual,
+                valor_rateado=valor_rateado,
+                observacoes=dist.get('observacoes')
+            )
+            
+            db.session.add(rateio)
+            rateios_criados.append(rateio)
+        
+        db.session.commit()
+        
+        return rateios_criados
+    
+    @classmethod
+    def get_por_lancamento(cls, lancamento_id):
+        """Retorna rateios de um lançamento."""
+        return cls.query.filter_by(lancamento_id=lancamento_id, ativo=True).all()
+    
+    @classmethod
+    def get_por_centro_custo(cls, centro_custo_id, data_inicio=None, data_fim=None):
+        """Retorna rateios recebidos por um centro de custo."""
+        query = cls.query.filter_by(centro_custo_id=centro_custo_id, ativo=True)
+        
+        if data_inicio or data_fim:
+            query = query.join(LancamentoFinanceiro)
+            if data_inicio:
+                query = query.filter(LancamentoFinanceiro.data_lancamento >= data_inicio)
+            if data_fim:
+                query = query.filter(LancamentoFinanceiro.data_lancamento <= data_fim)
+        
+        return query.all()
+    
+    @classmethod
+    def calcular_total_centro(cls, centro_custo_id, data_inicio=None, data_fim=None):
+        """Calcula total rateado para um centro de custo."""
+        rateios = cls.get_por_centro_custo(centro_custo_id, data_inicio, data_fim)
+        return sum(float(r.valor_rateado) for r in rateios)
+
+
+# ============================================================
+# IMPORTAÇÃO EM LOTE
+# ============================================================
+
+class ImportacaoLote(BaseModel):
+    """
+    Model para Importação em Lote de Lançamentos.
+    
+    Controla importações de arquivos Excel/CSV.
+    """
+    
+    __tablename__ = 'importacoes_lote'
+    __table_args__ = {'extend_existing': True}
+    
+    # Informações do arquivo
+    arquivo_nome = db.Column(db.String(255), nullable=False)
+    arquivo_path = db.Column(db.String(500))
+    tipo_arquivo = db.Column(db.String(20))  # EXCEL, CSV
+    
+    # Status da importação
+    status = db.Column(db.String(30), default='PROCESSANDO')
+    # Status: PROCESSANDO, CONCLUIDA, ERRO, PARCIAL
+    
+    # Contadores
+    total_linhas = db.Column(db.Integer, default=0)
+    linhas_importadas = db.Column(db.Integer, default=0)
+    linhas_erro = db.Column(db.Integer, default=0)
+    
+    # Detalhes
+    erros_detalhes = db.Column(db.Text)  # JSON com erros
+    configuracao = db.Column(db.Text)  # JSON com mapeamento de colunas
+    
+    # Usuário responsável
+    usuario = db.Column(db.String(100))
+    
+    # Timestamps
+    data_inicio = db.Column(db.DateTime, default=datetime.utcnow)
+    data_fim = db.Column(db.DateTime)
+    
+    def __repr__(self):
+        return f'<ImportacaoLote {self.id}: {self.arquivo_nome} ({self.status})>'
+    
+    @property
+    def status_cor(self):
+        """Retorna cor do badge de status."""
+        cores = {
+            'PROCESSANDO': 'info',
+            'CONCLUIDA': 'success',
+            'ERRO': 'danger',
+            'PARCIAL': 'warning'
+        }
+        return cores.get(self.status, 'secondary')
+    
+    @property
+    def percentual_sucesso(self):
+        """Calcula percentual de sucesso."""
+        if self.total_linhas == 0:
+            return 0
+        return (self.linhas_importadas / self.total_linhas) * 100
+    
+    @property
+    def duracao(self):
+        """Calcula duração da importação."""
+        if not self.data_fim:
+            return None
+        delta = self.data_fim - self.data_inicio
+        return delta.total_seconds()
+    
+    def finalizar(self, status='CONCLUIDA'):
+        """Finaliza importação."""
+        self.status = status
+        self.data_fim = datetime.utcnow()
+        db.session.commit()
+
+
+# ============================================================
+# RELATÓRIOS CUSTOMIZÁVEIS
+# ============================================================
+
+class RelatorioCustomizado(BaseModel):
+    """
+    Model para Relatórios Customizáveis.
+    
+    Permite criar relatórios personalizados com campos,
+    filtros e agrupamentos definidos pelo usuário.
+    """
+    
+    __tablename__ = 'relatorios_customizados'
+    __table_args__ = {'extend_existing': True}
+    
+    # Informações Básicas
+    nome = db.Column(db.String(200), nullable=False)
+    descricao = db.Column(db.Text)
+    
+    # Tipo de relatório
+    tipo = db.Column(db.String(50), nullable=False)
+    # Tipos: LANCAMENTOS, FLUXO_CAIXA, DRE, CONTAS_PAGAR, CONTAS_RECEBER, CENTROS_CUSTO
+    
+    # Configuração (JSON)
+    campos_selecionados = db.Column(db.Text)  # JSON: ['campo1', 'campo2', ...]
+    filtros = db.Column(db.Text)  # JSON: {'campo': 'valor', ...}
+    agrupamento = db.Column(db.String(100))  # Campo para agrupar
+    ordenacao = db.Column(db.String(100))  # Campo para ordenar
+    ordem_direcao = db.Column(db.String(10), default='ASC')  # ASC ou DESC
+    
+    # Formato de exportação padrão
+    formato_padrao = db.Column(db.String(20), default='EXCEL')  # EXCEL, PDF, CSV
+    
+    # Compartilhamento
+    publico = db.Column(db.Boolean, default=False)
+    usuario_criador = db.Column(db.String(100))
+    
+    # Favorito
+    favorito = db.Column(db.Boolean, default=False)
+    
+    # Última execução
+    ultima_execucao = db.Column(db.DateTime)
+    total_execucoes = db.Column(db.Integer, default=0)
+    
+    def __repr__(self):
+        return f'<RelatorioCustomizado {self.id}: {self.nome}>'
+    
+    @property
+    def tipo_icone(self):
+        """Retorna ícone baseado no tipo."""
+        icones = {
+            'LANCAMENTOS': 'fas fa-list',
+            'FLUXO_CAIXA': 'fas fa-chart-line',
+            'DRE': 'fas fa-chart-bar',
+            'CONTAS_PAGAR': 'fas fa-file-invoice-dollar',
+            'CONTAS_RECEBER': 'fas fa-receipt',
+            'CENTROS_CUSTO': 'fas fa-sitemap'
+        }
+        return icones.get(self.tipo, 'fas fa-file-alt')
+    
+    def get_campos_lista(self):
+        """Retorna lista de campos selecionados."""
+        import json
+        if self.campos_selecionados:
+            return json.loads(self.campos_selecionados)
+        return []
+    
+    def get_filtros_dict(self):
+        """Retorna dicionário de filtros."""
+        import json
+        if self.filtros:
+            return json.loads(self.filtros)
+        return {}
+    
+    def set_campos(self, campos):
+        """Define campos selecionados."""
+        import json
+        self.campos_selecionados = json.dumps(campos)
+    
+    def set_filtros(self, filtros_dict):
+        """Define filtros."""
+        import json
+        self.filtros = json.dumps(filtros_dict)
+    
+    def executar(self):
+        """
+        Executa o relatório e retorna dados.
+        
+        Returns:
+            list: Lista de resultados
+        """
+        self.ultima_execucao = datetime.utcnow()
+        self.total_execucoes += 1
+        db.session.commit()
+        
+        # Buscar dados baseado no tipo
+        if self.tipo == 'LANCAMENTOS':
+            return self._executar_lancamentos()
+        elif self.tipo == 'FLUXO_CAIXA':
+            return self._executar_fluxo_caixa()
+        elif self.tipo == 'DRE':
+            return self._executar_dre()
+        elif self.tipo == 'CONTAS_PAGAR':
+            return self._executar_contas_pagar()
+        elif self.tipo == 'CONTAS_RECEBER':
+            return self._executar_contas_receber()
+        elif self.tipo == 'CENTROS_CUSTO':
+            return self._executar_centros_custo()
+        
+        return []
+    
+    def _executar_lancamentos(self):
+        """Executa relatório de lançamentos."""
+        filtros = self.get_filtros_dict()
+        
+        query = LancamentoFinanceiro.query.filter_by(ativo=True)
+        
+        # Aplicar filtros
+        if 'tipo' in filtros:
+            query = query.filter_by(tipo=filtros['tipo'])
+        
+        if 'status' in filtros:
+            query = query.filter_by(status=filtros['status'])
+        
+        if 'categoria' in filtros:
+            query = query.filter_by(categoria=filtros['categoria'])
+        
+        if 'data_inicio' in filtros:
+            query = query.filter(LancamentoFinanceiro.data_lancamento >= filtros['data_inicio'])
+        
+        if 'data_fim' in filtros:
+            query = query.filter(LancamentoFinanceiro.data_lancamento <= filtros['data_fim'])
+        
+        if 'conta_bancaria_id' in filtros:
+            query = query.filter_by(conta_bancaria_id=filtros['conta_bancaria_id'])
+        
+        if 'centro_custo_id' in filtros:
+            query = query.filter_by(centro_custo_id=filtros['centro_custo_id'])
+        
+        # Ordenação
+        if self.ordenacao:
+            campo_ordem = getattr(LancamentoFinanceiro, self.ordenacao, None)
+            if campo_ordem:
+                if self.ordem_direcao == 'DESC':
+                    query = query.order_by(campo_ordem.desc())
+                else:
+                    query = query.order_by(campo_ordem.asc())
+        
+        return query.all()
+    
+    def _executar_fluxo_caixa(self):
+        """Executa relatório de fluxo de caixa."""
+        # Implementação similar aos outros relatórios
+        return []
+    
+    def _executar_dre(self):
+        """Executa relatório de DRE."""
+        return []
+    
+    def _executar_contas_pagar(self):
+        """Executa relatório de contas a pagar."""
+        return LancamentoFinanceiro.query.filter(
+            LancamentoFinanceiro.tipo.in_(['despesa', 'conta_pagar']),
+            LancamentoFinanceiro.ativo == True
+        ).all()
+    
+    def _executar_contas_receber(self):
+        """Executa relatório de contas a receber."""
+        return LancamentoFinanceiro.query.filter(
+            LancamentoFinanceiro.tipo.in_(['receita', 'conta_receber']),
+            LancamentoFinanceiro.ativo == True
+        ).all()
+    
+    def _executar_centros_custo(self):
+        """Executa relatório de centros de custo."""
+        return CentroCusto.query.filter_by(ativo=True).all()
+    
+    @classmethod
+    def get_campos_disponiveis(cls, tipo):
+        """
+        Retorna campos disponíveis para um tipo de relatório.
+        
+        Args:
+            tipo: Tipo do relatório
+            
+        Returns:
+            list: Lista de dicts com campos
+        """
+        campos_lancamentos = [
+            {'nome': 'data_lancamento', 'label': 'Data Lançamento', 'tipo': 'data'},
+            {'nome': 'data_vencimento', 'label': 'Data Vencimento', 'tipo': 'data'},
+            {'nome': 'descricao', 'label': 'Descrição', 'tipo': 'texto'},
+            {'nome': 'tipo', 'label': 'Tipo', 'tipo': 'opcao'},
+            {'nome': 'status', 'label': 'Status', 'tipo': 'opcao'},
+            {'nome': 'valor', 'label': 'Valor', 'tipo': 'numero'},
+            {'nome': 'categoria', 'label': 'Categoria', 'tipo': 'texto'},
+            {'nome': 'numero_documento', 'label': 'Nº Documento', 'tipo': 'texto'},
+            {'nome': 'forma_pagamento', 'label': 'Forma Pagamento', 'tipo': 'texto'},
+        ]
+        
+        if tipo == 'LANCAMENTOS':
+            return campos_lancamentos
+        elif tipo == 'CONTAS_PAGAR' or tipo == 'CONTAS_RECEBER':
+            return campos_lancamentos
+        
+        return []
+    
+    @classmethod
+    def get_filtros_disponiveis(cls, tipo):
+        """
+        Retorna filtros disponíveis para um tipo de relatório.
+        
+        Args:
+            tipo: Tipo do relatório
+            
+        Returns:
+            list: Lista de dicts com filtros
+        """
+        filtros_lancamentos = [
+            {'nome': 'tipo', 'label': 'Tipo', 'tipo': 'select'},
+            {'nome': 'status', 'label': 'Status', 'tipo': 'select'},
+            {'nome': 'categoria', 'label': 'Categoria', 'tipo': 'text'},
+            {'nome': 'data_inicio', 'label': 'Data Início', 'tipo': 'date'},
+            {'nome': 'data_fim', 'label': 'Data Fim', 'tipo': 'date'},
+            {'nome': 'conta_bancaria_id', 'label': 'Conta Bancária', 'tipo': 'select'},
+            {'nome': 'centro_custo_id', 'label': 'Centro de Custo', 'tipo': 'select'},
+        ]
+        
+        if tipo in ['LANCAMENTOS', 'CONTAS_PAGAR', 'CONTAS_RECEBER']:
+            return filtros_lancamentos
+        
+        return []

@@ -11,11 +11,14 @@ Data: 2025
 """
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from decimal import Decimal
 import io
 from app.extensoes import db
-from app.financeiro.financeiro_model import LancamentoFinanceiro, CategoriaFinanceira, ContaBancaria, CentroCusto, CustoFixo
+from app.financeiro.financeiro_model import (
+    LancamentoFinanceiro, CategoriaFinanceira, ContaBancaria, CentroCusto, CustoFixo,
+    Notificacao, RateioDespesa, ImportacaoLote, RelatorioCustomizado
+)
 from app.cliente.cliente_model import Cliente
 from app.fornecedor.fornecedor_model import Fornecedor
 
@@ -3159,3 +3162,555 @@ def notas_fiscais_galeria():
                          mes_selecionado=mes,
                          ano_selecionado=ano,
                          tipo_selecionado=tipo)
+
+
+# ============================================================
+# NOTIFICAÇÕES E ALERTAS
+# ============================================================
+
+@bp_financeiro.route('/notificacoes')
+def notificacoes():
+    """Lista todas as notificações."""
+    try:
+        from app.financeiro.financeiro_model import Notificacao
+        
+        # Filtros
+        tipo = request.args.get('tipo')
+        prioridade = request.args.get('prioridade')
+        lidas = request.args.get('lidas', 'false') == 'true'
+        
+        # Query base
+        query = Notificacao.query.filter_by(ativo=True)
+        
+        # Aplicar filtros
+        if tipo:
+            query = query.filter_by(tipo=tipo)
+        
+        if prioridade:
+            query = query.filter_by(prioridade=prioridade)
+        
+        if not lidas:
+            query = query.filter_by(lida=False)
+        
+        # Ordenar por data (mais recentes primeiro)
+        notificacoes_lista = query.order_by(Notificacao.data_criacao.desc()).all()
+        
+        # Contar não lidas
+        total_nao_lidas = Notificacao.contar_nao_lidas()
+        
+        return render_template('financeiro/notificacoes/listar.html',
+                             notificacoes=notificacoes_lista,
+                             total_nao_lidas=total_nao_lidas,
+                             filtro_tipo=tipo,
+                             filtro_prioridade=prioridade,
+                             filtro_lidas=lidas)
+    
+    except Exception as e:
+        flash(f'Erro ao carregar notificações: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.dashboard'))
+
+
+@bp_financeiro.route('/notificacoes/<int:id>/marcar-lida', methods=['POST'])
+def marcar_notificacao_lida(id):
+    """Marca notificação como lida."""
+    try:
+        from app.financeiro.financeiro_model import Notificacao
+        
+        notificacao = Notificacao.query.get_or_404(id)
+        notificacao.marcar_como_lida()
+        
+        return jsonify({'success': True, 'message': 'Notificação marcada como lida'})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp_financeiro.route('/notificacoes/marcar-todas-lidas', methods=['POST'])
+def marcar_todas_lidas():
+    """Marca todas as notificações como lidas."""
+    try:
+        from app.financeiro.financeiro_model import Notificacao
+        
+        notificacoes = Notificacao.get_nao_lidas()
+        
+        for notif in notificacoes:
+            notif.marcar_como_lida()
+        
+        flash('Todas as notificações foram marcadas como lidas!', 'success')
+        return redirect(url_for('financeiro.notificacoes'))
+    
+    except Exception as e:
+        flash(f'Erro: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.notificacoes'))
+
+
+@bp_financeiro.route('/notificacoes/verificar-alertas', methods=['POST'])
+def verificar_alertas():
+    """Executa verificação manual de alertas."""
+    try:
+        from app.financeiro.financeiro_model import Notificacao
+        
+        notificacoes = Notificacao.verificar_todas()
+        
+        flash(f'{len(notificacoes)} novas notificações criadas!', 'success')
+        return redirect(url_for('financeiro.notificacoes'))
+    
+    except Exception as e:
+        flash(f'Erro ao verificar alertas: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.notificacoes'))
+
+
+@bp_financeiro.route('/api/notificacoes/nao-lidas')
+def api_notificacoes_nao_lidas():
+    """API para contar notificações não lidas (para badge no menu)."""
+    try:
+        from app.financeiro.financeiro_model import Notificacao
+        
+        total = Notificacao.contar_nao_lidas()
+        
+        return jsonify({
+            'total': total,
+            'success': True
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'success': False
+        }), 500
+
+
+# ============================================================
+# IMPORTAÇÃO EM LOTE
+# ============================================================
+
+@bp_financeiro.route('/importacao-lote')
+def importacao_lote():
+    """Lista importações realizadas."""
+    try:
+        from app.financeiro.financeiro_model import ImportacaoLote
+        
+        importacoes = ImportacaoLote.query.filter_by(ativo=True).order_by(
+            ImportacaoLote.data_inicio.desc()
+        ).all()
+        
+        return render_template('financeiro/importacao_lote/listar.html',
+                             importacoes=importacoes)
+    
+    except Exception as e:
+        flash(f'Erro: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.dashboard'))
+
+
+@bp_financeiro.route('/importacao-lote/nova', methods=['GET', 'POST'])
+def nova_importacao_lote():
+    """Upload de arquivo para importação."""
+    if request.method == 'POST':
+        try:
+            from app.financeiro.financeiro_model import ImportacaoLote
+            import pandas as pd
+            import os
+            from werkzeug.utils import secure_filename
+            
+            # Verificar arquivo
+            if 'arquivo' not in request.files:
+                flash('Nenhum arquivo selecionado', 'danger')
+                return redirect(request.url)
+            
+            arquivo = request.files['arquivo']
+            
+            if arquivo.filename == '':
+                flash('Nenhum arquivo selecionado', 'danger')
+                return redirect(request.url)
+            
+            # Salvar arquivo temporariamente
+            filename = secure_filename(arquivo.filename)
+            upload_folder = os.path.join('app', 'static', 'uploads', 'importacoes')
+            os.makedirs(upload_folder, exist_ok=True)
+            
+            filepath = os.path.join(upload_folder, filename)
+            arquivo.save(filepath)
+            
+            # Detectar tipo
+            tipo_arquivo = 'EXCEL' if filename.endswith(('.xlsx', '.xls')) else 'CSV'
+            
+            # Criar registro de importação
+            importacao = ImportacaoLote(
+                arquivo_nome=filename,
+                arquivo_path=filepath,
+                tipo_arquivo=tipo_arquivo,
+                status='PROCESSANDO'
+            )
+            db.session.add(importacao)
+            db.session.commit()
+            
+            # Processar arquivo
+            try:
+                if tipo_arquivo == 'EXCEL':
+                    df = pd.read_excel(filepath)
+                else:
+                    df = pd.read_csv(filepath)
+                
+                importacao.total_linhas = len(df)
+                
+                # Obter mapeamento de colunas do form
+                mapa = {
+                    'data': request.form.get('col_data'),
+                    'descricao': request.form.get('col_descricao'),
+                    'valor': request.form.get('col_valor'),
+                    'tipo': request.form.get('col_tipo'),
+                }
+                
+                erros = []
+                sucesso = 0
+                
+                # Importar cada linha
+                for idx, row in df.iterrows():
+                    try:
+                        # Converter data
+                        data_lanc = pd.to_datetime(row[mapa['data']]).date()
+                        
+                        # Criar lançamento
+                        lancamento = LancamentoFinanceiro(
+                            descricao=str(row[mapa['descricao']]),
+                            valor=converter_valor_monetario(str(row[mapa['valor']])),
+                            tipo=str(row[mapa['tipo']]).upper(),
+                            data_lancamento=data_lanc,
+                            data_vencimento=data_lanc,
+                            status='pendente'
+                        )
+                        
+                        db.session.add(lancamento)
+                        sucesso += 1
+                    
+                    except Exception as e:
+                        erros.append({
+                            'linha': idx + 2,  # +2 porque linha 1 é cabeçalho e idx começa em 0
+                            'erro': str(e)
+                        })
+                
+                # Salvar
+                db.session.commit()
+                
+                # Atualizar importação
+                importacao.linhas_importadas = sucesso
+                importacao.linhas_erro = len(erros)
+                
+                if len(erros) > 0:
+                    import json
+                    importacao.erros_detalhes = json.dumps(erros)
+                    importacao.status = 'PARCIAL' if sucesso > 0 else 'ERRO'
+                else:
+                    importacao.status = 'CONCLUIDA'
+                
+                importacao.finalizar(importacao.status)
+                
+                flash(f'Importação concluída! {sucesso} lançamentos importados, {len(erros)} erros.', 
+                      'success' if len(erros) == 0 else 'warning')
+                
+                return redirect(url_for('financeiro.importacao_lote'))
+            
+            except Exception as e:
+                importacao.status = 'ERRO'
+                importacao.erros_detalhes = str(e)
+                importacao.finalizar('ERRO')
+                
+                flash(f'Erro ao processar arquivo: {str(e)}', 'danger')
+                return redirect(url_for('financeiro.importacao_lote'))
+        
+        except Exception as e:
+            flash(f'Erro: {str(e)}', 'danger')
+            return redirect(url_for('financeiro.importacao_lote'))
+    
+    # GET - Mostrar formulário
+    return render_template('financeiro/importacao_lote/form.html')
+
+
+@bp_financeiro.route('/importacao-lote/<int:id>/detalhes')
+def detalhes_importacao(id):
+    """Detalhes de uma importação."""
+    try:
+        from app.financeiro.financeiro_model import ImportacaoLote
+        import json
+        
+        importacao = ImportacaoLote.query.get_or_404(id)
+        
+        # Parse dos erros
+        erros = []
+        if importacao.erros_detalhes:
+            erros = json.loads(importacao.erros_detalhes)
+        
+        return render_template('financeiro/importacao_lote/detalhes.html',
+                             importacao=importacao,
+                             erros=erros)
+    
+    except Exception as e:
+        flash(f'Erro: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.importacao_lote'))
+
+
+# ============================================================
+# RATEIO DE DESPESAS
+# ============================================================
+
+@bp_financeiro.route('/lancamentos/<int:id>/ratear', methods=['GET', 'POST'])
+def ratear_despesa(id):
+    """Rateio de despesa entre centros de custo."""
+    lancamento = LancamentoFinanceiro.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        try:
+            from app.financeiro.financeiro_model import RateioDespesa
+            
+            # Obter distribuição do formulário
+            distribuicao = []
+            
+            # Contar quantos centros foram selecionados
+            i = 0
+            while True:
+                centro_id = request.form.get(f'centro_custo_id_{i}')
+                if not centro_id:
+                    break
+                
+                percentual = request.form.get(f'percentual_{i}')
+                observacoes = request.form.get(f'observacoes_{i}')
+                
+                distribuicao.append({
+                    'centro_custo_id': int(centro_id),
+                    'percentual': float(percentual),
+                    'observacoes': observacoes
+                })
+                
+                i += 1
+            
+            # Criar rateio
+            RateioDespesa.criar_rateio(id, distribuicao)
+            
+            flash('Rateio criado com sucesso!', 'success')
+            return redirect(url_for('financeiro.listar_lancamentos'))
+        
+        except ValueError as e:
+            flash(str(e), 'danger')
+            return redirect(request.url)
+        
+        except Exception as e:
+            flash(f'Erro ao criar rateio: {str(e)}', 'danger')
+            return redirect(request.url)
+    
+    # GET - Mostrar formulário
+    from app.financeiro.financeiro_model import RateioDespesa
+    
+    centros_custo = CentroCusto.query.filter_by(ativo=True).all()
+    rateios_existentes = RateioDespesa.get_por_lancamento(id)
+    
+    return render_template('financeiro/rateio/form.html',
+                         lancamento=lancamento,
+                         centros_custo=centros_custo,
+                         rateios_existentes=rateios_existentes)
+
+
+@bp_financeiro.route('/centros-custo/<int:id>/rateios')
+def rateios_centro_custo(id):
+    """Lista rateios recebidos por um centro de custo."""
+    try:
+        from app.financeiro.financeiro_model import RateioDespesa
+        
+        centro = CentroCusto.query.get_or_404(id)
+        
+        # Filtros de data
+        data_inicio = request.args.get('data_inicio')
+        data_fim = request.args.get('data_fim')
+        
+        if data_inicio:
+            data_inicio = datetime.strptime(data_inicio, '%Y-%m-%d').date()
+        if data_fim:
+            data_fim = datetime.strptime(data_fim, '%Y-%m-%d').date()
+        
+        # Buscar rateios
+        rateios = RateioDespesa.get_por_centro_custo(id, data_inicio, data_fim)
+        
+        # Calcular total
+        total = RateioDespesa.calcular_total_centro(id, data_inicio, data_fim)
+        
+        return render_template('financeiro/rateio/listar.html',
+                             centro=centro,
+                             rateios=rateios,
+                             total=total,
+                             data_inicio=data_inicio,
+                             data_fim=data_fim)
+    
+    except Exception as e:
+        flash(f'Erro: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.centros_custo'))
+
+
+# ============================================================
+# RELATÓRIOS CUSTOMIZÁVEIS
+# ============================================================
+
+@bp_financeiro.route('/relatorios-customizados')
+def relatorios_customizados():
+    """Lista relatórios customizados."""
+    try:
+        from app.financeiro.financeiro_model import RelatorioCustomizado
+        
+        relatorios = RelatorioCustomizado.query.filter_by(ativo=True).order_by(
+            RelatorioCustomizado.favorito.desc(),
+            RelatorioCustomizado.nome.asc()
+        ).all()
+        
+        return render_template('financeiro/relatorios_customizados/listar.html',
+                             relatorios=relatorios)
+    
+    except Exception as e:
+        flash(f'Erro: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.dashboard'))
+
+
+@bp_financeiro.route('/relatorios-customizados/novo', methods=['GET', 'POST'])
+def novo_relatorio_customizado():
+    """Criar novo relatório customizado."""
+    if request.method == 'POST':
+        try:
+            from app.financeiro.financeiro_model import RelatorioCustomizado
+            import json
+            
+            # Obter dados do formulário
+            nome = request.form.get('nome')
+            descricao = request.form.get('descricao')
+            tipo = request.form.get('tipo')
+            
+            # Campos selecionados (checkboxes)
+            campos = request.form.getlist('campos')
+            
+            # Filtros
+            filtros = {}
+            if request.form.get('filtro_tipo'):
+                filtros['tipo'] = request.form.get('filtro_tipo')
+            if request.form.get('filtro_status'):
+                filtros['status'] = request.form.get('filtro_status')
+            if request.form.get('filtro_data_inicio'):
+                filtros['data_inicio'] = request.form.get('filtro_data_inicio')
+            if request.form.get('filtro_data_fim'):
+                filtros['data_fim'] = request.form.get('filtro_data_fim')
+            
+            # Criar relatório
+            relatorio = RelatorioCustomizado(
+                nome=nome,
+                descricao=descricao,
+                tipo=tipo,
+                agrupamento=request.form.get('agrupamento'),
+                ordenacao=request.form.get('ordenacao'),
+                ordem_direcao=request.form.get('ordem_direcao', 'ASC'),
+                formato_padrao=request.form.get('formato_padrao', 'EXCEL')
+            )
+            
+            relatorio.set_campos(campos)
+            relatorio.set_filtros(filtros)
+            
+            db.session.add(relatorio)
+            db.session.commit()
+            
+            flash('Relatório criado com sucesso!', 'success')
+            return redirect(url_for('financeiro.relatorios_customizados'))
+        
+        except Exception as e:
+            flash(f'Erro: {str(e)}', 'danger')
+            return redirect(request.url)
+    
+    # GET - Mostrar formulário
+    from app.financeiro.financeiro_model import RelatorioCustomizado
+    
+    # Tipos disponíveis
+    tipos = [
+        {'valor': 'LANCAMENTOS', 'label': 'Lançamentos Financeiros'},
+        {'valor': 'CONTAS_PAGAR', 'label': 'Contas a Pagar'},
+        {'valor': 'CONTAS_RECEBER', 'label': 'Contas a Receber'},
+        {'valor': 'FLUXO_CAIXA', 'label': 'Fluxo de Caixa'},
+        {'valor': 'DRE', 'label': 'DRE'},
+        {'valor': 'CENTROS_CUSTO', 'label': 'Centros de Custo'},
+    ]
+    
+    return render_template('financeiro/relatorios_customizados/form.html',
+                         tipos=tipos,
+                         RelatorioCustomizado=RelatorioCustomizado)
+
+
+@bp_financeiro.route('/relatorios-customizados/<int:id>/executar')
+def executar_relatorio_customizado(id):
+    """Executa relatório customizado."""
+    try:
+        from app.financeiro.financeiro_model import RelatorioCustomizado
+        
+        relatorio = RelatorioCustomizado.query.get_or_404(id)
+        
+        # Executar relatório
+        dados = relatorio.executar()
+        
+        return render_template('financeiro/relatorios_customizados/resultado.html',
+                             relatorio=relatorio,
+                             dados=dados)
+    
+    except Exception as e:
+        flash(f'Erro ao executar relatório: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.relatorios_customizados'))
+
+
+@bp_financeiro.route('/relatorios-customizados/<int:id>/exportar/<formato>')
+def exportar_relatorio_customizado(id, formato):
+    """Exporta relatório customizado."""
+    try:
+        from app.financeiro.financeiro_model import RelatorioCustomizado
+        from io import BytesIO
+        import openpyxl
+        
+        relatorio = RelatorioCustomizado.query.get_or_404(id)
+        dados = relatorio.executar()
+        
+        if formato == 'excel':
+            # Criar Excel
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = relatorio.nome[:31]  # Limite de 31 caracteres
+            
+            # Cabeçalho
+            ws.append([relatorio.nome])
+            ws.append([])
+            
+            # Dados
+            if len(dados) > 0:
+                # Obter campos
+                campos = relatorio.get_campos_lista()
+                
+                # Cabeçalhos das colunas
+                ws.append(campos)
+                
+                # Linhas de dados
+                for item in dados:
+                    linha = []
+                    for campo in campos:
+                        valor = getattr(item, campo, '')
+                        linha.append(str(valor))
+                    ws.append(linha)
+            
+            # Salvar
+            output = BytesIO()
+            wb.save(output)
+            output.seek(0)
+            
+            filename = f'{relatorio.nome.replace(" ", "_")}.xlsx'
+            
+            return send_file(
+                output,
+                mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                as_attachment=True,
+                download_name=filename
+            )
+        
+        else:
+            flash('Formato não suportado', 'danger')
+            return redirect(url_for('financeiro.relatorios_customizados'))
+    
+    except Exception as e:
+        flash(f'Erro ao exportar: {str(e)}', 'danger')
+        return redirect(url_for('financeiro.relatorios_customizados'))

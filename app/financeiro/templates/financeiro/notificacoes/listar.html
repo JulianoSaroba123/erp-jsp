@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Notificações e Alertas - ERP JSP{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
+<li class="breadcrumb-item active">Notificações</li>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-bell"></i> Notificações e Alertas</h2>
+        <div>
+            <form action="{{ url_for('financeiro.verificar_alertas') }}" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-sync"></i> Verificar Alertas
+                </button>
+            </form>
+            <form action="{{ url_for('financeiro.marcar_todas_lidas') }}" method="POST" class="d-inline">
+                <button type="submit" class="btn btn-secondary">
+                    <i class="fas fa-check-double"></i> Marcar Todas Como Lidas
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tipo</label>
+                    <select name="tipo" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="VENCIMENTO" {% if filtro_tipo == 'VENCIMENTO' %}selected{% endif %}>Vencimento</option>
+                        <option value="SALDO_NEGATIVO" {% if filtro_tipo == 'SALDO_NEGATIVO' %}selected{% endif %}>Saldo Negativo</option>
+                        <option value="ESTOURO_ORCAMENTO" {% if filtro_tipo == 'ESTOURO_ORCAMENTO' %}selected{% endif %}>Estouro Orçamento</option>
+                        <option value="CONCILIACAO_PENDENTE" {% if filtro_tipo == 'CONCILIACAO_PENDENTE' %}selected{% endif %}>Conciliação Pendente</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Prioridade</label>
+                    <select name="prioridade" class="form-select">
+                        <option value="">Todas</option>
+                        <option value="URGENTE" {% if filtro_prioridade == 'URGENTE' %}selected{% endif %}>Urgente</option>
+                        <option value="ALTA" {% if filtro_prioridade == 'ALTA' %}selected{% endif %}>Alta</option>
+                        <option value="MEDIA" {% if filtro_prioridade == 'MEDIA' %}selected{% endif %}>Média</option>
+                        <option value="BAIXA" {% if filtro_prioridade == 'BAIXA' %}selected{% endif %}>Baixa</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="lidas" class="form-select">
+                        <option value="false" {% if not filtro_lidas %}selected{% endif %}>Não Lidas</option>
+                        <option value="true" {% if filtro_lidas %}selected{% endif %}>Lidas</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-filter"></i> Filtrar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contador -->
+    {% if total_nao_lidas > 0 %}
+    <div class="alert alert-warning">
+        <i class="fas fa-exclamation-triangle"></i> Você tem <strong>{{ total_nao_lidas }}</strong> notificação(ões) não lida(s)
+    </div>
+    {% endif %}
+
+    <!-- Lista de Notificações -->
+    <div class="row">
+        {% if notificacoes %}
+            {% for notif in notificacoes %}
+            <div class="col-12 mb-3">
+                <div class="card {% if not notif.lida %}border-{{ notif.prioridade_cor }}{% else %}bg-light{% endif %}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h5 class="card-title">
+                                    <i class="{{ notif.tipo_icone }}"></i>
+                                    {{ notif.titulo }}
+                                    <span class="badge bg-{{ notif.tipo_cor }}">{{ notif.tipo }}</span>
+                                    <span class="badge bg-{{ notif.prioridade_cor }}">{{ notif.prioridade }}</span>
+                                </h5>
+                                <p class="card-text">{{ notif.mensagem }}</p>
+                                <small class="text-muted">
+                                    <i class="far fa-clock"></i> {{ notif.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+                                </small>
+                            </div>
+                            <div>
+                                {% if notif.acao_url %}
+                                <a href="{{ notif.acao_url }}" class="btn btn-sm btn-primary">
+                                    {{ notif.acao_texto or 'Ver Detalhes' }}
+                                </a>
+                                {% endif %}
+                                {% if not notif.lida %}
+                                <button onclick="marcarLida({{ notif.id }})" class="btn btn-sm btn-success">
+                                    <i class="fas fa-check"></i> Marcar Lida
+                                </button>
+                                {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-check"></i> Lida
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Nenhuma notificação encontrada.
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function marcarLida(notifId) {
+    fetch(`/financeiro/notificacoes/${notifId}/marcar-lida`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro ao marcar notificação como lida');
+        }
+    });
+}
+</script>
+
+{% endblock %}
