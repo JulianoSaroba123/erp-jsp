@@ -951,3 +951,182 @@ class PlanoContas(BaseModel):
         
         db.session.commit()
         return len(contas_criadas)
+
+
+class OrcamentoAnual(BaseModel):
+    """
+    Model para Orçamento Anual.
+    
+    Permite planejar valores orçados mensalmente por categorias/centros de custo,
+    comparar com valores realizados e acompanhar execução orçamentária.
+    """
+    
+    __tablename__ = 'orcamentos_anuais'
+    __table_args__ = {'extend_existing': True}
+    
+    # Informações Básicas
+    ano = db.Column(db.Integer, nullable=False, index=True)
+    mes = db.Column(db.Integer, nullable=False, index=True)  # 1-12
+    descricao = db.Column(db.String(200))
+    
+    # Tipo e Categoria
+    tipo = db.Column(db.String(20), nullable=False)  # RECEITA ou DESPESA
+    categoria = db.Column(db.String(100), nullable=False, index=True)
+    
+    # Valores
+    valor_orcado = db.Column(db.Numeric(12, 2), nullable=False, default=0)
+    
+    # Relacionamentos
+    centro_custo_id = db.Column(db.Integer, db.ForeignKey('centros_custo.id'), nullable=True)
+    plano_conta_id = db.Column(db.Integer, db.ForeignKey('plano_contas.id'), nullable=True)
+    
+    # Status
+    ativo = db.Column(db.Boolean, default=True)
+    
+    # Observações
+    observacoes = db.Column(db.Text)
+    
+    # Relacionamentos
+    centro_custo = db.relationship('CentroCusto', backref='orcamentos', foreign_keys=[centro_custo_id])
+    plano_conta = db.relationship('PlanoContas', backref='orcamentos', foreign_keys=[plano_conta_id])
+    
+    def __repr__(self):
+        return f'<OrcamentoAnual {self.ano}/{self.mes:02d} - {self.categoria}: R$ {self.valor_orcado}>'
+    
+    @property
+    def mes_nome(self):
+        """Retorna nome do mês."""
+        meses = {
+            1: 'Janeiro', 2: 'Fevereiro', 3: 'Março', 4: 'Abril',
+            5: 'Maio', 6: 'Junho', 7: 'Julho', 8: 'Agosto',
+            9: 'Setembro', 10: 'Outubro', 11: 'Novembro', 12: 'Dezembro'
+        }
+        return meses.get(self.mes, 'N/A')
+    
+    @property
+    def periodo(self):
+        """Retorna período formatado."""
+        return f"{self.mes_nome}/{self.ano}"
+    
+    @property
+    def tipo_icone(self):
+        """Retorna ícone baseado no tipo."""
+        return 'fas fa-arrow-up text-success' if self.tipo == 'RECEITA' else 'fas fa-arrow-down text-danger'
+    
+    def calcular_realizado(self):
+        """Calcula valor realizado no período."""
+        from datetime import datetime
+        
+        # Data inicial e final do mês
+        data_inicio = datetime(self.ano, self.mes, 1)
+        if self.mes == 12:
+            data_fim = datetime(self.ano + 1, 1, 1)
+        else:
+            data_fim = datetime(self.ano, self.mes + 1, 1)
+        
+        # Busca lançamentos do período
+        query = LancamentoFinanceiro.query.filter(
+            LancamentoFinanceiro.data_vencimento >= data_inicio,
+            LancamentoFinanceiro.data_vencimento < data_fim,
+            LancamentoFinanceiro.tipo == self.tipo
+        )
+        
+        # Filtra por centro de custo se definido
+        if self.centro_custo_id:
+            query = query.filter(LancamentoFinanceiro.centro_custo_id == self.centro_custo_id)
+        
+        # Filtra por plano de contas se definido
+        if self.plano_conta_id:
+            query = query.filter(LancamentoFinanceiro.plano_conta_id == self.plano_conta_id)
+        
+        # Soma valores
+        total = db.session.query(
+            db.func.sum(LancamentoFinanceiro.valor)
+        ).filter(
+            LancamentoFinanceiro.id.in_([l.id for l in query.all()])
+        ).scalar() or 0
+        
+        return float(total)
+    
+    @property
+    def valor_realizado(self):
+        """Property para valor realizado."""
+        return self.calcular_realizado()
+    
+    @property
+    def percentual_executado(self):
+        """Retorna percentual de execução."""
+        if self.valor_orcado == 0:
+            return 0
+        return (self.valor_realizado / float(self.valor_orcado)) * 100
+    
+    @property
+    def variacao(self):
+        """Retorna variação (realizado - orçado)."""
+        return self.valor_realizado - float(self.valor_orcado)
+    
+    @property
+    def status_orcamento(self):
+        """Retorna status do orçamento."""
+        perc = self.percentual_executado
+        
+        if perc <= 80:
+            return {'texto': 'Dentro do Orçamento', 'classe': 'success'}
+        elif perc <= 100:
+            return {'texto': 'Atenção', 'classe': 'warning'}
+        else:
+            return {'texto': 'Estourado', 'classe': 'danger'}
+    
+    @classmethod
+    def criar_orcamento_padrao(cls, ano):
+        """
+        Cria orçamentos padrão para o ano todo.
+        
+        Args:
+            ano: Ano para criar os orçamentos
+            
+        Returns:
+            int: Quantidade de orçamentos criados
+        """
+        categorias_padrao = [
+            # RECEITAS
+            {'tipo': 'RECEITA', 'categoria': 'Vendas Sistemas Fotovoltaicos', 'valor': 50000},
+            {'tipo': 'RECEITA', 'categoria': 'Serviços de Instalação', 'valor': 15000},
+            {'tipo': 'RECEITA', 'categoria': 'Manutenção e Monitoramento', 'valor': 5000},
+            
+            # DESPESAS
+            {'tipo': 'DESPESA', 'categoria': 'Folha de Pagamento', 'valor': 20000},
+            {'tipo': 'DESPESA', 'categoria': 'Fornecedores - Equipamentos', 'valor': 30000},
+            {'tipo': 'DESPESA', 'categoria': 'Marketing e Publicidade', 'valor': 3000},
+            {'tipo': 'DESPESA', 'categoria': 'Aluguel e Condomínio', 'valor': 2500},
+            {'tipo': 'DESPESA', 'categoria': 'Energia e Telecomunicações', 'valor': 800},
+            {'tipo': 'DESPESA', 'categoria': 'Impostos e Taxas', 'valor': 5000},
+            {'tipo': 'DESPESA', 'categoria': 'Despesas Administrativas', 'valor': 1500},
+        ]
+        
+        orcamentos_criados = 0
+        
+        for mes in range(1, 13):
+            for cat in categorias_padrao:
+                # Verifica se já existe
+                existe = cls.query.filter_by(
+                    ano=ano,
+                    mes=mes,
+                    tipo=cat['tipo'],
+                    categoria=cat['categoria']
+                ).first()
+                
+                if not existe:
+                    orcamento = cls(
+                        ano=ano,
+                        mes=mes,
+                        tipo=cat['tipo'],
+                        categoria=cat['categoria'],
+                        valor_orcado=cat['valor'],
+                        ativo=True
+                    )
+                    db.session.add(orcamento)
+                    orcamentos_criados += 1
+        
+        db.session.commit()
+        return orcamentos_criados

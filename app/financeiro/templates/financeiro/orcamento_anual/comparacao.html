@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}Comparação Orçado vs Realizado - {{ ano_selecionado }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.index') }}">Financeiro</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.orcamento_anual_listar') }}">Orçamento Anual</a></li>
+<li class="breadcrumb-item active">Comparação</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="fas fa-balance-scale text-primary"></i> Comparação Orçado vs Realizado - {{ ano_selecionado }}</h2>
+        <p class="text-muted">Análise detalhada por categoria</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('financeiro.orcamento_anual_dashboard', ano=ano_selecionado) }}" class="btn btn-info">
+            <i class="fas fa-chart-line"></i> Dashboard
+        </a>
+        <a href="{{ url_for('financeiro.orcamento_anual_listar', ano=ano_selecionado) }}" class="btn btn-primary">
+            <i class="fas fa-list"></i> Ver Lista
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label"><i class="fas fa-calendar"></i> Ano</label>
+                <select name="ano" class="form-select" onchange="this.form.submit()">
+                    {% for ano in anos_disponiveis %}
+                    <option value="{{ ano }}" {% if ano == ano_selecionado %}selected{% endif %}>{{ ano }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label"><i class="fas fa-calendar-day"></i> Mês (Opcional)</label>
+                <select name="mes" class="form-select" onchange="this.form.submit()">
+                    <option value="">Ano Completo</option>
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {% if mes_selecionado == m %}selected{% endif %}>
+                        {{ ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][m-1] }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabela de Comparação -->
+{% if dados_comparacao %}
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-table"></i> Comparação por Categoria ({{ dados_comparacao|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Categoria</th>
+                        <th class="text-end">Orçado Total</th>
+                        <th class="text-end">Realizado Total</th>
+                        <th class="text-end">Variação</th>
+                        <th class="text-center">Execução</th>
+                        <th class="text-center">Detalhes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in dados_comparacao %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-{{ 'success' if item.tipo == 'RECEITA' else 'danger' }}">
+                                <i class="fas fa-arrow-{{ 'up' if item.tipo == 'RECEITA' else 'down' }}"></i>
+                                {{ item.tipo }}
+                            </span>
+                        </td>
+                        <td><strong>{{ item.categoria }}</strong></td>
+                        <td class="text-end">R$ {{ "{:,.2f}".format(item.orcado) }}</td>
+                        <td class="text-end">R$ {{ "{:,.2f}".format(item.realizado) }}</td>
+                        <td class="text-end">
+                            {% set var = item.realizado - item.orcado %}
+                            <span class="badge bg-{{ 'success' if var >= 0 else 'danger' }}">
+                                {{ '+' if var >= 0 else '' }}R$ {{ "{:,.2f}".format(var) }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            {% set perc = (item.realizado / item.orcado * 100) if item.orcado > 0 else 0 %}
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar 
+                                    {% if perc <= 80 %}bg-success
+                                    {% elif perc <= 100 %}bg-warning
+                                    {% else %}bg-danger
+                                    {% endif %}" 
+                                     style="width: {{ [perc, 100]|min }}%" 
+                                     role="progressbar">
+                                    <strong>{{ "{:.1f}".format(perc) }}%</strong>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-info" type="button" 
+                                    data-bs-toggle="collapse" 
+                                    data-bs-target="#detalhes{{ loop.index }}" 
+                                    aria-expanded="false">
+                                <i class="fas fa-eye"></i> Ver Meses
+                            </button>
+                        </td>
+                    </tr>
+                    <tr class="collapse" id="detalhes{{ loop.index }}">
+                        <td colspan="7">
+                            <div class="p-3 bg-light">
+                                <h6>Detalhamento Mensal - {{ item.categoria }}</h6>
+                                <div class="row">
+                                    {% for mes in item.meses %}
+                                    <div class="col-md-3 mb-2">
+                                        <div class="card">
+                                            <div class="card-body p-2">
+                                                <h6 class="card-title mb-1">{{ mes.mes_nome }}</h6>
+                                                <small class="d-block">Orçado: R$ {{ "{:,.2f}".format(mes.orcado) }}</small>
+                                                <small class="d-block">Realizado: R$ {{ "{:,.2f}".format(mes.realizado) }}</small>
+                                                <div class="progress mt-1" style="height: 15px;">
+                                                    <div class="progress-bar 
+                                                        {% if mes.percentual <= 80 %}bg-success
+                                                        {% elif mes.percentual <= 100 %}bg-warning
+                                                        {% else %}bg-danger
+                                                        {% endif %}" 
+                                                         style="width: {{ [mes.percentual, 100]|min }}%">
+                                                        {{ "{:.0f}".format(mes.percentual) }}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info text-center">
+    <i class="fas fa-info-circle fa-3x mb-3 d-block"></i>
+    <h5>Nenhum dado encontrado</h5>
+    <p>Não há orçamentos cadastrados para o período selecionado.</p>
+    <a href="{{ url_for('financeiro.orcamento_anual_novo') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Cadastrar Orçamento
+    </a>
+</div>
+{% endif %}
+{% endblock %}

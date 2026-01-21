@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if orcamento else 'Novo' }} Orçamento{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.index') }}">Financeiro</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.orcamento_anual_listar') }}">Orçamento Anual</a></li>
+<li class="breadcrumb-item active">{{ 'Editar' if orcamento else 'Novo' }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2><i class="fas fa-{{ 'edit' if orcamento else 'plus' }} text-primary"></i> {{ 'Editar' if orcamento else 'Novo' }} Orçamento</h2>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST">
+            <div class="row">
+                <!-- Ano -->
+                <div class="col-md-3 mb-3">
+                    <label for="ano" class="form-label">Ano <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="ano" name="ano" 
+                           value="{{ orcamento.ano if orcamento else ano_atual }}" 
+                           min="2020" max="2050" required>
+                </div>
+                
+                <!-- Mês -->
+                <div class="col-md-3 mb-3">
+                    <label for="mes" class="form-label">Mês <span class="text-danger">*</span></label>
+                    <select class="form-select" id="mes" name="mes" required>
+                        <option value="">Selecione...</option>
+                        {% for m in range(1, 13) %}
+                        <option value="{{ m }}" {% if orcamento and orcamento.mes == m %}selected{% endif %}>
+                            {{ ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][m-1] }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Tipo -->
+                <div class="col-md-3 mb-3">
+                    <label for="tipo" class="form-label">Tipo <span class="text-danger">*</span></label>
+                    <select class="form-select" id="tipo" name="tipo" required>
+                        <option value="">Selecione...</option>
+                        <option value="RECEITA" {% if orcamento and orcamento.tipo == 'RECEITA' %}selected{% endif %}>
+                            Receita
+                        </option>
+                        <option value="DESPESA" {% if orcamento and orcamento.tipo == 'DESPESA' %}selected{% endif %}>
+                            Despesa
+                        </option>
+                    </select>
+                </div>
+                
+                <!-- Valor Orçado -->
+                <div class="col-md-3 mb-3">
+                    <label for="valor_orcado" class="form-label">Valor Orçado <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        <input type="text" class="form-control" id="valor_orcado" name="valor_orcado" 
+                               value="{{ "{:.2f}".format(orcamento.valor_orcado) if orcamento else '' }}" 
+                               placeholder="0,00" required>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Categoria -->
+                <div class="col-md-6 mb-3">
+                    <label for="categoria" class="form-label">Categoria <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="categoria" name="categoria" 
+                           value="{{ orcamento.categoria if orcamento else '' }}" 
+                           placeholder="Ex: Vendas Sistemas Fotovoltaicos" 
+                           list="categorias_list" required>
+                    <datalist id="categorias_list">
+                        <option value="Vendas Sistemas Fotovoltaicos">
+                        <option value="Serviços de Instalação">
+                        <option value="Manutenção e Monitoramento">
+                        <option value="Folha de Pagamento">
+                        <option value="Fornecedores - Equipamentos">
+                        <option value="Marketing e Publicidade">
+                        <option value="Aluguel e Condomínio">
+                        <option value="Energia e Telecomunicações">
+                        <option value="Impostos e Taxas">
+                        <option value="Despesas Administrativas">
+                    </datalist>
+                </div>
+                
+                <!-- Descrição -->
+                <div class="col-md-6 mb-3">
+                    <label for="descricao" class="form-label">Descrição</label>
+                    <input type="text" class="form-control" id="descricao" name="descricao" 
+                           value="{{ orcamento.descricao if orcamento else '' }}" 
+                           placeholder="Descrição breve">
+                </div>
+            </div>
+            
+            <div class="row">
+                <!-- Centro de Custo -->
+                <div class="col-md-6 mb-3">
+                    <label for="centro_custo_id" class="form-label">Centro de Custo (Opcional)</label>
+                    <select class="form-select" id="centro_custo_id" name="centro_custo_id">
+                        <option value="">Nenhum</option>
+                        {% for cc in centros_custo %}
+                        <option value="{{ cc.id }}" {% if orcamento and orcamento.centro_custo_id == cc.id %}selected{% endif %}>
+                            {{ cc.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <!-- Plano de Contas -->
+                <div class="col-md-6 mb-3">
+                    <label for="plano_conta_id" class="form-label">Plano de Contas (Opcional)</label>
+                    <select class="form-select" id="plano_conta_id" name="plano_conta_id">
+                        <option value="">Nenhum</option>
+                        {% for conta in contas %}
+                        <option value="{{ conta.id }}" {% if orcamento and orcamento.plano_conta_id == conta.id %}selected{% endif %}>
+                            {{ conta.codigo }} - {{ conta.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Observações -->
+            <div class="mb-3">
+                <label for="observacoes" class="form-label">Observações</label>
+                <textarea class="form-control" id="observacoes" name="observacoes" rows="3" 
+                          placeholder="Observações adicionais...">{{ orcamento.observacoes if orcamento else '' }}</textarea>
+            </div>
+            
+            <!-- Ativo -->
+            {% if orcamento %}
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="ativo" name="ativo" 
+                       {% if orcamento.ativo %}checked{% endif %}>
+                <label class="form-check-label" for="ativo">
+                    Orçamento Ativo
+                </label>
+            </div>
+            {% endif %}
+            
+            <!-- Botões -->
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('financeiro.orcamento_anual_listar') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> {{ 'Atualizar' if orcamento else 'Criar' }} Orçamento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Máscara de valor
+document.getElementById('valor_orcado').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    value = (parseInt(value) / 100).toFixed(2);
+    e.target.value = value;
+});
+</script>
+{% endblock %}

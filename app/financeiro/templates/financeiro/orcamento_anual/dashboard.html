@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Orçamento - {{ ano_selecionado }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.index') }}">Financeiro</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.orcamento_anual_listar') }}">Orçamento Anual</a></li>
+<li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="fas fa-chart-line text-primary"></i> Dashboard Orçamento - {{ ano_selecionado }}</h2>
+        <p class="text-muted">Análise visual do orçamento anual</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="btn-group">
+            <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fas fa-calendar"></i> {{ ano_selecionado }}
+            </button>
+            <ul class="dropdown-menu">
+                {% for ano in anos_disponiveis %}
+                <li><a class="dropdown-item" href="{{ url_for('financeiro.orcamento_anual_dashboard', ano=ano) }}">{{ ano }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        <a href="{{ url_for('financeiro.orcamento_anual_listar', ano=ano_selecionado) }}" class="btn btn-primary">
+            <i class="fas fa-list"></i> Ver Lista
+        </a>
+    </div>
+</div>
+
+<!-- Indicadores Principais -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-arrow-up"></i> Receitas Orçadas</h6>
+                <h3>R$ {{ "{:,.2f}".format(total_orcado_receita) }}</h3>
+                <small>Realizado: R$ {{ "{:,.2f}".format(total_realizado_receita) }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-arrow-down"></i> Despesas Orçadas</h6>
+                <h3>R$ {{ "{:,.2f}".format(total_orcado_despesa) }}</h3>
+                <small>Realizado: R$ {{ "{:,.2f}".format(total_realizado_despesa) }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-chart-bar"></i> Resultado Orçado</h6>
+                <h3>R$ {{ "{:,.2f}".format(resultado_orcado) }}</h3>
+                <small>
+                    {% if resultado_orcado > 0 %}
+                    <i class="fas fa-thumbs-up"></i> Lucro Planejado
+                    {% else %}
+                    <i class="fas fa-exclamation-triangle"></i> Prejuízo Planejado
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-{{ 'success' if resultado_realizado > 0 else 'warning' }} text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-wallet"></i> Resultado Realizado</h6>
+                <h3>R$ {{ "{:,.2f}".format(resultado_realizado) }}</h3>
+                <small>
+                    {% if resultado_realizado > resultado_orcado %}
+                    <i class="fas fa-arrow-up"></i> Acima do Orçado
+                    {% else %}
+                    <i class="fas fa-arrow-down"></i> Abaixo do Orçado
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico Mensal -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Evolução Mensal - Orçado vs Realizado</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="chartMensal" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos de Receitas e Despesas -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5><i class="fas fa-arrow-up"></i> Receitas - Orçado vs Realizado</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="chartReceitas" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5><i class="fas fa-arrow-down"></i> Despesas - Orçado vs Realizado</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="chartDespesas" height="150"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Categorias -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-trophy"></i> Top 10 Categorias por Valor Orçado</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Categoria</th>
+                                <th>Tipo</th>
+                                <th class="text-end">Orçado</th>
+                                <th class="text-end">Realizado</th>
+                                <th class="text-end">Variação</th>
+                                <th class="text-center">Execução</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for idx, cat in enumerate(top_categorias, 1) %}
+                            <tr>
+                                <td><strong>{{ idx }}º</strong></td>
+                                <td>{{ cat.categoria }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if cat.tipo == 'RECEITA' else 'danger' }}">
+                                        {{ cat.tipo }}
+                                    </span>
+                                </td>
+                                <td class="text-end">R$ {{ "{:,.2f}".format(cat.orcado) }}</td>
+                                <td class="text-end">R$ {{ "{:,.2f}".format(cat.realizado) }}</td>
+                                <td class="text-end">
+                                    {% set var = cat.realizado - cat.orcado %}
+                                    <span class="badge bg-{{ 'success' if var >= 0 else 'danger' }}">
+                                        R$ {{ "{:,.2f}".format(var) }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    {% set perc = (cat.realizado / cat.orcado * 100) if cat.orcado > 0 else 0 %}
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-{{ 'success' if perc <= 100 else 'danger' }}" 
+                                             style="width: {{ perc }}%" 
+                                             role="progressbar">
+                                            {{ "{:.0f}".format(perc) }}%
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Dados
+const dadosMensais = {{ dados_mensais | tojson }};
+const meses = dadosMensais.map(d => d.mes_nome);
+const receitasOrcadas = dadosMensais.map(d => d.orcado_receita);
+const receitasRealizadas = dadosMensais.map(d => d.realizado_receita);
+const despesasOrcadas = dadosMensais.map(d => d.orcado_despesa);
+const despesasRealizadas = dadosMensais.map(d => d.realizado_despesa);
+
+// Gráfico Mensal Geral
+const ctxMensal = document.getElementById('chartMensal').getContext('2d');
+new Chart(ctxMensal, {
+    type: 'line',
+    data: {
+        labels: meses,
+        datasets: [
+            {
+                label: 'Receitas Orçadas',
+                data: receitasOrcadas,
+                borderColor: 'rgba(40, 167, 69, 1)',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                borderWidth: 2,
+                fill: true
+            },
+            {
+                label: 'Receitas Realizadas',
+                data: receitasRealizadas,
+                borderColor: 'rgba(23, 162, 184, 1)',
+                backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                borderWidth: 2,
+                fill: true
+            },
+            {
+                label: 'Despesas Orçadas',
+                data: despesasOrcadas,
+                borderColor: 'rgba(220, 53, 69, 1)',
+                backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                borderWidth: 2,
+                fill: true
+            },
+            {
+                label: 'Despesas Realizadas',
+                data: despesasRealizadas,
+                borderColor: 'rgba(255, 193, 7, 1)',
+                backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                borderWidth: 2,
+                fill: true
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.dataset.label + ': R$ ' + context.parsed.y.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return 'R$ ' + value.toFixed(0).replace(/\d(?=(\d{3})+$)/g, '$&,');
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Gráfico Receitas
+const ctxReceitas = document.getElementById('chartReceitas').getContext('2d');
+new Chart(ctxReceitas, {
+    type: 'bar',
+    data: {
+        labels: meses,
+        datasets: [
+            {
+                label: 'Orçado',
+                data: receitasOrcadas,
+                backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                borderColor: 'rgba(40, 167, 69, 1)',
+                borderWidth: 1
+            },
+            {
+                label: 'Realizado',
+                data: receitasRealizadas,
+                backgroundColor: 'rgba(23, 162, 184, 0.7)',
+                borderColor: 'rgba(23, 162, 184, 1)',
+                borderWidth: 1
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// Gráfico Despesas
+const ctxDespesas = document.getElementById('chartDespesas').getContext('2d');
+new Chart(ctxDespesas, {
+    type: 'bar',
+    data: {
+        labels: meses,
+        datasets: [
+            {
+                label: 'Orçado',
+                data: despesasOrcadas,
+                backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                borderColor: 'rgba(220, 53, 69, 1)',
+                borderWidth: 1
+            },
+            {
+                label: 'Realizado',
+                data: despesasRealizadas,
+                backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                borderColor: 'rgba(255, 193, 7, 1)',
+                borderWidth: 1
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

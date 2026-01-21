@@ -2482,3 +2482,330 @@ def api_plano_contas_analiticas():
         'success': True,
         'contas': [conta.to_dict() for conta in contas]
     })
+
+
+# ============================================================================
+# ORÇAMENTO ANUAL
+# ============================================================================
+
+@bp_financeiro.route('/orcamento-anual')
+def orcamento_anual_listar():
+    """Listar orçamentos anuais."""
+    from app.financeiro.financeiro_model import OrcamentoAnual
+    from datetime import datetime
+    
+    # Filtros
+    ano = request.args.get('ano', datetime.now().year, type=int)
+    tipo = request.args.get('tipo', '')
+    categoria = request.args.get('categoria', '')
+    
+    # Query base
+    query = OrcamentoAnual.query.filter_by(ano=ano)
+    
+    if tipo:
+        query = query.filter_by(tipo=tipo)
+    if categoria:
+        query = query.filter(OrcamentoAnual.categoria.like(f'%{categoria}%'))
+    
+    orcamentos = query.order_by(OrcamentoAnual.mes, OrcamentoAnual.tipo, OrcamentoAnual.categoria).all()
+    
+    # Estatísticas
+    total_orcado_receita = sum(o.valor_orcado for o in orcamentos if o.tipo == 'RECEITA')
+    total_orcado_despesa = sum(o.valor_orcado for o in orcamentos if o.tipo == 'DESPESA')
+    
+    total_realizado_receita = sum(o.valor_realizado for o in orcamentos if o.tipo == 'RECEITA')
+    total_realizado_despesa = sum(o.valor_realizado for o in orcamentos if o.tipo == 'DESPESA')
+    
+    # Anos disponíveis
+    anos_disponiveis = db.session.query(
+        db.func.distinct(OrcamentoAnual.ano)
+    ).order_by(OrcamentoAnual.ano.desc()).all()
+    anos_disponiveis = [a[0] for a in anos_disponiveis]
+    
+    # Categorias únicas
+    categorias_disponiveis = db.session.query(
+        db.func.distinct(OrcamentoAnual.categoria)
+    ).filter_by(ano=ano).order_by(OrcamentoAnual.categoria).all()
+    categorias_disponiveis = [c[0] for c in categorias_disponiveis]
+    
+    return render_template('financeiro/orcamento_anual/listar.html',
+                         orcamentos=orcamentos,
+                         ano_selecionado=ano,
+                         tipo_selecionado=tipo,
+                         categoria_selecionada=categoria,
+                         anos_disponiveis=anos_disponiveis,
+                         categorias_disponiveis=categorias_disponiveis,
+                         total_orcado_receita=total_orcado_receita,
+                         total_orcado_despesa=total_orcado_despesa,
+                         total_realizado_receita=total_realizado_receita,
+                         total_realizado_despesa=total_realizado_despesa)
+
+
+@bp_financeiro.route('/orcamento-anual/dashboard')
+def orcamento_anual_dashboard():
+    """Dashboard analítico do orçamento anual."""
+    from app.financeiro.financeiro_model import OrcamentoAnual
+    from datetime import datetime
+    
+    ano = request.args.get('ano', datetime.now().year, type=int)
+    
+    # Busca todos os orçamentos do ano
+    orcamentos = OrcamentoAnual.query.filter_by(ano=ano, ativo=True).all()
+    
+    # Dados para gráficos
+    dados_mensais = {}
+    for mes in range(1, 13):
+        orcamentos_mes = [o for o in orcamentos if o.mes == mes]
+        
+        dados_mensais[mes] = {
+            'mes': mes,
+            'mes_nome': OrcamentoAnual(mes=mes, ano=ano, tipo='RECEITA', categoria='temp', valor_orcado=0).mes_nome,
+            'orcado_receita': sum(o.valor_orcado for o in orcamentos_mes if o.tipo == 'RECEITA'),
+            'orcado_despesa': sum(o.valor_orcado for o in orcamentos_mes if o.tipo == 'DESPESA'),
+            'realizado_receita': sum(o.valor_realizado for o in orcamentos_mes if o.tipo == 'RECEITA'),
+            'realizado_despesa': sum(o.valor_realizado for o in orcamentos_mes if o.tipo == 'DESPESA'),
+        }
+    
+    # Análise por categoria
+    categorias = {}
+    for orc in orcamentos:
+        if orc.categoria not in categorias:
+            categorias[orc.categoria] = {
+                'categoria': orc.categoria,
+                'tipo': orc.tipo,
+                'orcado': 0,
+                'realizado': 0
+            }
+        categorias[orc.categoria]['orcado'] += float(orc.valor_orcado)
+        categorias[orc.categoria]['realizado'] += orc.valor_realizado
+    
+    # Top 5 categorias por valor
+    top_categorias = sorted(
+        categorias.values(),
+        key=lambda x: x['orcado'],
+        reverse=True
+    )[:10]
+    
+    # Anos disponíveis
+    anos_disponiveis = db.session.query(
+        db.func.distinct(OrcamentoAnual.ano)
+    ).order_by(OrcamentoAnual.ano.desc()).all()
+    anos_disponiveis = [a[0] for a in anos_disponiveis]
+    
+    # Indicadores
+    total_orcado_receita = sum(c['orcado'] for c in categorias.values() if c['tipo'] == 'RECEITA')
+    total_orcado_despesa = sum(c['orcado'] for c in categorias.values() if c['tipo'] == 'DESPESA')
+    total_realizado_receita = sum(c['realizado'] for c in categorias.values() if c['tipo'] == 'RECEITA')
+    total_realizado_despesa = sum(c['realizado'] for c in categorias.values() if c['tipo'] == 'DESPESA')
+    
+    resultado_orcado = total_orcado_receita - total_orcado_despesa
+    resultado_realizado = total_realizado_receita - total_realizado_despesa
+    
+    return render_template('financeiro/orcamento_anual/dashboard.html',
+                         ano_selecionado=ano,
+                         anos_disponiveis=anos_disponiveis,
+                         dados_mensais=list(dados_mensais.values()),
+                         top_categorias=top_categorias,
+                         total_orcado_receita=total_orcado_receita,
+                         total_orcado_despesa=total_orcado_despesa,
+                         total_realizado_receita=total_realizado_receita,
+                         total_realizado_despesa=total_realizado_despesa,
+                         resultado_orcado=resultado_orcado,
+                         resultado_realizado=resultado_realizado)
+
+
+@bp_financeiro.route('/orcamento-anual/novo', methods=['GET', 'POST'])
+def orcamento_anual_novo():
+    """Criar novo orçamento."""
+    from app.financeiro.financeiro_model import OrcamentoAnual, CentroCusto, PlanoContas
+    from datetime import datetime
+    
+    if request.method == 'POST':
+        try:
+            # Validações
+            ano = int(request.form['ano'])
+            mes = int(request.form['mes'])
+            tipo = request.form['tipo']
+            categoria = request.form['categoria']
+            valor_orcado = float(request.form['valor_orcado'].replace(',', '.'))
+            
+            # Verifica duplicidade
+            existe = OrcamentoAnual.query.filter_by(
+                ano=ano,
+                mes=mes,
+                tipo=tipo,
+                categoria=categoria
+            ).first()
+            
+            if existe:
+                flash('Já existe um orçamento para esta combinação de ano/mês/tipo/categoria!', 'warning')
+                return redirect(url_for('financeiro.orcamento_anual_novo'))
+            
+            # Cria orçamento
+            orcamento = OrcamentoAnual(
+                ano=ano,
+                mes=mes,
+                tipo=tipo,
+                categoria=categoria,
+                valor_orcado=valor_orcado,
+                descricao=request.form.get('descricao', ''),
+                observacoes=request.form.get('observacoes', ''),
+                centro_custo_id=request.form.get('centro_custo_id') or None,
+                plano_conta_id=request.form.get('plano_conta_id') or None,
+                ativo=True
+            )
+            
+            db.session.add(orcamento)
+            db.session.commit()
+            
+            flash('Orçamento criado com sucesso!', 'success')
+            return redirect(url_for('financeiro.orcamento_anual_listar', ano=ano))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao criar orçamento: {str(e)}', 'danger')
+    
+    # GET
+    centros_custo = CentroCusto.query.filter_by(ativo=True).order_by(CentroCusto.nome).all()
+    contas = PlanoContas.query.filter_by(ativa=True, aceita_lancamento=True).order_by(PlanoContas.codigo).all()
+    
+    ano_atual = datetime.now().year
+    
+    return render_template('financeiro/orcamento_anual/form.html',
+                         centros_custo=centros_custo,
+                         contas=contas,
+                         ano_atual=ano_atual)
+
+
+@bp_financeiro.route('/orcamento-anual/<int:id>/editar', methods=['GET', 'POST'])
+def orcamento_anual_editar(id):
+    """Editar orçamento."""
+    from app.financeiro.financeiro_model import OrcamentoAnual, CentroCusto, PlanoContas
+    
+    orcamento = OrcamentoAnual.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        try:
+            orcamento.ano = int(request.form['ano'])
+            orcamento.mes = int(request.form['mes'])
+            orcamento.tipo = request.form['tipo']
+            orcamento.categoria = request.form['categoria']
+            orcamento.valor_orcado = float(request.form['valor_orcado'].replace(',', '.'))
+            orcamento.descricao = request.form.get('descricao', '')
+            orcamento.observacoes = request.form.get('observacoes', '')
+            orcamento.centro_custo_id = request.form.get('centro_custo_id') or None
+            orcamento.plano_conta_id = request.form.get('plano_conta_id') or None
+            orcamento.ativo = 'ativo' in request.form
+            
+            db.session.commit()
+            
+            flash('Orçamento atualizado com sucesso!', 'success')
+            return redirect(url_for('financeiro.orcamento_anual_listar', ano=orcamento.ano))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Erro ao atualizar orçamento: {str(e)}', 'danger')
+    
+    # GET
+    centros_custo = CentroCusto.query.filter_by(ativo=True).order_by(CentroCusto.nome).all()
+    contas = PlanoContas.query.filter_by(ativa=True, aceita_lancamento=True).order_by(PlanoContas.codigo).all()
+    
+    return render_template('financeiro/orcamento_anual/form.html',
+                         orcamento=orcamento,
+                         centros_custo=centros_custo,
+                         contas=contas)
+
+
+@bp_financeiro.route('/orcamento-anual/<int:id>/excluir', methods=['POST'])
+def orcamento_anual_excluir(id):
+    """Excluir orçamento."""
+    from app.financeiro.financeiro_model import OrcamentoAnual
+    
+    orcamento = OrcamentoAnual.query.get_or_404(id)
+    ano = orcamento.ano
+    
+    try:
+        db.session.delete(orcamento)
+        db.session.commit()
+        flash('Orçamento excluído com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir orçamento: {str(e)}', 'danger')
+    
+    return redirect(url_for('financeiro.orcamento_anual_listar', ano=ano))
+
+
+@bp_financeiro.route('/orcamento-anual/criar-padrao', methods=['POST'])
+def orcamento_anual_criar_padrao():
+    """Criar orçamentos padrão para um ano."""
+    from app.financeiro.financeiro_model import OrcamentoAnual
+    from datetime import datetime
+    
+    ano = request.form.get('ano', datetime.now().year, type=int)
+    
+    try:
+        qtd = OrcamentoAnual.criar_orcamento_padrao(ano)
+        flash(f'✅ {qtd} orçamentos padrão criados para {ano}!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao criar orçamentos padrão: {str(e)}', 'danger')
+    
+    return redirect(url_for('financeiro.orcamento_anual_listar', ano=ano))
+
+
+@bp_financeiro.route('/orcamento-anual/comparacao')
+def orcamento_anual_comparacao():
+    """Comparação Orçado vs Realizado."""
+    from app.financeiro.financeiro_model import OrcamentoAnual
+    from datetime import datetime
+    
+    ano = request.args.get('ano', datetime.now().year, type=int)
+    mes = request.args.get('mes', type=int)
+    
+    query = OrcamentoAnual.query.filter_by(ano=ano, ativo=True)
+    
+    if mes:
+        query = query.filter_by(mes=mes)
+    
+    orcamentos = query.order_by(
+        OrcamentoAnual.mes,
+        OrcamentoAnual.tipo,
+        OrcamentoAnual.categoria
+    ).all()
+    
+    # Agrupa por categoria
+    categorias = {}
+    for orc in orcamentos:
+        key = f"{orc.tipo}_{orc.categoria}"
+        if key not in categorias:
+            categorias[key] = {
+                'tipo': orc.tipo,
+                'categoria': orc.categoria,
+                'orcado': 0,
+                'realizado': 0,
+                'meses': []
+            }
+        categorias[key]['orcado'] += float(orc.valor_orcado)
+        categorias[key]['realizado'] += orc.valor_realizado
+        categorias[key]['meses'].append({
+            'mes': orc.mes,
+            'mes_nome': orc.mes_nome,
+            'orcado': float(orc.valor_orcado),
+            'realizado': orc.valor_realizado,
+            'percentual': orc.percentual_executado
+        })
+    
+    # Converte para lista
+    dados_comparacao = list(categorias.values())
+    
+    # Anos disponíveis
+    anos_disponiveis = db.session.query(
+        db.func.distinct(OrcamentoAnual.ano)
+    ).order_by(OrcamentoAnual.ano.desc()).all()
+    anos_disponiveis = [a[0] for a in anos_disponiveis]
+    
+    return render_template('financeiro/orcamento_anual/comparacao.html',
+                         dados_comparacao=dados_comparacao,
+                         ano_selecionado=ano,
+                         mes_selecionado=mes,
+                         anos_disponiveis=anos_disponiveis)

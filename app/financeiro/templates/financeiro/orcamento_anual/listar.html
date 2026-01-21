@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Orçamento Anual - {{ ano_selecionado }}{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.index') }}">Financeiro</a></li>
+<li class="breadcrumb-item active">Orçamento Anual</li>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="fas fa-chart-pie text-primary"></i> Orçamento Anual - {{ ano_selecionado }}</h2>
+        <p class="text-muted">Planejamento e controle orçamentário</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('financeiro.orcamento_anual_dashboard', ano=ano_selecionado) }}" class="btn btn-info">
+            <i class="fas fa-chart-line"></i> Dashboard
+        </a>
+        <a href="{{ url_for('financeiro.orcamento_anual_novo') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Novo Orçamento
+        </a>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label"><i class="fas fa-calendar"></i> Ano</label>
+                <select name="ano" class="form-select" onchange="this.form.submit()">
+                    <option value="{{ ano_selecionado }}" selected>{{ ano_selecionado }}</option>
+                    {% for ano in anos_disponiveis %}
+                        {% if ano != ano_selecionado %}
+                        <option value="{{ ano }}">{{ ano }}</option>
+                        {% endif %}
+                    {% endfor %}
+                    <option value="{{ ano_selecionado + 1 }}">{{ ano_selecionado + 1 }} (Próximo)</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label"><i class="fas fa-filter"></i> Tipo</label>
+                <select name="tipo" class="form-select" onchange="this.form.submit()">
+                    <option value="">Todos</option>
+                    <option value="RECEITA" {% if tipo_selecionado == 'RECEITA' %}selected{% endif %}>Receitas</option>
+                    <option value="DESPESA" {% if tipo_selecionado == 'DESPESA' %}selected{% endif %}>Despesas</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label"><i class="fas fa-tag"></i> Categoria</label>
+                <input type="text" name="categoria" class="form-control" placeholder="Filtrar por categoria" value="{{ categoria_selecionada }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resumo -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-arrow-up"></i> Receitas Orçadas</h6>
+                <h3>R$ {{ "{:,.2f}".format(total_orcado_receita) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-arrow-down"></i> Despesas Orçadas</h6>
+                <h3>R$ {{ "{:,.2f}".format(total_orcado_despesa) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-check-circle"></i> Receitas Realizadas</h6>
+                <h3>R$ {{ "{:,.2f}".format(total_realizado_receita) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <h6 class="card-title"><i class="fas fa-exclamation-circle"></i> Despesas Realizadas</h6>
+                <h3>R$ {{ "{:,.2f}".format(total_realizado_despesa) }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Botão Criar Padrão -->
+{% if orcamentos|length == 0 %}
+<div class="alert alert-info">
+    <i class="fas fa-info-circle"></i> Nenhum orçamento encontrado para {{ ano_selecionado }}.
+    <form method="POST" action="{{ url_for('financeiro.orcamento_anual_criar_padrao') }}" style="display: inline;">
+        <input type="hidden" name="ano" value="{{ ano_selecionado }}">
+        <button type="submit" class="btn btn-sm btn-primary" onclick="return confirm('Criar orçamentos padrão para {{ ano_selecionado }}?')">
+            <i class="fas fa-magic"></i> Criar Orçamento Padrão
+        </button>
+    </form>
+</div>
+{% endif %}
+
+<!-- Tabela de Orçamentos -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="fas fa-list"></i> Orçamentos Cadastrados ({{ orcamentos|length }})</h5>
+    </div>
+    <div class="card-body">
+        {% if orcamentos %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Período</th>
+                        <th>Tipo</th>
+                        <th>Categoria</th>
+                        <th class="text-end">Orçado</th>
+                        <th class="text-end">Realizado</th>
+                        <th class="text-end">Variação</th>
+                        <th class="text-center">Execução</th>
+                        <th>Status</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for orc in orcamentos %}
+                    <tr>
+                        <td>{{ orc.mes_nome }}/{{ orc.ano }}</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if orc.tipo == 'RECEITA' else 'danger' }}">
+                                <i class="{{ orc.tipo_icone }}"></i> {{ orc.tipo }}
+                            </span>
+                        </td>
+                        <td>{{ orc.categoria }}</td>
+                        <td class="text-end">R$ {{ "{:,.2f}".format(orc.valor_orcado) }}</td>
+                        <td class="text-end">R$ {{ "{:,.2f}".format(orc.valor_realizado) }}</td>
+                        <td class="text-end">
+                            <span class="badge bg-{{ 'success' if orc.variacao >= 0 else 'danger' }}">
+                                R$ {{ "{:,.2f}".format(orc.variacao) }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-{{ orc.status_orcamento['classe'] }}" 
+                                     role="progressbar" 
+                                     style="width: {{ orc.percentual_executado }}%"
+                                     aria-valuenow="{{ orc.percentual_executado }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    {{ "{:.0f}".format(orc.percentual_executado) }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ orc.status_orcamento['classe'] }}">
+                                {{ orc.status_orcamento['texto'] }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <a href="{{ url_for('financeiro.orcamento_anual_editar', id=orc.id) }}" 
+                               class="btn btn-sm btn-warning" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('financeiro.orcamento_anual_excluir', id=orc.id) }}" 
+                                  style="display: inline;" 
+                                  onsubmit="return confirm('Confirma exclusão deste orçamento?')">
+                                <button type="submit" class="btn btn-sm btn-danger" title="Excluir">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-4">
+            <i class="fas fa-inbox fa-3x mb-3 d-block"></i>
+            Nenhum orçamento encontrado com os filtros aplicados.
+        </p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
