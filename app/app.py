@@ -132,9 +132,11 @@ def create_app(config_name=None):
                     CentroCusto,
                     HistoricoFinanceiro,
                     ExtratoBancario,
-                    CustoFixo
+                    CustoFixo,
+                    OrcamentoAnual,
+                    NotaFiscal
                 )
-                print("[OK] Modelos Financeiros Avançados importados (7 tabelas)")
+                print("[OK] Modelos Financeiros Avançados importados (9 tabelas)")
             except Exception as e:
                 print(f" ⚠ Erro ao importar modelos Financeiros: {e}")
             
