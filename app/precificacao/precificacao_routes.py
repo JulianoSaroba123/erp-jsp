@@ -97,6 +97,29 @@ def calculadora():
             percentual_impostos=float(request.form.get('percentual_impostos', 13.33)),
             horas_improdutivas_percentual=float(request.form.get('horas_improdutivas_percentual', 20)),
             
+            # === CAMPOS AVANÇADOS ===
+            # Gestão de Riscos
+            percentual_inadimplencia=float(request.form.get('percentual_inadimplencia', 5.0)),
+            reserva_tecnica_percentual=float(request.form.get('reserva_tecnica_percentual', 3.0)),
+            
+            # Análise de Investimento
+            capital_investido=converter_valor_monetario(request.form.get('capital_investido', 0)),
+            roi_desejado_anual=float(request.form.get('roi_desejado_anual', 20.0)),
+            
+            # Gestão de Capacidade
+            percentual_utilizacao_esperada=float(request.form.get('percentual_utilizacao_esperada', 70.0)),
+            
+            # Análise de Mercado
+            preco_mercado_hora=converter_valor_monetario(request.form.get('preco_mercado_hora', 0)),
+            preco_mercado_dia=converter_valor_monetario(request.form.get('preco_mercado_dia', 0)),
+            estrategia_pricing=request.form.get('estrategia_pricing', 'competitivo'),
+            
+            # Precificação por Complexidade
+            multiplicador_simples=float(request.form.get('multiplicador_simples', 0.8)),
+            multiplicador_medio=float(request.form.get('multiplicador_medio', 1.0)),
+            multiplicador_complexo=float(request.form.get('multiplicador_complexo', 1.3)),
+            multiplicador_urgente=float(request.form.get('multiplicador_urgente', 1.5)),
+            
             # Observações
             observacoes=request.form.get('observacoes', '').strip()
         )
@@ -121,20 +144,33 @@ def calculadora():
 
 @precificacao_bp.route("/resultado/<int:id>")
 def resultado(id):
-    """Exibe os resultados da precificação em cards visuais com gráficos."""
+    """Exibe os resultados da precificação com análises profissionais."""
     try:
         config = ConfigPrecificacao.query.get_or_404(id)
         
-        # Preparar dados para gráficos
+        # Preparar dados para gráficos e análises
         dados_grafico = config.get_dados_grafico()
         resumo_custos = config.get_resumo_custos()
         
+        # === ANÁLISES PROFISSIONAIS ===
+        analise_break_even = config.get_analise_ponto_equilibrio()
+        analise_cenarios = config.get_analise_cenarios()
+        precificacao_complexidade = config.get_precificacao_complexidade()
+        comparacao_mercado = config.get_comparacao_mercado()
+        indicadores = config.get_indicadores_financeiros()
+        
         return render_template(
             "precificacao/resultado.html",
-            resultado=config,  # Mudança aqui: resultado ao invés de config
+            resultado=config,
             config=config,
             dados_grafico=dados_grafico,
-            resumo_custos=resumo_custos
+            resumo_custos=resumo_custos,
+            # Análises avançadas
+            analise_break_even=analise_break_even,
+            analise_cenarios=analise_cenarios,
+            precificacao_complexidade=precificacao_complexidade,
+            comparacao_mercado=comparacao_mercado,
+            indicadores=indicadores
         )
         
     except Exception as e:
