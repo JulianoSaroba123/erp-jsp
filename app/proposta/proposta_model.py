@@ -69,6 +69,11 @@ class Proposta(BaseModel):
     garantia = db.Column(db.String(500))
     forma_pagamento = db.Column(db.String(500), default='a_vista')
     
+    # Dados de Parcelamento (quando forma_pagamento = 'parcelado')
+    numero_parcelas = db.Column(db.Integer, default=1)  # Quantidade de parcelas
+    intervalo_parcelas = db.Column(db.Integer, default=30)  # Dias entre parcelas
+    data_primeira_parcela = db.Column(db.Date)  # Data de vencimento da 1ª parcela
+    
     # Meta campos herdados de BaseModel:
     # id, data_criacao, data_atualizacao, ativo, usuario_criacao, usuario_atualizacao
     
@@ -247,6 +252,78 @@ class Proposta(BaseModel):
         self.valor_servicos = self.valor_total_servicos_calculado
         self.valor_total = self.valor_total_calculado
         self.save()
+    
+    def gerar_parcelas(self):
+        """
+        Gera as parcelas de pagamento baseado nos dados de parcelamento.
+        
+        Remove parcelas existentes e cria novas baseado em:
+        - numero_parcelas
+        - entrada (percentual)
+        - data_primeira_parcela
+        - intervalo_parcelas
+        - valor_total
+        """
+        if self.forma_pagamento != 'parcelado' or not self.numero_parcelas:
+            return
+        
+        # Remove parcelas antigas
+        ParcelaProposta.query.filter_by(proposta_id=self.id).delete()
+        
+        # Calcula valores
+        valor_total = Decimal(str(self.valor_total or 0))
+        percentual_entrada = Decimal(str(self.entrada or 0))
+        valor_entrada = valor_total * (percentual_entrada / 100)
+        valor_restante = valor_total - valor_entrada
+        numero_parcelas = int(self.numero_parcelas or 1)
+        valor_parcela = valor_restante / numero_parcelas if numero_parcelas > 0 else Decimal(0)
+        
+        # Data da primeira parcela (ou hoje se não definida)
+        data_base = self.data_primeira_parcela or date.today()
+        intervalo = int(self.intervalo_parcelas or 30)
+        
+        parcelas_criadas = []
+        
+        # Cria entrada se houver
+        if valor_entrada > 0:
+            parcela_entrada = ParcelaProposta(
+                proposta_id=self.id,
+                numero_parcela=0,
+                valor_parcela=float(valor_entrada),
+                data_vencimento=data_base,
+                descricao=f"Entrada ({percentual_entrada}%)",
+                status='pendente'
+            )
+            db.session.add(parcela_entrada)
+            parcelas_criadas.append(parcela_entrada)
+        
+        # Cria parcelas restantes
+        for i in range(1, numero_parcelas + 1):
+            # Calcula data de vencimento (entrada + intervalo * número da parcela)
+            dias_apos_entrada = intervalo * i
+            data_venc = data_base + timedelta(days=dias_apos_entrada)
+            
+            # Ajusta última parcela para incluir centavos restantes
+            if i == numero_parcelas:
+                # Soma todas as parcelas criadas
+                total_parcelas = sum(p.valor_parcela for p in parcelas_criadas)
+                valor_ajustado = float(valor_total) - total_parcelas
+            else:
+                valor_ajustado = float(valor_parcela)
+            
+            parcela = ParcelaProposta(
+                proposta_id=self.id,
+                numero_parcela=i,
+                valor_parcela=valor_ajustado,
+                data_vencimento=data_venc,
+                descricao=f"Parcela {i}/{numero_parcelas}",
+                status='pendente'
+            )
+            db.session.add(parcela)
+            parcelas_criadas.append(parcela)
+        
+        db.session.commit()
+        return parcelas_criadas
     
     def gerar_ordem_servico(self):
         """
@@ -459,3 +536,28 @@ class PropostaAnexo(BaseModel):
     
     def __repr__(self):
         return f'<PropostaAnexo {self.nome_original}>'
+
+
+class ParcelaProposta(BaseModel):
+    """
+    Model para Parcelas de Pagamento da Proposta.
+    
+    Armazena o parcelamento quando forma_pagamento = 'parcelado'.
+    """
+    
+    __tablename__ = 'parcelas_proposta'
+    
+    # Relacionamento
+    proposta_id = db.Column(db.Integer, db.ForeignKey('propostas.id'), nullable=False)
+    proposta = db.relationship('Proposta', backref='parcelas_pagamento')
+    
+    # Dados da parcela
+    numero_parcela = db.Column(db.Integer, nullable=False)  # 1, 2, 3...
+    valor_parcela = db.Column(db.Numeric(10, 2), nullable=False)
+    data_vencimento = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String(20), default='pendente')  # pendente, pago, cancelado
+    data_pagamento = db.Column(db.Date)
+    descricao = db.Column(db.String(200))  # Ex: "Parcela 1/12 - Entrada"
+    
+    def __repr__(self):
+        return f'<Parcela {self.numero_parcela} - R$ {self.valor_parcela}>'

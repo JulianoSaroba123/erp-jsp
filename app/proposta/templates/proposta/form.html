@@ -314,7 +314,7 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label text-white">Forma de Pagamento</label>
-                        <select class="form-select bg-dark text-white border-secondary" name="forma_pagamento">
+                        <select class="form-select bg-dark text-white border-secondary" name="forma_pagamento" id="formaPagamento">
                             <option value="">Selecione...</option>
                             <option value="a_vista" {% if proposta and proposta.forma_pagamento == 'a_vista' %}selected{% endif %}>À vista</option>
                             <option value="parcelado" {% if proposta and proposta.forma_pagamento == 'parcelado' %}selected{% endif %}>Parcelado</option>
@@ -328,7 +328,7 @@
                     <div class="col-md-3">
                         <label class="form-label text-white">Entrada (%)</label>
                         <input type="number" class="form-control bg-dark text-white border-secondary" 
-                               name="entrada" value="{{ proposta.entrada if proposta else 0 }}" 
+                               name="entrada" id="entrada" value="{{ proposta.entrada if proposta else 0 }}" 
                                step="0.01" min="0" max="100" placeholder="0,00">
                     </div>
                     <div class="col-md-3">
@@ -337,6 +337,56 @@
                                name="prazo_execucao" value="{{ proposta.prazo_execucao if proposta else '' }}" 
                                placeholder="Ex: 15 dias úteis">
                     </div>
+                    
+                    <!-- CAMPOS DE PARCELAMENTO (aparecem apenas quando forma = parcelado) -->
+                    <div id="camposParcelamento" style="display: none;" class="col-12">
+                        <div class="card bg-secondary bg-opacity-10 border-info mb-3">
+                            <div class="card-header bg-info bg-opacity-25 text-white">
+                                <h6 class="mb-0"><i class="fas fa-calendar-alt"></i> Configuração de Parcelamento</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label text-white">Número de Parcelas</label>
+                                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                                               name="numero_parcelas" id="numeroParcelas" 
+                                               value="{{ proposta.numero_parcelas if proposta else 1 }}" 
+                                               min="1" max="120" placeholder="Ex: 12">
+                                        <small class="text-muted">Máximo 120 parcelas</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label text-white">Intervalo (dias)</label>
+                                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                                               name="intervalo_parcelas" id="intervaloParcelas" 
+                                               value="{{ proposta.intervalo_parcelas if proposta else 30 }}" 
+                                               min="1" max="365" placeholder="30">
+                                        <small class="text-muted">Dias entre parcelas</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label text-white">1ª Parcela</label>
+                                        <input type="date" class="form-control bg-dark text-white border-secondary" 
+                                               name="data_primeira_parcela" id="dataPrimeiraParcela" 
+                                               value="{{ proposta.data_primeira_parcela.strftime('%Y-%m-%d') if proposta and proposta.data_primeira_parcela else '' }}">
+                                        <small class="text-muted">Vencimento da 1ª parcela</small>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="button" class="btn btn-info w-100" id="btnVisualizarParcelas" style="margin-top: 31px;">
+                                            <i class="fas fa-eye"></i> Visualizar Parcelas
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Preview das Parcelas -->
+                                <div id="previewParcelas" class="mt-3" style="display: none;">
+                                    <div class="alert alert-info">
+                                        <h6><i class="fas fa-info-circle"></i> Preview do Parcelamento</h6>
+                                        <div id="listaParcelas"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="col-12">
                         <label class="form-label text-white">Condições de Pagamento</label>
                         <textarea class="form-control bg-dark text-white border-secondary" name="condicoes_pagamento" rows="2" 
@@ -731,6 +781,116 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('btnAtualizarClientes').addEventListener('click', atualizarListaClientes);
     
     console.log('✅ Funcionalidade de atualização de clientes carregada!');
+    
+    // ===== FUNCIONALIDADE DE PARCELAMENTO =====
+    
+    const formaPagamento = document.getElementById('formaPagamento');
+    const camposParcelamento = document.getElementById('camposParcelamento');
+    const btnVisualizarParcelas = document.getElementById('btnVisualizarParcelas');
+    const previewParcelas = document.getElementById('previewParcelas');
+    const listaParcelas = document.getElementById('listaParcelas');
+    
+    // Mostrar/ocultar campos de parcelamento
+    function toggleCamposParcelamento() {
+        if (formaPagamento.value === 'parcelado') {
+            camposParcelamento.style.display = 'block';
+        } else {
+            camposParcelamento.style.display = 'none';
+            previewParcelas.style.display = 'none';
+        }
+    }
+    
+    // Calcular e exibir preview das parcelas
+    function calcularParcelas() {
+        const valorTotal = parseFloat(totalGeralElement.textContent.replace('R$ ', '').replace(/\./g, '').replace(',', '.')) || 0;
+        const entrada = parseFloat(document.getElementById('entrada').value) || 0;
+        const numeroParcelas = parseInt(document.getElementById('numeroParcelas').value) || 1;
+        const intervalo = parseInt(document.getElementById('intervaloParcelas').value) || 30;
+        const dataPrimeira = document.getElementById('dataPrimeiraParcela').value;
+        
+        if (!dataPrimeira) {
+            showToast('Por favor, informe a data da primeira parcela', 'warning');
+            return;
+        }
+        
+        // Calcula valores
+        const valorEntrada = valorTotal * (entrada / 100);
+        const valorRestante = valorTotal - valorEntrada;
+        const valorParcela = valorRestante / numeroParcelas;
+        
+        // Monta HTML das parcelas
+        let html = '<div class="table-responsive"><table class="table table-sm table-dark table-striped">';
+        html += '<thead><tr><th>Parcela</th><th>Vencimento</th><th>Valor</th></tr></thead><tbody>';
+        
+        // Entrada
+        if (valorEntrada > 0) {
+            html += `<tr class="table-info">
+                <td><strong>Entrada</strong></td>
+                <td>${formatarData(dataPrimeira)}</td>
+                <td><strong>R$ ${valorEntrada.toFixed(2).replace('.', ',')}</strong></td>
+            </tr>`;
+        }
+        
+        // Parcelas
+        const dataBase = new Date(dataPrimeira + 'T00:00:00');
+        let totalParcelas = valorEntrada;
+        
+        for (let i = 1; i <= numeroParcelas; i++) {
+            // Calcula data de vencimento
+            const dataVenc = new Date(dataBase);
+            dataVenc.setDate(dataVenc.getDate() + (intervalo * i));
+            
+            // Ajusta última parcela para fechar valores
+            let valorAtual = valorParcela;
+            if (i === numeroParcelas) {
+                valorAtual = valorTotal - totalParcelas;
+            }
+            totalParcelas += valorAtual;
+            
+            html += `<tr>
+                <td>Parcela ${i}/${numeroParcelas}</td>
+                <td>${formatarData(dataVenc.toISOString().split('T')[0])}</td>
+                <td>R$ ${valorAtual.toFixed(2).replace('.', ',')}</td>
+            </tr>`;
+        }
+        
+        html += `<tr class="table-success">
+            <td colspan="2"><strong>TOTAL</strong></td>
+            <td><strong>R$ ${valorTotal.toFixed(2).replace('.', ',')}</strong></td>
+        </tr>`;
+        html += '</tbody></table></div>';
+        
+        // Resumo
+        html += `<div class="mt-2">
+            <small class="text-muted">
+                <i class="fas fa-info-circle"></i> 
+                Entrada de <strong>R$ ${valorEntrada.toFixed(2).replace('.', ',')}</strong> + 
+                ${numeroParcelas}x de <strong>R$ ${valorParcela.toFixed(2).replace('.', ',')}</strong> 
+                (intervalo de ${intervalo} dias)
+            </small>
+        </div>`;
+        
+        listaParcelas.innerHTML = html;
+        previewParcelas.style.display = 'block';
+    }
+    
+    // Formatar data para exibição
+    function formatarData(dataStr) {
+        const data = new Date(dataStr + 'T00:00:00');
+        const dia = String(data.getDate()).padStart(2, '0');
+        const mes = String(data.getMonth() + 1).padStart(2, '0');
+        const ano = data.getFullYear();
+        return `${dia}/${mes}/${ano}`;
+    }
+    
+    // Event listeners
+    formaPagamento.addEventListener('change', toggleCamposParcelamento);
+    btnVisualizarParcelas.addEventListener('click', calcularParcelas);
+    
+    // Inicializa no carregamento
+    toggleCamposParcelamento();
+    
+    console.log('✅ Funcionalidade de parcelamento carregada!');
 });
 </script>
 {% endblock %}

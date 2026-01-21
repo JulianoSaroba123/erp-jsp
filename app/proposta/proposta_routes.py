@@ -156,6 +156,14 @@ def nova_proposta():
                 valor_total=0  # Será calculado depois
             )
             
+            # Campos de parcelamento
+            if request.form.get('forma_pagamento') == 'parcelado':
+                nova_prop.numero_parcelas = int(request.form.get('numero_parcelas', 1))
+                nova_prop.intervalo_parcelas = int(request.form.get('intervalo_parcelas', 30))
+                data_primeira = request.form.get('data_primeira_parcela')
+                if data_primeira:
+                    nova_prop.data_primeira_parcela = datetime.strptime(data_primeira, '%Y-%m-%d').date()
+            
             # Processar KM estimado
             km_estimado_str = request.form.get('km_estimado', '').strip()
             if km_estimado_str:
@@ -271,6 +279,11 @@ def nova_proposta():
                 
                 db.session.commit()
                 logger.debug(f" Produtos e serviços adicionados na criação: {len(produtos_validos)} produtos, {len(servicos_validos)} serviços")
+                
+                # Gerar parcelas automaticamente se for parcelado
+                if nova_prop.forma_pagamento == 'parcelado' and nova_prop.numero_parcelas:
+                    nova_prop.gerar_parcelas()
+                    logger.debug(f" Parcelas geradas automaticamente: {nova_prop.numero_parcelas} parcelas")
                 
             except Exception as e:
                 logger.error(f"Erro ao processar produtos/serviços na criação: {str(e)}")
@@ -402,6 +415,19 @@ def editar_proposta(id):
             proposta.desconto = converter_valor_monetario(request.form.get('desconto', 0))
             proposta.entrada = converter_valor_monetario(request.form.get('entrada', 0))
             
+            # Campos de parcelamento
+            if request.form.get('forma_pagamento') == 'parcelado':
+                proposta.numero_parcelas = int(request.form.get('numero_parcelas', 1))
+                proposta.intervalo_parcelas = int(request.form.get('intervalo_parcelas', 30))
+                data_primeira = request.form.get('data_primeira_parcela')
+                if data_primeira:
+                    proposta.data_primeira_parcela = datetime.strptime(data_primeira, '%Y-%m-%d').date()
+            else:
+                # Limpa dados de parcelamento se mudou a forma de pagamento
+                proposta.numero_parcelas = None
+                proposta.intervalo_parcelas = None
+                proposta.data_primeira_parcela = None
+            
             # Processar data de emissão
             data_emissao = request.form.get('data_emissao')
             if data_emissao:
@@ -522,12 +548,20 @@ def editar_proposta(id):
             logger.debug(f"💰 Valores calculados: produtos={valor_total_produtos}, servicos={valor_total_servicos}, total={proposta.valor_total}")
             logger.debug(f" Produtos válidos: {len(produtos_validos)}, Serviços válidos: {len(servicos_validos)}")
 
-            # Processar parcelas: remover existentes e recriar conforme formulário
+            # Commit para salvar os valores antes de gerar parcelas
+            db.session.commit()
+            
+            # Gerar parcelas automaticamente se for parcelado
+            if proposta.forma_pagamento == 'parcelado' and proposta.numero_parcelas:
+                proposta.gerar_parcelas()
+                logger.debug(f" Parcelas regeneradas: {proposta.numero_parcelas} parcelas")
+
+            # Processar parcelas antigas (se houver do sistema legado): remover existentes e recriar conforme formulário
             try:
                 from app.proposta.proposta_model import PropostaParcela
-                # Remover existentes usando ORM
-                PropostaParcela.query.filter_by(proposta_id=id).delete()
-                db.session.flush()
+                # Remover existentes legadas usando ORM (se existir tabela legada)
+                # PropostaParcela.query.filter_by(proposta_id=id).delete()
+                # db.session.flush()
 
                 entrada = converter_valor_monetario(request.form.get('entrada', 0))
                 parcelas_datas = request.form.getlist('parcela_data[]')
