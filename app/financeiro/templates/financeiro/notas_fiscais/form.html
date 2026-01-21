@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ 'Editar' if nota else 'Nova' }} Nota Fiscal{% endblock %}
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{{ url_for('financeiro.index') }}">Financeiro</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
 <li class="breadcrumb-item"><a href="{{ url_for('financeiro.notas_fiscais_listar') }}">Notas Fiscais</a></li>
 <li class="breadcrumb-item active">{{ 'Editar' if nota else 'Nova' }}</li>
 {% endblock %}
