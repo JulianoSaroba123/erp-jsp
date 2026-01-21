@@ -1,0 +1,430 @@
+{% extends "base.html" %}
+
+{% block title %}📊 Análise Profissional de Precificação - ERP JSP{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="text-primary mb-2">
+                                <i class="fas fa-chart-line me-2"></i>
+                                {{ config.nome_simulacao }}
+                            </h2>
+                            <p class="text-muted mb-0">
+                                <i class="fas fa-calendar me-2"></i>
+                                Gerado em: {{ config.data_formatada }}
+                            </p>
+                        </div>
+                        <div class="text-end">
+                            <a href="{{ url_for('precificacao.calculadora') }}" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-calculator me-2"></i>
+                                Nova Simulação
+                            </a>
+                            <a href="{{ url_for('precificacao.historico') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-history me-2"></i>
+                                Histórico
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards Principais - Valores Recomendados -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-gradient text-white border-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-clock fa-3x mb-3"></i>
+                    <h6 class="text-uppercase">Valor por Hora</h6>
+                    <h2 class="display-4 fw-bold">{{ config.valor_hora_formatado }}</h2>
+                    <p class="mb-0">Cenário Realista ({{ config.percentual_utilizacao_esperada }}% utilização)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-gradient text-white border-0" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-calendar-day fa-3x mb-3"></i>
+                    <h6 class="text-uppercase">Valor por Dia</h6>
+                    <h2 class="display-4 fw-bold">{{ config.valor_dia_formatado }}</h2>
+                    <p class="mb-0">8 horas de trabalho</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-gradient text-white border-0" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-briefcase fa-3x mb-3"></i>
+                    <h6 class="text-uppercase">Valor Empreita</h6>
+                    <h2 class="display-4 fw-bold">{{ config.valor_empreita_formatado }}</h2>
+                    <p class="mb-0">Projeto padrão (10 dias)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ponto de Equilíbrio (BEP) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-balance-scale me-2"></i>
+                        Ponto de Equilíbrio (Break Even Point)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <div class="border-end border-secondary">
+                                <h3 class="text-warning">{{ "%.0f"|format(analise_break_even.horas_necessarias) }}</h3>
+                                <p class="text-muted">Horas/mês para empatar</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end border-secondary">
+                                <h3 class="text-info">{{ "R$ {:,.2f}"|format(analise_break_even.faturamento_minimo)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}</h3>
+                                <p class="text-muted">Faturamento mínimo</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end border-secondary">
+                                <h3 class="text-primary">{{ "%.1f"|format(analise_break_even.percentual_capacidade) }}%</h3>
+                                <p class="text-muted">% da capacidade</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-{{ 'success' if analise_break_even.status == 'Saudável' else 'danger' if analise_break_even.status == 'Crítico' else 'warning' }}">
+                                {{ analise_break_even.status }}
+                            </h3>
+                            <p class="text-muted">Status da empresa</p>
+                        </div>
+                    </div>
+                    {% if analise_break_even.status == 'Crítico' %}
+                    <div class="alert alert-danger mt-3 mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>ATENÇÃO:</strong> Ponto de equilíbrio muito alto! Você precisa vender mais de 85% da capacidade para não ter prejuízo. Revise seus custos.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Análise de Cenários -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-info">
+                <div class="card-header bg-info text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Análise de Cenários (Otimista / Realista / Pessimista)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for key, cenario in analise_cenarios.items() %}
+                        <div class="col-md-4">
+                            <div class="card bg-secondary mb-3">
+                                <div class="card-header bg-{{ 'success' if key == 'otimista' else 'primary' if key == 'realista' else 'warning' }} text-dark">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-{{ 'smile' if key == 'otimista' else 'meh' if key == 'realista' else 'frown' }} me-2"></i>
+                                        {{ cenario.nome }}
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <small class="text-muted">Utilização:</small>
+                                        <h5 class="text-white">{{ cenario.utilizacao }}</h5>
+                                    </div>
+                                    <div class="mb-3">
+                                        <small class="text-muted">Valor/Hora:</small>
+                                        <h4 class="text-{{ 'success' if key == 'otimista' else 'primary' if key == 'realista' else 'warning' }}">
+                                            {{ "R$ {:,.2f}"|format(cenario.valor_hora)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}
+                                        </h4>
+                                    </div>
+                                    <div class="mb-3">
+                                        <small class="text-muted">Faturamento Mensal:</small>
+                                        <h5 class="text-info">{{ "R$ {:,.2f}"|format(cenario.faturamento_mensal)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}</h5>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted">Lucro Esperado:</small>
+                                        <h5 class="text-{{ 'success' if cenario.lucro_estimado > 0 else 'danger' }}">
+                                            {{ "R$ {:,.2f}"|format(cenario.lucro_estimado)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}
+                                        </h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Precificação por Complexidade -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-success">
+                <div class="card-header bg-success text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-layer-group me-2"></i>
+                        Precificação Dinâmica por Complexidade
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr class="table-success">
+                                    <th>Tipo de Serviço</th>
+                                    <th>Multiplicador</th>
+                                    <th class="text-end">Valor/Hora</th>
+                                    <th class="text-end">Valor/Dia</th>
+                                    <th>Exemplo de Uso</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for key, item in precificacao_complexidade.items() %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-{{ 'leaf' if key == 'simples' else 'cog' if key == 'medio' else 'brain' if key == 'complexo' else 'bolt' }} me-2 text-{{ 'success' if key == 'simples' else 'info' if key == 'medio' else 'warning' if key == 'complexo' else 'danger' }}"></i>
+                                        <strong>{{ item.nome }}</strong>
+                                    </td>
+                                    <td><span class="badge bg-{{ 'success' if key == 'simples' else 'info' if key == 'medio' else 'warning' if key == 'complexo' else 'danger' }}">{{ item.multiplicador }}x</span></td>
+                                    <td class="text-end"><strong>{{ "R$ {:,.2f}"|format(item.valor_hora)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}</strong></td>
+                                    <td class="text-end">{{ "R$ {:,.2f}"|format(item.valor_dia)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}</td>
+                                    <td><small class="text-muted">{{ item.exemplo }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparação com Mercado -->
+    {% if comparacao_mercado.tem_referencia %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-{{ comparacao_mercado.cor_badge }}">
+                <div class="card-header bg-{{ comparacao_mercado.cor_badge }}{{ ' text-dark' if comparacao_mercado.cor_badge != 'danger' else '' }}">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        Posicionamento de Mercado
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="text-{{ comparacao_mercado.cor_badge }}">
+                                <i class="fas fa-award me-2"></i>
+                                {{ comparacao_mercado.posicionamento }}
+                            </h4>
+                            <p class="lead mb-3">{{ comparacao_mercado.recomendacao }}</p>
+                            <div class="row text-center">
+                                <div class="col-md-4">
+                                    <p class="text-muted mb-1">Seu Preço</p>
+                                    <h4 class="text-primary">{{ "R$ {:,.2f}"|format(comparacao_mercado.preco_calculado)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}</h4>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="text-muted mb-1">Mercado (Média)</p>
+                                    <h4 class="text-info">{{ "R$ {:,.2f}"|format(comparacao_mercado.preco_mercado)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}</h4>
+                                </div>
+                                <div class="col-md-4">
+                                    <p class="text-muted mb-1">Diferença</p>
+                                    <h4 class="text-{{ 'success' if comparacao_mercado.diferenca > 0 else 'danger' }}">
+                                        {{ "+" if comparacao_mercado.diferenca > 0 else "" }}{{ "%.1f"|format(comparacao_mercado.percentual) }}%
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="progress" style="height: 30px;">
+                                <div class="progress-bar bg-{{ comparacao_mercado.cor_badge }}" role="progressbar" 
+                                     style="width: {{ 50 + (comparacao_mercado.percentual if comparacao_mercado.percentual < 50 else 50) }}%"
+                                     aria-valuenow="{{ comparacao_mercado.percentual }}" aria-valuemin="-100" aria-valuemax="100">
+                                    {{ "%.0f"|format(comparacao_mercado.percentual) }}%
+                                </div>
+                            </div>
+                            <p class="text-muted mt-2 mb-0"><small>Em relação ao mercado</small></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Indicadores Financeiros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-dark border-primary">
+                <div class="card-header bg-primary text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Indicadores Financeiros Chave
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <i class="fas fa-percentage fa-2x text-warning mb-2"></i>
+                                <p class="text-muted mb-1">Markup</p>
+                                <h4 class="text-warning">{{ "%.1f"|format(indicadores.markup) }}%</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <i class="fas fa-chart-pie fa-2x text-success mb-2"></i>
+                                <p class="text-muted mb-1">Margem Contrib.</p>
+                                <h4 class="text-success">{{ "%.1f"|format(indicadores.margem_contribuicao) }}%</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <i class="fas fa-chart-line fa-2x text-info mb-2"></i>
+                                <p class="text-muted mb-1">ROI Mensal</p>
+                                <h4 class="text-info">{{ "%.2f"|format(indicadores.roi_mensal) }}%</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <i class="fas fa-rocket fa-2x text-primary mb-2"></i>
+                                <p class="text-muted mb-1">ROI Anual</p>
+                                <h4 class="text-primary">{{ "%.1f"|format(indicadores.roi_anual_projetado) }}%</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <i class="fas fa-money-bill-wave fa-2x text-success mb-2"></i>
+                                <p class="text-muted mb-1">Margem Líquida</p>
+                                <h4 class="text-success">{{ "%.1f"|format(indicadores.margem_liquida) }}%</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="mb-3">
+                                <i class="fas fa-calendar-check fa-2x text-warning mb-2"></i>
+                                <p class="text-muted mb-1">BEP (dias)</p>
+                                <h4 class="text-warning">{{ "%.0f"|format(indicadores.ponto_equilibrio_dias) }}</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo de Custos -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        Composição de Custos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="custosChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calculator me-2"></i>
+                        Resumo Financeiro
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-dark table-sm">
+                        <tr>
+                            <td>Custos Fixos:</td>
+                            <td class="text-end"><strong>{{ config.custo_fixo_total_formatado }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Custos Variáveis:</td>
+                            <td class="text-end"><strong>{{ config.custo_variavel_total_formatado }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Mão de Obra:</td>
+                            <td class="text-end"><strong>{{ config.custo_mao_obra_total_formatado }}</strong></td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td><strong>CUSTO TOTAL MENSAL:</strong></td>
+                            <td class="text-end"><strong>{{ config.custo_total_formatado }}</strong></td>
+                        </tr>
+                        <tr class="table-success">
+                            <td><strong>FATURAMENTO ESPERADO:</strong></td>
+                            <td class="text-end"><strong>{{ "R$ {:,.2f}"|format(indicadores.faturamento_esperado)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}</strong></td>
+                        </tr>
+                        <tr class="table-{{ 'success' if indicadores.lucro_esperado > 0 else 'danger' }}">
+                            <td><strong>LUCRO ESPERADO:</strong></td>
+                            <td class="text-end"><strong>{{ "R$ {:,.2f}"|format(indicadores.lucro_esperado)|replace(',', 'X')|replace('.', ',')|replace('X', '.') }}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Gráfico de Custos
+const ctx = document.getElementById('custosChart').getContext('2d');
+new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: {{ dados_grafico.labels|tojson }},
+        datasets: [{
+            data: {{ dados_grafico.values|tojson }},
+            backgroundColor: {{ dados_grafico.colors|tojson }},
+            borderWidth: 2,
+            borderColor: '#000'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: '#fff',
+                    padding: 15,
+                    font: {
+                        size: 12
+                    }
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        let label = context.label || '';
+                        let value = context.parsed || 0;
+                        return label + ': R$ ' + value.toLocaleString('pt-BR', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
