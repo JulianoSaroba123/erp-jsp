@@ -822,8 +822,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Calcular e exibir preview das parcelas
-    function calcularParcelas() {
+    // Calcular e exibir preview das parcelas - FUNÇÃO GLOBAL
+    window.calcularParcelas = function() {
         console.log('🔢 Calculando parcelas...');
         
         // Pega o valor total do campo
