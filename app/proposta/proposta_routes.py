@@ -743,6 +743,26 @@ def gerar_pdf(id):
         proposta.produtos = [ItemProposta(p[0], p[1], p[2], p[3]) for p in produtos_result]
         proposta.servicos = [ItemProposta(s[0], s[1], s[2], s[3]) for s in servicos_result]
         
+        # Carregar parcelas se existirem
+        parcelas = []
+        if proposta.forma_pagamento == 'parcelado' and hasattr(proposta, 'parcelas_pagamento'):
+            parcelas = proposta.parcelas_pagamento
+        elif proposta.forma_pagamento == 'parcelado':
+            # Buscar parcelas via SQL direto
+            parcelas_result = db.session.execute(
+                text("SELECT numero_parcela, valor_parcela, data_vencimento, status FROM parcelas_proposta WHERE proposta_id = :id AND ativo = true ORDER BY numero_parcela"),
+                {"id": id}
+            ).fetchall()
+            
+            class ParcelaProposta:
+                def __init__(self, numero_parcela, valor_parcela, data_vencimento, status):
+                    self.numero_parcela = numero_parcela
+                    self.valor_parcela = valor_parcela
+                    self.data_vencimento = data_vencimento
+                    self.status = status
+            
+            parcelas = [ParcelaProposta(p[0], p[1], p[2], p[3]) for p in parcelas_result]
+        
         # Tentar importar WeasyPrint
         try:
             import weasyprint
@@ -762,7 +782,8 @@ def gerar_pdf(id):
             html_content = render_template('proposta/pdf_proposta.html', 
                                          proposta=proposta, 
                                          logo_url=logo_url,
-                                         config=config)
+                                         config=config,
+                                         parcelas=parcelas)
             
             # Base URL para resolver outros caminhos relativos
             base_url = f"file:///{project_root.replace(os.sep, '/')}/"
@@ -793,7 +814,8 @@ def gerar_pdf(id):
             # Criar resposta HTML com headers de não-cache
             html_response = make_response(render_template('proposta/pdf_proposta.html', 
                                                         proposta=proposta,
-                                                        config=config))
+                                                        config=config,
+                                                        parcelas=parcelas))
             html_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
             html_response.headers['Pragma'] = 'no-cache'
             html_response.headers['Expires'] = '0'

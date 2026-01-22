@@ -574,6 +574,57 @@
                 </div>
             </div>
             {% endif %}
+            
+            <!-- PARCELAMENTO -->
+            {% if proposta.forma_pagamento == 'parcelado' and parcelas and parcelas|length > 0 %}
+            <div style="margin-top: 20px;">
+                <div style="font-weight: bold; color: #666; font-size: 11px; margin-bottom: 8px; padding: 8px; background: var(--primary-color); color: white; border-radius: 3px;">
+                    <span style="margin-right: 5px;">📊</span> DETALHAMENTO DO PARCELAMENTO
+                </div>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px;">
+                    <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid var(--primary-color);">
+                            <th style="padding: 8px; text-align: left; border: 1px solid #ddd; font-weight: bold;">Parcela</th>
+                            <th style="padding: 8px; text-align: center; border: 1px solid #ddd; font-weight: bold;">Vencimento</th>
+                            <th style="padding: 8px; text-align: right; border: 1px solid #ddd; font-weight: bold;">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set total_parcelas = 0 %}
+                        {% for parcela in parcelas %}
+                        <tr style="border-bottom: 1px solid #ddd; {% if parcela.numero_parcela == 0 %}background: #e3f2fd; font-weight: bold;{% endif %}">
+                            <td style="padding: 8px; border: 1px solid #ddd;">
+                                {% if parcela.numero_parcela == 0 %}
+                                    💵 Entrada
+                                {% else %}
+                                    Parcela {{ parcela.numero_parcela }}/{{ parcelas|length - 1 if parcelas[0].numero_parcela == 0 else parcelas|length }}
+                                {% endif %}
+                            </td>
+                            <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">
+                                {{ parcela.data_vencimento.strftime('%d/%m/%Y') if parcela.data_vencimento else '-' }}
+                            </td>
+                            <td style="padding: 8px; text-align: right; border: 1px solid #ddd; {% if parcela.numero_parcela == 0 %}font-weight: bold;{% endif %}">
+                                R$ {{ '{:,.2f}'.format(parcela.valor_parcela).replace(',', '_').replace('.', ',').replace('_', '.') }}
+                            </td>
+                        </tr>
+                        {% set total_parcelas = total_parcelas + parcela.valor_parcela %}
+                        {% endfor %}
+                        <tr style="background: #e8f5e9; font-weight: bold; border-top: 2px solid var(--primary-color);">
+                            <td colspan="2" style="padding: 10px; text-align: right; border: 1px solid #ddd;">TOTAL</td>
+                            <td style="padding: 10px; text-align: right; border: 1px solid #ddd;">R$ {{ '{:,.2f}'.format(total_parcelas).replace(',', '_').replace('.', ',').replace('_', '.') }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                {% if proposta.entrada and proposta.entrada > 0 %}
+                <div style="margin-top: 10px; padding: 10px; background: #fff3e0; border-left: 4px solid var(--secondary-color); border-radius: 3px; font-size: 10px;">
+                    <strong>📌 Resumo:</strong> Entrada de {{ proposta.entrada }}% + {{ (parcelas|length - 1 if parcelas[0].numero_parcela == 0 else parcelas|length) }} parcelas
+                    {% if proposta.intervalo_parcelas %}
+                        com intervalo de {{ proposta.intervalo_parcelas }} dias
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
         </div>
     </div>
     <!-- 06 Observações -->
