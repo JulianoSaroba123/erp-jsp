@@ -370,7 +370,7 @@
                                         <small class="text-muted">Vencimento da 1ª parcela</small>
                                     </div>
                                     <div class="col-md-3">
-                                        <button type="button" class="btn btn-info w-100" id="btnVisualizarParcelas" style="margin-top: 31px;" onclick="event.preventDefault(); event.stopPropagation(); calcularParcelas(); return false;">
+                                        <button type="button" class="btn btn-info w-100" id="btnVisualizarParcelas" style="margin-top: 31px;">
                                             <i class="fas fa-eye"></i> Visualizar Parcelas
                                         </button>
                                     </div>
@@ -952,21 +952,59 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('⚠️ formaPagamento não encontrado');
     }
     
-    // Botão usa onclick inline para evitar conflitos
-    console.log('✅ Botão Visualizar Parcelas configurado com onclick inline');
+    // Event listener para o botão (SEM onclick inline)
+    if (btnVisualizarParcelas) {
+        btnVisualizarParcelas.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation(); // Impede outros listeners
+            
+            if (!window.processandoCalculo) {
+                window.calcularParcelas();
+            }
+            return false;
+        }, { once: false }); // Permite múltiplos cliques
+        console.log('✅ Event listener adicionado em btnVisualizarParcelas');
+    } else {
+        console.warn('⚠️ btnVisualizarParcelas não encontrado');
+    }
     
     // Inicializa no carregamento
     toggleCamposParcelamento();
     
-    // Proteção extrema: força preview a ficar visível a cada 100ms
+    // MutationObserver: Força preview a ficar visível de forma AGRESSIVA
+    if (previewParcelas) {
+        const observer = new MutationObserver((mutations) => {
+            if (window.manterPreviewVisivel) {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+                        if (previewParcelas.style.display !== 'block') {
+                            console.warn('⚠️ MutationObserver detectou mudança! Forçando display:block');
+                            previewParcelas.style.display = 'block';
+                        }
+                    }
+                });
+            }
+        });
+        
+        observer.observe(previewParcelas, {
+            attributes: true,
+            attributeFilter: ['style', 'class'],
+            attributeOldValue: true
+        });
+        
+        console.log('👁️ MutationObserver ativado no preview');
+    }
+    
+    // Backup: setInterval como segunda camada de proteção
     setInterval(() => {
         if (window.manterPreviewVisivel && previewParcelas) {
             if (previewParcelas.style.display !== 'block') {
-                console.warn('⚠️ Algo tentou esconder o preview! Forçando visibilidade...');
+                console.warn('⚠️ setInterval detectou preview escondido! Forçando...');
                 previewParcelas.style.display = 'block';
             }
         }
-    }, 100);
+    }, 50); // A cada 50ms (mais rápido)
     
     console.log('✅ Funcionalidade de parcelamento carregada!');
 });
