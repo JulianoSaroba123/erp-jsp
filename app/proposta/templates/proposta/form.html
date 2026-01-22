@@ -792,24 +792,36 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Mostrar/ocultar campos de parcelamento
     function toggleCamposParcelamento() {
-        if (formaPagamento.value === 'parcelado') {
+        if (formaPagamento && formaPagamento.value === 'parcelado') {
             camposParcelamento.style.display = 'block';
         } else {
-            camposParcelamento.style.display = 'none';
-            previewParcelas.style.display = 'none';
+            if (camposParcelamento) camposParcelamento.style.display = 'none';
+            if (previewParcelas) previewParcelas.style.display = 'none';
         }
     }
     
     // Calcular e exibir preview das parcelas
     function calcularParcelas() {
-        const valorTotal = parseFloat(totalGeralElement.textContent.replace('R$ ', '').replace(/\./g, '').replace(',', '.')) || 0;
+        // Pega o valor total do campo
+        const valorTotalInput = document.getElementById('valorTotal');
+        if (!valorTotalInput) {
+            alert('Erro: Campo de valor total não encontrado');
+            return;
+        }
+        
+        const valorTotal = parseFloat(valorTotalInput.value.replace('R$ ', '').replace(/\./g, '').replace(',', '.')) || 0;
         const entrada = parseFloat(document.getElementById('entrada').value) || 0;
         const numeroParcelas = parseInt(document.getElementById('numeroParcelas').value) || 1;
         const intervalo = parseInt(document.getElementById('intervaloParcelas').value) || 30;
         const dataPrimeira = document.getElementById('dataPrimeiraParcela').value;
         
+        if (valorTotal <= 0) {
+            alert('Por favor, preencha os produtos/serviços primeiro para calcular o valor total');
+            return;
+        }
+        
         if (!dataPrimeira) {
-            showToast('Por favor, informe a data da primeira parcela', 'warning');
+            alert('Por favor, informe a data da primeira parcela');
             return;
         }
         
@@ -883,9 +895,14 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${dia}/${mes}/${ano}`;
     }
     
-    // Event listeners
-    formaPagamento.addEventListener('change', toggleCamposParcelamento);
-    btnVisualizarParcelas.addEventListener('click', calcularParcelas);
+    // Event listeners (com verificação se elementos existem)
+    if (formaPagamento) {
+        formaPagamento.addEventListener('change', toggleCamposParcelamento);
+    }
+    
+    if (btnVisualizarParcelas) {
+        btnVisualizarParcelas.addEventListener('click', calcularParcelas);
+    }
     
     // Inicializa no carregamento
     toggleCamposParcelamento();
