@@ -792,6 +792,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const previewParcelas = document.getElementById('previewParcelas');
     const listaParcelas = document.getElementById('listaParcelas');
     
+    // Flag para controlar se o preview deve ficar visível
+    let manterPreviewVisivel = false;
+    
     console.log('Elementos encontrados:', {
         formaPagamento: !!formaPagamento,
         camposParcelamento: !!camposParcelamento,
@@ -810,7 +813,11 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             if (camposParcelamento) {
                 camposParcelamento.style.display = 'none';
-                console.log('❌ Campos de parcelamento ocultados (preview mantido)');
+                console.log('❌ Campos de parcelamento ocultados');
+            }
+            // NÃO TOCA NO PREVIEW se a proteção estiver ativa
+            if (manterPreviewVisivel) {
+                console.log('🔒 Preview protegido - mantendo visível');
             }
         }
     }
@@ -909,7 +916,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('📋 Preview gerado, exibindo...');
         listaParcelas.innerHTML = html;
         previewParcelas.style.display = 'block';
+        manterPreviewVisivel = true; // Ativa proteção
         console.log('✅ Parcelas calculadas e exibidas!');
+        console.log('🔒 Proteção ativada - preview não pode ser escondido');
         
         // Scroll suave até o preview
         setTimeout(() => {
@@ -939,6 +948,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Inicializa no carregamento
     toggleCamposParcelamento();
+    
+    // Proteção extrema: força preview a ficar visível a cada 100ms
+    setInterval(() => {
+        if (manterPreviewVisivel && previewParcelas) {
+            if (previewParcelas.style.display !== 'block') {
+                console.warn('⚠️ Algo tentou esconder o preview! Forçando visibilidade...');
+                previewParcelas.style.display = 'block';
+            }
+        }
+    }, 100);
     
     console.log('✅ Funcionalidade de parcelamento carregada!');
 });
