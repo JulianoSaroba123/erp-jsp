@@ -27,6 +27,16 @@
 
 {% block content %}
 <style>
+    /* PROTEÇÃO FORÇADA PARA O PREVIEW DE PARCELAS */
+    #previewParcelas.preview-ativo-forcado,
+    .preview-ativo-forcado {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+    
     /* Cores JSP Ciano - Form */
     .card.bg-dark {
         background: #1f2937 !important;
@@ -923,11 +933,18 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('📋 Preview gerado, exibindo...');
         listaParcelas.innerHTML = html;
-        previewParcelas.style.display = 'block';
+        
+        // FORÇA display com !important via cssText
+        previewParcelas.style.cssText = 'display: block !important;';
+        previewParcelas.classList.add('preview-ativo-forcado');
+        
         window.manterPreviewVisivel = true; // Ativa proteção
         window.processandoCalculo = false; // Libera para próxima execução
+        
         console.log('✅ Parcelas calculadas e exibidas!');
         console.log('🔒 Proteção ativada - preview não pode ser escondido');
+        console.log('📦 cssText aplicado:', previewParcelas.style.cssText);
+        console.log('🎯 Classes:', previewParcelas.className);
         
         // Scroll suave até o preview
         setTimeout(() => {
@@ -977,10 +994,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const observer = new MutationObserver((mutations) => {
             if (window.manterPreviewVisivel) {
                 mutations.forEach((mutation) => {
-                    if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-                        if (previewParcelas.style.display !== 'block') {
-                            console.warn('⚠️ MutationObserver detectou mudança! Forçando display:block');
-                            previewParcelas.style.display = 'block';
+                    if (mutation.type === 'attributes') {
+                        const currentDisplay = previewParcelas.style.display;
+                        const currentCssText = previewParcelas.style.cssText;
+                        
+                        console.log('👁️ Mutação detectada:', {
+                            attributeName: mutation.attributeName,
+                            oldValue: mutation.oldValue,
+                            currentDisplay: currentDisplay,
+                            currentCssText: currentCssText
+                        });
+                        
+                        if (!currentCssText.includes('display: block !important')) {
+                            console.warn('⚠️ ALGO REMOVEU O !important! Reaplicando...');
+                            previewParcelas.style.cssText = 'display: block !important;';
                         }
                     }
                 });
@@ -999,9 +1026,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Backup: setInterval como segunda camada de proteção
     setInterval(() => {
         if (window.manterPreviewVisivel && previewParcelas) {
-            if (previewParcelas.style.display !== 'block') {
-                console.warn('⚠️ setInterval detectou preview escondido! Forçando...');
-                previewParcelas.style.display = 'block';
+            const cssText = previewParcelas.style.cssText;
+            if (!cssText.includes('display: block !important')) {
+                console.warn('⚠️ setInterval detectou preview sem !important! Forçando...');
+                console.log('📄 cssText antes:', cssText);
+                previewParcelas.style.cssText = 'display: block !important;';
+                console.log('📄 cssText depois:', previewParcelas.style.cssText);
             }
         }
     }, 50); // A cada 50ms (mais rápido)
