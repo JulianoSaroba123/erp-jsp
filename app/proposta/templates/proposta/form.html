@@ -350,7 +350,7 @@
                                         <label class="form-label text-white">Número de Parcelas</label>
                                         <input type="number" class="form-control bg-dark text-white border-secondary" 
                                                name="numero_parcelas" id="numeroParcelas" 
-                                               value="{{ proposta.numero_parcelas if proposta else 1 }}" 
+                                               value="{{ proposta.numero_parcelas if proposta and proposta.numero_parcelas else 1 }}" 
                                                min="1" max="120" placeholder="Ex: 12">
                                         <small class="text-muted">Máximo 120 parcelas</small>
                                     </div>
@@ -358,7 +358,7 @@
                                         <label class="form-label text-white">Intervalo (dias)</label>
                                         <input type="number" class="form-control bg-dark text-white border-secondary" 
                                                name="intervalo_parcelas" id="intervaloParcelas" 
-                                               value="{{ proposta.intervalo_parcelas if proposta else 30 }}" 
+                                               value="{{ proposta.intervalo_parcelas if proposta and proposta.intervalo_parcelas else 30 }}" 
                                                min="1" max="365" placeholder="30">
                                         <small class="text-muted">Dias entre parcelas</small>
                                     </div>

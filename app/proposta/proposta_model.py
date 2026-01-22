@@ -264,7 +264,15 @@ class Proposta(BaseModel):
         - intervalo_parcelas
         - valor_total
         """
-        if self.forma_pagamento != 'parcelado' or not self.numero_parcelas:
+        try:
+            # Verifica se os campos existem (para compatibilidade com BD antigo)
+            if not hasattr(self, 'numero_parcelas') or not hasattr(self, 'intervalo_parcelas'):
+                return
+            
+            if self.forma_pagamento != 'parcelado' or not self.numero_parcelas:
+                return
+        except Exception as e:
+            # Se houver erro ao acessar os campos, retorna silenciosamente
             return
         
         # Remove parcelas antigas

@@ -156,13 +156,17 @@ def nova_proposta():
                 valor_total=0  # Será calculado depois
             )
             
-            # Campos de parcelamento
-            if request.form.get('forma_pagamento') == 'parcelado':
-                nova_prop.numero_parcelas = int(request.form.get('numero_parcelas', 1))
-                nova_prop.intervalo_parcelas = int(request.form.get('intervalo_parcelas', 30))
-                data_primeira = request.form.get('data_primeira_parcela')
-                if data_primeira:
-                    nova_prop.data_primeira_parcela = datetime.strptime(data_primeira, '%Y-%m-%d').date()
+            # Campos de parcelamento (com try-except para compatibilidade)
+            try:
+                if request.form.get('forma_pagamento') == 'parcelado':
+                    nova_prop.numero_parcelas = int(request.form.get('numero_parcelas', 1))
+                    nova_prop.intervalo_parcelas = int(request.form.get('intervalo_parcelas', 30))
+                    data_primeira = request.form.get('data_primeira_parcela')
+                    if data_primeira:
+                        nova_prop.data_primeira_parcela = datetime.strptime(data_primeira, '%Y-%m-%d').date()
+            except (AttributeError, Exception) as e:
+                # Campos ainda não existem no BD, ignora
+                logger.debug(f"Campos de parcelamento não disponíveis: {str(e)}")
             
             # Processar KM estimado
             km_estimado_str = request.form.get('km_estimado', '').strip()
@@ -280,10 +284,13 @@ def nova_proposta():
                 db.session.commit()
                 logger.debug(f" Produtos e serviços adicionados na criação: {len(produtos_validos)} produtos, {len(servicos_validos)} serviços")
                 
-                # Gerar parcelas automaticamente se for parcelado
-                if nova_prop.forma_pagamento == 'parcelado' and nova_prop.numero_parcelas:
-                    nova_prop.gerar_parcelas()
-                    logger.debug(f" Parcelas geradas automaticamente: {nova_prop.numero_parcelas} parcelas")
+                # Gerar parcelas automaticamente se for parcelado (com try-except)
+                try:
+                    if nova_prop.forma_pagamento == 'parcelado' and hasattr(nova_prop, 'numero_parcelas') and nova_prop.numero_parcelas:
+                        nova_prop.gerar_parcelas()
+                        logger.debug(f" Parcelas geradas automaticamente: {nova_prop.numero_parcelas} parcelas")
+                except Exception as e:
+                    logger.warning(f"Não foi possível gerar parcelas: {str(e)}")
                 
             except Exception as e:
                 logger.error(f"Erro ao processar produtos/serviços na criação: {str(e)}")
@@ -415,17 +422,23 @@ def editar_proposta(id):
             proposta.desconto = converter_valor_monetario(request.form.get('desconto', 0))
             proposta.entrada = converter_valor_monetario(request.form.get('entrada', 0))
             
-            # Campos de parcelamento
-            if request.form.get('forma_pagamento') == 'parcelado':
-                proposta.numero_parcelas = int(request.form.get('numero_parcelas', 1))
-                proposta.intervalo_parcelas = int(request.form.get('intervalo_parcelas', 30))
-                data_primeira = request.form.get('data_primeira_parcela')
-                if data_primeira:
-                    proposta.data_primeira_parcela = datetime.strptime(data_primeira, '%Y-%m-%d').date()
-            else:
-                # Limpa dados de parcelamento se mudou a forma de pagamento
-                proposta.numero_parcelas = None
-                proposta.intervalo_parcelas = None
+            # Campos de parcelamento (com try-except para compatibilidade)
+            try:
+                if request.form.get('forma_pagamento') == 'parcelado':
+                    proposta.numero_parcelas = int(request.form.get('numero_parcelas', 1))
+                    proposta.intervalo_parcelas = int(request.form.get('intervalo_parcelas', 30))
+                    data_primeira = request.form.get('data_primeira_parcela')
+                    if data_primeira:
+                        proposta.data_primeira_parcela = datetime.strptime(data_primeira, '%Y-%m-%d').date()
+                else:
+                    # Limpa dados de parcelamento se mudou a forma de pagamento
+                    if hasattr(proposta, 'numero_parcelas'):
+                        proposta.numero_parcelas = None
+                        proposta.intervalo_parcelas = None
+                        proposta.data_primeira_parcela = None
+            except (AttributeError, Exception) as e:
+                # Campos ainda não existem no BD, ignora
+                logger.debug(f"Campos de parcelamento não disponíveis: {str(e)}")
                 proposta.data_primeira_parcela = None
             
             # Processar data de emissão
@@ -551,10 +564,13 @@ def editar_proposta(id):
             # Commit para salvar os valores antes de gerar parcelas
             db.session.commit()
             
-            # Gerar parcelas automaticamente se for parcelado
-            if proposta.forma_pagamento == 'parcelado' and proposta.numero_parcelas:
-                proposta.gerar_parcelas()
-                logger.debug(f" Parcelas regeneradas: {proposta.numero_parcelas} parcelas")
+            # Gerar parcelas automaticamente se for parcelado (com try-except)
+            try:
+                if proposta.forma_pagamento == 'parcelado' and hasattr(proposta, 'numero_parcelas') and proposta.numero_parcelas:
+                    proposta.gerar_parcelas()
+                    logger.debug(f" Parcelas regeneradas: {proposta.numero_parcelas} parcelas")
+            except Exception as e:
+                logger.warning(f"Não foi possível gerar parcelas: {str(e)}")
 
             # Processar parcelas antigas (se houver do sistema legado): remover existentes e recriar conforme formulário
             try:
