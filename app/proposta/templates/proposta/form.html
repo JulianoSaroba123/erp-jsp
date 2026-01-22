@@ -370,7 +370,7 @@
                                         <small class="text-muted">Vencimento da 1ª parcela</small>
                                     </div>
                                     <div class="col-md-3">
-                                        <button type="button" class="btn btn-info w-100" id="btnVisualizarParcelas" style="margin-top: 31px;">
+                                        <button type="button" class="btn btn-info w-100" id="btnVisualizarParcelas" style="margin-top: 31px;" onclick="event.preventDefault(); event.stopPropagation(); calcularParcelas(); return false;">
                                             <i class="fas fa-eye"></i> Visualizar Parcelas
                                         </button>
                                     </div>
@@ -934,18 +934,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('⚠️ formaPagamento não encontrado');
     }
     
-    if (btnVisualizarParcelas) {
-        btnVisualizarParcelas.addEventListener('click', function(event) {
-            event.preventDefault(); // Previne submit do formulário
-            event.stopPropagation(); // Previne propagação do evento
-            console.log('🖱️ Botão Visualizar Parcelas clicado!');
-            calcularParcelas();
-            return false; // Segurança adicional
-        });
-        console.log('✅ Event listener adicionado em btnVisualizarParcelas');
-    } else {
-        console.warn('⚠️ btnVisualizarParcelas não encontrado');
-    }
+    // Botão usa onclick inline para evitar conflitos
+    console.log('✅ Botão Visualizar Parcelas configurado com onclick inline');
     
     // Inicializa no carregamento
     toggleCamposParcelamento();
