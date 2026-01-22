@@ -786,14 +786,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('🔧 Inicializando funcionalidade de parcelamento...');
     
+    // Variáveis globais
+    window.manterPreviewVisivel = false;
+    window.processandoCalculo = false; // Previne duplo clique
+    
     const formaPagamento = document.getElementById('formaPagamento');
     const camposParcelamento = document.getElementById('camposParcelamento');
     const btnVisualizarParcelas = document.getElementById('btnVisualizarParcelas');
     const previewParcelas = document.getElementById('previewParcelas');
     const listaParcelas = document.getElementById('listaParcelas');
-    
-    // Flag para controlar se o preview deve ficar visível
-    let manterPreviewVisivel = false;
     
     console.log('Elementos encontrados:', {
         formaPagamento: !!formaPagamento,
@@ -816,7 +817,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('❌ Campos de parcelamento ocultados');
             }
             // NÃO TOCA NO PREVIEW se a proteção estiver ativa
-            if (manterPreviewVisivel) {
+            if (window.manterPreviewVisivel) {
                 console.log('🔒 Preview protegido - mantendo visível');
             }
         }
@@ -824,6 +825,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Calcular e exibir preview das parcelas - FUNÇÃO GLOBAL
     window.calcularParcelas = function() {
+        // Previne execução múltipla
+        if (window.processandoCalculo) {
+            console.log('⚠️ Já está calculando, ignorando...');
+            return;
+        }
+        
+        window.processandoCalculo = true;
         console.log('🔢 Calculando parcelas...');
         
         // Pega o valor total do campo
@@ -916,7 +924,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('📋 Preview gerado, exibindo...');
         listaParcelas.innerHTML = html;
         previewParcelas.style.display = 'block';
-        manterPreviewVisivel = true; // Ativa proteção
+        window.manterPreviewVisivel = true; // Ativa proteção
+        window.processandoCalculo = false; // Libera para próxima execução
         console.log('✅ Parcelas calculadas e exibidas!');
         console.log('🔒 Proteção ativada - preview não pode ser escondido');
         
@@ -951,7 +960,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Proteção extrema: força preview a ficar visível a cada 100ms
     setInterval(() => {
-        if (manterPreviewVisivel && previewParcelas) {
+        if (window.manterPreviewVisivel && previewParcelas) {
             if (previewParcelas.style.display !== 'block') {
                 console.warn('⚠️ Algo tentou esconder o preview! Forçando visibilidade...');
                 previewParcelas.style.display = 'block';
