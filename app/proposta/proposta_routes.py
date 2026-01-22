@@ -743,25 +743,44 @@ def gerar_pdf(id):
         proposta.produtos = [ItemProposta(p[0], p[1], p[2], p[3]) for p in produtos_result]
         proposta.servicos = [ItemProposta(s[0], s[1], s[2], s[3]) for s in servicos_result]
         
-        # Carregar parcelas se existirem
+        # Carregar parcelas se existirem - SEMPRE tentar via SQL direto
         parcelas = []
-        if proposta.forma_pagamento == 'parcelado' and hasattr(proposta, 'parcelas_pagamento'):
-            parcelas = proposta.parcelas_pagamento
-        elif proposta.forma_pagamento == 'parcelado':
-            # Buscar parcelas via SQL direto
-            parcelas_result = db.session.execute(
-                text("SELECT numero_parcela, valor_parcela, data_vencimento, status FROM parcelas_proposta WHERE proposta_id = :id AND ativo = true ORDER BY numero_parcela"),
-                {"id": id}
-            ).fetchall()
-            
-            class ParcelaProposta:
-                def __init__(self, numero_parcela, valor_parcela, data_vencimento, status):
-                    self.numero_parcela = numero_parcela
-                    self.valor_parcela = valor_parcela
-                    self.data_vencimento = data_vencimento
-                    self.status = status
-            
-            parcelas = [ParcelaProposta(p[0], p[1], p[2], p[3]) for p in parcelas_result]
+        if proposta.forma_pagamento == 'parcelado':
+            try:
+                # Buscar parcelas via SQL direto
+                parcelas_result = db.session.execute(
+                    text("SELECT numero_parcela, valor_parcela, data_vencimento, status FROM parcelas_proposta WHERE proposta_id = :id AND ativo = true ORDER BY numero_parcela"),
+                    {"id": id}
+                ).fetchall()
+                
+                class ParcelaProposta:
+                    def __init__(self, numero_parcela, valor_parcela, data_vencimento, status):
+                        self.numero_parcela = numero_parcela
+                        self.valor_parcela = valor_parcela
+                        self.data_vencimento = data_vencimento
+                        self.status = status
+                
+                parcelas = [ParcelaProposta(p[0], p[1], p[2], p[3]) for p in parcelas_result]
+                logger.info(f"📊 Parcelas carregadas para PDF: {len(parcelas)} parcelas encontradas")
+                
+                # Se não encontrou parcelas mas tem configuração, gerar agora
+                if len(parcelas) == 0 and hasattr(proposta, 'numero_parcelas') and proposta.numero_parcelas:
+                    logger.warning(f"⚠️ Proposta parcelada sem parcelas geradas! Tentando gerar...")
+                    try:
+                        proposta.gerar_parcelas()
+                        db.session.commit()
+                        # Recarregar parcelas
+                        parcelas_result = db.session.execute(
+                            text("SELECT numero_parcela, valor_parcela, data_vencimento, status FROM parcelas_proposta WHERE proposta_id = :id AND ativo = true ORDER BY numero_parcela"),
+                            {"id": id}
+                        ).fetchall()
+                        parcelas = [ParcelaProposta(p[0], p[1], p[2], p[3]) for p in parcelas_result]
+                        logger.info(f"✅ Parcelas geradas: {len(parcelas)}")
+                    except Exception as e:
+                        logger.error(f"❌ Erro ao gerar parcelas: {str(e)}")
+            except Exception as e:
+                logger.error(f"Erro ao carregar parcelas: {str(e)}")
+                parcelas = []
         
         # Tentar importar WeasyPrint
         try:

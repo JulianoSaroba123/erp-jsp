@@ -575,11 +575,15 @@
             </div>
             {% endif %}
             
+            <!-- DEBUG INFO (comentar depois) -->
+            <!-- Forma pagamento: {{ proposta.forma_pagamento }} | Parcelas count: {{ parcelas|length if parcelas else 0 }} -->
+            
             <!-- PARCELAMENTO -->
-            {% if proposta.forma_pagamento == 'parcelado' and parcelas and parcelas|length > 0 %}
+            {% if proposta.forma_pagamento == 'parcelado' %}
+                {% if parcelas and parcelas|length > 0 %}
             <div style="margin-top: 20px;">
                 <div style="font-weight: bold; color: #666; font-size: 11px; margin-bottom: 8px; padding: 8px; background: var(--primary-color); color: white; border-radius: 3px;">
-                    <span style="margin-right: 5px;">📊</span> DETALHAMENTO DO PARCELAMENTO
+                    <span style="margin-right: 5px;">📊</span> DETALHAMENTO DO PARCELAMENTO ({{ parcelas|length }} parcelas)
                 </div>
                 <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 11px;">
                     <thead>
@@ -624,6 +628,13 @@
                 </div>
                 {% endif %}
             </div>
+                {% else %}
+            <!-- DEBUG: Forma é parcelado mas não há parcelas -->
+            <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px;">
+                <strong>⚠️ Aviso:</strong> Esta proposta está configurada como parcelada, mas as parcelas ainda não foram geradas.
+                <br><small>Edite a proposta e clique em "Visualizar Parcelas" para gerar o detalhamento.</small>
+            </div>
+                {% endif %}
             {% endif %}
         </div>
     </div>
