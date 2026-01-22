@@ -784,30 +784,47 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ===== FUNCIONALIDADE DE PARCELAMENTO =====
     
+    console.log('🔧 Inicializando funcionalidade de parcelamento...');
+    
     const formaPagamento = document.getElementById('formaPagamento');
     const camposParcelamento = document.getElementById('camposParcelamento');
     const btnVisualizarParcelas = document.getElementById('btnVisualizarParcelas');
     const previewParcelas = document.getElementById('previewParcelas');
     const listaParcelas = document.getElementById('listaParcelas');
     
+    console.log('Elementos encontrados:', {
+        formaPagamento: !!formaPagamento,
+        camposParcelamento: !!camposParcelamento,
+        btnVisualizarParcelas: !!btnVisualizarParcelas,
+        previewParcelas: !!previewParcelas,
+        listaParcelas: !!listaParcelas
+    });
+    
     // Mostrar/ocultar campos de parcelamento
     function toggleCamposParcelamento() {
         if (formaPagamento && formaPagamento.value === 'parcelado') {
             camposParcelamento.style.display = 'block';
+            console.log('✅ Campos de parcelamento exibidos');
         } else {
             if (camposParcelamento) camposParcelamento.style.display = 'none';
             if (previewParcelas) previewParcelas.style.display = 'none';
+            console.log('❌ Campos de parcelamento ocultados');
         }
     }
     
     // Calcular e exibir preview das parcelas
     function calcularParcelas() {
+        console.log('🔢 Calculando parcelas...');
+        
         // Pega o valor total do campo
         const valorTotalInput = document.getElementById('valorTotal');
         if (!valorTotalInput) {
+            console.error('❌ Campo valorTotal não encontrado!');
             alert('Erro: Campo de valor total não encontrado');
             return;
         }
+        
+        console.log('Valor Total Input:', valorTotalInput.value);
         
         const valorTotal = parseFloat(valorTotalInput.value.replace('R$ ', '').replace(/\./g, '').replace(',', '.')) || 0;
         const entrada = parseFloat(document.getElementById('entrada').value) || 0;
@@ -815,12 +832,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const intervalo = parseInt(document.getElementById('intervaloParcelas').value) || 30;
         const dataPrimeira = document.getElementById('dataPrimeiraParcela').value;
         
+        console.log('Dados:', { valorTotal, entrada, numeroParcelas, intervalo, dataPrimeira });
+        
         if (valorTotal <= 0) {
+            console.warn('⚠️ Valor total é zero ou negativo');
             alert('Por favor, preencha os produtos/serviços primeiro para calcular o valor total');
             return;
         }
         
         if (!dataPrimeira) {
+            console.warn('⚠️ Data da primeira parcela não informada');
             alert('Por favor, informe a data da primeira parcela');
             return;
         }
@@ -882,8 +903,10 @@ document.addEventListener('DOMContentLoaded', function() {
             </small>
         </div>`;
         
+        console.log('📋 Preview gerado, exibindo...');
         listaParcelas.innerHTML = html;
         previewParcelas.style.display = 'block';
+        console.log('✅ Parcelas calculadas e exibidas!');
     }
     
     // Formatar data para exibição
@@ -898,10 +921,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners (com verificação se elementos existem)
     if (formaPagamento) {
         formaPagamento.addEventListener('change', toggleCamposParcelamento);
+        console.log('✅ Event listener adicionado em formaPagamento');
+    } else {
+        console.warn('⚠️ formaPagamento não encontrado');
     }
     
     if (btnVisualizarParcelas) {
-        btnVisualizarParcelas.addEventListener('click', calcularParcelas);
+        btnVisualizarParcelas.addEventListener('click', function() {
+            console.log('🖱️ Botão Visualizar Parcelas clicado!');
+            calcularParcelas();
+        });
+        console.log('✅ Event listener adicionado em btnVisualizarParcelas');
+    } else {
+        console.warn('⚠️ btnVisualizarParcelas não encontrado');
     }
     
     // Inicializa no carregamento
