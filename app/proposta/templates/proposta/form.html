@@ -803,13 +803,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // Mostrar/ocultar campos de parcelamento
     function toggleCamposParcelamento() {
         if (formaPagamento && formaPagamento.value === 'parcelado') {
-            if (camposParcelamento) camposParcelamento.style.display = 'block';
-            console.log('✅ Campos de parcelamento exibidos');
+            if (camposParcelamento) {
+                camposParcelamento.style.display = 'block';
+                console.log('✅ Campos de parcelamento exibidos');
+            }
         } else {
-            if (camposParcelamento) camposParcelamento.style.display = 'none';
-            // NÃO esconde o preview se usuário já calculou as parcelas
-            // if (previewParcelas) previewParcelas.style.display = 'none';
-            console.log('❌ Campos de parcelamento ocultados (preview mantido)');
+            if (camposParcelamento) {
+                camposParcelamento.style.display = 'none';
+                console.log('❌ Campos de parcelamento ocultados (preview mantido)');
+            }
         }
     }
     
@@ -906,11 +908,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('📋 Preview gerado, exibindo...');
         listaParcelas.innerHTML = html;
-        previewParcelas.style.setProperty('display', 'block', 'important');
-        previewParcelas.setAttribute('data-keep-visible', 'true');
+        previewParcelas.style.display = 'block';
         console.log('✅ Parcelas calculadas e exibidas!');
         
-        // Força scroll suave até o preview
+        // Scroll suave até o preview
         setTimeout(() => {
             previewParcelas.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }, 100);
