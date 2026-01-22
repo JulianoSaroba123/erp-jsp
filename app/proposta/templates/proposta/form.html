@@ -927,9 +927,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (btnVisualizarParcelas) {
-        btnVisualizarParcelas.addEventListener('click', function() {
+        btnVisualizarParcelas.addEventListener('click', function(event) {
+            event.preventDefault(); // Previne submit do formulário
+            event.stopPropagation(); // Previne propagação do evento
             console.log('🖱️ Botão Visualizar Parcelas clicado!');
             calcularParcelas();
+            return false; // Segurança adicional
         });
         console.log('✅ Event listener adicionado em btnVisualizarParcelas');
     } else {
