@@ -601,6 +601,68 @@
 document.addEventListener('DOMContentLoaded', function() {
     let servicoIndex = {{ (ordem.servicos|length) if ordem and ordem.servicos else 0 }};
     let produtoIndex = {{ (ordem.produtos_utilizados|length) if ordem and ordem.produtos_utilizados else 0 }};
+    let produtosCadastrados = []; // Cache de produtos cadastrados
+    
+    // ===== CARREGAR PRODUTOS CADASTRADOS =====
+    async function carregarProdutosCadastrados() {
+        try {
+            console.log('🔄 Carregando produtos cadastrados...');
+            const response = await fetch('/ordem-servico/api/produtos');
+            const data = await response.json();
+            
+            if (data.success) {
+                produtosCadastrados = data.produtos;
+                console.log(`✅ ${data.total} produtos carregados!`);
+                return data.produtos;
+            } else {
+                console.error('❌ Erro ao carregar produtos:', data.error);
+                return [];
+            }
+        } catch (error) {
+            console.error('❌ Erro na requisição de produtos:', error);
+            return [];
+        }
+    }
+    
+    // Função para popular um select com produtos
+    function carregarProdutosNoSelect(selectElement) {
+        if (!selectElement) return;
+        
+        // Limpar e adicionar opção padrão
+        selectElement.innerHTML = '<option value="">-- Selecione um produto --</option>';
+        
+        // Adicionar opção para produto personalizado
+        const optionCustom = document.createElement('option');
+        optionCustom.value = 'custom';
+        optionCustom.textContent = '✏️ Produto personalizado (digite abaixo)';
+        selectElement.appendChild(optionCustom);
+        
+        // Adicionar produtos cadastrados
+        if (produtosCadastrados && produtosCadastrados.length > 0) {
+            produtosCadastrados.forEach(produto => {
+                const option = document.createElement('option');
+                option.value = produto.id;
+                
+                // Monta texto descritivo
+                let texto = produto.nome;
+                if (produto.codigo) {
+                    texto = `${produto.codigo} - ${texto}`;
+                }
+                if (produto.preco > 0) {
+                    texto += ` (R$ ${produto.preco.toFixed(2).replace('.', ',')})`;
+                }
+                
+                option.textContent = texto;
+                option.dataset.preco = produto.preco;
+                option.dataset.nome = produto.nome;
+                
+                selectElement.appendChild(option);
+            });
+        }
+    }
+    
+    // Carregar produtos ao inicializar
+    carregarProdutosCadastrados();
     
     // Prevenir reload de página por botões do formulário
     const form = document.querySelector('form');
@@ -863,8 +925,12 @@ document.addEventListener('DOMContentLoaded', function() {
         div.innerHTML = `
             <div class="row g-2 align-items-center">
                 <div class="col-md-4">
-                    <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
-                           name="produto_descricao[]" placeholder="Descrição do produto" required>
+                    <select class="form-select form-select-sm bg-dark text-white border-secondary produto-select" 
+                            name="produto_id[]" required>
+                        <option value="">Carregando produtos...</option>
+                    </select>
+                    <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary mt-1 d-none produto-descricao-custom" 
+                           name="produto_descricao_custom[]" placeholder="Digite a descrição do produto">
                 </div>
                 <div class="col-md-2">
                     <input type="number" class="form-control form-control-sm bg-dark text-white border-secondary produto-quantidade" 
@@ -890,6 +956,11 @@ document.addEventListener('DOMContentLoaded', function() {
         produtoIndex++;
         console.log('Produto adicionado! Total:', produtoIndex);
         
+        // Carregar produtos no novo select
+        const novoSelect = div.querySelector('.produto-select');
+        const inputCustom = div.querySelector('.produto-descricao-custom');
+        carregarProdutosNoSelect(novoSelect);
+        
         // Adicionar eventos aos novos campos
         const novoItem = div;
         const qtdField = novoItem.querySelector('.produto-quantidade');
@@ -901,6 +972,35 @@ document.addEventListener('DOMContentLoaded', function() {
         
         valorField.addEventListener('input', function() {
             calcularTotalItem(novoItem);
+        });
+        
+        // Evento para quando selecionar um produto
+        novoSelect.addEventListener('change', function() {
+            const produtoId = this.value;
+            
+            if (produtoId === 'custom') {
+                // Mostrar campo de descrição personalizada
+                inputCustom.classList.remove('d-none');
+                inputCustom.required = true;
+                inputCustom.focus();
+                valorField.value = '';
+            } else {
+                // Ocultar campo personalizado
+                inputCustom.classList.add('d-none');
+                inputCustom.required = false;
+                inputCustom.value = '';
+                
+                if (produtoId && produtosCadastrados) {
+                    const produto = produtosCadastrados.find(p => p.id == produtoId);
+                    if (produto) {
+                        // Preencher valor automaticamente
+                        if (produto.preco > 0) {
+                            valorField.value = produto.preco.toFixed(2).replace('.', ',');
+                            calcularTotalItem(novoItem);
+                        }
+                    }
+                }
+            }
         });
     });
     

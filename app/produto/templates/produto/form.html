@@ -438,6 +438,9 @@ document.addEventListener('DOMContentLoaded', function() {
         estoque: !!controlaEstoqueCheck
     });
     
+    // Timeout para debounce
+    let timeoutCalculo = null;
+    
     // Função para parsear valor monetário (aceita vírgula ou ponto)
     function parseValor(value) {
         if (!value) return 0;
@@ -455,8 +458,19 @@ document.addEventListener('DOMContentLoaded', function() {
         return Number(value).toFixed(2).replace('.', ',');
     }
     
+    // Função com debounce para cálculos em tempo real
+    function calcularComDebounce(funcao, delay = 300) {
+        clearTimeout(timeoutCalculo);
+        timeoutCalculo = setTimeout(funcao, delay);
+    }
+    
     // Função principal de cálculo do preço baseado em markup
     function calcularPreco() {
+        if (!precoCustoInput || !markupInput || !precoVendaInput || !margemLucroInput) {
+            console.log('⚠️ Campos não encontrados');
+            return;
+        }
+        
         const custo = parseValor(precoCustoInput.value);
         const markup = parseValor(markupInput.value);
         
@@ -472,6 +486,14 @@ document.addEventListener('DOMContentLoaded', function() {
             margemLucroInput.value = formatarValor(margem);
             
             console.log('✅ Preço calculado:', precoVenda.toFixed(2), 'Margem:', margem.toFixed(2) + '%');
+            
+            // Flash visual
+            precoVendaInput.classList.add('border-success');
+            margemLucroInput.classList.add('border-success');
+            setTimeout(() => {
+                precoVendaInput.classList.remove('border-success');
+                margemLucroInput.classList.remove('border-success');
+            }, 500);
         } else {
             console.log('⚠️ Valores insuficientes - Custo:', custo, 'Markup:', markup);
         }
@@ -479,6 +501,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Função para calcular markup baseado no preço de venda
     function calcularMarkup() {
+        if (!precoCustoInput || !precoVendaInput || !markupInput || !margemLucroInput) {
+            console.log('⚠️ Campos não encontrados');
+            return;
+        }
+        
         const custo = parseValor(precoCustoInput.value);
         const venda = parseValor(precoVendaInput.value);
         
@@ -493,6 +520,14 @@ document.addEventListener('DOMContentLoaded', function() {
             margemLucroInput.value = formatarValor(margem);
             
             console.log('✅ Markup calculado:', markup.toFixed(2) + '%');
+            
+            // Flash visual
+            markupInput.classList.add('border-warning');
+            margemLucroInput.classList.add('border-warning');
+            setTimeout(() => {
+                markupInput.classList.remove('border-warning');
+                margemLucroInput.classList.remove('border-warning');
+            }, 500);
         } else {
             console.log('⚠️ Valores insuficientes para calcular markup');
         }

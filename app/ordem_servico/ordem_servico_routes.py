@@ -637,20 +637,54 @@ def novo():
                 print(f"➕ Serviço adicionado: {item.descricao} - {item.quantidade} {item.tipo_servico} = R$ {item.valor_total}")
             
             # Processa produtos utilizados
-            produtos_desc = request.form.getlist('produto_descricao[]')
+            # Aceita tanto produto_id (novos produtos cadastrados) quanto produto_descricao (produtos antigos ou personalizados)
+            produtos_id = request.form.getlist('produto_id[]')
+            produtos_desc = request.form.getlist('produto_descricao[]')  # Para produtos antigos
+            produtos_desc_custom = request.form.getlist('produto_descricao_custom[]')  # Para produtos personalizados novos
             produtos_qtd = request.form.getlist('produto_quantidade[]')
             produtos_valor = request.form.getlist('produto_valor[]')
             
-            for i, desc in enumerate(produtos_desc):
-                if desc.strip():
+            # Determinar qual lista tem mais itens para processar
+            max_produtos = max(len(produtos_id) if produtos_id else 0, 
+                              len(produtos_desc) if produtos_desc else 0)
+            
+            for i in range(max_produtos):
+                descricao = None
+                produto_cadastrado_id = None
+                
+                # Prioridade: produto_id (novo sistema)
+                if i < len(produtos_id) and produtos_id[i] and produtos_id[i] != '':
+                    if produtos_id[i] == 'custom':
+                        # Produto personalizado - usar descrição custom
+                        if i < len(produtos_desc_custom) and produtos_desc_custom[i].strip():
+                            descricao = produtos_desc_custom[i].strip()
+                    else:
+                        # Produto cadastrado
+                        try:
+                            produto_cadastrado_id = int(produtos_id[i])
+                            produto_obj = Produto.query.get(produto_cadastrado_id)
+                            if produto_obj:
+                                descricao = produto_obj.nome
+                        except (ValueError, TypeError):
+                            pass
+                
+                # Fallback: produto_descricao (antigo sistema - para OS antigas)
+                if not descricao and i < len(produtos_desc) and produtos_desc[i].strip():
+                    descricao = produtos_desc[i].strip()
+                
+                # Se tem descrição, adiciona o produto
+                if descricao:
                     produto = OrdemServicoProduto(
                         ordem_servico_id=ordem.id,
-                        descricao=desc.strip(),
+                        descricao=descricao,
+                        produto_id=produto_cadastrado_id,  # Referência ao produto cadastrado (se houver)
                         quantidade=Decimal(produtos_qtd[i].replace(',', '.')) if i < len(produtos_qtd) and produtos_qtd[i] else 1,
                         valor_unitario=Decimal(produtos_valor[i].replace(',', '.')) if i < len(produtos_valor) and produtos_valor[i] else 0
                     )
                     produto.calcular_total()
                     db.session.add(produto)
+                    print(f"➕ Produto adicionado: {descricao} (ID: {produto_cadastrado_id}) - {produto.quantidade} x R$ {produto.valor_unitario} = R$ {produto.valor_total}")
+            
             
             # Recalcula valores principais considerando itens (DEPOIS que todos os itens foram criados)
             # Garante consistência entre telas e PDF
@@ -1158,27 +1192,63 @@ def editar(id):
                 produtos_removidos += 1
             print(f" {produtos_removidos} produtos removidos")
             
-            produtos_desc = request.form.getlist('produto_descricao[]')
+            # Aceita tanto produto_id (novos produtos cadastrados) quanto produto_descricao (produtos antigos ou personalizados)
+            produtos_id = request.form.getlist('produto_id[]')
+            produtos_desc = request.form.getlist('produto_descricao[]')  # Para produtos antigos
+            produtos_desc_custom = request.form.getlist('produto_descricao_custom[]')  # Para produtos personalizados novos
             produtos_qtd = request.form.getlist('produto_quantidade[]')
             produtos_valor = request.form.getlist('produto_valor[]')
 
-            print(f"DEBUG: Processando {len(produtos_desc)} produtos do formulário")
-            print(f"  📝 Descrições: {produtos_desc}")
+            # Determinar qual lista tem mais itens para processar
+            max_produtos = max(len(produtos_id) if produtos_id else 0, 
+                              len(produtos_desc) if produtos_desc else 0)
+            
+            print(f"DEBUG: Processando {max_produtos} produtos do formulário")
+            print(f"  📝 IDs: {produtos_id if produtos_id else []}")
+            print(f"  📝 Descrições: {produtos_desc if produtos_desc else []}")
+            print(f"  📝 Custom: {produtos_desc_custom if produtos_desc_custom else []}")
+            
             produtos_adicionados = 0
-            for i, desc in enumerate(produtos_desc):
-                if desc and desc.strip():
+            for i in range(max_produtos):
+                descricao = None
+                produto_cadastrado_id = None
+                
+                # Prioridade: produto_id (novo sistema)
+                if i < len(produtos_id) and produtos_id[i] and produtos_id[i] != '':
+                    if produtos_id[i] == 'custom':
+                        # Produto personalizado - usar descrição custom
+                        if i < len(produtos_desc_custom) and produtos_desc_custom[i].strip():
+                            descricao = produtos_desc_custom[i].strip()
+                    else:
+                        # Produto cadastrado
+                        try:
+                            produto_cadastrado_id = int(produtos_id[i])
+                            produto_obj = Produto.query.get(produto_cadastrado_id)
+                            if produto_obj:
+                                descricao = produto_obj.nome
+                        except (ValueError, TypeError):
+                            pass
+                
+                # Fallback: produto_descricao (antigo sistema - para OS antigas)
+                if not descricao and i < len(produtos_desc) and produtos_desc[i].strip():
+                    descricao = produtos_desc[i].strip()
+                
+                # Se tem descrição, adiciona o produto
+                if descricao:
                     qtd_value = produtos_qtd[i] if i < len(produtos_qtd) else ''
                     valor_value = produtos_valor[i] if i < len(produtos_valor) else ''
+                    
                     produto = OrdemServicoProduto(
                         ordem_servico_id=ordem.id,
-                        descricao=desc.strip(),
+                        descricao=descricao,
+                        produto_id=produto_cadastrado_id,  # Referência ao produto cadastrado (se houver)
                         quantidade=safe_decimal_convert(qtd_value, 1),
                         valor_unitario=safe_decimal_convert(valor_value, 0)
                     )
                     produto.calcular_total()
                     db.session.add(produto)
                     produtos_adicionados += 1
-                    print(f"  ➕ Adicionado produto: {desc.strip()}")
+                    print(f"  ➕ Adicionado produto: {descricao} (ID: {produto_cadastrado_id})")
             print(f" {produtos_adicionados} produtos adicionados")
             
             # Recalcula valores dos campos principais após adicionar todos os itens
@@ -1894,6 +1964,42 @@ def api_clientes_refresh():
         
     except Exception as e:
         print(f" Erro na API de clientes REFRESH: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@ordem_servico_bp.route('/api/produtos')
+def api_produtos():
+    """
+    API para buscar produtos cadastrados.
+    Retorna lista de produtos ativos com seus dados.
+    """
+    try:
+        # Busca todos os produtos ativos
+        produtos = Produto.query.filter_by(ativo=True).order_by(Produto.nome).all()
+        
+        produtos_list = []
+        for produto in produtos:
+            # Pega o preço de venda ou custo (o que estiver disponível)
+            preco = produto.preco_venda if hasattr(produto, 'preco_venda') and produto.preco_venda else (produto.preco_custo if hasattr(produto, 'preco_custo') and produto.preco_custo else 0)
+            
+            produtos_list.append({
+                'id': produto.id,
+                'nome': produto.nome,
+                'descricao': produto.descricao if hasattr(produto, 'descricao') and produto.descricao else '',
+                'preco': float(preco) if preco else 0,
+                'codigo': produto.codigo if hasattr(produto, 'codigo') and produto.codigo else '',
+                'estoque': produto.estoque_atual if hasattr(produto, 'estoque_atual') else 0
+            })
+        
+        return jsonify({
+            'success': True,
+            'produtos': produtos_list,
+            'total': len(produtos_list)
+        })
+        
+    except Exception as e:
+        print(f"❌ Erro ao buscar produtos: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
