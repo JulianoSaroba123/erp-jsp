@@ -626,7 +626,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Função para popular um select com produtos
     function carregarProdutosNoSelect(selectElement) {
-        if (!selectElement) return;
+        if (!selectElement) {
+            console.warn('⚠️ Select element não encontrado!');
+            return;
+        }
         
         // Limpar e adicionar opção padrão
         selectElement.innerHTML = '<option value="">-- Selecione um produto --</option>';
@@ -638,6 +641,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selectElement.appendChild(optionCustom);
         
         // Adicionar produtos cadastrados
+        console.log('📦 Produtos disponíveis:', produtosCadastrados.length);
         if (produtosCadastrados && produtosCadastrados.length > 0) {
             produtosCadastrados.forEach(produto => {
                 const option = document.createElement('option');
@@ -658,11 +662,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 selectElement.appendChild(option);
             });
+            console.log(`✅ ${produtosCadastrados.length} produtos adicionados ao select`);
+        } else {
+            console.warn('⚠️ Nenhum produto cadastrado encontrado!');
         }
     }
     
-    // Carregar produtos ao inicializar
-    carregarProdutosCadastrados();
+    // Carregar produtos ao inicializar - com await
+    (async function() {
+        await carregarProdutosCadastrados();
+        console.log('✅ Produtos carregados e prontos para uso');
+    })();
     
     // Prevenir reload de página por botões do formulário
     const form = document.querySelector('form');
