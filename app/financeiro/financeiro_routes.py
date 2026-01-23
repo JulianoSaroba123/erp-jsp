@@ -1515,27 +1515,53 @@ def novo_custo_fixo():
         from app.financeiro.financeiro_model import CustoFixo
         
         if request.method == 'POST':
-            # Criar custo fixo
-            custo = CustoFixo(
-                nome=request.form['nome'],
-                descricao=request.form.get('descricao', ''),
-                valor_mensal=converter_valor_monetario(request.form['valor_mensal']),
-                categoria=request.form['categoria'],
-                tipo=request.form.get('tipo', 'DESPESA'),
-                dia_vencimento=int(request.form['dia_vencimento']),
-                gerar_automaticamente=bool(request.form.get('gerar_automaticamente')),
-                data_inicio=datetime.strptime(request.form['data_inicio'], '%Y-%m-%d').date(),
-                data_fim=datetime.strptime(request.form['data_fim'], '%Y-%m-%d').date() if request.form.get('data_fim') else None,
-                conta_bancaria_id=int(request.form['conta_bancaria_id']) if request.form.get('conta_bancaria_id') else None,
-                centro_custo_id=int(request.form['centro_custo_id']) if request.form.get('centro_custo_id') else None,
-                ativo=True
-            )
+            try:
+                # Criar custo fixo
+                custo = CustoFixo(
+                    nome=request.form['nome'],
+                    descricao=request.form.get('descricao', ''),
+                    valor_mensal=converter_valor_monetario(request.form['valor_mensal']),
+                    categoria=request.form['categoria'],
+                    tipo=request.form.get('tipo', 'DESPESA'),
+                    dia_vencimento=int(request.form['dia_vencimento']),
+                    gerar_automaticamente=bool(request.form.get('gerar_automaticamente')),
+                    data_inicio=datetime.strptime(request.form['data_inicio'], '%Y-%m-%d').date(),
+                    data_fim=datetime.strptime(request.form['data_fim'], '%Y-%m-%d').date() if request.form.get('data_fim') else None,
+                    conta_bancaria_id=int(request.form['conta_bancaria_id']) if request.form.get('conta_bancaria_id') else None,
+                    centro_custo_id=int(request.form['centro_custo_id']) if request.form.get('centro_custo_id') else None,
+                    ativo=True
+                )
+                
+                db.session.add(custo)
+                db.session.commit()
+                
+                logger.info(f'✅ Custo fixo criado: {custo.nome} (ID: {custo.id})')
+                flash(f'Custo fixo "{custo.nome}" criado com sucesso!', 'success')
+                
+                # Redirecionar diretamente para a lista
+                redirect_url = url_for('financeiro.listar_custos_fixos')
+                logger.info(f'🔄 Redirecionando para: {redirect_url}')
+                return redirect(redirect_url)
             
-            db.session.add(custo)
-            db.session.commit()
-            
-            flash(f'Custo fixo "{custo.nome}" criado com sucesso!', 'success')
-            return redirect(url_for('financeiro.listar_custos_fixos'))
+            except Exception as post_error:
+                db.session.rollback()
+                logger.error(f'❌ Erro no POST do custo fixo: {str(post_error)}')
+                logger.exception(post_error)
+                flash(f'Erro ao salvar custo fixo: {str(post_error)}', 'danger')
+                # Em caso de erro, recarregar o formulário
+                contas = ContaBancaria.query.filter_by(ativo=True).all()
+                centros = CentroCusto.query.filter_by(ativo=True).all()
+                categorias_padrao = [
+                    'Aluguel', 'Salários', 'Encargos', 'Energia', 'Água',
+                    'Internet', 'Telefone', 'Software', 'Manutenção', 'Seguros',
+                    'Impostos', 'Contabilidade', 'Marketing', 'Outros'
+                ]
+                return render_template('financeiro/custos_fixos/form.html',
+                                     custo=None,
+                                     contas=contas,
+                                     centros=centros,
+                                     categorias=categorias_padrao,
+                                     data_hoje=date.today())
         
         # GET - exibir formulário
         contas = ContaBancaria.query.filter_by(ativo=True).all()
@@ -1557,6 +1583,8 @@ def novo_custo_fixo():
     
     except Exception as e:
         db.session.rollback()
+        logger.error(f'❌ Erro ao criar custo fixo: {str(e)}')
+        logger.exception(e)  # Log completo do stack trace
         flash(f'Erro ao criar custo fixo: {str(e)}', 'danger')
         return redirect(url_for('financeiro.listar_custos_fixos'))
 
