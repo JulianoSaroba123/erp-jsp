@@ -85,19 +85,24 @@ def novo():
             preco_venda = request.form.get('preco_venda', '0').replace(',', '.')
             markup = request.form.get('markup', '0').replace(',', '.')
             
+            # Função auxiliar para converter string vazia em None
+            def get_or_none(field_name):
+                value = request.form.get(field_name, '').strip()
+                return value if value else None
+            
             # Coleta dados do formulário
             produto = Produto(
                 nome=request.form.get('nome', '').strip(),
-                descricao=request.form.get('descricao', '').strip(),
-                codigo=request.form.get('codigo', '').strip(),
-                codigo_barras=request.form.get('codigo_barras', '').strip(),
-                categoria=request.form.get('categoria', '').strip(),
-                subcategoria=request.form.get('subcategoria', '').strip(),
-                marca=request.form.get('marca', '').strip(),
-                modelo=request.form.get('modelo', '').strip(),
+                descricao=get_or_none('descricao'),
+                codigo=get_or_none('codigo'),
+                codigo_barras=get_or_none('codigo_barras'),
+                categoria=get_or_none('categoria'),
+                subcategoria=get_or_none('subcategoria'),
+                marca=get_or_none('marca'),
+                modelo=get_or_none('modelo'),
                 unidade_medida=request.form.get('unidade_medida', 'UN'),
                 peso=Decimal(request.form.get('peso', '0').replace(',', '.')) if request.form.get('peso') else None,
-                dimensoes=request.form.get('dimensoes', '').strip(),
+                dimensoes=get_or_none('dimensoes'),
                 preco_custo=Decimal(preco_custo) if preco_custo else 0,
                 preco_venda=Decimal(preco_venda) if preco_venda else 0,
                 markup=Decimal(markup) if markup else 0,
@@ -106,7 +111,7 @@ def novo():
                 estoque_maximo=int(request.form.get('estoque_maximo', 0)),
                 controla_estoque=bool(request.form.get('controla_estoque')),
                 status=request.form.get('status', 'ativo'),
-                observacoes=request.form.get('observacoes', '').strip()
+                observacoes=get_or_none('observacoes')
             )
             
             # Validações
@@ -182,18 +187,23 @@ def editar(id):
             preco_venda = request.form.get('preco_venda', '0').replace(',', '.')
             markup = request.form.get('markup', '0').replace(',', '.')
             
+            # Função auxiliar para converter string vazia em None
+            def get_or_none(field_name):
+                value = request.form.get(field_name, '').strip()
+                return value if value else None
+            
             # Atualiza dados
             produto.nome = request.form.get('nome', '').strip()
-            produto.descricao = request.form.get('descricao', '').strip()
-            novo_codigo = request.form.get('codigo', '').strip()
-            novo_codigo_barras = request.form.get('codigo_barras', '').strip()
-            produto.categoria = request.form.get('categoria', '').strip()
-            produto.subcategoria = request.form.get('subcategoria', '').strip()
-            produto.marca = request.form.get('marca', '').strip()
-            produto.modelo = request.form.get('modelo', '').strip()
+            produto.descricao = get_or_none('descricao')
+            novo_codigo = get_or_none('codigo')
+            novo_codigo_barras = get_or_none('codigo_barras')
+            produto.categoria = get_or_none('categoria')
+            produto.subcategoria = get_or_none('subcategoria')
+            produto.marca = get_or_none('marca')
+            produto.modelo = get_or_none('modelo')
             produto.unidade_medida = request.form.get('unidade_medida', 'UN')
             produto.peso = Decimal(request.form.get('peso', '0').replace(',', '.')) if request.form.get('peso') else None
-            produto.dimensoes = request.form.get('dimensoes', '').strip()
+            produto.dimensoes = get_or_none('dimensoes')
             produto.preco_custo = Decimal(preco_custo) if preco_custo else 0
             produto.preco_venda = Decimal(preco_venda) if preco_venda else 0
             produto.markup = Decimal(markup) if markup else 0
@@ -202,7 +212,7 @@ def editar(id):
             produto.estoque_maximo = int(request.form.get('estoque_maximo', 0))
             produto.controla_estoque = bool(request.form.get('controla_estoque'))
             produto.status = request.form.get('status', 'ativo')
-            produto.observacoes = request.form.get('observacoes', '').strip()
+            produto.observacoes = get_or_none('observacoes')
             
             # Validações
             if not produto.nome:
