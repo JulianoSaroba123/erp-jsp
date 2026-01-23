@@ -498,47 +498,63 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Event listeners com logs
-    if (markupInput) {
-        console.log('🎯 Configurando listeners do markup...');
+    // Event listeners para CÁLCULO EM TEMPO REAL
+    if (precoCustoInput) {
+        console.log('🎯 Configurando listeners do custo (tempo real)...');
         
-        markupInput.addEventListener('input', function() {
-            console.log('⌨️ Markup input:', this.value);
-            calcularPreco();
+        // Calcular imediatamente ao digitar
+        precoCustoInput.addEventListener('input', function() {
+            console.log('⌨️ Custo digitando:', this.value);
+            const markup = parseValor(markupInput.value);
+            if (markup > 0) {
+                calcularPreco();
+            }
         });
         
-        markupInput.addEventListener('blur', function() {
-            console.log('👁️ Markup blur:', this.value);
-            calcularPreco();
-        });
-        
-        markupInput.addEventListener('change', function() {
-            console.log('🔄 Markup change:', this.value);
+        // Calcular ao sair do campo
+        precoCustoInput.addEventListener('blur', function() {
+            console.log('👁️ Custo saiu do campo:', this.value);
             calcularPreco();
         });
     }
     
-    if (precoCustoInput) {
-        console.log('🎯 Configurando listeners do custo...');
+    if (markupInput) {
+        console.log('🎯 Configurando listeners do markup (tempo real)...');
         
-        precoCustoInput.addEventListener('input', function() {
-            console.log('⌨️ Custo input:', this.value);
-            if (markupInput.value) {
-                calcularPreco();
-            }
+        // Calcular imediatamente ao digitar
+        markupInput.addEventListener('input', function() {
+            console.log('⌨️ Markup digitando:', this.value);
+            calcularPreco();
         });
         
-        precoCustoInput.addEventListener('blur', function() {
-            console.log('👁️ Custo blur:', this.value);
-            if (markupInput.value) {
-                calcularPreco();
-            }
+        // Calcular ao sair do campo
+        markupInput.addEventListener('blur', function() {
+            console.log('👁️ Markup saiu do campo:', this.value);
+            calcularPreco();
+        });
+        
+        // Calcular ao mudar
+        markupInput.addEventListener('change', function() {
+            console.log('🔄 Markup mudou:', this.value);
+            calcularPreco();
         });
     }
     
     if (precoVendaInput) {
+        console.log('🎯 Configurando listeners do preço de venda (tempo real)...');
+        
+        // Calcular markup reverso ao digitar
+        precoVendaInput.addEventListener('input', function() {
+            console.log('⌨️ Venda digitando:', this.value);
+            const custo = parseValor(precoCustoInput.value);
+            if (custo > 0) {
+                calcularMarkup();
+            }
+        });
+        
+        // Calcular ao sair do campo
         precoVendaInput.addEventListener('blur', function() {
-            console.log('👁️ Venda blur:', this.value);
+            console.log('👁️ Venda saiu do campo:', this.value);
             calcularMarkup();
         });
     }
