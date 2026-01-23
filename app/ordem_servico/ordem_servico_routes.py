@@ -1977,9 +1977,23 @@ def api_produtos():
     try:
         print("🔍 API /api/produtos chamada!")
         
-        # Busca todos os produtos ativos
-        produtos = Produto.query.filter_by(ativo=True).order_by(Produto.nome).all()
-        print(f"📦 Encontrados {len(produtos)} produtos ativos no banco")
+        # Primeiro, verificar TODOS os produtos
+        todos_produtos = Produto.query.all()
+        print(f"📦 Total de produtos no banco (todos): {len(todos_produtos)}")
+        
+        # Mostrar todos para debug
+        for p in todos_produtos:
+            ativo_status = getattr(p, 'ativo', 'SEM_CAMPO_ATIVO')
+            print(f"  🔍 Produto ID {p.id}: {p.nome} | Ativo: {ativo_status}")
+        
+        # Buscar apenas produtos ativos (se o campo existir)
+        if hasattr(Produto, 'ativo'):
+            produtos = Produto.query.filter_by(ativo=True).order_by(Produto.nome).all()
+            print(f"📦 Produtos com ativo=True: {len(produtos)}")
+        else:
+            # Se não existe campo ativo, buscar todos
+            produtos = Produto.query.order_by(Produto.nome).all()
+            print(f"📦 Produtos (sem filtro de ativo): {len(produtos)}")
         
         produtos_list = []
         for produto in produtos:
@@ -2001,7 +2015,11 @@ def api_produtos():
         return jsonify({
             'success': True,
             'produtos': produtos_list,
-            'total': len(produtos_list)
+            'total': len(produtos_list),
+            'debug': {
+                'total_no_banco': len(todos_produtos),
+                'total_retornados': len(produtos_list)
+            }
         })
         
     except Exception as e:
