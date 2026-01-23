@@ -33,14 +33,46 @@
         </div>
     </div>
 
+    <!-- Aviso Informativo -->
+    {% if not lancamento %}
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-info border-start border-5 border-primary" role="alert">
+                <div class="d-flex align-items-start">
+                    <i class="fas fa-info-circle fa-2x text-primary me-3 mt-1"></i>
+                    <div>
+                        <h5 class="alert-heading mb-2">
+                            <i class="fas fa-lightbulb me-2"></i>Quando usar Lançamentos Financeiros?
+                        </h5>
+                        <p class="mb-2">Use esta tela para registrar <strong>movimentações financeiras pontuais ou esporádicas</strong>:</p>
+                        <ul class="mb-2">
+                            <li>💰 Recebimentos de clientes (vendas, serviços)</li>
+                            <li>🧾 Pagamentos a fornecedores (compras, materiais)</li>
+                            <li>📋 Despesas eventuais (reparos, manutenções)</li>
+                            <li>💳 Transferências entre contas</li>
+                        </ul>
+                        <hr class="my-2">
+                        <p class="mb-0">
+                            <strong>📌 Dica Profissional:</strong> Para <strong>despesas recorrentes da empresa</strong> (aluguel, salários, contas de luz/água),
+                            utilize o módulo <a href="{{ url_for('financeiro.listar_custos_fixos') }}" class="alert-link fw-bold">
+                                <i class="fas fa-repeat"></i> Custos Fixos
+                            </a> que gera lançamentos automaticamente todos os meses.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Formulário -->
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header bg-gradient">
                     <h5 class="mb-0">
-                        <i class="fas fa-form me-2"></i>
-                        Dados do Lançamento
+                        <i class="fas fa-receipt me-2"></i>
+                        Dados do Lançamento Financeiro
                     </h5>
                 </div>
                 <div class="card-body">
