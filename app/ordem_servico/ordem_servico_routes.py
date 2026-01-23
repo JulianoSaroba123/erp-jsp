@@ -1975,23 +1975,29 @@ def api_produtos():
     Retorna lista de produtos ativos com seus dados.
     """
     try:
+        print("🔍 API /api/produtos chamada!")
+        
         # Busca todos os produtos ativos
         produtos = Produto.query.filter_by(ativo=True).order_by(Produto.nome).all()
+        print(f"📦 Encontrados {len(produtos)} produtos ativos no banco")
         
         produtos_list = []
         for produto in produtos:
             # Pega o preço de venda ou custo (o que estiver disponível)
             preco = produto.preco_venda if hasattr(produto, 'preco_venda') and produto.preco_venda else (produto.preco_custo if hasattr(produto, 'preco_custo') and produto.preco_custo else 0)
             
-            produtos_list.append({
+            produto_data = {
                 'id': produto.id,
                 'nome': produto.nome,
                 'descricao': produto.descricao if hasattr(produto, 'descricao') and produto.descricao else '',
                 'preco': float(preco) if preco else 0,
                 'codigo': produto.codigo if hasattr(produto, 'codigo') and produto.codigo else '',
                 'estoque': produto.estoque_atual if hasattr(produto, 'estoque_atual') else 0
-            })
+            }
+            produtos_list.append(produto_data)
+            print(f"  ✅ Produto: {produto.nome} (ID: {produto.id}) - R$ {preco}")
         
+        print(f"✅ Retornando {len(produtos_list)} produtos")
         return jsonify({
             'success': True,
             'produtos': produtos_list,
