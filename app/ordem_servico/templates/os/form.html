@@ -607,7 +607,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function carregarProdutosCadastrados() {
         try {
             console.log('🔄 Carregando produtos cadastrados...');
-            const response = await fetch('/ordem-servico/api/produtos');
+            const response = await fetch('/ordem_servico/api/produtos');  // FIX: underscore não hífen
             const data = await response.json();
             
             if (data.success) {
