@@ -438,52 +438,61 @@ document.addEventListener('DOMContentLoaded', function() {
         estoque: !!controlaEstoqueCheck
     });
     
-    // Função para formatar número (vírgula para ponto)
-    function parseNumber(value) {
-        return parseFloat(value.replace(',', '.')) || 0;
+    // Função para parsear valor monetário (aceita vírgula ou ponto)
+    function parseValor(value) {
+        if (!value) return 0;
+        // Remove espaços e converte string para número
+        const cleanValue = String(value).trim().replace(/\s/g, '');
+        // Se tiver vírgula, troca por ponto
+        const normalized = cleanValue.replace(',', '.');
+        const parsed = parseFloat(normalized);
+        return isNaN(parsed) ? 0 : parsed;
     }
     
-    // Função para formatar para exibição (ponto para vírgula)
-    function formatDisplay(value) {
-        return value.toFixed(2).replace('.', ',');
+    // Função para formatar valor para exibição (com 2 decimais)
+    function formatarValor(value) {
+        if (!value || isNaN(value)) return '0,00';
+        return Number(value).toFixed(2).replace('.', ',');
     }
     
-    // Função principal de cálculo
+    // Função principal de cálculo do preço baseado em markup
     function calcularPreco() {
-        const custo = parseNumber(precoCustoInput.value);
-        const markup = parseNumber(markupInput.value);
+        const custo = parseValor(precoCustoInput.value);
+        const markup = parseValor(markupInput.value);
         
-        console.log('💰 Calculando - Custo:', custo, 'Markup:', markup);
+        console.log('💰 Calculando preço - Custo:', custo, 'Markup:', markup + '%');
         
-        if (custo > 0 && markup > 0) {
-            const venda = custo * (1 + markup / 100);
-            const margem = ((venda - custo) / custo) * 100;
+        if (custo > 0 && markup >= 0) {
+            // Preço de venda = Custo + (Custo * Markup/100)
+            const precoVenda = custo * (1 + markup / 100);
+            // Margem de lucro = ((Venda - Custo) / Custo) * 100
+            const margem = ((precoVenda - custo) / custo) * 100;
             
-            precoVendaInput.value = formatDisplay(venda);
-            margemLucroInput.value = formatDisplay(margem);
+            precoVendaInput.value = formatarValor(precoVenda);
+            margemLucroInput.value = formatarValor(margem);
             
-            console.log('✅ Resultado - Venda:', venda, 'Margem:', margem);
-            console.log('📝 Campos atualizados - Venda:', precoVendaInput.value, 'Margem:', margemLucroInput.value);
+            console.log('✅ Preço calculado:', precoVenda.toFixed(2), 'Margem:', margem.toFixed(2) + '%');
         } else {
-            console.log('⚠️ Valores insuficientes para cálculo');
+            console.log('⚠️ Valores insuficientes - Custo:', custo, 'Markup:', markup);
         }
     }
     
-    // Função para calcular markup reverso
+    // Função para calcular markup baseado no preço de venda
     function calcularMarkup() {
-        const custo = parseNumber(precoCustoInput.value);
-        const venda = parseNumber(precoVendaInput.value);
+        const custo = parseValor(precoCustoInput.value);
+        const venda = parseValor(precoVendaInput.value);
         
         console.log('🔄 Calculando markup reverso - Custo:', custo, 'Venda:', venda);
         
         if (custo > 0 && venda > 0) {
+            // Markup = ((Venda - Custo) / Custo) * 100
             const markup = ((venda - custo) / custo) * 100;
-            const margem = markup; // Markup e margem são iguais neste contexto
+            const margem = markup;
             
-            markupInput.value = formatDisplay(markup);
-            margemLucroInput.value = formatDisplay(margem);
+            markupInput.value = formatarValor(markup);
+            margemLucroInput.value = formatarValor(margem);
             
-            console.log('✅ Markup calculado:', markup);
+            console.log('✅ Markup calculado:', markup.toFixed(2) + '%');
         } else {
             console.log('⚠️ Valores insuficientes para calcular markup');
         }
@@ -613,8 +622,29 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleEstoque();
     if (nomeInput) nomeInput.focus();
     
+    // Calcular automaticamente se já houver valores ao carregar
+    setTimeout(() => {
+        const custo = parseValor(precoCustoInput.value);
+        const markup = parseValor(markupInput.value);
+        const venda = parseValor(precoVendaInput.value);
+        
+        console.log('🔄 Verificando valores iniciais:', { custo, markup, venda });
+        
+        // Se tem custo e markup, calcular venda
+        if (custo > 0 && markup > 0 && venda === 0) {
+            console.log('📊 Calculando automaticamente ao carregar...');
+            calcularPreco();
+        }
+        // Se tem custo e venda mas não tem markup, calcular markup
+        else if (custo > 0 && venda > 0 && markup === 0) {
+            console.log('📊 Calculando markup automaticamente ao carregar...');
+            calcularMarkup();
+        }
+    }, 100);
+    
     // Função global para teste
     window.calcularPreco = calcularPreco;
+    window.calcularMarkup = calcularMarkup;
     window.testarCalculo = function() {
         console.log('🧪 TESTE MANUAL INICIADO');
         console.log('📊 Valores atuais:');
