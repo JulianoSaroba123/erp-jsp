@@ -525,7 +525,7 @@
             <div class="value-highlight">
                 <i class="fas fa-dollar-sign fa-2x mb-2"></i>
                 <h5 class="mb-2">Valor Total</h5>
-                <div class="amount">R$ {{ "%.2f"|format(ordem.valor_total|float)|replace('.', ',') }}</div>
+                <div class="amount">R$ {{ "%.2f"|format(ordem.valor_total_calculado_novo|float)|replace('.', ',') }}</div>
                 <hr class="my-3 opacity-50">
                 <div class="d-flex justify-content-between mb-2">
                     <span><i class="fas fa-tools me-1"></i> Serviços:</span>
@@ -535,11 +535,10 @@
                     <span><i class="fas fa-box me-1"></i> Produtos:</span>
                     <strong>R$ {{ "%.2f"|format(ordem.valor_total_produtos|float)|replace('.', ',') }}</strong>
                 </div>
-                {% if ordem.desconto %}
+                {% if ordem.valor_desconto and ordem.valor_desconto > 0 %}
                 <div class="d-flex justify-content-between">
                     <span><i class="fas fa-percentage me-1"></i> Desconto:</span>
-                    {% set valor_desconto = (ordem.valor_total_produtos + ordem.valor_total_servicos) * (ordem.desconto or 0) / 100 %}
-                    <strong>- R$ {{ "%.2f"|format(valor_desconto|float)|replace('.', ',') }}</strong>
+                    <strong>- R$ {{ "%.2f"|format(ordem.valor_desconto|float)|replace('.', ',') }}</strong>
                 </div>
                 {% endif %}
             </div>
