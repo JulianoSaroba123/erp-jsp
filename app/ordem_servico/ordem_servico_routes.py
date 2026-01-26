@@ -940,10 +940,23 @@ def visualizar(id):
     Args:
         id: ID da ordem de serviço
     """
-    ordem = OrdemServico.get_by_id(id)
+    from sqlalchemy.orm import joinedload
+    
+    # Carregar OS com todos os relacionamentos necessários
+    ordem = OrdemServico.query.options(
+        joinedload(OrdemServico.servicos),
+        joinedload(OrdemServico.produtos_utilizados),
+        joinedload(OrdemServico.parcelas),
+        joinedload(OrdemServico.anexos)
+    ).filter_by(id=id, ativo=True).first()
+    
     if not ordem:
         flash('Ordem de serviço não encontrada!', 'error')
         return redirect(url_for('ordem_servico.listar'))
+    
+    # Debug: verificar se os itens foram carregados
+    print(f"📋 OS #{ordem.numero}: {len(ordem.servicos)} serviços, {len(ordem.produtos_utilizados)} produtos")
+    print(f"💰 Valores: Serviços={ordem.valor_total_servicos}, Produtos={ordem.valor_total_produtos}")
     
     return render_template('os/visualizar.html', ordem=ordem)
 
