@@ -622,8 +622,10 @@ def novo():
             
             print(f"🔍 DEBUG: Coletados {len(servicos_data)} serviços: {servicos_data}")
             
-            # Criar itens de serviço
+            # Criar itens de serviço E ACUMULAR TOTAL
             print("🔍 DEBUG: Criando itens de serviço...")
+            total_servicos_acumulado = Decimal('0.00')
+            
             for servico_data in servicos_data:
                 item = OrdemServicoItem(
                     ordem_servico_id=ordem.id,
@@ -633,6 +635,7 @@ def novo():
                     valor_unitario=Decimal(str(servico_data['valor_unitario']))
                 )
                 item.calcular_total()
+                total_servicos_acumulado += item.valor_total
                 db.session.add(item)
                 print(f"➕ Serviço adicionado: {item.descricao} - {item.quantidade} {item.tipo_servico} = R$ {item.valor_total}")
             
@@ -643,6 +646,9 @@ def novo():
             produtos_desc_custom = request.form.getlist('produto_descricao_custom[]')  # Para produtos personalizados novos
             produtos_qtd = request.form.getlist('produto_quantidade[]')
             produtos_valor = request.form.getlist('produto_valor[]')
+            
+            # ACUMULAR TOTAL DE PRODUTOS
+            total_produtos_acumulado = Decimal('0.00')
             
             # Determinar qual lista tem mais itens para processar
             max_produtos = max(len(produtos_id) if produtos_id else 0, 
@@ -682,15 +688,19 @@ def novo():
                         valor_unitario=Decimal(produtos_valor[i].replace(',', '.')) if i < len(produtos_valor) and produtos_valor[i] else 0
                     )
                     produto.calcular_total()
+                    total_produtos_acumulado += produto.valor_total
                     db.session.add(produto)
                     print(f"➕ Produto adicionado: {descricao} (ID: {produto_cadastrado_id}) - {produto.quantidade} x R$ {produto.valor_unitario} = R$ {produto.valor_total}")
             
             
-            # Recalcula valores principais considerando itens (DEPOIS que todos os itens foram criados)
-            # Garante consistência entre telas e PDF
-            ordem.valor_servico = ordem.valor_total_servicos
-            ordem.valor_pecas = ordem.valor_total_produtos
-            ordem.valor_total = ordem.valor_total_calculado_novo
+            # CALCULAR TOTAIS DIRETO DOS VALORES ACUMULADOS (tudo já é Decimal)
+            total_final = total_servicos_acumulado + total_produtos_acumulado - ordem.valor_desconto
+            
+            ordem.valor_servico = total_servicos_acumulado
+            ordem.valor_pecas = total_produtos_acumulado
+            ordem.valor_total = total_final
+            
+            print(f"✅ TOTAIS CALCULADOS: Serviços={ordem.valor_servico} + Produtos={ordem.valor_pecas} - Desconto={ordem.valor_desconto} = TOTAL={ordem.valor_total}")
             
             # NOTE: parcelas processing moved to after total calculation (see below)
 
@@ -886,37 +896,6 @@ def novo():
                                 valor=valor_final
                             )
                             db.session.add(parcela)
-
-            # Recalcula e atualiza valores antes de confirmar transação
-            # SOLUÇÃO ULTRA DEFINITIVA: String → Decimal (sem float no meio)
-            try:
-                servicos_items = ordem.servicos if ordem.servicos else []
-                servicos_total = sum(float(item.valor_total or 0) for item in servicos_items)
-            except Exception as e:
-                print(f"⚠️ Erro ao calcular serviços: {e}")
-                servicos_total = 0.0
-            
-            try:
-                produtos_items = ordem.produtos_utilizados if ordem.produtos_utilizados else []
-                produtos_total = sum(float(produto.valor_total or 0) for produto in produtos_items)
-            except Exception as e:
-                print(f"⚠️ Erro ao calcular produtos: {e}")
-                produtos_total = 0.0
-            
-            try:
-                desconto_valor = float(ordem.valor_desconto or 0)
-            except:
-                desconto_valor = 0.0
-            
-            # Calcular tudo em float primeiro
-            total_calculado = servicos_total + produtos_total - desconto_valor
-            
-            # AGORA sim, converter para Decimal usando string
-            ordem.valor_servico = Decimal(f"{servicos_total:.2f}")
-            ordem.valor_pecas = Decimal(f"{produtos_total:.2f}")
-            ordem.valor_total = Decimal(f"{total_calculado:.2f}")
-            
-            print(f"✅ Totais: Serviços R$ {ordem.valor_servico} | Produtos R$ {ordem.valor_pecas} | Total R$ {ordem.valor_total}")
 
             try:
                 print("🔄 DEBUG: Tentando fazer commit da ordem...")
