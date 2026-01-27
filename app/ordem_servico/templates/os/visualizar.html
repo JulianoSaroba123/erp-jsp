@@ -320,6 +320,92 @@
                 </div>
             </div>
 
+            <!-- Serviços Realizados -->
+            {% if ordem.servicos and ordem.servicos|length > 0 %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-tools text-primary me-2"></i>
+                        Serviços Realizados ({{ ordem.servicos|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th>Tipo</th>
+                                    <th class="text-end">Qtd</th>
+                                    <th class="text-end">Valor Unit.</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for servico in ordem.servicos %}
+                                <tr>
+                                    <td>{{ servico.descricao }}</td>
+                                    <td><span class="badge bg-primary">{{ servico.tipo_servico }}</span></td>
+                                    <td class="text-end">{{ "%.2f"|format(servico.quantidade|float)|replace('.', ',') }}</td>
+                                    <td class="text-end">R$ {{ "%.2f"|format(servico.valor_unitario|float)|replace('.', ',') }}</td>
+                                    <td class="text-end fw-bold">R$ {{ "%.2f"|format(servico.valor_total|float)|replace('.', ',') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-active">
+                                    <td colspan="4" class="text-end fw-bold">TOTAL SERVIÇOS:</td>
+                                    <td class="text-end fw-bold text-primary">R$ {{ "%.2f"|format(ordem.valor_total_servicos|float)|replace('.', ',') }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Produtos Utilizados -->
+            {% if ordem.produtos_utilizados and ordem.produtos_utilizados|length > 0 %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-box text-warning me-2"></i>
+                        Produtos Utilizados ({{ ordem.produtos_utilizados|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th class="text-end">Qtd</th>
+                                    <th class="text-end">Valor Unit.</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for produto in ordem.produtos_utilizados %}
+                                <tr>
+                                    <td>{{ produto.descricao }}</td>
+                                    <td class="text-end">{{ "%.2f"|format(produto.quantidade|float)|replace('.', ',') }}</td>
+                                    <td class="text-end">R$ {{ "%.2f"|format(produto.valor_unitario|float)|replace('.', ',') }}</td>
+                                    <td class="text-end fw-bold">R$ {{ "%.2f"|format(produto.valor_total|float)|replace('.', ',') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-active">
+                                    <td colspan="3" class="text-end fw-bold">TOTAL PRODUTOS:</td>
+                                    <td class="text-end fw-bold text-warning">R$ {{ "%.2f"|format(ordem.valor_total_produtos|float)|replace('.', ',') }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Controles de Execução -->
             {% if ordem.km_inicial or ordem.hora_inicial or ordem.prazo_garantia %}
             <div class="card info-card">
