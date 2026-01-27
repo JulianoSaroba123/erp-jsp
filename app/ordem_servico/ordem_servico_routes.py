@@ -623,7 +623,9 @@ def novo():
             print(f"🔍 DEBUG: Coletados {len(servicos_data)} serviços: {servicos_data}")
             
             # Criar itens de serviço E ACUMULAR TOTAL
-            print("🔍 DEBUG: Criando itens de serviço...")
+            print("="*80)
+            print("🚀 VERSÃO NOVA DO CÓDIGO RODANDO - ACUMULAÇÃO DECIMAL")
+            print("="*80)
             total_servicos_acumulado = Decimal('0.00')
             
             for servico_data in servicos_data:
@@ -700,7 +702,13 @@ def novo():
             ordem.valor_pecas = total_produtos_acumulado
             ordem.valor_total = total_final
             
-            print(f"✅ TOTAIS CALCULADOS: Serviços={ordem.valor_servico} + Produtos={ordem.valor_pecas} - Desconto={ordem.valor_desconto} = TOTAL={ordem.valor_total}")
+            print("="*80)
+            print(f"✅ TOTAIS CALCULADOS (DECIMAL PURO):")
+            print(f"   Serviços: {ordem.valor_servico} (tipo: {type(ordem.valor_servico)})")
+            print(f"   Produtos: {ordem.valor_pecas} (tipo: {type(ordem.valor_pecas)})")
+            print(f"   Desconto: {ordem.valor_desconto} (tipo: {type(ordem.valor_desconto)})")
+            print(f"   TOTAL: {ordem.valor_total} (tipo: {type(ordem.valor_total)})")
+            print("="*80)
             
             # NOTE: parcelas processing moved to after total calculation (see below)
 
