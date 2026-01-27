@@ -888,9 +888,15 @@ def novo():
                             db.session.add(parcela)
 
             # Recalcula e atualiza valores antes de confirmar transação
-            ordem.valor_servico = ordem.valor_total_servicos
-            ordem.valor_pecas = ordem.valor_total_produtos
-            ordem.valor_total = ordem.valor_total_calculado_novo
+            # IMPORTANTE: Garantir que todos sejam Decimal para evitar erro de tipos
+            servicos_total = Decimal(str(ordem.valor_total_servicos or 0))
+            produtos_total = Decimal(str(ordem.valor_total_produtos or 0))
+            desconto_valor = Decimal(str(ordem.valor_desconto or 0))
+            
+            ordem.valor_servico = servicos_total
+            ordem.valor_pecas = produtos_total
+            ordem.valor_total = servicos_total + produtos_total - desconto_valor
+            
             print(f"DEBUG: Totais calculados → Serviços: R$ {ordem.valor_servico} | Peças: R$ {ordem.valor_pecas} | Total: R$ {ordem.valor_total}")
 
             try:
