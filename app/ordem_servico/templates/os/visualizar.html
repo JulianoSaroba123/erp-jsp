@@ -254,18 +254,31 @@
                 <div class="card-header">
                     <h5 class="card-title mb-0 fw-bold">
                         <i class="fas fa-wrench text-warning me-2"></i>
-                        Equipamento e Diagnóstico
+                        Equipamento e Local
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
+                        {% if ordem.local %}
+                        <div class="col-md-12">
+                            <div class="stats-box">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-map-marker-alt me-3"></i>
+                                    <div>
+                                        <small class="text-muted d-block">Local</small>
+                                        <strong>{{ ordem.local }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
                         <div class="col-md-12">
                             <div class="stats-box">
                                 <div class="d-flex align-items-center">
                                     <i class="fas fa-cog me-3"></i>
                                     <div>
                                         <small class="text-muted d-block">Equipamento</small>
-                                        <strong>{{ ordem.equipamento if ordem.equipamento and ordem.equipamento != 'None' else 'Não informado' }}</strong>
+                                        <strong>{{ ordem.equipamento or 'Não informado' }}</strong>
                                     </div>
                                 </div>
                             </div>
@@ -276,7 +289,7 @@
                                     <i class="fas fa-tag me-3"></i>
                                     <div>
                                         <small class="text-muted d-block">Marca/Modelo</small>
-                                        <strong>{{ ordem.marca_modelo if ordem.marca_modelo and ordem.marca_modelo != 'None' else 'Não informado' }}</strong>
+                                        <strong>{{ ordem.marca_modelo or 'Não informado' }}</strong>
                                     </div>
                                 </div>
                             </div>
@@ -287,7 +300,7 @@
                                     <i class="fas fa-hashtag me-3"></i>
                                     <div>
                                         <small class="text-muted d-block">Número de Série</small>
-                                        <strong>{{ ordem.numero_serie if ordem.numero_serie and ordem.numero_serie != 'None' else 'Não informado' }}</strong>
+                                        <strong>{{ ordem.numero_serie or 'Não informado' }}</strong>
                                     </div>
                                 </div>
                             </div>
@@ -299,7 +312,7 @@
                         <h6 class="fw-bold mb-2">
                             <i class="fas fa-exclamation-circle me-2"></i>Defeito Relatado
                         </h6>
-                        <p class="mb-0 text-muted">{{ ordem.defeito_relatado if ordem.defeito_relatado and ordem.defeito_relatado != 'None' else 'Não informado' }}</p>
+                        <p class="mb-0" style="white-space: pre-wrap; color: #1f2937;">{{ ordem.defeito_relatado or 'Não informado' }}</p>
                     </div>
                     
                     <hr class="my-3">
@@ -307,7 +320,7 @@
                         <h6 class="fw-bold mb-2">
                             <i class="fas fa-stethoscope me-2"></i>Diagnóstico
                         </h6>
-                        <p class="mb-0 text-muted">{{ ordem.diagnostico if ordem.diagnostico and ordem.diagnostico != 'None' else 'Não informado' }}</p>
+                        <p class="mb-0" style="white-space: pre-wrap; color: #1f2937;">{{ ordem.diagnostico or 'Não informado' }}</p>
                     </div>
 
                     <hr class="my-3">
@@ -315,7 +328,7 @@
                         <h6 class="fw-bold mb-2">
                             <i class="fas fa-clipboard-check me-2"></i>Diagnóstico Técnico
                         </h6>
-                        <p class="mb-0 text-muted">{{ ordem.diagnostico_tecnico if ordem.diagnostico_tecnico and ordem.diagnostico_tecnico != 'None' else 'Não informado' }}</p>
+                        <p class="mb-0" style="white-space: pre-wrap; color: #1f2937;">{{ ordem.diagnostico_tecnico or 'Não informado' }}</p>
                     </div>
                 </div>
             </div>
@@ -628,40 +641,6 @@
                 </div>
                 {% endif %}
             </div>
-
-            <!-- Local e Equipamento -->
-            {% if ordem.local or ordem.equipamento %}
-            <div class="card info-card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-map-marker-alt text-danger me-2"></i>
-                        Local e Equipamento
-                    </h5>
-                </div>
-                <div class="card-body">
-                    {% if ordem.local %}
-                    <div class="stats-box mb-3">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-location-arrow me-3"></i>
-                            <div>
-                                <small class="text-muted d-block">Local</small>
-                                <strong>{{ ordem.local }}</strong>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                    <div class="stats-box">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-cog me-3"></i>
-                            <div>
-                                <small class="text-muted d-block">Equipamento</small>
-                                <strong>{{ ordem.equipamento if ordem.equipamento and ordem.equipamento != 'None' else 'Não informado' }}</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
 
             <!-- Condições de Pagamento -->
             {% if ordem.condicao_pagamento or ordem.forma_pagamento %}
