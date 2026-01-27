@@ -888,25 +888,35 @@ def novo():
                             db.session.add(parcela)
 
             # Recalcula e atualiza valores antes de confirmar transação
-            # SOLUÇÃO DEFINITIVA: Converter tudo para float para evitar conflito de tipos
+            # SOLUÇÃO ULTRA DEFINITIVA: String → Decimal (sem float no meio)
             try:
-                servicos_total = float(sum(item.valor_total or 0 for item in ordem.servicos))
-            except:
+                servicos_items = ordem.servicos if ordem.servicos else []
+                servicos_total = sum(float(item.valor_total or 0) for item in servicos_items)
+            except Exception as e:
+                print(f"⚠️ Erro ao calcular serviços: {e}")
                 servicos_total = 0.0
             
             try:
-                produtos_total = float(sum(produto.valor_total or 0 for produto in ordem.produtos_utilizados))
-            except:
+                produtos_items = ordem.produtos_utilizados if ordem.produtos_utilizados else []
+                produtos_total = sum(float(produto.valor_total or 0) for produto in produtos_items)
+            except Exception as e:
+                print(f"⚠️ Erro ao calcular produtos: {e}")
                 produtos_total = 0.0
             
-            desconto_valor = float(ordem.valor_desconto or 0)
+            try:
+                desconto_valor = float(ordem.valor_desconto or 0)
+            except:
+                desconto_valor = 0.0
             
-            # Converter tudo para Decimal antes de salvar no banco
-            ordem.valor_servico = Decimal(str(servicos_total))
-            ordem.valor_pecas = Decimal(str(produtos_total))
-            ordem.valor_total = Decimal(str(servicos_total + produtos_total - desconto_valor))
+            # Calcular tudo em float primeiro
+            total_calculado = servicos_total + produtos_total - desconto_valor
             
-            print(f"DEBUG: Totais calculados → Serviços: R$ {ordem.valor_servico} | Peças: R$ {ordem.valor_pecas} | Total: R$ {ordem.valor_total}")
+            # AGORA sim, converter para Decimal usando string
+            ordem.valor_servico = Decimal(f"{servicos_total:.2f}")
+            ordem.valor_pecas = Decimal(f"{produtos_total:.2f}")
+            ordem.valor_total = Decimal(f"{total_calculado:.2f}")
+            
+            print(f"✅ Totais: Serviços R$ {ordem.valor_servico} | Produtos R$ {ordem.valor_pecas} | Total R$ {ordem.valor_total}")
 
             try:
                 print("🔄 DEBUG: Tentando fazer commit da ordem...")
