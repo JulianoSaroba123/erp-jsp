@@ -213,12 +213,14 @@ class OrdemServico(BaseModel):
     @property
     def valor_total_servicos(self):
         """Calcula valor total dos serviços."""
-        return sum(item.valor_total for item in self.servicos)
+        total = sum(item.valor_total for item in self.servicos)
+        return Decimal(str(total)) if total else Decimal('0')
     
     @property
     def valor_total_produtos(self):
         """Calcula valor total dos produtos."""
-        return sum(produto.valor_total for produto in self.produtos_utilizados)
+        total = sum(produto.valor_total for produto in self.produtos_utilizados)
+        return Decimal(str(total)) if total else Decimal('0')
     
     @property
     def valor_total_calculado_novo(self):
@@ -226,7 +228,8 @@ class OrdemServico(BaseModel):
         servicos = Decimal(str(self.valor_total_servicos or 0))
         produtos = Decimal(str(self.valor_total_produtos or 0))
         desconto = Decimal(str(self.valor_desconto or 0))
-        return float(servicos + produtos - desconto)
+        total = servicos + produtos - desconto
+        return float(total)
     
     @property
     def status_cor(self):
