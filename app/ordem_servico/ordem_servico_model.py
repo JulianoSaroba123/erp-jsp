@@ -596,9 +596,9 @@ class OrdemServicoItem(BaseModel):
     
     def calcular_total(self):
         """Calcula valor total do item (quantidade × valor unitário)."""
-        quantidade = float(self.quantidade or 0)
-        valor_unit = float(self.valor_unitario or 0)
-        self.valor_total = float(Decimal(str(quantidade)) * Decimal(str(valor_unit)))
+        quantidade = Decimal(str(self.quantidade or 0))
+        valor_unit = Decimal(str(self.valor_unitario or 0))
+        self.valor_total = quantidade * valor_unit
     
     @property
     def tipo_servico_display(self):
@@ -642,7 +642,7 @@ class OrdemServicoProduto(BaseModel):
         if self.quantidade and self.valor_unitario:
             self.valor_total = Decimal(str(self.quantidade)) * Decimal(str(self.valor_unitario))
         else:
-            self.valor_total = 0.00
+            self.valor_total = Decimal('0.00')
 
 
 class OrdemServicoParcela(BaseModel):
