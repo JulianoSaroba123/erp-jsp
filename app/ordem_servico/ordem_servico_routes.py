@@ -894,35 +894,46 @@ def novo():
             print(f"DEBUG: Totais calculados → Serviços: R$ {ordem.valor_servico} | Peças: R$ {ordem.valor_pecas} | Total: R$ {ordem.valor_total}")
 
             try:
-                print("DEBUG: Tentando fazer commit da ordem...")
+                print("🔄 DEBUG: Tentando fazer commit da ordem...")
                 db.session.commit()
-                print(" DEBUG: Commit realizado com sucesso!")
+                print("✅ DEBUG: Commit realizado com sucesso!")
                 
                 # === INTEGRAÇÃO FINANCEIRA ===
                 try:
                     from app.financeiro.financeiro_utils import gerar_lancamento_ordem_servico
-                    print("DEBUG: Gerando lançamento financeiro...")
+                    print("🔄 DEBUG: Gerando lançamento financeiro...")
                     gerar_lancamento_ordem_servico(ordem)
-                    print(" DEBUG: Integração financeira concluída!")
+                    print("✅ DEBUG: Integração financeira concluída!")
                 except Exception as financeiro_error:
                     print(f"⚠️ DEBUG: Erro na integração financeira: {financeiro_error}")
                     # Não interrompe o fluxo - ordem já foi criada
                 
             except Exception as commit_error:
-                print(f" DEBUG: Erro no commit: {commit_error}")
+                print(f"❌ DEBUG: Erro no commit: {commit_error}")
+                print(f"❌ DEBUG: Tipo do erro: {type(commit_error)}")
+                import traceback
+                traceback.print_exc()
                 db.session.rollback()
-                raise
+                flash(f'Erro ao salvar ordem de serviço no banco de dados: {str(commit_error)}', 'error')
+                clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+                numero_os = OrdemServico.gerar_proximo_numero()
+                return render_template('os/form.html', ordem=None, clientes=clientes, numero_os=numero_os, today=date.today())
 
-            flash(f'Ordem de Serviço {ordem.numero} criada com sucesso! Você pode visualizar, editar ou gerar o PDF.', 'success')
+            flash(f'✅ Ordem de Serviço #{ordem.numero} criada com sucesso!', 'success')
+            print(f"✅ DEBUG: Redirecionando para visualizar OS #{ordem.numero} (ID: {ordem.id})")
             return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
             
         except Exception as e:
             # Em caso de erro, desfaz qualquer alteração pendente na sessão
+            print(f"❌ DEBUG: Erro geral ao criar OS: {str(e)}")
+            print(f"❌ DEBUG: Tipo do erro: {type(e)}")
+            import traceback
+            traceback.print_exc()
             try:
                 db.session.rollback()
             except Exception:
                 pass
-            flash(f'Erro ao criar ordem de serviço: {str(e)}', 'error')
+            flash(f'❌ Erro ao criar ordem de serviço: {str(e)}', 'error')
             clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
             numero_os = OrdemServico.gerar_proximo_numero()
             return render_template('os/form.html', ordem=None, clientes=clientes, numero_os=numero_os, today=date.today())
