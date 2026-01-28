@@ -336,6 +336,7 @@ class Proposta(BaseModel):
     def gerar_ordem_servico(self):
         """
         Gera uma nova Ordem de Serviço a partir desta proposta aprovada.
+        Transfere todos os dados incluindo condições de pagamento e parcelas.
         
         Returns:
             OrdemServico: Nova OS criada ou None se não foi possível
@@ -343,8 +344,28 @@ class Proposta(BaseModel):
         if not self.pode_converter:
             return None
         
-        from app.ordem_servico.ordem_servico_model import OrdemServico, OrdemServicoItem, OrdemServicoProduto
+        from app.ordem_servico.ordem_servico_model import OrdemServico, OrdemServicoItem, OrdemServicoProduto, OrdemServicoParcela
         from datetime import timedelta
+        
+        # Determinar condições de pagamento da proposta
+        condicao_pgto = 'a_vista'
+        num_parcelas = 1
+        valor_entrada = 0.0
+        data_primeira_parcela = None
+        
+        # Verificar se há parcelas cadastradas na proposta
+        if hasattr(self, 'parcelas') and self.parcelas:
+            parcelas_proposta = [p for p in self.parcelas if p.ativo]
+            if parcelas_proposta:
+                condicao_pgto = 'parcelado'
+                num_parcelas = len(parcelas_proposta)
+                # Verifica se a primeira parcela é entrada (número 0)
+                primeira = min(parcelas_proposta, key=lambda p: p.numero_parcela)
+                if primeira.numero_parcela == 0:
+                    valor_entrada = float(primeira.valor)
+                    data_primeira_parcela = primeira.data_vencimento
+                elif parcelas_proposta:
+                    data_primeira_parcela = parcelas_proposta[0].data_vencimento
         
         # Criar nova OS com todos os campos obrigatórios
         nova_os = OrdemServico(
@@ -374,10 +395,11 @@ class Proposta(BaseModel):
             # Garantia
             prazo_garantia=90,  # 90 dias padrão
             
-            # Condições de pagamento
-            condicao_pagamento='a_vista',
-            numero_parcelas=1,
-            valor_entrada=0.0,
+            # Condições de pagamento (transferidas da proposta)
+            condicao_pagamento=condicao_pgto,
+            numero_parcelas=num_parcelas,
+            valor_entrada=valor_entrada,
+            data_primeira_parcela=data_primeira_parcela,
             status_pagamento='pendente'
         )
         
@@ -411,6 +433,21 @@ class Proposta(BaseModel):
                     valor_total=servico.valor_total
                 )
                 db.session.add(os_servico)
+        
+        # Transferir parcelas da proposta para a OS
+        if hasattr(self, 'parcelas') and self.parcelas:
+            parcelas_proposta = [p for p in self.parcelas if p.ativo]
+            for parcela_prop in parcelas_proposta:
+                # Ignorar parcela de entrada (número 0) pois já foi considerada no valor_entrada
+                if parcela_prop.numero_parcela > 0:
+                    os_parcela = OrdemServicoParcela(
+                        ordem_servico_id=nova_os.id,
+                        numero_parcela=parcela_prop.numero_parcela,
+                        data_vencimento=parcela_prop.data_vencimento,
+                        valor=parcela_prop.valor,
+                        status='pendente'
+                    )
+                    db.session.add(os_parcela)
         
         # Atualizar valores da OS
         nova_os.atualizar_valores_automaticos()
