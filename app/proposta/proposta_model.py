@@ -356,12 +356,17 @@ class Proposta(BaseModel):
         # Verificar se há parcelas cadastradas na proposta
         if hasattr(self, 'parcelas') and self.parcelas:
             parcelas_proposta = [p for p in self.parcelas if p.ativo]
+            print(f"🔍 DEBUG: Proposta {self.codigo} tem {len(parcelas_proposta)} parcelas ativas")
+            
             if parcelas_proposta:
                 condicao_pgto = 'parcelado'
                 
                 # Separar entrada (parcela 0) das demais parcelas
                 parcelas_normais = [p for p in parcelas_proposta if p.numero_parcela > 0]
                 parcela_entrada = next((p for p in parcelas_proposta if p.numero_parcela == 0), None)
+                
+                print(f"   📊 Parcelas normais: {len(parcelas_normais)}")
+                print(f"   💰 Entrada: {'Sim' if parcela_entrada else 'Não'} - R$ {parcela_entrada.valor if parcela_entrada else 0}")
                 
                 # Número de parcelas = apenas as parcelas normais (sem contar entrada)
                 num_parcelas = len(parcelas_normais)
@@ -374,6 +379,11 @@ class Proposta(BaseModel):
                 if parcelas_normais:
                     primeira_parcela = min(parcelas_normais, key=lambda p: p.numero_parcela)
                     data_primeira_parcela = primeira_parcela.data_vencimento
+                    print(f"   📅 Data 1ª parcela: {data_primeira_parcela}")
+        else:
+            print(f"⚠️ DEBUG: Proposta {self.codigo} NÃO tem parcelas cadastradas!")
+        
+        print(f"✅ DEBUG: Condições finais - Pagamento: {condicao_pgto} | Parcelas: {num_parcelas} | Entrada: R$ {valor_entrada}")
         
         # Se não tem parcelas, é à vista
         if num_parcelas == 0:
