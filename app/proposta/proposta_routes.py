@@ -888,7 +888,12 @@ def gerar_os_de_proposta(id):
     try:
         logger.debug(f"Gerando OS a partir da proposta {id}...")
         
-        proposta = Proposta.query.get_or_404(id)
+        from sqlalchemy.orm import joinedload
+        
+        # Buscar proposta COM as parcelas (eager loading)
+        proposta = Proposta.query.options(
+            joinedload(Proposta.parcelas)
+        ).get_or_404(id)
         
         # Verificar se a proposta pode ser convertida
         if not proposta.pode_converter:
