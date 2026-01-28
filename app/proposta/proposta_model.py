@@ -468,7 +468,7 @@ class Proposta(BaseModel):
                         numero_parcela=parcela_prop.numero_parcela,
                         data_vencimento=parcela_prop.data_vencimento,
                         valor=parcela_prop.valor,
-                        status='pendente'
+                        pago=False  # Parcela inicia como não paga
                     )
                     db.session.add(os_parcela)
         
