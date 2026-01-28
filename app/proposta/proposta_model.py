@@ -349,7 +349,7 @@ class Proposta(BaseModel):
         
         # Determinar condições de pagamento da proposta
         condicao_pgto = 'a_vista'
-        num_parcelas = 1
+        num_parcelas = 0
         valor_entrada = 0.0
         data_primeira_parcela = None
         
@@ -358,14 +358,27 @@ class Proposta(BaseModel):
             parcelas_proposta = [p for p in self.parcelas if p.ativo]
             if parcelas_proposta:
                 condicao_pgto = 'parcelado'
-                num_parcelas = len(parcelas_proposta)
-                # Verifica se a primeira parcela é entrada (número 0)
-                primeira = min(parcelas_proposta, key=lambda p: p.numero_parcela)
-                if primeira.numero_parcela == 0:
-                    valor_entrada = float(primeira.valor)
-                    data_primeira_parcela = primeira.data_vencimento
-                elif parcelas_proposta:
-                    data_primeira_parcela = parcelas_proposta[0].data_vencimento
+                
+                # Separar entrada (parcela 0) das demais parcelas
+                parcelas_normais = [p for p in parcelas_proposta if p.numero_parcela > 0]
+                parcela_entrada = next((p for p in parcelas_proposta if p.numero_parcela == 0), None)
+                
+                # Número de parcelas = apenas as parcelas normais (sem contar entrada)
+                num_parcelas = len(parcelas_normais)
+                
+                # Se tem entrada, pegar valor
+                if parcela_entrada:
+                    valor_entrada = float(parcela_entrada.valor)
+                
+                # Data da primeira parcela (primeira parcela normal, não a entrada)
+                if parcelas_normais:
+                    primeira_parcela = min(parcelas_normais, key=lambda p: p.numero_parcela)
+                    data_primeira_parcela = primeira_parcela.data_vencimento
+        
+        # Se não tem parcelas, é à vista
+        if num_parcelas == 0:
+            condicao_pgto = 'a_vista'
+            num_parcelas = 1
         
         # Criar nova OS com todos os campos obrigatórios
         nova_os = OrdemServico(
