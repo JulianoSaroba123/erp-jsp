@@ -353,32 +353,35 @@ class Proposta(BaseModel):
         valor_entrada = 0.0
         data_primeira_parcela = None
         
-        # Verificar se há parcelas cadastradas na proposta
-        if hasattr(self, 'parcelas') and self.parcelas:
-            parcelas_proposta = [p for p in self.parcelas if p.ativo]
+        # Verificar se há parcelas cadastradas na proposta (usa parcelas_pagamento, não parcelas)
+        if hasattr(self, 'parcelas_pagamento') and self.parcelas_pagamento:
+            parcelas_proposta = [p for p in self.parcelas_pagamento if p.ativo]
             print(f"🔍 DEBUG: Proposta {self.codigo} tem {len(parcelas_proposta)} parcelas ativas")
             
             if parcelas_proposta:
                 condicao_pgto = 'parcelado'
                 
-                # IMPORTANTE: As parcelas da proposta começam em 1, não em 0
-                # Todas as parcelas são transferidas para a OS
-                num_parcelas = len(parcelas_proposta)
+                # Separar entrada (numero_parcela=0) das parcelas normais
+                parcela_entrada = next((p for p in parcelas_proposta if p.numero_parcela == 0), None)
+                parcelas_normais = [p for p in parcelas_proposta if p.numero_parcela > 0]
                 
-                # Pegar valor de entrada do campo da proposta (se houver)
-                if self.entrada and self.entrada > 0:
-                    # Entrada está em percentual, converter para valor
-                    valor_entrada = float(self.valor_total or 0) * (float(self.entrada) / 100)
-                    print(f"   💰 Entrada (da proposta): {self.entrada}% = R$ {valor_entrada}")
+                # Pegar valor de entrada
+                if parcela_entrada:
+                    valor_entrada = float(parcela_entrada.valor_parcela or 0)
+                    print(f"   💰 Entrada (parcela 0): R$ {valor_entrada}")
                 else:
                     valor_entrada = 0.0
                 
-                # Data da primeira parcela
-                primeira_parcela = min(parcelas_proposta, key=lambda p: p.numero_parcela)
-                data_primeira_parcela = primeira_parcela.data_vencimento
+                # Número de parcelas = apenas as parcelas normais (não conta entrada)
+                num_parcelas = len(parcelas_normais)
                 
-                print(f"   📊 Total de parcelas: {num_parcelas}")
-                print(f"   📅 Data 1ª parcela: {data_primeira_parcela}")
+                # Data da primeira parcela normal
+                if parcelas_normais:
+                    primeira_parcela = min(parcelas_normais, key=lambda p: p.numero_parcela)
+                    data_primeira_parcela = primeira_parcela.data_vencimento
+                    print(f"   📅 Data 1ª parcela: {data_primeira_parcela}")
+                
+                print(f"   📊 Parcelas normais: {num_parcelas}")
         else:
             print(f"⚠️ DEBUG: Proposta {self.codigo} NÃO tem parcelas cadastradas!")
         
@@ -456,21 +459,23 @@ class Proposta(BaseModel):
                 )
                 db.session.add(os_servico)
         
-        # Transferir parcelas da proposta para a OS
-        if hasattr(self, 'parcelas') and self.parcelas:
-            parcelas_proposta = [p for p in self.parcelas if p.ativo]
-            print(f"🔄 DEBUG: Transferindo {len(parcelas_proposta)} parcelas da proposta para OS")
+        # Transferir parcelas da proposta para a OS (apenas parcelas normais, não a entrada)
+        if hasattr(self, 'parcelas_pagamento') and self.parcelas_pagamento:
+            parcelas_proposta = [p for p in self.parcelas_pagamento if p.ativo]
+            # Filtrar apenas parcelas normais (numero_parcela > 0), entrada já foi transferida como valor_entrada
+            parcelas_normais = [p for p in parcelas_proposta if p.numero_parcela > 0]
+            print(f"🔄 DEBUG: Transferindo {len(parcelas_normais)} parcelas da proposta para OS (entrada não incluída)")
             
-            for parcela_prop in parcelas_proposta:
+            for parcela_prop in parcelas_normais:
                 os_parcela = OrdemServicoParcela(
                     ordem_servico_id=nova_os.id,
                     numero_parcela=parcela_prop.numero_parcela,
                     data_vencimento=parcela_prop.data_vencimento,
-                    valor=parcela_prop.valor,
+                    valor=parcela_prop.valor_parcela,  # Campo correto: valor_parcela
                     pago=False  # Parcela inicia como não paga
                 )
                 db.session.add(os_parcela)
-                print(f"   ✅ Parcela {parcela_prop.numero_parcela}: R$ {parcela_prop.valor} - Venc: {parcela_prop.data_vencimento}")
+                print(f"   ✅ Parcela {parcela_prop.numero_parcela}: R$ {parcela_prop.valor_parcela} - Venc: {parcela_prop.data_vencimento}")
         else:
             print(f"⚠️ DEBUG: Proposta não tem parcelas para transferir")
         
