@@ -361,25 +361,24 @@ class Proposta(BaseModel):
             if parcelas_proposta:
                 condicao_pgto = 'parcelado'
                 
-                # Separar entrada (parcela 0) das demais parcelas
-                parcelas_normais = [p for p in parcelas_proposta if p.numero_parcela > 0]
-                parcela_entrada = next((p for p in parcelas_proposta if p.numero_parcela == 0), None)
+                # IMPORTANTE: As parcelas da proposta começam em 1, não em 0
+                # Todas as parcelas são transferidas para a OS
+                num_parcelas = len(parcelas_proposta)
                 
-                print(f"   📊 Parcelas normais: {len(parcelas_normais)}")
-                print(f"   💰 Entrada: {'Sim' if parcela_entrada else 'Não'} - R$ {parcela_entrada.valor if parcela_entrada else 0}")
+                # Pegar valor de entrada do campo da proposta (se houver)
+                if self.entrada and self.entrada > 0:
+                    # Entrada está em percentual, converter para valor
+                    valor_entrada = float(self.valor_total or 0) * (float(self.entrada) / 100)
+                    print(f"   💰 Entrada (da proposta): {self.entrada}% = R$ {valor_entrada}")
+                else:
+                    valor_entrada = 0.0
                 
-                # Número de parcelas = apenas as parcelas normais (sem contar entrada)
-                num_parcelas = len(parcelas_normais)
+                # Data da primeira parcela
+                primeira_parcela = min(parcelas_proposta, key=lambda p: p.numero_parcela)
+                data_primeira_parcela = primeira_parcela.data_vencimento
                 
-                # Se tem entrada, pegar valor
-                if parcela_entrada:
-                    valor_entrada = float(parcela_entrada.valor)
-                
-                # Data da primeira parcela (primeira parcela normal, não a entrada)
-                if parcelas_normais:
-                    primeira_parcela = min(parcelas_normais, key=lambda p: p.numero_parcela)
-                    data_primeira_parcela = primeira_parcela.data_vencimento
-                    print(f"   📅 Data 1ª parcela: {data_primeira_parcela}")
+                print(f"   📊 Total de parcelas: {num_parcelas}")
+                print(f"   📅 Data 1ª parcela: {data_primeira_parcela}")
         else:
             print(f"⚠️ DEBUG: Proposta {self.codigo} NÃO tem parcelas cadastradas!")
         
@@ -460,17 +459,20 @@ class Proposta(BaseModel):
         # Transferir parcelas da proposta para a OS
         if hasattr(self, 'parcelas') and self.parcelas:
             parcelas_proposta = [p for p in self.parcelas if p.ativo]
+            print(f"🔄 DEBUG: Transferindo {len(parcelas_proposta)} parcelas da proposta para OS")
+            
             for parcela_prop in parcelas_proposta:
-                # Ignorar parcela de entrada (número 0) pois já foi considerada no valor_entrada
-                if parcela_prop.numero_parcela > 0:
-                    os_parcela = OrdemServicoParcela(
-                        ordem_servico_id=nova_os.id,
-                        numero_parcela=parcela_prop.numero_parcela,
-                        data_vencimento=parcela_prop.data_vencimento,
-                        valor=parcela_prop.valor,
-                        pago=False  # Parcela inicia como não paga
-                    )
-                    db.session.add(os_parcela)
+                os_parcela = OrdemServicoParcela(
+                    ordem_servico_id=nova_os.id,
+                    numero_parcela=parcela_prop.numero_parcela,
+                    data_vencimento=parcela_prop.data_vencimento,
+                    valor=parcela_prop.valor,
+                    pago=False  # Parcela inicia como não paga
+                )
+                db.session.add(os_parcela)
+                print(f"   ✅ Parcela {parcela_prop.numero_parcela}: R$ {parcela_prop.valor} - Venc: {parcela_prop.data_vencimento}")
+        else:
+            print(f"⚠️ DEBUG: Proposta não tem parcelas para transferir")
         
         # Atualizar valores da OS
         nova_os.atualizar_valores_automaticos()

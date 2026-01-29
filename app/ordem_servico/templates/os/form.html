@@ -462,6 +462,47 @@
                         <label class="form-label text-white">Descrição das Condições de Pagamento</label>
                         <textarea class="form-control bg-dark text-white border-secondary" name="descricao_pagamento" rows="2" placeholder="Descreva as condições específicas de pagamento">{{ ordem.descricao_pagamento if ordem else '' }}</textarea>
                     </div>
+                    
+                    <!-- Parcelas Existentes (somente visualização em edição) -->
+                    {% if ordem and ordem.parcelas and ordem.parcelas|length > 0 %}
+                    <div class="col-12 mt-3">
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading"><i class="fas fa-info-circle"></i> Parcelas Cadastradas ({{ ordem.parcelas|length }})</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-dark table-bordered mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Nº</th>
+                                            <th>Vencimento</th>
+                                            <th class="text-end">Valor</th>
+                                            <th class="text-center">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for parcela in ordem.parcelas %}
+                                        <tr>
+                                            <td><strong>#{{ parcela.numero_parcela }}</strong></td>
+                                            <td>{{ parcela.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                                            <td class="text-end">R$ {{ '{:,.2f}'.format(parcela.valor).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                                            <td class="text-center">
+                                                {% if parcela.pago %}
+                                                    <span class="badge bg-success">Paga</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning text-dark">Pendente</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                <i class="fas fa-exclamation-triangle"></i> 
+                                Para alterar as parcelas, ajuste os campos acima e salve. As parcelas serão recalculadas automaticamente.
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

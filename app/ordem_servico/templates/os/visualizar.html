@@ -684,6 +684,57 @@
             </div>
             {% endif %}
 
+            <!-- Parcelas do Pagamento -->
+            {% if ordem.parcelas and ordem.parcelas|length > 0 %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-calendar-alt text-warning me-2"></i>
+                        Parcelas ({{ ordem.parcelas|length }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Parcela</th>
+                                    <th>Vencimento</th>
+                                    <th class="text-end">Valor</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for parcela in ordem.parcelas %}
+                                <tr>
+                                    <td><strong>#{{ parcela.numero_parcela }}</strong></td>
+                                    <td>{{ parcela.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                                    <td class="text-end">R$ {{ '{:,.2f}'.format(parcela.valor).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                                    <td class="text-center">
+                                        {% if parcela.pago %}
+                                            <span class="badge bg-success"><i class="fas fa-check"></i> Paga</span>
+                                        {% elif parcela.data_vencimento < today %}
+                                            <span class="badge bg-danger"><i class="fas fa-exclamation-triangle"></i> Vencida</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Pendente</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-active">
+                                    <td colspan="2" class="text-end"><strong>TOTAL:</strong></td>
+                                    <td class="text-end"><strong>R$ {{ '{:,.2f}'.format(ordem.parcelas|sum(attribute='valor')|float).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong></td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Informações Adicionais -->
             {% if ordem.solicitante or ordem.tipo_servico %}
             <div class="card info-card">

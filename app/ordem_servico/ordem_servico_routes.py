@@ -981,7 +981,7 @@ def visualizar(id):
     print(f"📋 OS #{ordem.numero}: {len(ordem.servicos)} serviços, {len(ordem.produtos_utilizados)} produtos")
     print(f"💰 Valores: Serviços={ordem.valor_total_servicos}, Produtos={ordem.valor_total_produtos}")
     
-    return render_template('os/visualizar.html', ordem=ordem)
+    return render_template('os/visualizar.html', ordem=ordem, today=date.today())
 
 @ordem_servico_bp.route('/<int:id>/editar', methods=['GET', 'POST'])
 def editar(id):
