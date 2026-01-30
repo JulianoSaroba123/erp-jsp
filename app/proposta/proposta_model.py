@@ -460,8 +460,11 @@ class Proposta(BaseModel):
                 db.session.add(os_servico)
         
         # Transferir parcelas da proposta para a OS (apenas parcelas normais, não a entrada)
+        parcelas_criadas = 0
         if hasattr(self, 'parcelas_pagamento') and self.parcelas_pagamento:
             parcelas_proposta = [p for p in self.parcelas_pagamento if p.ativo]
+            print(f"📋 DEBUG: Proposta tem {len(parcelas_proposta)} parcelas ativas no total")
+            
             # Filtrar apenas parcelas normais (numero_parcela > 0), entrada já foi transferida como valor_entrada
             parcelas_normais = [p for p in parcelas_proposta if p.numero_parcela > 0]
             print(f"🔄 DEBUG: Transferindo {len(parcelas_normais)} parcelas da proposta para OS (entrada não incluída)")
@@ -476,15 +479,20 @@ class Proposta(BaseModel):
                     ativo=True  # Garantir que a parcela está ativa
                 )
                 db.session.add(os_parcela)
-                print(f"   ✅ Parcela {parcela_prop.numero_parcela}: R$ {parcela_prop.valor_parcela} - Venc: {parcela_prop.data_vencimento}")
+                parcelas_criadas += 1
+                print(f"   ✅ Parcela {parcela_prop.numero_parcela}: R$ {parcela_prop.valor_parcela} - Venc: {parcela_prop.data_vencimento} - Ativo: True")
         else:
-            print(f"⚠️ DEBUG: Proposta não tem parcelas para transferir")
+            print(f"⚠️ DEBUG: Proposta NÃO tem parcelas_pagamento para transferir")
+        
+        print(f"💾 DEBUG: Total de {parcelas_criadas} parcelas adicionadas à sessão")
         
         # Atualizar valores da OS
         nova_os.atualizar_valores_automaticos()
         
         # Commit de tudo
+        print(f"💾 DEBUG: Fazendo commit da OS e {parcelas_criadas} parcelas...")
         db.session.commit()
+        print(f"✅ DEBUG: Commit concluído! OS #{nova_os.numero} criada com ID {nova_os.id}")
         
         return nova_os
 
