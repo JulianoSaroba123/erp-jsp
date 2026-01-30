@@ -657,7 +657,10 @@ class OrdemServicoParcela(BaseModel):
     
     # Relacionamento com ordem de serviço
     ordem_servico_id = db.Column(db.Integer, db.ForeignKey('ordem_servico.id'), nullable=False)
-    ordem_servico = db.relationship('OrdemServico', backref='parcelas')
+    ordem_servico = db.relationship('OrdemServico', 
+                                     backref=db.backref('parcelas', 
+                                                        lazy='select',
+                                                        order_by='OrdemServicoParcela.numero_parcela'))
     
     # Dados da parcela
     numero_parcela = db.Column(db.Integer, nullable=False)

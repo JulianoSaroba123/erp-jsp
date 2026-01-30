@@ -993,7 +993,12 @@ def editar(id):
     """
     print(f"DEBUG: Iniciando edição para ID {id}")
     
-    ordem = OrdemServico.get_by_id(id)
+    # Carregar OS com eager loading de parcelas
+    from sqlalchemy.orm import joinedload
+    ordem = OrdemServico.query.options(
+        joinedload(OrdemServico.parcelas)
+    ).filter_by(id=id, ativo=True).first()
+    
     if not ordem:
         print(f" DEBUG: Ordem com ID {id} não encontrada")
         flash('Ordem de serviço não encontrada!', 'error')
