@@ -1000,6 +1000,10 @@ def editar(id):
         return redirect(url_for('ordem_servico.listar'))
     
     print(f" DEBUG: Ordem encontrada: {ordem.numero}")
+    print(f"💳 DEBUG PARCELAS: {len(ordem.parcelas) if hasattr(ordem, 'parcelas') and ordem.parcelas else 0} parcelas carregadas")
+    if hasattr(ordem, 'parcelas') and ordem.parcelas:
+        for p in ordem.parcelas:
+            print(f"   Parcela {p.numero_parcela}: R$ {p.valor} - Venc: {p.data_vencimento}")
     
     if request.method == 'POST':
         try:

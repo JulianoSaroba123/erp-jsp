@@ -472,7 +472,8 @@ class Proposta(BaseModel):
                     numero_parcela=parcela_prop.numero_parcela,
                     data_vencimento=parcela_prop.data_vencimento,
                     valor=parcela_prop.valor_parcela,  # Campo correto: valor_parcela
-                    pago=False  # Parcela inicia como não paga
+                    pago=False,  # Parcela inicia como não paga
+                    ativo=True  # Garantir que a parcela está ativa
                 )
                 db.session.add(os_parcela)
                 print(f"   ✅ Parcela {parcela_prop.numero_parcela}: R$ {parcela_prop.valor_parcela} - Venc: {parcela_prop.data_vencimento}")
