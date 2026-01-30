@@ -51,7 +51,7 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Informações Principais -->
-        <div class="col-lg-8">
+        <div class="col-12">
             <div class="info-card">
                 <div class="section-header">
                     <h5 class="mb-0">
@@ -182,99 +182,6 @@
                 </div>
             </div>
             {% endif %}
-        </div>
-
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-            <!-- Cliente -->
-            <div class="info-card">
-                <div class="section-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-user me-2"></i>
-                        Cliente Proprietário
-                    </h5>
-                </div>
-
-                <div class="text-center py-3">
-                    <div class="mb-3">
-                        <i class="fas fa-user-circle fa-4x text-orange-500"></i>
-                    </div>
-                    <h6>{{ equipamento.cliente.nome }}</h6>
-                    {% if equipamento.cliente.cpf_cnpj %}
-                    <p class="text-muted mb-2">{{ equipamento.cliente.cpf_cnpj }}</p>
-                    {% endif %}
-                    <a href="{{ url_for('cliente.editar', id=equipamento.cliente_id) }}" 
-                       class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-eye me-1"></i>
-                        Ver Cliente
-                    </a>
-                </div>
-            </div>
-
-            <!-- Ações -->
-            <div class="info-card">
-                <div class="section-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-tools me-2"></i>
-                        Ações
-                    </h5>
-                </div>
-
-                <div class="d-grid gap-2 p-3">
-                    <a href="{{ url_for('equipamento.editar', id=equipamento.id) }}" 
-                       class="btn btn-primary">
-                        <i class="fas fa-edit me-2"></i>
-                        Editar Equipamento
-                    </a>
-                    
-                    <a href="{{ url_for('equipamento.listar') }}" 
-                       class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>
-                        Voltar para Lista
-                    </a>
-                    
-                    <hr>
-                    
-                    <button type="button" 
-                            class="btn btn-outline-danger"
-                            onclick="confirmarExclusao()">
-                        <i class="fas fa-trash me-2"></i>
-                        Excluir Equipamento
-                    </button>
-                </div>
-            </div>
-
-            <!-- Informações do Sistema -->
-            <div class="info-card">
-                <div class="section-header">
-                    <h5 class="mb-0">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Informações do Sistema
-                    </h5>
-                </div>
-
-                <div class="info-row">
-                    <div class="info-label">Cadastrado em:</div>
-                    <div class="info-value">
-                        {% if equipamento.criado_em %}
-                        {{ equipamento.criado_em.strftime('%d/%m/%Y %H:%M') }}
-                        {% else %}
-                        -
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="info-row">
-                    <div class="info-label">Última atualização:</div>
-                    <div class="info-value">
-                        {% if equipamento.atualizado_em %}
-                        {{ equipamento.atualizado_em.strftime('%d/%m/%Y %H:%M') }}
-                        {% else %}
-                        -
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
