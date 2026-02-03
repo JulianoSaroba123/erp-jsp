@@ -749,6 +749,14 @@ def register_blueprints(app):
     # Blueprint de status do sistema
     from app.status_routes import status_bp
     app.register_blueprint(status_bp)
+    
+    # Blueprint de diagnóstico do sistema
+    try:
+        from app.diagnostico_routes import diagnostico_bp
+        app.register_blueprint(diagnostico_bp)
+        print("[OK] Blueprint de diagnóstico registrado")
+    except Exception as e:
+        print(f"⚠️ Módulo diagnóstico não disponível: {e}")
 
 
 def register_auxiliary_routes(app):
