@@ -6,6 +6,7 @@ ERP JSP v3.0 - Routes de Cliente com APIs Completas
 Rotas para gerenciamento de clientes incluindo consultas automáticas.
 CRUD completo com validações e APIs de CNPJ/CEP.
 
+Versão: 3.0.1 - Corrigido tratamento de erros 404/500
 Autor: JSP Soluções
 Data: 2025
 """
