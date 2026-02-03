@@ -20,6 +20,22 @@ from app.cliente.cliente_model import Cliente
 # Cria o blueprint
 cliente_bp = Blueprint('cliente', __name__, template_folder='templates')
 
+# Handler de erros para o blueprint
+@cliente_bp.errorhandler(404)
+def cliente_nao_encontrado(e):
+    """Handler para erro 404 no módulo de clientes."""
+    flash('Cliente não encontrado.', 'error')
+    return redirect(url_for('cliente.listar'))
+
+@cliente_bp.errorhandler(500)
+def erro_interno_cliente(e):
+    """Handler para erro 500 no módulo de clientes."""
+    import traceback
+    print(f"❌ Erro 500 no módulo cliente:")
+    print(traceback.format_exc())
+    flash(f'Erro interno ao processar cliente: {str(e)}', 'error')
+    return redirect(url_for('cliente.listar'))
+
 @cliente_bp.route('/')
 @cliente_bp.route('/listar')
 def listar():
@@ -225,7 +241,11 @@ def novo():
 @cliente_bp.route('/<int:id>/editar', methods=['GET', 'POST'])
 def editar(id):
     """Edita um cliente existente."""
-    cliente = Cliente.query.get_or_404(id)
+    cliente = Cliente.query.filter_by(id=id).first()
+    
+    if not cliente:
+        flash(f'Cliente #{id} não encontrado.', 'error')
+        return redirect(url_for('cliente.listar'))
     
     if request.method == 'POST':
         try:
@@ -348,13 +368,22 @@ def editar(id):
 @cliente_bp.route('/<int:id>')
 def visualizar(id):
     """Visualiza um cliente específico."""
-    cliente = Cliente.query.get_or_404(id)
+    cliente = Cliente.query.filter_by(id=id, ativo=True).first()
+    
+    if not cliente:
+        flash(f'Cliente #{id} não encontrado ou foi excluído.', 'error')
+        return redirect(url_for('cliente.listar'))
+    
     return render_template('cliente/visualizar.html', cliente=cliente)
 
 @cliente_bp.route('/<int:id>/excluir', methods=['GET', 'POST'])
 def excluir(id):
     """Exclui (desativa) um cliente."""
-    cliente = Cliente.query.get_or_404(id)
+    cliente = Cliente.query.filter_by(id=id, ativo=True).first()
+    
+    if not cliente:
+        flash(f'Cliente #{id} não encontrado ou já foi excluído.', 'error')
+        return redirect(url_for('cliente.listar'))
     
     if request.method == 'GET':
         # Mostrar página de confirmação
