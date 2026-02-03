@@ -757,6 +757,14 @@ def register_blueprints(app):
         print("[OK] Blueprint de diagnóstico registrado")
     except Exception as e:
         print(f"⚠️ Módulo diagnóstico não disponível: {e}")
+    
+    # Blueprint de debug (apenas para desenvolvimento/troubleshooting)
+    try:
+        from app.debug_routes import debug_bp
+        app.register_blueprint(debug_bp)
+        print("[OK] Blueprint de debug registrado")
+    except Exception as e:
+        print(f"⚠️ Módulo debug não disponível: {e}")
 
 
 def register_auxiliary_routes(app):

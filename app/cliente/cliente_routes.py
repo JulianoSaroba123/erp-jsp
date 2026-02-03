@@ -11,7 +11,7 @@ Autor: JSP Soluções
 Data: 2025
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort
 import requests
 import re
 from datetime import datetime
@@ -244,7 +244,7 @@ def editar(id):
     """Edita um cliente existente."""
     cliente = Cliente.query.filter_by(id=id).first()
     
-    if not cliente:
+    if cliente is None:
         flash(f'Cliente #{id} não encontrado.', 'error')
         return redirect(url_for('cliente.listar'))
     
@@ -371,7 +371,7 @@ def visualizar(id):
     """Visualiza um cliente específico."""
     cliente = Cliente.query.filter_by(id=id, ativo=True).first()
     
-    if not cliente:
+    if cliente is None:
         flash(f'Cliente #{id} não encontrado ou foi excluído.', 'error')
         return redirect(url_for('cliente.listar'))
     
@@ -382,7 +382,7 @@ def excluir(id):
     """Exclui (desativa) um cliente."""
     cliente = Cliente.query.filter_by(id=id, ativo=True).first()
     
-    if not cliente:
+    if cliente is None:
         flash(f'Cliente #{id} não encontrado ou já foi excluído.', 'error')
         return redirect(url_for('cliente.listar'))
     
