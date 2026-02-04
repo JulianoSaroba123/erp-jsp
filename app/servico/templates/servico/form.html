@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if servico.id else 'Novo' }} Serviço - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('servico.listar') }}">Serviços</a></li>
+        <li class="breadcrumb-item active">{{ 'Editar' if servico.id else 'Novo' }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">
+                    <i class="fas fa-{{ 'edit' if servico.id else 'plus' }} me-2"></i>
+                    {{ 'Editar' if servico.id else 'Novo' }} Serviço
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="formServico">
+                    <!-- Dados Principais -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Dados Principais
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Código <span class="text-danger">*</span></label>
+                            <input type="text" name="codigo" class="form-control" 
+                                   value="{{ servico.codigo or '' }}" required>
+                            <small class="text-muted">Ex: SRV001</small>
+                        </div>
+                        
+                        <div class="col-md-9">
+                            <label class="form-label">Nome do Serviço <span class="text-danger">*</span></label>
+                            <input type="text" name="nome" class="form-control" 
+                                   value="{{ servico.nome or '' }}" required
+                                   placeholder="Ex: Instalação Elétrica Residencial">
+                        </div>
+                        
+                        <div class="col-12 mt-3">
+                            <label class="form-label">Descrição</label>
+                            <textarea name="descricao" class="form-control" rows="3" 
+                                      placeholder="Descrição detalhada do serviço...">{{ servico.descricao or '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Categoria e Tipo -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-tags me-2"></i>
+                                Categoria e Tipo de Cobrança
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Categoria</label>
+                            <select name="categoria" class="form-select">
+                                <option value="instalacao" {% if servico.categoria == 'instalacao' %}selected{% endif %}>Instalação</option>
+                                <option value="manutencao" {% if servico.categoria == 'manutencao' %}selected{% endif %}>Manutenção</option>
+                                <option value="reparo" {% if servico.categoria == 'reparo' %}selected{% endif %}>Reparo</option>
+                                <option value="consultoria" {% if servico.categoria == 'consultoria' %}selected{% endif %}>Consultoria</option>
+                                <option value="projeto" {% if servico.categoria == 'projeto' %}selected{% endif %}>Projeto</option>
+                                <option value="vistoria" {% if servico.categoria == 'vistoria' %}selected{% endif %}>Vistoria</option>
+                                <option value="treinamento" {% if servico.categoria == 'treinamento' %}selected{% endif %}>Treinamento</option>
+                                <option value="outros" {% if servico.categoria == 'outros' or not servico.categoria %}selected{% endif %}>Outros</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Tipo de Cobrança <span class="text-danger">*</span></label>
+                            <select name="tipo_cobranca" class="form-select" required>
+                                <option value="hora" {% if servico.tipo_cobranca == 'hora' %}selected{% endif %}>Por Hora</option>
+                                <option value="dia" {% if servico.tipo_cobranca == 'dia' %}selected{% endif %}>Por Dia</option>
+                                <option value="servico" {% if servico.tipo_cobranca == 'servico' or not servico.tipo_cobranca %}selected{% endif %}>Serviço Fechado</option>
+                                <option value="km" {% if servico.tipo_cobranca == 'km' %}selected{% endif %}>Por Quilômetro</option>
+                                <option value="item" {% if servico.tipo_cobranca == 'item' %}selected{% endif %}>Por Item/Unidade</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Valores -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-dollar-sign me-2"></i>
+                                Valores e Tempo
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Valor Base <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" name="valor_base" class="form-control" 
+                                       value="{{ servico.valor_base or '0.00' }}" 
+                                       step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Valor Mínimo (opcional)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" name="valor_minimo" class="form-control" 
+                                       value="{{ servico.valor_minimo or '' }}" 
+                                       step="0.01" min="0">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mt-3">
+                            <label class="form-label">Tempo Estimado (minutos)</label>
+                            <input type="number" name="tempo_estimado" class="form-control" 
+                                   value="{{ servico.tempo_estimado or '' }}" min="0">
+                        </div>
+                        
+                        <div class="col-md-4 mt-3">
+                            <label class="form-label">Tempo Mín. (minutos)</label>
+                            <input type="number" name="tempo_estimado_min" class="form-control" 
+                                   value="{{ servico.tempo_estimado_min or '' }}" min="0">
+                        </div>
+                        
+                        <div class="col-md-4 mt-3">
+                            <label class="form-label">Tempo Máx. (minutos)</label>
+                            <input type="number" name="tempo_estimado_max" class="form-control" 
+                                   value="{{ servico.tempo_estimado_max or '' }}" min="0">
+                        </div>
+                        
+                        <div class="col-md-12 mt-3">
+                            <label class="form-label">Prazo de Garantia (dias)</label>
+                            <input type="number" name="prazo_garantia" class="form-control" 
+                                   value="{{ servico.prazo_garantia or '0' }}" min="0">
+                        </div>
+                    </div>
+
+                    <!-- Configurações -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-cogs me-2"></i>
+                                Configurações
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="disponivel_app" 
+                                       {% if servico.disponivel_app or not servico.id %}checked{% endif %}>
+                                <label class="form-check-label">Disponível para Agendamento</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="requer_agendamento" 
+                                       {% if servico.requer_agendamento %}checked{% endif %}>
+                                <label class="form-check-label">Requer Agendamento Prévio</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="destaque" 
+                                       {% if servico.destaque %}checked{% endif %}>
+                                <label class="form-check-label">Serviço em Destaque</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Observações -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary border-bottom pb-2 mb-3">
+                                <i class="fas fa-sticky-note me-2"></i>
+                                Informações Adicionais
+                            </h6>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Materiais Necessários</label>
+                            <textarea name="materiais_necessarios" class="form-control" rows="2" 
+                                      placeholder="Liste os materiais que geralmente são necessários...">{{ servico.materiais_necessarios or '' }}</textarea>
+                        </div>
+                        
+                        <div class="col-12 mt-3">
+                            <label class="form-label">Instruções de Execução</label>
+                            <textarea name="instrucoes_execucao" class="form-control" rows="3" 
+                                      placeholder="Instruções para o técnico executar o serviço...">{{ servico.instrucoes_execucao or '' }}</textarea>
+                        </div>
+                        
+                        <div class="col-12 mt-3">
+                            <label class="form-label">Observações Gerais</label>
+                            <textarea name="observacoes" class="form-control" rows="2" 
+                                      placeholder="Observações adicionais...">{{ servico.observacoes or '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('servico.listar') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Voltar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>
+                            Salvar Serviço
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
