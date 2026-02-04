@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmar Exclusão - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('servico.listar') }}">Serviços</a></li>
+        <li class="breadcrumb-item active">Confirmar Exclusão</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mx-auto">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirmar Exclusão
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Tem certeza que deseja excluir este serviço?
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label text-muted">Código</label>
+                    <div class="fw-bold"><code>{{ servico.codigo }}</code></div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label text-muted">Nome</label>
+                    <div class="fw-bold">{{ servico.nome }}</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label text-muted">Categoria</label>
+                    <div>
+                        <span class="badge bg-secondary">{{ servico.categoria_display }}</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label text-muted">Valor Base</label>
+                    <div class="fw-bold text-success">{{ servico.valor_base_formatado }}</div>
+                </div>
+                
+                <hr>
+                
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <strong>Atenção:</strong> Esta ação não pode ser desfeita. 
+                    O serviço será marcado como inativo mas permanecerá no banco de dados.
+                </div>
+            </div>
+            <div class="card-footer">
+                <form method="POST" class="d-flex justify-content-between">
+                    <a href="{{ url_for('servico.listar') }}" class="btn btn-secondary">
+                        <i class="fas fa-times me-2"></i>
+                        Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>
+                        Confirmar Exclusão
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

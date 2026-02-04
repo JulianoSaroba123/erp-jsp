@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}{{ servico.nome }} - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('servico.listar') }}">Serviços</a></li>
+        <li class="breadcrumb-item active">{{ servico.codigo }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-tools me-2"></i>
+                    {{ servico.nome }}
+                    {% if servico.destaque %}
+                    <span class="badge bg-warning ms-2">
+                        <i class="fas fa-star"></i> Destaque
+                    </span>
+                    {% endif %}
+                </h4>
+                <div class="btn-group">
+                    <a href="{{ url_for('servico.editar', id=servico.id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar
+                    </a>
+                    <a href="{{ url_for('servico.excluir', id=servico.id) }}" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>
+                        Excluir
+                    </a>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                <!-- Dados Principais -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Dados Principais
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Código</label>
+                            <div class="fw-bold"><code>{{ servico.codigo }}</code></div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Categoria</label>
+                            <div>
+                                <span class="badge bg-secondary">{{ servico.categoria_display }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if servico.descricao %}
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Descrição</label>
+                            <div>{{ servico.descricao }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Valores e Cobrança -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-dollar-sign me-2"></i>
+                            Valores e Cobrança
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Tipo de Cobrança</label>
+                            <div class="fw-bold">{{ servico.tipo_cobranca_display }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Valor Base</label>
+                            <div class="fw-bold text-success h5 mb-0">{{ servico.valor_base_formatado }}</div>
+                        </div>
+                    </div>
+                    
+                    {% if servico.valor_minimo %}
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Valor Mínimo</label>
+                            <div>R$ {{ "%.2f"|format(servico.valor_minimo) }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Tempo e Garantia -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-clock me-2"></i>
+                            Tempo e Garantia
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Tempo Estimado</label>
+                            <div>
+                                {% if servico.tempo_estimado_min and servico.tempo_estimado_max %}
+                                    {{ servico.tempo_estimado_range }}
+                                {% else %}
+                                    {{ servico.tempo_estimado_formatado }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Prazo de Garantia</label>
+                            <div>
+                                {% if servico.prazo_garantia > 0 %}
+                                    {{ servico.prazo_garantia }} dias
+                                {% else %}
+                                    <span class="text-muted">Sem garantia</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configurações -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-cogs me-2"></i>
+                            Configurações
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Disponível para Agendamento</label>
+                            <div>
+                                {% if servico.disponivel_app %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> Sim
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-times"></i> Não
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Requer Agendamento Prévio</label>
+                            <div>
+                                {% if servico.requer_agendamento %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-calendar"></i> Sim
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Não</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Serviço em Destaque</label>
+                            <div>
+                                {% if servico.destaque %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-star"></i> Sim
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Não</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informações Adicionais -->
+                {% if servico.materiais_necessarios or servico.instrucoes_execucao or servico.observacoes %}
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-sticky-note me-2"></i>
+                            Informações Adicionais
+                        </h6>
+                    </div>
+                    
+                    {% if servico.materiais_necessarios %}
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Materiais Necessários</label>
+                            <div class="alert alert-info mb-0">
+                                {{ servico.materiais_necessarios }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if servico.instrucoes_execucao %}
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Instruções de Execução</label>
+                            <div class="alert alert-warning mb-0">
+                                {{ servico.instrucoes_execucao }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if servico.observacoes %}
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Observações Gerais</label>
+                            <div>{{ servico.observacoes }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <!-- Auditoria -->
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-history me-2"></i>
+                            Informações de Auditoria
+                        </h6>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Criado em</label>
+                            <div>
+                                <small>{{ servico.criado_em.strftime('%d/%m/%Y às %H:%M') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Atualizado em</label>
+                            <div>
+                                <small>{{ servico.atualizado_em.strftime('%d/%m/%Y às %H:%M') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('servico.listar') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Voltar
+                    </a>
+                    <div>
+                        <a href="{{ url_for('servico.editar', id=servico.id) }}" class="btn btn-warning me-2">
+                            <i class="fas fa-edit me-2"></i>
+                            Editar
+                        </a>
+                        <a href="{{ url_for('servico.excluir', id=servico.id) }}" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>
+                            Excluir
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
