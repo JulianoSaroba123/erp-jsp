@@ -215,7 +215,7 @@ def dashboard():
     # Serviços em destaque
     destaques = Servico.listar_destaques()
     
-    # Últimos serviços criados
+    # Últimos serviços criados (usando criado_em que é o campo real)
     recentes = Servico.query.filter_by(ativo=True).order_by(Servico.criado_em.desc()).limit(5).all()
     
     return render_template('servico/dashboard.html', 

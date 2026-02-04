@@ -83,7 +83,18 @@ class Servico(BaseModel):
     destaque = db.Column(db.Boolean, default=False)  # Serviço em destaque
     
     # Meta campos herdados de BaseModel:
-    # id, data_criacao, data_atualizacao, ativo, usuario_criacao, usuario_atualizacao
+    # id, criado_em, atualizado_em, ativo
+    
+    # Properties para compatibilidade
+    @property
+    def data_criacao(self):
+        """Alias para criado_em (compatibilidade)."""
+        return self.criado_em
+    
+    @property
+    def data_atualizacao(self):
+        """Alias para atualizado_em (compatibilidade)."""
+        return self.atualizado_em
     
     def __repr__(self):
         return f'<Servico {self.codigo}: {self.nome}>'
