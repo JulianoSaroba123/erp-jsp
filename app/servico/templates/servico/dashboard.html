@@ -14,191 +14,295 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>
-        <i class="fas fa-tools me-2"></i>
+        <i class="fas fa-tools me-2 text-primary"></i>
         Dashboard de Serviços
     </h2>
-    <a href="{{ url_for('servico.novo') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>
-        Novo Serviço
-    </a>
+    <div>
+        <a href="{{ url_for('servico.listar') }}" class="btn btn-outline-primary me-2">
+            <i class="fas fa-list me-2"></i>
+            Ver Todos
+        </a>
+        <a href="{{ url_for('servico.novo') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>
+            Novo Serviço
+        </a>
+    </div>
 </div>
 
 <!-- Estatísticas -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white">
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-primary h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="card-title mb-0">Total de Serviços</h6>
-                        <h2 class="mb-0">{{ stats.total }}</h2>
+                        <p class="text-muted mb-1 small text-uppercase">Total de Serviços</p>
+                        <h2 class="mb-0 fw-bold text-primary">{{ stats.total }}</h2>
+                        <small class="text-muted">
+                            <i class="fas fa-wrench me-1"></i>
+                            Cadastrados no sistema
+                        </small>
                     </div>
-                    <i class="fas fa-tools fa-3x opacity-50"></i>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="fas fa-tools fa-2x text-primary"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white">
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-success h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="card-title mb-0">Disponíveis</h6>
-                        <h2 class="mb-0">{{ stats.disponiveis }}</h2>
+                        <p class="text-muted mb-1 small text-uppercase">Disponíveis</p>
+                        <h2 class="mb-0 fw-bold text-success">{{ stats.disponiveis }}</h2>
+                        <small class="text-muted">
+                            <i class="fas fa-check-circle me-1"></i>
+                            Para agendamento
+                        </small>
                     </div>
-                    <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="fas fa-calendar-check fa-2x text-success"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-white">
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-warning h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="card-title mb-0">Em Destaque</h6>
-                        <h2 class="mb-0">{{ stats.destaques }}</h2>
+                        <p class="text-muted mb-1 small text-uppercase">Em Destaque</p>
+                        <h2 class="mb-0 fw-bold text-warning">{{ stats.destaques }}</h2>
+                        <small class="text-muted">
+                            <i class="fas fa-star me-1"></i>
+                            Serviços principais
+                        </small>
                     </div>
-                    <i class="fas fa-star fa-3x opacity-50"></i>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded">
+                        <i class="fas fa-award fa-2x text-warning"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white">
+    
+    <div class="col-xl-3 col-md-6">
+        <div class="card border-info h-100">
             <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <h6 class="card-title mb-0">Categorias</h6>
-                        <h2 class="mb-0">{{ stats.por_categoria|length }}</h2>
+                        <p class="text-muted mb-1 small text-uppercase">Categorias</p>
+                        <h2 class="mb-0 fw-bold text-info">{{ stats.por_categoria|length }}</h2>
+                        <small class="text-muted">
+                            <i class="fas fa-tags me-1"></i>
+                            Tipos diferentes
+                        </small>
                     </div>
-                    <i class="fas fa-tags fa-3x opacity-50"></i>
+                    <div class="bg-info bg-opacity-10 p-3 rounded">
+                        <i class="fas fa-layer-group fa-2x text-info"></i>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
+<div class="row g-3">
     <!-- Serviços em Destaque -->
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">
+    <div class="col-lg-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-warning bg-opacity-10 border-warning">
                 <h5 class="mb-0">
-                    <i class="fas fa-star me-2"></i>
+                    <i class="fas fa-star text-warning me-2"></i>
                     Serviços em Destaque
                 </h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 {% if destaques %}
                 <div class="list-group list-group-flush">
                     {% for servico in destaques %}
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="mb-1">
-                                    <code>{{ servico.codigo }}</code> {{ servico.nome }}
-                                </h6>
-                                <small class="text-muted">{{ servico.categoria_display }}</small>
+                    <a href="{{ url_for('servico.visualizar', id=servico.id) }}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-dark me-2">{{ servico.codigo }}</span>
+                                    <h6 class="mb-0">{{ servico.nome }}</h6>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-tag me-1"></i>
+                                        {{ servico.categoria_display }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ servico.tempo_estimado_formatado }}
+                                    </small>
+                                </div>
                             </div>
-                            <div class="text-end">
-                                <strong>{{ servico.valor_base_formatado }}</strong>
-                                <br>
+                            <div class="text-end ms-3">
+                                <div class="fw-bold text-success fs-5">{{ servico.valor_base_formatado }}</div>
                                 <small class="text-muted">{{ servico.tipo_cobranca_display }}</small>
                             </div>
                         </div>
-                    </div>
+                    </a>
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="text-center py-4 text-muted">
-                    <i class="fas fa-star fa-2x mb-2"></i>
-                    <p>Nenhum serviço em destaque.</p>
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-star fa-3x mb-3 opacity-25"></i>
+                    <p class="mb-2">Nenhum serviço em destaque.</p>
+                    <small>Marque serviços importantes como destaque para aparecerem aqui.</small>
                 </div>
                 {% endif %}
             </div>
-            <div class="card-footer">
-                <a href="{{ url_for('servico.listar') }}" class="btn btn-sm btn-outline-primary">
-                    Ver Todos os Serviços
+            {% if destaques %}
+            <div class="card-footer bg-light">
+                <a href="{{ url_for('servico.listar') }}?destaque=1" class="btn btn-sm btn-outline-warning">
+                    <i class="fas fa-arrow-right me-1"></i>
+                    Ver Todos os Destaques
                 </a>
             </div>
+            {% endif %}
         </div>
     </div>
 
     <!-- Últimos Serviços Criados -->
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">
+    <div class="col-lg-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-header bg-primary bg-opacity-10 border-primary">
                 <h5 class="mb-0">
-                    <i class="fas fa-clock me-2"></i>
+                    <i class="fas fa-clock text-primary me-2"></i>
                     Últimos Serviços Criados
                 </h5>
             </div>
-            <div class="card-body">
+            <div class="card-body p-0">
                 {% if recentes %}
                 <div class="list-group list-group-flush">
                     {% for servico in recentes %}
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="mb-1">
-                                    <code>{{ servico.codigo }}</code> {{ servico.nome }}
-                                </h6>
+                    <a href="{{ url_for('servico.visualizar', id=servico.id) }}" 
+                       class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-dark me-2">{{ servico.codigo }}</span>
+                                    <h6 class="mb-0">{{ servico.nome }}</h6>
+                                    {% if servico.destaque %}
+                                    <span class="badge bg-warning ms-2">
+                                        <i class="fas fa-star"></i>
+                                    </span>
+                                    {% endif %}
+                                </div>
                                 <small class="text-muted">
-                                    Criado em {{ servico.criado_em.strftime('%d/%m/%Y') }}
+                                    <i class="fas fa-calendar me-1"></i>
+                                    Criado em {{ servico.criado_em.strftime('%d/%m/%Y às %H:%M') }}
                                 </small>
                             </div>
-                            <a href="{{ url_for('servico.editar', id=servico.id) }}" 
-                               class="btn btn-sm btn-outline-warning">
-                                <i class="fas fa-edit"></i>
-                            </a>
+                            <div class="ms-3">
+                                <a href="{{ url_for('servico.editar', id=servico.id) }}" 
+                                   class="btn btn-sm btn-outline-warning"
+                                   onclick="event.stopPropagation();">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>
                         </div>
-                    </div>
+                    </a>
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="text-center py-4 text-muted">
-                    <i class="fas fa-inbox fa-2x mb-2"></i>
-                    <p>Nenhum serviço cadastrado ainda.</p>
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i>
+                    <p class="mb-2">Nenhum serviço cadastrado ainda.</p>
+                    <small>Comece cadastrando seu primeiro serviço!</small>
                 </div>
                 {% endif %}
             </div>
+            {% if recentes %}
+            <div class="card-footer bg-light">
+                <a href="{{ url_for('servico.listar') }}" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-list me-1"></i>
+                    Ver Todos os Serviços
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
 
 <!-- Serviços por Categoria -->
-<div class="row">
+<div class="row mt-4">
     <div class="col-12">
-        <div class="card">
-            <div class="card-header">
+        <div class="card shadow-sm">
+            <div class="card-header bg-info bg-opacity-10 border-info">
                 <h5 class="mb-0">
-                    <i class="fas fa-chart-pie me-2"></i>
-                    Serviços por Categoria
+                    <i class="fas fa-chart-bar text-info me-2"></i>
+                    Distribuição por Categoria
                 </h5>
             </div>
             <div class="card-body">
                 {% if stats.por_categoria %}
-                <div class="row">
+                <div class="row g-3">
                     {% for categoria, quantidade in stats.por_categoria.items() %}
-                    <div class="col-md-3 mb-3">
-                        <div class="card border-primary">
+                    <div class="col-xl-3 col-lg-4 col-md-6">
+                        <div class="card border-0 bg-light h-100 hover-shadow">
                             <div class="card-body text-center">
-                                <h3 class="text-primary">{{ quantidade }}</h3>
-                                <p class="mb-0 text-muted">{{ categoria|title }}</p>
+                                <div class="mb-2">
+                                    {% if categoria == 'instalacao_eletrica' %}
+                                        <i class="fas fa-bolt fa-3x text-primary"></i>
+                                    {% elif categoria == 'manutencao' %}
+                                        <i class="fas fa-wrench fa-3x text-success"></i>
+                                    {% elif categoria == 'energia_solar' %}
+                                        <i class="fas fa-solar-panel fa-3x text-warning"></i>
+                                    {% elif categoria == 'automacao' %}
+                                        <i class="fas fa-robot fa-3x text-info"></i>
+                                    {% elif categoria == 'cftv' %}
+                                        <i class="fas fa-video fa-3x text-danger"></i>
+                                    {% elif categoria == 'rede_dados' %}
+                                        <i class="fas fa-network-wired fa-3x text-secondary"></i>
+                                    {% elif categoria == 'certificacao' %}
+                                        <i class="fas fa-certificate fa-3x text-purple"></i>
+                                    {% elif categoria == 'consultoria' %}
+                                        <i class="fas fa-comments fa-3x text-dark"></i>
+                                    {% else %}
+                                        <i class="fas fa-tools fa-3x text-muted"></i>
+                                    {% endif %}
+                                </div>
+                                <h2 class="mb-2 fw-bold text-primary">{{ quantidade }}</h2>
+                                <p class="mb-0 text-muted small text-uppercase">
+                                    {{ categoria.replace('_', ' ') }}
+                                </p>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="text-center py-4 text-muted">
-                    <i class="fas fa-tags fa-2x mb-2"></i>
-                    <p>Nenhuma categoria com serviços.</p>
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-chart-pie fa-3x mb-3 opacity-25"></i>
+                    <p class="mb-2">Nenhuma categoria com serviços.</p>
+                    <small>Cadastre serviços para visualizar a distribuição.</small>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.hover-shadow {
+    transition: all 0.3s ease;
+}
+.hover-shadow:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+.text-purple {
+    color: #6f42c1 !important;
+}
+</style>
 {% endblock %}
