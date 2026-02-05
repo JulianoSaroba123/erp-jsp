@@ -776,149 +776,210 @@
             nomeFantasia.addEventListener('input', sincronizarNomePJ);
         }
 
-        // Consulta CNPJ automatica (usando mesmo endpoint dos clientes)
-        document.getElementById('btn-consultar-cnpj').addEventListener('click', function() {
-            if (tipoSelect.value !== 'PJ') {
-                alert('A consulta automática está disponível apenas para Pessoa Jurídica (CNPJ)');
-                return;
-            }
-            
-            const cnpj = cpfCnpjInput.value;
-            const cnpjLimpo = cnpj.replace(/\D/g, '');
-            
-            if (cnpjLimpo.length !== 14) {
-                alert('CNPJ deve ter 14 digitos');
-                return;
-            }
-            
-            // Mostra loading
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            this.disabled = true;
-            
-            // Usa endpoint dos clientes (funciona igual)
-            fetch(`/cliente/api/consultar-cnpj/${cnpjLimpo}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Preenche os campos com os dados retornados
-                        if (data.data.fantasia) {
-                            document.getElementById('nome_fantasia').value = data.data.fantasia;
-                        }
-                        if (data.data.nome) {
-                            // Se não tem fantasia, usa o nome como fantasia
-                            if (!data.data.fantasia && document.getElementById('nome_fantasia').value === '') {
+        // Consulta CNPJ automatica
+        const btnConsultarCnpj = document.getElementById('btn-consultar-cnpj');
+        if (btnConsultarCnpj) {
+            btnConsultarCnpj.addEventListener('click', function() {
+                console.log('🔍 Iniciando consulta CNPJ...');
+                
+                if (tipoSelect.value !== 'PJ') {
+                    alert('⚠️ A consulta automática está disponível apenas para Pessoa Jurídica (CNPJ)');
+                    return;
+                }
+                
+                const cnpj = cpfCnpjInput.value;
+                const cnpjLimpo = cnpj.replace(/\D/g, '');
+                
+                console.log('📋 CNPJ digitado:', cnpj);
+                console.log('📋 CNPJ limpo:', cnpjLimpo);
+                
+                if (cnpjLimpo.length !== 14) {
+                    alert('⚠️ CNPJ deve ter 14 dígitos');
+                    return;
+                }
+                
+                // Mostra loading
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...';
+                this.disabled = true;
+                
+                console.log('🌐 Fazendo requisição para:', `/cliente/api/consultar-cnpj/${cnpjLimpo}`);
+                
+                // Usa endpoint dos clientes (funciona igual)
+                fetch(`/cliente/api/consultar-cnpj/${cnpjLimpo}`)
+                    .then(response => {
+                        console.log('📡 Resposta recebida:', response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('📦 Dados recebidos:', data);
+                        
+                        if (data.success) {
+                            let camposPreenchidos = [];
+                            
+                            // Preenche razão social e fantasia
+                            if (data.data.nome) {
+                                document.getElementById('nome').value = data.data.nome;
+                                camposPreenchidos.push('Razão Social');
+                            }
+                            
+                            if (data.data.fantasia) {
+                                document.getElementById('nome_fantasia').value = data.data.fantasia;
+                                camposPreenchidos.push('Nome Fantasia');
+                            } else if (data.data.nome) {
+                                // Se não tem fantasia, usa o nome como fantasia
                                 document.getElementById('nome_fantasia').value = data.data.nome;
                             }
+                            
+                            // Preenche contatos
+                            if (data.data.email) {
+                                document.getElementById('email').value = data.data.email;
+                                camposPreenchidos.push('Email');
+                            }
+                            if (data.data.telefone) {
+                                document.getElementById('telefone').value = mascaraTelefone(data.data.telefone);
+                                camposPreenchidos.push('Telefone');
+                            }
+                            
+                            // Preenche endereco completo
+                            const endereco = data.data.endereco || data.data;
+                            if (endereco) {
+                                if (endereco.cep) {
+                                    document.getElementById('cep').value = mascaraCep(endereco.cep);
+                                    camposPreenchidos.push('CEP');
+                                }
+                                if (endereco.logradouro) {
+                                    document.getElementById('endereco').value = endereco.logradouro;
+                                    camposPreenchidos.push('Endereço');
+                                }
+                                if (endereco.numero) {
+                                    document.getElementById('numero').value = endereco.numero;
+                                }
+                                if (endereco.complemento) {
+                                    document.getElementById('complemento').value = endereco.complemento;
+                                }
+                                if (endereco.bairro) {
+                                    document.getElementById('bairro').value = endereco.bairro;
+                                    camposPreenchidos.push('Bairro');
+                                }
+                                if (endereco.cidade || endereco.municipio) {
+                                    document.getElementById('cidade').value = endereco.cidade || endereco.municipio;
+                                    camposPreenchidos.push('Cidade');
+                                }
+                                if (endereco.uf) {
+                                    document.getElementById('estado').value = endereco.uf.toUpperCase();
+                                    camposPreenchidos.push('UF');
+                                }
+                            }
+                            
+                            // Define o país como Brasil
+                            document.getElementById('pais').value = 'Brasil';
+                            
+                            // Sincroniza nome
+                            sincronizarNomePJ();
+                            
+                            console.log('✅ Campos preenchidos:', camposPreenchidos);
+                            
+                            alert('✅ Dados da empresa carregados com sucesso!\n\n' +
+                                  '📋 Campos preenchidos:\n• ' + camposPreenchidos.join('\n• '));
+                        } else {
+                            console.error('❌ Erro na resposta:', data.error);
+                            alert('❌ Erro: ' + (data.error || 'Não foi possível consultar o CNPJ'));
                         }
-                        
-                        // Preenche contatos
-                        if (data.data.email) {
-                            document.getElementById('email').value = data.data.email;
-                        }
-                        if (data.data.telefone) {
-                            document.getElementById('telefone').value = data.data.telefone;
-                        }
-                        
-                        // Preenche endereco completo
-                        const endereco = data.data.endereco;
-                        if (endereco) {
-                            if (endereco.cep) {
-                                document.getElementById('cep').value = mascaraCep(endereco.cep);
-                            }
-                            if (endereco.logradouro) {
-                                document.getElementById('endereco').value = endereco.logradouro;
-                            }
-                            if (endereco.numero) {
-                                document.getElementById('numero').value = endereco.numero;
-                            }
-                            if (endereco.complemento) {
-                                document.getElementById('complemento').value = endereco.complemento;
-                            }
-                            if (endereco.bairro) {
-                                document.getElementById('bairro').value = endereco.bairro;
-                            }
-                            if (endereco.cidade) {
-                                document.getElementById('cidade').value = endereco.cidade;
-                            }
-                            if (endereco.uf) {
-                                document.getElementById('estado').value = endereco.uf.toUpperCase();
-                            }
-                        }
-                        
-                        // Aplica mascaras nos campos preenchidos
-                        if (document.getElementById('telefone').value) {
-                            document.getElementById('telefone').value = mascaraTelefone(document.getElementById('telefone').value);
-                        }
-                        
-                        // Define o país como Brasil
-                        document.getElementById('pais').value = 'Brasil';
-                        
-                        // Sincroniza nome
-                        sincronizarNomePJ();
-                        
-                        alert('✅ Dados da empresa carregados com sucesso!\n\n📋 Dados preenchidos:\n' +
-                              '• Nome/Razão Social\n' +
-                              '• Nome Fantasia\n' + 
-                              '• Email e Telefone\n' +
-                              '• Endereço completo');
-                    } else {
-                        alert('❌ Erro: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro:', error);
-                    alert('Erro ao consultar CNPJ. Tente novamente.');
-                })
-                .finally(() => {
-                    // Remove loading
-                    this.innerHTML = '<i class="fas fa-search"></i>';
-                    this.disabled = false;
-                });
-        });
+                    })
+                    .catch(error => {
+                        console.error('❌ Erro na requisição:', error);
+                        alert('❌ Erro ao consultar CNPJ. Verifique sua conexão e tente novamente.');
+                    })
+                    .finally(() => {
+                        // Remove loading
+                        this.innerHTML = '<i class="fas fa-search"></i>';
+                        this.disabled = false;
+                        console.log('🏁 Consulta finalizada');
+                    });
+            });
+        }
         
-        // Consulta CEP automatica (usando endpoint dos clientes)
-        document.getElementById('btn-consultar-cep').addEventListener('click', function() {
-            const cep = document.getElementById('cep').value;
-            const cepLimpo = cep.replace(/\D/g, '');
-            
-            if (cepLimpo.length !== 8) {
-                alert('CEP deve ter 8 digitos');
-                return;
-            }
-            
-            // Mostra loading
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            this.disabled = true;
-            
-            // Usa endpoint dos clientes
-            fetch(`/cliente/api/consultar-cep/${cepLimpo}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Preenche os campos de endereco
-                        document.getElementById('endereco').value = data.data.logradouro || '';
-                        document.getElementById('bairro').value = data.data.bairro || '';
-                        document.getElementById('cidade').value = data.data.cidade || '';
-                        document.getElementById('estado').value = data.data.uf || '';
+        // Consulta CEP automatica
+        const btnConsultarCep = document.getElementById('btn-consultar-cep');
+        if (btnConsultarCep) {
+            btnConsultarCep.addEventListener('click', function() {
+                console.log('🔍 Iniciando consulta CEP...');
+                
+                const cep = document.getElementById('cep').value;
+                const cepLimpo = cep.replace(/\D/g, '');
+                
+                console.log('📋 CEP digitado:', cep);
+                console.log('📋 CEP limpo:', cepLimpo);
+                
+                if (cepLimpo.length !== 8) {
+                    alert('⚠️ CEP deve ter 8 dígitos');
+                    return;
+                }
+                
+                // Mostra loading
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...';
+                this.disabled = true;
+                
+                console.log('🌐 Fazendo requisição para:', `/cliente/api/consultar-cep/${cepLimpo}`);
+                
+                // Usa endpoint dos clientes
+                fetch(`/cliente/api/consultar-cep/${cepLimpo}`)
+                    .then(response => {
+                        console.log('📡 Resposta recebida:', response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('📦 Dados recebidos:', data);
                         
-                        // Aplica mascara do CEP
-                        document.getElementById('cep').value = mascaraCep(data.data.cep || cep);
-                        
-                        alert('✅ Endereço carregado com sucesso!');
-                    } else {
-                        alert('❌ Erro: ' + data.error);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erro:', error);
-                    alert('Erro ao consultar CEP. Tente novamente.');
-                })
-                .finally(() => {
-                    // Remove loading
-                    this.innerHTML = '<i class="fas fa-search"></i>';
-                    this.disabled = false;
-                });
-        });
+                        if (data.success) {
+                            let camposPreenchidos = [];
+                            
+                            // Preenche os campos de endereco
+                            if (data.data.logradouro) {
+                                document.getElementById('endereco').value = data.data.logradouro;
+                                camposPreenchidos.push('Endereço');
+                            }
+                            if (data.data.bairro) {
+                                document.getElementById('bairro').value = data.data.bairro;
+                                camposPreenchidos.push('Bairro');
+                            }
+                            if (data.data.cidade || data.data.localidade) {
+                                document.getElementById('cidade').value = data.data.cidade || data.data.localidade;
+                                camposPreenchidos.push('Cidade');
+                            }
+                            if (data.data.uf) {
+                                document.getElementById('estado').value = data.data.uf.toUpperCase();
+                                camposPreenchidos.push('UF');
+                            }
+                            
+                            // Aplica mascara do CEP
+                            document.getElementById('cep').value = mascaraCep(data.data.cep || cep);
+                            
+                            // Foca no campo número
+                            document.getElementById('numero').focus();
+                            
+                            console.log('✅ Campos preenchidos:', camposPreenchidos);
+                            
+                            alert('✅ Endereço carregado com sucesso!\n\n' +
+                                  '📋 Campos preenchidos:\n• ' + camposPreenchidos.join('\n• ') +
+                                  '\n\n💡 Agora preencha o número do imóvel.');
+                        } else {
+                            console.error('❌ Erro na resposta:', data.error);
+                            alert('❌ Erro: ' + (data.error || 'CEP não encontrado'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Erro na requisição:', error);
+                        alert('❌ Erro ao consultar CEP. Verifique sua conexão e tente novamente.');
+                    })
+                    .finally(() => {
+                        // Remove loading
+                        this.innerHTML = '<i class="fas fa-search"></i>';
+                        this.disabled = false;
+                        console.log('🏁 Consulta finalizada');
+                    });
+            });
+        }
 
         // Inicializa interface
         atualizarInterface();
