@@ -72,11 +72,41 @@ def editar():
         # Logo upload
         if 'logo' in request.files:
             file = request.files['logo']
-            if file and allowed_file(file.filename):
+            if file and file.filename and allowed_file(file.filename):
+                import base64
+                from io import BytesIO
+                from PIL import Image
+                
+                # Salvar arquivo
                 filename = secure_filename(file.filename)
                 save_path = os.path.join(UPLOAD_FOLDER, filename)
                 file.save(save_path)
                 conf.logo = save_path
+                
+                # Converter para base64 e salvar também (para consistência e PDFs)
+                try:
+                    # Abrir a imagem e redimensionar se necessário
+                    img = Image.open(save_path)
+                    
+                    # Redimensionar se a imagem for muito grande (máx 800px)
+                    max_size = 800
+                    if img.width > max_size or img.height > max_size:
+                        img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
+                    
+                    # Converte para base64
+                    buffer = BytesIO()
+                    img_format = img.format or 'PNG'
+                    img.save(buffer, format=img_format)
+                    img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                    
+                    # Salva o base64 no banco
+                    conf.logo_base64 = img_base64
+                    print(f"✅ Logo convertida para base64 e salva no banco (formato: {img_format})")
+                    
+                except Exception as e:
+                    print(f"⚠️ Erro ao converter logo para base64: {e}")
+                    # Continua mesmo se falhar a conversão para base64
+                    pass
 
         db.session.commit()
         # Invalidate cache

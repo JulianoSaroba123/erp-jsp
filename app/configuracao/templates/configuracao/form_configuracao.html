@@ -70,10 +70,16 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label"><i class="fas fa-image me-1"></i>Logotipo</label>
-                                <input type="file" name="logo" class="form-control">
-                                {% if configuracao.logo %}
+                                <input type="file" name="logo" class="form-control" accept="image/*">
+                                {% if configuracao.logo_base64 %}
                                 <div class="mt-2">
-                                    <img src="/{{ configuracao.logo }}" alt="logo" class="img-thumbnail" style="max-height:80px;">
+                                    <img src="data:image/png;base64,{{ configuracao.logo_base64 }}" alt="logo" class="img-thumbnail" style="max-height:80px;">
+                                    <p class="text-muted small mt-1 mb-0">Logo atual (salva no sistema)</p>
+                                </div>
+                                {% elif configuracao.logo %}
+                                <div class="mt-2">
+                                    <img src="{{ url_for('configuracao.uploaded_file', filename=configuracao.logo.split('/')[-1]) }}" alt="logo" class="img-thumbnail" style="max-height:80px;">
+                                    <p class="text-muted small mt-1 mb-0">Logo atual (arquivo: {{ configuracao.logo.split('/')[-1] }})</p>
                                 </div>
                                 {% endif %}
                             </div>
