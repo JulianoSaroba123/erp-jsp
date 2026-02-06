@@ -1,212 +1,238 @@
 {% extends 'base.html' %}
 
-{% block title %}Configurações do Sistema{% endblock %}
+{% block title %}Configurações do Sistema - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
+        <li class="breadcrumb-item active">Configurações</li>
+    </ol>
+</nav>
+{% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row mb-4">
+    <div class="row justify-content-center">
         <div class="col-12">
-            <h1 class="h3 text-white">Configurações do Sistema</h1>
-            <p class="text-muted">Defina os dados da empresa, endereço, bancários e preferências do sistema.</p>
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>
+                        Configurações do Sistema
+                    </h4>
+                    <p class="mb-0 mt-2 small opacity-75">Defina os dados da empresa, endereço, bancários e preferências do sistema.</p>
+                </div>
+
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" action="{{ url_for('configuracao.editar') }}">
+                        <div class="row">
+                            <div class="col-lg-8">
+                                <!-- Identificação -->
+                                <div class="form-section">
+                                    <h6 class="section-title">
+                                        <i class="fas fa-building me-2"></i>
+                                        01 - Identificação da Empresa
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label"><i class="fas fa-star text-warning me-1"></i>Nome Fantasia *</label>
+                                            <input type="text" name="nome_fantasia" class="form-control" required placeholder="Nome Fantasia" value="{{ configuracao.nome_fantasia or '' }}">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label"><i class="fas fa-building me-1"></i>Razão Social</label>
+                                            <input type="text" name="razao_social" class="form-control" placeholder="Razão Social" value="{{ configuracao.razao_social or '' }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3 mt-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label"><i class="fas fa-id-card me-1"></i>CNPJ *</label>
+                                            <div class="input-group">
+                                                <input type="text" name="cnpj" id="cnpj_input" class="form-control" placeholder="00.000.000/0000-00" value="{{ configuracao.cnpj or '' }}">
+                                                <button type="button" class="btn btn-outline-primary" id="btn_lookup_cnpj"><i class="fas fa-search me-1"></i>Buscar</button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label"><i class="fas fa-file-alt me-1"></i>Inscrição Estadual</label>
+                                            <input type="text" name="inscricao_estadual" class="form-control" value="{{ configuracao.inscricao_estadual or '' }}">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label"><i class="fas fa-phone me-1"></i>Telefone</label>
+                                            <input type="text" name="telefone" class="form-control" value="{{ configuracao.telefone or '' }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3 mt-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label"><i class="fas fa-envelope me-1"></i>E-mail</label>
+                                            <input type="email" name="email" class="form-control" placeholder="contato@empresa.com" value="{{ configuracao.email or '' }}">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label"><i class="fas fa-globe me-1"></i>Site</label>
+                                            <input type="text" name="site" class="form-control" placeholder="https://www.seusite.com" value="{{ configuracao.site or '' }}">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label"><i class="fas fa-image me-1"></i>Logotipo</label>
+                                            <input type="file" name="logo" class="form-control">
+                                            {% if configuracao.logo %}
+                                            <div class="mt-2">
+                                                <img src="/{{ configuracao.logo }}" alt="logo" class="img-thumbnail" style="max-height:80px;">
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Endereço -->
+                                <div class="form-section">
+                                    <h6 class="section-title">
+                                        <i class="fas fa-map-marker-alt me-2"></i>
+                                        02 - Endereço
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label class="form-label"><i class="fas fa-map-pin me-1"></i>CEP</label>
+                                            <div class="input-group">
+                                                <input type="text" name="cep" id="cep_input" class="form-control" value="{{ configuracao.cep or '' }}" placeholder="00000-000">
+                                                <button type="button" class="btn btn-outline-primary" id="btn_lookup_cep"><i class="fas fa-search me-1"></i>Buscar</button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label"><i class="fas fa-road me-1"></i>Logradouro</label>
+                                            <input type="text" name="logradouro" id="logradouro" class="form-control" value="{{ configuracao.logradouro or '' }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label"><i class="fas fa-hashtag me-1"></i>Número</label>
+                                            <input type="text" name="numero" class="form-control" value="{{ configuracao.numero or '' }}">
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3 mt-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label"><i class="fas fa-map me-1"></i>Bairro</label>
+                                            <input type="text" name="bairro" id="bairro" class="form-control" value="{{ configuracao.bairro or '' }}">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label"><i class="fas fa-city me-1"></i>Cidade</label>
+                                            <input type="text" name="cidade" id="cidade" class="form-control" value="{{ configuracao.cidade or '' }}">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label"><i class="fas fa-flag me-1"></i>UF</label>
+                                            <input type="text" name="uf" id="uf" class="form-control" value="{{ configuracao.uf or '' }}" maxlength="2">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bancários -->
+                                <div class="form-section">
+                                    <h6 class="section-title">
+                                        <i class="fas fa-university me-2"></i>
+                                        03 - Dados Bancários
+                                    </h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label"><i class="fas fa-landmark me-1"></i>Banco</label>
+                                            <input type="text" name="banco" class="form-control" value="{{ configuracao.banco or '' }}" placeholder="Nome do banco">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label"><i class="fas fa-code-branch me-1"></i>Agência</label>
+                                            <input type="text" name="agencia" class="form-control" value="{{ configuracao.agencia or '' }}" placeholder="0000">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label"><i class="fas fa-wallet me-1"></i>Conta</label>
+                                            <input type="text" name="conta" class="form-control" value="{{ configuracao.conta or '' }}" placeholder="00000-0">
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-3 mt-3">
+                                        <div class="col-12">
+                                            <label class="form-label"><i class="fas fa-qrcode me-1"></i>PIX</label>
+                                            <input type="text" name="pix" class="form-control" value="{{ configuracao.pix or '' }}" placeholder="Chave PIX">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Textos Institucionais -->
+                                <div class="form-section">
+                                    <h6 class="section-title">
+                                        <i class="fas fa-align-left me-2"></i>
+                                        04 - Textos Institucionais
+                                    </h6>
+                                    <div class="mb-3">
+                                        <label class="form-label"><i class="fas fa-bullseye me-1"></i>Missão</label>
+                                        <textarea name="missao" class="form-control" rows="3" placeholder="Missão da empresa">{{ configuracao.missao or '' }}</textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label"><i class="fas fa-eye me-1"></i>Visão</label>
+                                        <textarea name="visao" class="form-control" rows="2" placeholder="Visão da empresa">{{ configuracao.visao or '' }}</textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label"><i class="fas fa-heart me-1"></i>Valores</label>
+                                        <textarea name="valores" class="form-control" rows="2" placeholder="Valores da empresa">{{ configuracao.valores or '' }}</textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label"><i class="fas fa-quote-right me-1"></i>Frase de Assinatura</label>
+                                        <input type="text" name="frase_assinatura" class="form-control" value="{{ configuracao.frase_assinatura or '' }}" placeholder="Frase de impacto">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <!-- Preferências do Sistema -->
+                                <div class="form-section">
+                                    <h6 class="section-title">
+                                        <i class="fas fa-palette me-2"></i>
+                                        05 - Preferências do Sistema
+                                    </h6>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label"><i class="fas fa-paint-brush me-1"></i>Tema</label>
+                                        <select name="tema" class="form-select">
+                                            <option value="claro" {% if configuracao.tema == 'claro' %}selected{% endif %}>☀️ Claro</option>
+                                            <option value="escuro" {% if configuracao.tema == 'escuro' %}selected{% endif %}>🌙 Escuro</option>
+                                            <option value="futurista" {% if configuracao.tema == 'futurista' %}selected{% endif %}>🚀 Futurista</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label"><i class="fas fa-fill-drip me-1"></i>Cor Principal (Hex)</label>
+                                        <input type="text" name="cor_principal" class="form-control" value="{{ configuracao.cor_principal or '#00aaff' }}" placeholder="#00aaff">
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" name="exibir_logo_em_pdfs" id="exibir_logo_em_pdfs" {% if configuracao.exibir_logo_em_pdfs %}checked{% endif %}>
+                                        <label class="form-check-label" for="exibir_logo_em_pdfs">
+                                            <i class="fas fa-file-pdf me-1"></i>Exibir logo em PDFs
+                                        </label>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" name="exibir_rodape_padrao" id="exibir_rodape_padrao" {% if configuracao.exibir_rodape_padrao %}checked{% endif %}>
+                                        <label class="form-check-label" for="exibir_rodape_padrao">
+                                            <i class="fas fa-shoe-prints me-1"></i>Exibir rodapé padrão
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Botões de Ação -->
+                                <div class="form-section mt-4">
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-success btn-lg">
+                                            <i class="fas fa-save me-2"></i>Salvar Configurações
+                                        </button>
+                                        <a href="{{ url_for('painel.dashboard') }}" class="btn btn-secondary">
+                                            <i class="fas fa-times me-2"></i>Cancelar
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
-
-    <form method="POST" enctype="multipart/form-data" action="{{ url_for('configuracao.editar') }}">
-        <div class="row">
-            <div class="col-lg-8">
-                <!-- Identificação -->
-                <div class="card mb-3">
-                    <div class="card-header bg-primary text-white">
-                        <strong>01 - Identificação da Empresa</strong>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Nome Fantasia *</label>
-                                <input type="text" name="nome_fantasia" class="form-control" required placeholder="Nome Fantasia" value="{{ configuracao.nome_fantasia or '' }}">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Razão Social</label>
-                                <input type="text" name="razao_social" class="form-control" placeholder="Razão Social" value="{{ configuracao.razao_social or '' }}">
-                            </div>
-                        </div>
-
-                        <div class="row g-3 mt-3">
-                            <div class="col-md-4">
-                                <label class="form-label">CNPJ *</label>
-                                <div class="input-group">
-                                    <input type="text" name="cnpj" id="cnpj_input" class="form-control" placeholder="00.000.000/0000-00" value="{{ configuracao.cnpj or '' }}">
-                                    <button type="button" class="btn btn-outline-secondary" id="btn_lookup_cnpj">Buscar</button>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Inscrição Estadual</label>
-                                <input type="text" name="inscricao_estadual" class="form-control" value="{{ configuracao.inscricao_estadual or '' }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Telefone</label>
-                                <input type="text" name="telefone" class="form-control" value="{{ configuracao.telefone or '' }}">
-                            </div>
-                        </div>
-
-                        <div class="row g-3 mt-3">
-                            <div class="col-md-4">
-                                <label class="form-label">E-mail</label>
-                                <input type="email" name="email" class="form-control" placeholder="contato@empresa.com" value="{{ configuracao.email or '' }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Site</label>
-                                <input type="text" name="site" class="form-control" placeholder="https://www.seusite.com" value="{{ configuracao.site or '' }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Logotipo</label>
-                                <input type="file" name="logo" class="form-control">
-                                {% if configuracao.logo %}
-                                <div class="mt-2">
-                                    <img src="/{{ configuracao.logo }}" alt="logo" style="max-height:80px;">
-                                </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Endereço -->
-                <div class="card mb-3">
-                    <div class="card-header bg-info text-white">
-                        <strong>02 - Endereço</strong>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label">CEP</label>
-                                <div class="input-group">
-                                    <input type="text" name="cep" id="cep_input" class="form-control" value="{{ configuracao.cep or '' }}" placeholder="00000-000">
-                                    <button type="button" class="btn btn-outline-secondary" id="btn_lookup_cep">Buscar</button>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Logradouro</label>
-                                <input type="text" name="logradouro" id="logradouro" class="form-control" value="{{ configuracao.logradouro or '' }}">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Número</label>
-                                <input type="text" name="numero" class="form-control" value="{{ configuracao.numero or '' }}">
-                            </div>
-                        </div>
-
-                        <div class="row g-3 mt-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Bairro</label>
-                                <input type="text" name="bairro" id="bairro" class="form-control" value="{{ configuracao.bairro or '' }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Cidade</label>
-                                <input type="text" name="cidade" id="cidade" class="form-control" value="{{ configuracao.cidade or '' }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">UF</label>
-                                <input type="text" name="uf" id="uf" class="form-control" value="{{ configuracao.uf or '' }}">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Bancários -->
-                <div class="card mb-3">
-                    <div class="card-header bg-secondary text-white">
-                        <strong>03 - Dados Bancários</strong>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Banco</label>
-                                <input type="text" name="banco" class="form-control" value="{{ configuracao.banco or '' }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Agência</label>
-                                <input type="text" name="agencia" class="form-control" value="{{ configuracao.agencia or '' }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Conta</label>
-                                <input type="text" name="conta" class="form-control" value="{{ configuracao.conta or '' }}">
-                            </div>
-                        </div>
-
-                        <div class="row g-3 mt-3">
-                            <div class="col-12">
-                                <label class="form-label">PIX</label>
-                                <input type="text" name="pix" class="form-control" value="{{ configuracao.pix or '' }}">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Textos Institucionais -->
-                <div class="card mb-3">
-                    <div class="card-header bg-dark text-white">
-                        <strong>04 - Textos Institucionais</strong>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Missão</label>
-                            <textarea name="missao" class="form-control" rows="3">{{ configuracao.missao or '' }}</textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Visão</label>
-                            <textarea name="visao" class="form-control" rows="2">{{ configuracao.visao or '' }}</textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Valores</label>
-                            <textarea name="valores" class="form-control" rows="2">{{ configuracao.valores or '' }}</textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Frase de Assinatura</label>
-                            <input type="text" name="frase_assinatura" class="form-control" value="{{ configuracao.frase_assinatura or '' }}">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <!-- Preferências do Sistema -->
-                <div class="card mb-3">
-                    <div class="card-header bg-primary text-white">
-                        <strong>05 - Preferências do Sistema</strong>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Tema</label>
-                            <select name="tema" class="form-select">
-                                <option value="claro" {% if configuracao.tema == 'claro' %}selected{% endif %}>Claro</option>
-                                <option value="escuro" {% if configuracao.tema == 'escuro' %}selected{% endif %}>Escuro</option>
-                                <option value="futurista" {% if configuracao.tema == 'futurista' %}selected{% endif %}>Futurista</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Cor Principal (Hex)</label>
-                            <input type="text" name="cor_principal" class="form-control" value="{{ configuracao.cor_principal or '#00aaff' }}">
-                        </div>
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox" name="exibir_logo_em_pdfs" id="exibir_logo_em_pdfs" {% if configuracao.exibir_logo_em_pdfs %}checked{% endif %}>
-                            <label class="form-check-label" for="exibir_logo_em_pdfs">Exibir logo em PDFs</label>
-                        </div>
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox" name="exibir_rodape_padrao" id="exibir_rodape_padrao" {% if configuracao.exibir_rodape_padrao %}checked{% endif %}>
-                            <label class="form-check-label" for="exibir_rodape_padrao">Exibir rodapé padrão</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card mb-3">
-                    <div class="card-body d-grid">
-                        <button type="submit" class="btn btn-success">Salvar Configurações</button>
-                        <a href="{{ url_for('painel.dashboard') }}" class="btn btn-secondary">Cancelar</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </form>
 </div>
 
 <script>
@@ -232,8 +258,8 @@ async function buscarCNPJ() {
     try {
         // Mostrar loading
         const btn = document.getElementById('btn_lookup_cnpj');
-        const originalText = btn.textContent;
-        btn.textContent = '⏳';
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         btn.disabled = true;
         
         const url = `/configuracao/lookup/cnpj?cnpj=${encodeURIComponent(cnpj)}`;
@@ -307,7 +333,7 @@ async function buscarCNPJ() {
     } finally {
         // Restaurar botão
         const btn = document.getElementById('btn_lookup_cnpj');
-        btn.textContent = 'Buscar';
+        btn.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
         btn.disabled = false;
     }
 }
@@ -333,8 +359,8 @@ async function buscarCEP() {
     try {
         // Mostrar loading
         const btn = document.getElementById('btn_lookup_cep');
-        const originalText = btn.textContent;
-        btn.textContent = '⏳';
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
         btn.disabled = true;
         
         const url = `/configuracao/lookup/cep?cep=${encodeURIComponent(cep)}`;
@@ -386,7 +412,7 @@ async function buscarCEP() {
     } finally {
         // Restaurar botão
         const btn = document.getElementById('btn_lookup_cep');
-        btn.textContent = 'Buscar';
+        btn.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
         btn.disabled = false;
     }
 }
