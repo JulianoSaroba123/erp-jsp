@@ -14,28 +14,24 @@
     
     <style>
         :root {
-            /* Cores JSP Futuristas */
+            /* Cores JSP Modernas */
             --jsp-primary: #007bff;
-            --jsp-secondary: #007bff;
-            --jsp-accent: #0056b3;
+            --jsp-secondary: #0056b3;
+            --jsp-accent: #00c9ff;
             --jsp-success: #28a745;
-            --jsp-warning: #17a2b8;
-            --jsp-dark: #000512;
+            --jsp-dark: #0a1929;
+            --jsp-darker: #000512;
             
             /* Neon Effects */
-            --neon-blue: #007bff;
-            --neon-green: #28a745;
-            --neon-glow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+            --neon-blue: #00d4ff;
+            --neon-blue-glow: rgba(0, 212, 255, 0.4);
+            --shadow-glow: 0 0 20px var(--neon-blue-glow);
             
-            /* Responsividade */
-            --card-max-width: min(420px, 90vw);
-            --card-padding: clamp(1.5rem, 4vw, 2.5rem);
-            --font-size-base: clamp(14px, 2vw, 16px);
-            --font-size-small: clamp(12px, 1.8vw, 14px);
-            --font-size-title: clamp(1.2rem, 3.5vw, 1.8rem);
-            --spacing-base: clamp(1rem, 4vw, 1.5rem);
-            --input-height: clamp(48px, 8vw, 56px);
-            --button-height: clamp(48px, 7vw, 54px);
+            /* Card Sizing - Proporções Otimizadas */
+            --card-max-width: 440px;
+            --card-padding-x: 2rem;
+            --card-padding-y: 2rem;
+            --card-header-padding: 1.75rem;
         }
         
         * {
@@ -43,12 +39,13 @@
         }
         
         body {
-            background: linear-gradient(135deg, var(--jsp-dark) 0%, var(--jsp-primary) 50%, #001122 100%);
+            background: linear-gradient(135deg, var(--jsp-darker) 0%, #001a33 35%, var(--jsp-primary) 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
+            justify-content: center;
             font-family: 'Exo 2', sans-serif;
-            padding: 1rem;
+            padding: 1.5rem;
             position: relative;
             overflow-x: hidden;
         }
@@ -100,21 +97,31 @@
             max-width: var(--card-max-width);
             margin: 0 auto;
             position: relative;
+            z-index: 10;
         }
         
         .login-card {
-            background: rgba(10, 25, 41, 0.95);
-            border: 1px solid rgba(0, 212, 255, 0.2);
-            border-radius: 20px;
+            background: linear-gradient(145deg, rgba(10, 25, 41, 0.97) 0%, rgba(0, 15, 35, 0.98) 100%);
+            border: 1px solid rgba(0, 212, 255, 0.25);
+            border-radius: 24px;
             box-shadow: 
-                0 20px 40px rgba(0, 0, 0, 0.4),
-                0 0 20px rgba(0, 212, 255, 0.1),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                0 30px 60px rgba(0, 0, 0, 0.5),
+                0 0 40px rgba(0, 123, 255, 0.15),
+                inset 0 1px 1px rgba(255, 255, 255, 0.1);
             overflow: hidden;
-            -webkit-backdrop-filter: blur(10px);
-            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
             position: relative;
-            animation: cardSlideIn 0.8s ease-out;
+            animation: cardSlideIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .login-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 
+                0 35px 70px rgba(0, 0, 0, 0.6),
+                0 0 50px rgba(0, 123, 255, 0.25),
+                inset 0 1px 1px rgba(255, 255, 255, 0.15);
         }
         
         .login-card::before {
@@ -145,57 +152,71 @@
         }
         
         .login-header {
-            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(255, 107, 53, 0.1) 100%);
-            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+            background: linear-gradient(135deg, rgba(0, 123, 255, 0.12) 0%, rgba(0, 212, 255, 0.08) 100%);
+            border-bottom: 1px solid rgba(0, 212, 255, 0.25);
             color: white;
-            padding: var(--card-padding);
+            padding: var(--card-header-padding) var(--card-padding-x);
             text-align: center;
             position: relative;
         }
         
         .login-header h1 {
-            margin: 0;
-            font-size: var(--font-size-title);
+            margin: 0.5rem 0 0.25rem;
+            font-size: 1.5rem;
             font-weight: 700;
             font-family: 'Orbitron', sans-serif;
-            color: var(--neon-blue);
-            text-shadow: var(--neon-glow);
-            letter-spacing: 1px;
+            color: #ffffff;
+            text-shadow: 0 0 20px var(--neon-blue-glow);
+            letter-spacing: 2px;
         }
         
         .login-header .subtitle {
             margin-top: 0.5rem;
-            opacity: 0.8;
-            font-size: var(--font-size-small);
-            color: #ccc;
+            opacity: 0.75;
+            font-size: 0.875rem;
+            color: #b0c4de;
             font-weight: 300;
             letter-spacing: 0.5px;
         }
         
+        .jsp-subtitle {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--jsp-accent);
+            letter-spacing: 1.5px;
+            margin: 0.25rem 0;
+        }
+        
         .login-body {
-            padding: var(--card-padding);
-            background: rgba(0, 5, 18, 0.3);
+            padding: var(--card-padding-y) var(--card-padding-x);
+            background: rgba(0, 5, 18, 0.25);
         }
         
         .form-floating {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1.25rem;
             position: relative;
         }
         
         .form-floating label {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: var(--font-size-base);
+            color: rgba(255, 255, 255, 0.55);
+            font-size: 0.9375rem;
             font-weight: 400;
+            transition: all 0.3s ease;
+        }
+        
+        .form-floating label i {
+            opacity: 0.7;
         }
         
         .form-control {
-            height: var(--input-height);
-            font-size: var(--font-size-base);
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(0, 212, 255, 0.3);
+            height: 52px;
+            font-size: 0.9375rem;
+            background: rgba(0, 15, 30, 0.4);
+            border: 1.5px solid rgba(0, 212, 255, 0.3);
             color: white;
-            border-radius: 10px;
-            transition: all 0.3s ease;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 1rem 0.95rem;
         }
         
         .form-control::placeholder {
@@ -203,10 +224,28 @@
         }
         
         .form-control:focus {
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 15, 30, 0.6);
             border-color: var(--neon-blue);
-            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.35), 0 0 0 3px rgba(0, 212, 255, 0.1);
             color: white;
+            outline: none;
+        }
+        
+        .form-control:focus + label {
+            color: var(--neon-blue);
+        }
+        
+        .form-control:focus + label i {
+            opacity: 1;
+            color: var(--jsp-accent);
+        }
+        
+        .form-control:focus {
+            background: rgba(0, 15, 30, 0.6);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.35), 0 0 0 3px rgba(0, 212, 255, 0.1);
+            color: white;
+            outline: none;
         }
         
         .form-control:focus + label {
@@ -214,20 +253,21 @@
         }
         
         .btn-login {
-            background: linear-gradient(135deg, var(--neon-blue), #0056b3);
+            background: linear-gradient(135deg, var(--jsp-primary), var(--jsp-secondary));
             border: none;
             color: white;
             font-weight: 600;
             font-family: 'Orbitron', sans-serif;
-            padding: 0.65rem 1.8rem;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-            height: var(--button-height);
-            font-size: var(--font-size-base);
+            padding: 0.75rem 2rem;
+            border-radius: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 52px;
+            font-size: 0.9375rem;
             position: relative;
             overflow: hidden;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
         }
         
         .btn-login::before {
@@ -242,10 +282,10 @@
         }
         
         .btn-login:hover {
-            background: linear-gradient(135deg, #0069d9, var(--neon-blue));
+            background: linear-gradient(135deg, #0056b3, var(--jsp-primary));
             color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 123, 255, 0.5);
         }
         
         .btn-login:hover::before {
@@ -253,130 +293,165 @@
         }
         
         .form-check-input {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(0, 212, 255, 0.3);
+            background: rgba(0, 15, 30, 0.4);
+            border: 1.5px solid rgba(0, 212, 255, 0.35);
+            width: 1.1em;
+            height: 1.1em;
+            cursor: pointer;
         }
         
         .form-check-input:checked {
-            background-color: var(--neon-blue);
-            border-color: var(--neon-blue);
-            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+            background-color: var(--jsp-primary);
+            border-color: var(--jsp-primary);
+            box-shadow: 0 0 15px rgba(0, 123, 255, 0.5);
         }
         
         .form-check-label {
-            color: rgba(255, 255, 255, 0.8);
-            font-size: var(--font-size-small);
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 0.875rem;
+            cursor: pointer;
+            user-select: none;
         }
         
         .alert {
-            border-radius: 10px;
-            margin-bottom: 1rem;
-            font-size: var(--font-size-small);
+            border-radius: 12px;
+            margin-bottom: 1.25rem;
+            font-size: 0.875rem;
             border: none;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(0, 15, 30, 0.5);
             color: white;
+            padding: 0.875rem 1rem;
+            backdrop-filter: blur(5px);
         }
         
         .alert-danger {
-            border-left: 3px solid var(--jsp-accent);
+            border-left: 4px solid #dc3545;
+            background: rgba(220, 53, 69, 0.15);
         }
         
         .alert-success {
-            border-left: 3px solid var(--neon-green);
+            border-left: 4px solid var(--jsp-success);
+            background: rgba(40, 167, 69, 0.15);
         }
         
         .alert-info {
-            border-left: 3px solid var(--neon-blue);
+            border-left: 4px solid var(--jsp-accent);
+            background: rgba(0, 212, 255, 0.15);
         }
         
         .footer-text {
             text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: var(--font-size-small);
-            margin-top: var(--spacing-base);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8125rem;
+            margin-top: 1.5rem;
             font-weight: 300;
+            line-height: 1.6;
         }
         
         .footer-text strong {
-            color: var(--neon-blue);
+            color: var(--jsp-accent);
             font-family: 'Orbitron', sans-serif;
+            font-weight: 600;
         }
         
         /* Efeitos nos ícones */
         .fas {
-            color: var(--neon-blue);
-            filter: drop-shadow(0 0 3px currentColor);
+            color: var(--jsp-accent);
+            filter: drop-shadow(0 0 2px currentColor);
         }
         
         .logo {
-            width: 70px;
-            height: 70px;
-            background: linear-gradient(135deg, var(--neon-blue), #0056b3);
-            border: 2px solid var(--neon-blue);
-            border-radius: 15px;
+            width: 85px;
+            height: 85px;
+            background: linear-gradient(135deg, var(--jsp-primary), var(--jsp-secondary));
+            border: 2.5px solid rgba(0, 212, 255, 0.4);
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 1rem;
-            font-size: 1.8rem;
+            font-size: 2rem;
             color: white;
             font-weight: bold;
             font-family: 'Orbitron', sans-serif;
             box-shadow: 
-                0 0 20px rgba(0, 212, 255, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            animation: logo-pulse 2s ease-in-out infinite;
+                0 8px 30px rgba(0, 123, 255, 0.4),
+                0 0 40px rgba(0, 212, 255, 0.2),
+                inset 0 2px 0 rgba(255, 255, 255, 0.15);
+            animation: logo-pulse 3s ease-in-out infinite;
             position: relative;
         }
         
         @keyframes logo-pulse {
             0%, 100% { 
                 box-shadow: 
-                    0 0 20px rgba(0, 212, 255, 0.4),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+                    0 8px 30px rgba(0, 123, 255, 0.4),
+                    0 0 40px rgba(0, 212, 255, 0.2),
+                    inset 0 2px 0 rgba(255, 255, 255, 0.15);
             }
             50% { 
                 box-shadow: 
-                    0 0 30px rgba(0, 212, 255, 0.6),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+                    0 10px 40px rgba(0, 123, 255, 0.6),
+                    0 0 60px rgba(0, 212, 255, 0.4),
+                    inset 0 2px 0 rgba(255, 255, 255, 0.2);
             }
         }
         
         .logo img {
-            width: 66px;
-            height: 66px;
-            border-radius: 12px;
+            width: 80px;
+            height: 80px;
+            border-radius: 15px;
             object-fit: cover;
             display: block;
             background: white;
+            padding: 2px;
         }
         
         /* Media Queries */
         @media (max-width: 576px) {
-            body {
-                padding: 0.5rem;
-                align-items: flex-start;
-                padding-top: 5vh;
+            :root {
+                --card-padding-x: 1.5rem;
+                --card-padding-y: 1.5rem;
+                --card-header-padding: 1.5rem;
             }
             
-            .login-header,
-            .login-body {
-                padding: 2rem 1.5rem;
+            body {
+                padding: 1rem;
+                align-items: flex-start;
+                padding-top: 8vh;
+            }
+            
+            .login-card {
+                border-radius: 20px;
             }
 
             .form-control {
                 font-size: 16px !important; /* Evita zoom no iOS */
+                height: 50px;
+            }
+            
+            .btn-login {
+                height: 50px;
+                font-size: 0.875rem;
             }
             
             .logo {
-                width: 60px;
-                height: 60px;
-                font-size: 1.5rem;
+                width: 75px;
+                height: 75px;
+                font-size: 1.75rem;
             }
             
             .logo img {
-                width: 56px;
-                height: 56px;
+                width: 70px;
+                height: 70px;
+            }
+            
+            .login-header h1 {
+                font-size: 1.35rem;
+            }
+            
+            .jsp-subtitle {
+                font-size: 0.85rem;
             }
         }
         
