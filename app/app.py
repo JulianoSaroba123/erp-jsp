@@ -925,6 +925,19 @@ def register_context_processors(app):
             'format_datetime': format_datetime
         }
     @app.context_processor
+    def inject_config_global():
+        """Injeta a configuração principal (`config`) em todos os templates.
+
+        Usa `get_config()` para obter a configuração atual e retorna como `config`.
+        Isto permite que o `base.html` e outros templates acessem `config.logo_base64`.
+        """
+        try:
+            from app.configuracao.configuracao_utils import get_config
+            cfg = get_config()
+            return {'config': cfg}
+        except Exception:
+            return {'config': None}
+    @app.context_processor
     def utility_processor():
         from flask import url_for
         def safe_url_for(endpoint, **values):
