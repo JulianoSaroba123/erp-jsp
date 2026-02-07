@@ -48,6 +48,24 @@ def login():
     # Busca configurações para logo e dados da empresa
     from app.configuracao.configuracao_utils import get_config
     config = get_config()
+
+    # Normaliza logo_base64 para exibição: se estiver salvo como base64 puro
+    # sem o prefixo Data URI, adicionamos o prefixo em memória para que
+    # a página mostre a imagem imediatamente (não grava no banco aqui).
+    try:
+        if config and getattr(config, 'logo_base64', None):
+            lb = config.logo_base64.strip()
+            if lb and not lb.startswith('data:image/'):
+                # Detecta tipo de imagem pelo início do base64
+                tipo = 'jpeg'
+                if lb.startswith('iVBORw'):
+                    tipo = 'png'
+                elif lb.startswith('R0lGOD'):
+                    tipo = 'gif'
+                config.logo_base64 = f'data:image/{tipo};base64,{lb}'
+    except Exception:
+        # Se algo falhar na normalização, não impedimos o login
+        pass
     
     # Adiciona timestamp para cache busting
     import time
