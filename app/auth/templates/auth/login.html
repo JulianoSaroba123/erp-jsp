@@ -27,11 +27,11 @@
             --neon-blue-glow: rgba(0, 212, 255, 0.4);
             --shadow-glow: 0 0 20px var(--neon-blue-glow);
             
-            /* Card Sizing - Proporções Otimizadas */
-            --card-max-width: 440px;
-            --card-padding-x: 2rem;
-            --card-padding-y: 2rem;
-            --card-header-padding: 1.75rem;
+            /* Card Sizing - Proporções Compactas */
+            --card-max-width: 380px;
+            --card-padding-x: 1.75rem;
+            --card-padding-y: 1.5rem;
+            --card-header-padding: 1.5rem;
         }
         
         * {
@@ -103,10 +103,10 @@
         .login-card {
             background: linear-gradient(145deg, rgba(10, 25, 41, 0.97) 0%, rgba(0, 15, 35, 0.98) 100%);
             border: 1px solid rgba(0, 212, 255, 0.25);
-            border-radius: 24px;
+            border-radius: 20px;
             box-shadow: 
-                0 30px 60px rgba(0, 0, 0, 0.5),
-                0 0 40px rgba(0, 123, 255, 0.15),
+                0 25px 50px rgba(0, 0, 0, 0.5),
+                0 0 35px rgba(0, 123, 255, 0.15),
                 inset 0 1px 1px rgba(255, 255, 255, 0.1);
             overflow: hidden;
             -webkit-backdrop-filter: blur(20px);
@@ -117,10 +117,10 @@
         }
         
         .login-card:hover {
-            transform: translateY(-4px);
+            transform: translateY(-3px);
             box-shadow: 
-                0 35px 70px rgba(0, 0, 0, 0.6),
-                0 0 50px rgba(0, 123, 255, 0.25),
+                0 30px 60px rgba(0, 0, 0, 0.6),
+                0 0 45px rgba(0, 123, 255, 0.25),
                 inset 0 1px 1px rgba(255, 255, 255, 0.15);
         }
         
@@ -161,30 +161,30 @@
         }
         
         .login-header h1 {
-            margin: 0.5rem 0 0.25rem;
-            font-size: 1.5rem;
+            margin: 0.35rem 0 0.2rem;
+            font-size: 1.3rem;
             font-weight: 700;
             font-family: 'Orbitron', sans-serif;
             color: #ffffff;
             text-shadow: 0 0 20px var(--neon-blue-glow);
-            letter-spacing: 2px;
+            letter-spacing: 1.5px;
         }
         
         .login-header .subtitle {
-            margin-top: 0.5rem;
+            margin-top: 0.4rem;
             opacity: 0.75;
-            font-size: 0.875rem;
+            font-size: 0.8125rem;
             color: #b0c4de;
             font-weight: 300;
             letter-spacing: 0.5px;
         }
         
         .jsp-subtitle {
-            font-size: 0.95rem;
+            font-size: 0.85rem;
             font-weight: 600;
             color: var(--jsp-accent);
-            letter-spacing: 1.5px;
-            margin: 0.25rem 0;
+            letter-spacing: 1.2px;
+            margin: 0.2rem 0;
         }
         
         .login-body {
@@ -193,7 +193,7 @@
         }
         
         .form-floating {
-            margin-bottom: 1.25rem;
+            margin-bottom: 1rem;
             position: relative;
         }
         
@@ -209,14 +209,14 @@
         }
         
         .form-control {
-            height: 52px;
-            font-size: 0.9375rem;
+            height: 48px;
+            font-size: 0.875rem;
             background: rgba(0, 15, 30, 0.4);
             border: 1.5px solid rgba(0, 212, 255, 0.3);
             color: white;
-            border-radius: 12px;
+            border-radius: 10px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            padding: 1rem 0.95rem;
+            padding: 0.85rem 0.9rem;
         }
         
         .form-control::placeholder {
@@ -258,15 +258,15 @@
             color: white;
             font-weight: 600;
             font-family: 'Orbitron', sans-serif;
-            padding: 0.75rem 2rem;
-            border-radius: 12px;
+            padding: 0.65rem 1.75rem;
+            border-radius: 10px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            height: 52px;
-            font-size: 0.9375rem;
+            height: 48px;
+            font-size: 0.875rem;
             position: relative;
             overflow: hidden;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 1.2px;
             box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
         }
         
@@ -308,19 +308,19 @@
         
         .form-check-label {
             color: rgba(255, 255, 255, 0.75);
-            font-size: 0.875rem;
+            font-size: 0.8125rem;
             cursor: pointer;
             user-select: none;
         }
         
         .alert {
-            border-radius: 12px;
-            margin-bottom: 1.25rem;
-            font-size: 0.875rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            font-size: 0.8125rem;
             border: none;
             background: rgba(0, 15, 30, 0.5);
             color: white;
-            padding: 0.875rem 1rem;
+            padding: 0.75rem 0.9rem;
             backdrop-filter: blur(5px);
         }
         
@@ -342,10 +342,10 @@
         .footer-text {
             text-align: center;
             color: rgba(255, 255, 255, 0.5);
-            font-size: 0.8125rem;
-            margin-top: 1.5rem;
+            font-size: 0.75rem;
+            margin-top: 1.25rem;
             font-weight: 300;
-            line-height: 1.6;
+            line-height: 1.5;
         }
         
         .footer-text strong {
@@ -361,16 +361,16 @@
         }
         
         .logo {
-            width: 85px;
-            height: 85px;
+            width: 72px;
+            height: 72px;
             background: linear-gradient(135deg, var(--jsp-primary), var(--jsp-secondary));
-            border: 2.5px solid rgba(0, 212, 255, 0.4);
-            border-radius: 18px;
+            border: 2px solid rgba(0, 212, 255, 0.4);
+            border-radius: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1rem;
-            font-size: 2rem;
+            margin: 0 auto 0.75rem;
+            font-size: 1.75rem;
             color: white;
             font-weight: bold;
             font-family: 'Orbitron', sans-serif;
@@ -398,9 +398,9 @@
         }
         
         .logo img {
-            width: 80px;
-            height: 80px;
-            border-radius: 15px;
+            width: 68px;
+            height: 68px;
+            border-radius: 14px;
             object-fit: cover;
             display: block;
             background: white;
@@ -410,9 +410,9 @@
         /* Media Queries */
         @media (max-width: 576px) {
             :root {
-                --card-padding-x: 1.5rem;
-                --card-padding-y: 1.5rem;
-                --card-header-padding: 1.5rem;
+                --card-padding-x: 1.25rem;
+                --card-padding-y: 1.25rem;
+                --card-header-padding: 1.25rem;
             }
             
             body {
@@ -427,31 +427,31 @@
 
             .form-control {
                 font-size: 16px !important; /* Evita zoom no iOS */
-                height: 50px;
+                height: 46px;
             }
             
             .btn-login {
-                height: 50px;
-                font-size: 0.875rem;
+                height: 46px;
+                font-size: 0.8125rem;
             }
             
             .logo {
-                width: 75px;
-                height: 75px;
-                font-size: 1.75rem;
+                width: 64px;
+                height: 64px;
+                font-size: 1.5rem;
             }
             
             .logo img {
-                width: 70px;
-                height: 70px;
+                width: 60px;
+                height: 60px;
             }
             
             .login-header h1 {
-                font-size: 1.35rem;
+                font-size: 1.2rem;
             }
             
             .jsp-subtitle {
-                font-size: 0.85rem;
+                font-size: 0.75rem;
             }
         }
         
