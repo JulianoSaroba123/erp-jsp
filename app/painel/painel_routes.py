@@ -35,6 +35,10 @@ def dashboard():
     Exibe estatísticas gerais, financeiras e navegação rápida.
     """
     try:
+        # Importa configurações
+        from app.configuracao.configuracao_utils import get_config
+        config = get_config()
+        
         # Importa models apenas quando necessário para evitar imports circulares
         from app.cliente.cliente_model import Cliente
         from app.fornecedor.fornecedor_model import Fornecedor
@@ -112,6 +116,7 @@ def dashboard():
         stats['fluxo_caixa_cor'] = 'success' if stats['fluxo_caixa'] >= 0 else 'danger'
         
         return render_template('painel/dashboard.html',
+                             config=config,
                              stats=stats,
                              clientes_recentes=clientes_recentes,
                              produtos_estoque_baixo=produtos_estoque_baixo,
@@ -141,6 +146,7 @@ def dashboard():
         }
         
         return render_template('painel/dashboard.html',
+                             config=None,
                              stats=stats,
                              clientes_recentes=[],
                              produtos_estoque_baixo=[],
