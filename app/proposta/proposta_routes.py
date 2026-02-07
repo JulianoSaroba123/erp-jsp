@@ -792,10 +792,17 @@ def gerar_pdf(id):
             from app.configuracao.configuracao_utils import get_config
             config = get_config()
             
-            # Caminho absoluto para a logo
-            project_root = os.path.dirname(current_app.root_path)
-            logo_path = os.path.join(project_root, "static", "img", "JSP.jpg")
-            logo_url = f"file:///{logo_path.replace(os.sep, '/')}"
+            # Usar logo base64 das configurações se disponível
+            logo_url = None
+            if config and config.logo_base64:
+                logo_url = config.logo_base64
+                logger.info("✅ Usando logo_base64 das configurações")
+            else:
+                # Fallback para logo padrão se não houver base64
+                project_root = os.path.dirname(current_app.root_path)
+                logo_path = os.path.join(project_root, "static", "img", "JSP.jpg")
+                logo_url = f"file:///{logo_path.replace(os.sep, '/')}"
+                logger.warning("⚠️ Logo base64 não encontrada, usando logo padrão")
             
             # Renderizar template HTML com o caminho da logo e configurações
             html_content = render_template('proposta/pdf_proposta.html', 
