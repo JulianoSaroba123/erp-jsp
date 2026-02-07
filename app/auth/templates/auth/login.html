@@ -39,7 +39,10 @@
         }
         
         body {
-            background: linear-gradient(135deg, var(--jsp-darker) 0%, #001a33 35%, var(--jsp-primary) 100%);
+            background: 
+                radial-gradient(ellipse at top right, rgba(0, 123, 255, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom left, rgba(0, 201, 255, 0.15) 0%, transparent 50%),
+                linear-gradient(135deg, var(--jsp-darker) 0%, #001634 35%, #002855 70%, var(--jsp-primary) 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -59,10 +62,10 @@
             width: 100%;
             height: 100%;
             background-image: 
-                radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(0, 255, 136, 0.05) 0%, transparent 50%);
-            animation: float 20s ease-in-out infinite;
+                radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 123, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(0, 201, 255, 0.08) 0%, transparent 50%);
+            animation: float 25s ease-in-out infinite;
             z-index: -1;
         }
         
@@ -102,26 +105,29 @@
         
         .login-card {
             background: linear-gradient(145deg, rgba(10, 25, 41, 0.97) 0%, rgba(0, 15, 35, 0.98) 100%);
-            border: 1px solid rgba(0, 212, 255, 0.25);
+            border: 1.5px solid rgba(0, 212, 255, 0.3);
             border-radius: 20px;
             box-shadow: 
-                0 25px 50px rgba(0, 0, 0, 0.5),
-                0 0 35px rgba(0, 123, 255, 0.15),
-                inset 0 1px 1px rgba(255, 255, 255, 0.1);
+                0 25px 60px rgba(0, 0, 0, 0.6),
+                0 0 40px rgba(0, 123, 255, 0.2),
+                0 0 80px rgba(0, 201, 255, 0.1),
+                inset 0 1px 1px rgba(255, 255, 255, 0.12);
             overflow: hidden;
-            -webkit-backdrop-filter: blur(20px);
-            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(25px);
+            backdrop-filter: blur(25px);
             position: relative;
             animation: cardSlideIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .login-card:hover {
-            transform: translateY(-3px);
+            transform: translateY(-5px) scale(1.01);
             box-shadow: 
-                0 30px 60px rgba(0, 0, 0, 0.6),
-                0 0 45px rgba(0, 123, 255, 0.25),
-                inset 0 1px 1px rgba(255, 255, 255, 0.15);
+                0 35px 70px rgba(0, 0, 0, 0.7),
+                0 0 60px rgba(0, 123, 255, 0.35),
+                0 0 100px rgba(0, 201, 255, 0.15),
+                inset 0 1px 1px rgba(255, 255, 255, 0.18);
+            border-color: rgba(0, 212, 255, 0.5);
         }
         
         .login-card::before {
@@ -152,12 +158,15 @@
         }
         
         .login-header {
-            background: linear-gradient(135deg, rgba(0, 123, 255, 0.12) 0%, rgba(0, 212, 255, 0.08) 100%);
-            border-bottom: 1px solid rgba(0, 212, 255, 0.25);
+            background: 
+                linear-gradient(135deg, rgba(0, 123, 255, 0.15) 0%, rgba(0, 201, 255, 0.1) 100%),
+                radial-gradient(ellipse at top, rgba(0, 212, 255, 0.1), transparent);
+            border-bottom: 1.5px solid rgba(0, 212, 255, 0.3);
             color: white;
             padding: var(--card-header-padding) var(--card-padding-x);
             text-align: center;
             position: relative;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
         
         .login-header h1 {
@@ -364,7 +373,7 @@
             width: 72px;
             height: 72px;
             background: linear-gradient(135deg, var(--jsp-primary), var(--jsp-secondary));
-            border: 2px solid rgba(0, 212, 255, 0.4);
+            border: 2.5px solid rgba(0, 212, 255, 0.5);
             border-radius: 16px;
             display: flex;
             align-items: center;
@@ -375,25 +384,55 @@
             font-weight: bold;
             font-family: 'Orbitron', sans-serif;
             box-shadow: 
-                0 8px 30px rgba(0, 123, 255, 0.4),
-                0 0 40px rgba(0, 212, 255, 0.2),
-                inset 0 2px 0 rgba(255, 255, 255, 0.15);
+                0 8px 35px rgba(0, 123, 255, 0.5),
+                0 0 50px rgba(0, 212, 255, 0.3),
+                0 0 80px rgba(0, 201, 255, 0.15),
+                inset 0 2px 0 rgba(255, 255, 255, 0.2),
+                inset 0 -2px 8px rgba(0, 0, 0, 0.2);
             animation: logo-pulse 3s ease-in-out infinite;
             position: relative;
+            overflow: hidden;
+        }
+        
+        .logo::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: logo-shine 4s ease-in-out infinite;
         }
         
         @keyframes logo-pulse {
             0%, 100% { 
                 box-shadow: 
-                    0 8px 30px rgba(0, 123, 255, 0.4),
-                    0 0 40px rgba(0, 212, 255, 0.2),
-                    inset 0 2px 0 rgba(255, 255, 255, 0.15);
+                    0 8px 35px rgba(0, 123, 255, 0.5),
+                    0 0 50px rgba(0, 212, 255, 0.3),
+                    0 0 80px rgba(0, 201, 255, 0.15),
+                    inset 0 2px 0 rgba(255, 255, 255, 0.2),
+                    inset 0 -2px 8px rgba(0, 0, 0, 0.2);
+                transform: scale(1);
             }
             50% { 
                 box-shadow: 
-                    0 10px 40px rgba(0, 123, 255, 0.6),
-                    0 0 60px rgba(0, 212, 255, 0.4),
-                    inset 0 2px 0 rgba(255, 255, 255, 0.2);
+                    0 10px 45px rgba(0, 123, 255, 0.7),
+                    0 0 70px rgba(0, 212, 255, 0.5),
+                    0 0 100px rgba(0, 201, 255, 0.25),
+                    inset 0 2px 0 rgba(255, 255, 255, 0.3),
+                    inset 0 -2px 10px rgba(0, 0, 0, 0.3);
+                transform: scale(1.02);
+            }
+        }
+        
+        @keyframes logo-shine {
+            0% {
+                transform: translateX(-100%) translateY(-100%) rotate(45deg);
+            }
+            100% {
+                transform: translateX(100%) translateY(100%) rotate(45deg);
             }
         }
         
@@ -405,6 +444,9 @@
             display: block;
             background: white;
             padding: 2px;
+            position: relative;
+            z-index: 1;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
         }
         
         /* Media Queries */
@@ -548,10 +590,15 @@
             <div class="login-card">
                 <div class="login-header">
                     <div class="logo">
-                        <img src="{{ url_for('static', filename='img/JSP.jpg') }}?v={{ current_time }}" 
-                             alt="JSP Elétrica Industrial & Solar"
-                             onerror="this.style.display='none'; this.parentNode.innerHTML='<div style=&quot;color: var(--neon-blue); font-weight: bold; font-size: 1.5rem; text-align: center; padding: 20px;&quot;>JSP</div>';"
-                             onload="console.log('✅ Logo JSP carregado com sucesso');">
+                        {% if config and config.logo_base64 %}
+                            <img src="{{ config.logo_base64 }}" 
+                                 alt="{{ config.nome_fantasia or 'JSP Elétrica Industrial & Solar' }}"
+                                 onerror="this.style.display='none'; this.parentNode.innerHTML='<div style=&quot;color: var(--jsp-accent); font-weight: bold; font-size: 1.5rem; text-align: center; padding: 20px;&quot;>JSP</div>';">
+                        {% else %}
+                            <img src="{{ url_for('static', filename='img/JSP.jpg') }}?v={{ current_time }}" 
+                                 alt="JSP Elétrica Industrial & Solar"
+                                 onerror="this.style.display='none'; this.parentNode.innerHTML='<div style=&quot;color: var(--jsp-accent); font-weight: bold; font-size: 1.5rem; text-align: center; padding: 20px;&quot;>JSP</div>';">
+                        {% endif %}
                     </div>
                     <h1>{{ config.nome_fantasia if config and config.nome_fantasia else 'JSP ELÉTRICA' }}</h1>
                     <h2 class="jsp-subtitle">INDUSTRIAL & SOLAR</h2>
