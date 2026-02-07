@@ -70,27 +70,24 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label"><i class="fas fa-image me-1"></i>Logotipo</label>
-                                <input type="file" name="logo" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif">
-                                {% if configuracao.logo_base64 %}
-                                <div class="mt-2 text-center">
-                                    <img src="data:image/png;base64,{{ configuracao.logo_base64 }}" alt="Logo atual" class="img-thumbnail" style="max-height:100px;">
-                                    <p class="text-success small mt-1 mb-0"><i class="fas fa-check-circle"></i> Logo configurada</p>
-                                </div>
-                                {% elif configuracao.logo %}
-                                <div class="mt-2 text-center">
-                                    <img src="{{ url_for('configuracao.uploaded_file', filename=configuracao.logo.split('/')[-1]) }}" alt="Logo atual" class="img-thumbnail" style="max-height:100px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                    <p class="text-warning small mt-1 mb-0" style="display:none;"><i class="fas fa-exclamation-triangle"></i> Arquivo não encontrado - faça novo upload</p>
-                                    <p class="text-info small mt-1 mb-0"><i class="fas fa-info-circle"></i> Arquivo: {{ configuracao.logo.split('/')[-1] }}</p>
-                                </div>
-                                {% else %}
-                                <div class="mt-2 text-center">
-                                    <div class="border rounded p-3 bg-light">
+                                <input type="file" name="logo" id="logo_input" class="form-control" accept="image/png,image/jpeg,image/jpg,image/gif">
+                                
+                                <!-- Preview da logo -->
+                                <div id="logo_preview_container" class="mt-2 text-center">
+                                    {% if configuracao.logo_base64 %}
+                                    <img id="logo_preview" src="data:image/png;base64,{{ configuracao.logo_base64 }}" alt="Logo atual" class="img-thumbnail" style="max-height:100px;">
+                                    <p id="logo_status" class="text-success small mt-1 mb-0"><i class="fas fa-check-circle"></i> Logo configurada</p>
+                                    {% elif configuracao.logo %}
+                                    <img id="logo_preview" src="{{ url_for('configuracao.uploaded_file', filename=configuracao.logo.split('/')[-1]) }}" alt="Logo atual" class="img-thumbnail" style="max-height:100px;" onerror="this.style.display='none'; document.getElementById('logo_placeholder').style.display='block';">
+                                    <p id="logo_status" class="text-info small mt-1 mb-0"><i class="fas fa-info-circle"></i> Arquivo: {{ configuracao.logo.split('/')[-1] }}</p>
+                                    {% else %}
+                                    <div id="logo_placeholder" class="border rounded p-3 bg-light">
                                         <i class="fas fa-image fa-3x text-muted mb-2"></i>
                                         <p class="text-muted small mb-0">Nenhuma logo configurada</p>
                                         <p class="text-muted small mb-0">Faça upload de uma imagem</p>
                                     </div>
+                                    {% endif %}
                                 </div>
-                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -451,6 +448,89 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ Event listener CEP registrado');
     } else {
         console.error('❌ Botão CEP não encontrado');
+    }
+    
+    // Preview de logo ao selecionar arquivo
+    const logoInput = document.getElementById('logo_input');
+    if (logoInput) {
+        logoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            
+            if (!file) {
+                console.log('❌ Nenhum arquivo selecionado');
+                return;
+            }
+            
+            console.log('📁 Arquivo selecionado:', file.name, '| Tamanho:', (file.size / 1024).toFixed(2), 'KB');
+            
+            // Validar tipo de arquivo
+            const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                alert('❌ Tipo de arquivo inválido! Selecione PNG, JPG ou GIF.');
+                logoInput.value = '';
+                return;
+            }
+            
+            // Validar tamanho (máx 5MB)
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                alert('❌ Arquivo muito grande! Tamanho máximo: 5MB');
+                logoInput.value = '';
+                return;
+            }
+            
+            // Criar preview
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                // Atualizar ou criar preview
+                let previewImg = document.getElementById('logo_preview');
+                let statusText = document.getElementById('logo_status');
+                let placeholder = document.getElementById('logo_placeholder');
+                
+                // Esconder placeholder se existir
+                if (placeholder) {
+                    placeholder.style.display = 'none';
+                }
+                
+                // Criar ou atualizar imagem
+                if (!previewImg) {
+                    const container = document.getElementById('logo_preview_container');
+                    previewImg = document.createElement('img');
+                    previewImg.id = 'logo_preview';
+                    previewImg.className = 'img-thumbnail';
+                    previewImg.style.maxHeight = '100px';
+                    previewImg.alt = 'Preview da logo';
+                    container.insertBefore(previewImg, container.firstChild);
+                }
+                
+                previewImg.src = event.target.result;
+                previewImg.style.display = 'block';
+                
+                // Atualizar ou criar status
+                if (!statusText) {
+                    statusText = document.createElement('p');
+                    statusText.id = 'logo_status';
+                    statusText.className = 'small mt-1 mb-0';
+                    document.getElementById('logo_preview_container').appendChild(statusText);
+                }
+                
+                statusText.className = 'text-primary small mt-1 mb-0';
+                statusText.innerHTML = `<i class="fas fa-clock me-1"></i>Novo arquivo selecionado: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                
+                console.log('✅ Preview da logo atualizado');
+            };
+            
+            reader.onerror = function() {
+                console.error('❌ Erro ao ler arquivo');
+                alert('Erro ao carregar preview da imagem');
+            };
+            
+            reader.readAsDataURL(file);
+        });
+        
+        console.log('✅ Event listener de logo registrado');
+    } else {
+        console.error('❌ Input de logo não encontrado');
     }
 });
 </script>
