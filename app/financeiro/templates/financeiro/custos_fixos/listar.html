@@ -88,45 +88,43 @@
 <div class="card">
     <div class="card-body">
         {% if custos %}
-        <div class="table-responsive">
-            <table class="table table-striped table-hover">
+        <div class="table-responsive" style="white-space: nowrap;">
+            <table class="table table-striped table-hover" style="margin-bottom: 0;">
                 <thead>
                     <tr>
-                        <th>Nome</th>
-                        <th>Categoria</th>
-                        <th>Valor Mensal</th>
-                        <th>Dia Vencimento</th>
-                        <th>Próximo Venc.</th>
-                        <th>Conta</th>
-                        <th>Centro Custo</th>
-                        <th>Auto-Gerar</th>
-                        <th>Status</th>
-                        <th>Ações</th>
+                        <th style="white-space: nowrap;">Nome</th>
+                        <th style="white-space: nowrap;">Categoria</th>
+                        <th style="white-space: nowrap;">Valor Mensal</th>
+                        <th style="white-space: nowrap;">Dia Vencimento</th>
+                        <th style="white-space: nowrap;">Próximo Venc.</th>
+                        <th style="white-space: nowrap;">Conta</th>
+                        <th style="white-space: nowrap;">Centro Custo</th>
+                        <th style="white-space: nowrap;">Auto-Gerar</th>
+                        <th style="white-space: nowrap;">Status</th>
+                        <th style="white-space: nowrap;">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for custo in custos %}
-                    <tr>
-                        <td>
+                    <tr style="white-space: nowrap;">
+                        <td style="white-space: nowrap;">
                             <strong>{{ custo.nome }}</strong>
-                            {% if custo.descricao %}
-                            <br><small class="text-muted">{{ custo.descricao[:50] }}...</small>
-                            {% endif %}
+                            {% if custo.descricao %}<small class="text-muted"> — {{ custo.descricao[:30] }}...</small>{% endif %}
                         </td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             <span class="badge bg-secondary">{{ custo.categoria }}</span>
                         </td>
-                        <td class="text-end">
+                        <td style="white-space: nowrap; text-align: right;">
                             {% if custo.tipo == 'DESPESA' %}
                             <span class="text-danger">{{ custo.valor_formatado }}</span>
                             {% else %}
                             <span class="text-success">{{ custo.valor_formatado }}</span>
                             {% endif %}
                         </td>
-                        <td class="text-center">
+                        <td style="white-space: nowrap; text-align: center;">
                             <span class="badge bg-info">Dia {{ custo.dia_vencimento }}</span>
                         </td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             {% set dias_restantes = (custo.proximo_vencimento - data_hoje).days %}
                             {{ custo.proximo_vencimento.strftime('%d/%m/%Y') }}
                             {% if dias_restantes <= 7 %}
@@ -135,35 +133,35 @@
                             <span class="badge bg-warning">{{ dias_restantes }} dia(s)</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             {% if custo.conta_bancaria %}
                             {{ custo.conta_bancaria.nome }}
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             {% if custo.centro_custo %}
                             {{ custo.centro_custo.nome }}
                             {% else %}
                             <span class="text-muted">-</span>
                             {% endif %}
                         </td>
-                        <td class="text-center">
+                        <td style="white-space: nowrap; text-align: center;">
                             {% if custo.gerar_automaticamente %}
                             <i class="fas fa-check-circle text-success" title="Sim"></i>
                             {% else %}
                             <i class="fas fa-times-circle text-muted" title="Não"></i>
                             {% endif %}
                         </td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             {% if custo.ativo %}
                             <span class="badge bg-success">Ativo</span>
                             {% else %}
                             <span class="badge bg-secondary">Inativo</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             <div class="btn-group" role="group">
                                 <a href="{{ url_for('financeiro.editar_custo_fixo', id=custo.id) }}" 
                                    class="btn btn-sm btn-warning" title="Editar">
