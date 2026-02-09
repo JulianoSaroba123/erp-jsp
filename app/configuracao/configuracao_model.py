@@ -57,6 +57,10 @@ class Configuracao(BaseModel):
 
     def __repr__(self):
         return f"<Configuracao: {self.nome_fantasia}>"
+    
+    def get(self, key, default=None):
+        """Permite usar config.get() como dicionário para compatibilidade com templates."""
+        return getattr(self, key, default)
 
     @classmethod
     def get_solo(cls):
