@@ -145,6 +145,26 @@
     </div>
 </div>
 
+<!-- Ações Rápidas -->
+<div class="row mb-4 quick-actions">
+    <div class="col-12">
+        <div class="d-flex flex-wrap gap-3 align-items-center justify-content-center">
+            <a href="{{ url_for('ordem_servico.novo') }}" class="btn">
+                <i class="fas fa-wrench me-2"></i> Nova Ordem de Serviço
+            </a>
+            <a href="{{ url_for('cliente.novo') }}" class="btn">
+                <i class="fas fa-user-plus me-2"></i> Novo Cliente
+            </a>
+            <a href="{{ url_for('proposta.nova_proposta') }}" class="btn">
+                <i class="fas fa-file-signature me-2"></i> Nova Proposta
+            </a>
+            <a href="{{ url_for('produto.novo') }}" class="btn">
+                <i class="fas fa-box-open me-2"></i> Novo Produto
+            </a>
+        </div>
+    </div>
+</div>
+
 <!-- Cards de Estatísticas -->
 <div class="row mb-4">
     <div class="col-md-3">
@@ -168,25 +188,6 @@
             </div>
         </div>
     </div>
-                <!-- Ações Rápidas -->
-                <div class="row mb-4 quick-actions">
-                    <div class="col-12">
-                        <div class="d-flex flex-wrap gap-3 align-items-center">
-                            <a href="{{ url_for('ordem_servico.novo') }}" class="btn">
-                                <i class="fas fa-wrench me-2"></i> Nova Ordem de Serviço
-                            </a>
-                            <a href="{{ url_for('cliente.novo') }}" class="btn">
-                                <i class="fas fa-user-plus me-2"></i> Novo Cliente
-                            </a>
-                            <a href="{{ url_for('proposta.nova_proposta') }}" class="btn">
-                                <i class="fas fa-file-signature me-2"></i> Nova Proposta
-                            </a>
-                            <a href="{{ url_for('produto.novo') }}" class="btn">
-                                <i class="fas fa-box-open me-2"></i> Novo Produto
-                            </a>
-                        </div>
-                    </div>
-                </div>
 
     <div class="col-md-3">
         <div class="card stat-card">
