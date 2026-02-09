@@ -107,6 +107,7 @@
                                 <tr>
                                     <th>Descrição</th>
                                     <th>Fornecedor</th>
+                                    <th>Origem</th>
                                     <th>Valor</th>
                                     <th>Vencimento</th>
                                     <th>Status</th>
@@ -128,6 +129,20 @@
                                             {{ conta.fornecedor.nome }}
                                         {% else %}
                                             <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ conta.origem_cor if conta.origem else 'primary' }}">
+                                            <i class="fas {{ conta.origem_icone if conta.origem else 'fa-hand-pointer' }} me-1"></i>
+                                            {{ conta.origem_formatada if conta.origem else 'Manual' }}
+                                        </span>
+                                        {% if conta.origem == 'CUSTO_FIXO' and conta.custo_fixo %}
+                                        <br><small class="text-muted">
+                                            <a href="{{ url_for('financeiro.editar_custo_fixo', id=conta.custo_fixo.id) }}" 
+                                               class="text-decoration-none" title="Ver Custo Fixo">
+                                                <i class="fas fa-link me-1"></i>{{ conta.custo_fixo.nome }}
+                                            </a>
+                                        </small>
                                         {% endif %}
                                     </td>
                                     <td class="text-danger">

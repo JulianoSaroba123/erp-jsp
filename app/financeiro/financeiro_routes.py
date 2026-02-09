@@ -1501,7 +1501,8 @@ def listar_custos_fixos():
                              total_mensal=total_mensal,
                              categorias=categorias,
                              categoria_filtro=categoria,
-                             status_filtro=status)
+                             status_filtro=status,
+                             data_hoje=date.today())
     
     except Exception as e:
         flash(f'Erro ao listar custos fixos: {str(e)}', 'danger')

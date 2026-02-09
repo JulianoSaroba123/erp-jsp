@@ -73,6 +73,34 @@
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
         border-color: rgba(0, 123, 255, 0.3);
     }
+
+    .stat-icon {
+        width: 64px;
+        height: 64px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+        background: rgba(6,182,212,0.06);
+        box-shadow: 0 6px 18px rgba(6,182,212,0.04);
+    }
+
+    .quick-actions .btn {
+        border-radius: 12px;
+        padding: 0.9rem 1.1rem;
+        min-width: 160px;
+        background: linear-gradient(90deg, rgba(6,182,212,0.06), rgba(0,212,255,0.03));
+        border: 1px solid rgba(6,182,212,0.06);
+        color: #bfefff;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .quick-actions .btn:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(6,182,212,0.06);
+    }
+
+    .card .card-body small.text-muted { color: #9aa6b2 }
 </style>
 
 <!-- Bem-vindo -->
@@ -140,7 +168,26 @@
             </div>
         </div>
     </div>
-    
+                <!-- Ações Rápidas -->
+                <div class="row mb-4 quick-actions">
+                    <div class="col-12">
+                        <div class="d-flex flex-wrap gap-3 align-items-center">
+                            <a href="{{ url_for('ordem_servico.nova') }}" class="btn">
+                                <i class="fas fa-wrench me-2"></i> Nova Ordem de Serviço
+                            </a>
+                            <a href="{{ url_for('cliente.novo') }}" class="btn">
+                                <i class="fas fa-user-plus me-2"></i> Novo Cliente
+                            </a>
+                            <a href="{{ url_for('proposta.nova') }}" class="btn">
+                                <i class="fas fa-file-signature me-2"></i> Nova Proposta
+                            </a>
+                            <a href="{{ url_for('produto.novo') }}" class="btn">
+                                <i class="fas fa-box-open me-2"></i> Novo Produto
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
     <div class="col-md-3">
         <div class="card stat-card">
             <div class="card-body text-center">

@@ -78,6 +78,11 @@ class LancamentoFinanceiro(BaseModel):
     desconto = db.Column(db.Numeric(12, 2), default=0)
     multa = db.Column(db.Numeric(12, 2), default=0)
     
+    # 🎯 ORIGEM DO LANÇAMENTO - Para rastreabilidade
+    origem = db.Column(db.String(50), default='MANUAL')
+    # Possíveis origens: MANUAL, CUSTO_FIXO, ORDEM_SERVICO, IMPORTACAO, INTEGRACAO
+    custo_fixo_id = db.Column(db.Integer, db.ForeignKey('custos_fixos.id'), nullable=True)
+    
     # Relacionamentos
     cliente = db.relationship('Cliente', backref='lancamentos_financeiros', foreign_keys=[cliente_id])
     fornecedor = db.relationship('Fornecedor', backref='lancamentos_financeiros', foreign_keys=[fornecedor_id])
@@ -85,6 +90,7 @@ class LancamentoFinanceiro(BaseModel):
     conta_bancaria = db.relationship('ContaBancaria', backref='lancamentos', foreign_keys=[conta_bancaria_id])
     centro_custo = db.relationship('CentroCusto', backref='lancamentos', foreign_keys=[centro_custo_id])
     plano_conta = db.relationship('PlanoContas', backref='lancamentos', foreign_keys=[plano_conta_id])
+    custo_fixo = db.relationship('CustoFixo', backref='lancamentos_gerados', foreign_keys=[custo_fixo_id])
     historico = db.relationship('HistoricoFinanceiro', backref='lancamento', cascade='all, delete-orphan')
     
     def __repr__(self):
@@ -143,6 +149,42 @@ class LancamentoFinanceiro(BaseModel):
             'conta_pagar': 'warning'
         }
         return cores.get(self.tipo, 'secondary')
+    
+    @property
+    def origem_formatada(self):
+        """Retorna origem formatada para exibição."""
+        origens = {
+            'MANUAL': 'Lançamento Manual',
+            'CUSTO_FIXO': 'Custo Fixo Recorrente',
+            'ORDEM_SERVICO': 'Ordem de Serviço',
+            'IMPORTACAO': 'Importação',
+            'INTEGRACAO': 'Integração'
+        }
+        return origens.get(self.origem, 'Manual')
+    
+    @property
+    def origem_cor(self):
+        """Retorna cor da badge da origem."""
+        cores = {
+            'MANUAL': 'primary',
+            'CUSTO_FIXO': 'warning',
+            'ORDEM_SERVICO': 'info',
+            'IMPORTACAO': 'secondary',
+            'INTEGRACAO': 'dark'
+        }
+        return cores.get(self.origem, 'primary')
+    
+    @property
+    def origem_icone(self):
+        """Retorna ícone da origem."""
+        icones = {
+            'MANUAL': 'fa-hand-pointer',
+            'CUSTO_FIXO': 'fa-repeat',
+            'ORDEM_SERVICO': 'fa-wrench',
+            'IMPORTACAO': 'fa-file-import',
+            'INTEGRACAO': 'fa-plug'
+        }
+        return icones.get(self.origem, 'fa-file')
     
     @property
     def dias_vencimento(self):
@@ -710,7 +752,8 @@ class CustoFixo(BaseModel):
             status='PENDENTE',
             conta_bancaria_id=self.conta_bancaria_id,
             centro_custo_id=self.centro_custo_id,
-            origem='CUSTO_FIXO'
+            origem='CUSTO_FIXO',
+            custo_fixo_id=self.id  # Vincula ao custo fixo que gerou
         )
         
         db.session.add(lancamento)
