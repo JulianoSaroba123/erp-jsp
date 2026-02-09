@@ -6,7 +6,7 @@ from flask_login import login_required, current_user
 from app.extensoes import db
 from app.energia_solar.energia_solar_model import CalculoEnergiaSolar
 from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar, KitSolar, ProjetoSolar
-from app.energia_solar.custo_fixo_model import CustoFixo
+from app.energia_solar.custo_fixo_model import CustoPadraoSolar
 from app.cliente.cliente_model import Cliente
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -2045,7 +2045,7 @@ def projeto_recalcular_geracao(projeto_id):
 def custos_fixos_listar():
     """Lista todos os custos fixos cadastrados"""
     try:
-        custos = CustoFixo.query.order_by(CustoFixo.tipo, CustoFixo.descricao).all()
+        custos = CustoPadraoSolar.query.order_by(CustoPadraoSolar.tipo, CustoPadraoSolar.descricao).all()
         return render_template('energia_solar/custos_fixos_lista.html', custos=custos)
     except Exception as e:
         logger.error(f"❌ Erro ao listar custos fixos: {e}")
@@ -2059,7 +2059,7 @@ def custos_fixos_listar():
 @login_required
 def custos_fixos_api():
     """API para listar custos fixos ativos (para carregar no wizard)"""
-    custos = CustoFixo.query.filter_by(ativo=True, aplicar_automaticamente=True).all()
+    custos = CustoPadraoSolar.query.filter_by(ativo=True, aplicar_automaticamente=True).all()
     return jsonify([custo.to_dict() for custo in custos])
 
 
@@ -2069,7 +2069,7 @@ def custo_fixo_novo():
     """Criar novo custo fixo"""
     if request.method == 'POST':
         try:
-            custo = CustoFixo(
+            custo = CustoPadraoSolar(
                 descricao=request.form.get('descricao'),
                 unidade=request.form.get('unidade', 'un'),
                 quantidade=float(request.form.get('quantidade', 1)),
@@ -2098,7 +2098,7 @@ def custo_fixo_novo():
 @login_required
 def custo_fixo_editar(custo_id):
     """Editar custo fixo existente"""
-    custo = CustoFixo.query.get_or_404(custo_id)
+    custo = CustoPadraoSolar.query.get_or_404(custo_id)
     
     if request.method == 'POST':
         try:
@@ -2128,7 +2128,7 @@ def custo_fixo_editar(custo_id):
 @login_required
 def custo_fixo_excluir(custo_id):
     """Excluir custo fixo"""
-    custo = CustoFixo.query.get_or_404(custo_id)
+    custo = CustoPadraoSolar.query.get_or_404(custo_id)
     
     try:
         descricao = custo.descricao

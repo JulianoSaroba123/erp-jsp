@@ -1,12 +1,12 @@
 """
-Modelo para Custos Fixos - Catálogo de custos padrão
+Modelo para Custos Padrão Solar - Catálogo de custos padrão para projetos
 """
 from app.extensoes import db
 from datetime import datetime
 
 
-class CustoFixo(db.Model):
-    """Custos fixos que aparecem automaticamente em novos projetos"""
+class CustoPadraoSolar(db.Model):
+    """Custos padrão que aparecem automaticamente em novos projetos solares"""
     __tablename__ = 'custo_fixo'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -45,4 +45,4 @@ class CustoFixo(db.Model):
         }
     
     def __repr__(self):
-        return f'<CustoFixo {self.descricao} - R$ {self.valor_unitario}>'
+        return f'<CustoPadraoSolar {self.descricao} - R$ {self.valor_unitario}>'
