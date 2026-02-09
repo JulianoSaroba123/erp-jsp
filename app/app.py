@@ -279,6 +279,22 @@ def create_app(config_name=None):
                         db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN plano_conta_id INTEGER REFERENCES plano_contas(id)"))
                         db.session.commit()
                     
+                    # 🎯 RASTREABILIDADE - Campos de origem do lançamento
+                    if 'origem' not in colunas:
+                        print("   🔧 Adicionando coluna 'origem'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN origem VARCHAR(50) DEFAULT 'MANUAL'"))
+                        db.session.commit()
+                        # Atualizar registros existentes
+                        db.session.execute(text("UPDATE lancamentos_financeiros SET origem = 'MANUAL' WHERE origem IS NULL"))
+                        db.session.commit()
+                        print("   ✅ Coluna 'origem' adicionada e registros atualizados!")
+                    
+                    if 'custo_fixo_id' not in colunas:
+                        print("   🔧 Adicionando coluna 'custo_fixo_id'...")
+                        db.session.execute(text("ALTER TABLE lancamentos_financeiros ADD COLUMN custo_fixo_id INTEGER REFERENCES custos_fixos(id)"))
+                        db.session.commit()
+                        print("   ✅ Coluna 'custo_fixo_id' adicionada!")
+                    
                     print("   ✅ Colunas verificadas/criadas!")
             except Exception as e:
                 db.session.rollback()
