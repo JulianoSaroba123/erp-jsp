@@ -51,6 +51,13 @@
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
+    /* Truncar nomes longos em uma linha */
+    table tbody td:first-child {
+        max-width: 300px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 </style>
 
 <div class="container-fluid">
@@ -128,7 +135,7 @@
                             {% for cliente in clientes %}
                             <tr>
                                 <td>
-                                    <strong>{{ cliente.nome_display }}</strong>
+                                    <strong class="text-truncate">{{ cliente.nome_display }}</strong>
                                 </td>
                                 <td>
                                     <span class="badge bg-{{ 'info' if cliente.tipo == 'PF' else 'warning' }}">
