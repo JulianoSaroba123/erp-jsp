@@ -14,7 +14,11 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 import io
+import logging
 from app.extensoes import db
+
+# Configurar logger
+logger = logging.getLogger(__name__)
 from app.financeiro.financeiro_model import (
     LancamentoFinanceiro, CategoriaFinanceira, ContaBancaria, CentroCusto, CustoFixo,
     Notificacao, RateioDespesa, ImportacaoLote, RelatorioCustomizado
