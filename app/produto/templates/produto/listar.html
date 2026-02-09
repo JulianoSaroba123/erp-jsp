@@ -178,33 +178,21 @@
                             <tr>
                                 <td>
                                     <code>{{ produto.codigo_display }}</code>
-                                    {% if produto.codigo_barras %}
-                                    <br><small class="text-muted">{{ produto.codigo_barras }}</small>
-                                    {% endif %}
                                 </td>
                                 <td>
                                     <div>
                                         <strong>{{ produto.nome_display }}</strong>
-                                        {% if produto.marca %}
-                                        <br><small class="text-muted">{{ produto.marca }}</small>
-                                        {% endif %}
                                     </div>
                                 </td>
                                 <td>
                                     {% if produto.categoria %}
                                         <span class="badge bg-info">{{ produto.categoria }}</span>
-                                        {% if produto.subcategoria %}
-                                        <br><small class="text-muted">{{ produto.subcategoria }}</small>
-                                        {% endif %}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     <div class="text-success fw-bold">{{ produto.preco_venda_formatado }}</div>
-                                    {% if produto.preco_custo %}
-                                    <small class="text-muted">Custo: {{ produto.preco_custo_formatado }}</small>
-                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if produto.controla_estoque %}
@@ -212,9 +200,6 @@
                                         <span class="badge bg-{% if situacao == 'baixo' %}danger{% elif situacao == 'alto' %}warning{% else %}success{% endif %}">
                                             {{ produto.estoque_atual }} {{ produto.unidade_medida }}
                                         </span>
-                                        {% if produto.estoque_minimo %}
-                                        <br><small class="text-muted">Mín: {{ produto.estoque_minimo }}</small>
-                                        {% endif %}
                                     {% else %}
                                         <span class="text-muted">Sem controle</span>
                                     {% endif %}

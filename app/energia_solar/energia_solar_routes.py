@@ -2045,7 +2045,9 @@ def projeto_recalcular_geracao(projeto_id):
 def custos_fixos_listar():
     """Lista todos os custos fixos cadastrados"""
     try:
-        custos = CustoPadraoSolar.query.order_by(CustoPadraoSolar.tipo, CustoPadraoSolar.descricao).all()
+        from app.financeiro.financeiro_model import CustoFixo
+
+        custos = CustoFixo.query.order_by(CustoFixo.dia_vencimento).all()
         return render_template('energia_solar/custos_fixos_lista.html', custos=custos)
     except Exception as e:
         logger.error(f"❌ Erro ao listar custos fixos: {e}")

@@ -143,15 +143,9 @@
                             <tr>
                                 <td>
                                     <strong>{{ equipamento.nome }}</strong>
-                                    {% if equipamento.tipo %}
-                                    <br><small class="text-muted">{{ equipamento.tipo }}</small>
-                                    {% endif %}
                                 </td>
                                 <td>
                                     {{ equipamento.marca or '-' }}
-                                    {% if equipamento.modelo %}
-                                    <br><small class="text-muted">{{ equipamento.modelo }}</small>
-                                    {% endif %}
                                 </td>
                                 <td>
                                     <code>{{ equipamento.numero_serie or '-' }}</code>
