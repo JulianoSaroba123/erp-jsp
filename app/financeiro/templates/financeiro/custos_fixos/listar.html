@@ -1,246 +1,304 @@
 {% extends "base.html" %}
 
-{% block title %}Custos Fixos - ERP JSP{% endblock %}
+{% block title %}Custos Fixos - {{ super() }}{% endblock %}
 
 {% block breadcrumb %}
-<li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
-<li class="breadcrumb-item active">Custos Fixos</li>
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Custos Fixos</span>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid" style="padding-left: 2rem; padding-right: 2rem; margin-left: 0;">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-1"><i class="fas fa-repeat text-primary me-2"></i>Custos Fixos</h2>
-            <p class="text-muted mb-0">Gerencie despesas e receitas recorrentes mensais</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{{ url_for('financeiro.dashboard_custos_fixos') }}" class="btn btn-outline-info">
-                <i class="fas fa-chart-pie me-1"></i>Dashboard
-            </a>
-            <a href="{{ url_for('financeiro.novo_custo_fixo') }}" class="btn btn-primary">
-                <i class="fas fa-plus me-1"></i>Novo Custo Fixo
-            </a>
+<style>
+    /* Cores JSP Ciano */
+    .custos-header {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(6,182,212,0.3);
+    }
+    .custos-header h2,
+    .custos-header p {
+        color: white !important;
+    }
+    .btn-novo-custo {
+        background: white !important;
+        color: #0891b2 !important;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+        margin-left: 0.5rem;
+    }
+    .btn-novo-custo:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+        color: #0e7490 !important;
+    }
+    .btn-dashboard-custo {
+        background: rgba(255,255,255,0.2) !important;
+        color: white !important;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .btn-dashboard-custo:hover {
+        background: rgba(255,255,255,0.3) !important;
+        color: white !important;
+    }
+    .stats-card {
+        background: white;
+        border: none;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-left: 4px solid #06b6d4;
+    }
+    .main-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+</style>
+
+<div class="container-fluid">
+    <!-- Header Moderno Separado -->
+    <div class="custos-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="mb-2">
+                    <i class="fas fa-repeat me-2"></i>
+                    Custos Fixos
+                </h2>
+                <p class="mb-0 opacity-75">Gerencie despesas e receitas recorrentes mensais</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="{{ url_for('financeiro.dashboard_custos_fixos') }}" class="btn btn-dashboard-custo">
+                    <i class="fas fa-chart-pie me-2"></i>
+                    Dashboard
+                </a>
+                <a href="{{ url_for('financeiro.novo_custo_fixo') }}" class="btn btn-novo-custo">
+                    <i class="fas fa-plus me-2"></i>
+                    Novo Custo Fixo
+                </a>
+            </div>
         </div>
     </div>
 
-    <!-- Cards de Resumo - Design Moderno -->
-    <div class="row g-3 mb-4">
-        <div class="col-xl-4 col-md-6">
-            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #0d6efd !important;">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted mb-1 small text-uppercase fw-semibold">Total Mensal</p>
-                            <h3 class="mb-0 fw-bold text-primary">R$ {{ "{:,.2f}".format(total_mensal).replace(',', '_').replace('.', ',').replace('_', '.') }}</h3>
-                        </div>
-                        <div class="bg-primary bg-opacity-10 p-3 rounded">
-                            <i class="fas fa-calendar-alt fa-lg text-primary"></i>
-                        </div>
+    <!-- Cards de Resumo -->
+    <div class="row mb-4">
+        <div class="col-xl-4 col-md-6 mb-3">
+            <div class="stats-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small text-uppercase fw-semibold">Total Mensal</p>
+                        <h3 class="mb-0 fw-bold" style="color: #0891b2;">R$ {{ "{:,.2f}".format(total_mensal).replace(',', '_').replace('.', ',').replace('_', '.') }}</h3>
+                    </div>
+                    <div style="background: rgba(6,182,212,0.1); padding: 1rem; border-radius: 8px;">
+                        <i class="fas fa-calendar-alt fa-2x" style="color: #0891b2;"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-4 col-md-6">
-            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #198754 !important;">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted mb-1 small text-uppercase fw-semibold">Custos Ativos</p>
-                            <h3 class="mb-0 fw-bold text-success">{{ custos|selectattr('ativo', 'equalto', True)|list|length }}</h3>
-                            <p class="text-muted small mb-0">registros ativos</p>
-                        </div>
-                        <div class="bg-success bg-opacity-10 p-3 rounded">
-                            <i class="fas fa-check-circle fa-lg text-success"></i>
-                        </div>
+        <div class="col-xl-4 col-md-6 mb-3">
+            <div class="stats-card" style="border-left-color: #10b981;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small text-uppercase fw-semibold">Custos Ativos</p>
+                        <h3 class="mb-0 fw-bold text-success">{{ custos|selectattr('ativo', 'equalto', True)|list|length }}</h3>
+                        <p class="text-muted small mb-0">registros ativos</p>
+                    </div>
+                    <div style="background: rgba(16,185,129,0.1); padding: 1rem; border-radius: 8px;">
+                        <i class="fas fa-check-circle fa-2x text-success"></i>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-xl-4 col-md-12">
-            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #0dcaf0 !important;">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted mb-1 small text-uppercase fw-semibold">Projeção Anual</p>
-                            <h3 class="mb-0 fw-bold text-info">R$ {{ "{:,.2f}".format(total_mensal * 12).replace(',', '_').replace('.', ',').replace('_', '.') }}</h3>
-                            <p class="text-muted small mb-0">estimativa em 12 meses</p>
-                        </div>
-                        <div class="bg-info bg-opacity-10 p-3 rounded">
-                            <i class="fas fa-chart-line fa-lg text-info"></i>
-                        </div>
+        <div class="col-xl-4 col-md-12 mb-3">
+            <div class="stats-card" style="border-left-color: #8b5cf6;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <p class="text-muted mb-1 small text-uppercase fw-semibold">Projeção Anual</p>
+                        <h3 class="mb-0 fw-bold" style="color: #8b5cf6;">R$ {{ "{:,.2f}".format(total_mensal * 12).replace(',', '_').replace('.', ',').replace('_', '.') }}</h3>
+                        <p class="text-muted small mb-0">estimativa em 12 meses</p>
+                    </div>
+                    <div style="background: rgba(139,92,246,0.1); padding: 1rem; border-radius: 8px;">
+                        <i class="fas fa-chart-line fa-2x" style="color: #8b5cf6;"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Filtros - Design Limpo -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-            <form method="GET" class="row g-3 align-items-end">
-                <div class="col-lg-4 col-md-6">
-                    <label class="form-label fw-semibold small text-muted mb-1">
-                        <i class="fas fa-tag me-1"></i>CATEGORIA
-                    </label>
-                    <select name="categoria" class="form-select">
-                        <option value="">Todas</option>
-                        {% for cat in categorias %}
-                        <option value="{{ cat }}" {% if cat == categoria_filtro %}selected{% endif %}>
-                            {{ cat }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-lg-4 col-md-6">
-                    <label class="form-label fw-semibold small text-muted mb-1">
-                        <i class="fas fa-toggle-on me-1"></i>STATUS
-                    </label>
-                    <select name="status" class="form-select">
-                        <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativos</option>
-                        <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativos</option>
-                        <option value="todos" {% if status_filtro == 'todos' %}selected{% endif %}>Todos</option>
-                    </select>
-                </div>
-                <div class="col-lg-4 col-md-12">
-                    <button type="submit" class="btn btn-primary me-2">
-                        <i class="fas fa-filter me-1"></i>Filtrar
-                    </button>
-                    <a href="{{ url_for('financeiro.listar_custos_fixos') }}" class="btn btn-outline-secondary">
-                        <i class="fas fa-redo me-1"></i>Limpar
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Tabela de Custos - Design Profissional -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom">
-            <h5 class="mb-0 fw-semibold">
-                <i class="fas fa-list text-primary me-2"></i>Lista de Custos Fixos
-            </h5>
-        </div>
-        <div class="card-body p-0">
-            {% if custos %}
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" style="white-space: nowrap;">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="ps-4 fw-semibold small text-uppercase text-muted">Nome</th>
-                            <th class="fw-semibold small text-uppercase text-muted">Categoria</th>
-                            <th class="text-end fw-semibold small text-uppercase text-muted">Valor Mensal</th>
-                            <th class="text-center fw-semibold small text-uppercase text-muted">Dia Venc.</th>
-                            <th class="fw-semibold small text-uppercase text-muted">Próximo Venc.</th>
-                            <th class="fw-semibold small text-uppercase text-muted">Conta</th>
-                            <th class="fw-semibold small text-uppercase text-muted">Centro Custo</th>
-                            <th class="text-center fw-semibold small text-uppercase text-muted">Auto-Gerar</th>
-                            <th class="text-center fw-semibold small text-uppercase text-muted">Status</th>
-                            <th class="text-center pe-4 fw-semibold small text-uppercase text-muted">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {% for custo in custos %}
-                    <tr class="border-bottom">
-                        <td class="ps-4">
-                            <div class="fw-semibold">{{ custo.nome }}</div>
-                            {% if custo.descricao %}<small class="text-muted">{{ custo.descricao[:40] }}...</small>{% endif %}
-                        </td>
-                        <td>
-                            <span class="badge rounded-pill bg-secondary bg-opacity-10 text-secondary border border-secondary">{{ custo.categoria }}</span>
-                        </td>
-                        <td class="text-end">
-                            {% if custo.tipo == 'DESPESA' %}
-                            <span class="fw-bold text-danger">{{ custo.valor_formatado }}</span>
-                            {% else %}
-                            <span class="fw-bold text-success">{{ custo.valor_formatado }}</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            <span class="badge bg-primary bg-opacity-10 text-primary">{{ custo.dia_vencimento }}</span>
-                        </td>
-                        <td>
-                            {% set dias_restantes = (custo.proximo_vencimento - data_hoje).days %}
-                            <div>{{ custo.proximo_vencimento.strftime('%d/%m/%Y') }}</div>
-                            {% if dias_restantes <= 7 %}
-                            <small class="badge bg-danger">{{ dias_restantes }} dia(s)</small>
-                            {% elif dias_restantes <= 15 %}
-                            <small class="badge bg-warning text-dark">{{ dias_restantes }} dia(s)</small>
-                            {% else %}
-                            <small class="text-muted">em {{ dias_restantes }} dia(s)</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if custo.conta_bancaria %}
-                            <small>{{ custo.conta_bancaria.nome }}</small>
-                            {% else %}
-                            <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if custo.centro_custo %}
-                            <small>{{ custo.centro_custo.nome }}</small>
-                            {% else %}
-                            <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            {% if custo.gerar_automaticamente %}
-                            <i class="fas fa-check-circle text-success fa-lg" title="Sim"></i>
-                            {% else %}
-                            <i class="fas fa-times-circle text-muted" title="Não"></i>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            {% if custo.ativo %}
-                            <span class="badge bg-success bg-opacity-10 text-success border border-success">Ativo</span>
-                            {% else %}
-                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">Inativo</span>
-                            {% endif %}
-                        </td>
-                        <td  class="text-center pe-4">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="{{ url_for('financeiro.editar_custo_fixo', id=custo.id) }}" 
-                                   class="btn btn-outline-warning" title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form method="POST" action="{{ url_for('financeiro.excluir_custo_fixo', id=custo.id) }}" 
-                                      style="display:inline;" 
-                                      onsubmit="return confirm('Deseja desativar este custo fixo?');">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Excluir">
-                                        <i class="fas fa-trash"></i>
+    <div class="row">
+        <div class="col-12">
+            <div class="card main-card">
+                <div class="card-body">
+                    <!-- Filtros -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <form method="GET" class="row g-3">
+                                <div class="col-md-5">
+                                    <select name="categoria" class="form-select">
+                                        <option value="">Todas as Categorias</option>
+                                        {% for cat in categorias %}
+                                        <option value="{{ cat }}" {% if cat == categoria_filtro %}selected{% endif %}>
+                                            {{ cat }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <select name="status" class="form-select">
+                                        <option value="ativo" {% if status_filtro == 'ativo' %}selected{% endif %}>Ativos</option>
+                                        <option value="inativo" {% if status_filtro == 'inativo' %}selected{% endif %}>Inativos</option>
+                                        <option value="todos" {% if status_filtro == 'todos' %}selected{% endif %}>Todos</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <button type="submit" class="btn btn-outline-primary me-2">
+                                        <i class="fas fa-filter"></i>
                                     </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot class="bg-light">
-                    <tr>
-                        <th class="ps-4 fw-semibold small text-uppercase text-muted" colspan="2">
-                            <i class="fas fa-calculator me-1"></i>TOTAL MENSAL
-                        </th>
-                        <th class="text-end fw-bold text-primary">
-                            R$ {{ "{:,.2f}".format(total_mensal).replace(',', '_').replace('.', ',').replace('_', '.') }}
-                        </th>
-                        <th colspan="7"></th>
-                    </tr>
-                </tfoot>
-            </table>
+                                    <a href="{{ url_for('financeiro.listar_custos_fixos') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <small class="text-muted">
+                                {{ custos|selectattr('ativo', 'equalto', True)|list|length }} custo(s) fixo(s) cadastrado(s)
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Custos -->
+                    {% if custos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Categoria</th>
+                                    <th class="text-end">Valor Mensal</th>
+                                    <th class="text-center">Dia Venc.</th>
+                                    <th>Próximo Venc.</th>
+                                    <th>Conta</th>
+                                    <th>Centro Custo</th>
+                                    <th class="text-center">Auto-Gerar</th>
+                                    <th class="text-center">Status</th>
+                                    <th width="150">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for custo in custos %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ custo.nome }}</strong>
+                                        {% if custo.descricao %}<br><small class="text-muted">{{ custo.descricao[:50] }}...</small>{% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ custo.categoria }}</span>
+                                    </td>
+                                    <td class="text-end">
+                                        {% if custo.tipo == 'DESPESA' %}
+                                        <strong class="text-danger">{{ custo.valor_formatado }}</strong>
+                                        {% else %}
+                                        <strong class="text-success">{{ custo.valor_formatado }}</strong>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge" style="background-color: #06b6d4; color: white;">{{ custo.dia_vencimento }}</span>
+                                    </td>
+                                    <td>
+                                        {% set dias_restantes = (custo.proximo_vencimento - data_hoje).days %}
+                                        {{ custo.proximo_vencimento.strftime('%d/%m/%Y') }}
+                                        {% if dias_restantes <= 7 %}
+                                        <br><small class="badge bg-danger">{{ dias_restantes }} dia(s)</small>
+                                        {% elif dias_restantes <= 15 %}
+                                        <br><small class="badge bg-warning text-dark">{{ dias_restantes }} dia(s)</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if custo.conta_bancaria %}
+                                        {{ custo.conta_bancaria.nome }}
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if custo.centro_custo %}
+                                        {{ custo.centro_custo.nome }}
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if custo.gerar_automaticamente %}
+                                        <i class="fas fa-check-circle text-success fa-lg" title="Sim"></i>
+                                        {% else %}
+                                        <i class="fas fa-times-circle text-muted" title="Não"></i>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if custo.ativo %}
+                                        <span class="badge bg-success">Ativo</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Inativo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('financeiro.editar_custo_fixo', id=custo.id) }}" 
+                                               class="btn btn-outline-warning" 
+                                               title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <form method="POST" action="{{ url_for('financeiro.excluir_custo_fixo', id=custo.id) }}" 
+                                                  style="display:inline;" 
+                                                  onsubmit="return confirm('Deseja desativar este custo fixo?');">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Excluir">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Total -->
+                    <div class="row mt-3">
+                        <div class="col-12 text-end">
+                            <strong>Total Mensal: </strong>
+                            <span class="text-primary fs-5 fw-bold">
+                                R$ {{ "{:,.2f}".format(total_mensal).replace(',', '_').replace('.', ',').replace('_', '.') }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Nenhum custo fixo cadastrado</p>
+                        <a href="{{ url_for('financeiro.novo_custo_fixo') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Criar Primeiro Custo Fixo
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        {% else %}
-        <div class="text-center py-5">
-            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">Nenhum custo fixo cadastrado</h5>
-            <p class="text-muted mb-3">Comece criando seu primeiro custo fixo recorrente</p>
-            <a href="{{ url_for('financeiro.novo_custo_fixo') }}" class="btn btn-primary">
-                <i class="fas fa-plus me-1"></i>Criar Primeiro Custo Fixo
-            </a>
-        </div>
-        {% endif %}
     </div>
-</div>
 </div>
 {% endblock %}
