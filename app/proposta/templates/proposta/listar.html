@@ -3,7 +3,7 @@
 {% block title %}Propostas - {{ super() }}{% endblock %}
 
 {% block breadcrumb %}
-<a href="{{ url_for('painel.dashboard') }}"><i class="fas fa-home"></i> Dashboard</a>
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
 <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
 <span class="current-page">Propostas</span>
 {% endblock %}
@@ -35,93 +35,61 @@
     .btn-nova-proposta:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(255,255,255,0.3);
-        color: #06b6d4 !important;
-    }
-    /* Cores JSP Ciano - Lista */
-    .card {
-        border: none !important;
-        border-radius: 12px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    .btn-outline-primary {
-        border-color: #06b6d4 !important;
-        color: #06b6d4 !important;
-    }
-    .btn-outline-primary:hover {
-        background: #06b6d4 !important;
-        color: white !important;
-    }
-    .table thead th {
-        background: #f0f9ff !important;
         color: #0e7490 !important;
-        font-weight: 600 !important;
-        border-bottom: 2px solid #06b6d4 !important;
     }
-    .badge.bg-primary {
-        background: #06b6d4 !important;
-    }
-    .badge.bg-info {
-        background: #0891b2 !important;
-    }
-    .text-primary {
-        color: #06b6d4 !important;
-    }
-    a.text-primary:hover {
-        color: #0891b2 !important;
-    }
-    /* Stats Cards */
-    .stat-card-primary {
-        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-        box-shadow: 0 2px 8px rgba(6,182,212,0.3);
-    }
-    .stat-card-warning {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        box-shadow: 0 2px 8px rgba(245,158,11,0.3);
-    }
-    .stat-card-success {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        box-shadow: 0 2px 8px rgba(16,185,129,0.3);
-    }
-    .stat-card-info {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        box-shadow: 0 2px 8px rgba(59,130,246,0.3);
-    }
-    .stat-card {
-        text-white;
-        padding: 1rem;
-        border-radius: 8px;
+    .main-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 </style>
 
-    <!-- Header Moderno -->
-    <div class="proposta-header mb-4">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <h2 class="mb-2">
-                    <i class="fas fa-file-contract me-2"></i>
-                    Gerenciamento de Propostas
-                </h2>
-                <p class="mb-0 opacity-75">Cadastro e controle de todas as suas propostas</p>
-            </div>
-            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
-                <a href="{{ url_for('proposta.nova_proposta') }}" class="btn btn-nova-proposta">
-                    <i class="fas fa-plus me-2"></i>
-                    Nova Proposta
-                </a>
-            </div>
+<!-- Header Moderno -->
+<div class="proposta-header mb-4">
+    <div class="row align-items-center">
+        <div class="col-lg-8">
+            <h2 class="mb-2">
+                <i class="fas fa-file-contract me-2"></i>
+                Gerenciamento de Propostas
+            </h2>
+            <p class="mb-0 opacity-75">Cadastro e controle de propostas</p>
+        </div>
+        <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+            <a href="{{ url_for('proposta.nova_proposta') }}" class="btn btn-nova-proposta">
+                <i class="fas fa-plus me-2"></i>
+                Nova Proposta
+            </a>
         </div>
     </div>
+</div>
 
 <div class="row">
     <div class="col-12">
-        <div class="card">
-            
+        <div class="card main-card">
             <div class="card-body">
                 <!-- Barra de Busca e Filtros -->
                 <div class="row mb-4">
+                    <div class="col-md-4">
+                        <form method="GET" class="d-flex">
+                            <input type="text" 
+                                   name="busca" 
+                                   class="form-control me-2" 
+                                   placeholder="Buscar por código ou cliente..."
+                                   value="{{ busca }}"
+                                   autocomplete="off">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            {% if busca %}
+                            <a href="{{ url_for('proposta.listar_propostas') }}" class="btn btn-outline-secondary ms-2">
+                                <i class="fas fa-times"></i>
+                            </a>
+                            {% endif %}
+                        </form>
+                    </div>
                     <div class="col-md-3">
-                        <form method="GET" class="d-flex flex-column">
-                            <label class="form-label small">Status</label>
+                        <form method="GET" class="d-flex">
+                            <input type="hidden" name="busca" value="{{ busca }}">
                             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                                 <option value="">Todos os Status</option>
                                 <option value="Pendente" {{ 'selected' if request.args.get('status') == 'Pendente' else '' }}>Pendente</option>
@@ -131,103 +99,18 @@
                             </select>
                         </form>
                     </div>
-                    <div class="col-md-3">
-                        <form method="GET">
-                            <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
-                            <label class="form-label small">Cliente</label>
-                            <input type="text" 
-                                   name="cliente" 
-                                   class="form-control form-control-sm" 
-                                   placeholder="Nome do cliente"
-                                   value="{{ request.args.get('cliente', '') }}"
-                                   autocomplete="off">
-                        </form>
+                    <div class="col-md-5 text-end">
+                        <small class="text-muted">
+                            {{ propostas|length }} proposta(s) encontrada(s)
+                        </small>
                     </div>
-                    <div class="col-md-3">
-                        <form method="GET">
-                            <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
-                            <input type="hidden" name="cliente" value="{{ request.args.get('cliente', '') }}">
-                            <label class="form-label small">Código</label>
-                            <input type="text" 
-                                   name="codigo" 
-                                   class="form-control form-control-sm" 
-                                   placeholder="Código da proposta"
-                                   value="{{ request.args.get('codigo', '') }}"
-                                   autocomplete="off">
-                        </form>
-                    </div>
-                    <div class="col-md-3 d-flex align-items-end">
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-outline-primary btn-sm" onclick="filtrarPropostas()">
-                                <i class="fas fa-search"></i>
-                            </button>
-                            <a href="{{ url_for('proposta.listar_propostas') }}" class="btn btn-outline-secondary btn-sm">
-                                <i class="fas fa-times"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Estatísticas -->
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="stat-card stat-card-primary text-white">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="small">Total</div>
-                                    <div class="h4 mb-0">{{ total_propostas or 0 }}</div>
-                                </div>
-                                <i class="fas fa-file-contract fa-2x opacity-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card stat-card-warning text-white">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="small">Pendentes</div>
-                                    <div class="h4 mb-0">{{ propostas_pendentes or 0 }}</div>
-                                </div>
-                                <i class="fas fa-clock fa-2x opacity-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card stat-card-success text-white">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="small">Aprovadas</div>
-                                    <div class="h4 mb-0">{{ propostas_aprovadas or 0 }}</div>
-                                </div>
-                                <i class="fas fa-check-circle fa-2x opacity-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="stat-card stat-card-info text-white">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <div class="small">Valor Total</div>
-                                    <div class="h4 mb-0">R$ {{ "{:,.2f}".format(valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
-                                </div>
-                                <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Resultado da busca -->
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <small class="text-muted">
-                        {{ propostas|length }} proposta(s) encontrada(s)
-                    </small>
                 </div>
                 
                 <!-- Tabela de Propostas -->
                 {% if propostas %}
                 <div class="table-responsive">
-                    <table class="table table-dark table-hover">
-                        <thead>
+                    <table class="table table-hover">
+                        <thead class="table-light">
                             <tr>
                                 <th>Código</th>
                                 <th>Cliente</th>
@@ -293,18 +176,18 @@
                                         </a>
                                         <a href="{{ url_for('proposta.gerar_pdf', id=proposta.id) }}" 
                                            class="btn btn-outline-primary" 
-                                           title="PDF Proposta"
+                                           title="PDF"
                                            target="_blank">
                                             <i class="fas fa-file-pdf"></i>
                                         </a>
-                                                                        <a href="{{ url_for('proposta.excluir_proposta', id=proposta.id) }}" 
+                                        <a href="{{ url_for('proposta.excluir_proposta', id=proposta.id) }}" 
                                            class="btn btn-outline-danger" 
                                            title="Excluir">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                         <form method="POST" action="{{ url_for('proposta.duplicar_proposta', id=proposta.id) }}" style="display: inline;">
                                             <button type="submit" 
-                                                    class="btn btn-outline-info btn-sm" 
+                                                    class="btn btn-outline-secondary btn-sm" 
                                                     title="Duplicar"
                                                     onclick="return confirm('Deseja duplicar esta proposta?')">
                                                 <i class="fas fa-copy"></i>
@@ -318,17 +201,13 @@
                     </table>
                 </div>
                 {% else %}
-                <!-- Estado vazio -->
                 <div class="text-center py-5">
-                    <div class="mb-4">
-                        <i class="fas fa-file-contract text-muted" style="font-size: 4rem;"></i>
-                    </div>
+                    <i class="fas fa-file-contract fa-3x text-muted mb-3"></i>
                     <h5 class="text-muted">Nenhuma proposta encontrada</h5>
-                    <p class="text-muted mb-4">
-                        Não há propostas que correspondam aos filtros aplicados.
-                    </p>
+                    <p class="text-muted">Comece criando sua primeira proposta</p>
                     <a href="{{ url_for('proposta.nova_proposta') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Criar primeira proposta
+                        <i class="fas fa-plus me-2"></i>
+                        Criar Primeira Proposta
                     </a>
                 </div>
                 {% endif %}
@@ -336,111 +215,4 @@
         </div>
     </div>
 </div>
-
-<!-- Modal de confirmação de exclusão -->
-<div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-labelledby="modalConfirmacaoLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalConfirmacaoLabel">Confirmar Exclusão</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-            <div class="modal-body">
-                <p>Tem certeza que deseja excluir a proposta <strong id="nomeItem"></strong>?</p>
-                <p class="text-muted small">Esta ação não pode ser desfeita.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <form method="POST" id="formExclusao" style="display: inline;">
-                    <button type="submit" class="btn btn-danger">Excluir</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function confirmarExclusao(nome, url) {
-    console.log('Função confirmarExclusao chamada:', nome, url);
-    
-    try {
-        // Atualizar o conteúdo do modal
-        const nomeElement = document.getElementById('nomeItem');
-        const formElement = document.getElementById('formExclusao');
-        
-        if (!nomeElement || !formElement) {
-            console.error('Elementos do modal não encontrados');
-            // Fallback para confirm nativo
-            if (confirm(`Tem certeza que deseja excluir a proposta ${nome}?`)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = url;
-                document.body.appendChild(form);
-                form.submit();
-            }
-            return;
-        }
-        
-        nomeElement.textContent = nome;
-        formElement.action = url;
-        
-        // Tentar abrir o modal
-        const modalElement = document.getElementById('modalConfirmacao');
-        if (modalElement && window.bootstrap) {
-            const modal = new bootstrap.Modal(modalElement);
-            modal.show();
-        } else {
-            console.error('Bootstrap ou modal não encontrado');
-            // Fallback para confirm nativo
-            if (confirm(`Tem certeza que deseja excluir a proposta ${nome}?`)) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.action = url;
-                document.body.appendChild(form);
-                form.submit();
-            }
-        }
-    } catch (error) {
-        console.error('Erro na função confirmarExclusao:', error);
-        // Fallback para confirm nativo
-        if (confirm(`Tem certeza que deseja excluir a proposta ${nome}?`)) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = url;
-            document.body.appendChild(form);
-            form.submit();
-        }
-    }
-}
-
-function filtrarPropostas() {
-    // Pegar todos os formulários de filtro
-    const forms = document.querySelectorAll('form');
-    const params = new URLSearchParams();
-    
-    forms.forEach(form => {
-        const formData = new FormData(form);
-        for (let [key, value] of formData.entries()) {
-            if (value.trim()) {
-                params.set(key, value);
-            }
-        }
-    });
-    
-    // Redirecionar com os parâmetros
-    window.location.href = '{{ url_for("proposta.listar_propostas") }}?' + params.toString();
-}
-
-// Auto-submit nos filtros
-document.addEventListener('DOMContentLoaded', function() {
-    const inputs = document.querySelectorAll('input[name="cliente"], input[name="codigo"]');
-    inputs.forEach(input => {
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                filtrarPropostas();
-            }
-        });
-    });
-});
-</script>
 {% endblock %}
