@@ -99,7 +99,7 @@
             <div class="stats-card">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted mb-1 small text-uppercase fw-semibold">Total Mensal</p>
+                        <p class="mb-1 small text-uppercase fw-semibold" style="color: #666;">Total Mensal</p>
                         <h3 class="mb-0 fw-bold" style="color: #0891b2;">R$ {{ "{:,.2f}".format(total_mensal).replace(',', '_').replace('.', ',').replace('_', '.') }}</h3>
                     </div>
                     <div style="background: rgba(6,182,212,0.1); padding: 1rem; border-radius: 8px;">
@@ -112,9 +112,9 @@
             <div class="stats-card" style="border-left-color: #10b981;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted mb-1 small text-uppercase fw-semibold">Custos Ativos</p>
+                        <p class="mb-1 small text-uppercase fw-semibold" style="color: #666;">Custos Ativos</p>
                         <h3 class="mb-0 fw-bold text-success">{{ custos|selectattr('ativo', 'equalto', True)|list|length }}</h3>
-                        <p class="text-muted small mb-0">registros ativos</p>
+                        <p class="small mb-0" style="color: #999;">registros ativos</p>
                     </div>
                     <div style="background: rgba(16,185,129,0.1); padding: 1rem; border-radius: 8px;">
                         <i class="fas fa-check-circle fa-2x text-success"></i>
@@ -126,9 +126,9 @@
             <div class="stats-card" style="border-left-color: #8b5cf6;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted mb-1 small text-uppercase fw-semibold">Projeção Anual</p>
+                        <p class="mb-1 small text-uppercase fw-semibold" style="color: #666;">Projeção Anual</p>
                         <h3 class="mb-0 fw-bold" style="color: #8b5cf6;">R$ {{ "{:,.2f}".format(total_mensal * 12).replace(',', '_').replace('.', ',').replace('_', '.') }}</h3>
-                        <p class="text-muted small mb-0">estimativa em 12 meses</p>
+                        <p class="small mb-0" style="color: #999;">estimativa em 12 meses</p>
                     </div>
                     <div style="background: rgba(139,92,246,0.1); padding: 1rem; border-radius: 8px;">
                         <i class="fas fa-chart-line fa-2x" style="color: #8b5cf6;"></i>
