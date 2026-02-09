@@ -3,26 +3,108 @@
 {% block title %}Cálculos de Energia Solar{% endblock %}
 
 {% block breadcrumb %}
-<a href="{{ url_for('energia_solar.dashboard') }}" class="breadcrumb-item">Energia Solar</a>
+<a href="{{ url_for('painel.dashboard') }}"><i class="fas fa-home"></i> Dashboard</a>
 <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
-<span class="breadcrumb-item active">Lista de Cálculos</span>
+<span class="current-page">Energia Solar</span>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="neon-title">
-            <i class="fas fa-list me-2"></i>
-            Cálculos de Energia Solar
-        </h2>
-        <a href="{{ url_for('energia_solar.projeto_criar') }}" class="btn btn-neon-primary">
-            <i class="fas fa-calculator me-2"></i>Novo Cálculo
-        </a>
+<style>
+    /* Header Gradient Ciano JSP */
+    .energia-solar-header {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(6,182,212,0.3);
+    }
+    .energia-solar-header h2,
+    .energia-solar-header p {
+        color: white !important;
+    }
+    .btn-novo-calculo {
+        background: white !important;
+        color: #0891b2 !important;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .btn-novo-calculo:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+        color: #06b6d4 !important;
+    }
+    /* Stats Cards */
+    .stats-card {
+        background: white;
+        border-left: 4px solid;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .stats-card-left h6 {
+        opacity: 0.75;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+    }
+    .stats-card-left .value {
+        font-size: 1.75rem;
+        font-weight: bold;
+        color: #0891b2;
+    }
+    .stats-card-left .helper {
+        font-size: 0.85rem;
+        color: #999;
+        margin-top: 0.25rem;
+    }
+    .stats-card-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+    }
+    .main-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .text-ciano {
+        color: #0891b2 !important;
+    }
+</style>
+
+<div class="container-fluid" style="padding-left: 1.5rem; padding-right: 1.5rem;">
+    <!-- Header Moderno -->
+    <div class="energia-solar-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="mb-2">
+                    <i class="fas fa-solar-panel me-2"></i>
+                    Cálculos de Energia Solar
+                </h2>
+                <p class="mb-0 opacity-75">Projetos e análises de energia solar para seus clientes</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="{{ url_for('energia_solar.projeto_criar') }}" class="btn btn-novo-calculo">
+                    <i class="fas fa-plus me-2"></i>
+                    Novo Cálculo
+                </a>
+            </div>
+        </div>
     </div>
 
     <!-- Tabela -->
-    <div class="card card-neon">
+    <div class="card main-card">
         <div class="card-body p-0">
             {% if calculos.items %}
             <div class="table-responsive">

@@ -3,34 +3,106 @@
 {% block title %}Produtos - {{ super() }}{% endblock %}
 
 {% block breadcrumb %}
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item active">Produtos</li>
-    </ol>
-</nav>
+<a href="{{ url_for('painel.dashboard') }}"><i class="fas fa-home"></i> Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Produtos</span>
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h4 class="mb-0">
+<style>
+    /* Header Gradient Ciano JSP */
+    .produto-header {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(6,182,212,0.3);
+    }
+    .produto-header h2,
+    .produto-header p {
+        color: white !important;
+    }
+    .btn-novo-produto {
+        background: white !important;
+        color: #0891b2 !important;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .btn-novo-produto:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+        color: #06b6d4 !important;
+    }
+    /* Stats Cards */
+    .stats-card {
+        background: white;
+        border-left: 4px solid;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .stats-card-left h6 {
+        opacity: 0.75;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+    }
+    .stats-card-left .value {
+        font-size: 1.75rem;
+        font-weight: bold;
+        color: #0891b2;
+    }
+    .stats-card-left .helper {
+        font-size: 0.85rem;
+        color: #999;
+        margin-top: 0.25rem;
+    }
+    .stats-card-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+    }
+    .main-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+</style>
+
+<div class="container-fluid" style="padding-left: 1.5rem; padding-right: 1.5rem;">
+    <!-- Header Moderno -->
+    <div class="produto-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="mb-2">
                     <i class="fas fa-box me-2"></i>
                     Gerenciamento de Produtos
-                </h4>
-                <div class="btn-group">
-                    <a href="{{ url_for('produto.novo') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>
-                        Novo Produto
-                    </a>
-                    <a href="{{ url_for('produto.estoque_baixo') }}" class="btn btn-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Estoque Baixo
-                    </a>
-                </div>
+                </h2>
+                <p class="mb-0 opacity-75">Cadastro e controle de todos os seus produtos</p>
             </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="{{ url_for('produto.novo') }}" class="btn btn-novo-produto">
+                    <i class="fas fa-plus me-2"></i>
+                    Novo Produto
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card main-card">
             
             <div class="card-body">
                 <!-- Barra de Busca e Filtros -->
@@ -189,6 +261,7 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 {% endblock %}
 

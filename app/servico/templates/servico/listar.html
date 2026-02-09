@@ -3,105 +3,160 @@
 {% block title %}Serviços - {{ super() }}{% endblock %}
 
 {% block breadcrumb %}
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('painel.dashboard') }}">Dashboard</a></li>
-        <li class="breadcrumb-item active">Serviços</li>
-    </ol>
-</nav>
+<a href="{{ url_for('painel.dashboard') }}"><i class="fas fa-home"></i> Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Serviços</span>
 {% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>
-        <i class="fas fa-tools me-2"></i>
-        Serviços
-    </h2>
-    <a href="{{ url_for('servico.novo') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-2"></i>
-        Novo Serviço
-    </a>
-</div>
+<style>
+    /* Header Gradient Ciano JSP */
+    .servico-header {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(6,182,212,0.3);
+    }
+    .servico-header h2,
+    .servico-header p {
+        color: white !important;
+    }
+    .btn-novo-servico {
+        background: white !important;
+        color: #0891b2 !important;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+    .btn-novo-servico:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255,255,255,0.3);
+        color: #06b6d4 !important;
+    }
+    /* Stats Cards */
+    .stats-card {
+        background: white;
+        border-left: 4px solid;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .stats-card-left h6 {
+        opacity: 0.75;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+    }
+    .stats-card-left .value {
+        font-size: 1.75rem;
+        font-weight: bold;
+        color: #0891b2;
+    }
+    .stats-card-left .helper {
+        font-size: 0.85rem;
+        color: #999;
+        margin-top: 0.25rem;
+    }
+    .stats-card-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+    }
+    .main-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+</style>
 
-<!-- Estatísticas -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <h6 class="card-title">Total de Serviços</h6>
-                <h3>{{ stats.total }}</h3>
+<div class="container-fluid" style="padding-left: 1.5rem; padding-right: 1.5rem;">
+    <!-- Header Moderno -->
+    <div class="servico-header mb-4">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h2 class="mb-2">
+                    <i class="fas fa-tools me-2"></i>
+                    Gerenciamento de Serviços
+                </h2>
+                <p class="mb-0 opacity-75">Cadastro e controle de todos os seus serviços</p>
             </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <h6 class="card-title">Disponíveis</h6>
-                <h3>{{ stats.disponiveis }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-white">
-            <div class="card-body">
-                <h6 class="card-title">Em Destaque</h6>
-                <h3>{{ stats.destaques }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white">
-            <div class="card-body">
-                <h6 class="card-title">Categorias</h6>
-                <h3>{{ stats.por_categoria|length }}</h3>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Filtros -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="GET" class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Buscar</label>
-                <input type="text" name="busca" class="form-control" 
-                       placeholder="Código, nome ou descrição..." 
-                       value="{{ busca }}">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Categoria</label>
-                <select name="categoria" class="form-select">
-                    <option value="">Todas</option>
-                    <option value="instalacao" {% if categoria_filtro == 'instalacao' %}selected{% endif %}>Instalação</option>
-                    <option value="manutencao" {% if categoria_filtro == 'manutencao' %}selected{% endif %}>Manutenção</option>
-                    <option value="reparo" {% if categoria_filtro == 'reparo' %}selected{% endif %}>Reparo</option>
-                    <option value="consultoria" {% if categoria_filtro == 'consultoria' %}selected{% endif %}>Consultoria</option>
-                    <option value="projeto" {% if categoria_filtro == 'projeto' %}selected{% endif %}>Projeto</option>
-                    <option value="vistoria" {% if categoria_filtro == 'vistoria' %}selected{% endif %}>Vistoria</option>
-                    <option value="treinamento" {% if categoria_filtro == 'treinamento' %}selected{% endif %}>Treinamento</option>
-                    <option value="outros" {% if categoria_filtro == 'outros' %}selected{% endif %}>Outros</option>
-                </select>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-search me-2"></i>
-                    Filtrar
-                </button>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <a href="{{ url_for('servico.listar') }}" class="btn btn-secondary w-100">
-                    <i class="fas fa-times me-2"></i>
-                    Limpar
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <a href="{{ url_for('servico.novo') }}" class="btn btn-novo-servico">
+                    <i class="fas fa-plus me-2"></i>
+                    Novo Serviço
                 </a>
             </div>
-        </form>
+        </div>
     </div>
-</div>
 
-<!-- Lista de Serviços -->
-<div class="card">
-    <div class="card-body">
+    <!-- Cards de Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="border-left-color: #06b6d4;">
+                <div class="stats-card-left">
+                    <h6>Total</h6>
+                    <div class="value">{{ stats.total }}</div>
+                    <div class="helper">Serviços cadastrados</div>
+                </div>
+                <div class="stats-card-icon" style="background-color: rgba(6,182,212,0.1); color: #06b6d4;">
+                    <i class="fas fa-tools"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="border-left-color: #10b981;">
+                <div class="stats-card-left">
+                    <h6>Disponíveis</h6>
+                    <div class="value" style="color: #10b981;">{{ stats.disponiveis }}</div>
+                    <div class="helper">Serviços ativos</div>
+                </div>
+                <div class="stats-card-icon" style="background-color: rgba(16,185,129,0.1); color: #10b981;">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="border-left-color: #8b5cf6;">
+                <div class="stats-card-left">
+                    <h6>Em Destaque</h6>
+                    <div class="value" style="color: #8b5cf6;">{{ stats.destaques }}</div>
+                    <div class="helper">Serviços destacados</div>
+                </div>
+                <div class="stats-card-icon" style="background-color: rgba(139,92,246,0.1); color: #8b5cf6;">
+                    <i class="fas fa-star"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="stats-card" style="border-left-color: #f59e0b;">
+                <div class="stats-card-left">
+                    <h6>Categorias</h6>
+                    <div class="value" style="color: #f59e0b;">{{ stats.por_categoria|length }}</div>
+                    <div class="helper">Categorias</div>
+                </div>
+                <div class="stats-card-icon" style="background-color: rgba(245,158,11,0.1); color: #f59e0b;">
+                    <i class="fas fa-list"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card main-card">
+            
+            <div class="card-body">
         {% if servicos %}
         <div class="table-responsive">
             <table class="table table-hover">
@@ -176,8 +231,9 @@
                 <i class="fas fa-plus me-2"></i>
                 Cadastrar Primeiro Serviço
             </a>
+            </div>
         </div>
-        {% endif %}
     </div>
+</div>
 </div>
 {% endblock %}
