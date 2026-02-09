@@ -257,23 +257,34 @@ class LancamentoFinanceiro(BaseModel):
         if not ano:
             ano = date.today().year
         
-        # Filtro por mês/ano
+        # Filtro por mês/ano - usar data_vencimento ou data_lancamento
         filtro_data = db.and_(
-            db.extract('month', cls.data_lancamento) == mes,
-            db.extract('year', cls.data_lancamento) == ano,
+            db.or_(
+                db.and_(
+                    db.extract('month', cls.data_vencimento) == mes,
+                    db.extract('year', cls.data_vencimento) == ano
+                ),
+                db.and_(
+                    cls.data_vencimento.is_(None),
+                    db.extract('month', cls.data_lancamento) == mes,
+                    db.extract('year', cls.data_lancamento) == ano
+                )
+            ),
             cls.ativo == True
         )
         
+        # Receitas (incluindo pendentes)
         receitas = cls.query.filter(
             filtro_data,
             cls.tipo.in_(['receita', 'conta_receber']),
-            cls.status == 'recebido'
+            cls.status.in_(['recebido', 'pendente'])
         ).all()
         
+        # Despesas (incluindo pendentes)
         despesas = cls.query.filter(
             filtro_data,
             cls.tipo.in_(['despesa', 'conta_pagar']),
-            cls.status == 'pago'
+            cls.status.in_(['pago', 'pendente'])
         ).all()
         
         total_receitas = sum(float(r.valor) for r in receitas)
