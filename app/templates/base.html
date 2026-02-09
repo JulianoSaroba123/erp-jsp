@@ -279,7 +279,28 @@
         }
 
         /* compact brand logo tweaks */
-        .brand-logo img { width:48px;height:48px;object-fit:cover;border-radius:8px }
+        .sidebar-brand {
+            margin-bottom: 1.5rem;
+            padding: 1rem 0.75rem;
+            border-bottom: 1px solid rgba(6, 182, 212, 0.1);
+        }
+        
+        .brand-logo img { 
+            width: 56px;
+            height: 56px;
+            object-fit: cover;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.2);
+        }
+        
+        .sidebar-brand h1 {
+            color: #e0e7ff !important;
+            font-weight: 700 !important;
+        }
+        
+        .sidebar-brand div:last-child {
+            color: #94a3b8;
+        }
     </style>
     
     {% block head %}{% endblock %}
