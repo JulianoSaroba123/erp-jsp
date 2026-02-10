@@ -175,7 +175,7 @@
                                        class="form-control" 
                                        id="data_lancamento" 
                                        name="data_lancamento" 
-                                       value="{% if lancamento %}{{ lancamento.data_lancamento.strftime('%Y-%m-%d') }}{% else %}{{ date.today().strftime('%Y-%m-%d') }}{% endif %}">
+                                       value="{% if lancamento %}{{ lancamento.data_lancamento.strftime('%Y-%m-%d') }}{% else %}{{ now().strftime('%Y-%m-%d') }}{% endif %}">
                             </div>
 
                             <!-- Data de Vencimento -->
