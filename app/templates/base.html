@@ -746,6 +746,24 @@
             sidebar.classList.toggle('show');
         }
 
+        function syncSidebarLayout() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.querySelector('.main-content');
+
+            if (!sidebar || !mainContent) {
+                return;
+            }
+
+            const sidebarPosition = window.getComputedStyle(sidebar).position;
+
+            if (window.innerWidth > 991 && sidebarPosition === 'fixed') {
+                mainContent.style.marginLeft = '250px';
+                sidebar.style.left = '0';
+            } else {
+                mainContent.style.marginLeft = '';
+            }
+        }
+
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', function(event) {
             const sidebar = document.getElementById('sidebar');
@@ -760,6 +778,7 @@
 
         // Marca link ativo na sidebar
         document.addEventListener('DOMContentLoaded', function() {
+            syncSidebarLayout();
             const currentLocation = location.pathname;
             const menuItems = document.querySelectorAll('.sidebar .nav-link');
             
@@ -778,6 +797,9 @@
                 }
             });
         });
+
+        window.addEventListener('pageshow', syncSidebarLayout);
+        window.addEventListener('resize', syncSidebarLayout);
         
         // Diagnóstico imediato da sidebar
         function diagnosticarSidebar() {
