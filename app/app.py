@@ -29,8 +29,8 @@ def create_app(config_name=None):
         Flask: Instância configurada da aplicação
     """
     # Cria a aplicação Flask
-    # Define o caminho da pasta static na raiz do projeto
-    static_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static')
+    # Define o caminho da pasta static dentro de app/
+    static_folder = os.path.join(os.path.dirname(__file__), 'static')
     app = Flask(__name__, static_folder=static_folder)
 
     # Ensure logs directory exists early so middleware/handlers can write
