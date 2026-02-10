@@ -99,7 +99,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <div class="small">Em Estoque</div>
-                                    <div class="h4 mb-0">{{ produtos|selectattr('estoque', 'greaterthan', 0)|list|length }}</div>
+                                    <div class="h4 mb-0">{{ produtos|selectattr('estoque_atual', 'greaterthan', 0)|list|length }}</div>
                                 </div>
                                 <i class="fas fa-warehouse fa-2x opacity-50"></i>
                             </div>
