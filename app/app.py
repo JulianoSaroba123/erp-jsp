@@ -12,7 +12,7 @@ Data: 2025
 
 import os
 from flask import Flask, render_template, request
-from datetime import datetime
+from datetime import datetime, date
 from app.config import config
 from app.extensoes import init_extensions
 
@@ -51,6 +51,10 @@ def create_app(config_name=None):
     if app.config.get('DEBUG'):
         app.jinja_env.auto_reload = True
         app.config['TEMPLATES_AUTO_RELOAD'] = True
+
+    # Helpers globais para templates (evita 'date is undefined')
+    app.jinja_env.globals.setdefault('date', date)
+    app.jinja_env.globals.setdefault('now', datetime.now)
 
     # Inicializa extensões
     init_extensions(app)
