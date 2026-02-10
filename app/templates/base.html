@@ -50,9 +50,7 @@
         body {
             display: flex;
             min-height: 100vh;
-            height: 100vh;
             margin: 0;
-            overflow: hidden;
         }
         
         .sidebar {
@@ -60,13 +58,14 @@
             overflow-y: auto;
             overflow-x: hidden;
             flex-shrink: 0;
+            position: sticky;
+            top: 0;
         }
         
         .main-content {
             flex: 1;
             min-width: 0;
-            height: 100vh;
-            overflow-y: auto;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             position: relative;
