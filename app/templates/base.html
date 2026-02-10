@@ -316,11 +316,11 @@
     <div class="sidebar" id="sidebar">
         <!-- Sidebar Brand -->
         <div class="sidebar-brand d-flex align-items-center">
-            <div class="brand-logo me-2">
+            <div class="brand-logo me-3">
                 {% if config and config.logo_base64 %}
-                    <img src="{{ config.logo_base64 }}" alt="{{ config.nome_fantasia or COMPANY_NAME }}">
+                    <img src="{{ config.logo_base64 }}" alt="{{ config.nome_fantasia or COMPANY_NAME }}" onerror="this.src='{{ url_for('static', filename='icons/icon-192.png') }}'">
                 {% else %}
-                    <img src="{{ url_for('static', filename='img/JSP.jpg') }}" alt="{{ COMPANY_NAME }}">
+                    <img src="{{ url_for('static', filename='icons/icon-192.png') }}" alt="{{ COMPANY_NAME }}" style="width: 48px; height: 48px; border-radius: 8px; box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);">
                 {% endif %}
             </div>
             <div>

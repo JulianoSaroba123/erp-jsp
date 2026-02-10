@@ -10,41 +10,43 @@
 
 {% block content %}
 <style>
-    /* Cores JSP Ciano */
+    /* Header Gradient Ciano JSP */
     .clientes-header {
         background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-        color: white;
-        border-radius: 12px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 15px rgba(6,182,212,0.3);
+        box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
     }
-    .clientes-header h2,
-    .clientes-header p {
+    .clientes-header h3,
+    .clientes-header .text-white {
         color: white !important;
     }
     .btn-novo-cliente {
         background: white !important;
         color: #0891b2 !important;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 8px;
         font-weight: 600;
-        transition: all 0.3s;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
     .btn-novo-cliente:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(255,255,255,0.3);
-        color: #0e7490 !important;
+        color: #06b6d4 !important;
     }
-    .stats-card {
-        background: white;
-        border: none;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        border-left: 4px solid #06b6d4;
+    /* Stats Cards */
+    .stat-card {
+        padding: 1rem;
+        border-radius: 8px;
+        color: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .stat-card-primary {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+    }
+    .stat-card-info {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    .stat-card-warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
     }
     .main-card {
         border: none;
@@ -53,74 +55,111 @@
     }
     /* Truncar nomes longos em uma linha */
     table tbody td:first-child {
-        max-width: 300px;
+        max-width: 250px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
 </style>
 
-<div class="container-fluid">
-    <!-- Header Moderno Separado -->
-    <div class="clientes-header mb-4">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <h2 class="mb-2">
+<div class="row">
+    <div class="col-12">
+        <!-- Header Destacado -->
+        <div class="mb-4 p-4 rounded-3 clientes-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="mb-0 text-white fw-bold">
                     <i class="fas fa-users me-2"></i>
                     Gerenciamento de Clientes
-                </h2>
-                <p class="mb-0 opacity-75">Cadastro e controle de clientes</p>
-            </div>
-            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
-                <a href="{{ url_for('cliente.novo') }}" class="btn btn-novo-cliente">
+                </h3>
+                <a href="{{ url_for('cliente.novo') }}" class="btn btn-novo-cliente btn-lg">
                     <i class="fas fa-plus me-2"></i>
                     Novo Cliente
                 </a>
             </div>
         </div>
-    </div>
 
-    <div class="row">
-        <div class="col-12">
-            <div class="card main-card">
-            
+        <div class="card border-0 shadow-sm main-card">
             <div class="card-body">
+
+                <!-- Estatísticas -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="stat-card stat-card-primary">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="small">Total</div>
+                                    <div class="h4 mb-0">{{ clientes|length }}</div>
+                                </div>
+                                <i class="fas fa-users fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card stat-card-info">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="small">Pessoa Física</div>
+                                    <div class="h4 mb-0">{{ clientes|selectattr('tipo', 'equalto', 'PF')|list|length }}</div>
+                                </div>
+                                <i class="fas fa-user fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card stat-card-warning">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="small">Pessoa Jurídica</div>
+                                    <div class="h4 mb-0">{{ clientes|selectattr('tipo', 'equalto', 'PJ')|list|length }}</div>
+                                </div>
+                                <i class="fas fa-building fa-2x opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <!-- Barra de Busca -->
                 <div class="row mb-4">
-                    <div class="col-md-6">
-                        <form method="GET" class="d-flex">
+                    <div class="col-md-9">
+                        <form method="GET">
+                            <label class="form-label small">Buscar Cliente</label>
                             <input type="text" 
                                    name="busca" 
-                                   class="form-control me-2" 
+                                   class="form-control form-control-sm" 
                                    placeholder="Buscar por nome, CPF/CNPJ ou email..."
                                    value="{{ busca }}"
                                    autocomplete="off">
-                            <button type="submit" class="btn btn-outline-primary">
+                        </form>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-outline-primary btn-sm" onclick="document.querySelector('form').submit()">
                                 <i class="fas fa-search"></i>
                             </button>
                             {% if busca %}
-                            <a href="{{ url_for('cliente.listar') }}" class="btn btn-outline-secondary ms-2">
+                            <a href="{{ url_for('cliente.listar') }}" class="btn btn-outline-secondary btn-sm">
                                 <i class="fas fa-times"></i>
                             </a>
                             {% endif %}
-                        </form>
+                        </div>
                     </div>
-                    <div class="col-md-6 text-end">
-                        <small class="text-muted">
-                            {% if busca %}
-                                {{ clientes|length }} cliente(s) encontrado(s) para "{{ busca }}"
-                            {% else %}
-                                {{ clientes|length }} cliente(s) cadastrado(s)
-                            {% endif %}
-                        </small>
-                    </div>
+                </div>
+                
+                <!-- Resultado da busca -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <small class="text-muted">
+                        {% if busca %}
+                            {{ clientes|length }} cliente(s) encontrado(s) para "{{ busca }}"
+                        {% else %}
+                            {{ clientes|length }} cliente(s) cadastrado(s)
+                        {% endif %}
+                    </small>
                 </div>
                 
                 <!-- Tabela de Clientes -->
                 {% if clientes %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
+                    <table class="table table-dark table-hover">
+                        <thead>
                             <tr>
                                 <th>Nome</th>
                                 <th>Tipo</th>
