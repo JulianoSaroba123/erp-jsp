@@ -652,7 +652,9 @@
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded',function() {
+        console.log('🚀 INICIANDO SCRIPT DE FORNECEDOR');
+        
         const tipoSelect = document.getElementById('tipo');
         const labelDocumento = document.getElementById('label-documento');
         const labelRgIe = document.getElementById('label-rg-ie');
@@ -665,9 +667,19 @@
         const nomeFantasia = document.getElementById('nome_fantasia');
         const razaoSocialPj = document.getElementById('razao_social_pj');
         
+        console.log('📋 Elementos encontrados:');
+        console.log('  - tipoSelect:', tipoSelect ? '✅' : '❌');
+        console.log('  - btnCnpj:', btnCnpj ? '✅' : '❌');
+        console.log('  - cpfCnpjInput:', cpfCnpjInput ? '✅' : '❌');
+        console.log('  - razaoSocialPj:', razaoSocialPj ? '✅' : '❌');
+        console.log('  - nomeFantasia:', nomeFantasia ? '✅' : '❌');
+        
         // Atualiza interface conforme o tipo
         function atualizarInterface() {
+            console.log('🔄 atualizarInterface() chamada');
             const tipoPJ = tipoSelect.value === 'PJ';
+            console.log('  - Tipo selecionado:', tipoSelect.value);
+            console.log('  - É PJ?:', tipoPJ);
             
             if (tipoPJ) {
                 // Pessoa Jurídica
@@ -689,6 +701,9 @@
                 // Mostra o botão de consulta CNPJ
                 if (btnCnpj) {
                     btnCnpj.style.display = 'inline-block';
+                    console.log('  ✅ Botão CNPJ exibido');
+                } else {
+                    console.log('  ❌ Botão CNPJ não encontrado!');
                 }
                 
                 // Torna razão social e nome fantasia obrigatórios
@@ -771,6 +786,7 @@
         }
         
         // Event listeners
+        console.log('🎯 Registrando event listeners');
         tipoSelect.addEventListener('change', atualizarInterface);
         
         cpfCnpjInput.addEventListener('input', function() {
@@ -796,8 +812,11 @@
         });
 
         // Consulta CNPJ automatica
-        const btnConsultarCnpj = document.getElementById('btn-consultar-cnpj');
+        console.log('🔍 Configurando botão de consulta CNPJ:', btnConsultarCnpj ? '✅' : '❌');
+        
         if (btnConsultarCnpj) {
+            btnConsultarCnpj.addEventListener('click', function() {
+                console.log('🖱️ BOTÃO CLICADO!');
             btnConsultarCnpj.addEventListener('click', function() {
                 console.log('🔍 Iniciando consulta CNPJ...');
                 
@@ -1014,10 +1033,12 @@
                         console.log('🏁 Consulta finalizada');
                     });
             });
-        }
-
-        // Inicializa interface
+        console.log('⚙️ Inicializando interface...');
         atualizarInterface();
+
+        // Foco no tipo primeiro
+        tipoSelect.focus();
+        console.log('✅ Script de fornecedor carregado com sucesso!'e();
 
         // Foco no tipo primeiro
         tipoSelect.focus();
