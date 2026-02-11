@@ -55,8 +55,10 @@
                                     </select>
                                 </div>
                                 
-                                <div class="col-md-9">
-                                    <label for="nome" class="form-label">Nome Completo *</label>
+                                <div class="col-md-9" id="campo-nome-simples">
+                                    <label for="nome" class="form-label">
+                                        <span id="label-nome">Nome Completo</span> *
+                                    </label>
                                     <input type="text" 
                                            class="form-control" 
                                            id="nome" 
@@ -70,6 +72,16 @@
                                 <!-- Para Pessoa Jurídica -->
                                 <div id="campos-pj" style="display: none;">
                                     <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <label for="razao_social_pj" class="form-label">Razão Social *</label>
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   id="razao_social_pj" 
+                                                   name="nome" 
+                                                   value="{{ fornecedor.nome or '' }}"
+                                                   maxlength="150"
+                                                   placeholder="Razão social da empresa">
+                                        </div>
                                         <div class="col-md-6">
                                             <label for="nome_fantasia" class="form-label">Nome Fantasia *</label>
                                             <input type="text" 
@@ -91,12 +103,6 @@
                                                    placeholder="Inscrição Estadual">
                                         </div>
                                     </div>
-                                    
-                                    <!-- Campo hidden para nome principal em PJ -->
-                                    <input type="hidden" 
-                                           id="nome_hidden" 
-                                           name="nome" 
-                                           value="{{ fornecedor.nome or '' }}">
                                 </div>
                             </div>
                         </div>
@@ -653,19 +659,11 @@
         const cpfCnpjInput = document.getElementById('cpf_cnpj');
         const btnCnpj = document.getElementById('btn-consultar-cnpj');
         const camposPj = document.getElementById('campos-pj');
+        const campoNomeSimples = document.getElementById('campo-nome-simples');
         const extrasPf = document.getElementById('extras-pf');
         const extrasPj = document.getElementById('extras-pj');
         const nomeFantasia = document.getElementById('nome_fantasia');
-        
-        // Função para sincronizar nome em PJ
-        function sincronizarNomePJ() {
-            if (tipoSelect.value === 'PJ' && nomeFantasia) {
-                const nomeHidden = document.getElementById('nome_hidden');
-                if (nomeHidden && nomeFantasia.value) {
-                    nomeHidden.value = nomeFantasia.value;
-                }
-            }
-        }
+        const razaoSocialPj = document.getElementById('razao_social_pj');
         
         // Atualiza interface conforme o tipo
         function atualizarInterface() {
@@ -677,32 +675,58 @@
                 labelRgIe.textContent = 'Inscrição Estadual';
                 cpfCnpjInput.placeholder = '00.000.000/0000-00';
                 
+                // Esconde campo nome simples
+                if (campoNomeSimples) {
+                    campoNomeSimples.style.display = 'none';
+                    document.getElementById('nome').removeAttribute('required');
+                }
+                
                 // Mostra campos PJ
                 camposPj.style.display = 'block';
-                extrasPj.style.display = 'block';
+                extrasPj.style.display = 'flex';
                 extrasPf.style.display = 'none';
                 
                 // Mostra o botão de consulta CNPJ
-                btnCnpj.style.display = 'inline-block';
+                if (btnCnpj) {
+                    btnCnpj.style.display = 'inline-block';
+                }
                 
-                // Torna nome fantasia obrigatório
-                document.getElementById('nome_fantasia').required = true;
+                // Torna razão social e nome fantasia obrigatórios
+                if (razaoSocialPj) {
+                    razaoSocialPj.required = true;
+                }
+                if (nomeFantasia) {
+                    nomeFantasia.required = true;
+                }
             } else {
                 // Pessoa Física
                 labelDocumento.textContent = 'CPF';
                 labelRgIe.textContent = 'RG';
                 cpfCnpjInput.placeholder = '000.000.000-00';
                 
+                // Mostra campo nome simples
+                if (campoNomeSimples) {
+                    campoNomeSimples.style.display = 'block';
+                    document.getElementById('nome').setAttribute('required', 'required');
+                }
+                
                 // Esconde campos PJ
                 camposPj.style.display = 'none';
                 extrasPj.style.display = 'none';
-                extrasPf.style.display = 'block';
+                extrasPf.style.display = 'flex';
                 
                 // Esconde o botão de consulta CNPJ
-                btnCnpj.style.display = 'none';
+                if (btnCnpj) {
+                    btnCnpj.style.display = 'none';
+                }
                 
-                // Remove obrigatoriedade do nome fantasia
-                document.getElementById('nome_fantasia').required = false;
+                // Remove obrigatoriedade dos campos PJ
+                if (razaoSocialPj) {
+                    razaoSocialPj.required = false;
+                }
+                if (nomeFantasia) {
+                    nomeFantasia.required = false;
+                }
             }
         }
         
@@ -770,11 +794,6 @@
         document.getElementById('estado').addEventListener('input', function() {
             this.value = this.value.toUpperCase();
         });
-        
-        // Sincronização nome fantasia
-        if (nomeFantasia) {
-            nomeFantasia.addEventListener('input', sincronizarNomePJ);
-        }
 
         // Consulta CNPJ automatica
         const btnConsultarCnpj = document.getElementById('btn-consultar-cnpj');
@@ -802,10 +821,10 @@
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...';
                 this.disabled = true;
                 
-                console.log('🌐 Fazendo requisição para:', `/cliente/api/consultar-cnpj/${cnpjLimpo}`);
+                console.log('🌐 Fazendo requisição para:', `/fornecedor/api/consultar-cnpj/${cnpjLimpo}`);
                 
-                // Usa endpoint dos clientes (funciona igual)
-                fetch(`/cliente/api/consultar-cnpj/${cnpjLimpo}`)
+                // Usa endpoint específico de fornecedor
+                fetch(`/fornecedor/api/consultar-cnpj/${cnpjLimpo}`)
                     .then(response => {
                         console.log('📡 Resposta recebida:', response.status);
                         return response.json();
@@ -818,26 +837,42 @@
                             
                             // Preenche razão social e fantasia
                             if (data.data.nome) {
-                                document.getElementById('nome').value = data.data.nome;
-                                camposPreenchidos.push('Razão Social');
+                                const razaoSocial = document.getElementById('razao_social_pj');
+                                if (razaoSocial) {
+                                    razaoSocial.value = data.data.nome;
+                                    camposPreenchidos.push('Razão Social');
+                                }
                             }
                             
-                            if (data.data.fantasia) {
-                                document.getElementById('nome_fantasia').value = data.data.fantasia;
-                                camposPreenchidos.push('Nome Fantasia');
+                            // API de fornecedor retorna 'nome_fantasia'
+                            if (data.data.nome_fantasia || data.data.fantasia) {
+                                const fantasia = document.getElementById('nome_fantasia');
+                                if (fantasia) {
+                                    fantasia.value = data.data.nome_fantasia || data.data.fantasia;
+                                    camposPreenchidos.push('Nome Fantasia');
+                                }
                             } else if (data.data.nome) {
                                 // Se não tem fantasia, usa o nome como fantasia
-                                document.getElementById('nome_fantasia').value = data.data.nome;
+                                const fantasia = document.getElementById('nome_fantasia');
+                                if (fantasia) {
+                                    fantasia.value = data.data.nome;
+                                }
                             }
                             
                             // Preenche contatos
                             if (data.data.email) {
-                                document.getElementById('email').value = data.data.email;
-                                camposPreenchidos.push('Email');
+                                const email = document.getElementById('email');
+                                if (email) {
+                                    email.value = data.data.email;
+                                    camposPreenchidos.push('Email');
+                                }
                             }
                             if (data.data.telefone) {
-                                document.getElementById('telefone').value = mascaraTelefone(data.data.telefone);
-                                camposPreenchidos.push('Telefone');
+                                const telefone = document.getElementById('telefone');
+                                if (telefone) {
+                                    telefone.value = mascaraTelefone(data.data.telefone);
+                                    camposPreenchidos.push('Telefone');
+                                }
                             }
                             
                             // Preenche endereco completo
@@ -872,10 +907,10 @@
                             }
                             
                             // Define o país como Brasil
-                            document.getElementById('pais').value = 'Brasil';
-                            
-                            // Sincroniza nome
-                            sincronizarNomePJ();
+                            const paisElement = document.getElementById('pais');
+                            if (paisElement) {
+                                paisElement.value = 'Brasil';
+                            }
                             
                             console.log('✅ Campos preenchidos:', camposPreenchidos);
                             
@@ -920,10 +955,10 @@
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...';
                 this.disabled = true;
                 
-                console.log('🌐 Fazendo requisição para:', `/cliente/api/consultar-cep/${cepLimpo}`);
+                console.log('🌐 Fazendo requisição para:', `/fornecedor/api/consultar-cep/${cepLimpo}`);
                 
-                // Usa endpoint dos clientes
-                fetch(`/cliente/api/consultar-cep/${cepLimpo}`)
+                // Usa endpoint específico de fornecedor
+                fetch(`/fornecedor/api/consultar-cep/${cepLimpo}`)
                     .then(response => {
                         console.log('📡 Resposta recebida:', response.status);
                         return response.json();
