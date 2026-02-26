@@ -190,6 +190,25 @@ class Proposta(BaseModel):
             return False
         return date.today() > valida_ate
     
+    @property
+    def vencida(self):
+        """Alias para proposta_vencida para compatibilidade com templates."""
+        return self.proposta_vencida
+    
+    @property
+    def dias_para_vencimento(self):
+        """Retorna quantos dias faltam para a proposta vencer."""
+        valida_ate = self.valida_ate
+        if not valida_ate or self.status in ['aprovada', 'rejeitada', 'cancelada']:
+            return None
+        dias = (valida_ate - date.today()).days
+        return dias if dias >= 0 else None
+    
+    @property
+    def condicao_pagamento(self):
+        """Alias para forma_pagamento para compatibilidade com templates."""
+        return self.forma_pagamento
+    
     @classmethod
     def gerar_proximo_codigo(cls):
         """Gera o próximo código de proposta."""

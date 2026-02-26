@@ -11,6 +11,19 @@ Data: 2025
 """
 
 import os
+import sys
+
+# Configurar encoding UTF-8 para Windows
+if sys.platform == 'win32':
+    try:
+        if sys.stdout.encoding != 'utf-8':
+            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        if sys.stderr.encoding != 'utf-8':
+            sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    except Exception:
+        # Se reconfigure não estiver disponível, tentar outra abordagem
+        pass
+
 from flask import Flask, render_template, request
 from datetime import datetime, date
 from app.config import config
