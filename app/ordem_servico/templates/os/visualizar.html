@@ -523,7 +523,7 @@
             {% endif %}
 
             <!-- Produtos -->
-            {% if ordem.itens_produto %}
+            {% if ordem.produtos_utilizados %}
             <div class="card info-card">
                 <div class="card-header" style="background: #e0f2fe !important; background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%) !important;">
                     <h5 class="card-title mb-0 fw-bold" style="color: #0369a1 !important;">
@@ -544,7 +544,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in ordem.itens_produto %}
+                                {% for item in ordem.produtos_utilizados %}
                                 <tr style="border-bottom: 1px solid #e5e7eb; transition: background 0.2s;" onmouseover="this.style.background='#f0f9ff'" onmouseout="this.style.background='white'">
                                     <td style="text-align: center; padding: 12px; font-weight: 600; color: #0891b2;">{{ loop.index }}</td>
                                     <td style="padding: 12px; color: #1f2937; font-weight: 500;">{{ item.produto.nome if item.produto else item.descricao }}</td>
@@ -561,7 +561,7 @@
             {% endif %}
             
             <!-- Serviços -->
-            {% if ordem.itens_servico %}
+            {% if ordem.servicos %}
             <div class="card info-card">
                 <div class="card-header" style="background: #dcfce7 !important; background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%) !important;">
                     <h5 class="card-title mb-0 fw-bold" style="color: #15803d !important;">
@@ -582,10 +582,10 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for item in ordem.itens_servico %}
+                                {% for item in ordem.servicos %}
                                 <tr style="border-bottom: 1px solid #e5e7eb; transition: background 0.2s;" onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background='white'">
-                                    <td style="text-align: center; padding: 12px; font-weight: 600; color: #16a34a;">{{ loop.index + (ordem.itens_produto|length if ordem.itens_produto else 0) }}</td>
-                                    <td style="padding: 12px; color: #1f2937; font-weight: 500;">{{ item.servico.nome if item.servico else item.descricao }}</td>
+                                    <td style="text-align: center; padding: 12px; font-weight: 600; color: #16a34a;">{{ loop.index + (ordem.produtos_utilizados|length if ordem.produtos_utilizados else 0) }}</td>
+                                    <td style="padding: 12px; color: #1f2937; font-weight: 500;">{{ item.descricao }}</td>
                                     <td style="text-align: center; padding: 12px; color: #1f2937; font-weight: 600;">{{ item.quantidade }}</td>
                                     <td style="text-align: right; padding: 12px; white-space: nowrap; color: #1f2937;">R$ {{ "%.2f"|format(item.valor_unitario|float)|replace('.', ',') }}</td>
                                     <td style="text-align: right; padding: 12px; white-space: nowrap; font-weight: 600; color: #16a34a;">R$ {{ "%.2f"|format((item.quantidade * item.valor_unitario)|float)|replace('.', ',') }}</td>
