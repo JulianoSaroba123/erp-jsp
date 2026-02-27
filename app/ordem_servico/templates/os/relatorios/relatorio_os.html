@@ -156,12 +156,12 @@
         <th>Valor/Hora</th>
         <th>Subtotal</th>
       </tr>
-      {% for item in os.itens_servico %}
+      {% for item in os.servicos %}
       <tr>
         <td>{{ item.descricao }}</td>
-        <td>{{ item.horas }}</td>
-        <td>{{ item.valor_hora }}</td>
-        <td>{{ item.subtotal }}</td>
+        <td>{{ item.quantidade }}</td>
+        <td>{{ item.valor_unitario }}</td>
+        <td>{{ item.valor_total }}</td>
       </tr>
       {% endfor %}
     </table>
