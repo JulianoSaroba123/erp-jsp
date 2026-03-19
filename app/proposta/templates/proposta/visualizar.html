@@ -3,13 +3,14 @@
 {% block title %}Proposta {{ proposta.codigo }} - {{ proposta.titulo }} - ERP JSP{% endblock %}
 
 {% block content %}
-<!-- v3.1 - Cores JSP Ciano com Contraste Melhorado -->
+<!-- v3.2 - Cores JSP Padrão Ciano -->
 <style>
-    /* Cores JSP Ciano - Atualizado */
+    /* === CORES JSP CIANO - PADRÃO === */
+    
+    /* Cabeçalho da Proposta */
     .proposta-header {
-        background: #06b6d4 !important;
-        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
-        color: white !important;
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: #ffffff;
         border-radius: 12px;
         padding: 2rem;
         margin-bottom: 2rem;
@@ -19,102 +20,118 @@
     .proposta-header h2,
     .proposta-header p,
     .proposta-header i {
-        color: white !important;
+        color: #ffffff;
     }
     
+    /* Cards de Informação */
     .info-card {
         border: none;
         border-radius: 12px;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         transition: transform 0.2s;
         margin-bottom: 1.5rem;
+        overflow: hidden;
     }
+    
     .info-card:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(0,0,0,0.12);
     }
+    
     .info-card .card-header {
-        background: #cffafe !important;
-        background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%) !important;
+        background: linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%);
         border: none;
-        border-radius: 12px 12px 0 0 !important;
         padding: 1rem 1.5rem;
     }
+    
     .info-card .card-header h5 {
-        color: #0e7490 !important;
-        font-weight: bold !important;
+        color: #0e7490;
+        font-weight: 600;
+        margin: 0;
+        font-size: 1.1rem;
     }
+    
     .info-card .card-body {
-        background: white !important;
+        background: #ffffff;
+        color: #1f2937;
     }
+    
+    /* Destaque de Valores */
     .value-highlight {
-        background: #06b6d4 !important;
-        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
-        color: white !important;
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+        color: #ffffff;
         padding: 1.5rem;
         border-radius: 12px;
         text-align: center;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
         box-shadow: 0 4px 15px rgba(6,182,212,0.3);
     }
+    
     .value-highlight .amount {
         font-size: 2.5rem;
-        font-weight: bold;
+        font-weight: 700;
         margin: 0.5rem 0;
-        color: white !important;
+        color: #ffffff;
     }
+    
     .value-highlight h5,
     .value-highlight i,
     .value-highlight span,
     .value-highlight strong,
     .value-highlight div {
-        color: white !important;
+        color: #ffffff;
     }
+    
+    /* Caixas de Estatísticas */
     .stats-box {
-        background: white !important;
-        border: 1px solid #e5e7eb !important;
-        border-left: 4px solid #06b6d4 !important;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-left: 4px solid #06b6d4;
         padding: 1rem;
         border-radius: 8px;
         margin-bottom: 1rem;
     }
+    
     .stats-box i {
         font-size: 2rem;
-        color: #06b6d4 !important;
+        color: #06b6d4;
     }
+    
     .stats-box small,
     .stats-box .text-muted {
-        color: #4b5563 !important;
-        font-size: 0.875rem !important;
-        font-weight: 500 !important;
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 500;
     }
-    .stats-box strong,
-    .stats-box div:not(.small) {
-        color: #000000 !important;
-        font-weight: 700 !important;
-        font-size: 1rem !important;
+    
+    .stats-box strong {
+        color: #111827;
+        font-weight: 600;
+        font-size: 1rem;
     }
+    
     .stats-box p {
-        color: #1f2937 !important;
-        margin: 0 !important;
-        font-weight: 500 !important;
+        color: #1f2937;
+        margin: 0;
+        font-weight: 500;
     }
-    .stats-box .d-flex strong,
-    .stats-box .d-flex div {
-        color: #000000 !important;
-        font-weight: 700 !important;
-    }
+    
+    /* Badges Customizadas */
     .badge-custom {
         padding: 0.5rem 1rem;
-        font-size: 0.9rem;
+        font-size: 0.875rem;
+        font-weight: 500;
         border-radius: 20px;
     }
+    
+    /* Botões de Ação */
     .action-btn {
         border-radius: 8px;
         padding: 0.75rem 1.5rem;
         font-weight: 500;
-        transition: all 0.3s;
+        transition: all 0.3s ease;
     }
+    
     .action-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0,0,0,0.15);
@@ -167,15 +184,15 @@
     </div>
 
     <div class="row">
-        <!-- Coluna Ãšnica (100% da largura) -->
+        <!-- Coluna Única (100% da largura) -->
         <div class="col-12">
             
-            <!-- InformaÃ§Ãµes BÃ¡sicas - Card Moderno -->
+            <!-- Informações Básicas - Card Moderno -->
             <div class="card info-card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-info-circle text-primary me-2"></i>
-                        InformaÃ§Ãµes da Proposta
+                    <h5>
+                        <i class="fas fa-info-circle me-2"></i>
+                        Informações da Proposta
                     </h5>
                 </div>
                 <div class="card-body">
@@ -197,7 +214,7 @@
                                     <i class="fas fa-user-tie me-3"></i>
                                     <div>
                                         <small class="text-muted d-block">Vendedor</small>
-                                        <strong>{{ proposta.vendedor or 'NÃ£o informado' }}</strong>
+                                        <strong>{{ proposta.vendedor or 'Não informado' }}</strong>
                                     </div>
                                 </div>
                             </div>
@@ -207,7 +224,7 @@
                                 <div class="d-flex align-items-center">
                                     <i class="fas fa-calendar me-3"></i>
                                     <div>
-                                        <small class="text-muted d-block">Data CriaÃ§Ã£o</small>
+                                        <small class="text-muted d-block">Data de Criação</small>
                                         <strong>{{ proposta.criado_em.strftime('%d/%m/%Y %H:%M') if proposta.criado_em else 'N/A' }}</strong>
                                     </div>
                                 </div>
@@ -218,7 +235,7 @@
                                 <div class="d-flex align-items-center">
                                     <i class="fas fa-calendar-check me-3"></i>
                                     <div>
-                                        <small class="text-muted d-block">VÃ¡lida atÃ©</small>
+                                        <small class="text-muted d-block">Válida até</small>
                                         <strong>
                                             {% if proposta.valida_ate %}
                                                 {{ proposta.valida_ate.strftime('%d/%m/%Y') }}
@@ -254,40 +271,41 @@
                 </div>
             </div>
 
-            <!-- Estimativas e Dados TÃ©cnicos -->
+            <!-- Estimativas e Dados Técnicos -->
             {% if proposta.km_estimado or proposta.tempo_estimado or proposta.prazo_execucao %}
             <div class="card info-card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-calculator text-info me-2"></i>
-                        Estimativas de ExecuÃ§Ã£o
+                    <h5>
+                        <i class="fas fa-calculator me-2"></i>
+                        Estimativas de Execução
                     </h5>
                 </div>
                 <div class="card-body">
                     <div class="row text-center g-3">
                         {% if proposta.km_estimado %}
                         <div class="col-md-4">
-                            <div class="stats-box">
+                            <div class="stats-box text-center">
                                 <i class="fas fa-road mb-2 d-block"></i>
-                                <div class="fw-bold h4 text-primary mb-1">{{ proposta.km_estimado }}</div>
+                                <div class="fw-bold h4 mb-1">{{ proposta.km_estimado }}</div>
                                 <small class="text-muted">KM Estimado</small>
                             </div>
                         </div>
                         {% endif %}
                         {% if proposta.tempo_estimado %}
                         <div class="col-md-4">
-                            <div class="stats-box">
+                            <div class="stats-box text-center">
                                 <i class="fas fa-clock mb-2 d-block"></i>
-                                <div class="fw-bold h4 text-warning mb-1">{{ proposta.tempo_estimado }}</div>
+                                <div class="fw-bold h4 mb-1">{{ proposta.tempo_estimado }}</div>
                                 <small class="text-muted">Tempo Estimado</small>
                             </div>
+                        </div>
                         </div>
                         {% endif %}
                         {% if proposta.prazo_execucao %}
                         <div class="col-md-4">
-                            <div class="stats-box">
+                            <div class="stats-box text-center">
                                 <i class="fas fa-calendar-alt mb-2 d-block"></i>
-                                <div class="fw-bold h4 text-success mb-1">{{ proposta.prazo_execucao }} dias</div>
+                                <div class="fw-bold h4 mb-1">{{ proposta.prazo_execucao }} dias</div>
                                 <small class="text-muted">Prazo de ExecuÃ§Ã£o</small>
                             </div>
                         </div>
@@ -297,13 +315,13 @@
             </div>
             {% endif %}
 
-            <!-- ObservaÃ§Ãµes -->
+            <!-- Observações -->
             {% if proposta.observacoes %}
             <div class="card info-card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-sticky-note text-warning me-2"></i>
-                        ObservaÃ§Ãµes
+                    <h5>
+                        <i class="fas fa-sticky-note me-2"></i>
+                        Observações
                     </h5>
                 </div>
                 <div class="card-body">
@@ -321,7 +339,7 @@
                 <div class="amount">R$ {{ '{:,.2f}'.format(proposta.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
                 <hr class="my-3 opacity-50">
                 <div class="d-flex justify-content-between mb-2">
-                    <span><i class="fas fa-tools me-1"></i> ServiÃ§os:</span>
+                    <span><i class="fas fa-tools me-1"></i> Serviços:</span>
                     <strong>R$ {{ '{:,.2f}'.format(proposta.valor_servicos or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
@@ -337,11 +355,11 @@
                 {% endif %}
             </div>
 
-            <!-- CondiÃ§Ãµes de Pagamento -->
+            <!-- Condições de Pagamento -->
             <div class="card info-card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-credit-card text-info me-2"></i>
+                    <h5>
+                        <i class="fas fa-credit-card me-2"></i>
                         Pagamento
                     </h5>
                 </div>
@@ -375,11 +393,11 @@
                 </div>
             </div>
 
-            <!-- AÃ§Ãµes RÃ¡pidas -->
+            <!-- Ações Rápidas -->
             <div class="card info-card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-bolt me-2"></i>AÃ§Ãµes RÃ¡pidas
+                    <h5>
+                        <i class="fas fa-bolt me-2"></i>Ações Rápidas
                     </h5>
                 </div>
                 <div class="card-body">
@@ -394,7 +412,7 @@
                         {% elif proposta.status in ['enviada', 'em_analise'] %}
                             <form method="POST" action="{{ url_for('proposta.aprovar', id=proposta.id) }}">
                                 <button type="submit" class="btn btn-success w-100 action-btn" 
-                                        onclick="return confirm('Confirma a aprovaÃ§Ã£o da proposta?')">
+                                        onclick="return confirm('Confirma a aprovação da proposta?')">
                                     <i class="fas fa-check me-2"></i>Aprovar Proposta
                                 </button>
                             </form>
@@ -438,27 +456,27 @@
             <div class="modal-header">
                 <h5 class="modal-title" id="modalGerarOSLabel">
                     <i class="fas fa-cogs text-success me-2"></i>
-                    Gerar Ordem de ServiÃ§o
+                    Gerar Ordem de Serviço
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
-                    <strong>AtenÃ§Ã£o:</strong> Uma nova Ordem de ServiÃ§o serÃ¡ criada a partir desta proposta aprovada.
+                    <strong>Atenção:</strong> Uma nova Ordem de Serviço será criada a partir desta proposta aprovada.
                 </div>
                 
-                <h6><strong>Dados que serÃ£o transferidos:</strong></h6>
+                <h6><strong>Dados que serão transferidos:</strong></h6>
                 <ul class="list-unstyled ms-3">
                     <li><i class="fas fa-check text-success me-2"></i>Cliente: {{ proposta.cliente.nome if proposta.cliente else 'N/A' }}</li>
-                    <li><i class="fas fa-check text-success me-2"></i>TÃ­tulo: {{ proposta.titulo }}</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Título: {{ proposta.titulo }}</li>
                     <li><i class="fas fa-check text-success me-2"></i>Produtos: {{ proposta.itens_produto|length if proposta.itens_produto else 0 }} itens</li>
-                    <li><i class="fas fa-check text-success me-2"></i>ServiÃ§os: {{ proposta.itens_servico|length if proposta.itens_servico else 0 }} itens</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Serviços: {{ proposta.itens_servico|length if proposta.itens_servico else 0 }} itens</li>
                     <li><i class="fas fa-check text-success me-2"></i>Valor Total: R$ {{ '{:,.2f}'.format(proposta.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</li>
                 </ul>
                 
                 <p class="text-muted">
-                    A OS serÃ¡ criada com status "Pendente" e vocÃª serÃ¡ redirecionado para visualizÃ¡-la apÃ³s a criaÃ§Ã£o.
+                    A OS será criada com status "Pendente" e você será redirecionado para visualizá-la após a criação.
                 </p>
             </div>
             <div class="modal-footer">
