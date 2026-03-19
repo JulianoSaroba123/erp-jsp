@@ -122,7 +122,7 @@
 </style>
 
 <div class="container-fluid">
-    <!-- Cabeçalho Moderno -->
+    <!-- CabeÃ§alho Moderno -->
     <div class="proposta-header">
         <div class="row align-items-center">
             <div class="col-lg-8">
@@ -167,15 +167,15 @@
     </div>
 
     <div class="row">
-        <!-- Coluna Única (100% da largura) -->
+        <!-- Coluna Ãšnica (100% da largura) -->
         <div class="col-12">
             
-            <!-- Informações Básicas - Card Moderno -->
+            <!-- InformaÃ§Ãµes BÃ¡sicas - Card Moderno -->
             <div class="card info-card">
                 <div class="card-header">
                     <h5 class="card-title mb-0 fw-bold">
                         <i class="fas fa-info-circle text-primary me-2"></i>
-                        Informações da Proposta
+                        InformaÃ§Ãµes da Proposta
                     </h5>
                 </div>
                 <div class="card-body">
@@ -197,7 +197,7 @@
                                     <i class="fas fa-user-tie me-3"></i>
                                     <div>
                                         <small class="text-muted d-block">Vendedor</small>
-                                        <strong>{{ proposta.vendedor or 'Não informado' }}</strong>
+                                        <strong>{{ proposta.vendedor or 'NÃ£o informado' }}</strong>
                                     </div>
                                 </div>
                             </div>
@@ -207,7 +207,7 @@
                                 <div class="d-flex align-items-center">
                                     <i class="fas fa-calendar me-3"></i>
                                     <div>
-                                        <small class="text-muted d-block">Data Criação</small>
+                                        <small class="text-muted d-block">Data CriaÃ§Ã£o</small>
                                         <strong>{{ proposta.criado_em.strftime('%d/%m/%Y %H:%M') if proposta.criado_em else 'N/A' }}</strong>
                                     </div>
                                 </div>
@@ -218,7 +218,7 @@
                                 <div class="d-flex align-items-center">
                                     <i class="fas fa-calendar-check me-3"></i>
                                     <div>
-                                        <small class="text-muted d-block">Válida até</small>
+                                        <small class="text-muted d-block">VÃ¡lida atÃ©</small>
                                         <strong>
                                             {% if proposta.valida_ate %}
                                                 {{ proposta.valida_ate.strftime('%d/%m/%Y') }}
@@ -236,7 +236,7 @@
                     <hr class="my-3">
                     <div>
                         <h6 class="fw-bold mb-2">
-                            <i class="fas fa-align-left me-2"></i>Descrição
+                            <i class="fas fa-align-left me-2"></i>DescriÃ§Ã£o
                         </h6>
                         <p class="mb-0 text-muted">{{ proposta.descricao }}</p>
                     </div>
@@ -254,13 +254,13 @@
                 </div>
             </div>
 
-            <!-- Estimativas e Dados Técnicos -->
+            <!-- Estimativas e Dados TÃ©cnicos -->
             {% if proposta.km_estimado or proposta.tempo_estimado or proposta.prazo_execucao %}
             <div class="card info-card">
                 <div class="card-header">
                     <h5 class="card-title mb-0 fw-bold">
                         <i class="fas fa-calculator text-info me-2"></i>
-                        Estimativas de Execução
+                        Estimativas de ExecuÃ§Ã£o
                     </h5>
                 </div>
                 <div class="card-body">
@@ -288,7 +288,7 @@
                             <div class="stats-box">
                                 <i class="fas fa-calendar-alt mb-2 d-block"></i>
                                 <div class="fw-bold h4 text-success mb-1">{{ proposta.prazo_execucao }} dias</div>
-                                <small class="text-muted">Prazo de Execução</small>
+                                <small class="text-muted">Prazo de ExecuÃ§Ã£o</small>
                             </div>
                         </div>
                         {% endif %}
@@ -297,13 +297,13 @@
             </div>
             {% endif %}
 
-            <!-- Observações -->
+            <!-- ObservaÃ§Ãµes -->
             {% if proposta.observacoes %}
             <div class="card info-card">
                 <div class="card-header">
                     <h5 class="card-title mb-0 fw-bold">
                         <i class="fas fa-sticky-note text-warning me-2"></i>
-                        Observações
+                        ObservaÃ§Ãµes
                     </h5>
                 </div>
                 <div class="card-body">
@@ -314,36 +314,30 @@
             </div>
             {% endif %}
 
-        </div>
-
-    </div>
-
-    <!-- Botões de Ação -->
-
             <!-- Valores - Card Destacado -->
             <div class="value-highlight">
                 <i class="fas fa-dollar-sign fa-2x mb-2"></i>
                 <h5 class="mb-2">Valor Total</h5>
-                <div class="amount">R$ {{ "%.2f"|format(proposta.valor_total|float)|replace('.', ',') }}</div>
+                <div class="amount">R$ {{ '{:,.2f}'.format(proposta.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
                 <hr class="my-3 opacity-50">
                 <div class="d-flex justify-content-between mb-2">
-                    <span><i class="fas fa-tools me-1"></i> Serviços:</span>
-                    <strong>R$ {{ "%.2f"|format(proposta.valor_servicos|float)|replace('.', ',') }}</strong>
+                    <span><i class="fas fa-tools me-1"></i> ServiÃ§os:</span>
+                    <strong>R$ {{ '{:,.2f}'.format(proposta.valor_servicos or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
                     <span><i class="fas fa-box me-1"></i> Produtos:</span>
-                    <strong>R$ {{ "%.2f"|format(proposta.valor_produtos|float)|replace('.', ',') }}</strong>
+                    <strong>R$ {{ '{:,.2f}'.format(proposta.valor_produtos or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
                 </div>
                 {% if proposta.desconto %}
                 <div class="d-flex justify-content-between">
                     <span><i class="fas fa-percentage me-1"></i> Desconto:</span>
-                    {% set valor_desconto = (proposta.valor_produtos + proposta.valor_servicos) * (proposta.desconto or 0) / 100 %}
-                    <strong>- R$ {{ "%.2f"|format(valor_desconto|float)|replace('.', ',') }}</strong>
+                    {% set valor_desconto = (proposta.valor_produtos or 0) + (proposta.valor_servicos or 0) * (proposta.desconto or 0) / 100 %}
+                    <strong>- R$ {{ '{:,.2f}'.format(valor_desconto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
                 </div>
                 {% endif %}
             </div>
 
-            <!-- Condições de Pagamento -->
+            <!-- CondiÃ§Ãµes de Pagamento -->
             <div class="card info-card">
                 <div class="card-header">
                     <h5 class="card-title mb-0 fw-bold">
@@ -356,10 +350,10 @@
                         <div class="d-flex align-items-center">
                             <i class="fas fa-money-bill me-3"></i>
                             <div>
-                                <small class="text-muted d-block">Condição</small>
+                                <small class="text-muted d-block">CondiÃ§Ã£o</small>
                                 <strong>
                                     {% if proposta.condicao_pagamento == 'a_vista' %}
-                                        À Vista
+                                        Ã€ Vista
                                     {% else %}
                                         {{ proposta.numero_parcelas }}x Parcelado
                                     {% endif %}
@@ -381,11 +375,11 @@
                 </div>
             </div>
 
-            <!-- Ações Rápidas -->
+            <!-- AÃ§Ãµes RÃ¡pidas -->
             <div class="card info-card">
                 <div class="card-header">
                     <h5 class="card-title mb-0 fw-bold">
-                        <i class="fas fa-bolt me-2"></i>Ações Rápidas
+                        <i class="fas fa-bolt me-2"></i>AÃ§Ãµes RÃ¡pidas
                     </h5>
                 </div>
                 <div class="card-body">
@@ -400,26 +394,26 @@
                         {% elif proposta.status in ['enviada', 'em_analise'] %}
                             <form method="POST" action="{{ url_for('proposta.aprovar', id=proposta.id) }}">
                                 <button type="submit" class="btn btn-success w-100 action-btn" 
-                                        onclick="return confirm('Confirma a aprovação da proposta?')">
+                                        onclick="return confirm('Confirma a aprovaÃ§Ã£o da proposta?')">
                                     <i class="fas fa-check me-2"></i>Aprovar Proposta
                                 </button>
                             </form>
                             <form method="POST" action="{{ url_for('proposta.rejeitar', id=proposta.id) }}">
                                 <button type="submit" class="btn btn-outline-danger w-100 action-btn" 
-                                        onclick="return confirm('Confirma a rejeição da proposta?')">
+                                        onclick="return confirm('Confirma a rejeiÃ§Ã£o da proposta?')">
                                     <i class="fas fa-times me-2"></i>Rejeitar Proposta
                                 </button>
                             </form>
                         {% elif proposta.pode_converter %}
                             <form method="POST" action="{{ url_for('proposta.criar_os_a_partir_da_proposta', id=proposta.id) }}">
                                 <button type="submit" class="btn btn-info w-100 action-btn" 
-                                        onclick="return confirm('Confirma a conversão em Ordem de Serviço?')">
+                                        onclick="return confirm('Confirma a conversÃ£o em Ordem de ServiÃ§o?')">
                                     <i class="fas fa-exchange-alt me-2"></i>Converter em OS
                                 </button>
                             </form>
                         {% elif proposta.ordem_servico_id %}
                             <a href="{{ url_for('ordem_servico.visualizar', id=proposta.ordem_servico_id) }}" class="btn btn-info w-100 action-btn">
-                                <i class="fas fa-tools me-2"></i>Ver Ordem de Serviço
+                                <i class="fas fa-tools me-2"></i>Ver Ordem de ServiÃ§o
                             </a>
                         {% endif %}
                         
@@ -433,9 +427,9 @@
                 </div>
             </div>
 
-        </div>
-    </div>
-</div>
+        </div><!-- Fim col-12 -->
+    </div><!-- Fim row -->
+</div><!-- Fim container-fluid -->
 
 <!-- Modal para Gerar OS -->
 <div class="modal fade" id="modalGerarOS" tabindex="-1" aria-labelledby="modalGerarOSLabel" aria-hidden="true">
@@ -444,27 +438,27 @@
             <div class="modal-header">
                 <h5 class="modal-title" id="modalGerarOSLabel">
                     <i class="fas fa-cogs text-success me-2"></i>
-                    Gerar Ordem de Serviço
+                    Gerar Ordem de ServiÃ§o
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
-                    <strong>Atenção:</strong> Uma nova Ordem de Serviço será criada a partir desta proposta aprovada.
+                    <strong>AtenÃ§Ã£o:</strong> Uma nova Ordem de ServiÃ§o serÃ¡ criada a partir desta proposta aprovada.
                 </div>
                 
-                <h6><strong>Dados que serão transferidos:</strong></h6>
+                <h6><strong>Dados que serÃ£o transferidos:</strong></h6>
                 <ul class="list-unstyled ms-3">
                     <li><i class="fas fa-check text-success me-2"></i>Cliente: {{ proposta.cliente.nome if proposta.cliente else 'N/A' }}</li>
-                    <li><i class="fas fa-check text-success me-2"></i>Título: {{ proposta.titulo }}</li>
+                    <li><i class="fas fa-check text-success me-2"></i>TÃ­tulo: {{ proposta.titulo }}</li>
                     <li><i class="fas fa-check text-success me-2"></i>Produtos: {{ proposta.itens_produto|length if proposta.itens_produto else 0 }} itens</li>
-                    <li><i class="fas fa-check text-success me-2"></i>Serviços: {{ proposta.itens_servico|length if proposta.itens_servico else 0 }} itens</li>
+                    <li><i class="fas fa-check text-success me-2"></i>ServiÃ§os: {{ proposta.itens_servico|length if proposta.itens_servico else 0 }} itens</li>
                     <li><i class="fas fa-check text-success me-2"></i>Valor Total: R$ {{ '{:,.2f}'.format(proposta.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</li>
                 </ul>
                 
                 <p class="text-muted">
-                    A OS será criada com status "Pendente" e você será redirecionado para visualizá-la após a criação.
+                    A OS serÃ¡ criada com status "Pendente" e vocÃª serÃ¡ redirecionado para visualizÃ¡-la apÃ³s a criaÃ§Ã£o.
                 </p>
             </div>
             <div class="modal-footer">

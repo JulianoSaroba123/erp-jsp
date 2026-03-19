@@ -2,16 +2,11 @@
 // CORREÇÃO DINÂMICA DE FUNDO BRANCO - FORMULÁRIOS
 // =====================================================
 
-console.log('🎨 Iniciando correção de fundo branco...');
-
 document.addEventListener('DOMContentLoaded', function() {
     
     function corrigirFundoBranco() {
-        console.log('🔍 Procurando elementos com fundo branco...');
-        
         // Selecionar todos os elementos que podem ter fundo branco
         const elementos = document.querySelectorAll('*');
-        let corrigidos = 0;
         
         elementos.forEach(element => {
             const computedStyle = window.getComputedStyle(element);
@@ -35,9 +30,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 element.style.setProperty('color', '#E8F4FD', 'important');
                 element.style.setProperty('border', '1px solid #00D4FF', 'important');
                 element.style.setProperty('border-radius', '15px', 'important');
-                
-                corrigidos++;
-                console.log('✅ Fundo corrigido:', element.tagName, element.className);
             }
             
             // Verificar e corrigir cards especificamente
@@ -46,13 +38,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 element.style.setProperty('border', '1px solid #00D4FF', 'important');
                 element.style.setProperty('border-radius', '20px', 'important');
                 element.style.setProperty('backdrop-filter', 'blur(20px)', 'important');
-                
-                corrigidos++;
-                console.log('✅ Card corrigido:', element.className);
             }
         });
-        
-        console.log(`✅ ${corrigidos} elementos corrigidos`);
     }
     
     // Executar correção inicial
@@ -73,15 +60,11 @@ document.addEventListener('DOMContentLoaded', function() {
         childList: true,
         subtree: true
     });
-    
-    console.log('👀 Observer ativo - monitorando mudanças no DOM');
 });
 
 // Executar correção também quando a página estiver totalmente carregada
 window.addEventListener('load', function() {
     setTimeout(function() {
-        console.log('🔄 Executando correção final após carregamento completo...');
-        
         // Correção final mais agressiva
         const todosElementos = document.querySelectorAll('*');
         todosElementos.forEach(el => {
@@ -93,8 +76,6 @@ window.addEventListener('load', function() {
                 
                 el.style.setProperty('background', 'rgba(15, 52, 96, 0.05)', 'important');
                 el.style.setProperty('color', '#E8F4FD', 'important');
-                
-                console.log('🎯 Fundo branco eliminado:', el.tagName, el.className);
             }
         });
     }, 1000);
