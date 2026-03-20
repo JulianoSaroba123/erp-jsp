@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block title %}{{ colaborador.nome }} - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('colaborador.listar') }}">Colaboradores</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">{{ colaborador.nome }}</span>
+{% endblock %}
+
+{% block content %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+    .info-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .stat-box {
+        padding: 1.5rem;
+        border-radius: 8px;
+        text-align: center;
+        color: white;
+    }
+    .stat-box-primary {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    .stat-box-info {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+    .stat-box-warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    .info-row {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    .info-label {
+        font-weight: 600;
+        color: #6b7280;
+        font-size: 0.9rem;
+    }
+    .info-value {
+        color: #1f2937;
+        font-size: 1rem;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <!-- Header do Perfil -->
+        <div class="mb-4 p-4 rounded-3 profile-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-1 fw-bold">
+                        <i class="fas fa-user-hard-hat me-2"></i>
+                        {{ colaborador.nome }}
+                    </h3>
+                    <p class="mb-0 opacity-75">
+                        {{ colaborador.cargo_formatado }}
+                        {% if colaborador.especialidade %}
+                        - {{ colaborador.especialidade }}
+                        {% endif %}
+                    </p>
+                </div>
+                <div>
+                    <a href="{{ url_for('colaborador.editar', id=colaborador.id) }}" 
+                       class="btn btn-light me-2">
+                        <i class="fas fa-edit me-2"></i>Editar
+                    </a>
+                    <a href="{{ url_for('colaborador.listar') }}" 
+                       class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left me-2"></i>Voltar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estatísticas -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="stat-box stat-box-primary">
+                    <i class="fas fa-clock fa-2x mb-2 opacity-75"></i>
+                    <h4 class="mb-0 fw-bold">{{ "%.1f"|format(colaborador.total_horas_trabalhadas) }}h</h4>
+                    <small>Total de Horas Trabalhadas</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-box stat-box-info">
+                    <i class="fas fa-Tasks fa-2x mb-2 opacity-75"></i>
+                    <h4 class="mb-0 fw-bold">{{ colaborador.total_os_trabalhadas }}</h4>
+                    <small>Ordens de Serviço</small>
+                </div>
+            </div>
+            <!-- Card de valor/hora removido para ocultar valores financeiros -->
+        </div>
+
+        <div class="row">
+            <!-- Informações Pessoais -->
+            <div class="col-md-6 mb-4">
+                <div class="card info-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-user me-2 text-success"></i>Informações Pessoais
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-row">
+                            <div class="info-label">Nome Completo</div>
+                            <div class="info-value">{{ colaborador.nome }}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">CPF</div>
+                            <div class="info-value">{{ colaborador.cpf or 'Não informado' }}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Status</div>
+                            <div class="info-value">
+                                {% if colaborador.esta_ativo %}
+                                <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contato -->
+            <div class="col-md-6 mb-4">
+                <div class="card info-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-phone me-2 text-success"></i>Contato
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="info-row">
+                            <div class="info-label">Telefone</div>
+                            <div class="info-value">{{ colaborador.telefone or 'Não informado' }}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Celular</div>
+                            <div class="info-value">{{ colaborador.celular or 'Não informado' }}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">E-mail</div>
+                            <div class="info-value">{{ colaborador.email or 'Não informado' }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dados Profissionais -->
+            <div class="col-md-12 mb-4">
+                <div class="card info-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-briefcase me-2 text-success"></i>Dados Profissionais
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="info-row">
+                                    <div class="info-label">Cargo</div>
+                                    <div class="info-value">
+                                        <span class="badge bg-primary">{{ colaborador.cargo_formatado }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-row">
+                                    <div class="info-label">Especialidade</div>
+                                    <div class="info-value">{{ colaborador.especialidade or 'Não informada' }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-row">
+                                    <div class="info-label">Data de Admissão</div>
+                                    <div class="info-value">
+                                        {{ colaborador.data_admissao.strftime('%d/%m/%Y') if colaborador.data_admissao else 'Não informada' }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-row">
+                                    <div class="info-label">Data de Demissão</div>
+                                    <div class="info-value">
+                                        {{ colaborador.data_demissao.strftime('%d/%m/%Y') if colaborador.data_demissao else '-' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Histórico de Trabalhos -->
+            <div class="col-md-12">
+                <div class="card info-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-history me-2 text-success"></i>Histórico de Trabalhos
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if trabalhos %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Ordem de Serviço</th>
+                                        <th>Período</th>
+                                        <th>Horas</th>
+                                        <th>Atividade</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for trabalho in trabalhos %}
+                                    <tr>
+                                        <td>{{ trabalho.data_trabalho.strftime('%d/%m/%Y') }}</td>
+                                        <td>
+                                            <a href="{{ url_for('ordem_servico.visualizar', id=trabalho.ordem_servico_id) }}" 
+                                               class="text-decoration-none">
+                                                OS #{{ trabalho.ordem_servico.numero }}
+                                            </a>
+                                        </td>
+                                        <td>{{ trabalho.periodo_trabalho }}</td>
+                                        <td>
+                                            <span class="badge bg-success">{{ trabalho.total_horas_formatado }}</span>
+                                        </td>
+                                        <td>{{ trabalho.descricao_atividade or '-' }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Nenhum trabalho registrado ainda.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observações -->
+            {% if colaborador.observacoes %}
+            <div class="col-md-12 mt-4">
+                <div class="card info-card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="mb-0">
+                            <i class="fas fa-sticky-note me-2 text-success"></i>Observações
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0" style="white-space: pre-wrap;">{{ colaborador.observacoes }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

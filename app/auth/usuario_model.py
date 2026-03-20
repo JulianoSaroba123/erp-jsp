@@ -72,7 +72,8 @@ class Usuario(BaseModel, UserMixin):
             'admin': 'Administrador',
             'usuario': 'Usuário',
             'operador': 'Operador',
-            'readonly': 'Apenas Leitura'
+            'readonly': 'Apenas Leitura',
+            'colaborador': 'Colaborador'
         }
         return tipos.get(self.tipo_usuario, self.tipo_usuario.title())
     
@@ -194,6 +195,11 @@ class Usuario(BaseModel, UserMixin):
             'readonly': [
                 'visualizar_clientes', 'visualizar_propostas', 'visualizar_ordem_servico',
                 'visualizar_produtos', 'visualizar_fornecedores', 'visualizar_financeiro'
+            ],
+            'colaborador': [
+                'visualizar_ordem_servico_proprias',  # Apenas suas OS
+                'editar_ordem_servico_proprias',      # Preencher horas e atividades
+                'upload_anexos_os'                      # Adicionar fotos
             ]
         }
         

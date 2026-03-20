@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Colaboradores - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Colaboradores</span>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* Header Gradient Verde JSP */
+    .colaboradores-header {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+    .colaboradores-header h3,
+    .colaboradores-header .text-white {
+        color: white !important;
+    }
+    .btn-novo-colaborador {
+        background: white !important;
+        color: #059669 !important;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .btn-novo-colaborador:hover {
+        transform: translateY(-2px);
+        color: #10b981 !important;
+    }
+    /* Stats Cards */
+    .stat-card {
+        padding: 1rem;
+        border-radius: 8px;
+        color: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .stat-card-primary {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+    .stat-card-info {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    .stat-card-warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+    .main-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .badge-cargo {
+        padding: 0.35rem 0.65rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <!-- Header Destacado -->
+        <div class="mb-4 p-4 rounded-3 colaboradores-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="mb-0 text-white fw-bold">
+                    <i class="fas fa-user-hard-hat me-2"></i>
+                    Gerenciamento de Colaboradores
+                </h3>
+                <a href="{{ url_for('colaborador.novo') }}" class="btn btn-novo-colaborador btn-lg">
+                    <i class="fas fa-plus me-2"></i>
+                    Novo Colaborador
+                </a>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card stat-card-primary">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small mb-1">Total de Colaboradores</div>
+                            <h4 class="mb-0 fw-bold">{{ colaboradores|length }}</h4>
+                        </div>
+                        <i class="fas fa-users fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card stat-card-info">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small mb-1">Ativos</div>
+                            <h4 class="mb-0 fw-bold">{{ colaboradores|selectattr('esta_ativo')|list|length }}</h4>
+                        </div>
+                        <i class="fas fa-user-check fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card stat-card-warning">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="small mb-1">Total de Horas (Mês)</div>
+                            <h4 class="mb-0 fw-bold">-</h4>
+                        </div>
+                        <i class="fas fa-clock fa-2x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card Principal -->
+        <div class="card main-card">
+            <div class="card-body">
+                <!-- Busca -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <form method="GET" action="{{ url_for('colaborador.listar') }}" class="d-flex gap-2">
+                            <input type="text" 
+                                   name="busca" 
+                                   class="form-control" 
+                                   placeholder="Buscar por nome, CPF ou cargo..."
+                                   value="{{ busca if busca else '' }}">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            {% if busca %}
+                            <a href="{{ url_for('colaborador.listar') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Limpar
+                            </a>
+                            {% endif %}
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tabela -->
+                {% if colaboradores %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th><i class="fas fa-user me-2"></i>Nome</th>
+                                <th><i class="fas fa-id-card me-2"></i>CPF</th>
+                                <th><i class="fas fa-briefcase me-2"></i>Cargo</th>
+                                <th><i class="fas fa-phone me-2"></i>Contato</th>
+                                <th><i class="fas fa-clock me-2"></i>Horas Total</th>
+                                <th class="text-center"><i class="fas fa-cog me-2"></i>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for colab in colaboradores %}
+                            <tr>
+                                <td>
+                                    <strong>{{ colab.nome }}</strong>
+                                    {% if not colab.esta_ativo %}
+                                    <span class="badge bg-secondary ms-2">Inativo</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ colab.cpf or '-' }}</td>
+                                <td>
+                                    <span class="badge badge-cargo bg-primary">
+                                        {{ colab.cargo_formatado }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if colab.celular %}
+                                    <i class="fas fa-mobile-alt text-success me-1"></i>
+                                    {{ colab.celular }}
+                                    {% elif colab.telefone %}
+                                    <i class="fas fa-phone text-info me-1"></i>
+                                    {{ colab.telefone }}
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if colab.total_horas_trabalhadas > 0 %}
+                                    <span class="text-success fw-bold">
+                                        {{ "%.1f"|format(colab.total_horas_trabalhadas) }}h
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted">0h</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('colaborador.visualizar', id=colab.id) }}" 
+                                           class="btn btn-sm btn-info"
+                                           title="Visualizar">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('colaborador.editar', id=colab.id) }}" 
+                                           class="btn btn-sm btn-warning"
+                                           title="Editar">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-danger"
+                                                onclick="confirmarExclusao({{ colab.id }}, '{{ colab.nome }}')"
+                                                title="Excluir">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-user-slash fa-4x text-muted mb-3"></i>
+                    <p class="text-muted">
+                        {% if busca %}
+                        Nenhum colaborador encontrado com os termos de busca.
+                        {% else %}
+                        Nenhum colaborador cadastrado ainda.
+                        {% endif %}
+                    </p>
+                    {% if not busca %}
+                    <a href="{{ url_for('colaborador.novo') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Cadastrar Primeiro Colaborador
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form de exclusão (hidden) -->
+<form id="formExcluir" method="POST" style="display: none;">
+</form>
+
+<script>
+function confirmarExclusao(id, nome) {
+    if (confirm(`Tem certeza que deseja remover o colaborador "${nome}"?\n\nEsta ação irá desativar o colaborador.`)) {
+        const form = document.getElementById('formExcluir');
+        form.action = "{{ url_for('colaborador.excluir', id=0) }}".replace('0', id);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

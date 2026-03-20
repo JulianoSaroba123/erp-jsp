@@ -80,6 +80,14 @@
                                name="titulo" value="{{ ordem.titulo if ordem else '' }}" required placeholder="Título da ordem de serviço">
                     </div>
                     <div class="col-md-2">
+                        <label class="form-label text-white">Tipo de OS *</label>
+                        <select class="form-select bg-dark text-white border-secondary" name="tipo_os" id="tipo_os_select">
+                            <option value="comercial" {% if ordem and ordem.tipo_os == 'comercial' %}selected{% elif not ordem %}selected{% endif %}>💰 Comercial</option>
+                            <option value="operacional" {% if ordem and ordem.tipo_os == 'operacional' %}selected{% endif %}>📋 Operacional</option>
+                        </select>
+                        <small class="text-muted">Comercial: com valores | Operacional: controle interno</small>
+                    </div>
+                    <div class="col-md-2">
                         <label class="form-label text-white">Prioridade</label>
                         <select class="form-select bg-dark text-white border-secondary" name="prioridade">
                             <option value="baixa" {% if ordem and ordem.prioridade == 'baixa' %}selected{% endif %}>📝 Baixa</option>
@@ -215,6 +223,92 @@
                         <label class="form-label text-white">Observações Gerais</label>
                         <textarea class="form-control bg-dark text-white border-secondary" name="observacoes" rows="3" placeholder="Observações adicionais, recomendações, etc.">{{ ordem.observacoes if ordem else '' }}</textarea>
                         <small class="text-muted">Informações complementares sobre o serviço</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- COLABORADORES (Apenas para OS Operacional) -->
+        <div id="secao_colaboradores" style="{% if not ordem or ordem.tipo_os != 'operacional' %}display: none;{% endif %}">
+            <div class="mb-4 p-3 rounded-3" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                <h5 class="mb-0 text-white fw-bold"><i class="fas fa-users me-2"></i>Colaboradores que Trabalharam nesta OS</h5>
+            </div>
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-body">
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <button type="button" class="btn btn-success" id="btnAdicionarColaborador" onclick="adicionarColaboradorLinha()" data-no-submit="true">
+                                <i class="fas fa-user-plus me-2"></i>Adicionar Colaborad or
+                            </button>
+                            <small class="text-muted ms-3">💡 Adicione os colaboradores e horas trabalhadas para controle operacional</small>
+                        </div>
+                    </div>
+                    
+                    <div id="colaboradores_lista">
+                        {% if ordem and ordem.colaboradores_trabalho %}
+                            {% for colab_trabalho in ordem.colaboradores_trabalho %}
+                            {% if colab_trabalho.ativo %}
+                            <div class="card bg-secondary mb-3 colaborador-item" data-index="{{ loop.index0 }}">
+                                <div class="card-body">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-md-3">
+                                            <label class="form-label text-white">Colaborador *</label>
+                                            <select class="form-select bg-dark text-white border-secondary colaborador-select" 
+                                                    name="colaboradores[{{ loop.index0 }}][colaborador_id]" required>
+                                                <option value="">Selecione...</option>
+                                                {# Será preenchido via JavaScript #}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Data</label>
+                                            <input type="date" class="form-control bg-dark text-white border-secondary" 
+                                                   name="colaboradores[{{ loop.index0 }}][data_trabalho]"
+                                                   value="{{ colab_trabalho.data_trabalho.strftime('%Y-%m-%d') if colab_trabalho.data_trabalho else '' }}" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Hora Início</label>
+                                            <input type="time" class="form-control bg-dark text-white border-secondary" 
+                                                   name="colaboradores[{{ loop.index0 }}][hora_inicio]"
+                                                   value="{{ colab_trabalho.hora_inicio.strftime('%H:%M') if colab_trabalho.hora_inicio else '' }}"
+                                                   onchange="calcularHorasColaborador({{ loop.index0 }})">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Hora Fim</label>
+                                            <input type="time" class="form-control bg-dark text-white border-secondary" 
+                                                   name="colaboradores[{{ loop.index0 }}][hora_fim]"
+                                                   value="{{ colab_trabalho.hora_fim.strftime('%H:%M') if colab_trabalho.hora_fim else '' }}"
+                                                   onchange="calcularHorasColaborador({{ loop.index0 }})">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Total Horas</label>
+                                            <input type="number" class="form-control bg-dark text-white border-secondary total-horas-input" 
+                                                   name="colaboradores[{{ loop.index0 }}][total_horas]"
+                                                   value="{{ colab_trabalho.total_horas if colab_trabalho.total_horas else '' }}"
+                                                   step="0.5" min="0" required>
+                                        </div>
+                                        <div class="col-md-1 text-end">
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="removerColaboradorLinha(this)" data-no-submit="true">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label text-white">Atividade Realizada</label>
+                                            <textarea class="form-control bg-dark text-white border-secondary" 
+                                                      name="colaboradores[{{ loop.index0 }}][descricao_atividade]"
+                                                      rows="2" 
+                                                      placeholder="Descreva o que foi feito...">{{ colab_trabalho.descricao_atividade if colab_trabalho.descricao_atividade else '' }}</textarea>
+                                        </div>
+                                        <input type="hidden" name="colaboradores[{{ loop.index0 }}][id]" value="{{ colab_trabalho.id }}">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="alert alert-info mt-3" id="info_total_horas" style="display: none;">
+                        <strong><i class="fas fa-clock me-2"></i>Total de Horas:</strong> <span id="total_horas_display">0h</span>
                     </div>
                 </div>
             </div>
@@ -1862,5 +1956,179 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// ===== CONTROLE DE COLABORADORES (OS OPERACIONAL) =====
+
+// Toggle da seção de colaboradores baseado no tipo de OS
+document.getElementById('tipo_os_select')?.addEventListener('change', function() {
+    const secaoColaboradores = document.getElementById('secao_colaboradores');
+    const secaoFinanceira = document.querySelectorAll('[id*="financeiro"], [id*="valores"], [id*="pagamento"]');
+    
+    if (this.value === 'operacional') {
+        // Mostrar colaboradores, ocultar seção financeira
+        secaoColaboradores.style.display = 'block';
+        // Poderia ocultar seções financeiras aqui se necessário
+    } else {
+        // Ocultar colaboradores, mostrar seção financeira
+        secaoColaboradores.style.display = 'none';
+    }
+});
+
+// Contador de linhas de colaboradores
+let colaboradorIndex = {{ ordem.colaboradores_trabalho|length if ordem and ordem.colaboradores_trabalho else 0 }};
+
+// Função para adicionar nova linha de colaborador
+function adicionarColaboradorLinha() {
+    const lista = document.getElementById('colaboradores_lista');
+    const hoje = new Date().toISOString().split('T')[0];
+    
+    const novaLinha = document.createElement('div');
+    novaLinha.className = 'card bg-secondary mb-3 colaborador-item';
+    novaLinha.setAttribute('data-index', colaboradorIndex);
+    novaLinha.innerHTML = `
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label text-white">Colaborador *</label>
+                    <select class="form-select bg-dark text-white border-secondary colaborador-select" | 
+                            name="colaboradores[${colaboradorIndex}][colaborador_id]" required>
+                        <option value="">Carregando...</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">Data</label>
+                    <input type="date" class="form-control bg-dark text-white border-secondary" 
+                           name="colaboradores[${colaboradorIndex}][data_trabalho]"
+                           value="${hoje}" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">Hora Início</label>
+                    <input type="time" class="form-control bg-dark text-white border-secondary" 
+                           name="colaboradores[${colaboradorIndex}][hora_inicio]"
+                           onchange="calcularHorasColaborador(${colaboradorIndex})">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">Hora Fim</label>
+                    <input type="time" class="form-control bg-dark text-white border-secondary" 
+                           name="colaboradores[${colaboradorIndex}][hora_fim]"
+                           onchange="calcularHorasColaborador(${colaboradorIndex})">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">Total Horas</label>
+                    <input type="number" class="form-control bg-dark text-white border-secondary total-horas-input" 
+                           name="colaboradores[${colaboradorIndex}][total_horas]"
+                           step="0.5" min="0" required>
+                </div>
+                <div class="col-md-1 text-end">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removerColaboradorLinha(this)" data-no-submit="true">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="col-12">
+                    <label class="form-label text-white">Atividade Realizada</label>
+                    <textarea class="form-control bg-dark text-white border-secondary" 
+                              name="colaboradores[${colaboradorIndex}][descricao_atividade]"
+                              rows="2" 
+                              placeholder="Descreva o que foi feito..."></textarea>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    lista.appendChild(novaLinha);
+    colaboradorIndex++;
+    
+    // Carregar colaboradores no select
+    carregarColaboradoresSelect(novaLinha.querySelector('.colaborador-select'));
+    
+    // Atualizar total
+    atualizarTotalHoras();
+}
+
+// Função para remover linha de colaborador
+function removerColaboradorLinha(btn) {
+    btn.closest('.colaborador-item').remove();
+    atualizarTotalHoras();
+}
+
+// Função para calcular horas automaticamente
+function calcularHorasColaborador(index) {
+    const horaInicio = document.querySelector(`[name="colaboradores[${index}][hora_inicio]"]`)?.value;
+    const horaFim = document.querySelector(`[name="colaboradores[${index}][hora_fim]"]`)?.value;
+    const totalInput = document.querySelector(`[name="colaboradores[${index}][total_horas]"]`);
+    
+    if (horaInicio && horaFim && totalInput) {
+        const [h1, m1] = horaInicio.split(':').map(Number);
+        const [h2, m2] = horaFim.split(':').map(Number);
+        
+        let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+        if (diff < 0) diff += 24 * 60; // Passou da meia-noite
+        
+        const horas = (diff / 60).toFixed(2);
+        totalInput.value = horas;
+        
+        atualizarTotalHoras();
+    }
+}
+
+// Função para atualizar total de horas
+function atualizarTotalHoras() {
+    const todosInputs = document.querySelectorAll('.total-horas-input');
+    let total = 0;
+    
+    todosInputs.forEach(input => {
+        const valor = parseFloat(input.value) || 0;
+        total += valor;
+    });
+    
+    const infoDiv = document.getElementById('info_total_horas');
+    const displaySpan = document.getElementById('total_horas_display');
+    
+    if (total > 0) {
+        const horas = Math.floor(total);
+        const minutos = Math.round((total - horas) * 60);
+        displaySpan.textContent = minutos > 0 ? `${horas}h ${minutos}min` : `${horas}h`;
+        infoDiv.style.display = 'block';
+    } else {
+        infoDiv.style.display = 'none';
+    }
+}
+
+// Função para carregar colaboradores no select
+async function carregarColaboradoresSelect(selectElement) {
+    try {
+        const response = await fetch('/colaborador/api/buscar_ativos');
+        const data = await response.json();
+        
+        if (data.sucesso) {
+            selectElement.innerHTML = '<option value="">Selecione um colaborador...</option>';
+            data.colaboradores.forEach(colab => {
+                const option = document.createElement('option');
+                option.value = colab.id;
+                option.textContent = `${colab.nome} - ${colab.cargo}`;
+                selectElement.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar colaboradores:', error);
+        selectElement.innerHTML = '<option value="">Erro ao carregar</option>';
+    }
+}
+
+// Carregar colaboradores nos selects existentes ao carregar a página
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.colaborador-select').forEach(select => {
+        carregarColaboradoresSelect(select);
+    });
+    
+    // Atualizar total inicial
+    atualizarTotalHoras();
+    
+    // Listeners para recalcular total
+    document.querySelectorAll('.total-horas-input').forEach(input => {
+        input.addEventListener('input', atualizarTotalHoras);
+    });
+});
+
 </script>
 {% endblock %}

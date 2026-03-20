@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if colaborador and colaborador.id else 'Novo' }} Colaborador - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('colaborador.listar') }}">Colaboradores</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">{{ 'Editar' if colaborador and colaborador.id else 'Novo' }} Colaborador</span>
+{% endblock %}
+
+{% block content %}
+<style>
+    .form-header {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        color: white;
+    }
+    .form-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #059669;
+        border-bottom: 2px solid #10b981;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <!-- Header -->
+        <div class="mb-4 p-4 rounded-3 form-header">
+            <h3 class="mb-0 fw-bold">
+                <i class="fas fa-user-hard-hat me-2"></i>
+                {{ 'Editar' if colaborador and colaborador.id else 'Novo' }} Colaborador
+            </h3>
+        </div>
+
+        <!-- Formulário -->
+        <div class="card form-card">
+            <div class="card-body p-4">
+                <form method="POST" id="formColaborador">
+                    <!-- Dados Principais -->
+                    <div class="mb-4">
+                        <div class="section-title">
+                            <i class="fas fa-user me-2"></i>Dados Principais
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="nome" 
+                                       value="{{ colaborador.nome if colaborador else '' }}"
+                                       required
+                                       placeholder="Nome completo do colaborador">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">CPF</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="cpf" 
+                                       value="{{ colaborador.cpf if colaborador else '' }}"
+                                       placeholder="000.000.000-00"
+                                       id="cpf">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dados Profissionais -->
+                    <div class="mb-4">
+                        <div class="section-title">
+                            <i class="fas fa-briefcase me-2"></i>Dados Profissionais
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Cargo <span class="text-danger">*</span></label>
+                                <select class="form-select" name="cargo" required>
+                                    <option value="">Selecione...</option>
+                                    {% for valor, texto in [
+                                        ('tecnico', 'Técnico'),
+                                        ('eletricista', 'Eletricista'),
+                                        ('engenheiro', 'Engenheiro'),
+                                        ('ajudante', 'Ajudante'),
+                                        ('instalador', 'Instalador'),
+                                        ('outros', 'Outros')
+                                    ] %}
+                                    <option value="{{ valor }}" 
+                                            {% if colaborador and colaborador.cargo == valor %}selected{% endif %}>
+                                        {{ texto }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Especialidade</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="especialidade" 
+                                       value="{{ colaborador.especialidade if colaborador else '' }}"
+                                       placeholder="Ex: Energia Solar, Automação">
+                            </div>
+                            
+                            <!-- Campo valor_hora ocultado -->
+                            <input type="hidden" name="valor_hora" value="{{ colaborador.valor_hora if colaborador else '0.00' }}">
+                        </div>
+                        
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label">Data de Admissão</label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       name="data_admissao" 
+                                       value="{{ colaborador.data_admissao.strftime('%Y-%m-%d') if colaborador and colaborador.data_admissao else '' }}">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Data de Demissão</label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       name="data_demissao" 
+                                       value="{{ colaborador.data_demissao.strftime('%Y-%m-%d') if colaborador and colaborador.data_demissao else '' }}">
+                                <small class="text-muted">Deixe vazio se ainda estiver ativo</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contato -->
+                    <div class="mb-4">
+                        <div class="section-title">
+                            <i class="fas fa-phone me-2"></i>Contato
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Telefone</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="telefone" 
+                                       value="{{ colaborador.telefone if colaborador else '' }}"
+                                       placeholder="(00) 0000-0000"
+                                       id="telefone">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Celular</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="celular" 
+                                       value="{{ colaborador.celular if colaborador else '' }}"
+                                       placeholder="(00) 00000-0000"
+                                       id="celular">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">E-mail</label>
+                                <input type="email" 
+                                       class="form-control" 
+                                       name="email" 
+                                       value="{{ colaborador.email if colaborador else '' }}"
+                                       placeholder="email@exemplo.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Observações -->
+                    <div class="mb-4">
+                        <div class="section-title">
+                            <i class="fas fa-sticky-note me-2"></i>Observações
+                        </div>
+                        
+                        <textarea class="form-control" 
+                                  name="observacoes" 
+                                  rows="4"
+                                  placeholder="Anotações gerais sobre o colaborador...">{{ colaborador.observacoes if colaborador else '' }}</textarea>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <a href="{{ url_for('colaborador.listar') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Voltar
+                        </a>
+                        
+                        <button type="submit" class="btn btn-success btn-lg px-5">
+                            <i class="fas fa-save me-2"></i>
+                            {{ 'Atualizar' if colaborador and colaborador.id else 'Cadastrar' }} Colaborador
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Máscaras para campos
+document.addEventListener('DOMContentLoaded', function() {
+    // CPF
+    const cpfInput = document.getElementById('cpf');
+    if (cpfInput) {
+        cpfInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.substr(0, 11);
+            
+            if (value.length >= 9) {
+                value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+            } else if (value.length >= 6) {
+                value = value.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+            } else if (value.length >= 3) {
+                value = value.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+            }
+            
+            e.target.value = value;
+        });
+    }
+    
+    // Telefone fixo
+    const telInput = document.getElementById('telefone');
+    if (telInput) {
+        telInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 10) value = value.substr(0, 10);
+            
+            if (value.length >= 6) {
+                value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+            } else if (value.length >= 2) {
+                value = value.replace(/(\d{2})(\d{0,4})/, '($1) $2');
+            }
+            
+            e.target.value = value;
+        });
+    }
+    
+    // Celular
+    const celInput = document.getElementById('celular');
+    if (celInput) {
+        celInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.substr(0, 11);
+            
+            if (value.length >= 7) {
+                value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+            } else if (value.length >= 2) {
+                value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+            }
+            
+            e.target.value = value;
+        });
+    }
+});
+</script>
+{% endblock %}

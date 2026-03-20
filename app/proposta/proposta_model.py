@@ -420,6 +420,7 @@ class Proposta(BaseModel):
             titulo=self.titulo or 'Ordem de Serviço',
             descricao=self.descricao or '',
             observacoes=f"OS gerada automaticamente da Proposta {self.codigo}",
+            tipo_os='comercial',  # OS de proposta sempre é comercial (com valores)
             status='pendente',
             prioridade=self.prioridade or 'normal',
             data_abertura=date.today(),

@@ -418,6 +418,33 @@
 
         <!-- DESCRIÇÃO DOS SERVIÇOS REALIZADOS -->
         <div class="section">
+            {% if ordem.tipo_os == 'operacional' %}
+            <div class="section-title">📋 ATIVIDADES E SERVIÇOS REALIZADOS</div>
+            <div class="section-content">
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">Descrição das Atividades</div>
+                        <div class="data-value data-value-large formatted-text" style="min-height: 120px; padding: 15px; background: #f8f9fa; border-left: 4px solid #10b981;">
+                            {{ ordem.descricao_problema if ordem.descricao_problema else (ordem.defeito_relatado if ordem.defeito_relatado else (ordem.descricao if ordem.descricao else (ordem.observacoes if ordem.observacoes else 'Nenhuma descrição informada'))) }}
+                        </div>
+                    </div>
+                </div>
+                <div class="data-row">
+                    <div class="data-cell">
+                        <div class="data-label">Técnico Responsável</div>
+                        <div class="data-value">{{ ordem.tecnico_responsavel if ordem.tecnico_responsavel else 'N/A' }}</div>
+                    </div>
+                    <div class="data-cell">
+                        <div class="data-label">Data de Início</div>
+                        <div class="data-value">{{ ordem.data_inicio.strftime('%d/%m/%Y às %H:%M') if ordem.data_inicio else 'N/A' }}</div>
+                    </div>
+                    <div class="data-cell">
+                        <div class="data-label">Data de Conclusão</div>
+                        <div class="data-value">{{ ordem.data_conclusao.strftime('%d/%m/%Y às %H:%M') if ordem.data_conclusao else 'N/A' }}</div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
             <div class="section-title">DESCRIÇÃO DOS SERVIÇOS REALIZADOS</div>
             <div class="section-content">
                 <div class="data-row">
@@ -459,6 +486,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
 
         {% if ordem.incluir_imagens_relatorio and ordem.anexos and ordem.anexos|length > 0 %}
@@ -493,7 +521,8 @@
         </div>
         {% endif %}
 
-        <!-- SERVIÇOS EXECUTADOS -->
+        <!-- SERVIÇOS EXECUTADOS (Apenas OS Comercial) -->
+        {% if not ordem.tipo_os or ordem.tipo_os == 'comercial' %}
         <div class="section">
             <div class="section-title">SERVIÇOS EXECUTADOS</div>
             <div class="section-content">
@@ -528,7 +557,7 @@
             </div>
         </div>
 
-        <!-- PRODUTOS UTILIZADOS -->
+        <!-- PRODUTOS UTILIZADOS (Apenas OS Comercial) -->
         <div class="section">
             <div class="section-title">PRODUTOS/PEÇAS UTILIZADOS</div>
             <div class="section-content">
@@ -563,7 +592,7 @@
             </div>
         </div>
 
-        <!-- RESUMO FINANCEIRO -->
+        <!-- RESUMO FINANCEIRO (Apenas OS Comercial) -->
         <div class="section">
             <div class="section-title">RESUMO FINANCEIRO</div>
             <div class="section-content">
@@ -597,9 +626,67 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
+        <!-- COLABORADORES (Apenas OS Operacional) -->
+        {% if ordem.tipo_os == 'operacional' and ordem.colaboradores_trabalho %}
+        <div class="section">
+            <div class="section-title">👷 COLABORADORES QUE TRABALHARAM NESTA OS 👷</div>
+            <div class="section-content">
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #1a365d;">
+                            <th style="padding: 8px; text-align: left; font-size: 11px; color: #1a365d;">Colaborador</th>
+                            <th style="padding: 8px; text-align: center; font-size: 11px; color: #1a365d;">Data</th>
+                            <th style="padding: 8px; text-align: center; font-size: 11px; color: #1a365d;">Período</th>
+                            <th style="padding: 8px; text-align: center; font-size: 11px; color: #1a365d;">Total Horas</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for colab_trabalho in ordem.colaboradores_trabalho %}
+                        {% if colab_trabalho.ativo %}
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 8px; font-size: 10px;">
+                                <strong>{{ colab_trabalho.colaborador.nome if colab_trabalho.colaborador else 'N/A' }}</strong>
+                                {% if colab_trabalho.colaborador and colab_trabalho.colaborador.cargo %}
+                                <br><span style="color: #718096; font-size: 9px;">{{ colab_trabalho.colaborador.cargo_formatado }}</span>
+                                {% endif %}
+                                {% if colab_trabalho.descricao_atividade %}
+                                <br><span style="color: #4a5568; font-size: 9px; font-style: italic;">{{ colab_trabalho.descricao_atividade }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 8px; text-align: center; font-size: 10px;">
+                                {{ colab_trabalho.data_trabalho.strftime('%d/%m/%Y') if colab_trabalho.data_trabalho else '-' }}
+                            </td>
+                            <td style="padding: 8px; text-align: center; font-size: 10px;">
+                                {% if colab_trabalho.hora_inicio and colab_trabalho.hora_fim %}
+                                {{ colab_trabalho.hora_inicio.strftime('%H:%M') }} - {{ colab_trabalho.hora_fim.strftime('%H:%M') }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td style="padding: 8px; text-align: center; font-size: 10px; font-weight: bold; color: #10b981;">
+                                {{ colab_trabalho.total_horas_formatado if colab_trabalho.total_horas else '0h' }}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                        <tr style="background-color: #f0fdf4; border-top: 2px solid #10b981;">
+                            <td colspan="3" style="padding: 10px; text-align: right; font-weight: bold; font-size: 11px; color: #1a365d;">
+                                TOTAL DE HORAS:
+                            </td>
+                            <td style="padding: 10px; text-align: center; font-weight: bold; font-size: 12px; color: #10b981;">
+                                {{ ordem.total_horas_colaboradores_formatado }}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
        
-        <!-- CONDIÇÕES DE PAGAMENTO -->
+        <!-- CONDIÇÕES DE PAGAMENTO (Apenas OS Comercial) -->
+        {% if not ordem.tipo_os or ordem.tipo_os == 'comercial' %}
         <div class="section">
             <div class="section-title">CONDIÇÕES DE PAGAMENTO</div>
             <div class="section-content">
@@ -685,8 +772,10 @@
                 {% endif %}
             </div>
         </div>
+        {% endif %}
 
-        <!-- DADOS BANCÁRIOS -->
+        <!-- DADOS BANCÁRIOS (Apenas OS Comercial) -->
+        {% if not ordem.tipo_os or ordem.tipo_os == 'comercial' %}
         <div class="section">
             <div class="section-title">🏦 DADOS BANCÁRIOS 🏦</div>
             <div class="section-content">
@@ -722,8 +811,10 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <!-- GARANTIA DOS SERVIÇOS -->
+        <!-- GARANTIA DOS SERVIÇOS (Apenas OS Comercial) -->
+        {% if not ordem.tipo_os or ordem.tipo_os == 'comercial' %}
         <div class="section">
             <div class="section-title">GARANTIA DOS SERVIÇOS</div>
             <div class="section-content">
@@ -745,6 +836,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <!-- TERMOS E CONDIÇÕES -->
         <div class="section">

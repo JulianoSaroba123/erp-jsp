@@ -607,6 +607,14 @@ def popular_banco_se_vazio():
     """Sincroniza dados do erp.db local com o banco Render"""
     from app.ordem_servico.ordem_servico_model import OrdemServico
     from app.cliente.cliente_model import Cliente
+    
+    # Importa modelos de Colaborador
+    try:
+        from app.colaborador.colaborador_model import Colaborador, OrdemServicoColaborador
+        print("[OK] Modelos Colaborador importados")
+    except Exception as e:
+        print(f" ⚠ Erro ao importar modelos Colaborador: {e}")
+    
     import os
     import sqlite3
     from datetime import datetime
@@ -715,6 +723,10 @@ def register_blueprints(app):
     # Blueprint de clientes
     from app.cliente.cliente_routes import cliente_bp
     app.register_blueprint(cliente_bp, url_prefix='/cliente')
+
+    # Blueprint de colaboradores
+    from app.colaborador.colaborador_routes import colaborador_bp
+    app.register_blueprint(colaborador_bp, url_prefix='/colaborador')
 
     # Blueprint de fornecedores
     from app.fornecedor.fornecedor_routes import fornecedor_bp

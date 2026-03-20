@@ -514,6 +514,8 @@ def novo():
                 diagnostico=request.form.get('diagnostico', '').strip(),
                 diagnostico_tecnico=request.form.get('diagnostico_tecnico', '').strip(),
                 solucao=request.form.get('solucao', '').strip(),
+                # Tipo de OS (comercial ou operacional)
+                tipo_os=request.form.get('tipo_os', 'comercial'),
                 # Novos campos - Tratamento seguro
                 km_inicial=safe_int_convert(request.form.get('km_inicial', '')),
                 km_final=safe_int_convert(request.form.get('km_final', '')),
@@ -1096,6 +1098,8 @@ def editar(id):
             ordem.diagnostico = request.form.get('diagnostico', '').strip()
             ordem.diagnostico_tecnico = request.form.get('diagnostico_tecnico', '').strip()
             ordem.solucao = request.form.get('solucao', '').strip()
+            # Tipo de OS (comercial ou operacional)
+            ordem.tipo_os = request.form.get('tipo_os', 'comercial')
             
             # Controle de KM e Tempo - Tratamento seguro de conversão
             ordem.km_inicial = safe_int_convert(request.form.get('km_inicial', ''))

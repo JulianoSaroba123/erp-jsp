@@ -31,9 +31,15 @@ PRIORIDADE_CHOICES = [
     ('urgente', 'Urgente')
 ]
 
+TIPO_OS_CHOICES = [
+    ('comercial', 'Comercial - Com valores financeiros'),
+    ('operacional', 'Operacional - Apenas controle interno')
+]
+
 # Dicionários para mapeamento
 STATUS_MAP = dict(STATUS_CHOICES)
 PRIORIDADE_MAP = dict(PRIORIDADE_CHOICES)
+TIPO_OS_MAP = dict(TIPO_OS_CHOICES)
 
 
 class OrdemServico(BaseModel):
@@ -49,8 +55,10 @@ class OrdemServico(BaseModel):
     # Constantes da classe
     STATUS_CHOICES = STATUS_CHOICES
     PRIORIDADE_CHOICES = PRIORIDADE_CHOICES
+    TIPO_OS_CHOICES = TIPO_OS_CHOICES
     STATUS_MAP = STATUS_MAP
     PRIORIDADE_MAP = PRIORIDADE_MAP
+    TIPO_OS_MAP = TIPO_OS_MAP
     
     # Campos básicos
     numero = db.Column(db.String(20), unique=True, nullable=False, index=True)
@@ -75,6 +83,10 @@ class OrdemServico(BaseModel):
     descricao = db.Column(db.Text)
     observacoes = db.Column(db.Text)
     tipo_servico = db.Column(db.String(100))  # Tipo/categoria do serviço
+    
+    # Tipo de OS (NOVO - v3.1)
+    tipo_os = db.Column(db.String(20), default='comercial', nullable=False, server_default='comercial')
+    # Possíveis tipos: comercial (com valores), operacional (sem valores)
     
     # Status do serviço (PADRONIZADO)
     status = db.Column(db.String(20), default='pendente', nullable=False, server_default='pendente')
@@ -153,6 +165,21 @@ class OrdemServico(BaseModel):
         return PRIORIDADE_MAP.get(self.prioridade, self.prioridade.title())
     
     @property
+    def tipo_os_formatado(self):
+        """Retorna tipo de OS formatado para exibição."""
+        return TIPO_OS_MAP.get(self.tipo_os, self.tipo_os.title())
+    
+    @property
+    def eh_operacional(self):
+        """Verifica se a OS é do tipo operacional (sem valores)."""
+        return self.tipo_os == 'operacional'
+    
+    @property
+    def eh_comercial(self):
+        """Verifica se a OS é do tipo comercial (com valores)."""
+        return self.tipo_os == 'comercial'
+    
+    @property
     def km_total(self):
         """Calcula KM total percorrido."""
         if self.km_inicial and self.km_final and self.km_final > self.km_inicial:
@@ -209,6 +236,27 @@ class OrdemServico(BaseModel):
             minutos = int((tempo_decimal - horas) * 60)
             return f"{horas:02d}:{minutos:02d}"
         return "00:00"
+    
+    @property
+    def total_horas_colaboradores(self):
+        """Calcula total de horas trabalhadas por todos os colaboradores."""
+        if not hasattr(self, 'colaboradores_trabalho'):
+            return 0.0
+        total = sum(float(c.total_horas or 0) for c in self.colaboradores_trabalho if c.ativo)
+        return total
+    
+    @property
+    def total_horas_colaboradores_formatado(self):
+        """Retorna total de horas dos colaboradores em formato legível."""
+        total = self.total_horas_colaboradores
+        if total > 0:
+            horas_inteiras = int(total)
+            minutos = int((total - horas_inteiras) * 60)
+            if minutos > 0:
+                return f'{horas_inteiras}h {minutos}min'
+            else:
+                return f'{horas_inteiras}h'
+        return '0h'
     
     @property
     def valor_total_servicos(self):
