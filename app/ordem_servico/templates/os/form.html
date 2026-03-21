@@ -137,12 +137,6 @@
                                name="data_conclusao" value="{{ ordem.data_conclusao.strftime('%Y-%m-%dT%H:%M') if ordem and ordem.data_conclusao else '' }}">
                         <small class="text-muted">✅ Data/hora que o serviço foi finalizado</small>
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label text-white">Data Vencimento Pgto</label>
-                        <input type="date" class="form-control bg-dark text-white border-secondary" 
-                               name="data_vencimento_pagamento" value="{{ ordem.data_vencimento_pagamento.strftime('%Y-%m-%d') if ordem and ordem.data_vencimento_pagamento else '' }}">
-                        <small class="text-muted">💰 Vencimento do pagamento</small>
-                    </div>
                 </div>
             </div>
         </div>
