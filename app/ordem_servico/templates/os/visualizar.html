@@ -454,6 +454,9 @@
                                 <div class="mt-2">
                                     <small class="d-block">Início: {{ ordem.hora_inicial.strftime('%H:%M') if ordem.hora_inicial else 'N/A' }}</small>
                                     <small class="d-block">Fim: {{ ordem.hora_final.strftime('%H:%M') if ordem.hora_final else 'N/A' }}</small>
+                                    {% if ordem.intervalo_almoco %}
+                                    <small class="d-block text-info">Almoço: {{ ordem.intervalo_almoco }} min</small>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>

@@ -381,35 +381,42 @@
         <div class="card bg-dark border-secondary mb-4">
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label text-white">Hora Inicial</label>
                         <input type="time" class="form-control bg-dark text-white border-secondary" 
                                name="hora_inicial" value="{{ ordem.hora_inicial.strftime('%H:%M') if ordem and ordem.hora_inicial else '' }}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label text-white">Hora Final</label>
                         <input type="time" class="form-control bg-dark text-white border-secondary" 
                                name="hora_final" value="{{ ordem.hora_final.strftime('%H:%M') if ordem and ordem.hora_final else '' }}">
                     </div>
-                    <div class="col-md-3">
-                        <label class="form-label text-white">KM Inicial</label>
+                    <div class="col-md-2">
+                        <label class="form-label text-white">Intervalo Almoço (min)</label>
                         <input type="number" class="form-control bg-dark text-white border-secondary" 
-                               name="km_inicial" value="{{ ordem.km_inicial if ordem else '' }}" step="1" min="0">
+                               id="intervalo_almoco" name="intervalo_almoco" value="{{ ordem.intervalo_almoco if ordem and ordem.intervalo_almoco else '60' }}" 
+                               step="15" min="0" max="180" placeholder="60">
+                        <small class="text-muted">Descontado do total</small>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label text-white">KM Final</label>
-                        <input type="number" class="form-control bg-dark text-white border-secondary" 
-                               name="km_final" value="{{ ordem.km_final if ordem else '' }}" step="1" min="0">
-                    </div>
-                    <div class="col-md-6">
                         <label class="form-label text-white">Total de Horas Trabalhadas</label>
                         <input type="text" class="form-control bg-info text-white" 
                                id="totalHoras" name="total_horas" readonly placeholder="Calculado automaticamente">
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-3">
                         <label class="form-label text-white">KM Total (Deslocamento)</label>
                         <input type="text" class="form-control bg-info text-white" 
                                id="totalKm" name="total_km" readonly placeholder="Calculado automaticamente">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white">KM Inicial</label>
+                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                               name="km_inicial" value="{{ ordem.km_inicial if ordem else '' }}" step="1" min="0">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-white">KM Final</label>
+                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                               name="km_final" value="{{ ordem.km_final if ordem else '' }}" step="1" min="0">
                     </div>
                 </div>
             </div>
@@ -1563,6 +1570,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function calcularTotalHoras() {
         const horaInicial = document.querySelector('input[name="hora_inicial"]').value;
         const horaFinal = document.querySelector('input[name="hora_final"]').value;
+        const intervaloAlmoco = parseInt(document.getElementById('intervalo_almoco')?.value || 0);
         const totalHorasField = document.getElementById('totalHoras');
         
         if (horaInicial && horaFinal) {
@@ -1577,7 +1585,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 finalMinutos += 24 * 60; // Adiciona 24 horas em minutos
             }
             
-            const diffMinutos = finalMinutos - inicialMinutos;
+            // Descontar intervalo de almoço
+            let diffMinutos = finalMinutos - inicialMinutos - intervaloAlmoco;
+            
+            // Garantir que não seja negativo
+            if (diffMinutos < 0) diffMinutos = 0;
+            
             const horas = Math.floor(diffMinutos / 60);
             const minutos = diffMinutos % 60;
             
@@ -1604,6 +1617,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners para os campos de tempo e KM (mover para DOMContentLoaded)
     const horaInicialInput = document.querySelector('input[name="hora_inicial"]');
     const horaFinalInput = document.querySelector('input[name="hora_final"]');
+    const intervaloAlmocoInput = document.getElementById('intervalo_almoco');
     const kmInicialInput = document.querySelector('input[name="km_inicial"]');
     const kmFinalInput = document.querySelector('input[name="km_final"]');
     
@@ -1611,6 +1625,11 @@ document.addEventListener('DOMContentLoaded', function() {
         horaInicialInput.addEventListener('change', calcularTotalHoras);
         horaFinalInput.addEventListener('change', calcularTotalHoras);
         console.log('✅ Event listeners de tempo ativados');
+    }
+    
+    if (intervaloAlmocoInput) {
+        intervaloAlmocoInput.addEventListener('input', calcularTotalHoras);
+        console.log('✅ Event listener de intervalo de almoço ativado');
     }
     
     if (kmInicialInput && kmFinalInput) {

@@ -536,6 +536,7 @@ def novo():
                 total_km=request.form.get('total_km', '').strip(),
                 hora_inicial=hora_inicial,
                 hora_final=hora_final,
+                intervalo_almoco=safe_int_convert(request.form.get('intervalo_almoco', '60'), default=60),
                 total_horas=request.form.get('total_horas', '').strip(),
                 condicao_pagamento=request.form.get('condicao_pagamento', 'a_vista'),
                 status_pagamento=request.form.get('status_pagamento', 'pendente'),
@@ -1147,6 +1148,7 @@ def editar(id):
             
             ordem.hora_inicial = hora_inicial
             ordem.hora_final = hora_final
+            ordem.intervalo_almoco = safe_int_convert(request.form.get('intervalo_almoco', '60'), default=60)
             ordem.total_horas = request.form.get('total_horas', '').strip()
             
             # Condições de Pagamento

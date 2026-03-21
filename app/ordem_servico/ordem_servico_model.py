@@ -131,6 +131,7 @@ class OrdemServico(BaseModel):
     # Controle de Tempo
     hora_inicial = db.Column(db.Time)
     hora_final = db.Column(db.Time)
+    intervalo_almoco = db.Column(db.Integer, default=60)  # Intervalo de almoço em minutos
     total_horas = db.Column(db.String(20))  # Formato: "2h 30min"
     
     # Condições de Pagamento

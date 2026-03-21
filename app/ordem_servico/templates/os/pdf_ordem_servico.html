@@ -859,6 +859,63 @@
             </div>
         </div>
 
+        <!-- COLABORADORES ENVOLVIDOS -->
+        {% if ordem.colaboradores_trabalho and ordem.colaboradores_trabalho|length > 0 %}
+        <div style="margin-top: 20px; page-break-inside: avoid;">
+            <div class="section-title">COLABORADORES ENVOLVIDOS</div>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 10px;">
+                <thead>
+                    <tr style="background-color: #2c3e50; color: white;">
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Nome</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Data</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Entrada</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Saída</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Total</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Horas Normais</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; text-align: center;">Horas Extras</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for trabalho in ordem.colaboradores_trabalho %}
+                    {% if trabalho.ativo %}
+                    {% set total_horas_num = trabalho.total_horas|float if trabalho.total_horas else 0 %}
+                    {% set horas_normais = 8 if total_horas_num >= 8 else total_horas_num %}
+                    {% set horas_extras = total_horas_num - 8 if total_horas_num > 8 else 0 %}
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">{{ trabalho.colaborador.nome if trabalho.colaborador else 'N/A' }}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{{ trabalho.data_trabalho.strftime('%d/%m/%Y') if trabalho.data_trabalho else 'N/A' }}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{{ trabalho.hora_inicio.strftime('%H:%M') if trabalho.hora_inicio else '-' }}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">{{ trabalho.hora_fim.strftime('%H:%M') if trabalho.hora_fim else '-' }}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold;">{{ trabalho.total_horas_formatado }}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center; color: #27ae60;">
+                            {% if horas_normais > 0 %}
+                            {{ '%dh %02dmin'|format(horas_normais|int, ((horas_normais % 1) * 60)|int) }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td style="border: 1px solid #ddd; padding: 8px; text-align: center; color: #e74c3c; font-weight: bold;">
+                            {% if horas_extras > 0 %}
+                            {{ '%dh %02dmin'|format(horas_extras|int, ((horas_extras % 1) * 60)|int) }}
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div style="margin-top: 10px; padding: 10px; background-color: #ecf0f1; border-left: 4px solid #3498db;">
+                <small style="color: #7f8c8d;">
+                    <strong>Legenda:</strong> 
+                    <span style="color: #27ae60;">■</span> Horas Normais (até 8h) | 
+                    <span style="color: #e74c3c;">■</span> Horas Extras (acima de 8h)
+                </small>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- ASSINATURAS -->
         <div class="signatures">
             <div class="signature-box">
