@@ -488,6 +488,14 @@ def novo():
             if request.form.get('hora_final'):
                 hora_final = datetime.strptime(request.form.get('hora_final'), '%H:%M').time()
             
+            # Define tipo_os: colaboradores sempre criam operacional
+            if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'colaborador':
+                tipo_os_final = 'operacional'
+                print("👷 DEBUG: Colaborador criando OS - forçando tipo_os='operacional'")
+            else:
+                tipo_os_final = request.form.get('tipo_os', 'comercial')
+                print(f"👤 DEBUG: Usuário padrão criando OS - tipo_os='{tipo_os_final}'")
+            
             # Cria ordem de serviço
             ordem = OrdemServico(
                 numero=OrdemServico.gerar_proximo_numero(),
@@ -521,7 +529,7 @@ def novo():
                 diagnostico_tecnico=request.form.get('diagnostico_tecnico', '').strip(),
                 solucao=request.form.get('solucao', '').strip(),
                 # Tipo de OS (comercial ou operacional)
-                tipo_os=request.form.get('tipo_os', 'comercial'),
+                tipo_os=tipo_os_final,
                 # Novos campos - Tratamento seguro
                 km_inicial=safe_int_convert(request.form.get('km_inicial', '')),
                 km_final=safe_int_convert(request.form.get('km_final', '')),
@@ -1114,8 +1122,14 @@ def editar(id):
             ordem.diagnostico = request.form.get('diagnostico', '').strip()
             ordem.diagnostico_tecnico = request.form.get('diagnostico_tecnico', '').strip()
             ordem.solucao = request.form.get('solucao', '').strip()
-            # Tipo de OS (comercial ou operacional)
-            ordem.tipo_os = request.form.get('tipo_os', 'comercial')
+            
+            # Tipo de OS: colaboradores não podem alterar, sempre operacional
+            if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'colaborador':
+                ordem.tipo_os = 'operacional'  # Forçar operacional para colaboradores
+                print("👷 DEBUG: Colaborador editando OS - mantendo tipo_os='operacional'")
+            else:
+                ordem.tipo_os = request.form.get('tipo_os', ordem.tipo_os or 'comercial')
+                print(f"👤 DEBUG: Usuário padrão editando OS - tipo_os='{ordem.tipo_os}'")
             
             # Controle de KM e Tempo - Tratamento seguro de conversão
             ordem.km_inicial = safe_int_convert(request.form.get('km_inicial', ''))
