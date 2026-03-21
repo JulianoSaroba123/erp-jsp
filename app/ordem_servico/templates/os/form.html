@@ -1601,13 +1601,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Event listeners para os campos de tempo
-    document.querySelector('input[name="hora_inicial"]').addEventListener('change', calcularTotalHoras);
-    document.querySelector('input[name="hora_final"]').addEventListener('change', calcularTotalHoras);
+    // Event listeners para os campos de tempo e KM (mover para DOMContentLoaded)
+    const horaInicialInput = document.querySelector('input[name="hora_inicial"]');
+    const horaFinalInput = document.querySelector('input[name="hora_final"]');
+    const kmInicialInput = document.querySelector('input[name="km_inicial"]');
+    const kmFinalInput = document.querySelector('input[name="km_final"]');
     
-    // Event listeners para os campos de KM
-    document.querySelector('input[name="km_inicial"]').addEventListener('input', calcularTotalKm);
-    document.querySelector('input[name="km_final"]').addEventListener('input', calcularTotalKm);
+    if (horaInicialInput && horaFinalInput) {
+        horaInicialInput.addEventListener('change', calcularTotalHoras);
+        horaFinalInput.addEventListener('change', calcularTotalHoras);
+        console.log('✅ Event listeners de tempo ativados');
+    }
+    
+    if (kmInicialInput && kmFinalInput) {
+        kmInicialInput.addEventListener('input', calcularTotalKm);
+        kmFinalInput.addEventListener('input', calcularTotalKm);
+        console.log('✅ Event listeners de KM ativados');
+    }
     
     // Calcular valores iniciais se existirem
     calcularTotalHoras();

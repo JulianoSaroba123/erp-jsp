@@ -334,6 +334,7 @@
             </div>
 
             <!-- Serviços Realizados -->
+            {% if current_user.tipo_usuario|default('usuario') != 'colaborador' %}
             {% if ordem.servicos and ordem.servicos|length > 0 %}
             <div class="card info-card">
                 <div class="card-header">
@@ -417,6 +418,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
             {% endif %}
 
             <!-- Controles de Execução -->
