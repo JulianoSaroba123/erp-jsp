@@ -985,6 +985,11 @@ def visualizar(id):
         flash('Ordem de serviço não encontrada!', 'error')
         return redirect(url_for('ordem_servico.listar'))
     
+    # Colaboradores só podem visualizar ordens operacionais
+    if current_user.tipo_usuario == 'colaborador' and ordem.tipo_os != 'operacional':
+        flash('Você não tem permissão para visualizar esta ordem de serviço.', 'error')
+        return redirect(url_for('ordem_servico.listar'))
+    
     # Debug: verificar se os itens foram carregados
     print(f"📋 OS #{ordem.numero}: {len(ordem.servicos)} serviços, {len(ordem.produtos_utilizados)} produtos")
     print(f"💰 Valores: Serviços={ordem.valor_total_servicos}, Produtos={ordem.valor_total_produtos}")
@@ -1010,6 +1015,11 @@ def editar(id):
     if not ordem:
         print(f" DEBUG: Ordem com ID {id} não encontrada")
         flash('Ordem de serviço não encontrada!', 'error')
+        return redirect(url_for('ordem_servico.listar'))
+    
+    # Colaboradores só podem editar ordens operacionais
+    if current_user.tipo_usuario == 'colaborador' and ordem.tipo_os != 'operacional':
+        flash('Você não tem permissão para editar esta ordem de serviço.', 'error')
         return redirect(url_for('ordem_servico.listar'))
     
     print(f" DEBUG: Ordem encontrada: {ordem.numero}")

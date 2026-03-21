@@ -79,6 +79,10 @@
                         <input type="text" class="form-control bg-dark text-white border-secondary" 
                                name="titulo" value="{{ ordem.titulo if ordem else '' }}" required placeholder="Título da ordem de serviço">
                     </div>
+                    {% if current_user.tipo_usuario == 'colaborador' %}
+                    <!-- Colaborador: sempre operacional (campo oculto) -->
+                    <input type="hidden" name="tipo_os" id="tipo_os_select" value="operacional">
+                    {% else %}
                     <div class="col-md-2">
                         <label class="form-label text-white">Tipo de OS *</label>
                         <select class="form-select bg-dark text-white border-secondary" name="tipo_os" id="tipo_os_select">
@@ -87,6 +91,7 @@
                         </select>
                         <small class="text-muted">Comercial: com valores | Operacional: controle interno</small>
                     </div>
+                    {% endif %}
                     <div class="col-md-2">
                         <label class="form-label text-white">Prioridade</label>
                         <select class="form-select bg-dark text-white border-secondary" name="prioridade">
@@ -355,6 +360,8 @@
             </div>
         </div>
 
+        <!-- SEÇÕES FINANCEIRAS (Ocultas para colaboradores) -->
+        {% if current_user.tipo_usuario != 'colaborador' %}
         <!-- ITENS DE SERVIÇO -->
         <div class="mb-4 p-3 rounded-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
             <h5 class="mb-0 text-white fw-bold"><i class="fas fa-wrench me-2"></i>Serviços Realizados</h5>
@@ -614,6 +621,8 @@
             </div>
         </div>
         {% endif %}
+        {% endif %}
+        <!-- FIM SEÇÕES FINANCEIRAS -->
 
         <!-- ANEXOS -->
         <div class="mb-4 p-3 rounded-3" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
