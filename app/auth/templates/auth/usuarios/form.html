@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if usuario else 'Novo' }} Usuário - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('usuario.listar') }}">Usuários</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">{{ 'Editar' if usuario else 'Novo' }} Usuário</span>
+{% endblock %}
+
+{% block content %}
+<style>
+    .form-header {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        color: white;
+    }
+    .form-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #2563eb;
+        border-bottom: 2px solid #3b82f6;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <!-- Header -->
+        <div class="mb-4 p-4 rounded-3 form-header">
+            <h3 class="mb-0 fw-bold">
+                <i class="fas fa-user-cog me-2"></i>
+                {{ 'Editar' if usuario else 'Novo' }} Usuário
+            </h3>
+        </div>
+
+        <!-- Formulário -->
+        <div class="card form-card">
+            <div class="card-body p-4">
+                <form method="POST" id="formUsuario">
+                    <!-- Dados Principais -->
+                    <div class="mb-4">
+                        <div class="section-title">
+                            <i class="fas fa-user me-2"></i>Dados Principais
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="nome" 
+                                       value="{{ usuario.nome if usuario else '' }}"
+                                       required
+                                       placeholder="Nome completo do usuário">
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" 
+                                       class="form-control" 
+                                       name="email" 
+                                       value="{{ usuario.email if usuario else '' }}"
+                                       required
+                                       placeholder="email@exemplo.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dados de Acesso -->
+                    <div class="mb-4">
+                        <div class="section-title">
+                            <i class="fas fa-key me-2"></i>Dados de Acesso
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Username <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="usuario" 
+                                       value="{{ usuario.usuario if usuario else '' }}"
+                                       required
+                                       placeholder="username"
+                                       pattern="[a-zA-Z0-9_]+"
+                                       title="Apenas letras, números e underscore">
+                                <small class="text-muted">Usado para fazer login</small>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    Senha 
+                                    {% if not usuario %}<span class="text-danger">*</span>{% endif %}
+                                </label>
+                                <input type="password" 
+                                       class="form-control" 
+                                       name="senha" 
+                                       {% if not usuario %}required{% endif %}
+                                       placeholder="{{ 'Nova senha' if usuario else 'Senha do usuário' }}"
+                                       minlength="6">
+                                <small class="text-muted">
+                                    {% if usuario %}
+                                    Deixe em branco para manter a senha atual
+                                    {% else %}
+                                    Mínimo 6 caracteres
+                                    {% endif %}
+                                </small>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo de Usuário <span class="text-danger">*</span></label>
+                                <select class="form-select" name="tipo_usuario" required>
+                                    <option value="">Selecione...</option>
+                                    {% for valor, texto, descricao in [
+                                        ('admin', 'Administrador', 'Acesso total ao sistema'),
+                                        ('usuario', 'Usuário', 'Acesso completo (sem configurações)'),
+                                        ('operador', 'Operador', 'Acesso limitado (sem financeiro)'),
+                                        ('colaborador', 'Colaborador', 'Apenas suas OS'),
+                                        ('readonly', 'Somente Leitura', 'Visualizar sem editar')
+                                    ] %}
+                                    <option value="{{ valor }}" 
+                                            title="{{ descricao }}"
+                                            {% if usuario and usuario.tipo_usuario == valor %}selected{% endif %}>
+                                        {{ texto }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dados Adicionais -->
+                    <div class="mb-4">
+                        <div class="section-title">
+                            <i class="fas fa-info-circle me-2"></i>Dados Adicionais (Opcional)
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Telefone</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="telefone" 
+                                       value="{{ usuario.telefone if usuario else '' }}"
+                                       placeholder="(00) 00000-0000">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Cargo</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="cargo" 
+                                       value="{{ usuario.cargo if usuario else '' }}"
+                                       placeholder="Ex: Gerente, Técnico">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label">Departamento</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="departamento" 
+                                       value="{{ usuario.departamento if usuario else '' }}"
+                                       placeholder="Ex: Vendas, Técnico">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botões -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('usuario.listar') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-2"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i>
+                            {{ 'Atualizar' if usuario else 'Cadastrar' }} Usuário
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

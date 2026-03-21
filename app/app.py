@@ -716,6 +716,10 @@ def register_blueprints(app):
     from app.auth.auth_routes import auth_bp
     app.register_blueprint(auth_bp)
     
+    # Blueprint de gerenciamento de usuários
+    from app.auth.usuario_routes import usuario_bp
+    app.register_blueprint(usuario_bp)
+    
     # Blueprint do painel principal
     from app.painel.painel_routes import painel_bp
     app.register_blueprint(painel_bp)

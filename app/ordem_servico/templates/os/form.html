@@ -2128,6 +2128,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.total-horas-input').forEach(input => {
         input.addEventListener('input', atualizarTotalHoras);
     });
+    
+    // Definir estado inicial da seção de colaboradores baseado no tipo_os
+    const tipoOsSelect = document.getElementById('tipo_os_select');
+    if (tipoOsSelect) {
+        // Disparar evento change para aplicar a lógica de exibição
+        tipoOsSelect.dispatchEvent(new Event('change'));
+    }
 });
 
 </script>

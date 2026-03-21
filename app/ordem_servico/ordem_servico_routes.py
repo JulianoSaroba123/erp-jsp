@@ -11,6 +11,7 @@ Data: 2025
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, make_response
+from flask_login import current_user
 from app.extensoes import db
 from app.ordem_servico.ordem_servico_model import (
     OrdemServico, OrdemServicoItem, OrdemServicoProduto, OrdemServicoParcela, OrdemServicoAnexo
@@ -387,8 +388,13 @@ def listar():
     print(f"   Total de OS (sem filtro): {total_geral}")
     print(f"   Total de OS ativas: {total_ativas}")
     
-    # Query principal
+    # Query principal - filtra OS ativas
     query = OrdemServico.query.filter(OrdemServico.ativo == True)
+    
+    # Se o usuário for colaborador, mostra apenas ordens operacionais
+    if current_user.tipo_usuario == 'colaborador':
+        query = query.filter(OrdemServico.tipo_os == 'operacional')
+        print(f"👷 Usuário colaborador: filtrando apenas OS operacionais")
     
     # Aplica filtros de busca se houver
     if busca:

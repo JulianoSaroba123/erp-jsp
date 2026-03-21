@@ -348,6 +348,7 @@
 
         <!-- Sidebar Navigation -->
         <nav class="sidebar-nav">
+            {% if current_user.is_authenticated and current_user.tipo_usuario != 'colaborador' %}
             <!-- Dashboard -->
             <div class="nav-item">
                 <a href="{{ url_for('painel.dashboard') }}" class="nav-link">
@@ -381,12 +382,27 @@
                     <span class="nav-text">Equipamentos</span>
                 </a>
             </div>
+            
+            <!-- Colaboradores (Apenas Admin) -->
+            {% if current_user.tipo_usuario == 'admin' %}
             <div class="nav-item">
                 <a href="{{ url_for('colaborador.listar') }}" class="nav-link">
                     <i class="nav-icon fas fa-user-hard-hat"></i>
                     <span class="nav-text">Colaboradores</span>
                 </a>
             </div>
+            {% endif %}
+            
+            <!-- Usuários (Apenas Admin) -->
+            {% if current_user.tipo_usuario == 'admin' %}
+            <div class="nav-item">
+                <a href="{{ url_for('usuario.listar') }}" class="nav-link">
+                    <i class="nav-icon fas fa-users-cog"></i>
+                    <span class="nav-text">Usuários</span>
+                </a>
+            </div>
+            {% endif %}
+            {% endif %}
 
             <!-- Operações -->
             <div class="nav-item">
@@ -395,6 +411,8 @@
                     <span class="nav-text">Ordens de Serviço</span>
                 </a>
             </div>
+            
+            {% if current_user.is_authenticated and current_user.tipo_usuario != 'colaborador' %}
             <div class="nav-item">
                 <a href="{{ url_for('proposta.listar_propostas') }}" class="nav-link">
                     <i class="nav-icon fas fa-file-invoice-dollar"></i>
@@ -414,9 +432,9 @@
                 <a href="javascript:void(0)" class="nav-link" onclick="toggleFinanceiroMenu(event)">
                     <i class="nav-icon fas fa-dollar-sign"></i>
                     <span class="nav-text">Financeiro</span>
-                    <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem; transform: rotate(180deg);" id="chevronFinanceiro"></i>
+                    <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem; transform: rotate(0deg);" id="chevronFinanceiro"></i>
                 </a>
-                <div class="nav-submenu" id="financeiroMenu" style="display: block;">
+                <div class="nav-submenu" id="financeiroMenu" style="display: none;">
                     <!-- Dashboard -->
                     <a href="{{ url_for('financeiro.dashboard') }}" class="nav-link ps-5">
                         <i class="fas fa-chart-line me-2"></i>
@@ -550,9 +568,9 @@
                 <a href="javascript:void(0)" class="nav-link" onclick="toggleEnergiaSolarMenu(event)">
                     <i class="nav-icon fas fa-solar-panel"></i>
                     <span class="nav-text">Energia Solar</span>
-                    <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem; transform: rotate(180deg);" id="chevronEnergiaSolar"></i>
+                    <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem; transform: rotate(0deg);" id="chevronEnergiaSolar"></i>
                 </a>
-                <div class="nav-submenu" id="energiaSolarMenu" style="display: block;">
+                <div class="nav-submenu" id="energiaSolarMenu" style="display: none;">
                     <!-- Dashboard -->
                     <a href="{{ url_for('energia_solar.dashboard') }}" class="nav-link ps-5">
                         <i class="fas fa-chart-line me-2"></i>
@@ -619,13 +637,7 @@
                 </div>
             </div>
 
-            <!-- Sistema -->
-            <div class="nav-item">
-                <a href="{{ url_for('configuracao.visualizar') }}" class="nav-link">
-                    <i class="nav-icon fas fa-cog"></i>
-                    <span class="nav-text">Configurações</span>
-                </a>
-            </div>
+            {% endif %}
             
             <!-- Usuário -->
             {% if current_user.is_authenticated %}
