@@ -27,6 +27,16 @@
 
 {% block content %}
 <div class="container-fluid">
+    <!-- DEBUG: Tipo de Usuário -->
+    <div class="alert alert-info mb-3" style="border-left: 4px solid #3498db;">
+        <strong>🔍 DEBUG:</strong> Usuário logado como: <strong>{{ current_user.tipo_usuario|default('NÃO DEFINIDO') }}</strong>
+        {% if current_user.tipo_usuario|default('usuario') == 'colaborador' %}
+        | ✅ Modo Colaborador ATIVO (seções financeiras ocultas)
+        {% else %}
+        | ❌ Modo Padrão (seções financeiras visíveis)
+        {% endif %}
+    </div>
+    
     <form method="POST" enctype="multipart/form-data" class="needs-validation" novalidate>
         
         <!-- INFORMAÇÕES BÁSICAS -->
