@@ -622,6 +622,8 @@
 
             <!-- Botões de Ação -->
 
+            <!-- SEÇÕES FINANCEIRAS (Ocultas para colaboradores) -->
+            {% if current_user.tipo_usuario|default('usuario') != 'colaborador' %}
             <!-- Valores - Card Destacado -->
             <div class="value-highlight">
                 <i class="fas fa-dollar-sign fa-2x mb-2"></i>
@@ -736,6 +738,8 @@
                 </div>
             </div>
             {% endif %}
+            {% endif %}
+            <!-- FIM SEÇÕES FINANCEIRAS -->
 
             <!-- Informações Adicionais -->
             {% if ordem.solicitante or ordem.tipo_servico %}
