@@ -79,7 +79,7 @@
                         <input type="text" class="form-control bg-dark text-white border-secondary" 
                                name="titulo" value="{{ ordem.titulo if ordem else '' }}" required placeholder="Título da ordem de serviço">
                     </div>
-                    {% if current_user.tipo_usuario == 'colaborador' %}
+                    {% if current_user.tipo_usuario|default('usuario') == 'colaborador' %}
                     <!-- Colaborador: sempre operacional (campo oculto) -->
                     <input type="hidden" name="tipo_os" id="tipo_os_select" value="operacional">
                     {% else %}
@@ -207,7 +207,7 @@
             <h5 class="mb-0 text-white fw-bold"><i class="fas fa-clipboard-list me-2"></i>Descrição do Serviço</h5>
         </div>
         
-        {% if current_user.tipo_usuario == 'colaborador' %}
+        {% if current_user.tipo_usuario|default('usuario') == 'colaborador' %}
         <!-- SELETOR DE TIPO DE DESCRIÇÃO (Colaborador) -->
         <div class="card bg-dark border-secondary mb-3">
             <div class="card-body">
@@ -223,7 +223,7 @@
         
         <div class="card bg-dark border-secondary mb-4" id="card_descricoes">
             <div class="card-body">
-                {% if current_user.tipo_usuario == 'colaborador' %}
+                {% if current_user.tipo_usuario|default('usuario') == 'colaborador' %}
                 <!-- DESCRIÇÃO SIMPLES (Padrão para Colaborador) -->
                 <div id="descricao_simples" class="row g-3">
                     <div class="col-12">
@@ -422,7 +422,7 @@
         </div>
 
         <!-- SEÇÕES FINANCEIRAS (Ocultas para colaboradores) -->
-        {% if current_user.tipo_usuario != 'colaborador' %}
+        {% if current_user.tipo_usuario|default('usuario') != 'colaborador' %}
         <!-- ITENS DE SERVIÇO -->
         <div class="mb-4 p-3 rounded-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
             <h5 class="mb-0 text-white fw-bold"><i class="fas fa-wrench me-2"></i>Serviços Realizados</h5>

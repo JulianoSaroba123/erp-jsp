@@ -348,7 +348,7 @@
 
         <!-- Sidebar Navigation -->
         <nav class="sidebar-nav">
-            {% if current_user.is_authenticated and current_user.tipo_usuario != 'colaborador' %}
+            {% if current_user.is_authenticated and current_user.tipo_usuario|default('usuario') != 'colaborador' %}
             <!-- Dashboard -->
             <div class="nav-item">
                 <a href="{{ url_for('painel.dashboard') }}" class="nav-link">
@@ -384,7 +384,7 @@
             </div>
             
             <!-- Colaboradores (Apenas Admin) -->
-            {% if current_user.tipo_usuario == 'admin' %}
+            {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
             <div class="nav-item">
                 <a href="{{ url_for('colaborador.listar') }}" class="nav-link">
                     <i class="nav-icon fas fa-user-hard-hat"></i>
@@ -394,7 +394,7 @@
             {% endif %}
             
             <!-- Usuários (Apenas Admin) -->
-            {% if current_user.tipo_usuario == 'admin' %}
+            {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
             <div class="nav-item">
                 <a href="{{ url_for('usuario.listar') }}" class="nav-link">
                     <i class="nav-icon fas fa-users-cog"></i>
@@ -412,7 +412,7 @@
                 </a>
             </div>
             
-            {% if current_user.is_authenticated and current_user.tipo_usuario != 'colaborador' %}
+            {% if current_user.is_authenticated and current_user.tipo_usuario|default('usuario') != 'colaborador' %}
             <div class="nav-item">
                 <a href="{{ url_for('proposta.listar_propostas') }}" class="nav-link">
                     <i class="nav-icon fas fa-file-invoice-dollar"></i>

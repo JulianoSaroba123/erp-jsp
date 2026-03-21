@@ -392,7 +392,7 @@ def listar():
     query = OrdemServico.query.filter(OrdemServico.ativo == True)
     
     # Se o usuário for colaborador, mostra apenas ordens operacionais
-    if current_user.tipo_usuario == 'colaborador':
+    if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'colaborador':
         query = query.filter(OrdemServico.tipo_os == 'operacional')
         print(f"👷 Usuário colaborador: filtrando apenas OS operacionais")
     
@@ -986,7 +986,7 @@ def visualizar(id):
         return redirect(url_for('ordem_servico.listar'))
     
     # Colaboradores só podem visualizar ordens operacionais
-    if current_user.tipo_usuario == 'colaborador' and ordem.tipo_os != 'operacional':
+    if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'colaborador' and ordem.tipo_os != 'operacional':
         flash('Você não tem permissão para visualizar esta ordem de serviço.', 'error')
         return redirect(url_for('ordem_servico.listar'))
     
@@ -1018,7 +1018,7 @@ def editar(id):
         return redirect(url_for('ordem_servico.listar'))
     
     # Colaboradores só podem editar ordens operacionais
-    if current_user.tipo_usuario == 'colaborador' and ordem.tipo_os != 'operacional':
+    if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'colaborador' and ordem.tipo_os != 'operacional':
         flash('Você não tem permissão para editar esta ordem de serviço.', 'error')
         return redirect(url_for('ordem_servico.listar'))
     
