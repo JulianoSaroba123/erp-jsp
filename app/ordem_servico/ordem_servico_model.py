@@ -134,6 +134,16 @@ class OrdemServico(BaseModel):
     intervalo_almoco = db.Column(db.Integer, default=60)  # Intervalo de almoço em minutos
     total_horas = db.Column(db.String(20))  # Formato: "2h 30min"
     
+    # Controle de Tempo Detalhado (Sistema de 6 campos)
+    hora_entrada_manha = db.Column(db.Time)  # Entrada pela manhã
+    hora_saida_almoco = db.Column(db.Time)   # Saída para almoço
+    hora_retorno_almoco = db.Column(db.Time) # Retorno do almoço
+    hora_saida = db.Column(db.Time)          # Saída no final do período
+    hora_entrada_extra = db.Column(db.Time)  # Entrada para horas extras (opcional)
+    hora_saida_extra = db.Column(db.Time)    # Saída após horas extras (opcional)
+    horas_normais = db.Column(db.String(20)) # Formato: "8h 00min" (calculado)
+    horas_extras = db.Column(db.String(20))  # Formato: "2h 30min" (calculado)
+    
     # Condições de Pagamento
     condicao_pagamento = db.Column(db.String(50), default='a_vista')  # a_vista, parcelado
     numero_parcelas = db.Column(db.Integer, default=1)
@@ -179,6 +189,23 @@ class OrdemServico(BaseModel):
     def eh_comercial(self):
         """Verifica se a OS é do tipo comercial (com valores)."""
         return self.tipo_os == 'comercial'
+
+    @property
+    def modo_operacional(self):
+        """Retorna o modo operacional padronizado da OS."""
+        if self.tipo_os != 'operacional':
+            return 'atendimento'
+        return 'diaria' if (self.tipo_servico or '').lower() == 'diaria' else 'atendimento'
+
+    @property
+    def eh_diaria(self):
+        """Indica se a OS operacional está em modo diária."""
+        return self.modo_operacional == 'diaria'
+
+    @property
+    def eh_atendimento(self):
+        """Indica se a OS está em modo atendimento."""
+        return self.modo_operacional == 'atendimento'
     
     @property
     def km_total(self):

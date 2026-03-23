@@ -81,7 +81,7 @@
                     </div>
                     {% if current_user.tipo_usuario|default('usuario') == 'colaborador' %}
                     <!-- Colaborador: sempre operacional (campo oculto) -->
-                    <input type="hidden" name="tipo_os" id="tipo_os_select" value="operacional">
+                    <input type="hidden" name="tipo_os" id="tipo_os_hidden" value="operacional">
                     {% else %}
                     <div class="col-md-2">
                         <label class="form-label text-white">Tipo de OS *</label>
@@ -200,91 +200,60 @@
         <div class="mb-3 p-3 rounded-3" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);">
             <h5 class="mb-0 text-white fw-bold"><i class="fas fa-clipboard-list me-2"></i>Descrição do Serviço</h5>
         </div>
-        
-        {% if current_user.tipo_usuario|default('usuario') == 'colaborador' %}
-        <!-- SELETOR DE TIPO DE DESCRIÇÃO (Colaborador) -->
-        <div class="card bg-dark border-secondary mb-3">
+
+        <div class="card bg-dark border-secondary mb-3" id="card_tipo_servico_operacional" style="{% if ordem and ordem.tipo_os != 'operacional' %}display: none;{% endif %}">
             <div class="card-body">
-                <label class="form-label text-white">Tipo de Descrição *</label>
-                <select class="form-select bg-dark text-white border-secondary" id="tipo_descricao" name="tipo_descricao">
-                    <option value="simples" selected>📋 Serviços Realizados (Acompanhamento Diário)</option>
-                    <option value="tecnica">🔧 Descrição Técnica (Atendimento/Chamado)</option>
+                <label class="form-label text-white">Modo da OS Operacional *</label>
+                <select class="form-select bg-dark text-white border-secondary" id="tipo_servico" name="tipo_servico">
+                    <option value="diaria" {% if ordem and ordem.eh_diaria %}selected{% endif %}>📋 Ordem Diária</option>
+                    <option value="atendimento" {% if not ordem or ordem.eh_atendimento %}selected{% endif %}>🔧 Atendimento</option>
                 </select>
-                <small class="text-muted">Escolha como deseja descrever o serviço</small>
+                <small class="text-muted">Diária usa um único relato. Atendimento mantém a descrição técnica completa.</small>
             </div>
         </div>
-        {% endif %}
-        
+
         <div class="card bg-dark border-secondary mb-4" id="card_descricoes">
             <div class="card-body">
-                {% if current_user.tipo_usuario|default('usuario') == 'colaborador' %}
-                <!-- DESCRIÇÃO SIMPLES (Padrão para Colaborador) -->
-                <div id="descricao_simples" class="row g-3">
+                <div id="descricao_diaria" class="row g-3" style="{% if ordem and not ordem.eh_diaria %}display: none;{% endif %}">
                     <div class="col-12">
                         <label class="form-label text-white">Descrição dos Serviços Realizados no Dia *</label>
                         <textarea class="form-control bg-dark text-white border-secondary" 
-                                  name="descricao_problema" rows="8" required
-                                  placeholder="Descreva todas as atividades e serviços realizados neste dia. Ex: Manutenção preventiva, limpeza do equipamento, troca de óleo, etc.">{{ ordem.descricao_problema if ordem else '' }}</textarea>
+                                  id="descricao_problema_diaria" name="descricao_problema_diaria" rows="8"
+                                  placeholder="Descreva todas as atividades e serviços realizados neste dia. Ex: Manutenção preventiva, limpeza do equipamento, troca de óleo, etc.">{{ ordem.descricao_problema if ordem and ordem.eh_diaria else '' }}</textarea>
                         <small class="text-muted">Relatório diário das atividades executadas</small>
                     </div>
                 </div>
-                
-                <!-- DESCRIÇÃO TÉCNICA (Opcional para Colaborador) -->
-                <div id="descricao_tecnica" class="row g-3" style="display: none;">
+
+                <div id="descricao_atendimento" class="row g-3" style="{% if ordem and ordem.eh_diaria %}display: none;{% endif %}">
                     <div class="col-md-6">
                         <label class="form-label text-white">Problema Relatado pelo Cliente</label>
                         <textarea class="form-control bg-dark text-white border-secondary" 
-                                  name="descricao_problema_alt" rows="4" 
-                                  placeholder="O que o cliente relatou? Ex: Notebook não liga, tela azul, etc.">{{ ordem.descricao_problema if ordem else '' }}</textarea>
+                                  id="descricao_problema" name="descricao_problema" rows="4" 
+                                  placeholder="O que o cliente relatou? Ex: Notebook não liga, tela azul, etc.">{{ ordem.descricao_problema if not ordem or ordem.eh_atendimento else '' }}</textarea>
                         <small class="text-muted">Relato inicial do cliente sobre o problema</small>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label text-white">Diagnóstico Técnico</label>
                         <textarea class="form-control bg-dark text-white border-secondary" 
-                                  name="diagnostico_tecnico" rows="4" 
-                                  placeholder="Análise técnica do problema. Ex: Fonte queimada, HD com defeito, etc.">{{ ordem.diagnostico_tecnico if ordem else '' }}</textarea>
+                                  id="diagnostico_tecnico" name="diagnostico_tecnico" rows="4" 
+                                  placeholder="Análise técnica do problema. Ex: Fonte queimada, HD com defeito, etc.">{{ ordem.diagnostico_tecnico if not ordem or ordem.eh_atendimento else '' }}</textarea>
                         <small class="text-muted">Diagnóstico após análise técnica</small>
                     </div>
                     <div class="col-12">
                         <label class="form-label text-white">Solução Aplicada</label>
                         <textarea class="form-control bg-dark text-white border-secondary" 
-                                  name="solucao" rows="3" 
-                                  placeholder="O que foi feito para resolver? Ex: Substituída fonte 65W, reinstalado Windows, etc.">{{ ordem.solucao if ordem else '' }}</textarea>
+                                  id="solucao" name="solucao" rows="3" 
+                                  placeholder="O que foi feito para resolver? Ex: Substituída fonte 65W, reinstalado Windows, etc.">{{ ordem.solucao if not ordem or ordem.eh_atendimento else '' }}</textarea>
                         <small class="text-muted">Procedimento realizado para solucionar o problema</small>
                     </div>
                     <div class="col-12">
                         <label class="form-label text-white">Observações Gerais</label>
                         <textarea class="form-control bg-dark text-white border-secondary" 
-                                  name="observacoes" rows="3" 
-                                  placeholder="Observações adicionais, recomendações, etc.">{{ ordem.observacoes if ordem else '' }}</textarea>
+                                  id="observacoes" name="observacoes" rows="3" 
+                                  placeholder="Observações adicionais, recomendações, etc.">{{ ordem.observacoes if not ordem or ordem.eh_atendimento else '' }}</textarea>
                         <small class="text-muted">Informações complementares sobre o serviço</small>
                     </div>
                 </div>
-                {% else %}
-                <!-- VERSÃO COMPLETA PARA ORDENS COMERCIAIS (Sempre 4 campos) -->
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label text-white">Problema Relatado pelo Cliente</label>
-                        <textarea class="form-control bg-dark text-white border-secondary" name="descricao_problema" rows="4" placeholder="O que o cliente relatou? Ex: Notebook não liga, tela azul, etc.">{{ ordem.descricao_problema if ordem else '' }}</textarea>
-                        <small class="text-muted">Relato inicial do cliente sobre o problema</small>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-white">Diagnóstico Técnico</label>
-                        <textarea class="form-control bg-dark text-white border-secondary" name="diagnostico_tecnico" rows="4" placeholder="Análise técnica do problema. Ex: Fonte queimada, HD com defeito, etc.">{{ ordem.diagnostico_tecnico if ordem else '' }}</textarea>
-                        <small class="text-muted">Diagnóstico após análise técnica</small>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label text-white">Solução Aplicada</label>
-                        <textarea class="form-control bg-dark text-white border-secondary" name="solucao" rows="3" placeholder="O que foi feito para resolver? Ex: Substituída fonte 65W, reinstalado Windows, etc.">{{ ordem.solucao if ordem else '' }}</textarea>
-                        <small class="text-muted">Procedimento realizado para solucionar o problema</small>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label text-white">Observações Gerais</label>
-                        <textarea class="form-control bg-dark text-white border-secondary" name="observacoes" rows="3" placeholder="Observações adicionais, recomendações, etc.">{{ ordem.observacoes if ordem else '' }}</textarea>
-                        <small class="text-muted">Informações complementares sobre o serviço</small>
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </div>
 
@@ -314,8 +283,8 @@
                                         <div class="col-md-3">
                                             <label class="form-label text-white">Colaborador *</label>
                                             <select class="form-select bg-dark text-white border-secondary colaborador-select" 
-                                                    name="colaboradores[{{ loop.index0 }}][colaborador_id]" required>
-                                                <option value="">Selecione...</option>
+                                                    name="colaboradores[{{ loop.index0 }}][colaborador_id]" data-selected="{{ colab_trabalho.colaborador_id }}" required>
+                                                <option value="" disabled selected>Selecione um colaborador...</option>
                                                 {# Será preenchido via JavaScript #}
                                             </select>
                                         </div>
@@ -325,31 +294,89 @@
                                                    name="colaboradores[{{ loop.index0 }}][data_trabalho]"
                                                    value="{{ colab_trabalho.data_trabalho.strftime('%Y-%m-%d') if colab_trabalho.data_trabalho else '' }}" required>
                                         </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label text-white">Hora Início</label>
-                                            <input type="time" class="form-control bg-dark text-white border-secondary" 
-                                                   name="colaboradores[{{ loop.index0 }}][hora_inicio]"
-                                                   value="{{ colab_trabalho.hora_inicio.strftime('%H:%M') if colab_trabalho.hora_inicio else '' }}"
-                                                   onchange="calcularHorasColaborador({{ loop.index0 }})">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label text-white">Hora Fim</label>
-                                            <input type="time" class="form-control bg-dark text-white border-secondary" 
-                                                   name="colaboradores[{{ loop.index0 }}][hora_fim]"
-                                                   value="{{ colab_trabalho.hora_fim.strftime('%H:%M') if colab_trabalho.hora_fim else '' }}"
-                                                   onchange="calcularHorasColaborador({{ loop.index0 }})">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label text-white">Total Horas</label>
-                                            <input type="number" class="form-control bg-dark text-white border-secondary total-horas-input" 
-                                                   name="colaboradores[{{ loop.index0 }}][total_horas]"
-                                                   value="{{ colab_trabalho.total_horas if colab_trabalho.total_horas else '' }}"
-                                                   step="0.5" min="0" required>
-                                        </div>
                                         <div class="col-md-1 text-end">
                                             <button type="button" class="btn btn-danger btn-sm" onclick="removerColaboradorLinha(this)" data-no-submit="true">
                                                 <i class="fas fa-trash"></i>
                                             </button>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Entrada Manhã</label>
+                                            <input type="time" class="form-control bg-dark text-white border-secondary colaborador-hora" 
+                                                   name="colaboradores[{{ loop.index0 }}][hora_entrada_manha]"
+                                                   value="{{ colab_trabalho.hora_entrada_manha.strftime('%H:%M') if colab_trabalho.hora_entrada_manha else '' }}"
+                                                   onchange="calcularHorasColaborador({{ loop.index0 }})">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Saída Manhã</label>
+                                            <input type="time" class="form-control bg-dark text-white border-secondary colaborador-hora" 
+                                                   name="colaboradores[{{ loop.index0 }}][hora_saida_manha]"
+                                                   value="{{ colab_trabalho.hora_saida_manha.strftime('%H:%M') if colab_trabalho.hora_saida_manha else '' }}"
+                                                   onchange="calcularHorasColaborador({{ loop.index0 }})">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Entrada Tarde</label>
+                                            <input type="time" class="form-control bg-dark text-white border-secondary colaborador-hora" 
+                                                   name="colaboradores[{{ loop.index0 }}][hora_entrada_tarde]"
+                                                   value="{{ colab_trabalho.hora_entrada_tarde.strftime('%H:%M') if colab_trabalho.hora_entrada_tarde else '' }}"
+                                                   onchange="calcularHorasColaborador({{ loop.index0 }})">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Saída Tarde</label>
+                                            <input type="time" class="form-control bg-dark text-white border-secondary colaborador-hora" 
+                                                   name="colaboradores[{{ loop.index0 }}][hora_saida_tarde]"
+                                                   value="{{ colab_trabalho.hora_saida_tarde.strftime('%H:%M') if colab_trabalho.hora_saida_tarde else '' }}"
+                                                   onchange="calcularHorasColaborador({{ loop.index0 }})">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Entrada Extra</label>
+                                            <input type="time" class="form-control bg-dark text-white border-secondary colaborador-hora" 
+                                                   name="colaboradores[{{ loop.index0 }}][hora_entrada_extra]"
+                                                   value="{{ colab_trabalho.hora_entrada_extra.strftime('%H:%M') if colab_trabalho.hora_entrada_extra else '' }}"
+                                                   onchange="calcularHorasColaborador({{ loop.index0 }})">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Saída Extra</label>
+                                            <input type="time" class="form-control bg-dark text-white border-secondary colaborador-hora" 
+                                                   name="colaboradores[{{ loop.index0 }}][hora_saida_extra]"
+                                                   value="{{ colab_trabalho.hora_saida_extra.strftime('%H:%M') if colab_trabalho.hora_saida_extra else '' }}"
+                                                   onchange="calcularHorasColaborador({{ loop.index0 }})">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Horas Normais</label>
+                                            <input type="text" class="form-control bg-info text-white colaborador-horas-normais" 
+                                                   name="colaboradores[{{ loop.index0 }}][horas_normais]"
+                                                   value="{{ colab_trabalho.horas_normais_formatado if colab_trabalho.horas_normais else '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Horas Extras</label>
+                                            <input type="text" class="form-control bg-warning text-dark colaborador-horas-extras" 
+                                                   name="colaboradores[{{ loop.index0 }}][horas_extras]"
+                                                   value="{{ colab_trabalho.horas_extras_formatado if colab_trabalho.horas_extras else '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">Total Horas</label>
+                                            <input type="text" class="form-control bg-dark text-white border-secondary total-horas-input" 
+                                                   name="colaboradores[{{ loop.index0 }}][total_horas]"
+                                                   value="{{ colab_trabalho.total_horas_formatado if colab_trabalho.total_horas else '' }}" readonly>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label text-white">KM Inicial</label>
+                                            <input type="number" class="form-control bg-dark text-white border-secondary colaborador-km-inicial" 
+                                                   name="colaboradores[{{ loop.index0 }}][km_inicial]"
+                                                   value="{{ colab_trabalho.km_inicial if colab_trabalho.km_inicial is not none else '' }}"
+                                                   step="1" min="0" onchange="calcularKmColaborador({{ loop.index0 }})">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label text-white">KM Final</label>
+                                            <input type="number" class="form-control bg-dark text-white border-secondary colaborador-km-final" 
+                                                   name="colaboradores[{{ loop.index0 }}][km_final]"
+                                                   value="{{ colab_trabalho.km_final if colab_trabalho.km_final is not none else '' }}"
+                                                   step="1" min="0" onchange="calcularKmColaborador({{ loop.index0 }})">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label text-white">KM Total</label>
+                                            <input type="text" class="form-control bg-dark text-white border-secondary colaborador-km-total" 
+                                                   value="{{ colab_trabalho.km_total }} km" readonly>
                                         </div>
                                         <div class="col-12">
                                             <label class="form-label text-white">Atividade Realizada</label>
@@ -368,62 +395,158 @@
                     </div>
                     
                     <div class="alert alert-info mt-3" id="info_total_horas" style="display: none;">
-                        <strong><i class="fas fa-clock me-2"></i>Total de Horas:</strong> <span id="total_horas_display">0h</span>
+                        <strong><i class="fas fa-business-time me-2"></i>Normais:</strong> <span id="total_horas_normais_colaboradores_display">0h</span>
+                        <span class="mx-2">|</span>
+                        <strong><i class="fas fa-bolt me-2"></i>Extras:</strong> <span id="total_horas_extras_colaboradores_display">0h</span>
+                        <span class="mx-2">|</span>
+                        <strong><i class="fas fa-clock me-2"></i>Total:</strong> <span id="total_horas_display">0h</span>
+                        <span class="mx-2">|</span>
+                        <strong><i class="fas fa-road me-2"></i>Total KM:</strong> <span id="total_km_colaboradores_display">0 km</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- CONTROLE DE TEMPO E KM -->
+        <div id="controle_execucao_global" style="{% if ordem and ordem.tipo_os == 'operacional' %}display: none;{% endif %}">
         <div class="mb-4 p-3 rounded-3" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
             <h5 class="mb-0 text-white fw-bold"><i class="fas fa-clock me-2"></i>Controle de Tempo e Deslocamento</h5>
         </div>
         <div class="card bg-dark border-secondary mb-4">
             <div class="card-body">
                 <div class="row g-3">
-                    <div class="col-md-2">
-                        <label class="form-label text-white">Hora Inicial</label>
-                        <input type="time" class="form-control bg-dark text-white border-secondary" 
-                               name="hora_inicial" value="{{ ordem.hora_inicial.strftime('%H:%M') if ordem and ordem.hora_inicial else '' }}">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label text-white">Hora Final</label>
-                        <input type="time" class="form-control bg-dark text-white border-secondary" 
-                               name="hora_final" value="{{ ordem.hora_final.strftime('%H:%M') if ordem and ordem.hora_final else '' }}">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label text-white">Intervalo Almoço (min)</label>
-                        <input type="number" class="form-control bg-dark text-white border-secondary" 
-                               id="intervalo_almoco" name="intervalo_almoco" value="{{ ordem.intervalo_almoco if ordem and ordem.intervalo_almoco else '60' }}" 
-                               step="15" min="0" max="180" placeholder="60">
-                        <small class="text-muted">Descontado do total</small>
+                    <!-- Período Normal - Manhã -->
+                    <div class="col-12">
+                        <h6 class="text-info mb-3"><i class="fas fa-sun me-2"></i>Período Normal</h6>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label text-white">Total de Horas Trabalhadas</label>
-                        <input type="text" class="form-control bg-info text-white" 
-                               id="totalHoras" name="total_horas" readonly placeholder="Calculado automaticamente">
+                        <label class="form-label text-white">🏢 Entrada Manhã</label>
+                        <input type="time" class="form-control bg-dark text-white border-secondary" 
+                               id="hora_entrada_manha" name="hora_entrada_manha"
+                               oninput="window.calcularTotalHoras && window.calcularTotalHoras()"
+                               onchange="window.calcularTotalHoras && window.calcularTotalHoras()"
+                               value="{{ ordem.hora_entrada_manha.strftime('%H:%M') if ordem and ordem.hora_entrada_manha else '' }}">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label text-white">KM Total (Deslocamento)</label>
+                        <label class="form-label text-white">🍽️ Saída Almoço</label>
+                        <input type="time" class="form-control bg-dark text-white border-secondary" 
+                               id="hora_saida_almoco" name="hora_saida_almoco"
+                               oninput="window.calcularTotalHoras && window.calcularTotalHoras()"
+                               onchange="window.calcularTotalHoras && window.calcularTotalHoras()"
+                               value="{{ ordem.hora_saida_almoco.strftime('%H:%M') if ordem and ordem.hora_saida_almoco else '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">⏰ Retorno Almoço</label>
+                        <input type="time" class="form-control bg-dark text-white border-secondary" 
+                               id="hora_retorno_almoco" name="hora_retorno_almoco"
+                               oninput="window.calcularTotalHoras && window.calcularTotalHoras()"
+                               onchange="window.calcularTotalHoras && window.calcularTotalHoras()"
+                               value="{{ ordem.hora_retorno_almoco.strftime('%H:%M') if ordem and ordem.hora_retorno_almoco else '' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">🏠 Saída</label>
+                        <input type="time" class="form-control bg-dark text-white border-secondary" 
+                               id="hora_saida" name="hora_saida"
+                               oninput="window.calcularTotalHoras && window.calcularTotalHoras()"
+                               onchange="window.calcularTotalHoras && window.calcularTotalHoras()"
+                               value="{{ ordem.hora_saida.strftime('%H:%M') if ordem and ordem.hora_saida else '' }}">
+                    </div>
+                    
+                    <!-- Período Extra -->
+                    <div class="col-12 mt-4">
+                        <h6 class="text-warning mb-3"><i class="fas fa-clock me-2"></i>Horas Extras (Opcional)</h6>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">🌙 Entrada Extra</label>
+                        <input type="time" class="form-control bg-dark text-white border-secondary" 
+                               id="hora_entrada_extra" name="hora_entrada_extra"
+                               oninput="window.calcularTotalHoras && window.calcularTotalHoras()"
+                               onchange="window.calcularTotalHoras && window.calcularTotalHoras()"
+                               value="{{ ordem.hora_entrada_extra.strftime('%H:%M') if ordem and ordem.hora_entrada_extra else '' }}">
+                        <small class="text-muted">Opcional</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">🌙 Saída Extra</label>
+                        <input type="time" class="form-control bg-dark text-white border-secondary" 
+                               id="hora_saida_extra" name="hora_saida_extra"
+                               oninput="window.calcularTotalHoras && window.calcularTotalHoras()"
+                               onchange="window.calcularTotalHoras && window.calcularTotalHoras()"
+                               value="{{ ordem.hora_saida_extra.strftime('%H:%M') if ordem and ordem.hora_saida_extra else '' }}">
+                        <small class="text-muted">Opcional</small>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">⏱️ Horas Normais</label>
                         <input type="text" class="form-control bg-info text-white" 
-                               id="totalKm" name="total_km" readonly placeholder="Calculado automaticamente">
+                               id="horasNormais" name="horas_normais" readonly placeholder="0h 00min">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-white">⚡ Horas Extras</label>
+                        <input type="text" class="form-control bg-warning text-dark" 
+                               id="horasExtras" name="horas_extras" readonly placeholder="0h 00min">
+                    </div>
+                    
+                    <!-- Totais Detalhados -->
+                    <div class="col-12 mt-3">
+                        <div class="alert alert-dark border border-info mb-0">
+                            <div class="row g-3 text-center">
+                                <div class="col-md-3">
+                                    <div class="p-3 bg-info bg-opacity-25 rounded">
+                                        <small class="text-info d-block mb-1"><i class="fas fa-clock me-1"></i>Horas Normais</small>
+                                        <strong class="fs-4 text-white" id="totalHorasNormaisDisplay">0h 00min</strong>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="p-3 bg-warning bg-opacity-25 rounded">
+                                        <small class="text-warning d-block mb-1"><i class="fas fa-bolt me-1"></i>Horas Extras</small>
+                                        <strong class="fs-4 text-white" id="totalHorasExtrasDisplay">0h 00min</strong>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="p-3 bg-success bg-opacity-25 rounded">
+                                        <small class="text-success d-block mb-1"><i class="fas fa-hourglass-half me-1"></i>Total Horas</small>
+                                        <strong class="fs-4 text-white" id="totalHorasDisplay">0h 00min</strong>
+                                        <input type="hidden" id="totalHoras" name="total_horas" value="">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="p-3 bg-primary bg-opacity-25 rounded">
+                                        <small class="text-info d-block mb-1"><i class="fas fa-road me-1"></i>KM Total</small>
+                                        <strong class="fs-4 text-white" id="totalKmDisplay">0 km</strong>
+                                        <input type="hidden" id="totalKm" name="total_km" value="">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center mt-2">
+                                <small class="text-muted"><i class="fas fa-calculator me-1"></i>Cálculo automático em tempo real</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- KM -->
+                    <div class="col-md-6">
+                        <label class="form-label text-white">🚗 KM Inicial</label>
+                        <input type="number" class="form-control bg-dark text-white border-secondary" 
+                               id="km_inicial" name="km_inicial"
+                               oninput="window.calcularTotalKm && window.calcularTotalKm()"
+                               onchange="window.calcularTotalKm && window.calcularTotalKm()"
+                               value="{{ ordem.km_inicial if ordem else '' }}" step="1" min="0">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label text-white">KM Inicial</label>
+                        <label class="form-label text-white">🏁 KM Final</label>
                         <input type="number" class="form-control bg-dark text-white border-secondary" 
-                               name="km_inicial" value="{{ ordem.km_inicial if ordem else '' }}" step="1" min="0">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-white">KM Final</label>
-                        <input type="number" class="form-control bg-dark text-white border-secondary" 
-                               name="km_final" value="{{ ordem.km_final if ordem else '' }}" step="1" min="0">
+                               id="km_final" name="km_final"
+                               oninput="window.calcularTotalKm && window.calcularTotalKm()"
+                               onchange="window.calcularTotalKm && window.calcularTotalKm()"
+                               value="{{ ordem.km_final if ordem else '' }}" step="1" min="0">
                     </div>
                 </div>
             </div>
         </div>
+        </div>
 
-        <!-- SEÇÕES FINANCEIRAS (Ocultas para colaboradores) -->
-        {% if current_user.tipo_usuario|default('usuario') != 'colaborador' %}
+        <!-- SEÇÕES FINANCEIRAS (Apenas administrador em atendimento) -->
+        {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
+        <div id="secao_admin_atendimento" style="{% if ordem and ordem.eh_diaria %}display: none;{% endif %}">
         <!-- ITENS DE SERVIÇO -->
         <div class="mb-4 p-3 rounded-3 d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
             <h5 class="mb-0 text-white fw-bold"><i class="fas fa-wrench me-2"></i>Serviços Realizados</h5>
@@ -683,6 +806,7 @@
             </div>
         </div>
         {% endif %}
+        </div>
         {% endif %}
         <!-- FIM SEÇÕES FINANCEIRAS -->
 
@@ -817,8 +941,14 @@
 {% block scripts %}
 {{ super() }}
 
+<!-- Sistema de Cálculo de Horários (arquivo externo) -->
+<script src="{{ url_for('static', filename='js/calculo_horarios.js', v='20260322-1') }}"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Inicializar sistema de cálculo de horários
+    inicializarCalculoHorarios();
+    
     let servicoIndex = {{ (ordem.servicos|length) if ordem and ordem.servicos else 0 }};
     let produtoIndex = {{ (ordem.produtos_utilizados|length) if ordem and ordem.produtos_utilizados else 0 }};
     let produtosCadastrados = []; // Cache de produtos cadastrados
@@ -939,8 +1069,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Função para limpar formulário
     window.limparFormulario = function() {
         if (confirm('Tem certeza que deseja limpar todos os campos?')) {
-            document.getElementById('servicosContainer').innerHTML = '';
-            document.getElementById('produtosContainer').innerHTML = '';
+            const servicosContainer = document.getElementById('servicosContainer');
+            const produtosContainer = document.getElementById('produtosContainer');
+
+            if (servicosContainer) {
+                servicosContainer.innerHTML = '';
+            }
+
+            if (produtosContainer) {
+                produtosContainer.innerHTML = '';
+            }
+
             calcularTotaisGerais();
             servicoIndex = 0;
             produtoIndex = 0;
@@ -1054,6 +1193,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log('📊 Total Serviços calculado:', totalServicos);
         console.log('📊 Total Produtos calculado:', totalProdutos);
+
+        if (!document.getElementById('valorServicos') || !document.getElementById('valorProdutos') || !document.getElementById('desconto') || !document.getElementById('valorTotal')) {
+            return;
+        }
         
         // Se não há itens, manter os valores originais do formulário
         const servicosExistentes = document.querySelectorAll('.servico-total').length;
@@ -1079,6 +1222,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Função para recalcular total quando desconto muda
     function recalcularTotal() {
+        if (!document.getElementById('valorServicos') || !document.getElementById('valorProdutos') || !document.getElementById('desconto') || !document.getElementById('valorTotal')) {
+            return;
+        }
         const valorServico = converterParaNumero(document.getElementById('valorServicos').value);
         const valorProduto = converterParaNumero(document.getElementById('valorProdutos').value);
         const desconto = converterParaNumero(document.getElementById('desconto').value);
@@ -1087,7 +1233,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Adicionar Serviço
-    document.getElementById('btnAdicionarServico').addEventListener('click', function() {
+    document.getElementById('btnAdicionarServico')?.addEventListener('click', function() {
         console.log('Adicionando serviço...');
         
         const container = document.getElementById('servicosContainer');
@@ -1146,7 +1292,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Adicionar Produto
-    document.getElementById('btnAdicionarProduto').addEventListener('click', function() {
+    document.getElementById('btnAdicionarProduto')?.addEventListener('click', function() {
         console.log('Adicionando produto...');
         
         const container = document.getElementById('produtosContainer');
@@ -1566,82 +1712,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('❌ Botão btnRefreshClientesOS não encontrado!');
     }
     
-    // Função para calcular total de horas
-    function calcularTotalHoras() {
-        const horaInicial = document.querySelector('input[name="hora_inicial"]').value;
-        const horaFinal = document.querySelector('input[name="hora_final"]').value;
-        const intervaloAlmoco = parseInt(document.getElementById('intervalo_almoco')?.value || 0);
-        const totalHorasField = document.getElementById('totalHoras');
-        
-        if (horaInicial && horaFinal) {
-            const [horaIni, minIni] = horaInicial.split(':').map(Number);
-            const [horaFin, minFin] = horaFinal.split(':').map(Number);
-            
-            let inicialMinutos = horaIni * 60 + minIni;
-            let finalMinutos = horaFin * 60 + minFin;
-            
-            // Se hora final for menor que inicial, assumir que passou da meia-noite
-            if (finalMinutos < inicialMinutos) {
-                finalMinutos += 24 * 60; // Adiciona 24 horas em minutos
-            }
-            
-            // Descontar intervalo de almoço
-            let diffMinutos = finalMinutos - inicialMinutos - intervaloAlmoco;
-            
-            // Garantir que não seja negativo
-            if (diffMinutos < 0) diffMinutos = 0;
-            
-            const horas = Math.floor(diffMinutos / 60);
-            const minutos = diffMinutos % 60;
-            
-            totalHorasField.value = `${horas}h ${minutos.toString().padStart(2, '0')}min`;
-        } else {
-            totalHorasField.value = '';
-        }
-    }
-    
-    // Função para calcular KM total
-    function calcularTotalKm() {
-        const kmInicial = parseFloat(document.querySelector('input[name="km_inicial"]').value) || 0;
-        const kmFinal = parseFloat(document.querySelector('input[name="km_final"]').value) || 0;
-        const totalKmField = document.getElementById('totalKm');
-        
-        if (kmFinal > kmInicial) {
-            const totalKm = kmFinal - kmInicial;
-            totalKmField.value = `${totalKm} km`;
-        } else {
-            totalKmField.value = '';
-        }
-    }
-    
-    // Event listeners para os campos de tempo e KM (mover para DOMContentLoaded)
-    const horaInicialInput = document.querySelector('input[name="hora_inicial"]');
-    const horaFinalInput = document.querySelector('input[name="hora_final"]');
-    const intervaloAlmocoInput = document.getElementById('intervalo_almoco');
-    const kmInicialInput = document.querySelector('input[name="km_inicial"]');
-    const kmFinalInput = document.querySelector('input[name="km_final"]');
-    
-    if (horaInicialInput && horaFinalInput) {
-        horaInicialInput.addEventListener('change', calcularTotalHoras);
-        horaFinalInput.addEventListener('change', calcularTotalHoras);
-        console.log('✅ Event listeners de tempo ativados');
-    }
-    
-    if (intervaloAlmocoInput) {
-        intervaloAlmocoInput.addEventListener('input', calcularTotalHoras);
-        console.log('✅ Event listener de intervalo de almoço ativado');
-    }
-    
-    if (kmInicialInput && kmFinalInput) {
-        kmInicialInput.addEventListener('input', calcularTotalKm);
-        kmFinalInput.addEventListener('input', calcularTotalKm);
-        console.log('✅ Event listeners de KM ativados');
-    }
-    
-    // Calcular valores iniciais se existirem
-    calcularTotalHoras();
-    calcularTotalKm();
-    
     // Inicializar eventos nos itens existentes (para modo edição)
     function inicializarItensExistentes() {
         console.log('🔧 Inicializando eventos nos itens existentes...');
@@ -2052,20 +2122,62 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ===== CONTROLE DE COLABORADORES (OS OPERACIONAL) =====
 
-// Toggle da seção de colaboradores baseado no tipo de OS
-document.getElementById('tipo_os_select')?.addEventListener('change', function() {
+function atualizarModoOperacional() {
+    const tipoOsSelect = document.getElementById('tipo_os_select');
+    const tipoServicoSelect = document.getElementById('tipo_servico');
     const secaoColaboradores = document.getElementById('secao_colaboradores');
-    const secaoFinanceira = document.querySelectorAll('[id*="financeiro"], [id*="valores"], [id*="pagamento"]');
-    
-    if (this.value === 'operacional') {
-        // Mostrar colaboradores, ocultar seção financeira
-        secaoColaboradores.style.display = 'block';
-        // Poderia ocultar seções financeiras aqui se necessário
-    } else {
-        // Ocultar colaboradores, mostrar seção financeira
-        secaoColaboradores.style.display = 'none';
+    const cardTipoServico = document.getElementById('card_tipo_servico_operacional');
+    const descricaoDiaria = document.getElementById('descricao_diaria');
+    const descricaoAtendimento = document.getElementById('descricao_atendimento');
+    const secaoAdminAtendimento = document.getElementById('secao_admin_atendimento');
+    const controleExecucaoGlobal = document.getElementById('controle_execucao_global');
+    const campoDiaria = document.getElementById('descricao_problema_diaria');
+    const camposAtendimento = [
+        document.getElementById('descricao_problema'),
+        document.getElementById('diagnostico_tecnico'),
+        document.getElementById('solucao')
+    ].filter(Boolean);
+
+    const tipoOs = tipoOsSelect ? tipoOsSelect.value : 'operacional';
+    const modo = tipoServicoSelect ? tipoServicoSelect.value : 'atendimento';
+    const ehOperacional = tipoOs === 'operacional';
+    const ehDiaria = ehOperacional && modo === 'diaria';
+
+    if (secaoColaboradores) {
+        secaoColaboradores.style.display = ehOperacional ? 'block' : 'none';
     }
-});
+
+    if (cardTipoServico) {
+        cardTipoServico.style.display = ehOperacional ? 'block' : 'none';
+    }
+
+    if (descricaoDiaria) {
+        descricaoDiaria.style.display = ehDiaria ? 'block' : 'none';
+    }
+
+    if (descricaoAtendimento) {
+        descricaoAtendimento.style.display = ehDiaria ? 'none' : 'block';
+    }
+
+    if (secaoAdminAtendimento) {
+        secaoAdminAtendimento.style.display = ehDiaria ? 'none' : 'block';
+    }
+
+    if (controleExecucaoGlobal) {
+        controleExecucaoGlobal.style.display = ehOperacional ? 'none' : 'block';
+    }
+
+    if (campoDiaria) {
+        campoDiaria.required = ehDiaria;
+    }
+
+    camposAtendimento.forEach(campo => {
+        campo.required = !ehDiaria;
+    });
+}
+
+document.getElementById('tipo_os_select')?.addEventListener('change', atualizarModoOperacional);
+document.getElementById('tipo_servico')?.addEventListener('change', atualizarModoOperacional);
 
 // Contador de linhas de colaboradores
 let colaboradorIndex = {{ ordem.colaboradores_trabalho|length if ordem and ordem.colaboradores_trabalho else 0 }};
@@ -2074,7 +2186,7 @@ let colaboradorIndex = {{ ordem.colaboradores_trabalho|length if ordem and ordem
 function adicionarColaboradorLinha() {
     const lista = document.getElementById('colaboradores_lista');
     const hoje = new Date().toISOString().split('T')[0];
-    
+
     const novaLinha = document.createElement('div');
     novaLinha.className = 'card bg-secondary mb-3 colaborador-item';
     novaLinha.setAttribute('data-index', colaboradorIndex);
@@ -2083,7 +2195,7 @@ function adicionarColaboradorLinha() {
             <div class="row g-3 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label text-white">Colaborador *</label>
-                    <select class="form-select bg-dark text-white border-secondary colaborador-select" | 
+                    <select class="form-select bg-dark text-white border-secondary colaborador-select" 
                             name="colaboradores[${colaboradorIndex}][colaborador_id]" required>
                         <option value="">Carregando...</option>
                     </select>
@@ -2095,27 +2207,77 @@ function adicionarColaboradorLinha() {
                            value="${hoje}" required>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label text-white">Hora Início</label>
-                    <input type="time" class="form-control bg-dark text-white border-secondary" 
-                           name="colaboradores[${colaboradorIndex}][hora_inicio]"
+                    <label class="form-label text-white">Entrada Manhã</label>
+                    <input type="time" class="form-control bg-dark text-white border-secondary colaborador-hora" 
+                           name="colaboradores[${colaboradorIndex}][hora_entrada_manha]"
                            onchange="calcularHorasColaborador(${colaboradorIndex})">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label text-white">Hora Fim</label>
-                    <input type="time" class="form-control bg-dark text-white border-secondary" 
-                           name="colaboradores[${colaboradorIndex}][hora_fim]"
+                    <label class="form-label text-white">Saída Manhã</label>
+                    <input type="time" class="form-control bg-dark text-white border-secondary colaborador-hora" 
+                           name="colaboradores[${colaboradorIndex}][hora_saida_manha]"
                            onchange="calcularHorasColaborador(${colaboradorIndex})">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label text-white">Total Horas</label>
-                    <input type="number" class="form-control bg-dark text-white border-secondary total-horas-input" 
-                           name="colaboradores[${colaboradorIndex}][total_horas]"
-                           step="0.5" min="0" required>
+                    <label class="form-label text-white">Entrada Tarde</label>
+                    <input type="time" class="form-control bg-dark text-white border-secondary colaborador-hora" 
+                           name="colaboradores[${colaboradorIndex}][hora_entrada_tarde]"
+                           onchange="calcularHorasColaborador(${colaboradorIndex})">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">Saída Tarde</label>
+                    <input type="time" class="form-control bg-dark text-white border-secondary colaborador-hora" 
+                           name="colaboradores[${colaboradorIndex}][hora_saida_tarde]"
+                           onchange="calcularHorasColaborador(${colaboradorIndex})">
                 </div>
                 <div class="col-md-1 text-end">
                     <button type="button" class="btn btn-danger btn-sm" onclick="removerColaboradorLinha(this)" data-no-submit="true">
                         <i class="fas fa-trash"></i>
                     </button>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">Entrada Extra</label>
+                    <input type="time" class="form-control bg-dark text-white border-secondary colaborador-hora" 
+                           name="colaboradores[${colaboradorIndex}][hora_entrada_extra]"
+                           onchange="calcularHorasColaborador(${colaboradorIndex})">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">Saída Extra</label>
+                    <input type="time" class="form-control bg-dark text-white border-secondary colaborador-hora" 
+                           name="colaboradores[${colaboradorIndex}][hora_saida_extra]"
+                           onchange="calcularHorasColaborador(${colaboradorIndex})">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">Horas Normais</label>
+                    <input type="text" class="form-control bg-info text-white colaborador-horas-normais" 
+                           name="colaboradores[${colaboradorIndex}][horas_normais]" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">Horas Extras</label>
+                    <input type="text" class="form-control bg-warning text-dark colaborador-horas-extras" 
+                           name="colaboradores[${colaboradorIndex}][horas_extras]" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">Total Horas</label>
+                    <input type="text" class="form-control bg-dark text-white border-secondary total-horas-input" 
+                           name="colaboradores[${colaboradorIndex}][total_horas]" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label text-white">KM Inicial</label>
+                    <input type="number" class="form-control bg-dark text-white border-secondary colaborador-km-inicial" 
+                           name="colaboradores[${colaboradorIndex}][km_inicial]"
+                           step="1" min="0" onchange="calcularKmColaborador(${colaboradorIndex})">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label text-white">KM Final</label>
+                    <input type="number" class="form-control bg-dark text-white border-secondary colaborador-km-final" 
+                           name="colaboradores[${colaboradorIndex}][km_final]"
+                           step="1" min="0" onchange="calcularKmColaborador(${colaboradorIndex})">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label text-white">KM Total</label>
+                    <input type="text" class="form-control bg-dark text-white border-secondary colaborador-km-total" 
+                           value="0 km" readonly>
                 </div>
                 <div class="col-12">
                     <label class="form-label text-white">Atividade Realizada</label>
@@ -2127,60 +2289,131 @@ function adicionarColaboradorLinha() {
             </div>
         </div>
     `;
-    
+
     lista.appendChild(novaLinha);
     colaboradorIndex++;
-    
-    // Carregar colaboradores no select
+
     carregarColaboradoresSelect(novaLinha.querySelector('.colaborador-select'));
-    
-    // Atualizar total
-    atualizarTotalHoras();
+    atualizarTotaisColaboradores();
 }
 
 // Função para remover linha de colaborador
 function removerColaboradorLinha(btn) {
     btn.closest('.colaborador-item').remove();
-    atualizarTotalHoras();
+    atualizarTotaisColaboradores();
+}
+
+function calcularPeriodoHoras(inicio, fim) {
+    if (!inicio || !fim) {
+        return 0;
+    }
+
+    const [h1, m1] = inicio.split(':').map(Number);
+    const [h2, m2] = fim.split(':').map(Number);
+
+    let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (diff < 0) diff += 24 * 60;
+    return diff / 60;
+}
+
+function formatarHorasDecimal(valor) {
+    const horas = Math.floor(valor || 0);
+    const minutos = Math.round(((valor || 0) - horas) * 60);
+    return minutos > 0 ? `${horas}h ${String(minutos).padStart(2, '0')}min` : `${horas}h`;
 }
 
 // Função para calcular horas automaticamente
 function calcularHorasColaborador(index) {
-    const horaInicio = document.querySelector(`[name="colaboradores[${index}][hora_inicio]"]`)?.value;
-    const horaFim = document.querySelector(`[name="colaboradores[${index}][hora_fim]"]`)?.value;
+    const horaEntradaManha = document.querySelector(`[name="colaboradores[${index}][hora_entrada_manha]"]`)?.value;
+    const horaSaidaManha = document.querySelector(`[name="colaboradores[${index}][hora_saida_manha]"]`)?.value;
+    const horaEntradaTarde = document.querySelector(`[name="colaboradores[${index}][hora_entrada_tarde]"]`)?.value;
+    const horaSaidaTarde = document.querySelector(`[name="colaboradores[${index}][hora_saida_tarde]"]`)?.value;
+    const horaEntradaExtra = document.querySelector(`[name="colaboradores[${index}][hora_entrada_extra]"]`)?.value;
+    const horaSaidaExtra = document.querySelector(`[name="colaboradores[${index}][hora_saida_extra]"]`)?.value;
+    const horasNormaisInput = document.querySelector(`[name="colaboradores[${index}][horas_normais]"]`);
+    const horasExtrasInput = document.querySelector(`[name="colaboradores[${index}][horas_extras]"]`);
     const totalInput = document.querySelector(`[name="colaboradores[${index}][total_horas]"]`);
-    
-    if (horaInicio && horaFim && totalInput) {
-        const [h1, m1] = horaInicio.split(':').map(Number);
-        const [h2, m2] = horaFim.split(':').map(Number);
-        
-        let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-        if (diff < 0) diff += 24 * 60; // Passou da meia-noite
-        
-        const horas = (diff / 60).toFixed(2);
-        totalInput.value = horas;
-        
-        atualizarTotalHoras();
+
+    if (!horasNormaisInput || !horasExtrasInput || !totalInput) {
+        return;
     }
+
+    const horasNormais = calcularPeriodoHoras(horaEntradaManha, horaSaidaManha) + calcularPeriodoHoras(horaEntradaTarde, horaSaidaTarde);
+    const horasExtras = calcularPeriodoHoras(horaEntradaExtra, horaSaidaExtra);
+    const totalHoras = horasNormais + horasExtras;
+
+    horasNormaisInput.value = formatarHorasDecimal(horasNormais);
+    horasExtrasInput.value = formatarHorasDecimal(horasExtras);
+    totalInput.value = formatarHorasDecimal(totalHoras);
+
+    atualizarTotaisColaboradores();
 }
 
-// Função para atualizar total de horas
-function atualizarTotalHoras() {
+function calcularKmColaborador(index) {
+    const kmInicial = document.querySelector(`[name="colaboradores[${index}][km_inicial]"]`)?.value;
+    const kmFinal = document.querySelector(`[name="colaboradores[${index}][km_final]"]`)?.value;
+    const totalInput = document.querySelector(`[name="colaboradores[${index}][km_final]"]`)?.closest('.row')?.querySelector('.colaborador-km-total');
+
+    if (!totalInput) {
+        return;
+    }
+
+    const inicial = parseInt(kmInicial || '0', 10);
+    const final = parseInt(kmFinal || '0', 10);
+    const total = Number.isFinite(inicial) && Number.isFinite(final) && final >= inicial ? final - inicial : 0;
+    totalInput.value = `${total} km`;
+    atualizarTotaisColaboradores();
+}
+
+// Função para atualizar total de horas e KM por colaboradores
+function atualizarTotaisColaboradores() {
     const todosInputs = document.querySelectorAll('.total-horas-input');
+    const todasNormais = document.querySelectorAll('.colaborador-horas-normais');
+    const todasExtras = document.querySelectorAll('.colaborador-horas-extras');
+    const todosKm = document.querySelectorAll('.colaborador-km-total');
     let total = 0;
-    
+    let totalNormais = 0;
+    let totalExtras = 0;
+    let totalKm = 0;
+
     todosInputs.forEach(input => {
-        const valor = parseFloat(input.value) || 0;
+        const match = String(input.value || '').match(/(\d+)h(?:\s+(\d+)min)?/);
+        const valor = match ? (parseInt(match[1], 10) + ((parseInt(match[2] || '0', 10)) / 60)) : 0;
         total += valor;
     });
-    
+
+    todasNormais.forEach(input => {
+        const match = String(input.value || '').match(/(\d+)h(?:\s+(\d+)min)?/);
+        const valor = match ? (parseInt(match[1], 10) + ((parseInt(match[2] || '0', 10)) / 60)) : 0;
+        totalNormais += valor;
+    });
+
+    todasExtras.forEach(input => {
+        const match = String(input.value || '').match(/(\d+)h(?:\s+(\d+)min)?/);
+        const valor = match ? (parseInt(match[1], 10) + ((parseInt(match[2] || '0', 10)) / 60)) : 0;
+        totalExtras += valor;
+    });
+
+    todosKm.forEach(input => {
+        const valor = parseInt(String(input.value || '0').replace(/\D/g, ''), 10) || 0;
+        totalKm += valor;
+    });
+
     const infoDiv = document.getElementById('info_total_horas');
+    const totalNormaisSpan = document.getElementById('total_horas_normais_colaboradores_display');
+    const totalExtrasSpan = document.getElementById('total_horas_extras_colaboradores_display');
     const displaySpan = document.getElementById('total_horas_display');
-    
-    if (total > 0) {
-        const horas = Math.floor(total);
-        const minutos = Math.round((total - horas) * 60);
-        displaySpan.textContent = minutos > 0 ? `${horas}h ${minutos}min` : `${horas}h`;
+    const totalKmSpan = document.getElementById('total_km_colaboradores_display');
+
+    if (!infoDiv || !totalNormaisSpan || !totalExtrasSpan || !displaySpan || !totalKmSpan) {
+        return;
+    }
+
+    if (total > 0 || totalKm > 0) {
+        totalNormaisSpan.textContent = formatarHorasDecimal(totalNormais);
+        totalExtrasSpan.textContent = formatarHorasDecimal(totalExtras);
+        displaySpan.textContent = formatarHorasDecimal(total);
+        totalKmSpan.textContent = `${totalKm} km`;
         infoDiv.style.display = 'block';
     } else {
         infoDiv.style.display = 'none';
@@ -2194,11 +2427,15 @@ async function carregarColaboradoresSelect(selectElement) {
         const data = await response.json();
         
         if (data.sucesso) {
-            selectElement.innerHTML = '<option value="">Selecione um colaborador...</option>';
+            selectElement.innerHTML = '<option value="" disabled selected>Selecione um colaborador...</option>';
+            const selectedId = selectElement.dataset.selected;
             data.colaboradores.forEach(colab => {
                 const option = document.createElement('option');
                 option.value = colab.id;
                 option.textContent = `${colab.nome} - ${colab.cargo}`;
+                if (selectedId && String(selectedId) === String(colab.id)) {
+                    option.selected = true;
+                }
                 selectElement.appendChild(option);
             });
         }
@@ -2210,45 +2447,32 @@ async function carregarColaboradoresSelect(selectElement) {
 
 // Carregar colaboradores nos selects existentes ao carregar a página
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 DEBUG: Carregando página do formulário');
+    
+    const colaboradorItems = document.querySelectorAll('.colaborador-item');
+    console.log(`👷 DEBUG: ${colaboradorItems.length} colaboradores encontrados no DOM`);
+    
     document.querySelectorAll('.colaborador-select').forEach(select => {
         carregarColaboradoresSelect(select);
     });
     
     // Atualizar total inicial
-    atualizarTotalHoras();
+    document.querySelectorAll('.colaborador-item').forEach((item, idx) => {
+        const dataIndex = item.getAttribute('data-index');
+        console.log(`📊 DEBUG: Recalculando colaborador ${idx} (data-index: ${dataIndex})`);
+        if (dataIndex !== null) {
+            calcularHorasColaborador(dataIndex);
+            calcularKmColaborador(dataIndex);
+        }
+    });
+    atualizarTotaisColaboradores();
     
     // Listeners para recalcular total
     document.querySelectorAll('.total-horas-input').forEach(input => {
-        input.addEventListener('input', atualizarTotalHoras);
+        input.addEventListener('input', atualizarTotaisColaboradores);
     });
     
-    // Definir estado inicial da seção de colaboradores baseado no tipo_os
-    const tipoOsSelect = document.getElementById('tipo_os_select');
-    if (tipoOsSelect) {
-        // Disparar evento change para aplicar a lógica de exibição
-        tipoOsSelect.dispatchEvent(new Event('change'));
-    }
-
-    // Toggle entre descrição simples e técnica para colaboradores
-    const tipoDescricaoSelect = document.getElementById('tipo_descricao');
-    if (tipoDescricaoSelect) {
-        tipoDescricaoSelect.addEventListener('change', function() {
-            const descSimples = document.getElementById('descricao_simples');
-            const descTecnica = document.getElementById('descricao_tecnica');
-            
-            if (this.value === 'simples') {
-                descSimples.style.display = 'block';
-                descTecnica.style.display = 'none';
-                // Limpar campos técnicos
-                descTecnica.querySelectorAll('textarea').forEach(ta => ta.value = '');
-            } else {
-                descSimples.style.display = 'none';
-                descTecnica.style.display = 'block';
-                // Limpar campo simples
-                descSimples.querySelector('textarea').value = '';
-            }
-        });
-    }
+    atualizarModoOperacional();
 });
 
 </script>

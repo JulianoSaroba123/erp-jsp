@@ -224,6 +224,12 @@
                     
                     <hr class="my-3">
                     <div>
+                        {% if ordem.eh_diaria %}
+                        <h6 class="fw-bold mb-2">
+                            <i class="fas fa-clipboard-check me-2"></i>Atividades e Serviços Realizados
+                        </h6>
+                        <p class="mb-0 text-muted">{{ ordem.descricao_problema if ordem.descricao_problema and ordem.descricao_problema != 'None' else 'Não informado' }}</p>
+                        {% else %}
                         <h6 class="fw-bold mb-2">
                             <i class="fas fa-exclamation-triangle me-2"></i>Descrição do Problema
                         </h6>
@@ -244,6 +250,7 @@
                             <i class="fas fa-check-circle me-2"></i>Solução
                         </h6>
                         <p class="mb-0 text-muted">{{ ordem.solucao if ordem.solucao and ordem.solucao != 'None' else 'Não informado' }}</p>
+                        {% endif %}
                     </div>
 
                 </div>
@@ -334,7 +341,7 @@
             </div>
 
             <!-- Serviços Realizados -->
-            {% if current_user.tipo_usuario|default('usuario') != 'colaborador' %}
+            {% if current_user.tipo_usuario|default('usuario') == 'admin' and ordem.eh_atendimento %}
             {% if ordem.servicos and ordem.servicos|length > 0 %}
             <div class="card info-card">
                 <div class="card-header">
@@ -419,6 +426,49 @@
                 </div>
             </div>
             {% endif %}
+            {% endif %}
+
+            {% if ordem.colaboradores_trabalho and ordem.colaboradores_trabalho|length > 0 %}
+            <div class="card info-card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0 fw-bold">
+                        <i class="fas fa-users text-success me-2"></i>
+                        Apontamentos por Colaborador
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Colaborador</th>
+                                    <th>Data</th>
+                                    <th>Período</th>
+                                    <th class="text-end">Normais</th>
+                                    <th class="text-end">Extras</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end">KM</th>
+                                    <th>Atividade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for trabalho in ordem.colaboradores_trabalho if trabalho.ativo %}
+                                <tr>
+                                    <td>{{ trabalho.colaborador.nome if trabalho.colaborador else '-' }}</td>
+                                    <td>{{ trabalho.data_trabalho.strftime('%d/%m/%Y') if trabalho.data_trabalho else '-' }}</td>
+                                    <td>{{ trabalho.periodo_trabalho }}</td>
+                                    <td class="text-end">{{ trabalho.horas_normais_formatado }}</td>
+                                    <td class="text-end">{{ trabalho.horas_extras_formatado }}</td>
+                                    <td class="text-end">{{ trabalho.total_horas_formatado }}</td>
+                                    <td class="text-end">{{ trabalho.km_total }} km</td>
+                                    <td>{{ trabalho.descricao_atividade or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
             {% endif %}
 
             <!-- Controles de Execução -->
@@ -622,8 +672,8 @@
 
             <!-- Botões de Ação -->
 
-            <!-- SEÇÕES FINANCEIRAS (Ocultas para colaboradores) -->
-            {% if current_user.tipo_usuario|default('usuario') != 'colaborador' %}
+            <!-- SEÇÕES FINANCEIRAS (Apenas administrador em atendimento) -->
+            {% if current_user.tipo_usuario|default('usuario') == 'admin' and ordem.eh_atendimento %}
             <!-- Valores - Card Destacado -->
             <div class="value-highlight">
                 <i class="fas fa-dollar-sign fa-2x mb-2"></i>
@@ -767,8 +817,8 @@
                         <div class="d-flex align-items-center">
                             <i class="fas fa-list me-3"></i>
                             <div>
-                                <small class="text-muted d-block">Tipo de Serviço</small>
-                                <strong>{{ ordem.tipo_servico }}</strong>
+                                <small class="text-muted d-block">Modo da OS</small>
+                                <strong>{{ 'Ordem Diária' if ordem.eh_diaria else 'Atendimento' }}</strong>
                             </div>
                         </div>
                     </div>

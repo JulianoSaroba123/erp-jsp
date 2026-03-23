@@ -17,6 +17,7 @@ from app.ordem_servico.ordem_servico_model import (
     OrdemServico, OrdemServicoItem, OrdemServicoProduto, OrdemServicoParcela, OrdemServicoAnexo
 )
 from app.cliente.cliente_model import Cliente
+from app.colaborador.colaborador_model import OrdemServicoColaborador
 from app.produto.produto_model import Produto
 from decimal import Decimal
 import decimal
@@ -129,6 +130,171 @@ def safe_decimal_convert(value, default=0):
         return Decimal(clean_value)
     except (ValueError, TypeError, decimal.InvalidOperation):
         return Decimal(str(default))
+
+
+def usuario_eh_admin():
+    """Retorna se o usuário logado é administrador."""
+    return getattr(current_user, 'tipo_usuario', None) == 'admin'
+
+
+def normalizar_modo_operacional(tipo_os, modo_informado):
+    """Padroniza o modo operacional da OS."""
+    if tipo_os != 'operacional':
+        return 'atendimento'
+
+    return 'diaria' if (modo_informado or '').strip().lower() == 'diaria' else 'atendimento'
+
+
+def aplicar_descricao_por_modo(ordem, form_data, tipo_os):
+    """Aplica os campos de descrição conforme o modo da OS."""
+    modo_operacional = normalizar_modo_operacional(tipo_os, form_data.get('tipo_servico'))
+    ordem.tipo_servico = modo_operacional
+
+    if modo_operacional == 'diaria':
+        ordem.descricao_problema = form_data.get('descricao_problema_diaria', '').strip()
+        ordem.diagnostico_tecnico = ''
+        ordem.solucao = ''
+        ordem.observacoes = ''
+    else:
+        ordem.descricao_problema = form_data.get('descricao_problema', '').strip()
+        ordem.diagnostico_tecnico = form_data.get('diagnostico_tecnico', '').strip()
+        ordem.solucao = form_data.get('solucao', '').strip()
+        ordem.observacoes = form_data.get('observacoes', '').strip()
+
+    return modo_operacional
+
+
+def limpar_itens_e_parcelas(ordem):
+    """Remove serviços, produtos e parcelas vinculados à OS."""
+    for item in list(getattr(ordem, 'servicos', []) or []):
+        db.session.delete(item)
+
+    for produto in list(getattr(ordem, 'produtos_utilizados', []) or []):
+        db.session.delete(produto)
+
+    for parcela in list(getattr(ordem, 'parcelas', []) or []):
+        db.session.delete(parcela)
+
+
+def limpar_dados_financeiros(ordem):
+    """Reseta dados financeiros quando a OS não permite gestão financeira."""
+    ordem.valor_servico = Decimal('0')
+    ordem.valor_pecas = Decimal('0')
+    ordem.valor_desconto = Decimal('0')
+    ordem.valor_total = Decimal('0')
+    ordem.condicao_pagamento = 'a_vista'
+    ordem.status_pagamento = 'pendente'
+    ordem.numero_parcelas = 1
+    ordem.valor_entrada = Decimal('0')
+    ordem.data_primeira_parcela = None
+    ordem.data_vencimento_pagamento = None
+    ordem.descricao_pagamento = ''
+    ordem.prazo_garantia = 0
+
+
+def extrair_colaboradores_form(form_data):
+    """Extrai os registros de colaboradores enviados pelo formulário."""
+    colaboradores = {}
+
+    for key in form_data.keys():
+        match = re.match(r'^colaboradores\[(\d+)\]\[(.+)\]$', key)
+        if match:
+            index, campo = match.groups()
+            valor = form_data.get(key, '').strip()
+            colaboradores.setdefault(index, {})[campo] = valor
+
+    return [colaboradores[index] for index in sorted(colaboradores.keys(), key=int)]
+
+
+def processar_colaboradores_os(ordem, form_data):
+    """Salva os apontamentos de colaboradores da OS."""
+    for item in list(getattr(ordem, 'colaboradores_trabalho', []) or []):
+        db.session.delete(item)
+
+    total_horas = Decimal('0')
+    total_horas_normais = Decimal('0')
+    total_horas_extras = Decimal('0')
+    total_km = 0
+
+    for colaborador_data in extrair_colaboradores_form(form_data):
+        colaborador_id = safe_int_convert(colaborador_data.get('colaborador_id'))
+        if not colaborador_id:
+            continue
+
+        data_trabalho = date.today()
+        if colaborador_data.get('data_trabalho'):
+            try:
+                data_trabalho = datetime.strptime(colaborador_data.get('data_trabalho'), '%Y-%m-%d').date()
+            except Exception:
+                data_trabalho = date.today()
+
+        def parse_hora(campo):
+            if colaborador_data.get(campo):
+                try:
+                    return datetime.strptime(colaborador_data.get(campo), '%H:%M').time()
+                except Exception:
+                    return None
+            return None
+
+        hora_entrada_manha = parse_hora('hora_entrada_manha')
+        hora_saida_manha = parse_hora('hora_saida_manha')
+        hora_entrada_tarde = parse_hora('hora_entrada_tarde')
+        hora_saida_tarde = parse_hora('hora_saida_tarde')
+        hora_entrada_extra = parse_hora('hora_entrada_extra')
+        hora_saida_extra = parse_hora('hora_saida_extra')
+        hora_inicio = hora_entrada_manha or hora_entrada_tarde or hora_entrada_extra or parse_hora('hora_inicio')
+        hora_fim = hora_saida_extra or hora_saida_tarde or hora_saida_manha or parse_hora('hora_fim')
+
+        trabalho = OrdemServicoColaborador(
+            ordem_servico_id=ordem.id,
+            colaborador_id=colaborador_id,
+            data_trabalho=data_trabalho,
+            hora_inicio=hora_inicio,
+            hora_fim=hora_fim,
+            hora_entrada_manha=hora_entrada_manha,
+            hora_saida_manha=hora_saida_manha,
+            hora_entrada_tarde=hora_entrada_tarde,
+            hora_saida_tarde=hora_saida_tarde,
+            hora_entrada_extra=hora_entrada_extra,
+            hora_saida_extra=hora_saida_extra,
+            km_inicial=safe_int_convert(colaborador_data.get('km_inicial')),
+            km_final=safe_int_convert(colaborador_data.get('km_final')),
+            descricao_atividade=colaborador_data.get('descricao_atividade', ''),
+            observacoes=colaborador_data.get('observacoes', '')
+        )
+
+        # Sempre calcular automaticamente a partir dos horários detalhados
+        trabalho.calcular_horas_automatico()
+
+        total_horas += Decimal(str(trabalho.total_horas or 0))
+        total_horas_normais += Decimal(str(trabalho.horas_normais or 0))
+        total_horas_extras += Decimal(str(trabalho.horas_extras or 0))
+        total_km += trabalho.km_total
+        db.session.add(trabalho)
+
+    if ordem.tipo_os == 'operacional':
+        if total_horas > 0:
+            horas_inteiras = int(total_horas)
+            minutos = int(round((float(total_horas) - horas_inteiras) * 60))
+            ordem.total_horas = f'{horas_inteiras}h {minutos:02d}min'
+        else:
+            ordem.total_horas = ''
+
+        if total_horas_normais > 0:
+            horas_normais_inteiras = int(total_horas_normais)
+            minutos_normais = int(round((float(total_horas_normais) - horas_normais_inteiras) * 60))
+            ordem.horas_normais = f'{horas_normais_inteiras}h {minutos_normais:02d}min'
+        else:
+            ordem.horas_normais = ''
+
+        if total_horas_extras > 0:
+            horas_extras_inteiras = int(total_horas_extras)
+            minutos_extras = int(round((float(total_horas_extras) - horas_extras_inteiras) * 60))
+            ordem.horas_extras = f'{horas_extras_inteiras}h {minutos_extras:02d}min'
+        else:
+            ordem.horas_extras = ''
+
+        ordem.total_km = f'{total_km} km' if total_km > 0 else ''
 
 from werkzeug.utils import secure_filename
 import re
@@ -479,7 +645,7 @@ def novo():
             if request.form.get('data_vencimento_pagamento'):
                 data_vencimento_pagamento = datetime.strptime(request.form.get('data_vencimento_pagamento'), '%Y-%m-%d').date()
             
-            # Converte horas
+            # Converte horas (sistema antigo - mantido para compatibilidade)
             hora_inicial = None
             hora_final = None
             
@@ -488,6 +654,27 @@ def novo():
             if request.form.get('hora_final'):
                 hora_final = datetime.strptime(request.form.get('hora_final'), '%H:%M').time()
             
+            # Converte horas detalhadas (sistema novo - 6 campos)
+            hora_entrada_manha = None
+            hora_saida_almoco = None
+            hora_retorno_almoco = None
+            hora_saida = None
+            hora_entrada_extra = None
+            hora_saida_extra = None
+            
+            if request.form.get('hora_entrada_manha'):
+                hora_entrada_manha = datetime.strptime(request.form.get('hora_entrada_manha'), '%H:%M').time()
+            if request.form.get('hora_saida_almoco'):
+                hora_saida_almoco = datetime.strptime(request.form.get('hora_saida_almoco'), '%H:%M').time()
+            if request.form.get('hora_retorno_almoco'):
+                hora_retorno_almoco = datetime.strptime(request.form.get('hora_retorno_almoco'), '%H:%M').time()
+            if request.form.get('hora_saida'):
+                hora_saida = datetime.strptime(request.form.get('hora_saida'), '%H:%M').time()
+            if request.form.get('hora_entrada_extra'):
+                hora_entrada_extra = datetime.strptime(request.form.get('hora_entrada_extra'), '%H:%M').time()
+            if request.form.get('hora_saida_extra'):
+                hora_saida_extra = datetime.strptime(request.form.get('hora_saida_extra'), '%H:%M').time()
+            
             # Define tipo_os: colaboradores sempre criam operacional
             if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'colaborador':
                 tipo_os_final = 'operacional'
@@ -495,6 +682,9 @@ def novo():
             else:
                 tipo_os_final = request.form.get('tipo_os', 'comercial')
                 print(f"👤 DEBUG: Usuário padrão criando OS - tipo_os='{tipo_os_final}'")
+
+            modo_operacional = normalizar_modo_operacional(tipo_os_final, request.form.get('tipo_servico'))
+            pode_gerir_financeiro = usuario_eh_admin() and modo_operacional == 'atendimento'
             
             # Cria ordem de serviço
             ordem = OrdemServico(
@@ -502,10 +692,10 @@ def novo():
                 cliente_id=int(request.form.get('cliente_id')),
                 titulo=request.form.get('titulo', request.form.get('equipamento', 'OS sem título')).strip(),
                 descricao=request.form.get('descricao', '').strip(),
-                observacoes=request.form.get('observacoes', '').strip(),
+                observacoes='',
                 # Novos campos de solicitação
                 solicitante=request.form.get('solicitante', '').strip(),
-                descricao_problema=request.form.get('descricao_problema', '').strip(),
+                descricao_problema='',
                 status=request.form.get('status', 'aberta'),
                 prioridade=request.form.get('prioridade', 'normal'),
                 data_prevista=data_prevista,
@@ -516,20 +706,21 @@ def novo():
                 # Data de conclusão (editável)
                 data_conclusao=(datetime.strptime(request.form.get('data_conclusao'), '%Y-%m-%dT%H:%M') if request.form.get('data_conclusao') else None),
                 # Data de vencimento do pagamento (editável)
-                data_vencimento_pagamento=(datetime.strptime(request.form.get('data_vencimento_pagamento'), '%Y-%m-%d').date() if request.form.get('data_vencimento_pagamento') else None),
+                data_vencimento_pagamento=(datetime.strptime(request.form.get('data_vencimento_pagamento'), '%Y-%m-%d').date() if pode_gerir_financeiro and request.form.get('data_vencimento_pagamento') else None),
                 tecnico_responsavel=request.form.get('tecnico_responsavel', '').strip(),
-                valor_servico=Decimal(str(valor_servico)) if valor_servico else Decimal('0'),
-                valor_pecas=Decimal(str(valor_pecas)) if valor_pecas else Decimal('0'),
-                valor_desconto=Decimal(str(valor_desconto)) if valor_desconto else Decimal('0'),
-                prazo_garantia=int(request.form.get('prazo_garantia', 0)),
+                valor_servico=Decimal(str(valor_servico)) if pode_gerir_financeiro and valor_servico else Decimal('0'),
+                valor_pecas=Decimal(str(valor_pecas)) if pode_gerir_financeiro and valor_pecas else Decimal('0'),
+                valor_desconto=Decimal(str(valor_desconto)) if pode_gerir_financeiro and valor_desconto else Decimal('0'),
+                prazo_garantia=int(request.form.get('prazo_garantia', 0)) if pode_gerir_financeiro else 0,
                 equipamento=request.form.get('equipamento', '').strip(),
                 marca_modelo=request.form.get('marca_modelo', '').strip(),
                 numero_serie=request.form.get('numero_serie', '').strip(),
                 diagnostico=request.form.get('diagnostico', '').strip(),
-                diagnostico_tecnico=request.form.get('diagnostico_tecnico', '').strip(),
-                solucao=request.form.get('solucao', '').strip(),
+                diagnostico_tecnico='',
+                solucao='',
                 # Tipo de OS (comercial ou operacional)
                 tipo_os=tipo_os_final,
+                tipo_servico=modo_operacional,
                 # Novos campos - Tratamento seguro
                 km_inicial=safe_int_convert(request.form.get('km_inicial', '')),
                 km_final=safe_int_convert(request.form.get('km_final', '')),
@@ -537,16 +728,27 @@ def novo():
                 hora_inicial=hora_inicial,
                 hora_final=hora_final,
                 intervalo_almoco=safe_int_convert(request.form.get('intervalo_almoco', '60'), default=60),
+                # Sistema de horários detalhado (6 campos)
+                hora_entrada_manha=hora_entrada_manha,
+                hora_saida_almoco=hora_saida_almoco,
+                hora_retorno_almoco=hora_retorno_almoco,
+                hora_saida=hora_saida,
+                hora_entrada_extra=hora_entrada_extra,
+                hora_saida_extra=hora_saida_extra,
+                horas_normais=request.form.get('horasNormais', '').strip(),
+                horas_extras=request.form.get('horasExtras', '').strip(),
                 total_horas=request.form.get('total_horas', '').strip(),
-                condicao_pagamento=request.form.get('condicao_pagamento', 'a_vista'),
-                status_pagamento=request.form.get('status_pagamento', 'pendente'),
-                numero_parcelas=safe_int_convert(request.form.get('numero_parcelas', '1'), default=1),
-                valor_entrada=Decimal(str(valor_entrada)) if valor_entrada else Decimal('0'),
-                data_primeira_parcela=data_primeira_parcela,
+                condicao_pagamento=request.form.get('condicao_pagamento', 'a_vista') if pode_gerir_financeiro else 'a_vista',
+                status_pagamento=request.form.get('status_pagamento', 'pendente') if pode_gerir_financeiro else 'pendente',
+                numero_parcelas=safe_int_convert(request.form.get('numero_parcelas', '1'), default=1) if pode_gerir_financeiro else 1,
+                valor_entrada=Decimal(str(valor_entrada)) if pode_gerir_financeiro and valor_entrada else Decimal('0'),
+                data_primeira_parcela=data_primeira_parcela if pode_gerir_financeiro else None,
                 # Novos campos para anexos e descrição de pagamento
-                descricao_pagamento=request.form.get('descricao_pagamento', '').strip(),
+                descricao_pagamento=request.form.get('descricao_pagamento', '').strip() if pode_gerir_financeiro else '',
                 observacoes_anexos=request.form.get('observacoes_anexos', '').strip()
             )
+
+            aplicar_descricao_por_modo(ordem, request.form, tipo_os_final)
             
             # Validações
             print(f"DEBUG: Validando título: '{ordem.titulo}'")
@@ -584,58 +786,56 @@ def novo():
             # Processa itens de serviço
             print("🔍 DEBUG: Processando itens de serviço com nova estrutura de tipos")
             
-            # Primeiro tenta coletar dados da estrutura de arrays simples (nova)
-            print("🔍 DEBUG: Coletando dados de serviços...")
-            servicos_desc_array = request.form.getlist('servico_descricao[]')
-            servicos_tipo_array = request.form.getlist('servico_tipo[]')
-            servicos_quantidade_array = request.form.getlist('servico_quantidade[]')
-            servicos_valor_array = request.form.getlist('servico_valor[]')
-            
-            print(f"DEBUG: Arrays simples encontrados - desc: {len(servicos_desc_array)}, tipo: {len(servicos_tipo_array)}, qtd: {len(servicos_quantidade_array)}, valor: {len(servicos_valor_array)}")
-            
-            # Se encontrou arrays simples, usa essa estrutura
             servicos_data = []
-            if servicos_desc_array:
-                print("DEBUG: Usando estrutura de arrays simples para serviços (novo)")
-                for i, desc in enumerate(servicos_desc_array):
-                    if desc and desc.strip():
-                        tipo = servicos_tipo_array[i] if i < len(servicos_tipo_array) else 'Serviço Fechado'
-                        quantidade = servicos_quantidade_array[i] if i < len(servicos_quantidade_array) else '1'
-                        valor_unitario = servicos_valor_array[i] if i < len(servicos_valor_array) else '0'
-                        
-                        servicos_data.append({
-                            'descricao': desc.strip(),
-                            'tipo': tipo,
-                            'quantidade': float(safe_decimal_convert(quantidade, 1.0)),
-                            'valor_unitario': float(safe_decimal_convert(valor_unitario, 0.0))
-                        })
-            else:
-                # Fallback para estrutura indexada (antiga)
-                print("DEBUG: Usando estrutura indexada para serviços (fallback)")
-                index = 0
-                while True:
-                    desc_key = f'servicos[{index}][descricao]'
-                    if desc_key not in request.form:
-                        break
-                        
-                    tipo_key = f'servicos[{index}][tipo]'
-                    quantidade_key = f'servicos[{index}][quantidade]'
-                    valor_key = f'servicos[{index}][valor_unitario]'
-                    
-                    desc = request.form.get(desc_key, '').strip()
-                    if desc:
-                        tipo = request.form.get(tipo_key, 'Serviço Fechado')
-                        quantidade = request.form.get(quantidade_key, '1')
-                        valor_unitario = request.form.get(valor_key, '0')
-                        
-                        servicos_data.append({
-                            'descricao': desc,
-                            'tipo': tipo,
-                            'quantidade': float(safe_decimal_convert(quantidade, 1.0)),
-                            'valor_unitario': float(safe_decimal_convert(valor_unitario, 0.0))
-                        })
-                        
-                    index += 1
+            if pode_gerir_financeiro:
+                print("🔍 DEBUG: Coletando dados de serviços...")
+                servicos_desc_array = request.form.getlist('servico_descricao[]')
+                servicos_tipo_array = request.form.getlist('servico_tipo[]')
+                servicos_quantidade_array = request.form.getlist('servico_quantidade[]')
+                servicos_valor_array = request.form.getlist('servico_valor[]')
+
+                print(f"DEBUG: Arrays simples encontrados - desc: {len(servicos_desc_array)}, tipo: {len(servicos_tipo_array)}, qtd: {len(servicos_quantidade_array)}, valor: {len(servicos_valor_array)}")
+
+                if servicos_desc_array:
+                    print("DEBUG: Usando estrutura de arrays simples para serviços (novo)")
+                    for i, desc in enumerate(servicos_desc_array):
+                        if desc and desc.strip():
+                            tipo = servicos_tipo_array[i] if i < len(servicos_tipo_array) else 'Serviço Fechado'
+                            quantidade = servicos_quantidade_array[i] if i < len(servicos_quantidade_array) else '1'
+                            valor_unitario = servicos_valor_array[i] if i < len(servicos_valor_array) else '0'
+
+                            servicos_data.append({
+                                'descricao': desc.strip(),
+                                'tipo': tipo,
+                                'quantidade': float(safe_decimal_convert(quantidade, 1.0)),
+                                'valor_unitario': float(safe_decimal_convert(valor_unitario, 0.0))
+                            })
+                else:
+                    print("DEBUG: Usando estrutura indexada para serviços (fallback)")
+                    index = 0
+                    while True:
+                        desc_key = f'servicos[{index}][descricao]'
+                        if desc_key not in request.form:
+                            break
+
+                        tipo_key = f'servicos[{index}][tipo]'
+                        quantidade_key = f'servicos[{index}][quantidade]'
+                        valor_key = f'servicos[{index}][valor_unitario]'
+
+                        desc = request.form.get(desc_key, '').strip()
+                        if desc:
+                            tipo = request.form.get(tipo_key, 'Serviço Fechado')
+                            quantidade = request.form.get(quantidade_key, '1')
+                            valor_unitario = request.form.get(valor_key, '0')
+
+                            servicos_data.append({
+                                'descricao': desc,
+                                'tipo': tipo,
+                                'quantidade': float(safe_decimal_convert(quantidade, 1.0)),
+                                'valor_unitario': float(safe_decimal_convert(valor_unitario, 0.0))
+                            })
+
+                        index += 1
             
             print(f"🔍 DEBUG: Coletados {len(servicos_data)} serviços: {servicos_data}")
             
@@ -660,17 +860,17 @@ def novo():
             
             # Processa produtos utilizados
             # Aceita tanto produto_id (novos produtos cadastrados) quanto produto_descricao (produtos antigos ou personalizados)
-            produtos_id = request.form.getlist('produto_id[]')
-            produtos_desc = request.form.getlist('produto_descricao[]')  # Para produtos antigos
-            produtos_desc_custom = request.form.getlist('produto_descricao_custom[]')  # Para produtos personalizados novos
-            produtos_qtd = request.form.getlist('produto_quantidade[]')
-            produtos_valor = request.form.getlist('produto_valor[]')
+            produtos_id = request.form.getlist('produto_id[]') if pode_gerir_financeiro else []
+            produtos_desc = request.form.getlist('produto_descricao[]') if pode_gerir_financeiro else []
+            produtos_desc_custom = request.form.getlist('produto_descricao_custom[]') if pode_gerir_financeiro else []
+            produtos_qtd = request.form.getlist('produto_quantidade[]') if pode_gerir_financeiro else []
+            produtos_valor = request.form.getlist('produto_valor[]') if pode_gerir_financeiro else []
             
             # ACUMULAR TOTAL DE PRODUTOS
             total_produtos_acumulado = Decimal('0.00')
             
             # Determinar qual lista tem mais itens para processar
-            max_produtos = max(len(produtos_id) if produtos_id else 0, 
+            max_produtos = max(len(produtos_id) if produtos_id else 0,
                               len(produtos_desc) if produtos_desc else 0)
             
             for i in range(max_produtos):
@@ -714,10 +914,13 @@ def novo():
             
             # CALCULAR TOTAIS DIRETO DOS VALORES ACUMULADOS (tudo já é Decimal)
             total_final = total_servicos_acumulado + total_produtos_acumulado - ordem.valor_desconto
-            
+
             ordem.valor_servico = total_servicos_acumulado
             ordem.valor_pecas = total_produtos_acumulado
             ordem.valor_total = total_final
+
+            if not pode_gerir_financeiro:
+                limpar_dados_financeiros(ordem)
             
             print("="*80)
             print(f"✅ TOTAIS CALCULADOS (DECIMAL PURO):")
@@ -796,9 +999,11 @@ def novo():
                             flash(f'Erro ao salvar arquivo {file.filename}: {str(e)}', 'warning')
                     elif file and file.filename and not allowed_file(file.filename):
                         flash(f'Tipo de arquivo não permitido: {file.filename}', 'warning')
+
+            processar_colaboradores_os(ordem, request.form)
             
             # Processa parcelas (validação + criação)
-            if ordem.condicao_pagamento == 'parcelado' and ordem.numero_parcelas and ordem.numero_parcelas > 0:
+            if pode_gerir_financeiro and ordem.condicao_pagamento == 'parcelado' and ordem.numero_parcelas and ordem.numero_parcelas > 0:
                 entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
                 parcelas_datas = request.form.getlist('parcela_data[]')
                 parcelas_valores = request.form.getlist('parcela_valor[]')
@@ -1015,10 +1220,11 @@ def editar(id):
     """
     print(f"DEBUG: Iniciando edição para ID {id}")
     
-    # Carregar OS com eager loading de parcelas
+    # Carregar OS com eager loading de parcelas e colaboradores
     from sqlalchemy.orm import joinedload
     ordem = OrdemServico.query.options(
-        joinedload(OrdemServico.parcelas)
+        joinedload(OrdemServico.parcelas),
+        joinedload(OrdemServico.colaboradores_trabalho)
     ).filter_by(id=id, ativo=True).first()
     
     if not ordem:
@@ -1031,8 +1237,13 @@ def editar(id):
         flash('Você não tem permissão para editar esta ordem de serviço.', 'error')
         return redirect(url_for('ordem_servico.listar'))
     
-    print(f" DEBUG: Ordem encontrada: {ordem.numero}")
+    print(f"✅ DEBUG: Ordem encontrada: {ordem.numero}")
     print(f"💳 DEBUG PARCELAS: {len(ordem.parcelas) if hasattr(ordem, 'parcelas') and ordem.parcelas else 0} parcelas carregadas")
+    print(f"👷 DEBUG COLABORADORES: {len(ordem.colaboradores_trabalho) if hasattr(ordem, 'colaboradores_trabalho') and ordem.colaboradores_trabalho else 0} colaboradores carregados")
+    if hasattr(ordem, 'colaboradores_trabalho') and ordem.colaboradores_trabalho:
+        for c in ordem.colaboradores_trabalho:
+            if c.ativo:
+                print(f"   Colaborador {c.colaborador_id}: Manhã {c.hora_entrada_manha}-{c.hora_saida_manha}, Tarde {c.hora_entrada_tarde}-{c.hora_saida_tarde}, Extra {c.hora_entrada_extra}-{c.hora_saida_extra}")
     if hasattr(ordem, 'parcelas') and ordem.parcelas:
         for p in ordem.parcelas:
             print(f"   Parcela {p.numero_parcela}: R$ {p.valor} - Venc: {p.data_vencimento}")
@@ -1047,6 +1258,18 @@ def editar(id):
             produtos_desc = request.form.getlist('produto_descricao[]')
             print(f"DEBUG: Serviços encontrados: {len(servicos_desc)} - {servicos_desc}")
             print(f"DEBUG: Produtos encontrados: {len(produtos_desc)} - {produtos_desc}")
+            usuario_admin = usuario_eh_admin()
+            
+            # ===== DEFINE pode_gerir_financeiro NO INÍCIO =====
+            # Determina tipo_os primeiro para calcular modo operacional
+            tipo_os_preliminar = request.form.get('tipo_os', ordem.tipo_os or 'comercial')
+            if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'colaborador':
+                tipo_os_preliminar = 'operacional'  # Forçar operacional para colaboradores
+            
+            modo_operacional = aplicar_descricao_por_modo(ordem, request.form, tipo_os_preliminar)
+            pode_gerir_financeiro = usuario_admin and modo_operacional == 'atendimento'
+            print(f"🔑 DEBUG: usuario_admin={usuario_admin}, modo_operacional='{modo_operacional}', pode_gerir_financeiro={pode_gerir_financeiro}")
+            # ===================================================
             
             # Converte valores
             valor_servico = safe_decimal_convert(request.form.get('valor_servico', '0'), 0)
@@ -1062,10 +1285,8 @@ def editar(id):
             ordem.cliente_id = int(request.form.get('cliente_id'))
             ordem.titulo = request.form.get('titulo', request.form.get('equipamento', ordem.titulo or 'OS sem título')).strip()
             ordem.descricao = request.form.get('descricao', '').strip()
-            ordem.observacoes = request.form.get('observacoes', '').strip()
             # Novos campos de solicitação
             ordem.solicitante = request.form.get('solicitante', '').strip()
-            ordem.descricao_problema = request.form.get('descricao_problema', '').strip()
             
             # Controla mudança de status
             novo_status = request.form.get('status', 'aberta')
@@ -1097,13 +1318,6 @@ def editar(id):
                     except Exception:
                         pass
 
-            # Permite definir data de vencimento do pagamento
-            if request.form.get('data_vencimento_pagamento'):
-                try:
-                    ordem.data_vencimento_pagamento = datetime.strptime(request.form.get('data_vencimento_pagamento'), '%Y-%m-%d').date()
-                except Exception:
-                    pass
-
             if novo_status != ordem.status:
                 if novo_status == 'em_andamento' and ordem.status == 'aberta':
                     ordem.data_inicio = dt.now()
@@ -1115,14 +1329,13 @@ def editar(id):
             ordem.data_prevista = data_prevista
             ordem.tecnico_responsavel = request.form.get('tecnico_responsavel', '').strip()
             # valor_servico e valor_pecas serão recalculados após processar itens
-            ordem.valor_desconto = safe_decimal_convert(request.form.get('valor_desconto', '0'), 0)
-            ordem.prazo_garantia = int(request.form.get('prazo_garantia', 0))
+            if pode_gerir_financeiro:
+                ordem.valor_desconto = safe_decimal_convert(request.form.get('valor_desconto', '0'), 0)
+                ordem.prazo_garantia = int(request.form.get('prazo_garantia', 0))
             ordem.equipamento = request.form.get('equipamento', '').strip()
             ordem.marca_modelo = request.form.get('marca_modelo', '').strip()
             ordem.numero_serie = request.form.get('numero_serie', '').strip()
             ordem.diagnostico = request.form.get('diagnostico', '').strip()
-            ordem.diagnostico_tecnico = request.form.get('diagnostico_tecnico', '').strip()
-            ordem.solucao = request.form.get('solucao', '').strip()
             
             # Tipo de OS: colaboradores não podem alterar, sempre operacional
             if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'colaborador':
@@ -1132,12 +1345,17 @@ def editar(id):
                 ordem.tipo_os = request.form.get('tipo_os', ordem.tipo_os or 'comercial')
                 print(f"👤 DEBUG: Usuário padrão editando OS - tipo_os='{ordem.tipo_os}'")
             
+            # Recalcula modo_operacional com o tipo_os final
+            modo_operacional = aplicar_descricao_por_modo(ordem, request.form, ordem.tipo_os)
+            pode_gerir_financeiro = usuario_admin and modo_operacional == 'atendimento'
+            print(f"🔄 DEBUG: Recalculado - modo_operacional='{modo_operacional}', pode_gerir_financeiro={pode_gerir_financeiro}")
+            
             # Controle de KM e Tempo - Tratamento seguro de conversão
             ordem.km_inicial = safe_int_convert(request.form.get('km_inicial', ''))
             ordem.km_final = safe_int_convert(request.form.get('km_final', ''))
             ordem.total_km = request.form.get('total_km', '').strip()
             
-            # Processa horários
+            # Processa horários (sistema antigo - compatibilidade)
             hora_inicial = None
             hora_final = None
             
@@ -1148,30 +1366,67 @@ def editar(id):
             
             ordem.hora_inicial = hora_inicial
             ordem.hora_final = hora_final
+            
+            # Processa horários detalhados (sistema novo - 6 campos)
+            if request.form.get('hora_entrada_manha'):
+                ordem.hora_entrada_manha = datetime.strptime(request.form.get('hora_entrada_manha'), '%H:%M').time()
+            else:
+                ordem.hora_entrada_manha = None
+                
+            if request.form.get('hora_saida_almoco'):
+                ordem.hora_saida_almoco = datetime.strptime(request.form.get('hora_saida_almoco'), '%H:%M').time()
+            else:
+                ordem.hora_saida_almoco = None
+                
+            if request.form.get('hora_retorno_almoco'):
+                ordem.hora_retorno_almoco = datetime.strptime(request.form.get('hora_retorno_almoco'), '%H:%M').time()
+            else:
+                ordem.hora_retorno_almoco = None
+                
+            if request.form.get('hora_saida'):
+                ordem.hora_saida = datetime.strptime(request.form.get('hora_saida'), '%H:%M').time()
+            else:
+                ordem.hora_saida = None
+                
+            if request.form.get('hora_entrada_extra'):
+                ordem.hora_entrada_extra = datetime.strptime(request.form.get('hora_entrada_extra'), '%H:%M').time()
+            else:
+                ordem.hora_entrada_extra = None
+                
+            if request.form.get('hora_saida_extra'):
+                ordem.hora_saida_extra = datetime.strptime(request.form.get('hora_saida_extra'), '%H:%M').time()
+            else:
+                ordem.hora_saida_extra = None
+            
+            # Campos de horas calculadas
+            ordem.horas_normais = request.form.get('horasNormais', '').strip()
+            ordem.horas_extras = request.form.get('horasExtras', '').strip()
             ordem.intervalo_almoco = safe_int_convert(request.form.get('intervalo_almoco', '60'), default=60)
             ordem.total_horas = request.form.get('total_horas', '').strip()
             
             # Condições de Pagamento
-            ordem.condicao_pagamento = request.form.get('condicao_pagamento', 'a_vista')
-            ordem.status_pagamento = request.form.get('status_pagamento', 'pendente')
-            ordem.numero_parcelas = int(request.form.get('numero_parcelas', 1)) if request.form.get('numero_parcelas') else 1
-            ordem.valor_entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
+            if pode_gerir_financeiro:
+                ordem.condicao_pagamento = request.form.get('condicao_pagamento', 'a_vista')
+                ordem.status_pagamento = request.form.get('status_pagamento', 'pendente')
+                ordem.numero_parcelas = int(request.form.get('numero_parcelas', 1)) if request.form.get('numero_parcelas') else 1
+                ordem.valor_entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
             
             # Data da primeira parcela
-            if request.form.get('data_primeira_parcela'):
+            if pode_gerir_financeiro and request.form.get('data_primeira_parcela'):
                 try:
                     ordem.data_primeira_parcela = datetime.strptime(request.form.get('data_primeira_parcela'), '%Y-%m-%d').date()
                 except Exception:
                     pass
             
             # Data de vencimento do pagamento
-            if request.form.get('data_vencimento_pagamento'):
+            if pode_gerir_financeiro and request.form.get('data_vencimento_pagamento'):
                 try:
                     ordem.data_vencimento_pagamento = datetime.strptime(request.form.get('data_vencimento_pagamento'), '%Y-%m-%d').date()
                 except Exception:
                     pass
             
-            ordem.descricao_pagamento = request.form.get('descricao_pagamento', '').strip()
+            if pode_gerir_financeiro:
+                ordem.descricao_pagamento = request.form.get('descricao_pagamento', '').strip()
             ordem.observacoes_anexos = request.form.get('observacoes_anexos', '').strip()
             
             # Validações
@@ -1181,162 +1436,150 @@ def editar(id):
                     ordem.titulo = f"OS - {request.form.get('equipamento', '').strip()}"
                 else:
                     ordem.titulo = f"OS #{ordem.numero}"
-            
-            # Processa itens de serviço - Remove antigos e adiciona novos
-            print(f"DEBUG: Removendo {len(ordem.servicos)} serviços antigos via loop delete")
-            servicos_removidos = 0
-            for item_existente in list(ordem.servicos):
-                print(f"  🗑️ Removendo serviço: {item_existente.descricao}")
-                db.session.delete(item_existente)
-                servicos_removidos += 1
-            print(f" {servicos_removidos} serviços removidos")
-            
-            # Processa itens de serviço com nova estrutura de tipos
-            print("DEBUG: Processando itens de serviço com nova estrutura de tipos (edição)")
-            
-            # Primeiro tenta coletar dados da estrutura de arrays simples (nova)
-            servicos_desc_array = request.form.getlist('servico_descricao[]')
-            servicos_tipo_array = request.form.getlist('servico_tipo[]')
-            servicos_quantidade_array = request.form.getlist('servico_quantidade[]')
-            servicos_valor_array = request.form.getlist('servico_valor[]')
-            
-            print(f"DEBUG: Arrays simples encontrados - desc: {len(servicos_desc_array)}, tipo: {len(servicos_tipo_array)}, qtd: {len(servicos_quantidade_array)}, valor: {len(servicos_valor_array)}")
-            
-            # Se encontrou arrays simples, usa essa estrutura
-            servicos_data = []
-            if servicos_desc_array:
-                print("DEBUG: Usando estrutura de arrays simples para serviços")
-                for i, desc in enumerate(servicos_desc_array):
-                    if desc and desc.strip():
-                        tipo = servicos_tipo_array[i] if i < len(servicos_tipo_array) else 'Serviço Fechado'
-                        quantidade = servicos_quantidade_array[i] if i < len(servicos_quantidade_array) else '1'
-                        valor_unitario = servicos_valor_array[i] if i < len(servicos_valor_array) else '0'
-                        
-                        servicos_data.append({
-                            'descricao': desc.strip(),
-                            'tipo': tipo,
-                            'quantidade': float(safe_decimal_convert(quantidade, 1.0)),
-                            'valor_unitario': float(safe_decimal_convert(valor_unitario, 0.0))
-                        })
-            else:
-                # Fallback para estrutura indexada (antiga)
-                print("DEBUG: Usando estrutura indexada para serviços (fallback)")
-                index = 0
-                while True:
-                    desc_key = f'servicos[{index}][descricao]'
-                    if desc_key not in request.form:
-                        break
-                        
-                    tipo_key = f'servicos[{index}][tipo]'
-                    quantidade_key = f'servicos[{index}][quantidade]'
-                    valor_key = f'servicos[{index}][valor_unitario]'
-                    
-                    desc = request.form.get(desc_key, '').strip()
-                    if desc:
-                        tipo = request.form.get(tipo_key, 'Serviço Fechado')
-                        quantidade = request.form.get(quantidade_key, '1')
-                        valor_unitario = request.form.get(valor_key, '0')
-                        
-                        servicos_data.append({
-                            'descricao': desc,
-                            'tipo': tipo,
-                            'quantidade': float(safe_decimal_convert(quantidade, 1.0)),
-                            'valor_unitario': float(safe_decimal_convert(valor_unitario, 0.0))
-                        })
-                        
-                    index += 1
-            
-            print(f"DEBUG: Coletados {len(servicos_data)} serviços para edição: {servicos_data}")
 
-            # Criar novos itens de serviço
-            servicos_adicionados = 0
-            for servico_data in servicos_data:
-                item = OrdemServicoItem(
-                    ordem_servico_id=ordem.id,
-                    descricao=servico_data['descricao'],
-                    tipo_servico=servico_data['tipo'],
-                    quantidade=Decimal(str(servico_data['quantidade'])),
-                    valor_unitario=Decimal(str(servico_data['valor_unitario']))
-                )
-                item.calcular_total()
-                db.session.add(item)
-                servicos_adicionados += 1
-                print(f"  ➕ Adicionado serviço: {item.descricao} - {item.quantidade} {item.tipo_servico} = R$ {item.valor_total}")
-            print(f" {servicos_adicionados} serviços adicionados")
-            
-            # Processa produtos utilizados - Remove antigos e adiciona novos
-            print(f"DEBUG: Removendo {len(ordem.produtos_utilizados)} produtos antigos via loop delete")
-            produtos_removidos = 0
-            for produto_existente in list(ordem.produtos_utilizados):
-                print(f"  🗑️ Removendo produto: {produto_existente.descricao}")
-                db.session.delete(produto_existente)
-                produtos_removidos += 1
-            print(f" {produtos_removidos} produtos removidos")
-            
-            # Aceita tanto produto_id (novos produtos cadastrados) quanto produto_descricao (produtos antigos ou personalizados)
-            produtos_id = request.form.getlist('produto_id[]')
-            produtos_desc = request.form.getlist('produto_descricao[]')  # Para produtos antigos
-            produtos_desc_custom = request.form.getlist('produto_descricao_custom[]')  # Para produtos personalizados novos
-            produtos_qtd = request.form.getlist('produto_quantidade[]')
-            produtos_valor = request.form.getlist('produto_valor[]')
+            if modo_operacional != 'atendimento':
+                limpar_itens_e_parcelas(ordem)
+                limpar_dados_financeiros(ordem)
+            elif pode_gerir_financeiro:
+                print(f"DEBUG: Removendo {len(ordem.servicos)} serviços antigos via loop delete")
+                servicos_removidos = 0
+                for item_existente in list(ordem.servicos):
+                    print(f"  🗑️ Removendo serviço: {item_existente.descricao}")
+                    db.session.delete(item_existente)
+                    servicos_removidos += 1
+                print(f" {servicos_removidos} serviços removidos")
 
-            # Determinar qual lista tem mais itens para processar
-            max_produtos = max(len(produtos_id) if produtos_id else 0, 
-                              len(produtos_desc) if produtos_desc else 0)
-            
-            print(f"DEBUG: Processando {max_produtos} produtos do formulário")
-            print(f"  📝 IDs: {produtos_id if produtos_id else []}")
-            print(f"  📝 Descrições: {produtos_desc if produtos_desc else []}")
-            print(f"  📝 Custom: {produtos_desc_custom if produtos_desc_custom else []}")
-            
-            produtos_adicionados = 0
-            for i in range(max_produtos):
-                descricao = None
-                produto_cadastrado_id = None
-                
-                # Prioridade: produto_id (novo sistema)
-                if i < len(produtos_id) and produtos_id[i] and produtos_id[i] != '':
-                    if produtos_id[i] == 'custom':
-                        # Produto personalizado - usar descrição custom
-                        if i < len(produtos_desc_custom) and produtos_desc_custom[i].strip():
-                            descricao = produtos_desc_custom[i].strip()
-                    else:
-                        # Produto cadastrado
-                        try:
-                            produto_cadastrado_id = int(produtos_id[i])
-                            produto_obj = Produto.query.get(produto_cadastrado_id)
-                            if produto_obj:
-                                descricao = produto_obj.nome
-                        except (ValueError, TypeError):
-                            pass
-                
-                # Fallback: produto_descricao (antigo sistema - para OS antigas)
-                if not descricao and i < len(produtos_desc) and produtos_desc[i].strip():
-                    descricao = produtos_desc[i].strip()
-                
-                # Se tem descrição, adiciona o produto
-                if descricao:
-                    qtd_value = produtos_qtd[i] if i < len(produtos_qtd) else ''
-                    valor_value = produtos_valor[i] if i < len(produtos_valor) else ''
-                    
-                    produto = OrdemServicoProduto(
+                print("DEBUG: Processando itens de serviço com nova estrutura de tipos (edição)")
+                servicos_desc_array = request.form.getlist('servico_descricao[]')
+                servicos_tipo_array = request.form.getlist('servico_tipo[]')
+                servicos_quantidade_array = request.form.getlist('servico_quantidade[]')
+                servicos_valor_array = request.form.getlist('servico_valor[]')
+
+                print(f"DEBUG: Arrays simples encontrados - desc: {len(servicos_desc_array)}, tipo: {len(servicos_tipo_array)}, qtd: {len(servicos_quantidade_array)}, valor: {len(servicos_valor_array)}")
+
+                servicos_data = []
+                if servicos_desc_array:
+                    print("DEBUG: Usando estrutura de arrays simples para serviços")
+                    for i, desc in enumerate(servicos_desc_array):
+                        if desc and desc.strip():
+                            tipo = servicos_tipo_array[i] if i < len(servicos_tipo_array) else 'Serviço Fechado'
+                            quantidade = servicos_quantidade_array[i] if i < len(servicos_quantidade_array) else '1'
+                            valor_unitario = servicos_valor_array[i] if i < len(servicos_valor_array) else '0'
+
+                            servicos_data.append({
+                                'descricao': desc.strip(),
+                                'tipo': tipo,
+                                'quantidade': float(safe_decimal_convert(quantidade, 1.0)),
+                                'valor_unitario': float(safe_decimal_convert(valor_unitario, 0.0))
+                            })
+                else:
+                    print("DEBUG: Usando estrutura indexada para serviços (fallback)")
+                    index = 0
+                    while True:
+                        desc_key = f'servicos[{index}][descricao]'
+                        if desc_key not in request.form:
+                            break
+
+                        tipo_key = f'servicos[{index}][tipo]'
+                        quantidade_key = f'servicos[{index}][quantidade]'
+                        valor_key = f'servicos[{index}][valor_unitario]'
+
+                        desc = request.form.get(desc_key, '').strip()
+                        if desc:
+                            tipo = request.form.get(tipo_key, 'Serviço Fechado')
+                            quantidade = request.form.get(quantidade_key, '1')
+                            valor_unitario = request.form.get(valor_key, '0')
+
+                            servicos_data.append({
+                                'descricao': desc,
+                                'tipo': tipo,
+                                'quantidade': float(safe_decimal_convert(quantidade, 1.0)),
+                                'valor_unitario': float(safe_decimal_convert(valor_unitario, 0.0))
+                            })
+
+                        index += 1
+
+                print(f"DEBUG: Coletados {len(servicos_data)} serviços para edição: {servicos_data}")
+
+                servicos_adicionados = 0
+                for servico_data in servicos_data:
+                    item = OrdemServicoItem(
                         ordem_servico_id=ordem.id,
-                        descricao=descricao,
-                        produto_id=produto_cadastrado_id,  # Referência ao produto cadastrado (se houver)
-                        quantidade=safe_decimal_convert(qtd_value, 1),
-                        valor_unitario=safe_decimal_convert(valor_value, 0)
+                        descricao=servico_data['descricao'],
+                        tipo_servico=servico_data['tipo'],
+                        quantidade=Decimal(str(servico_data['quantidade'])),
+                        valor_unitario=Decimal(str(servico_data['valor_unitario']))
                     )
-                    produto.calcular_total()
-                    db.session.add(produto)
-                    produtos_adicionados += 1
-                    print(f"  ➕ Adicionado produto: {descricao} (ID: {produto_cadastrado_id})")
-            print(f" {produtos_adicionados} produtos adicionados")
-            
-            # Recalcula valores dos campos principais após adicionar todos os itens
-            ordem.valor_servico = ordem.valor_total_servicos
-            ordem.valor_pecas = ordem.valor_total_produtos
-            ordem.valor_total = ordem.valor_total_calculado_novo
-            print(f"🧮 DEBUG: Valor serviço: R$ {ordem.valor_servico} | Valor peças: R$ {ordem.valor_pecas} | Valor total: R$ {ordem.valor_total}")
+                    item.calcular_total()
+                    db.session.add(item)
+                    servicos_adicionados += 1
+                    print(f"  ➕ Adicionado serviço: {item.descricao} - {item.quantidade} {item.tipo_servico} = R$ {item.valor_total}")
+                print(f" {servicos_adicionados} serviços adicionados")
+
+                print(f"DEBUG: Removendo {len(ordem.produtos_utilizados)} produtos antigos via loop delete")
+                produtos_removidos = 0
+                for produto_existente in list(ordem.produtos_utilizados):
+                    print(f"  🗑️ Removendo produto: {produto_existente.descricao}")
+                    db.session.delete(produto_existente)
+                    produtos_removidos += 1
+                print(f" {produtos_removidos} produtos removidos")
+
+                produtos_id = request.form.getlist('produto_id[]')
+                produtos_desc = request.form.getlist('produto_descricao[]')
+                produtos_desc_custom = request.form.getlist('produto_descricao_custom[]')
+                produtos_qtd = request.form.getlist('produto_quantidade[]')
+                produtos_valor = request.form.getlist('produto_valor[]')
+
+                max_produtos = max(len(produtos_id) if produtos_id else 0,
+                                  len(produtos_desc) if produtos_desc else 0)
+
+                print(f"DEBUG: Processando {max_produtos} produtos do formulário")
+                print(f"  📝 IDs: {produtos_id if produtos_id else []}")
+                print(f"  📝 Descrições: {produtos_desc if produtos_desc else []}")
+                print(f"  📝 Custom: {produtos_desc_custom if produtos_desc_custom else []}")
+
+                produtos_adicionados = 0
+                for i in range(max_produtos):
+                    descricao = None
+                    produto_cadastrado_id = None
+
+                    if i < len(produtos_id) and produtos_id[i] and produtos_id[i] != '':
+                        if produtos_id[i] == 'custom':
+                            if i < len(produtos_desc_custom) and produtos_desc_custom[i].strip():
+                                descricao = produtos_desc_custom[i].strip()
+                        else:
+                            try:
+                                produto_cadastrado_id = int(produtos_id[i])
+                                produto_obj = Produto.query.get(produto_cadastrado_id)
+                                if produto_obj:
+                                    descricao = produto_obj.nome
+                            except (ValueError, TypeError):
+                                pass
+
+                    if not descricao and i < len(produtos_desc) and produtos_desc[i].strip():
+                        descricao = produtos_desc[i].strip()
+
+                    if descricao:
+                        qtd_value = produtos_qtd[i] if i < len(produtos_qtd) else ''
+                        valor_value = produtos_valor[i] if i < len(produtos_valor) else ''
+
+                        produto = OrdemServicoProduto(
+                            ordem_servico_id=ordem.id,
+                            descricao=descricao,
+                            produto_id=produto_cadastrado_id,
+                            quantidade=safe_decimal_convert(qtd_value, 1),
+                            valor_unitario=safe_decimal_convert(valor_value, 0)
+                        )
+                        produto.calcular_total()
+                        db.session.add(produto)
+                        produtos_adicionados += 1
+                        print(f"  ➕ Adicionado produto: {descricao} (ID: {produto_cadastrado_id})")
+                print(f" {produtos_adicionados} produtos adicionados")
+
+                ordem.valor_servico = ordem.valor_total_servicos
+                ordem.valor_pecas = ordem.valor_total_produtos
+                ordem.valor_total = ordem.valor_total_calculado_novo
+                print(f"🧮 DEBUG: Valor serviço: R$ {ordem.valor_servico} | Valor peças: R$ {ordem.valor_pecas} | Valor total: R$ {ordem.valor_total}")
 
             # Processa parcelas da ordem: validação e recriação conforme formulário
             # IMPORTANTE: Só recria parcelas se o usuário forneceu dados manuais de parcelas
@@ -1344,7 +1587,7 @@ def editar(id):
                 # Verificar se existem parcelas cadastradas
                 tem_parcelas_existentes = hasattr(ordem, 'parcelas') and ordem.parcelas and len(ordem.parcelas) > 0
                 
-                if ordem.condicao_pagamento == 'parcelado' and ordem.numero_parcelas > 0:
+                if pode_gerir_financeiro and ordem.condicao_pagamento == 'parcelado' and ordem.numero_parcelas > 0:
                     entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
                     parcelas_datas = request.form.getlist('parcela_data[]')
                     parcelas_valores = request.form.getlist('parcela_valor[]')
@@ -1576,6 +1819,8 @@ def editar(id):
                         print(f"🔍 DEBUG ANEXOS EDITAR: Arquivo inválido: file={file}, filename='{file.filename if file else None}'")
             else:
                 print("🔍 DEBUG ANEXOS EDITAR: Nenhum campo 'anexos' encontrado nos arquivos")
+
+            processar_colaboradores_os(ordem, request.form)
             
             # Recalcula valor total novamente antes do commit final
             ordem.valor_total = ordem.valor_total_calculado
