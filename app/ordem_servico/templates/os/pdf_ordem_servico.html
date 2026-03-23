@@ -702,14 +702,14 @@
                             </td>
                             <td style="padding: 8px; text-align: center; font-weight: bold; font-size: 10px; color: #27ae60; border-right: 1px solid #dee2e6;">
                                 {% if ordem.horas_normais %}
-                                {{ ordem.horas_normais }}
+                                {{ ordem.horas_normais_formatado }}
                                 {% else %}
                                 -
                                 {% endif %}
                             </td>
                             <td style="padding: 8px; text-align: center; font-weight: bold; font-size: 10px; color: #e67e22; border-right: 1px solid #dee2e6;">
                                 {% if ordem.horas_extras %}
-                                {{ ordem.horas_extras }}
+                                {{ ordem.horas_extras_formatado }}
                                 {% else %}
                                 -
                                 {% endif %}
