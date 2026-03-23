@@ -521,91 +521,91 @@ def listar():
         print("=" * 80)
         print("🔍 DEBUG ROTA /listar")
         print("=" * 80)
-    
-    # DEBUG: Verificar TODAS as OS no banco
-    total_os = OrdemServico.query.count()
-    print(f"🔍 Total de OS no banco (SEM filtro): {total_os}")
-    
-    if total_os > 0:
-        print(f"🔍 Primeiras 5 OS no banco:")
-        primeiras = OrdemServico.query.limit(5).all()
-        for os in primeiras:
-            print(f"   ID={os.id}, numero={os.numero}, ativo={os.ativo} (tipo: {type(os.ativo)}), titulo={os.titulo}")
-    
-    # Parâmetros de busca
-    busca = request.args.get('busca', '').strip()
-    status = request.args.get('status', '').strip()
-    prioridade = request.args.get('prioridade', '').strip()
-    cliente_id = request.args.get('cliente_id', '').strip()
-    
-    print(f"\n📊 Parâmetros recebidos:")
-    print(f"   busca: '{busca}'")
-    print(f"   status: '{status}'")
-    print(f"   prioridade: '{prioridade}'")
-    print(f"   cliente_id: '{cliente_id}'")
-    
-    # ============================================================
-    # QUERY COM FILTRO EXPLÍCITO - ativo=True
-    # ============================================================
-    
-    # Log de diagnóstico
-    total_geral = OrdemServico.query.count()
-    total_ativas = OrdemServico.query.filter(OrdemServico.ativo == True).count()
-    print(f"\n📊 DIAGNÓSTICO:")
-    print(f"   Total de OS (sem filtro): {total_geral}")
-    print(f"   Total de OS ativas: {total_ativas}")
-    
-    # Query principal - filtra OS ativas
-    query = OrdemServico.query.filter(OrdemServico.ativo == True)
-    
-    # Se o usuário for colaborador, mostra apenas ordens operacionais
-    if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'colaborador':
-        query = query.filter(OrdemServico.tipo_os == 'operacional')
-        print(f"👷 Usuário colaborador: filtrando apenas OS operacionais")
-    
-    # Aplica filtros de busca se houver
-    if busca:
-        query = query.join(Cliente).filter(
-            db.or_(
-                OrdemServico.numero.ilike(f'%{busca}%'),
-                OrdemServico.titulo.ilike(f'%{busca}%'),
-                OrdemServico.equipamento.ilike(f'%{busca}%'),
-                Cliente.nome.ilike(f'%{busca}%')
+        
+        # DEBUG: Verificar TODAS as OS no banco
+        total_os = OrdemServico.query.count()
+        print(f"🔍 Total de OS no banco (SEM filtro): {total_os}")
+        
+        if total_os > 0:
+            print(f"🔍 Primeiras 5 OS no banco:")
+            primeiras = OrdemServico.query.limit(5).all()
+            for os in primeiras:
+                print(f"   ID={os.id}, numero={os.numero}, ativo={os.ativo} (tipo: {type(os.ativo)}), titulo={os.titulo}")
+        
+        # Parâmetros de busca
+        busca = request.args.get('busca', '').strip()
+        status = request.args.get('status', '').strip()
+        prioridade = request.args.get('prioridade', '').strip()
+        cliente_id = request.args.get('cliente_id', '').strip()
+        
+        print(f"\n📊 Parâmetros recebidos:")
+        print(f"   busca: '{busca}'")
+        print(f"   status: '{status}'")
+        print(f"   prioridade: '{prioridade}'")
+        print(f"   cliente_id: '{cliente_id}'")
+        
+        # ============================================================
+        # QUERY COM FILTRO EXPLÍCITO - ativo=True
+        # ============================================================
+        
+        # Log de diagnóstico
+        total_geral = OrdemServico.query.count()
+        total_ativas = OrdemServico.query.filter(OrdemServico.ativo == True).count()
+        print(f"\n📊 DIAGNÓSTICO:")
+        print(f"   Total de OS (sem filtro): {total_geral}")
+        print(f"   Total de OS ativas: {total_ativas}")
+        
+        # Query principal - filtra OS ativas
+        query = OrdemServico.query.filter(OrdemServico.ativo == True)
+        
+        # Se o usuário for colaborador, mostra apenas ordens operacionais
+        if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'colaborador':
+            query = query.filter(OrdemServico.tipo_os == 'operacional')
+            print(f"👷 Usuário colaborador: filtrando apenas OS operacionais")
+        
+        # Aplica filtros de busca se houver
+        if busca:
+            query = query.join(Cliente).filter(
+                db.or_(
+                    OrdemServico.numero.ilike(f'%{busca}%'),
+                    OrdemServico.titulo.ilike(f'%{busca}%'),
+                    OrdemServico.equipamento.ilike(f'%{busca}%'),
+                    Cliente.nome.ilike(f'%{busca}%')
+                )
             )
-        )
-    
-    if status:
-        query = query.filter(OrdemServico.status == status)
-    
-    if prioridade:
-        query = query.filter(OrdemServico.prioridade == prioridade)
-    
-    if cliente_id:
-        try:
-            query = query.filter(OrdemServico.cliente_id == int(cliente_id))
-        except ValueError:
-            pass
-    
-    ordens = query.order_by(OrdemServico.data_abertura.desc()).all()
-    
-    print(f"\n📋 Resultado da query:")
-    print(f"   Total de OS encontradas: {len(ordens)}")
-    if ordens:
-        print(f"   Primeiras 5 OS:")
-        for os in ordens[:5]:
-            print(f"   - {os.numero} | {os.titulo} | Status: {os.status}")
-    else:
-        print("   ⚠️ NENHUMA OS ENCONTRADA COM OS FILTROS APLICADOS")
-    
-    # Lista de clientes para filtro
-    clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
-    print(f"\n👥 Clientes ativos: {len(clientes)}")
-    
-    # Estatísticas
-    stats = OrdemServico.estatisticas_dashboard()
-    print(f"\n📊 Estatísticas: {stats}")
-    print("=" * 80)
-    
+        
+        if status:
+            query = query.filter(OrdemServico.status == status)
+        
+        if prioridade:
+            query = query.filter(OrdemServico.prioridade == prioridade)
+        
+        if cliente_id:
+            try:
+                query = query.filter(OrdemServico.cliente_id == int(cliente_id))
+            except ValueError:
+                pass
+        
+        ordens = query.order_by(OrdemServico.data_abertura.desc()).all()
+        
+        print(f"\n📋 Resultado da query:")
+        print(f"   Total de OS encontradas: {len(ordens)}")
+        if ordens:
+            print(f"   Primeiras 5 OS:")
+            for os in ordens[:5]:
+                print(f"   - {os.numero} | {os.titulo} | Status: {os.status}")
+        else:
+            print("   ⚠️ NENHUMA OS ENCONTRADA COM OS FILTROS APLICADOS")
+        
+        # Lista de clientes para filtro
+        clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+        print(f"\n👥 Clientes ativos: {len(clientes)}")
+        
+        # Estatísticas
+        stats = OrdemServico.estatisticas_dashboard()
+        print(f"\n📊 Estatísticas: {stats}")
+        print("=" * 80)
+        
         return render_template('os/listar.html', 
                              ordens=ordens, 
                              clientes=clientes,

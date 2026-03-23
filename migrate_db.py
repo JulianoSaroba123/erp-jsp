@@ -53,7 +53,7 @@ def run_migrations():
         
         migrations = []
         
-        # Define colunas a adicionar para horários detalhados
+        # Define colunas a adicionar para horários detalhados (colaboradores)
         colunas_horarios = [
             ("hora_entrada_manha", "TIME"),
             ("hora_saida_manha", "TIME"),
@@ -78,6 +78,30 @@ def run_migrations():
             if nome_coluna not in colunas_existentes:
                 migrations.append((nome_coluna, tipo_coluna))
         
+        # === MIGRAÇÃO ADICIONAL: Verificar tabela ordem_servico ===
+        if 'ordem_servico' in tabelas:
+            print("✅ Verificando tabela ordem_servico...")
+            
+            colunas_os = [col['name'] for col in inspector.get_columns('ordem_servico')]
+            
+            # Colunas adicionais que podem estar faltando
+            colunas_adicionais_os = [
+                ("intervalo_almoco", "INTEGER DEFAULT 60"),
+                ("hora_entrada_manha", "TIME"),
+                ("hora_saida_almoco", "TIME"),
+                ("hora_retorno_almoco", "TIME"),
+                ("hora_saida", "TIME"),
+                ("hora_entrada_extra", "TIME"),
+                ("hora_saida_extra", "TIME"),
+                ("horas_normais", "NUMERIC(10,2)"),
+                ("horas_extras", "NUMERIC(10,2)")
+            ]
+            
+            for nome_col, tipo_col in colunas_adicionais_os:
+                if nome_col not in colunas_os:
+                    print(f"   ⚠️  Coluna {nome_col} faltando em ordem_servico - adicionando...")
+                    migrations.append((nome_col, tipo_col, 'ordem_servico'))
+        
         if not migrations:
             print("✅ Todas as colunas já existem - nenhuma migration necessária")
             print("=" * 70 + "\n")
@@ -87,9 +111,16 @@ def run_migrations():
         
         # Executa migrations
         with engine.connect() as conn:
-            for nome_coluna, tipo_coluna in migrations:
-                sql = f"ALTER TABLE ordem_servico_colaborador ADD COLUMN IF NOT EXISTS {nome_coluna} {tipo_coluna}"
-                print(f"   ⚙️  {nome_coluna} ({tipo_coluna})...")
+            for migration in migrations:
+                # Pode ter 2 elementos (coluna, tipo) ou 3 (coluna, tipo, tabela)
+                if len(migration) == 3:
+                    nome_coluna, tipo_coluna, tabela = migration
+                else:
+                    nome_coluna, tipo_coluna = migration
+                    tabela = 'ordem_servico_colaborador'
+                
+                sql = f"ALTER TABLE {tabela} ADD COLUMN IF NOT EXISTS {nome_coluna} {tipo_coluna}"
+                print(f"   ⚙️  {tabela}.{nome_coluna} ({tipo_coluna})...")
                 
                 try:
                     conn.execute(text(sql))
