@@ -516,10 +516,11 @@ def listar():
     
     Suporte para busca por número, cliente ou status.
     """
-    # DEBUG: Log de início
-    print("=" * 80)
-    print("🔍 DEBUG ROTA /listar")
-    print("=" * 80)
+    try:
+        # DEBUG: Log de início
+        print("=" * 80)
+        print("🔍 DEBUG ROTA /listar")
+        print("=" * 80)
     
     # DEBUG: Verificar TODAS as OS no banco
     total_os = OrdemServico.query.count()
@@ -605,14 +606,30 @@ def listar():
     print(f"\n📊 Estatísticas: {stats}")
     print("=" * 80)
     
-    return render_template('os/listar.html', 
-                         ordens=ordens, 
-                         clientes=clientes,
-                         stats=stats,
-                         busca=busca,
-                         status_filtro=status,
-                         prioridade_filtro=prioridade,
-                         cliente_filtro=cliente_id)
+        return render_template('os/listar.html', 
+                             ordens=ordens, 
+                             clientes=clientes,
+                             stats=stats,
+                             busca=busca,
+                             status_filtro=status,
+                             prioridade_filtro=prioridade,
+                             cliente_filtro=cliente_id)
+    
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        print(f"\n❌ ERRO NA ROTA /listar: {error_msg}")
+        traceback.print_exc()
+        
+        # Verifica se é erro de coluna inexistente
+        if 'column' in error_msg.lower() or 'does not exist' in error_msg.lower():
+            flash('⚠️ Banco de dados desatualizado. Execute as migrations: python migrate_db.py', 'error')
+            return render_template('os/erro_db.html', 
+                                 erro=error_msg,
+                                 solucao='Execute: python migrate_db.py'), 500
+        
+        flash(f'Erro ao carregar ordens: {error_msg}', 'error')
+        return redirect(url_for('painel.index'))
 
 @ordem_servico_bp.route('/novo', methods=['GET', 'POST'])
 def novo():

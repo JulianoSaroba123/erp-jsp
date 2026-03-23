@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Erro - Banco Desatualizado{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="alert alert-danger">
+                <h4 class="alert-heading">⚠️ Banco de Dados Desatualizado</h4>
+                <hr>
+                <p><strong>Erro:</strong> {{ erro }}</p>
+                <hr>
+                <h5>Solução:</h5>
+                <p>{{ solucao }}</p>
+                
+                <div class="mt-4">
+                    <h6>Para administradores do Render:</h6>
+                    <ol>
+                        <li>Acesse: <a href="https://dashboard.render.com" target="_blank">Render Dashboard</a></li>
+                        <li>Vá em seu serviço → Shell</li>
+                        <li>Execute: <code>python migrate_db.py</code></li>
+                    </ol>
+                </div>
+            </div>
+            
+            <a href="{{ url_for('painel.index') }}" class="btn btn-primary">
+                ← Voltar ao Painel
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

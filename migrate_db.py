@@ -102,18 +102,23 @@ def run_migrations():
         print(f"\n✅ Migrations concluídas com sucesso!")
         
     except ImportError as e:
-        print(f"❌ Erro ao importar SQLAlchemy: {e}")
-        print("   Certifique-se que requirements.txt foi instalado")
+        print(f"\n❌ ERRO CRÍTICO: Não foi possível importar SQLAlchemy!")
+        print(f"   Detalhes: {e}")
+        print(f"   Verifique se requirements.txt foi instalado corretamente")
+        print("=" * 70 + "\n")
+        # FALHA HARD - não pode continuar sem SQLAlchemy
         sys.exit(1)
         
     except Exception as e:
-        print(f"⚠️ Erro ao executar migrations: {e}")
+        print(f"\n❌ ERRO CRÍTICO ao executar migrations!")
+        print(f"   Tipo: {type(e).__name__}")
+        print(f"   Mensagem: {e}")
+        print("\n📋 Traceback completo:")
         import traceback
         traceback.print_exc()
-        # NÃO FALHA - apenas loga o erro
-        # O app vai continuar e criar as colunas depois se necessário
-    
-    print("=" * 70 + "\n")
+        print("=" * 70 + "\n")
+        # FALHA HARD - migrations são obrigatórias
+        sys.exit(1)
 
 if __name__ == '__main__':
     run_migrations()
