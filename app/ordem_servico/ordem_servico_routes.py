@@ -103,13 +103,13 @@ def safe_decimal_convert(value, default=0):
     
     Args:
         value: Valor a ser convertido  
-        default: Valor padrão se conversão falhar
+        default: Valor padrão se conversão falhar (pode ser None)
         
     Returns:
-        Decimal
+        Decimal ou None
     """
     if not value or (isinstance(value, str) and value.strip() == ''):
-        return Decimal(str(default))
+        return Decimal(str(default)) if default is not None else None
         
     try:
         s = str(value).strip()
@@ -126,10 +126,10 @@ def safe_decimal_convert(value, default=0):
             clean_value = s
 
         if clean_value == '' or clean_value == '.':
-            return Decimal(str(default))
+            return Decimal(str(default)) if default is not None else None
         return Decimal(clean_value)
     except (ValueError, TypeError, decimal.InvalidOperation):
-        return Decimal(str(default))
+        return Decimal(str(default)) if default is not None else None
 
 
 def usuario_eh_admin():
@@ -280,19 +280,10 @@ def processar_colaboradores_os(ordem, form_data):
         else:
             ordem.total_horas = ''
 
-        if total_horas_normais > 0:
-            horas_normais_inteiras = int(total_horas_normais)
-            minutos_normais = int(round((float(total_horas_normais) - horas_normais_inteiras) * 60))
-            ordem.horas_normais = f'{horas_normais_inteiras}h {minutos_normais:02d}min'
-        else:
-            ordem.horas_normais = ''
+        # Salvar horas como Decimal (formato numérico no banco)
+        ordem.horas_normais = total_horas_normais if total_horas_normais > 0 else None
 
-        if total_horas_extras > 0:
-            horas_extras_inteiras = int(total_horas_extras)
-            minutos_extras = int(round((float(total_horas_extras) - horas_extras_inteiras) * 60))
-            ordem.horas_extras = f'{horas_extras_inteiras}h {minutos_extras:02d}min'
-        else:
-            ordem.horas_extras = ''
+        ordem.horas_extras = total_horas_extras if total_horas_extras > 0 else None
 
         ordem.total_km = f'{total_km} km' if total_km > 0 else ''
 
@@ -752,8 +743,9 @@ def novo():
                 hora_saida=hora_saida,
                 hora_entrada_extra=hora_entrada_extra,
                 hora_saida_extra=hora_saida_extra,
-                horas_normais=request.form.get('horasNormais', '').strip(),
-                horas_extras=request.form.get('horasExtras', '').strip(),
+                # Converter horas para Decimal ou None
+                horas_normais=safe_decimal_convert(request.form.get('horasNormais', ''), default=None),
+                horas_extras=safe_decimal_convert(request.form.get('horasExtras', ''), default=None),
                 total_horas=request.form.get('total_horas', '').strip(),
                 condicao_pagamento=request.form.get('condicao_pagamento', 'a_vista') if pode_gerir_financeiro else 'a_vista',
                 status_pagamento=request.form.get('status_pagamento', 'pendente') if pode_gerir_financeiro else 'pendente',
@@ -1415,9 +1407,18 @@ def editar(id):
             else:
                 ordem.hora_saida_extra = None
             
-            # Campos de horas calculadas
-            ordem.horas_normais = request.form.get('horasNormais', '').strip()
-            ordem.horas_extras = request.form.get('horasExtras', '').strip()
+            # Campos de horas calculadas - converter para Decimal
+            try:
+                hn = request.form.get('horasNormais', '').strip()
+                ordem.horas_normais = Decimal(str(hn)) if hn and hn != '' else None
+            except:
+                ordem.horas_normais = None
+            
+            try:
+                he = request.form.get('horasExtras', '').strip()
+                ordem.horas_extras = Decimal(str(he)) if he and he != '' else None
+            except:
+                ordem.horas_extras = None
             ordem.intervalo_almoco = safe_int_convert(request.form.get('intervalo_almoco', '60'), default=60)
             ordem.total_horas = request.form.get('total_horas', '').strip()
             

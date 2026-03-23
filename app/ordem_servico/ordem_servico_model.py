@@ -141,8 +141,8 @@ class OrdemServico(BaseModel):
     hora_saida = db.Column(db.Time)          # Saída no final do período
     hora_entrada_extra = db.Column(db.Time)  # Entrada para horas extras (opcional)
     hora_saida_extra = db.Column(db.Time)    # Saída após horas extras (opcional)
-    horas_normais = db.Column(db.String(20)) # Formato: "8h 00min" (calculado)
-    horas_extras = db.Column(db.String(20))  # Formato: "2h 30min" (calculado)
+    horas_normais = db.Column(db.Numeric(10, 2))  # Horas normais em formato decimal
+    horas_extras = db.Column(db.Numeric(10, 2))  # Horas extras em formato decimal
     
     # Condições de Pagamento
     condicao_pagamento = db.Column(db.String(50), default='a_vista')  # a_vista, parcelado
@@ -350,6 +350,28 @@ class OrdemServico(BaseModel):
         if self.status in ['finalizada', 'cancelada']:
             return 0
         return (date.today() - self.data_abertura).days
+    
+    @property
+    def horas_normais_formatado(self):
+        """Retorna horas normais formatadas (ex: '8h 30min')."""
+        if not self.horas_normais:
+            return '0h'
+        
+        horas_decimal = float(self.horas_normais)
+        horas_inteiras = int(horas_decimal)
+        minutos = int((horas_decimal - horas_inteiras) * 60)
+        return f'{horas_inteiras}h {minutos}min' if minutos > 0 else f'{horas_inteiras}h'
+    
+    @property
+    def horas_extras_formatado(self):
+        """Retorna horas extras formatadas (ex: '2h 30min')."""
+        if not self.horas_extras:
+            return '0h'
+        
+        horas_decimal = float(self.horas_extras)
+        horas_inteiras = int(horas_decimal)
+        minutos = int((horas_decimal - horas_inteiras) * 60)
+        return f'{horas_inteiras}h {minutos}min' if minutos > 0 else f'{horas_inteiras}h'
     
     @classmethod
     def gerar_proximo_numero(cls):
