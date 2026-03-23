@@ -3,7 +3,7 @@ services:
     name: erp-jsp
     env: python
     buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: python migrate_db.py && gunicorn app.app:app --bind 0.0.0.0:$PORT
+    startCommand: python create_tables.py && gunicorn app.app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
