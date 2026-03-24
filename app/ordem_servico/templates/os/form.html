@@ -1033,8 +1033,110 @@
 <!-- Biblioteca Signature Pad para assinaturas digitais -->
 <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 
-<!-- Sistema de Assinaturas Digitais -->
-<script src="{{ url_for('static', filename='js/assinatura.js', v='20260323-1') }}"></script>
+<!-- Sistema de Assinaturas Digitais (inline para garantir disponibilidade) -->
+<script>
+class AssinaturaManager {
+    constructor() {
+        this.signaturePads = {};
+        this.canvases = {};
+    }
+    inicializar(tipo) {
+        const canvas = document.getElementById(`canvas-assinatura-${tipo}`);
+        if (!canvas) return;
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * ratio;
+        canvas.height = rect.height * ratio;
+        canvas.getContext('2d').scale(ratio, ratio);
+        if (typeof SignaturePad !== 'undefined') {
+            this.signaturePads[tipo] = new SignaturePad(canvas, {
+                backgroundColor: 'rgb(255, 255, 255)', penColor: 'rgb(0, 0, 0)',
+                minWidth: 1, maxWidth: 2.5, velocityFilterWeight: 0.7
+            });
+        }
+        this.canvases[tipo] = canvas;
+    }
+    abrirModal(tipo) {
+        const modal = document.getElementById(`modal-assinatura-${tipo}`);
+        if (!modal) return;
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        setTimeout(() => {
+            this.inicializar(tipo);
+            const inputAssinatura = document.getElementById(`assinatura_${tipo}`);
+            if (inputAssinatura && inputAssinatura.value) {
+                this.carregarAssinatura(tipo, inputAssinatura.value);
+            }
+        }, 300);
+    }
+    limpar(tipo) {
+        if (this.signaturePads[tipo]) this.signaturePads[tipo].clear();
+    }
+    salvar(tipo) {
+        const signaturePad = this.signaturePads[tipo];
+        if (!signaturePad) { alert('Erro: Canvas não inicializado'); return; }
+        if (signaturePad.isEmpty()) { alert('Por favor, faça a assinatura antes de salvar'); return; }
+        const dataURL = signaturePad.toDataURL('image/png');
+        const inputAssinatura = document.getElementById(`assinatura_${tipo}`);
+        if (inputAssinatura) inputAssinatura.value = dataURL;
+        const inputNome = document.getElementById(`assinatura_${tipo}_nome`);
+        const nomeInput = document.getElementById(`nome-assinante-${tipo}`);
+        if (inputNome && nomeInput) inputNome.value = nomeInput.value || '';
+        const inputData = document.getElementById(`assinatura_${tipo}_data`);
+        if (inputData) inputData.value = new Date().toISOString();
+        this.mostrarPreview(tipo, dataURL);
+        const modal = document.getElementById(`modal-assinatura-${tipo}`);
+        const bsModal = bootstrap.Modal.getInstance(modal);
+        if (bsModal) bsModal.hide();
+        const btn = document.querySelector(`[onclick*="'${tipo}'"]`);
+        if (btn) { btn.classList.remove('btn-outline-primary', 'btn-outline-warning'); btn.classList.add('btn-success'); btn.innerHTML = '<i class="fas fa-check me-2"></i>Assinatura Salva'; }
+    }
+    carregarAssinatura(tipo, dataURL) {
+        const signaturePad = this.signaturePads[tipo];
+        const canvas = this.canvases[tipo];
+        if (!signaturePad || !canvas) return;
+        signaturePad.clear();
+        const img = new Image();
+        img.onload = () => { signaturePad.fromDataURL(dataURL); };
+        img.src = dataURL;
+    }
+    mostrarPreview(tipo, dataURL) {
+        let preview = document.getElementById(`preview-assinatura-${tipo}`);
+        if (!preview) {
+            const container = document.querySelector(`.assinatura-${tipo}-container`);
+            if (container) {
+                preview = document.createElement('img');
+                preview.id = `preview-assinatura-${tipo}`;
+                preview.className = 'img-fluid border rounded mt-2';
+                preview.style.maxHeight = '100px';
+                preview.style.backgroundColor = '#fff';
+                container.appendChild(preview);
+            }
+        }
+        if (preview) { preview.src = dataURL; preview.style.display = 'block'; }
+    }
+    remover(tipo) {
+        if (!confirm('Tem certeza que deseja remover esta assinatura?')) return;
+        ['assinatura_', 'assinatura_' + tipo + '_nome', 'assinatura_' + tipo + '_data'].forEach(id => {
+            const el = document.getElementById(id.includes('_nome') || id.includes('_data') ? id : `assinatura_${tipo}`);
+            if (el) el.value = '';
+        });
+        const inputNome = document.getElementById(`assinatura_${tipo}_nome`);
+        if (inputNome) inputNome.value = '';
+        const inputData = document.getElementById(`assinatura_${tipo}_data`);
+        if (inputData) inputData.value = '';
+        const preview = document.getElementById(`preview-assinatura-${tipo}`);
+        if (preview) preview.style.display = 'none';
+        const inputAssinatura = document.getElementById(`assinatura_${tipo}`);
+        if (inputAssinatura) inputAssinatura.value = '';
+    }
+}
+const assinaturaManager = new AssinaturaManager();
+function abrirModalAssinatura(tipo) { assinaturaManager.abrirModal(tipo); }
+function limparAssinatura(tipo) { assinaturaManager.limpar(tipo); }
+function salvarAssinatura(tipo) { assinaturaManager.salvar(tipo); }
+function removerAssinatura(tipo) { assinaturaManager.remover(tipo); }
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
