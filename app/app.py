@@ -431,7 +431,30 @@ def create_app(config_name=None):
                         pass  # Silenciosamente ignora
         except Exception as e:
             print(f" ⚠ Aviso na migração de campos de proposta: {e}")
-        
+
+        # Migração: adicionar colunas de assinaturas digitais em ordem_servico
+        try:
+            from sqlalchemy import text, inspect
+            inspector = inspect(db.engine)
+            if 'ordem_servico' in inspector.get_table_names():
+                colunas_os = [col['name'] for col in inspector.get_columns('ordem_servico')]
+                assinatura_cols = {
+                    'assinatura_cliente': 'TEXT',
+                    'assinatura_cliente_nome': 'VARCHAR(200)',
+                    'assinatura_cliente_data': 'TIMESTAMP',
+                    'assinatura_tecnico': 'TEXT',
+                    'assinatura_tecnico_nome': 'VARCHAR(200)',
+                    'assinatura_tecnico_data': 'TIMESTAMP',
+                }
+                for col_name, col_type in assinatura_cols.items():
+                    if col_name not in colunas_os:
+                        db.session.execute(text(f"ALTER TABLE ordem_servico ADD COLUMN {col_name} {col_type}"))
+                        db.session.commit()
+                        print(f"[OK] Coluna {col_name} adicionada em ordem_servico!")
+        except Exception as e:
+            db.session.rollback()
+            print(f" ⚠ Aviso na migração de assinaturas digitais: {e}")
+
         # Corrige sequências de ID (PostgreSQL)
         try:
             from sqlalchemy import text
