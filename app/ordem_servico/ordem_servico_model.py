@@ -141,8 +141,8 @@ class OrdemServico(BaseModel):
     hora_saida = db.Column(db.Time)          # Saída no final do período
     hora_entrada_extra = db.Column(db.Time)  # Entrada para horas extras (opcional)
     hora_saida_extra = db.Column(db.Time)    # Saída após horas extras (opcional)
-    horas_normais = db.Column(db.String(50))  # Horas normais (ex: '8h 30min' ou decimal)
-    horas_extras = db.Column(db.String(50))  # Horas extras (ex: '2h 15min' ou decimal)
+    horas_normais = db.Column(db.Numeric(10, 2))  # Horas normais em formato decimal
+    horas_extras = db.Column(db.Numeric(10, 2))  # Horas extras em formato decimal
     
     # Condições de Pagamento
     condicao_pagamento = db.Column(db.String(50), default='a_vista')  # a_vista, parcelado
@@ -364,33 +364,26 @@ class OrdemServico(BaseModel):
         """Retorna horas normais formatadas (ex: '8h 30min')."""
         if not self.horas_normais:
             return '0h'
-        val = str(self.horas_normais)
-        # Se já está no formato 'Xh Ymin', retorna como está
-        if 'h' in val:
-            return val
         try:
-            horas_decimal = float(val)
+            horas_decimal = float(self.horas_normais)
             horas_inteiras = int(horas_decimal)
             minutos = int((horas_decimal - horas_inteiras) * 60)
             return f'{horas_inteiras}h {minutos}min' if minutos > 0 else f'{horas_inteiras}h'
         except (ValueError, TypeError):
-            return val
+            return str(self.horas_normais)
     
     @property
     def horas_extras_formatado(self):
         """Retorna horas extras formatadas (ex: '2h 30min')."""
         if not self.horas_extras:
             return '0h'
-        val = str(self.horas_extras)
-        if 'h' in val:
-            return val
         try:
-            horas_decimal = float(val)
+            horas_decimal = float(self.horas_extras)
             horas_inteiras = int(horas_decimal)
             minutos = int((horas_decimal - horas_inteiras) * 60)
             return f'{horas_inteiras}h {minutos}min' if minutos > 0 else f'{horas_inteiras}h'
         except (ValueError, TypeError):
-            return val
+            return str(self.horas_extras)
     
     @classmethod
     def gerar_proximo_numero(cls):

@@ -432,6 +432,33 @@ def create_app(config_name=None):
         except Exception as e:
             print(f" ⚠ Aviso na migração de campos de proposta: {e}")
 
+        # Migração: corrigir horas_normais/horas_extras de varchar para numeric (banco local)
+        # No Render já são numeric; localmente podem ter sido criadas como varchar
+        try:
+            from sqlalchemy import text, inspect
+            inspector = inspect(db.engine)
+            if 'ordem_servico' in inspector.get_table_names():
+                colunas_os = {col['name']: col for col in inspector.get_columns('ordem_servico')}
+                for col_name in ('horas_normais', 'horas_extras'):
+                    col_info = colunas_os.get(col_name)
+                    if col_info and 'varchar' in str(col_info.get('type', '')).lower():
+                        # Converte "8h 48min" → decimal antes de alterar o tipo
+                        db.session.execute(text(f"""
+                            UPDATE ordem_servico SET {col_name} = NULL
+                            WHERE {col_name} IS NOT NULL
+                              AND {col_name} !~ '^[0-9]+(\.[0-9]+)?$'
+                        """))
+                        db.session.execute(text(f"""
+                            ALTER TABLE ordem_servico
+                            ALTER COLUMN {col_name} TYPE numeric(10,2)
+                            USING NULLIF(TRIM({col_name}), '')::numeric
+                        """))
+                        db.session.commit()
+                        print(f"[OK] Coluna {col_name} convertida de varchar para numeric!")
+        except Exception as e:
+            db.session.rollback()
+            print(f" ⚠ Aviso na migração de horas varchar->numeric: {e}")
+
         # Migração: adicionar colunas de assinaturas digitais em ordem_servico
         try:
             from sqlalchemy import text, inspect
