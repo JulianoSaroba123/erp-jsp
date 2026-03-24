@@ -13,11 +13,12 @@ class Config:
     
     if SQLALCHEMY_DATABASE_URI:
         # Produção: Usa PostgreSQL do Render
-        # Corrige URL do Render para SQLAlchemy + psycopg
+        # Corrige URL para usar psycopg (v3) - psycopg2-binary tem DLL issue no Python 3.13/Windows
         if SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
             SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgres://", "postgresql+psycopg://", 1)
         elif SQLALCHEMY_DATABASE_URI.startswith("postgresql://"):
             SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace("postgresql://", "postgresql+psycopg://", 1)
+        # Se já tem "+psycopg", mantém como está
     else:
         # Desenvolvimento: Usa SQLite local
         basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -40,7 +41,10 @@ class Config:
         'pool_pre_ping': True,
         'pool_recycle': 300,
         'pool_timeout': 20,
-        'max_overflow': 0
+        'max_overflow': 0,
+        # Desativa prepared statements do psycopg3 (modo binário)
+        # que não reconhece OID 1043 (VARCHAR) - corrige "Unknown PG numeric type: 1043"
+        'connect_args': {'prepare_threshold': None}
     }
     
     # Configurações de sessão
@@ -78,7 +82,8 @@ class ProductionConfig(Config):
         'pool_recycle': 3600,
         'pool_timeout': 30,
         'max_overflow': 20,
-        'pool_size': 10
+        'pool_size': 10,
+        'connect_args': {'prepare_threshold': None}
     }
 
 class TestingConfig(Config):

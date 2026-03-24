@@ -905,6 +905,92 @@
             </div>
         </div>
 
+        <!-- ASSINATURAS DIGITAIS -->
+        <div class="card bg-dark border-secondary">
+            <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-signature me-2"></i>Assinaturas Digitais
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <!-- Assinatura do Cliente -->
+                    <div class="col-md-6">
+                        <div class="assinatura-cliente-container">
+                            <label class="form-label text-white fw-bold">
+                                <i class="fas fa-user me-2 text-primary"></i>Assinatura do Cliente
+                            </label>
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-outline-primary" onclick="abrirModalAssinatura('cliente')">
+                                    <i class="fas fa-signature me-2"></i>
+                                    {% if ordem and ordem.assinatura_cliente %}Editar Assinatura{% else %}Assinar{% endif %}
+                                </button>
+                                {% if ordem and ordem.assinatura_cliente %}
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removerAssinatura('cliente')">
+                                    <i class="fas fa-trash me-2"></i>Remover Assinatura
+                                </button>
+                                <div class="text-muted small mt-2">
+                                    <i class="fas fa-check-circle text-success me-1"></i>
+                                    Assinado por: {{ ordem.assinatura_cliente_nome or 'Não informado' }}<br>
+                                    <i class="fas fa-clock text-info me-1"></i>
+                                    Data: {{ ordem.assinatura_cliente_data.strftime('%d/%m/%Y %H:%M') if ordem.assinatura_cliente_data else 'Não informada' }}
+                                </div>
+                                <img id="preview-assinatura-cliente" src="{{ ordem.assinatura_cliente }}" 
+                                     class="img-fluid border rounded mt-2" style="max-height: 100px; background-color: #fff;">
+                                {% endif %}
+                            </div>
+                            <!-- Campos hidden -->
+                            <input type="hidden" id="assinatura_cliente" name="assinatura_cliente" 
+                                   value="{{ ordem.assinatura_cliente if ordem else '' }}">
+                            <input type="hidden" id="assinatura_cliente_nome" name="assinatura_cliente_nome" 
+                                   value="{{ ordem.assinatura_cliente_nome if ordem else '' }}">
+                            <input type="hidden" id="assinatura_cliente_data" name="assinatura_cliente_data" 
+                                   value="{{ ordem.assinatura_cliente_data.isoformat() if ordem and ordem.assinatura_cliente_data else '' }}">
+                        </div>
+                    </div>
+
+                    <!-- Assinatura do Técnico -->
+                    <div class="col-md-6">
+                        <div class="assinatura-tecnico-container">
+                            <label class="form-label text-white fw-bold">
+                                <i class="fas fa-user-tie me-2 text-warning"></i>Assinatura do Técnico
+                            </label>
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-outline-warning" onclick="abrirModalAssinatura('tecnico')">
+                                    <i class="fas fa-signature me-2"></i>
+                                    {% if ordem and ordem.assinatura_tecnico %}Editar Assinatura{% else %}Assinar{% endif %}
+                                </button>
+                                {% if ordem and ordem.assinatura_tecnico %}
+                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="removerAssinatura('tecnico')">
+                                    <i class="fas fa-trash me-2"></i>Remover Assinatura
+                                </button>
+                                <div class="text-muted small mt-2">
+                                    <i class="fas fa-check-circle text-success me-1"></i>
+                                    Assinado por: {{ ordem.assinatura_tecnico_nome or 'Não informado' }}<br>
+                                    <i class="fas fa-clock text-info me-1"></i>
+                                    Data: {{ ordem.assinatura_tecnico_data.strftime('%d/%m/%Y %H:%M') if ordem.assinatura_tecnico_data else 'Não informada' }}
+                                </div>
+                                <img id="preview-assinatura-tecnico" src="{{ ordem.assinatura_tecnico }}" 
+                                     class="img-fluid border rounded mt-2" style="max-height: 100px; background-color: #fff;">
+                                {% endif %}
+                            </div>
+                            <!-- Campos hidden -->
+                            <input type="hidden" id="assinatura_tecnico" name="assinatura_tecnico" 
+                                   value="{{ ordem.assinatura_tecnico if ordem else '' }}">
+                            <input type="hidden" id="assinatura_tecnico_nome" name="assinatura_tecnico_nome" 
+                                   value="{{ ordem.assinatura_tecnico_nome if ordem else '' }}">
+                            <input type="hidden" id="assinatura_tecnico_data" name="assinatura_tecnico_data" 
+                                   value="{{ ordem.assinatura_tecnico_data.isoformat() if ordem and ordem.assinatura_tecnico_data else '' }}">
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3 mb-0">
+                    <i class="fas fa-info-circle me-2"></i>
+                    As assinaturas digitais serão incluídas no PDF da Ordem de Serviço
+                </div>
+            </div>
+        </div>
+
         <!-- BOTÕES -->
         <div class="card bg-dark border-secondary">
             <div class="card-body">
@@ -943,6 +1029,12 @@
 
 <!-- Sistema de Cálculo de Horários (arquivo externo) -->
 <script src="{{ url_for('static', filename='js/calculo_horarios.js', v='20260322-1') }}"></script>
+
+<!-- Biblioteca Signature Pad para assinaturas digitais -->
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
+<!-- Sistema de Assinaturas Digitais -->
+<script src="{{ url_for('static', filename='js/assinatura.js', v='20260323-1') }}"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -2476,4 +2568,86 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 </script>
+
+<!-- MODAIS DE ASSINATURA -->
+<!-- Modal Assinatura Cliente -->
+<div class="modal fade" id="modal-assinatura-cliente" tabindex="-1" aria-labelledby="modalAssinaturaClienteLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <h5 class="modal-title" id="modalAssinaturaClienteLabel">
+                    <i class="fas fa-signature me-2"></i>Assinatura do Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="nome-assinante-cliente" class="form-label">Nome Completo</label>
+                    <input type="text" class="form-control" id="nome-assinante-cliente" 
+                           placeholder="Digite o nome de quem está assinando"
+                           value="{{ ordem.assinatura_cliente_nome if ordem else '' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Assinatura</label>
+                    <div class="border rounded" style="background-color: #ffffff;">
+                        <canvas id="canvas-assinatura-cliente" style="width: 100%; height: 200px; cursor: crosshair;"></canvas>
+                    </div>
+                    <small class="text-muted">Desenhe sua assinatura acima usando o mouse ou toque na tela</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-warning" onclick="limparAssinatura('cliente')">
+                    <i class="fas fa-eraser me-2"></i>Limpar
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="salvarAssinatura('cliente')">
+                    <i class="fas fa-check me-2"></i>Salvar Assinatura
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Assinatura Técnico -->
+<div class="modal fade" id="modal-assinatura-tecnico" tabindex="-1" aria-labelledby="modalAssinaturaTecnicoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="modalAssinaturaTecnicoLabel">
+                    <i class="fas fa-signature me-2"></i>Assinatura do Técnico
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="nome-assinante-tecnico" class="form-label">Nome Completo</label>
+                    <input type="text" class="form-control" id="nome-assinante-tecnico" 
+                           placeholder="Digite o nome do técnico"
+                           value="{{ ordem.assinatura_tecnico_nome if ordem else '' }}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Assinatura</label>
+                    <div class="border rounded" style="background-color: #ffffff;">
+                        <canvas id="canvas-assinatura-tecnico" style="width: 100%; height: 200px; cursor: crosshair;"></canvas>
+                    </div>
+                    <small class="text-muted">Desenhe sua assinatura acima usando o mouse ou toque na tela</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-warning" onclick="limparAssinatura('tecnico')">
+                    <i class="fas fa-eraser me-2"></i>Limpar
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-warning text-dark" onclick="salvarAssinatura('tecnico')">
+                    <i class="fas fa-check me-2"></i>Salvar Assinatura
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

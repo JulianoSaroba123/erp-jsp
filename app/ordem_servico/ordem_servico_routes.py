@@ -36,7 +36,12 @@ def buscar_clientes_ativos():
     """
     try:
         # Busca básica e segura
-        clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+        # FIX: Usar text() para queries problemáticas com PostgreSQL
+        from sqlalchemy import select
+        
+        clientes = Cliente.query.filter(
+            Cliente.ativo == True
+        ).order_by(Cliente.nome).all()
         
         # Filtrar em Python para evitar problemas de SQL
         clientes_validos = []
@@ -48,7 +53,18 @@ def buscar_clientes_ativos():
         
     except Exception as e:
         print(f"❌ ERRO na busca de clientes: {e}")
-        return []
+        print(f"❌ Tentando busca alternativa...")
+        # Fallback: busca direta sem filtros complexos
+        try:
+            clientes = Cliente.query.all()
+            clientes_validos = [
+                c for c in clientes 
+                if c.ativo and c.nome and c.nome.strip()
+            ]
+            return clientes_validos
+        except Exception as e2:
+            print(f"❌ ERRO CRÍTICO na busca de clientes: {e2}")
+            return []
 
 # Configurações de upload
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'uploads', 'ordem_servico', 'anexos')
@@ -508,51 +524,19 @@ def listar():
     Suporte para busca por número, cliente ou status.
     """
     try:
-        # DEBUG: Log de início
-        print("=" * 80)
-        print("🔍 DEBUG ROTA /listar")
-        print("=" * 80)
-        
-        # DEBUG: Verificar TODAS as OS no banco
-        total_os = OrdemServico.query.count()
-        print(f"🔍 Total de OS no banco (SEM filtro): {total_os}")
-        
-        if total_os > 0:
-            print(f"🔍 Primeiras 5 OS no banco:")
-            primeiras = OrdemServico.query.limit(5).all()
-            for os in primeiras:
-                print(f"   ID={os.id}, numero={os.numero}, ativo={os.ativo} (tipo: {type(os.ativo)}), titulo={os.titulo}")
-        
         # Parâmetros de busca
         busca = request.args.get('busca', '').strip()
         status = request.args.get('status', '').strip()
         prioridade = request.args.get('prioridade', '').strip()
         cliente_id = request.args.get('cliente_id', '').strip()
         
-        print(f"\n📊 Parâmetros recebidos:")
-        print(f"   busca: '{busca}'")
-        print(f"   status: '{status}'")
-        print(f"   prioridade: '{prioridade}'")
-        print(f"   cliente_id: '{cliente_id}'")
-        
-        # ============================================================
-        # QUERY COM FILTRO EXPLÍCITO - ativo=True
-        # ============================================================
-        
-        # Log de diagnóstico
-        total_geral = OrdemServico.query.count()
-        total_ativas = OrdemServico.query.filter(OrdemServico.ativo == True).count()
-        print(f"\n📊 DIAGNÓSTICO:")
-        print(f"   Total de OS (sem filtro): {total_geral}")
-        print(f"   Total de OS ativas: {total_ativas}")
-        
         # Query principal - filtra OS ativas
-        query = OrdemServico.query.filter(OrdemServico.ativo == True)
+        # FIX: Usar filter() ao invés de filter_by() para evitar erro PostgreSQL
+        query = OrdemServico.query.filter(OrdemServico.ativo.is_(True))
         
         # Se o usuário for colaborador, mostra apenas ordens operacionais
         if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'colaborador':
             query = query.filter(OrdemServico.tipo_os == 'operacional')
-            print(f"👷 Usuário colaborador: filtrando apenas OS operacionais")
         
         # Aplica filtros de busca se houver
         if busca:
@@ -579,23 +563,11 @@ def listar():
         
         ordens = query.order_by(OrdemServico.data_abertura.desc()).all()
         
-        print(f"\n📋 Resultado da query:")
-        print(f"   Total de OS encontradas: {len(ordens)}")
-        if ordens:
-            print(f"   Primeiras 5 OS:")
-            for os in ordens[:5]:
-                print(f"   - {os.numero} | {os.titulo} | Status: {os.status}")
-        else:
-            print("   ⚠️ NENHUMA OS ENCONTRADA COM OS FILTROS APLICADOS")
-        
         # Lista de clientes para filtro
         clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
-        print(f"\n👥 Clientes ativos: {len(clientes)}")
         
         # Estatísticas
         stats = OrdemServico.estatisticas_dashboard()
-        print(f"\n📊 Estatísticas: {stats}")
-        print("=" * 80)
         
         return render_template('os/listar.html', 
                              ordens=ordens, 
@@ -754,7 +726,14 @@ def novo():
                 data_primeira_parcela=data_primeira_parcela if pode_gerir_financeiro else None,
                 # Novos campos para anexos e descrição de pagamento
                 descricao_pagamento=request.form.get('descricao_pagamento', '').strip() if pode_gerir_financeiro else '',
-                observacoes_anexos=request.form.get('observacoes_anexos', '').strip()
+                observacoes_anexos=request.form.get('observacoes_anexos', '').strip(),
+                # Assinaturas digitais
+                assinatura_cliente=request.form.get('assinatura_cliente', '').strip() or None,
+                assinatura_cliente_nome=request.form.get('assinatura_cliente_nome', '').strip() or None,
+                assinatura_cliente_data=datetime.fromisoformat(request.form.get('assinatura_cliente_data')) if request.form.get('assinatura_cliente_data') else None,
+                assinatura_tecnico=request.form.get('assinatura_tecnico', '').strip() or None,
+                assinatura_tecnico_nome=request.form.get('assinatura_tecnico_nome', '').strip() or None,
+                assinatura_tecnico_data=datetime.fromisoformat(request.form.get('assinatura_tecnico_data')) if request.form.get('assinatura_tecnico_data') else None
             )
 
             aplicar_descricao_por_modo(ordem, request.form, tipo_os_final)
@@ -1446,6 +1425,39 @@ def editar(id):
             if pode_gerir_financeiro:
                 ordem.descricao_pagamento = request.form.get('descricao_pagamento', '').strip()
             ordem.observacoes_anexos = request.form.get('observacoes_anexos', '').strip()
+            
+            # Atualizar assinaturas digitais
+            assinatura_cliente = request.form.get('assinatura_cliente', '').strip()
+            if assinatura_cliente:
+                ordem.assinatura_cliente = assinatura_cliente
+                ordem.assinatura_cliente_nome = request.form.get('assinatura_cliente_nome', '').strip() or None
+                assinatura_cliente_data_str = request.form.get('assinatura_cliente_data', '').strip()
+                if assinatura_cliente_data_str:
+                    try:
+                        ordem.assinatura_cliente_data = datetime.fromisoformat(assinatura_cliente_data_str)
+                    except:
+                        ordem.assinatura_cliente_data = None
+            elif not assinatura_cliente and not request.form.get('assinatura_cliente_nome'):
+                # Se não tem assinatura e não tem nome, limpar tudo
+                ordem.assinatura_cliente = None
+                ordem.assinatura_cliente_nome = None
+                ordem.assinatura_cliente_data = None
+            
+            assinatura_tecnico = request.form.get('assinatura_tecnico', '').strip()
+            if assinatura_tecnico:
+                ordem.assinatura_tecnico = assinatura_tecnico
+                ordem.assinatura_tecnico_nome = request.form.get('assinatura_tecnico_nome', '').strip() or None
+                assinatura_tecnico_data_str = request.form.get('assinatura_tecnico_data', '').strip()
+                if assinatura_tecnico_data_str:
+                    try:
+                        ordem.assinatura_tecnico_data = datetime.fromisoformat(assinatura_tecnico_data_str)
+                    except:
+                        ordem.assinatura_tecnico_data = None
+            elif not assinatura_tecnico and not request.form.get('assinatura_tecnico_nome'):
+                # Se não tem assinatura e não tem nome, limpar tudo
+                ordem.assinatura_tecnico = None
+                ordem.assinatura_tecnico_nome = None
+                ordem.assinatura_tecnico_data = None
             
             # Validações
             if not ordem.titulo or ordem.titulo == 'OS sem título':

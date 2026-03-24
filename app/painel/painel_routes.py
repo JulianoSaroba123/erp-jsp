@@ -48,9 +48,9 @@ def dashboard():
         
         # === ESTATÍSTICAS BÁSICAS ===
         stats_basicas = {
-            'total_clientes': Cliente.query.filter_by(ativo=True).count(),
-            'total_fornecedores': Fornecedor.query.filter_by(ativo=True).count(),
-            'total_produtos': Produto.query.filter_by(ativo=True).count(),
+            'total_clientes': Cliente.query.filter(Cliente.ativo.is_(True)).count(),
+            'total_fornecedores': Fornecedor.query.filter(Fornecedor.ativo.is_(True)).count(),
+            'total_produtos': Produto.query.filter(Produto.ativo.is_(True)).count(),
             'produtos_estoque_baixo': len(Produto.produtos_estoque_baixo()),
         }
         
@@ -74,7 +74,7 @@ def dashboard():
         
         # === DADOS AUXILIARES ===
         # Clientes recentes (últimos 5)
-        clientes_recentes = Cliente.query.filter_by(ativo=True).order_by(
+        clientes_recentes = Cliente.query.filter(Cliente.ativo.is_(True)).order_by(
             Cliente.criado_em.desc()
         ).limit(5).all()
         
@@ -82,7 +82,7 @@ def dashboard():
         produtos_estoque_baixo = Produto.produtos_estoque_baixo()[:5]
         
         # Ordens de serviço recentes (últimas 5)
-        ordens_recentes = OrdemServico.query.filter_by(ativo=True).order_by(
+        ordens_recentes = OrdemServico.query.filter(OrdemServico.ativo.is_(True)).order_by(
             OrdemServico.criado_em.desc()
         ).limit(5).all()
         

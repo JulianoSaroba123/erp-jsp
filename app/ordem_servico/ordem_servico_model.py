@@ -141,8 +141,8 @@ class OrdemServico(BaseModel):
     hora_saida = db.Column(db.Time)          # Saída no final do período
     hora_entrada_extra = db.Column(db.Time)  # Entrada para horas extras (opcional)
     hora_saida_extra = db.Column(db.Time)    # Saída após horas extras (opcional)
-    horas_normais = db.Column(db.Numeric(10, 2))  # Horas normais em formato decimal
-    horas_extras = db.Column(db.Numeric(10, 2))  # Horas extras em formato decimal
+    horas_normais = db.Column(db.String(50))  # Horas normais (ex: '8h 30min' ou decimal)
+    horas_extras = db.Column(db.String(50))  # Horas extras (ex: '2h 15min' ou decimal)
     
     # Condições de Pagamento
     condicao_pagamento = db.Column(db.String(50), default='a_vista')  # a_vista, parcelado
@@ -155,6 +155,14 @@ class OrdemServico(BaseModel):
     
     # Anexos e Documentos
     observacoes_anexos = db.Column(db.Text)  # Observações sobre anexos
+    
+    # Assinaturas Digitais
+    assinatura_cliente = db.Column(db.Text)  # Assinatura do cliente em base64
+    assinatura_cliente_nome = db.Column(db.String(200))  # Nome de quem assinou (cliente)
+    assinatura_cliente_data = db.Column(db.DateTime)  # Data/hora da assinatura do cliente
+    assinatura_tecnico = db.Column(db.Text)  # Assinatura do técnico em base64
+    assinatura_tecnico_nome = db.Column(db.String(200))  # Nome do técnico que assinou
+    assinatura_tecnico_data = db.Column(db.DateTime)  # Data/hora da assinatura do técnico
     
     # Meta campos herdados de BaseModel:
     # id, data_criacao, data_atualizacao, ativo, usuario_criacao, usuario_atualizacao
@@ -356,27 +364,38 @@ class OrdemServico(BaseModel):
         """Retorna horas normais formatadas (ex: '8h 30min')."""
         if not self.horas_normais:
             return '0h'
-        
-        horas_decimal = float(self.horas_normais)
-        horas_inteiras = int(horas_decimal)
-        minutos = int((horas_decimal - horas_inteiras) * 60)
-        return f'{horas_inteiras}h {minutos}min' if minutos > 0 else f'{horas_inteiras}h'
+        val = str(self.horas_normais)
+        # Se já está no formato 'Xh Ymin', retorna como está
+        if 'h' in val:
+            return val
+        try:
+            horas_decimal = float(val)
+            horas_inteiras = int(horas_decimal)
+            minutos = int((horas_decimal - horas_inteiras) * 60)
+            return f'{horas_inteiras}h {minutos}min' if minutos > 0 else f'{horas_inteiras}h'
+        except (ValueError, TypeError):
+            return val
     
     @property
     def horas_extras_formatado(self):
         """Retorna horas extras formatadas (ex: '2h 30min')."""
         if not self.horas_extras:
             return '0h'
-        
-        horas_decimal = float(self.horas_extras)
-        horas_inteiras = int(horas_decimal)
-        minutos = int((horas_decimal - horas_inteiras) * 60)
-        return f'{horas_inteiras}h {minutos}min' if minutos > 0 else f'{horas_inteiras}h'
+        val = str(self.horas_extras)
+        if 'h' in val:
+            return val
+        try:
+            horas_decimal = float(val)
+            horas_inteiras = int(horas_decimal)
+            minutos = int((horas_decimal - horas_inteiras) * 60)
+            return f'{horas_inteiras}h {minutos}min' if minutos > 0 else f'{horas_inteiras}h'
+        except (ValueError, TypeError):
+            return val
     
     @classmethod
     def gerar_proximo_numero(cls):
         """
-        Gera o próximo número de OS no formato OS2025001, OS2025002, etc.
+        Gera o próximo número de OS no formato OS2026001, OS2026002, etc.
         
         Sistema inteligente que:
         - Usa o ano atual
@@ -384,42 +403,63 @@ class OrdemServico(BaseModel):
         - Garante sequência sem duplicatas
         - Formato: OS + ANO + SEQUENCIAL (4 dígitos)
         """
+        from sqlalchemy import text
+        
         ano_atual = date.today().year
         prefixo = f"OS{ano_atual}"
         
-        # Busca a OS com maior número do ano usando ORDER BY para garantir eficiência
-        ultima_os = cls.query.filter(
-            cls.numero.like(f"{prefixo}%"),
-            cls.ativo == True
-        ).order_by(cls.numero.desc()).first()
-        
-        maior_numero = 0
-        
-        # Se encontrou alguma OS do ano, extrai o número
-        if ultima_os:
-            try:
-                # Extrai apenas a parte numérica (remove "OS2025")
-                parte_numerica = ultima_os.numero.replace(prefixo, "")
-                if parte_numerica.isdigit():
-                    maior_numero = int(parte_numerica)
-            except (ValueError, AttributeError):
-                # Se der erro, começa do 0
-                maior_numero = 0
-        
-        # Próximo número é sempre maior + 1
-        proximo_numero = maior_numero + 1
-        
-        # Gera o número final no formato OS2025001
-        numero_os = f"{prefixo}{proximo_numero:04d}"
-        
-        # Verificação de segurança: garante que não existe duplicata
-        tentativas = 0
-        while cls.query.filter_by(numero=numero_os).first() and tentativas < 100:
-            proximo_numero += 1
+        try:
+            # FIX: Usar SQL puro para evitar erro "Unknown PG numeric type: 1043"
+            # Query raw SQL compatível com PostgreSQL e SQLite
+            sql = text("""
+                SELECT numero 
+                FROM ordem_servico 
+                WHERE numero LIKE :prefixo AND ativo = true
+                ORDER BY numero DESC 
+                LIMIT 1
+            """)
+            
+            result = db.session.execute(sql, {"prefixo": f"{prefixo}%"})
+            ultima_os = result.first()
+            
+            maior_numero = 0
+            
+            if ultima_os:
+                try:
+                    numero_str = ultima_os[0]  # Pega o primeiro campo do resultado
+                    # Extrai apenas a parte numérica (remove "OS2026")
+                    parte_numerica = numero_str.replace(prefixo, "")
+                    if parte_numerica.isdigit():
+                        maior_numero = int(parte_numerica)
+                except (ValueError, AttributeError, IndexError):
+                    maior_numero = 0
+            
+            # Próximo número é sempre maior + 1
+            proximo_numero = maior_numero + 1
             numero_os = f"{prefixo}{proximo_numero:04d}"
-            tentativas += 1
-        
-        return numero_os
+            
+            # Verificação de segurança contra duplicatas
+            tentativas = 0
+            while tentativas < 100:
+                check_sql = text("SELECT COUNT(*) FROM ordem_servico WHERE numero = :numero")
+                count_result = db.session.execute(check_sql, {"numero": numero_os})
+                count = count_result.scalar()
+                
+                if count == 0:
+                    break
+                    
+                proximo_numero += 1
+                numero_os = f"{prefixo}{proximo_numero:04d}"
+                tentativas += 1
+            
+            return numero_os
+            
+        except Exception as e:
+            # Fallback EXTREMO: gera número timestamp-based
+            print(f"⚠️ ERRO CRÍTICO ao gerar número de OS: {e}")
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%H%M%S")
+            return f"{prefixo}{timestamp[-4:]}"
     
     @classmethod
     def buscar_por_numero(cls, numero):

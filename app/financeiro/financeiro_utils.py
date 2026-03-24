@@ -113,140 +113,82 @@ def atualizar_status_financeiro_ordem(ordem_servico):
 def calcular_metricas_dashboard():
     """
     Calcula métricas financeiras para o dashboard.
-    
-    Returns:
-        dict: Dicionário com métricas financeiras
+    USA SQL PURO para evitar incompatibilidade psycopg3 + SQLAlchemy com VARCHAR.
     """
     try:
-        from app.ordem_servico.ordem_servico_model import OrdemServico
-        
-        # Data atual para filtros
+        from sqlalchemy import text
+
         hoje = date.today()
-        mes_atual = hoje.month
-        ano_atual = hoje.year
-        
-        # === ORDENS DE SERVIÇO ===
-        # Total de ordens de serviço
-        total_ordens = OrdemServico.query.filter_by(ativo=True).count()
-        
-        # Ordens por status
-        ordens_abertas = OrdemServico.query.filter(
-            OrdemServico.ativo == True,
-            OrdemServico.status.in_(['aberta', 'pendente', 'iniciada', 'em_andamento'])
-        ).count()
-        
-        ordens_concluidas = OrdemServico.query.filter_by(
-            ativo=True, 
-            status='concluida'
-        ).count()
-        
-        # Valor total das ordens de serviço (todas as ativas)
-        valor_total_ordens = db.session.query(
-            db.func.sum(OrdemServico.valor_total)
-        ).filter(
-            OrdemServico.ativo == True,
-            OrdemServico.valor_total.isnot(None)
-        ).scalar() or 0
-        
-        # Valor das ordens concluídas (receita realizada)
-        valor_ordens_concluidas = db.session.query(
-            db.func.sum(OrdemServico.valor_total)
-        ).filter(
-            OrdemServico.ativo == True,
-            OrdemServico.status == 'concluida',
-            OrdemServico.valor_total.isnot(None)
-        ).scalar() or 0
-        
-        # Valor das ordens em aberto (receita a receber)
-        valor_ordens_abertas = db.session.query(
-            db.func.sum(OrdemServico.valor_total)
-        ).filter(
-            OrdemServico.ativo == True,
-            OrdemServico.status.in_(['aberta', 'pendente', 'iniciada', 'em_andamento']),
-            OrdemServico.valor_total.isnot(None)
-        ).scalar() or 0
-        
-        # === RECEITA DO MÊS ATUAL ===
-        # Ordens concluídas neste mês
-        ordens_mes = OrdemServico.query.filter(
-            OrdemServico.ativo == True,
-            OrdemServico.status == 'concluida',
-            db.extract('month', OrdemServico.data_conclusao) == mes_atual,
-            db.extract('year', OrdemServico.data_conclusao) == ano_atual
-        ).all()
-        
-        receita_mes = sum(float(ordem.valor_total or 0) for ordem in ordens_mes)
-        qtd_ordens_mes = len(ordens_mes)
-        
-        # === LANÇAMENTOS FINANCEIROS ===
-        receitas_mes = LancamentoFinanceiro.query.filter(
-            LancamentoFinanceiro.ativo == True,
-            LancamentoFinanceiro.tipo.in_(['receita', 'conta_receber']),
-            LancamentoFinanceiro.status == 'recebido',
-            db.extract('month', LancamentoFinanceiro.data_pagamento) == mes_atual,
-            db.extract('year', LancamentoFinanceiro.data_pagamento) == ano_atual
-        ).all()
-        
-        despesas_mes = LancamentoFinanceiro.query.filter(
-            LancamentoFinanceiro.ativo == True,
-            LancamentoFinanceiro.tipo.in_(['despesa', 'conta_pagar']),
-            LancamentoFinanceiro.status == 'pago',
-            db.extract('month', LancamentoFinanceiro.data_pagamento) == mes_atual,
-            db.extract('year', LancamentoFinanceiro.data_pagamento) == ano_atual
-        ).all()
-        
-        total_receitas_mes = sum(float(r.valor) for r in receitas_mes)
-        total_despesas_mes = sum(float(d.valor) for d in despesas_mes)
+        primeiro_dia_mes = date(hoje.year, hoje.month, 1)
+        if hoje.month == 12:
+            ultimo_dia_mes = date(hoje.year + 1, 1, 1)
+        else:
+            ultimo_dia_mes = date(hoje.year, hoje.month + 1, 1)
+
+        # === ORDENS DE SERVIÇO (SQL puro) ===
+        r = db.session.execute(text("""
+            SELECT
+                COUNT(*) FILTER (WHERE ativo = true) AS total_ordens,
+                COUNT(*) FILTER (WHERE ativo = true AND status IN ('aberta','pendente','iniciada','em_andamento')) AS ordens_abertas,
+                COUNT(*) FILTER (WHERE ativo = true AND status = 'concluida') AS ordens_concluidas,
+                COALESCE(SUM(valor_total) FILTER (WHERE ativo = true), 0) AS valor_total_ordens,
+                COALESCE(SUM(valor_total) FILTER (WHERE ativo = true AND status = 'concluida'), 0) AS valor_ordens_concluidas,
+                COALESCE(SUM(valor_total) FILTER (WHERE ativo = true AND status IN ('aberta','pendente','iniciada','em_andamento')), 0) AS valor_ordens_abertas,
+                COALESCE(SUM(valor_total) FILTER (WHERE ativo = true AND status = 'concluida' AND data_conclusao >= :p1 AND data_conclusao < :p2), 0) AS receita_mes,
+                COUNT(*) FILTER (WHERE ativo = true AND status = 'concluida' AND data_conclusao >= :p1 AND data_conclusao < :p2) AS qtd_ordens_mes
+            FROM ordem_servico
+        """), {"p1": primeiro_dia_mes, "p2": ultimo_dia_mes}).first()
+
+        total_ordens = int(r[0] or 0)
+        ordens_abertas = int(r[1] or 0)
+        ordens_concluidas = int(r[2] or 0)
+        valor_total_ordens = float(r[3] or 0)
+        valor_ordens_concluidas = float(r[4] or 0)
+        valor_ordens_abertas = float(r[5] or 0)
+        receita_mes = float(r[6] or 0)
+        qtd_ordens_mes = int(r[7] or 0)
+
+        # === LANÇAMENTOS FINANCEIROS (SQL puro) ===
+        rf = db.session.execute(text("""
+            SELECT
+                COALESCE(SUM(valor) FILTER (WHERE ativo = true AND tipo IN ('receita','conta_receber') AND status = 'recebido' AND data_pagamento >= :p1 AND data_pagamento < :p2), 0) AS receitas_mes,
+                COALESCE(SUM(valor) FILTER (WHERE ativo = true AND tipo IN ('despesa','conta_pagar') AND status = 'pago' AND data_pagamento >= :p1 AND data_pagamento < :p2), 0) AS despesas_mes,
+                COALESCE(SUM(valor) FILTER (WHERE ativo = true AND tipo = 'conta_receber' AND status = 'pendente'), 0) AS contas_receber,
+                COUNT(*) FILTER (WHERE ativo = true AND tipo = 'conta_receber' AND status = 'pendente') AS qtd_receber,
+                COALESCE(SUM(valor) FILTER (WHERE ativo = true AND tipo = 'conta_pagar' AND status = 'pendente'), 0) AS contas_pagar,
+                COUNT(*) FILTER (WHERE ativo = true AND tipo = 'conta_pagar' AND status = 'pendente') AS qtd_pagar
+            FROM lancamentos_financeiros
+        """), {"p1": primeiro_dia_mes, "p2": ultimo_dia_mes}).first()
+
+        total_receitas_mes = float(rf[0] or 0)
+        total_despesas_mes = float(rf[1] or 0)
+        total_contas_receber = float(rf[2] or 0)
+        qtd_contas_receber = int(rf[3] or 0)
+        total_contas_pagar = float(rf[4] or 0)
+        qtd_contas_pagar = int(rf[5] or 0)
         saldo_mes = total_receitas_mes - total_despesas_mes
-        
-        # Contas a receber (pendentes)
-        contas_receber = LancamentoFinanceiro.query.filter(
-            LancamentoFinanceiro.ativo == True,
-            LancamentoFinanceiro.tipo == 'conta_receber',
-            LancamentoFinanceiro.status == 'pendente'
-        ).all()
-        
-        total_contas_receber = sum(float(c.valor) for c in contas_receber)
-        
-        # Contas a pagar (pendentes)
-        contas_pagar = LancamentoFinanceiro.query.filter(
-            LancamentoFinanceiro.ativo == True,
-            LancamentoFinanceiro.tipo == 'conta_pagar',
-            LancamentoFinanceiro.status == 'pendente'
-        ).all()
-        
-        total_contas_pagar = sum(float(c.valor) for c in contas_pagar)
-        
-        # === RETORNO ===
+
         return {
-            # Ordens de Serviço
             'total_ordens': total_ordens,
             'ordens_abertas': ordens_abertas,
             'ordens_concluidas': ordens_concluidas,
-            'valor_total_ordens': float(valor_total_ordens),
-            'valor_ordens_concluidas': float(valor_ordens_concluidas),
-            'valor_ordens_abertas': float(valor_ordens_abertas),
-            
-            # Receita do Mês
+            'valor_total_ordens': valor_total_ordens,
+            'valor_ordens_concluidas': valor_ordens_concluidas,
+            'valor_ordens_abertas': valor_ordens_abertas,
             'receita_mes': receita_mes,
             'qtd_ordens_mes': qtd_ordens_mes,
-            
-            # Financeiro
             'total_receitas_mes': total_receitas_mes,
             'total_despesas_mes': total_despesas_mes,
             'saldo_mes': saldo_mes,
             'total_contas_receber': total_contas_receber,
             'total_contas_pagar': total_contas_pagar,
-            'qtd_contas_receber': len(contas_receber),
-            'qtd_contas_pagar': len(contas_pagar),
-            
-            # Resumo
-            'fluxo_caixa': float(valor_ordens_concluidas) + total_contas_receber - total_contas_pagar
+            'qtd_contas_receber': qtd_contas_receber,
+            'qtd_contas_pagar': qtd_contas_pagar,
+            'fluxo_caixa': valor_ordens_concluidas + total_contas_receber - total_contas_pagar
         }
-        
+
     except Exception as e:
         print(f" Erro ao calcular métricas do dashboard: {e}")
-        # Retornar valores zerados em caso de erro
         return {
             'total_ordens': 0, 'ordens_abertas': 0, 'ordens_concluidas': 0,
             'valor_total_ordens': 0, 'valor_ordens_concluidas': 0, 'valor_ordens_abertas': 0,

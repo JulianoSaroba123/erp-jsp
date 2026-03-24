@@ -977,15 +977,43 @@
         <!-- ASSINATURAS -->
         <div class="signatures">
             <div class="signature-box">
+                {% if ordem.assinatura_tecnico %}
+                <div style="text-align: center; margin-bottom: 5px;">
+                    <img src="{{ ordem.assinatura_tecnico }}" 
+                         alt="Assinatura do Técnico" 
+                         style="max-width: 250px; max-height: 80px; border: 1px solid #ddd; padding: 5px; background: white;">
+                </div>
+                {% endif %}
                 <div class="signature-line">
                     <div class="signature-title">Assinatura do Técnico</div>
-                    <div class="signature-name">{{ ordem.responsavel if ordem.responsavel else 'JSP ELÉTRICA INDUSTRIAL' }}</div>
+                    <div class="signature-name">
+                        {{ ordem.assinatura_tecnico_nome if ordem.assinatura_tecnico_nome else (ordem.responsavel if ordem.responsavel else 'JSP ELÉTRICA INDUSTRIAL') }}
+                    </div>
+                    {% if ordem.assinatura_tecnico_data %}
+                    <div style="font-size: 8px; color: #666; margin-top: 2px;">
+                        Assinado em: {{ ordem.assinatura_tecnico_data.strftime('%d/%m/%Y às %H:%M') }}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             <div class="signature-box">
+                {% if ordem.assinatura_cliente %}
+                <div style="text-align: center; margin-bottom: 5px;">
+                    <img src="{{ ordem.assinatura_cliente }}" 
+                         alt="Assinatura do Cliente" 
+                         style="max-width: 250px; max-height: 80px; border: 1px solid #ddd; padding: 5px; background: white;">
+                </div>
+                {% endif %}
                 <div class="signature-line">
                     <div class="signature-title">Assinatura do Cliente</div>
-                    <div class="signature-name">{{ ordem.cliente.nome if ordem.cliente else '' }}</div>
+                    <div class="signature-name">
+                        {{ ordem.assinatura_cliente_nome if ordem.assinatura_cliente_nome else (ordem.cliente.nome if ordem.cliente else '') }}
+                    </div>
+                    {% if ordem.assinatura_cliente_data %}
+                    <div style="font-size: 8px; color: #666; margin-top: 2px;">
+                        Assinado em: {{ ordem.assinatura_cliente_data.strftime('%d/%m/%Y às %H:%M') }}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
