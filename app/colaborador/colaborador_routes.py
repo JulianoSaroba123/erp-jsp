@@ -118,6 +118,7 @@ def novo():
                 data_admissao=datetime.strptime(request.form.get('data_admissao'), '%Y-%m-%d').date() 
                     if request.form.get('data_admissao') else None,
                 valor_hora=float(request.form.get('valor_hora', 0) or 0),
+                salario_mensal=float(request.form.get('salario_mensal', 0) or 0),
                 observacoes=request.form.get('observacoes'),
                 ativo=True
             )
@@ -173,6 +174,7 @@ def editar(id):
             colaborador.cargo = request.form.get('cargo', 'tecnico')
             colaborador.especialidade = request.form.get('especialidade')
             colaborador.valor_hora = float(request.form.get('valor_hora', 0) or 0)
+            colaborador.salario_mensal = float(request.form.get('salario_mensal', 0) or 0)
             colaborador.observacoes = request.form.get('observacoes')
             
             # Datas

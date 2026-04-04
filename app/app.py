@@ -374,7 +374,20 @@ def create_app(config_name=None):
             except Exception as e:
                 db.session.rollback()
                 print(f"   ⚠️ Erro na migração de plano_contas: {e}")
-            
+
+            # Migração: Adicionar coluna salario_mensal em colaborador
+            try:
+                inspector = inspect(db.engine)
+                if 'colaborador' in inspector.get_table_names():
+                    colunas_colab = [c['name'] for c in inspector.get_columns('colaborador')]
+                    if 'salario_mensal' not in colunas_colab:
+                        db.session.execute(text("ALTER TABLE colaborador ADD COLUMN salario_mensal NUMERIC(10,2) DEFAULT 0"))
+                        db.session.commit()
+                        print("[OK] Coluna 'salario_mensal' adicionada em colaborador!")
+            except Exception as e:
+                db.session.rollback()
+                print(f"   ⚠️ Erro na migração salario_mensal: {e}")
+
             print("✅ Todas as migrações concluídas!\n")
             
             # Cria usuário admin padrão se não existir nenhum usuário
@@ -459,28 +472,66 @@ def create_app(config_name=None):
             db.session.rollback()
             print(f" ⚠ Aviso na migração de horas varchar->numeric: {e}")
 
-        # Migração: adicionar colunas de assinaturas digitais em ordem_servico
+        # Migração: adicionar colunas de assinaturas digitais e demais campos em ordem_servico
         try:
             from sqlalchemy import text, inspect
             inspector = inspect(db.engine)
             if 'ordem_servico' in inspector.get_table_names():
                 colunas_os = [col['name'] for col in inspector.get_columns('ordem_servico')]
-                assinatura_cols = {
+                # Todas as colunas que podem estar faltando no Render
+                colunas_ordem_servico = {
+                    # Assinaturas digitais
                     'assinatura_cliente': 'TEXT',
                     'assinatura_cliente_nome': 'VARCHAR(200)',
                     'assinatura_cliente_data': 'TIMESTAMP',
                     'assinatura_tecnico': 'TEXT',
                     'assinatura_tecnico_nome': 'VARCHAR(200)',
                     'assinatura_tecnico_data': 'TIMESTAMP',
+                    # Tipo de OS e modo operacional
+                    'tipo_os': "VARCHAR(20) DEFAULT 'comercial'",
+                    # Campos de tempo detalhado
+                    'intervalo_almoco': 'INTEGER DEFAULT 60',
+                    'hora_entrada_manha': 'TIME',
+                    'hora_saida_almoco': 'TIME',
+                    'hora_retorno_almoco': 'TIME',
+                    'hora_saida': 'TIME',
+                    'hora_entrada_extra': 'TIME',
+                    'hora_saida_extra': 'TIME',
+                    # Campos de solicitação
+                    'solicitante': 'VARCHAR(200)',
+                    'descricao_problema': 'TEXT',
+                    'diagnostico_tecnico': 'TEXT',
+                    'solucao': 'TEXT',
+                    # Campos financeiros extras
+                    'valor_entrada': 'NUMERIC(10,2) DEFAULT 0',
+                    'data_primeira_parcela': 'DATE',
+                    'data_vencimento_pagamento': 'DATE',
+                    'descricao_pagamento': 'TEXT',
+                    'status_pagamento': "VARCHAR(20) DEFAULT 'pendente'",
+                    'observacoes_anexos': 'TEXT',
+                    # Controle de KM
+                    'km_inicial': 'INTEGER',
+                    'km_final': 'INTEGER',
+                    'total_km': 'VARCHAR(20)',
+                    # Proposta vinculada
+                    'proposta_id': 'INTEGER',
+                    # Preferência de relatório
+                    'incluir_imagens_relatorio': 'BOOLEAN DEFAULT FALSE',
+                    # Data de abertura (pode estar faltando em DBs antigas)
+                    'data_abertura': 'DATE',
                 }
-                for col_name, col_type in assinatura_cols.items():
+                for col_name, col_type in colunas_ordem_servico.items():
                     if col_name not in colunas_os:
-                        db.session.execute(text(f"ALTER TABLE ordem_servico ADD COLUMN {col_name} {col_type}"))
-                        db.session.commit()
-                        print(f"[OK] Coluna {col_name} adicionada em ordem_servico!")
+                        try:
+                            db.session.execute(text(f"ALTER TABLE ordem_servico ADD COLUMN {col_name} {col_type}"))
+                            db.session.commit()
+                            print(f"[OK] Coluna {col_name} adicionada em ordem_servico!")
+                        except Exception as col_err:
+                            db.session.rollback()
+                            print(f" ⚠ Não foi possível adicionar {col_name}: {col_err}")
         except Exception as e:
             db.session.rollback()
-            print(f" ⚠ Aviso na migração de assinaturas digitais: {e}")
+            print(f" ⚠ Aviso na migração de colunas de ordem_servico: {e}")
 
         # Corrige sequências de ID (PostgreSQL)
         try:

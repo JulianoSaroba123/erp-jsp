@@ -493,34 +493,56 @@
                                 <tr>
                                     <th>Colaborador</th>
                                     <th class="text-end">Total de Horas</th>
-                                    <th class="text-end">Valor/Hora</th>
-                                    <th class="text-end fw-bold">Custo R$</th>
+                                    <th class="text-end text-success">Valor/h Cliente</th>
+                                    <th class="text-end text-success fw-bold">Receita M.O.</th>
+                                    <th class="text-end text-danger">Custo Real/h<br><small class="fw-normal">(salário ÷ 220h)</small></th>
+                                    <th class="text-end text-danger fw-bold">Custo Real M.O.</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% set ns = namespace(total_custo=0.0, sem_valor=false) %}
+                                {% set ns = namespace(total_receita=0.0, total_custo_real=0.0, sem_vh=false, sem_salario=false) %}
                                 {% for trabalho in ordem.colaboradores_trabalho if trabalho.ativo %}
                                     {% set horas = trabalho.total_horas|float if trabalho.total_horas else 0.0 %}
                                     {% set vh = trabalho.colaborador.valor_hora|float if trabalho.colaborador and trabalho.colaborador.valor_hora else 0.0 %}
-                                    {% set custo = horas * vh %}
-                                    {% set ns.total_custo = ns.total_custo + custo %}
-                                    {% if vh == 0.0 %}{% set ns.sem_valor = true %}{% endif %}
+                                    {% set salario = trabalho.colaborador.salario_mensal|float if trabalho.colaborador and trabalho.colaborador.salario_mensal else 0.0 %}
+                                    {% set custo_hora_real = salario / 220.0 if salario > 0 else 0.0 %}
+                                    {% set receita = horas * vh %}
+                                    {% set custo_real = horas * custo_hora_real %}
+                                    {% set ns.total_receita = ns.total_receita + receita %}
+                                    {% set ns.total_custo_real = ns.total_custo_real + custo_real %}
+                                    {% if vh == 0.0 %}{% set ns.sem_vh = true %}{% endif %}
+                                    {% if salario == 0.0 %}{% set ns.sem_salario = true %}{% endif %}
                                 <tr>
                                     <td class="fw-semibold">{{ trabalho.colaborador.nome if trabalho.colaborador else '-' }}</td>
                                     <td class="text-end">
                                         <span class="badge bg-info text-dark">{{ trabalho.total_horas_formatado }}</span>
-                                        <small class="text-muted ms-1">({{ "%.2f"|format(horas)|replace('.', ',') }}h decimal)</small>
+                                        <small class="text-muted ms-1">({{ "%.2f"|format(horas)|replace('.', ',') }}h)</small>
                                     </td>
                                     <td class="text-end">
                                         {% if vh > 0 %}
                                             <span class="text-success fw-semibold">R$ {{ "%.2f"|format(vh)|replace('.', ',') }}/h</span>
                                         {% else %}
-                                            <span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Não configurado</span>
+                                            <span class="text-muted">—</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-end fw-bold">
                                         {% if vh > 0 %}
-                                            <span class="text-success">R$ {{ "%.2f"|format(custo)|replace('.', ',') }}</span>
+                                            <span class="text-success">R$ {{ "%.2f"|format(receita)|replace('.', ',') }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {% if salario > 0 %}
+                                            <span class="text-danger">R$ {{ "%.2f"|format(custo_hora_real)|replace('.', ',') }}/h</span>
+                                            <br><small class="text-muted">R$ {{ "%.2f"|format(salario)|replace('.', ',') }}/mês</small>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end fw-bold">
+                                        {% if salario > 0 %}
+                                            <span class="text-danger">R$ {{ "%.2f"|format(custo_real)|replace('.', ',') }}</span>
                                         {% else %}
                                             <span class="text-muted">—</span>
                                         {% endif %}
@@ -530,20 +552,43 @@
                             </tbody>
                             <tfoot>
                                 <tr style="background: #fef3c7;">
-                                    <td colspan="3" class="text-end fw-bold" style="color: #92400e;">
-                                        <i class="fas fa-coins me-2"></i>CUSTO TOTAL DE MÃO DE OBRA:
+                                    <td colspan="3" class="text-end fw-semibold" style="color: #065f46;">
+                                        <i class="fas fa-arrow-up me-1"></i>RECEITA TOTAL M.O.:
                                     </td>
-                                    <td class="text-end fw-bold h5 mb-0" style="color: #065f46;">
-                                        R$ {{ "%.2f"|format(ns.total_custo)|replace('.', ',') }}
+                                    <td class="text-end fw-bold" style="color: #065f46;">
+                                        R$ {{ "%.2f"|format(ns.total_receita)|replace('.', ',') }}
+                                    </td>
+                                    <td class="text-end fw-semibold text-danger">
+                                        <i class="fas fa-arrow-down me-1"></i>CUSTO TOTAL REAL:
+                                    </td>
+                                    <td class="text-end fw-bold text-danger">
+                                        R$ {{ "%.2f"|format(ns.total_custo_real)|replace('.', ',') }}
                                     </td>
                                 </tr>
+                                {% if ns.total_receita > 0 or ns.total_custo_real > 0 %}
+                                <tr style="background: #d1fae5;">
+                                    <td colspan="5" class="text-end fw-bold" style="color: #065f46;">
+                                        <i class="fas fa-chart-line me-2"></i>MARGEM M.O. (receita − custo):
+                                    </td>
+                                    <td class="text-end fw-bold h6 mb-0" style="color: #065f46;">
+                                        {% set margem = ns.total_receita - ns.total_custo_real %}
+                                        <span class="{{ 'text-success' if margem >= 0 else 'text-danger' }}">
+                                            R$ {{ "%.2f"|format(margem)|replace('.', ',') }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endif %}
                             </tfoot>
                         </table>
                     </div>
-                    {% if ns.sem_valor %}
+                    {% if ns.sem_vh or ns.sem_salario %}
                     <div class="alert alert-warning mt-3 mb-0 py-2">
                         <i class="fas fa-exclamation-triangle me-2"></i>
-                        <strong>Atenção:</strong> Um ou mais colaboradores não têm valor/hora configurado.
+                        <strong>Atenção:</strong> Um ou mais colaboradores não têm
+                        {% if ns.sem_vh %}valor/hora do cliente{% endif %}
+                        {% if ns.sem_vh and ns.sem_salario %} e {% endif %}
+                        {% if ns.sem_salario %}salário mensal{% endif %}
+                        configurado.
                         Configure em <a href="{{ url_for('colaborador.listar') }}" class="alert-link">Cadastro de Colaboradores</a>.
                     </div>
                     {% endif %}

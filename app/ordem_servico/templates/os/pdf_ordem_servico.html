@@ -742,25 +742,30 @@
         <!-- CUSTO DE MÃO DE OBRA (apenas quando solicitado - parâmetro com_custos) -->
         {% if com_custos and ordem.colaboradores_trabalho %}
         <div class="section">
-            <div class="section-title">💰 CUSTO DE MÃO DE OBRA</div>
+            <div class="section-title">💰 CUSTO DE MÃO DE OBRA — RECEITA × CUSTO REAL</div>
             <div class="section-content">
                 <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
                     <thead>
                         <tr style="background-color: #fef3c7; border-bottom: 2px solid #d97706;">
                             <th style="padding: 8px; text-align: left; color: #92400e;">Colaborador</th>
-                            <th style="padding: 8px; text-align: center; color: #92400e;">Total de Horas</th>
-                            <th style="padding: 8px; text-align: center; color: #92400e;">Horas Decimal</th>
-                            <th style="padding: 8px; text-align: center; color: #92400e;">Valor/Hora</th>
-                            <th style="padding: 8px; text-align: right; color: #92400e; font-weight: bold;">Custo R$</th>
+                            <th style="padding: 8px; text-align: center; color: #92400e;">Horas</th>
+                            <th style="padding: 8px; text-align: center; color: #065f46;">Valor/h<br>Cliente</th>
+                            <th style="padding: 8px; text-align: right; color: #065f46; font-weight: bold;">Receita M.O.</th>
+                            <th style="padding: 8px; text-align: center; color: #dc2626;">Custo Real/h<br>(÷ 220h)</th>
+                            <th style="padding: 8px; text-align: right; color: #dc2626; font-weight: bold;">Custo Real M.O.</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% set ns = namespace(total_custo=0.0) %}
+                        {% set ns = namespace(total_receita=0.0, total_custo_real=0.0) %}
                         {% for trabalho in ordem.colaboradores_trabalho if trabalho.ativo %}
                             {% set horas = trabalho.total_horas|float if trabalho.total_horas else 0.0 %}
                             {% set vh = trabalho.colaborador.valor_hora|float if trabalho.colaborador and trabalho.colaborador.valor_hora else 0.0 %}
-                            {% set custo = horas * vh %}
-                            {% set ns.total_custo = ns.total_custo + custo %}
+                            {% set salario = trabalho.colaborador.salario_mensal|float if trabalho.colaborador and trabalho.colaborador.salario_mensal else 0.0 %}
+                            {% set custo_hora_real = salario / 220.0 if salario > 0 else 0.0 %}
+                            {% set receita = horas * vh %}
+                            {% set custo_real = horas * custo_hora_real %}
+                            {% set ns.total_receita = ns.total_receita + receita %}
+                            {% set ns.total_custo_real = ns.total_custo_real + custo_real %}
                         <tr style="border-bottom: 1px solid #fde68a;">
                             <td style="padding: 7px 8px;">
                                 <strong>{{ trabalho.colaborador.nome if trabalho.colaborador else '-' }}</strong>
@@ -768,34 +773,46 @@
                                 <br><span style="color: #718096; font-size: 9px;">{{ trabalho.colaborador.cargo_formatado }}</span>
                                 {% endif %}
                             </td>
-                            <td style="padding: 7px 8px; text-align: center; font-weight: bold; color: #0e7490;">{{ trabalho.total_horas_formatado }}</td>
-                            <td style="padding: 7px 8px; text-align: center; color: #555;">{{ '%.2f'|format(horas)|replace('.', ',') }}h</td>
-                            <td style="padding: 7px 8px; text-align: center;">
-                                {% if vh > 0 %}
-                                R$ {{ '%.2f'|format(vh)|replace('.', ',') }}/h
-                                {% else %}
-                                <span style="color: #dc2626;">Não configurado</span>
-                                {% endif %}
+                            <td style="padding: 7px 8px; text-align: center; font-weight: bold; color: #0e7490;">
+                                {{ trabalho.total_horas_formatado }}<br>
+                                <span style="font-size:9px; color:#555;">({{ '%.2f'|format(horas)|replace('.', ',') }}h)</span>
+                            </td>
+                            <td style="padding: 7px 8px; text-align: center; color: #065f46;">
+                                {% if vh > 0 %}R$ {{ '%.2f'|format(vh)|replace('.', ',') }}/h{% else %}—{% endif %}
                             </td>
                             <td style="padding: 7px 8px; text-align: right; font-weight: bold; color: #065f46;">
-                                {% if vh > 0 %}
-                                R$ {{ '%.2f'|format(custo)|replace('.', ',') }}
-                                {% else %}
-                                —
-                                {% endif %}
+                                {% if vh > 0 %}R$ {{ '%.2f'|format(receita)|replace('.', ',') }}{% else %}—{% endif %}
+                            </td>
+                            <td style="padding: 7px 8px; text-align: center; color: #dc2626;">
+                                {% if salario > 0 %}
+                                R$ {{ '%.2f'|format(custo_hora_real)|replace('.', ',') }}/h<br>
+                                <span style="font-size:9px; color:#555;">(R$ {{ '%.2f'|format(salario)|replace('.', ',') }}/mês)</span>
+                                {% else %}—{% endif %}
+                            </td>
+                            <td style="padding: 7px 8px; text-align: right; font-weight: bold; color: #dc2626;">
+                                {% if salario > 0 %}R$ {{ '%.2f'|format(custo_real)|replace('.', ',') }}{% else %}—{% endif %}
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                     <tfoot>
                         <tr style="background-color: #f0fdf4; border-top: 2px solid #10b981;">
-                            <td colspan="4" style="padding: 10px 8px; text-align: right; font-weight: bold; font-size: 11px; color: #1a365d;">CUSTO TOTAL DE MÃO DE OBRA:</td>
-                            <td style="padding: 10px 8px; text-align: right; font-weight: bold; font-size: 13px; color: #065f46;">R$ {{ '%.2f'|format(ns.total_custo)|replace('.', ',') }}</td>
+                            <td colspan="3" style="padding: 8px; text-align: right; font-weight: bold; font-size: 10px; color: #065f46;">RECEITA TOTAL M.O.:</td>
+                            <td style="padding: 8px; text-align: right; font-weight: bold; font-size: 12px; color: #065f46;">R$ {{ '%.2f'|format(ns.total_receita)|replace('.', ',') }}</td>
+                            <td style="padding: 8px; text-align: right; font-weight: bold; font-size: 10px; color: #dc2626;">CUSTO TOTAL REAL:</td>
+                            <td style="padding: 8px; text-align: right; font-weight: bold; font-size: 12px; color: #dc2626;">R$ {{ '%.2f'|format(ns.total_custo_real)|replace('.', ',') }}</td>
+                        </tr>
+                        <tr style="background-color: #dbeafe; border-top: 1px solid #93c5fd;">
+                            <td colspan="5" style="padding: 8px; text-align: right; font-weight: bold; font-size: 10px; color: #1e3a5f;">MARGEM M.O. (receita − custo):</td>
+                            {% set margem = ns.total_receita - ns.total_custo_real %}
+                            <td style="padding: 8px; text-align: right; font-weight: bold; font-size: 12px; color: {{ '#065f46' if margem >= 0 else '#dc2626' }};">
+                                R$ {{ '%.2f'|format(margem)|replace('.', ',') }}
+                            </td>
                         </tr>
                     </tfoot>
                 </table>
                 <div style="margin-top: 6px; padding: 6px 10px; background: #fef9c3; border-left: 3px solid #d97706; font-size: 8px; color: #78350f;">
-                    <strong>Documento interno.</strong> Este relatório contém informações de custo de mão de obra e é destinado exclusivamente à administração.
+                    <strong>Documento interno — ADMIN.</strong> Custo real calculado sobre 220h/mês de trabalho. Não destinar ao cliente.
                 </div>
             </div>
         </div>

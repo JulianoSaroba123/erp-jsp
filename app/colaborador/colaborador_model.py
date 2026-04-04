@@ -58,8 +58,9 @@ class Colaborador(BaseModel):
     data_admissao = db.Column(db.Date)
     data_demissao = db.Column(db.Date)  # Null enquanto estiver ativo
     
-    # === DADOS FINANCEIROS (opcional - para futura precificação) ===
-    valor_hora = db.Column(db.Numeric(10, 2), default=0.00)  # Custo/hora do colaborador
+    # === DADOS FINANCEIROS ===
+    valor_hora = db.Column(db.Numeric(10, 2), default=0.00)       # Valor/hora cobrado do CLIENTE
+    salario_mensal = db.Column(db.Numeric(10, 2), default=0.00)   # Salário/pró-labore pago ao colaborador
     
     # === OBSERVAÇÕES ===
     observacoes = db.Column(db.Text)
