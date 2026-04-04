@@ -1289,22 +1289,25 @@ def editar(id):
                 try:
                     ordem.data_conclusao = datetime.strptime(request.form.get('data_conclusao'), '%Y-%m-%dT%H:%M').replace(tzinfo=None)
                 except Exception:
-                    # aceitar também formato YYYY-MM-DD
                     try:
                         ordem.data_conclusao = datetime.strptime(request.form.get('data_conclusao'), '%Y-%m-%d')
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"⚠️ Erro ao converter data_conclusao='{request.form.get('data_conclusao')}': {e}")
+            else:
+                # Campo enviado vazio = limpar data de conclusão
+                ordem.data_conclusao = None
 
             # Permite sobrescrever data_inicio manualmente
             if request.form.get('data_inicio'):
                 try:
                     ordem.data_inicio = datetime.strptime(request.form.get('data_inicio'), '%Y-%m-%dT%H:%M').replace(tzinfo=None)
                 except Exception:
-                    # aceitar também formato YYYY-MM-DD
                     try:
                         ordem.data_inicio = datetime.strptime(request.form.get('data_inicio'), '%Y-%m-%d')
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"⚠️ Erro ao converter data_inicio='{request.form.get('data_inicio')}': {e}")
+            else:
+                ordem.data_inicio = None
 
             if novo_status != ordem.status:
                 if novo_status == 'em_andamento' and ordem.status == 'aberta':
