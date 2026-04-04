@@ -2092,49 +2092,39 @@ def visualizar_anexo(anexo_id):
     """
     Visualiza um arquivo anexado (para imagens principalmente).
     Serve do BLOB primeiro, depois tenta disco físico.
-    
-    Args:
-        anexo_id: ID do anexo
     """
-    from flask import Response
+    from flask import send_file
     import io
-    
+
     anexo = OrdemServicoAnexo.query.get_or_404(anexo_id)
-    
-    # 1. Tenta servir do BLOB (se disponível)
+
+    # 1. Tenta servir do BLOB (funciona no Render)
     if hasattr(anexo, 'conteudo') and anexo.conteudo:
-        return Response(
-            io.BytesIO(anexo.conteudo),
-            mimetype=anexo.mime_type,
-            headers={'Content-Disposition': f'inline; filename="{anexo.nome_original}"'}
+        conteudo = bytes(anexo.conteudo) if not isinstance(anexo.conteudo, bytes) else anexo.conteudo
+        return send_file(
+            io.BytesIO(conteudo),
+            mimetype=anexo.mime_type or 'image/jpeg',
+            as_attachment=False,
+            download_name=anexo.nome_original
         )
-    
-    # 2. Fallback: tenta servir do disco
-    try:
-        return send_from_directory(
-            UPLOAD_FOLDER,
-            anexo.nome_arquivo,
-            as_attachment=False
-        )
-    except FileNotFoundError:
-        # 3. Tenta caminhos alternativos
-        possible_paths = [
-            os.path.join('app', 'static', 'uploads', anexo.nome_arquivo),
-            os.path.join(current_app.root_path, 'static', 'uploads', anexo.nome_arquivo),
-            os.path.join('uploads', anexo.nome_arquivo)
-        ]
-        
-        for path in possible_paths:
-            if os.path.exists(path):
-                with open(path, 'rb') as f:
-                    return Response(
-                        io.BytesIO(f.read()),
-                        mimetype=anexo.mime_type,
-                        headers={'Content-Disposition': f'inline; filename="{anexo.nome_original}"'}
-                    )
-        
-        # Arquivo não encontrado em lugar nenhum
-        return Response(b'', status=404, mimetype='image/jpeg')
+
+    # 2. Fallback: tenta disco
+    possible_paths = [
+        os.path.join(UPLOAD_FOLDER, anexo.nome_arquivo),
+        os.path.join('app', 'static', 'uploads', anexo.nome_arquivo),
+        os.path.join(current_app.root_path, 'static', 'uploads', anexo.nome_arquivo),
+    ]
+    for path in possible_paths:
+        if os.path.exists(path):
+            with open(path, 'rb') as f:
+                return send_file(
+                    io.BytesIO(f.read()),
+                    mimetype=anexo.mime_type or 'image/jpeg',
+                    as_attachment=False,
+                    download_name=anexo.nome_original
+                )
+
+    return ('Imagem não encontrada', 404)
 
 @ordem_servico_bp.route('/anexo/<int:anexo_id>/excluir', methods=['POST'])
 def excluir_anexo(anexo_id):
@@ -2195,12 +2185,24 @@ def listar_anexos(id):
 def download_anexo(anexo_id):
     """
     Faz download de um arquivo anexado.
-    
-    Args:
-        anexo_id: ID do anexo
+    Tenta BLOB primeiro (funciona no Render), depois disco.
     """
+    from flask import send_file
+    import io
+
     anexo = OrdemServicoAnexo.query.get_or_404(anexo_id)
-    
+
+    # 1. Tenta BLOB (Render)
+    if hasattr(anexo, 'conteudo') and anexo.conteudo:
+        conteudo = bytes(anexo.conteudo) if not isinstance(anexo.conteudo, bytes) else anexo.conteudo
+        return send_file(
+            io.BytesIO(conteudo),
+            mimetype=anexo.mime_type or 'application/octet-stream',
+            as_attachment=True,
+            download_name=anexo.nome_original
+        )
+
+    # 2. Fallback: disco
     try:
         return send_from_directory(
             UPLOAD_FOLDER,
