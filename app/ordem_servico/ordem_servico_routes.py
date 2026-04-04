@@ -2134,8 +2134,7 @@ def visualizar_anexo(anexo_id):
                     )
         
         # Arquivo não encontrado em lugar nenhum
-        flash('Arquivo não encontrado!', 'error')
-        return redirect(url_for('ordem_servico.visualizar', id=anexo.ordem_servico_id))
+        return Response(b'', status=404, mimetype='image/jpeg')
 
 @ordem_servico_bp.route('/anexo/<int:anexo_id>/excluir', methods=['POST'])
 def excluir_anexo(anexo_id):

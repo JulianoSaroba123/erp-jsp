@@ -388,6 +388,19 @@ def create_app(config_name=None):
                 db.session.rollback()
                 print(f"   ⚠️ Erro na migração salario_mensal: {e}")
 
+            # Migração: Adicionar coluna conteudo (BLOB) em ordem_servico_anexos
+            try:
+                inspector = inspect(db.engine)
+                if 'ordem_servico_anexos' in inspector.get_table_names():
+                    colunas_anexos = [c['name'] for c in inspector.get_columns('ordem_servico_anexos')]
+                    if 'conteudo' not in colunas_anexos:
+                        db.session.execute(text("ALTER TABLE ordem_servico_anexos ADD COLUMN conteudo BYTEA"))
+                        db.session.commit()
+                        print("[OK] Coluna 'conteudo' (BLOB) adicionada em ordem_servico_anexos!")
+            except Exception as e:
+                db.session.rollback()
+                print(f"   ⚠️ Erro na migração conteudo (anexos): {e}")
+
             print("✅ Todas as migrações concluídas!\n")
             
             # Cria usuário admin padrão se não existir nenhum usuário
