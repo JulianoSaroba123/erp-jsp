@@ -305,13 +305,14 @@ def relatorio_pagamento(id):
 
     # Busca todos os registros de trabalho do colaborador no período
     from app.colaborador.colaborador_model import OrdemServicoColaborador
+    from sqlalchemy import extract
     trabalhos = (
         OrdemServicoColaborador.query
         .filter_by(colaborador_id=colaborador.id, ativo=True)
         .join(OrdemServicoColaborador.ordem_servico)
         .filter(
-            db.func.extract('month', OrdemServicoColaborador.data_trabalho) == mes,
-            db.func.extract('year', OrdemServicoColaborador.data_trabalho) == ano
+            extract('month', OrdemServicoColaborador.data_trabalho) == mes,
+            extract('year', OrdemServicoColaborador.data_trabalho) == ano
         )
         .order_by(OrdemServicoColaborador.data_trabalho.asc())
         .all()
