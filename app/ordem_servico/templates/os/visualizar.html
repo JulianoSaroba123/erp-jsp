@@ -670,7 +670,6 @@
                         {% for anexo in ordem.anexos %}
                         <div class="col-md-4">
                             <div class="stats-box text-center p-3" style="min-height: 300px;">
-                                <!-- Debug: tipo={{ anexo.tipo_arquivo }} -->
                                 {% if anexo.tipo_arquivo and (anexo.tipo_arquivo.startswith('image') or anexo.tipo_arquivo == 'image') %}
                                 <!-- Imagem -->
                                 <a href="{{ url_for('ordem_servico.visualizar_anexo', anexo_id=anexo.id) }}" target="_blank" class="d-block mb-2">
@@ -680,16 +679,19 @@
                                          style="max-height: 200px; object-fit: cover; width: 100%;"
                                          onerror="this.style.display='none'; this.parentElement.nextElementSibling.style.display='flex';">
                                 </a>
-                                <div style="display:none; flex-direction:column; align-items:center; justify-content:center; height:150px; background:#f8f9fa; border:1px dashed #ccc; border-radius:6px;" class="mb-2">
-                                    <i class="fas fa-image fa-3x text-muted mb-2"></i>
-                                    <small class="text-muted">Imagem não disponível</small>
+                                <div style="display:none; flex-direction:column; align-items:center; justify-content:center; height:130px; background:#fff3cd; border:1px dashed #ffc107; border-radius:6px;" class="mb-2">
+                                    <i class="fas fa-exclamation-triangle fa-2x text-warning mb-1"></i>
+                                    <small class="text-warning fw-bold">Imagem perdida</small>
+                                    <small class="text-muted" style="font-size:10px;">Exclua e envie novamente</small>
                                 </div>
                                 {% else %}
                                 <!-- Arquivo não-imagem -->
-                                <i class="fas fa-file fa-4x mb-2 text-muted"></i>
+                                <div style="height:150px; display:flex; align-items:center; justify-content:center;" class="mb-2">
+                                    <i class="fas fa-file fa-4x text-muted"></i>
+                                </div>
                                 {% endif %}
                                 <div class="mt-2">
-                                    <small class="d-block text-truncate fw-bold">{{ anexo.nome_arquivo }}</small>
+                                    <small class="d-block text-truncate fw-bold" title="{{ anexo.nome_original }}">{{ anexo.nome_original }}</small>
                                     <small class="text-muted d-block">{{ anexo.descricao or 'Sem descrição' }}</small>
                                 </div>
                                 <div class="btn-group btn-group-sm mt-2 w-100" role="group">
@@ -704,10 +706,27 @@
                                         <i class="fas fa-eye me-1"></i>Ver
                                     </a>
                                     {% endif %}
+                                    {% if current_user.tipo_usuario == 'admin' %}
+                                    <button type="button"
+                                            class="btn btn-outline-danger btn-sm"
+                                            onclick="excluirAnexo({{ anexo.id }}, '{{ anexo.nome_original|replace("'", "") }}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
                         {% endfor %}
+
+                        <script>
+                        function excluirAnexo(id, nome) {
+                            if (!confirm('Excluir o arquivo "' + nome + '"?')) return;
+                            fetch('/ordem_servico/anexo/' + id + '/excluir', {method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token() if csrf_token is defined else "" }}'}})
+                            .then(r => r.json())
+                            .then(d => { if (d.success) location.reload(); else alert('Erro: ' + d.message); })
+                            .catch(() => { alert('Erro ao excluir.'); });
+                        }
+                        </script>
                     </div>
                 </div>
             </div>
