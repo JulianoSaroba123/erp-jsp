@@ -198,10 +198,18 @@
                                            title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
+                                        <a href="{{ url_for('colaborador.relatorio_pagamento', id=colab.id) }}"
+                                           target="_blank"
+                                           class="btn btn-sm btn-success"
+                                           title="Relatório de Pagamento">
+                                            <i class="fas fa-file-invoice-dollar"></i>
+                                        </a>
+                                        {% endif %}
                                         <form method="POST" 
                                               action="{{ url_for('colaborador.excluir', id=colab.id) }}"
                                               style="display:inline;"
-                                              onsubmit="return confirm('Confirmar exclus\u00e3o do colaborador {{ colab.nome }}?')">
+                                              onsubmit="return confirm('Confirmar exclusão do colaborador {{ colab.nome }}?')">
                                             <button type="submit" class="btn btn-sm btn-danger" title="Excluir">
                                                 <i class="fas fa-trash"></i>
                                             </button>

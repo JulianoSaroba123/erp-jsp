@@ -276,6 +276,90 @@ def api_dados(id):
         return jsonify({'sucesso': False, 'erro': str(e)}), 404
 
 
+@colaborador_bp.route('/relatorio-pagamento/<int:id>')
+def relatorio_pagamento(id):
+    """
+    Gera relatório de pagamento individual do colaborador (PDF/impressão).
+    Mostra todas as OSs trabalhadas, horas por dia e valor a receber.
+    Aceita parâmetros: ?mes=MM&ano=AAAA para filtrar por período.
+    Admin only.
+    """
+    from flask_login import current_user
+    from flask import make_response
+    from datetime import datetime as dt
+    from app.configuracao.configuracao_utils import get_config
+
+    if current_user.tipo_usuario != 'admin':
+        flash('Acesso restrito ao administrador.', 'error')
+        return redirect(url_for('colaborador.listar'))
+
+    colaborador = Colaborador.query.get_or_404(id)
+
+    # Filtro de período (padrão: mês atual)
+    hoje = dt.today()
+    try:
+        mes = int(request.args.get('mes', hoje.month))
+        ano = int(request.args.get('ano', hoje.year))
+    except (ValueError, TypeError):
+        mes, ano = hoje.month, hoje.year
+
+    # Busca todos os registros de trabalho do colaborador no período
+    from app.colaborador.colaborador_model import OrdemServicoColaborador
+    trabalhos = (
+        OrdemServicoColaborador.query
+        .filter_by(colaborador_id=colaborador.id, ativo=True)
+        .join(OrdemServicoColaborador.ordem_servico)
+        .filter(
+            db.extract('month', OrdemServicoColaborador.data_trabalho) == mes,
+            db.extract('year', OrdemServicoColaborador.data_trabalho) == ano
+        )
+        .order_by(OrdemServicoColaborador.data_trabalho.asc())
+        .all()
+    )
+
+    # Totais
+    total_horas = sum(float(t.total_horas or 0) for t in trabalhos)
+    salario = float(colaborador.salario_mensal or 0)
+    custo_hora = salario / 220.0 if salario > 0 else 0.0
+    valor_a_receber = total_horas * custo_hora
+
+    config = get_config()
+
+    # Meses em português
+    MESES = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+             'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+
+    html_content = render_template(
+        'colaborador/pdf_pagamento.html',
+        colaborador=colaborador,
+        trabalhos=trabalhos,
+        total_horas=total_horas,
+        salario=salario,
+        custo_hora=custo_hora,
+        valor_a_receber=valor_a_receber,
+        mes=mes,
+        ano=ano,
+        mes_nome=MESES[mes],
+        config=config,
+        now=dt,
+    )
+
+    # Auto-print
+    script = '<script>window.onload = function(){ window.print(); };</script>'
+    if '</body>' in html_content:
+        html_content = html_content.replace('</body>', f'{script}</body>')
+    else:
+        html_content += script
+
+    response = make_response(html_content)
+    response.headers['Content-Type'] = 'text/html; charset=utf-8'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Content-Disposition'] = (
+        f'inline; filename="Pagamento_{colaborador.nome.replace(" ", "_")}_{MESES[mes]}_{ano}.pdf"'
+    )
+    return response
+
+
 # === ROTA DE SEGURANÇA: captura qualquer URL inválida no blueprint ===
 @colaborador_bp.route('/<path:qualquer_coisa>')
 def rota_invalida(qualquer_coisa):

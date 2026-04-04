@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Pagamento — {{ colaborador.nome }} — {{ mes_nome }}/{{ ano }}</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            color: #1a1a1a;
+            background: white;
+        }
+
+        /* ── Layout de página ── */
+        .page {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ── Cabeçalho ── */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #1e3a5f;
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+        }
+        .header-left h1 {
+            font-size: 18px;
+            color: #1e3a5f;
+            font-weight: bold;
+        }
+        .header-left .subtitle {
+            font-size: 11px;
+            color: #718096;
+            margin-top: 2px;
+        }
+        .header-right {
+            text-align: right;
+            font-size: 10px;
+            color: #555;
+        }
+        .confidencial-badge {
+            display: inline-block;
+            background: #dc2626;
+            color: white;
+            font-size: 9px;
+            font-weight: bold;
+            padding: 2px 8px;
+            border-radius: 3px;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        /* ── Campos de info do colaborador ── */
+        .info-box {
+            background: #f0f4ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 6px;
+            padding: 12px 16px;
+            margin-bottom: 18px;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .info-item label {
+            display: block;
+            font-size: 9px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        .info-item span {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1e3a5f;
+        }
+
+        /* ── Período ── */
+        .periodo-badge {
+            display: inline-block;
+            background: #1e3a5f;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+
+        /* ── Tabela de OS ── */
+        .section-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #1e3a5f;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #c7d2fe;
+            padding-bottom: 4px;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        thead tr {
+            background: #1e3a5f;
+            color: white;
+        }
+        thead th {
+            padding: 8px 10px;
+            text-align: left;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        thead th.right { text-align: right; }
+        thead th.center { text-align: center; }
+
+        tbody tr:nth-child(odd)  { background: #f8fafc; }
+        tbody tr:nth-child(even) { background: #ffffff; }
+        tbody tr { border-bottom: 1px solid #e2e8f0; }
+
+        tbody td {
+            padding: 7px 10px;
+            font-size: 10px;
+            vertical-align: middle;
+        }
+        tbody td.right  { text-align: right; }
+        tbody td.center { text-align: center; }
+        tbody td.blue   { color: #0e7490; font-weight: bold; }
+        tbody td.green  { color: #065f46; font-weight: bold; }
+
+        /* Linha de subtotal (por OS) */
+        tr.subtotal td {
+            background: #e0f2fe !important;
+            font-weight: bold;
+            font-size: 10px;
+            color: #0369a1;
+        }
+
+        /* ── Rodapé da tabela ── */
+        tfoot tr.total-row td {
+            background: #1e3a5f;
+            color: white;
+            font-weight: bold;
+            font-size: 11px;
+            padding: 10px;
+        }
+        tfoot tr.total-row td.right { text-align: right; }
+
+        /* ── Resumo financeiro ── */
+        .resumo {
+            margin-top: 20px;
+            border: 2px solid #1e3a5f;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .resumo-header {
+            background: #1e3a5f;
+            color: white;
+            padding: 8px 14px;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .resumo-body {
+            padding: 14px;
+        }
+        .resumo-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 11px;
+        }
+        .resumo-row:last-child { border-bottom: none; }
+        .resumo-row.destaque {
+            background: #f0fdf4;
+            padding: 10px 8px;
+            border-radius: 4px;
+            border: 1px solid #10b981;
+            margin-top: 8px;
+        }
+        .resumo-row.destaque .valor {
+            font-size: 16px;
+            font-weight: bold;
+            color: #065f46;
+        }
+        .resumo-label { color: #4a5568; }
+        .resumo-valor { font-weight: bold; color: #1e3a5f; }
+
+        /* ── Assinatura ── */
+        .assinatura-box {
+            margin-top: 30px;
+            display: flex;
+            gap: 40px;
+            align-items: flex-end;
+        }
+        .assinatura-item { flex: 1; }
+        .assinatura-line {
+            border-bottom: 1px solid #4a5568;
+            margin-bottom: 4px;
+            height: 32px;
+        }
+        .assinatura-label {
+            font-size: 9px;
+            color: #718096;
+            text-align: center;
+        }
+
+        /* ── Aviso de rodapé ── */
+        .footer-aviso {
+            margin-top: 20px;
+            padding: 6px 12px;
+            background: #fef2f2;
+            border-left: 3px solid #dc2626;
+            font-size: 8px;
+            color: #7f1d1d;
+            text-align: center;
+        }
+
+        /* Sem OS no período */
+        .sem-os {
+            text-align: center;
+            padding: 24px;
+            color: #718096;
+            font-style: italic;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e0;
+            border-radius: 6px;
+        }
+
+        /* ── Print ── */
+        @media print {
+            body { margin: 0; }
+            .page { padding: 10px; }
+            @page { size: A4; margin: 1cm; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <!-- CABEÇALHO -->
+    <div class="header">
+        <div class="header-left">
+            <h1>📋 RELATÓRIO DE PAGAMENTO</h1>
+            <div class="subtitle">
+                {% if config and config.nome_empresa %}{{ config.nome_empresa }}{% else %}JSP Soluções{% endif %}
+            </div>
+        </div>
+        <div class="header-right">
+            <div>Emitido em: <strong>{{ now().strftime('%d/%m/%Y às %H:%M') }}</strong></div>
+            <div class="confidencial-badge">CONFIDENCIAL</div>
+        </div>
+    </div>
+
+    <!-- PERÍODO -->
+    <div class="periodo-badge">📅 Competência: {{ mes_nome }} / {{ ano }}</div>
+
+    <!-- INFO DO COLABORADOR -->
+    <div class="info-box">
+        <div class="info-grid">
+            <div class="info-item">
+                <label>Colaborador</label>
+                <span>{{ colaborador.nome }}</span>
+            </div>
+            <div class="info-item">
+                <label>Função / Cargo</label>
+                <span>{{ colaborador.cargo_formatado }}</span>
+            </div>
+            <div class="info-item">
+                <label>Especialidade</label>
+                <span>{{ colaborador.especialidade or '—' }}</span>
+            </div>
+            <div class="info-item">
+                <label>Salário / Pró-labore</label>
+                <span>R$ {{ '%.2f'|format(salario)|replace('.', ',') }}/mês</span>
+            </div>
+            <div class="info-item">
+                <label>Custo / hora (÷ 220h)</label>
+                <span>R$ {{ '%.2f'|format(custo_hora)|replace('.', ',') }}/h</span>
+            </div>
+            <div class="info-item">
+                <label>Total de Horas no Período</label>
+                <span>
+                    {% set h = total_horas|int %}
+                    {% set m = ((total_horas - h) * 60)|round|int %}
+                    {{ '%02d'|format(h) }}h {{ '%02d'|format(m) }}min
+                    ({{ '%.2f'|format(total_horas)|replace('.', ',') }}h)
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TABELA DE TRABALHOS -->
+    <div class="section-title">Ordens de Serviço Trabalhadas no Período</div>
+
+    {% if trabalhos %}
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>OS Nº</th>
+                <th>Cliente</th>
+                <th>Descrição da Atividade</th>
+                <th class="center">H. Normais</th>
+                <th class="center">H. Extras</th>
+                <th class="right">Total Horas</th>
+                <th class="right">Valor (R$)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set ns = namespace(total_h=0.0, total_v=0.0) %}
+            {% for t in trabalhos %}
+                {% set horas = t.total_horas|float if t.total_horas else 0.0 %}
+                {% set valor = horas * custo_hora %}
+                {% set ns.total_h = ns.total_h + horas %}
+                {% set ns.total_v = ns.total_v + valor %}
+                {% set h_int = horas|int %}
+                {% set m_int = ((horas - h_int) * 60)|round|int %}
+            <tr>
+                <td><strong>{{ t.data_trabalho.strftime('%d/%m/%Y') if t.data_trabalho else '—' }}</strong></td>
+                <td class="blue">
+                    {{ t.ordem_servico.numero_os if t.ordem_servico and t.ordem_servico.numero_os else (t.ordem_servico_id or '—') }}
+                </td>
+                <td>{{ t.ordem_servico.cliente.nome if t.ordem_servico and t.ordem_servico.cliente else '—' }}</td>
+                <td style="color:#4a5568;">
+                    {{ t.descricao_atividade[:60] ~ '...' if t.descricao_atividade and t.descricao_atividade|length > 60 else (t.descricao_atividade or '—') }}
+                </td>
+                <td class="center">
+                    {{ t.horas_normais_formatado if t.horas_normais else '—' }}
+                </td>
+                <td class="center" style="color:#e67e22;">
+                    {{ t.horas_extras_formatado if t.horas_extras else '—' }}
+                </td>
+                <td class="right blue">
+                    {{ '%02d'|format(h_int) }}h{{ '%02d'|format(m_int) }}min
+                </td>
+                <td class="right green">
+                    {% if custo_hora > 0 %}R$ {{ '%.2f'|format(valor)|replace('.', ',') }}{% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="6" class="right">TOTAL DO PERÍODO ({{ trabalhos|length }} registro{{ 's' if trabalhos|length != 1 else '' }}):</td>
+                <td class="right">
+                    {% set h = total_horas|int %}
+                    {% set m = ((total_horas - h) * 60)|round|int %}
+                    {{ '%02d'|format(h) }}h{{ '%02d'|format(m) }}min
+                </td>
+                <td class="right">
+                    {% if custo_hora > 0 %}R$ {{ '%.2f'|format(valor_a_receber)|replace('.', ',') }}{% else %}—{% endif %}
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+    {% else %}
+    <div class="sem-os">
+        Nenhum registro de trabalho encontrado para {{ mes_nome }}/{{ ano }}.
+    </div>
+    {% endif %}
+
+    <!-- RESUMO FINANCEIRO -->
+    <div class="resumo" style="margin-top: 22px;">
+        <div class="resumo-header">💰 RESUMO FINANCEIRO — {{ mes_nome }}/{{ ano }}</div>
+        <div class="resumo-body">
+            <div class="resumo-row">
+                <span class="resumo-label">Salário / Pró-labore mensal:</span>
+                <span class="resumo-valor">R$ {{ '%.2f'|format(salario)|replace('.', ',') }}</span>
+            </div>
+            <div class="resumo-row">
+                <span class="resumo-label">Custo/hora (salário ÷ 220h):</span>
+                <span class="resumo-valor">R$ {{ '%.2f'|format(custo_hora)|replace('.', ',') }}/h</span>
+            </div>
+            <div class="resumo-row">
+                <span class="resumo-label">Total de horas trabalhadas no período:</span>
+                <span class="resumo-valor">
+                    {% set h = total_horas|int %}
+                    {% set m = ((total_horas - h) * 60)|round|int %}
+                    {{ '%02d'|format(h) }}h {{ '%02d'|format(m) }}min &nbsp;
+                    <span style="color:#718096; font-weight:normal;">({{ '%.2f'|format(total_horas)|replace('.', ',') }}h decimal)</span>
+                </span>
+            </div>
+            <div class="resumo-row">
+                <span class="resumo-label">Fórmula de cálculo:</span>
+                <span style="color:#718096;">
+                    {{ '%.2f'|format(total_horas)|replace('.', ',') }}h
+                    × R$ {{ '%.2f'|format(custo_hora)|replace('.', ',') }}/h
+                    = R$ {{ '%.2f'|format(valor_a_receber)|replace('.', ',') }}
+                </span>
+            </div>
+            <div class="resumo-row destaque">
+                <span style="font-size:13px; font-weight:bold; color:#065f46;">
+                    ✅ VALOR A RECEBER:
+                </span>
+                <span class="valor">
+                    R$ {{ '%.2f'|format(valor_a_receber)|replace('.', ',') }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ASSINATURAS -->
+    <div class="assinatura-box">
+        <div class="assinatura-item">
+            <div class="assinatura-line"></div>
+            <div class="assinatura-label">
+                <strong>{{ colaborador.nome }}</strong><br>
+                Colaborador — Confirmo o recebimento
+            </div>
+        </div>
+        <div class="assinatura-item">
+            <div class="assinatura-line"></div>
+            <div class="assinatura-label">
+                Responsável / Administrador<br>
+                Data: _____ / _____ / __________
+            </div>
+        </div>
+    </div>
+
+    <!-- AVISO -->
+    <div class="footer-aviso">
+        🔒 <strong>DOCUMENTO CONFIDENCIAL.</strong>
+        Este relatório é destinado exclusivamente ao colaborador e à administração.
+        Não divulgar a terceiros.
+    </div>
+
+</div>
+</body>
+</html>
