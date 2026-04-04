@@ -2483,6 +2483,9 @@ def gerar_relatorio_pdf(id):
             incluir_imagens = ordem.incluir_imagens_relatorio if hasattr(ordem, 'incluir_imagens_relatorio') else False
             print(f"DEBUG PDF: Incluir imagens (via config OS): {incluir_imagens}")
         
+        # Verifica se deve incluir seção de custos de mão de obra
+        com_custos = request.args.get('com_custos') == '1'
+        
         # Temporariamente define o valor para renderização
         ordem_incluir_imagens_original = getattr(ordem, 'incluir_imagens_relatorio', False)
         ordem.incluir_imagens_relatorio = incluir_imagens
@@ -2583,7 +2586,8 @@ def gerar_relatorio_pdf(id):
             config=config,  # Adicionar configurações
             timedelta=timedelta,  # Para cálculo de garantia
             timestamp=dt.now().isoformat(),  # Timestamp único para evitar cache
-            anexos_base64=anexos_base64  # Imagens em base64
+            anexos_base64=anexos_base64,  # Imagens em base64
+            com_custos=com_custos  # Seção de custo de M.O. (admin)
         )
         print(f"🔍 PRIMEIROS 200 CHARS DO HTML: {html_content[:200]}...")
         print(f" DEBUG PDF: Template renderizado com sucesso")

@@ -111,8 +111,23 @@
                                        placeholder="Ex: Energia Solar, Automação">
                             </div>
                             
-                            <!-- Campo valor_hora ocultado -->
-                            <input type="hidden" name="valor_hora" value="{{ colaborador.valor_hora if colaborador else '0.00' }}">
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">
+                                    <i class="fas fa-dollar-sign me-1 text-success"></i>
+                                    Valor/Hora (R$)
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">R$</span>
+                                    <input type="number"
+                                           class="form-control"
+                                           name="valor_hora"
+                                           value="{{ '%.2f'|format(colaborador.valor_hora|float) if colaborador and colaborador.valor_hora else '0.00' }}"
+                                           step="0.01"
+                                           min="0"
+                                           placeholder="0,00">
+                                </div>
+                                <small class="text-muted">Custo hora do colaborador para cálculo de M.O.</small>
+                            </div>
                         </div>
                         
                         <div class="row g-3 mt-2">

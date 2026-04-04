@@ -151,6 +151,11 @@
                     <a href="{{ url_for('ordem_servico.gerar_relatorio_pdf', id=ordem.id) }}" target="_blank" class="btn btn-light action-btn">
                         <i class="fas fa-file-pdf me-2"></i>PDF Ordem
                     </a>
+                    {% if current_user.tipo_usuario|default('usuario') == 'admin' and ordem.colaboradores_trabalho and ordem.colaboradores_trabalho|length > 0 %}
+                    <a href="{{ url_for('ordem_servico.gerar_relatorio_pdf', id=ordem.id, com_custos=1) }}" target="_blank" class="btn btn-warning action-btn mt-2">
+                        <i class="fas fa-calculator me-2"></i>PDF com Custos M.O.
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -470,6 +475,82 @@
                 </div>
             </div>
             {% endif %}
+
+            <!-- ====== CUSTO DE MÃO DE OBRA - SOMENTE ADMINISTRADOR ====== -->
+            {% if current_user.tipo_usuario|default('usuario') == 'admin' and ordem.colaboradores_trabalho and ordem.colaboradores_trabalho|length > 0 %}
+            <div class="card info-card" style="border: 2px solid #f59e0b !important;">
+                <div class="card-header" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;">
+                    <h5 class="card-title mb-0 fw-bold" style="color: #92400e !important;">
+                        <i class="fas fa-calculator me-2"></i>
+                        Custo de Mão de Obra
+                        <span class="badge bg-danger ms-2" style="font-size: 0.7rem;">ADMIN</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-warning">
+                                <tr>
+                                    <th>Colaborador</th>
+                                    <th class="text-end">Total de Horas</th>
+                                    <th class="text-end">Valor/Hora</th>
+                                    <th class="text-end fw-bold">Custo R$</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set ns = namespace(total_custo=0.0, sem_valor=false) %}
+                                {% for trabalho in ordem.colaboradores_trabalho if trabalho.ativo %}
+                                    {% set horas = trabalho.total_horas|float if trabalho.total_horas else 0.0 %}
+                                    {% set vh = trabalho.colaborador.valor_hora|float if trabalho.colaborador and trabalho.colaborador.valor_hora else 0.0 %}
+                                    {% set custo = horas * vh %}
+                                    {% set ns.total_custo = ns.total_custo + custo %}
+                                    {% if vh == 0.0 %}{% set ns.sem_valor = true %}{% endif %}
+                                <tr>
+                                    <td class="fw-semibold">{{ trabalho.colaborador.nome if trabalho.colaborador else '-' }}</td>
+                                    <td class="text-end">
+                                        <span class="badge bg-info text-dark">{{ trabalho.total_horas_formatado }}</span>
+                                        <small class="text-muted ms-1">({{ "%.2f"|format(horas)|replace('.', ',') }}h decimal)</small>
+                                    </td>
+                                    <td class="text-end">
+                                        {% if vh > 0 %}
+                                            <span class="text-success fw-semibold">R$ {{ "%.2f"|format(vh)|replace('.', ',') }}/h</span>
+                                        {% else %}
+                                            <span class="text-danger"><i class="fas fa-exclamation-circle me-1"></i>Não configurado</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end fw-bold">
+                                        {% if vh > 0 %}
+                                            <span class="text-success">R$ {{ "%.2f"|format(custo)|replace('.', ',') }}</span>
+                                        {% else %}
+                                            <span class="text-muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr style="background: #fef3c7;">
+                                    <td colspan="3" class="text-end fw-bold" style="color: #92400e;">
+                                        <i class="fas fa-coins me-2"></i>CUSTO TOTAL DE MÃO DE OBRA:
+                                    </td>
+                                    <td class="text-end fw-bold h5 mb-0" style="color: #065f46;">
+                                        R$ {{ "%.2f"|format(ns.total_custo)|replace('.', ',') }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    {% if ns.sem_valor %}
+                    <div class="alert alert-warning mt-3 mb-0 py-2">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Atenção:</strong> Um ou mais colaboradores não têm valor/hora configurado.
+                        Configure em <a href="{{ url_for('colaborador.listar') }}" class="alert-link">Cadastro de Colaboradores</a>.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            <!-- ====== FIM CUSTO DE MÃO DE OBRA ====== -->
 
             <!-- Controles de Execução -->
             {% if ordem.km_inicial or ordem.hora_inicial or ordem.prazo_garantia %}
