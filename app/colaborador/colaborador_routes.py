@@ -272,3 +272,11 @@ def api_dados(id):
         return jsonify({'sucesso': True, 'colaborador': dados})
     except Exception as e:
         return jsonify({'sucesso': False, 'erro': str(e)}), 404
+
+
+# === ROTA DE SEGURANÇA: captura qualquer URL inválida no blueprint ===
+@colaborador_bp.route('/<path:qualquer_coisa>')
+def rota_invalida(qualquer_coisa):
+    """Redireciona qualquer URL não reconhecida para a lista de colaboradores."""
+    flash('Página de colaborador não encontrada. Redirecionado para a lista.', 'warning')
+    return redirect(url_for('colaborador.listar'))

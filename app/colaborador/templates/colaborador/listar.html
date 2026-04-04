@@ -200,7 +200,10 @@
                                         </a>
                                         <button type="button" 
                                                 class="btn btn-sm btn-danger"
-                                                onclick="confirmarExclusao({{ colab.id }}, '{{ colab.nome }}')"
+                                                onclick="confirmarExclusao(this)"
+                                                data-id="{{ colab.id }}"
+                                                data-nome="{{ colab.nome }}"
+                                                data-url="{{ url_for('colaborador.excluir', id=colab.id) }}"
                                                 title="Excluir">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -238,13 +241,13 @@
 </form>
 
 <script>
-// URL base para excluir (sem o ID no final)
-const urlBaseExcluir = "{{ url_for('colaborador.excluir', id=0) }}".replace(/\/0$/, '');
-
-function confirmarExclusao(id, nome) {
+function confirmarExclusao(btn) {
+    const id = btn.getAttribute('data-id');
+    const nome = btn.getAttribute('data-nome');
+    const url = btn.getAttribute('data-url');
     if (confirm(`Tem certeza que deseja remover o colaborador "${nome}"?\n\nEsta ação irá desativar o colaborador.`)) {
         const form = document.getElementById('formExcluir');
-        form.action = urlBaseExcluir + '/' + parseInt(id, 10);
+        form.action = url;
         form.submit();
     }
 }
