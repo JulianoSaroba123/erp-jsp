@@ -310,8 +310,8 @@ def relatorio_pagamento(id):
         .filter_by(colaborador_id=colaborador.id, ativo=True)
         .join(OrdemServicoColaborador.ordem_servico)
         .filter(
-            db.extract('month', OrdemServicoColaborador.data_trabalho) == mes,
-            db.extract('year', OrdemServicoColaborador.data_trabalho) == ano
+            db.func.extract('month', OrdemServicoColaborador.data_trabalho) == mes,
+            db.func.extract('year', OrdemServicoColaborador.data_trabalho) == ano
         )
         .order_by(OrdemServicoColaborador.data_trabalho.asc())
         .all()
