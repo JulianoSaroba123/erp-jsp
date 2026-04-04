@@ -2485,6 +2485,8 @@ def gerar_relatorio_pdf(id):
         
         # Verifica se deve incluir seção de custos de mão de obra
         com_custos = request.args.get('com_custos') == '1'
+        # PDF de fechamento interno (o que pagar a cada colaborador)
+        fechamento = request.args.get('fechamento') == '1'
         
         # Temporariamente define o valor para renderização
         ordem_incluir_imagens_original = getattr(ordem, 'incluir_imagens_relatorio', False)
@@ -2587,7 +2589,8 @@ def gerar_relatorio_pdf(id):
             timedelta=timedelta,  # Para cálculo de garantia
             timestamp=dt.now().isoformat(),  # Timestamp único para evitar cache
             anexos_base64=anexos_base64,  # Imagens em base64
-            com_custos=com_custos  # Seção de custo de M.O. (admin)
+            com_custos=com_custos,  # Seção de custo de M.O. (admin)
+            fechamento=fechamento   # PDF de fechamento - o que pagar ao colaborador
         )
         print(f"🔍 PRIMEIROS 200 CHARS DO HTML: {html_content[:200]}...")
         print(f" DEBUG PDF: Template renderizado com sucesso")
