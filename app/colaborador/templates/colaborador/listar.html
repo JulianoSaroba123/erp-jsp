@@ -238,10 +238,13 @@
 </form>
 
 <script>
+// URL base para excluir (sem o ID no final)
+const urlBaseExcluir = "{{ url_for('colaborador.excluir', id=0) }}".replace(/\/0$/, '');
+
 function confirmarExclusao(id, nome) {
     if (confirm(`Tem certeza que deseja remover o colaborador "${nome}"?\n\nEsta ação irá desativar o colaborador.`)) {
         const form = document.getElementById('formExcluir');
-        form.action = "{{ url_for('colaborador.excluir', id=0) }}".replace('0', id);
+        form.action = urlBaseExcluir + '/' + parseInt(id, 10);
         form.submit();
     }
 }
