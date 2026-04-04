@@ -2524,9 +2524,9 @@ def gerar_relatorio_pdf(id):
         print(f"🔍 TEMPLATE SENDO USADO: 'os/pdf_ordem_servico.html'")
         print(f"🔍 CAMINHO ABSOLUTO: {os.path.abspath(os.path.join('app', 'ordem_servico', 'templates', 'os', 'pdf_ordem_servico.html'))}")
         
-        # Converter imagens anexadas para base64 se incluir_imagens estiver ativo
+        # Converter imagens anexadas para base64 (sempre para PDF normal e do cliente; nunca para fechamento)
         anexos_base64 = {}
-        if incluir_imagens and hasattr(ordem, 'anexos') and ordem.anexos:
+        if not fechamento and hasattr(ordem, 'anexos') and ordem.anexos:
             import base64
             print(f"🖼️ DEBUG PDF: Convertendo {len(ordem.anexos)} anexos para base64...")
             for anexo in ordem.anexos:

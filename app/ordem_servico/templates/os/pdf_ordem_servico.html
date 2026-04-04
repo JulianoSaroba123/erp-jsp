@@ -489,7 +489,7 @@
             {% endif %}
         </div>
 
-        {% if ordem.incluir_imagens_relatorio and ordem.anexos and ordem.anexos|length > 0 %}
+        {% if not fechamento and ordem.anexos and ordem.anexos|length > 0 %}
         <!-- IMAGENS ANEXADAS -->
         <div class="section" style="margin-top: 20px;">
             <div class="section-title">IMAGENS ANEXADAS</div>
