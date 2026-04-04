@@ -737,6 +737,63 @@
                 </div>
             </div>
         </div>
+
+        <!-- RESUMO CUSTO M.O. PARA O CLIENTE (valor/hora cobrado × horas) -->
+        {% if not fechamento and not com_custos %}
+        {% set tem_vh = ordem.colaboradores_trabalho | selectattr('ativo') | selectattr('colaborador') | list %}
+        {% if tem_vh %}
+        <div class="section">
+            <div class="section-title">💼 CUSTO DE MÃO DE OBRA</div>
+            <div class="section-content">
+                <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                    <thead>
+                        <tr style="background-color: #1a365d; color: white;">
+                            <th style="padding: 9px 12px; text-align: left;">Colaborador</th>
+                            <th style="padding: 9px 12px; text-align: center;">Horas Trabalhadas</th>
+                            <th style="padding: 9px 12px; text-align: right;">Valor/hora</th>
+                            <th style="padding: 9px 12px; text-align: right; background: #2d5a27;">Total M.O.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set ns = namespace(total_mo=0.0) %}
+                        {% for trabalho in ordem.colaboradores_trabalho if trabalho.ativo %}
+                            {% set horas = trabalho.total_horas|float if trabalho.total_horas else 0.0 %}
+                            {% set vh = trabalho.colaborador.valor_hora|float if trabalho.colaborador and trabalho.colaborador.valor_hora else 0.0 %}
+                            {% set total = horas * vh %}
+                            {% set ns.total_mo = ns.total_mo + total %}
+                        <tr style="border-bottom: 1px solid #e2e8f0; {% if loop.index is odd %}background:#f8fafc;{% endif %}">
+                            <td style="padding: 9px 12px; font-weight: bold;">
+                                {{ trabalho.colaborador.nome if trabalho.colaborador else '—' }}
+                                {% if trabalho.colaborador and trabalho.colaborador.cargo %}
+                                <br><span style="font-size:9px; color:#718096;">{{ trabalho.colaborador.cargo_formatado }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 9px 12px; text-align: center; font-weight: bold; color:#0e7490;">
+                                {{ trabalho.total_horas_formatado }}
+                                <span style="font-size:9px; color:#718096;">({{ '%.2f'|format(horas)|replace('.', ',') }}h)</span>
+                            </td>
+                            <td style="padding: 9px 12px; text-align: right; color:#4a5568;">
+                                R$ {{ '%.2f'|format(vh)|replace('.', ',') }}/h
+                            </td>
+                            <td style="padding: 9px 12px; text-align: right; font-weight: bold; color:#065f46; background:#f0fdf4; border-left: 2px solid #10b981;">
+                                R$ {{ '%.2f'|format(total)|replace('.', ',') }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr style="background:#1a365d; color:white;">
+                            <td colspan="3" style="padding: 10px 12px; text-align: right; font-weight: bold;">TOTAL MÃO DE OBRA:</td>
+                            <td style="padding: 10px 12px; text-align: right; font-weight: bold; font-size: 13px; background:#2d5a27;">
+                                R$ {{ '%.2f'|format(ns.total_mo)|replace('.', ',') }}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
         {% endif %}
        
         <!-- CUSTO DE MÃO DE OBRA (apenas quando solicitado - parâmetro com_custos) -->
