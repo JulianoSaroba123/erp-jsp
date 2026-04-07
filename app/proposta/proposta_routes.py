@@ -141,7 +141,7 @@ def nova_proposta():
                 cliente_id=int(cliente_id),
                 titulo=titulo,
                 descricao=request.form.get('descricao', ''),
-                status='Pendente',
+                status='pendente',
                 vendedor=request.form.get('vendedor', ''),
                 prioridade=request.form.get('prioridade', 'normal'),
                 tempo_estimado=request.form.get('tempo_estimado', ''),
