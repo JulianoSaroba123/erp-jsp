@@ -99,9 +99,19 @@ def editar():
                     img.save(buffer, format=img_format)
                     img_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
                     
-                    # Salva o base64 no banco
-                    conf.logo_base64 = img_base64
-                    print(f"✅ Logo convertida para base64 e salva no banco (formato: {img_format})")
+                    # Determinar o MIME type
+                    mime_types = {
+                        'PNG': 'image/png',
+                        'JPEG': 'image/jpeg',
+                        'JPG': 'image/jpeg',
+                        'GIF': 'image/gif',
+                        'WEBP': 'image/webp'
+                    }
+                    mime_type = mime_types.get(img_format.upper(), 'image/png')
+                    
+                    # Salva o base64 com prefixo data URI no banco
+                    conf.logo_base64 = f"data:{mime_type};base64,{img_base64}"
+                    print(f"✅ Logo convertida para base64 e salva no banco (formato: {img_format}, MIME: {mime_type})")
                     
                 except Exception as e:
                     print(f"⚠️ Erro ao converter logo para base64: {e}")
