@@ -873,6 +873,10 @@ def register_blueprints(app):
     # Blueprint de configuração do sistema
     from app.configuracao.configuracao_routes import bp_config
     app.register_blueprint(bp_config, url_prefix='/configuracao')
+    
+    # Blueprint de diagnóstico de configuração
+    from app.configuracao.diagnostico_routes import bp_diagnostico
+    app.register_blueprint(bp_diagnostico)
 
     # Blueprint de precificação
     from app.precificacao.precificacao_routes import precificacao_bp
