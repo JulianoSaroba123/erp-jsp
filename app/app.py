@@ -1093,12 +1093,17 @@ def register_context_processors(app):
 
         Usa `get_config()` para obter a configuração atual e retorna como `config`.
         Isto permite que o `base.html` e outros templates acessem `config.logo_base64`.
+        
+        Cache com TTL de 30s garante dados atualizados sem sobrecarregar o banco.
         """
         try:
             from app.configuracao.configuracao_utils import get_config
-            cfg = get_config()
+            cfg = get_config()  # Usa cache com TTL de 30 segundos
             return {'config': cfg}
-        except Exception:
+        except Exception as e:
+            # Log do erro mas retorna None para não quebrar o sistema
+            import logging
+            logging.error(f"Erro ao carregar configuração no context processor: {e}")
             return {'config': None}
     @app.context_processor
     def utility_processor():

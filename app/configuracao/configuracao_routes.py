@@ -119,12 +119,10 @@ def editar():
                     pass
 
         db.session.commit()
-        # Invalidate cache
-        try:
-            from app.configuracao.configuracao_utils import _cached as _c
-            _c = None
-        except Exception:
-            pass
+        
+        # Invalidar cache para forçar reload
+        from app.configuracao.configuracao_utils import invalidate_cache
+        invalidate_cache()
 
         flash('Configurações atualizadas com sucesso.', 'success')
         return redirect(url_for('configuracao.visualizar'))
@@ -296,16 +294,13 @@ def fix_logo_base64():
         # Salvar
         db.session.commit()
         
-        # Invalidar cache de forma mais agressiva
-        import app.configuracao.configuracao_utils as cfg_utils
-        cfg_utils._cached = None
-        
-        # Forçar reload
-        cfg_utils.get_config(force_reload=True)
+        # Invalidar cache usando nova função
+        from app.configuracao.configuracao_utils import invalidate_cache
+        invalidate_cache()
         
         print(f"✅ Logo corrigida com sucesso!")
         print(f"   Novo prefixo: {conf.logo_base64[:50]}...")
-        print(f"   Cache invalidado e recarregado")
+        print(f"   Cache invalidado")
         
         return {
             'status': 'success',
@@ -314,7 +309,7 @@ def fix_logo_base64():
             'mime_type': mime_type,
             'tamanho': len(conf.logo_base64),
             'prefix': conf.logo_base64[:50],
-            'instrucoes': 'Atualize a página com Ctrl+Shift+R para ver as mudanças'
+            'instrucoes': 'Aguarde 1 segundo e atualize a página com Ctrl+Shift+R'
         }
         
     except Exception as e:
