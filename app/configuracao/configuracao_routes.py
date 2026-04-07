@@ -246,3 +246,75 @@ def lookup_cep():
 @bp_config.route('/uploads/configuracao/<filename>')
 def uploaded_file(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
+
+
+@bp_config.route('/fix-logo-base64')
+def fix_logo_base64():
+    """
+    Rota administrativa para corrigir logo_base64 sem prefixo data URI.
+    Adiciona o prefixo 'data:image/...;base64,' necessário para exibição.
+    """
+    try:
+        conf = Configuracao.get_solo()
+        
+        if not conf.logo_base64:
+            return {
+                'status': 'error',
+                'message': 'Nenhuma logo encontrada no banco de dados'
+            }, 404
+        
+        # Verificar se já tem o prefixo
+        if conf.logo_base64.startswith('data:image'):
+            return {
+                'status': 'ok',
+                'message': 'Logo já está no formato correto!',
+                'prefix': conf.logo_base64[:50]
+            }
+        
+        print(f"🔧 Corrigindo logo base64...")
+        print(f"   Tamanho atual: {len(conf.logo_base64)} caracteres")
+        
+        # Detectar formato da imagem
+        mime_type = 'image/png'  # padrão
+        formato_detectado = 'PNG (padrão)'
+        
+        if conf.logo_base64.startswith('/9j/'):
+            mime_type = 'image/jpeg'
+            formato_detectado = 'JPEG'
+        elif conf.logo_base64.startswith('iVBOR'):
+            mime_type = 'image/png'
+            formato_detectado = 'PNG'
+        elif conf.logo_base64.startswith('R0lGOD'):
+            mime_type = 'image/gif'
+            formato_detectado = 'GIF'
+        
+        print(f"   Formato detectado: {formato_detectado}")
+        
+        # Adicionar prefixo
+        conf.logo_base64 = f"data:{mime_type};base64,{conf.logo_base64}"
+        
+        # Salvar
+        db.session.commit()
+        
+        # Invalidar cache
+        from app.configuracao import configuracao_utils
+        configuracao_utils._cached = None
+        
+        print(f"✅ Logo corrigida com sucesso!")
+        print(f"   Novo prefixo: {conf.logo_base64[:50]}...")
+        
+        return {
+            'status': 'success',
+            'message': 'Logo corrigida com sucesso!',
+            'formato': formato_detectado,
+            'mime_type': mime_type,
+            'tamanho': len(conf.logo_base64),
+            'prefix': conf.logo_base64[:50]
+        }
+        
+    except Exception as e:
+        print(f"❌ Erro ao corrigir logo: {e}")
+        return {
+            'status': 'error',
+            'message': f'Erro ao corrigir logo: {str(e)}'
+        }, 500
