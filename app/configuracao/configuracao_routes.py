@@ -296,20 +296,25 @@ def fix_logo_base64():
         # Salvar
         db.session.commit()
         
-        # Invalidar cache
-        from app.configuracao import configuracao_utils
-        configuracao_utils._cached = None
+        # Invalidar cache de forma mais agressiva
+        import app.configuracao.configuracao_utils as cfg_utils
+        cfg_utils._cached = None
+        
+        # Forçar reload
+        cfg_utils.get_config(force_reload=True)
         
         print(f"✅ Logo corrigida com sucesso!")
         print(f"   Novo prefixo: {conf.logo_base64[:50]}...")
+        print(f"   Cache invalidado e recarregado")
         
         return {
             'status': 'success',
-            'message': 'Logo corrigida com sucesso!',
+            'message': 'Logo corrigida com sucesso! Cache invalidado.',
             'formato': formato_detectado,
             'mime_type': mime_type,
             'tamanho': len(conf.logo_base64),
-            'prefix': conf.logo_base64[:50]
+            'prefix': conf.logo_base64[:50],
+            'instrucoes': 'Atualize a página com Ctrl+Shift+R para ver as mudanças'
         }
         
     except Exception as e:

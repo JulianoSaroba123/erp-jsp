@@ -790,13 +790,23 @@ def gerar_pdf(id):
             
             # Importar configurações da empresa
             from app.configuracao.configuracao_utils import get_config
-            config = get_config()
+            config = get_config(force_reload=True)  # Forçar reload para garantir dados atualizados
             
             # Usar logo base64 das configurações se disponível
             logo_url = None
             if config and config.logo_base64:
-                logo_url = config.logo_base64
-                logger.info("✅ Usando logo_base64 das configurações")
+                # Verificar se a logo tem o prefixo correto
+                if not config.logo_base64.startswith('data:image'):
+                    logger.warning("⚠️ Logo base64 sem prefixo data URI - será exibida logo padrão")
+                    logger.warning(f"   Primeiros 50 chars: {config.logo_base64[:50]}")
+                    # Usar fallback
+                    project_root = os.path.dirname(current_app.root_path)
+                    logo_path = os.path.join(project_root, "static", "img", "JSP.jpg")
+                    logo_url = f"file:///{logo_path.replace(os.sep, '/')}"
+                else:
+                    logo_url = config.logo_base64
+                    logger.info("✅ Usando logo_base64 das configurações")
+                    logger.info(f"   Prefixo: {config.logo_base64[:50]}...")
             else:
                 # Fallback para logo padrão se não houver base64
                 project_root = os.path.dirname(current_app.root_path)
@@ -835,12 +845,22 @@ def gerar_pdf(id):
             
             # Importar configurações da empresa para HTML também
             from app.configuracao.configuracao_utils import get_config
-            config = get_config()
+            config = get_config(force_reload=True)  # Forçar reload para garantir dados atualizados
+            
+            # Preparar logo_url também para HTML
+            logo_url = None
+            if config and config.logo_base64:
+                if config.logo_base64.startswith('data:image'):
+                    logo_url = config.logo_base64
+                    logger.info("✅ Usando logo_base64 das configurações (HTML)")
+                else:
+                    logger.warning("⚠️ Logo base64 sem prefixo data URI (HTML)")
             
             # Criar resposta HTML com headers de não-cache
             html_response = make_response(render_template('proposta/pdf_proposta.html', 
                                                         proposta=proposta,
                                                         config=config,
+                                                        logo_url=logo_url,
                                                         parcelas=parcelas))
             html_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
             html_response.headers['Pragma'] = 'no-cache'
