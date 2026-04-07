@@ -641,6 +641,16 @@
             
             <!-- Usuário -->
             {% if current_user.is_authenticated %}
+            <!-- Configurações (Apenas Admin) -->
+            {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
+            <div class="nav-item">
+                <a href="{{ url_for('configuracao.visualizar') }}" class="nav-link">
+                    <i class="nav-icon fas fa-cog"></i>
+                    <span class="nav-text">Configurações</span>
+                </a>
+            </div>
+            {% endif %}
+            
             <div class="nav-item">
                 <a href="{{ url_for('auth.perfil') }}" class="nav-link">
                     <i class="nav-icon fas fa-user-circle"></i>
