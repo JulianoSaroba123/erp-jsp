@@ -371,15 +371,25 @@ def get_logo_base64():
         from app.configuracao.configuracao_model import Configuracao
         import base64
         
+        print("🔍 DEBUG LOGO: Iniciando busca da logo...")
+        
         # Busca a configuração do sistema
         config = Configuracao.get_solo()
         
         # Se há logo em base64 armazenado no banco (para cloud/Render), usa ele primeiro
         if config and config.logo_base64:
-            return config.logo_base64
+            print(f"✅ DEBUG LOGO: Logo encontrada no banco (base64) - {len(config.logo_base64)} chars")
+            # Remove prefixo data:image se houver
+            logo_b64 = config.logo_base64
+            if logo_b64.startswith('data:'):
+                # Extrai apenas o base64 depois da vírgula
+                logo_b64 = logo_b64.split(',', 1)[1] if ',' in logo_b64 else logo_b64
+                print(f"   🔧 Removido prefixo data:image, tamanho agora: {len(logo_b64)} chars")
+            return logo_b64
         
         # Se há logo configurado como arquivo, usa ele
         if config and config.logo:
+            print(f"🔍 DEBUG LOGO: Tentando carregar logo do arquivo: {config.logo}")
             # Verifica se é caminho absoluto ou relativo
             if os.path.isabs(config.logo):
                 logo_path = config.logo
@@ -387,42 +397,37 @@ def get_logo_base64():
                 # Caminho relativo ao diretório static
                 logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'static', 'uploads', config.logo)
             
+            print(f"   📁 Caminho completo: {logo_path}")
             # Lê o arquivo da imagem e converte para base64
             if os.path.exists(logo_path):
                 with open(logo_path, 'rb') as img_file:
                     img_data = img_file.read()
                     img_base64 = base64.b64encode(img_data).decode('utf-8')
-                    # Detecta o tipo da imagem pela extensão
-                    ext = os.path.splitext(logo_path)[1].lower()
-                    if ext in ['.jpg', '.jpeg']:
-                        return img_base64
-                    elif ext in ['.png']:
-                        return img_base64
-                    elif ext in ['.gif']:
-                        return img_base64
-                    else:
-                        return img_base64
+                    print(f"   ✅ Logo carregada do arquivo - {len(img_base64)} chars base64")
+                    return img_base64
+            else:
+                print(f"   ❌ Arquivo não encontrado: {logo_path}")
         
         # Fallback: tenta usar a logo padrão JSP.jpg
         logo_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'static', 'img', 'JSP.jpg')
+        print(f"🔍 DEBUG LOGO: Tentando logo padrão: {logo_path}")
         if os.path.exists(logo_path):
             with open(logo_path, 'rb') as img_file:
                 img_data = img_file.read()
                 img_base64 = base64.b64encode(img_data).decode('utf-8')
+                print(f"   ✅ Logo padrão carregada - {len(img_base64)} chars base64")
                 return img_base64
+        else:
+            print(f"   ❌ Logo padrão não encontrada: {logo_path}")
                 
     except Exception as e:
-        print(f"Erro ao carregar logo: {e}")
+        print(f"❌ DEBUG LOGO: Erro ao carregar logo: {e}")
+        import traceback
+        traceback.print_exc()
     
-    # Fallback final: SVG padrão
-    svg_logo = '''<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-        <rect width="80" height="80" fill="#007bff" rx="8"/>
-        <text x="40" y="30" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">JSP</text>
-        <text x="40" y="50" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="white">ELÉTRICA</text>
-        <text x="40" y="65" font-family="Arial, sans-serif" font-size="8" text-anchor="middle" fill="white">INDUSTRIAL</text>
-    </svg>'''
-    svg_base64 = base64.b64encode(svg_logo.encode('utf-8')).decode('utf-8')
-    return f"data:image/svg+xml;base64,{svg_base64}"
+    # Fallback final: retorna None para usar o SVG no template
+    print("⚠️ DEBUG LOGO: Nenhuma logo encontrada, retornando None (usará placeholder)")
+    return None
 
 @ordem_servico_bp.route('/teste_os')
 def teste_os():
