@@ -491,11 +491,21 @@ class OrdemServico(BaseModel):
             db.or_(
                 cls.status == 'em_execucao',
                 cls.status == 'Em Andamento',
-                cls.status == 'em andamento'
+                cls.status == 'em_andamento'
             )
         ).count()
         
-        # Finalizadas/Concluídas este mês (aceita: 'finalizada', 'Concluída', 'concluida')
+        # Finalizadas/Concluídas TOTAL (não apenas do mês)
+        concluidas_total = cls.query.filter(
+            cls.ativo == True,
+            db.or_(
+                cls.status == 'finalizada',
+                cls.status == 'Concluída',
+                cls.status == 'concluida'
+            )
+        ).count()
+        
+        # Concluídas este mês (para referência adicional)
         from datetime import date
         mes_atual = date.today().month
         ano_atual = date.today().year
@@ -515,13 +525,15 @@ class OrdemServico(BaseModel):
         print(f"   Total ativo=True: {total}")
         print(f"   Abertas (pendente/Aberta/aberta): {abertas}")
         print(f"   Em andamento (em_execucao/Em Andamento): {em_andamento}")
-        print(f"   Concluídas no mês {mes_atual}/{ano_atual} (finalizada/Concluída): {concluidas_mes}")
+        print(f"   Concluídas TOTAL (finalizada/Concluída): {concluidas_total}")
+        print(f"   Concluídas no mês {mes_atual}/{ano_atual}: {concluidas_mes}")
         
         return {
             'total': total,
             'abertas': abertas,
             'em_andamento': em_andamento,
-            'concluidas_mes': concluidas_mes
+            'concluidas_mes': concluidas_total,  # Alterado para mostrar TOTAL ao invés de apenas do mês
+            'concluidas_total': concluidas_total  # Novo campo
         }
     
     def iniciar_servico(self):
