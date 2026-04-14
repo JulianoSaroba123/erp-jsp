@@ -256,6 +256,12 @@
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
+            
+            /* Garantir visibilidade do total de mão de obra */
+            tfoot td {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
         }
         
         /* Melhorar quebras de página */
@@ -791,8 +797,8 @@
                     </tbody>
                     <tfoot>
                         <tr style="background: #1a365d; color: white;">
-                            <td colspan="3" style="padding: 12px; text-align: right; font-weight: bold; font-size: 11px;">TOTAL MÃO DE OBRA:</td>
-                            <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 14px; background: #2d5a27;">
+                            <td colspan="3" style="padding: 12px; text-align: right; font-weight: bold; font-size: 13px; color: #ffffff;">TOTAL MÃO DE OBRA:</td>
+                            <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 18px; background: #10b981; color: #000000; border-left: 3px solid #065f46;">
                                 R$ {{ '%.2f'|format(ns.total_mo)|replace('.', ',') }}
                             </td>
                         </tr>
