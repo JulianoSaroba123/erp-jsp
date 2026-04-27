@@ -299,10 +299,10 @@ async function buscarCNPJ() {
     
     try {
         // Mostrar loading
-        const btn = document.getElementById('btn_lookup_cnpj');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        btn.disabled = true;
+        const btnCNPJ = document.getElementById('btn_lookup_cnpj');
+        const originalText = btnCNPJ.innerHTML;
+        btnCNPJ.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btnCNPJ.disabled = true;
         
         const url = `/configuracao/lookup/cnpj?cnpj=${encodeURIComponent(cnpj)}`;
         console.log('📡 URL da requisição:', url);
@@ -321,9 +321,8 @@ async function buscarCNPJ() {
             console.error('❌ Erro na resposta:', errorMessage);
             
             // Restaurar botão antes de lançar erro
-            const btn = document.getElementById('btn_lookup_cnpj');
-            btn.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
-            btn.disabled = false;
+            btnCNPJ.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
+            btnCNPJ.disabled = false;
             
             if (res.status === 404) {
                 alert('⚠️ CNPJ não encontrado na base de dados da Receita Federal.\n\nVerifique se o número está correto ou preencha os dados manualmente.');
@@ -387,18 +386,17 @@ async function buscarCNPJ() {
         alert('✅ Dados da empresa preenchidos com sucesso!');
         
         // Restaurar botão
-        const btn = document.getElementById('btn_lookup_cnpj');
-        btn.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
-        btn.disabled = false;
+        btnCNPJ.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
+        btnCNPJ.disabled = false;
         
     } catch (error) {
         console.error('❌ Erro ao buscar CNPJ:', error);
         alert(`❌ Erro inesperado ao consultar CNPJ.\n\nDetalhes: ${error.message}\n\nPreencha os dados manualmente.`);
         
         // Restaurar botão
-        const btn = document.getElementById('btn_lookup_cnpj');
-        btn.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
-        btn.disabled = false;
+        const btnCNPJ = document.getElementById('btn_lookup_cnpj');
+        btnCNPJ.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
+        btnCNPJ.disabled = false;
     }
 }
 
@@ -430,10 +428,10 @@ async function buscarCEP() {
     
     try {
         // Mostrar loading
-        const btn = document.getElementById('btn_lookup_cep');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        btn.disabled = true;
+        const btnCEP = document.getElementById('btn_lookup_cep');
+        const originalText = btnCEP.innerHTML;
+        btnCEP.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btnCEP.disabled = true;
         
         const url = `/configuracao/lookup/cep?cep=${encodeURIComponent(cep)}`;
         console.log('📡 URL da requisição:', url);
@@ -452,6 +450,8 @@ async function buscarCEP() {
         
         if (data.erro) {
             alert('CEP não encontrado');
+            btnCEP.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
+            btnCEP.disabled = false;
             return;
         }
         
@@ -478,14 +478,18 @@ async function buscarCEP() {
         
         alert('✅ Endereço preenchido com sucesso!');
         
+        // Restaurar botão
+        btnCEP.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
+        btnCEP.disabled = false;
+        
     } catch (error) {
         console.error('❌ Erro ao buscar CEP:', error);
         alert(`Erro ao consultar CEP: ${error.message}`);
-    } finally {
+        
         // Restaurar botão
-        const btn = document.getElementById('btn_lookup_cep');
-        btn.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
-        btn.disabled = false;
+        const btnCEP = document.getElementById('btn_lookup_cep');
+        btnCEP.innerHTML = '<i class="fas fa-search me-1"></i>Buscar';
+        btnCEP.disabled = false;
     }
 }
 
