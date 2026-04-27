@@ -2,6 +2,28 @@
 
 {% block title %}Configurações do Sistema - {{ super() }}{% endblock %}
 
+{% block styles %}
+<style>
+    /* Garantir que botões de busca apareçam ativos */
+    #btn_lookup_cnpj, #btn_lookup_cep {
+        cursor: pointer !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+    
+    #btn_lookup_cnpj:hover, #btn_lookup_cep:hover {
+        background-color: #0d6efd !important;
+        color: white !important;
+        border-color: #0d6efd !important;
+    }
+    
+    /* Estilo para inputs de busca */
+    #cnpj_input, #cep_input {
+        border-right: none;
+    }
+</style>
+{% endblock %}
+
 {% block breadcrumb %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
@@ -470,32 +492,79 @@ async function buscarCEP() {
 // Registrar eventos quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Sistema de busca CNPJ/CEP carregado');
+    console.log('📍 Localização: Página de Configurações');
     
     const btnCNPJ = document.getElementById('btn_lookup_cnpj');
     const btnCEP = document.getElementById('btn_lookup_cep');
+    const cnpjInput = document.getElementById('cnpj_input');
+    const cepInput = document.getElementById('cep_input');
     
+    console.log('🔍 Debug - Elementos encontrados:');
+    console.log('   - Botão CNPJ:', btnCNPJ ? '✅ SIM' : '❌ NÃO');
+    console.log('   - Botão CEP:', btnCEP ? '✅ SIM' : '❌ NÃO');
+    console.log('   - Input CNPJ:', cnpjInput ? '✅ SIM' : '❌ NÃO');
+    console.log('   - Input CEP:', cepInput ? '✅ SIM' : '❌ NÃO');
+    
+    // Garantir que os botões estejam habilitados
     if (btnCNPJ) {
+        btnCNPJ.disabled = false;
+        btnCNPJ.classList.remove('disabled');
+        btnCNPJ.style.cursor = 'pointer';
+        btnCNPJ.style.opacity = '1';
         btnCNPJ.addEventListener('click', function(e) {
             e.preventDefault(); // Prevenir submit do formulário
             e.stopPropagation(); // Parar propagação do evento
             console.log('🖱️ Botão CNPJ clicado!');
+            console.log('   - CNPJ atual:', cnpjInput.value);
             buscarCNPJ();
         });
         console.log('✅ Event listener CNPJ registrado');
+        console.log('✅ Botão CNPJ habilitado e pronto para uso');
     } else {
         console.error('❌ Botão CNPJ não encontrado');
     }
     
+    // Máscara de CNPJ
+    if (cnpjInput) {
+        cnpjInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 14) {
+                value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+                value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+                value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+                value = value.replace(/(\d{4})(\d)/, '$1-$2');
+            }
+            e.target.value = value;
+        });
+    }
+    
     if (btnCEP) {
+        btnCEP.disabled = false;
+        btnCEP.classList.remove('disabled');
+        btnCEP.style.cursor = 'pointer';
+        btnCEP.style.opacity = '1';
         btnCEP.addEventListener('click', function(e) {
             e.preventDefault(); // Prevenir submit do formulário
             e.stopPropagation(); // Parar propagação do evento
             console.log('🖱️ Botão CEP clicado!');
+            console.log('   - CEP atual:', cepInput.value);
             buscarCEP();
         });
         console.log('✅ Event listener CEP registrado');
+        console.log('✅ Botão CEP habilitado e pronto para uso');
     } else {
         console.error('❌ Botão CEP não encontrado');
+    }
+    
+    // Máscara de CEP
+    if (cepInput) {
+        cepInput.addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length <= 8) {
+                value = value.replace(/^(\d{5})(\d)/, '$1-$2');
+            }
+            e.target.value = value;
+        });
     }
     
     // Preview de logo ao selecionar arquivo
