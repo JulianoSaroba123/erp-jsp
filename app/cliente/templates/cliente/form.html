@@ -865,7 +865,15 @@
             this.disabled = true;
             
             fetch(`/cliente/api/consultar-cnpj/${cnpjLimpo}`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            throw new Error('CNPJ não encontrado na base de dados da Receita Federal. Verifique se o número está correto ou preencha os dados manualmente.');
+                        }
+                        throw new Error(`Erro ${response.status} ao consultar CNPJ. Preencha os dados manualmente.`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         // Preenche os campos com os dados retornados
@@ -933,7 +941,7 @@
                 })
                 .catch(error => {
                     console.error('Erro:', error);
-                    alert('Erro ao consultar CNPJ. Tente novamente.');
+                    alert('⚠️ ' + error.message);
                 })
                 .finally(() => {
                     // Remove loading
