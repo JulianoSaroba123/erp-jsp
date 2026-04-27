@@ -250,7 +250,15 @@
 <script>
 // Funções aprimoradas para lookup CEP/CNPJ com melhor tratamento de erros
 async function buscarCNPJ() {
+    console.log('🎯 Função buscarCNPJ() chamada!');
     const cnpjInput = document.getElementById('cnpj_input');
+    
+    if (!cnpjInput) {
+        console.error('❌ Input CNPJ não encontrado!');
+        alert('Erro: Campo CNPJ não encontrado na página');
+        return;
+    }
+    
     const cnpj = cnpjInput.value.trim();
     
     console.log('🔍 Buscando CNPJ:', cnpj);
@@ -373,7 +381,15 @@ async function buscarCNPJ() {
 }
 
 async function buscarCEP() {
+    console.log('🎯 Função buscarCEP() chamada!');
     const cepInput = document.getElementById('cep_input');
+    
+    if (!cepInput) {
+        console.error('❌ Input CEP não encontrado!');
+        alert('Erro: Campo CEP não encontrado na página');
+        return;
+    }
+    
     const cep = cepInput.value.trim();
     
     console.log('🔍 Buscando CEP:', cep);
@@ -459,14 +475,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnCEP = document.getElementById('btn_lookup_cep');
     
     if (btnCNPJ) {
-        btnCNPJ.addEventListener('click', buscarCNPJ);
+        btnCNPJ.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevenir submit do formulário
+            e.stopPropagation(); // Parar propagação do evento
+            console.log('🖱️ Botão CNPJ clicado!');
+            buscarCNPJ();
+        });
         console.log('✅ Event listener CNPJ registrado');
     } else {
         console.error('❌ Botão CNPJ não encontrado');
     }
     
     if (btnCEP) {
-        btnCEP.addEventListener('click', buscarCEP);
+        btnCEP.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevenir submit do formulário
+            e.stopPropagation(); // Parar propagação do evento
+            console.log('🖱️ Botão CEP clicado!');
+            buscarCEP();
+        });
         console.log('✅ Event listener CEP registrado');
     } else {
         console.error('❌ Botão CEP não encontrado');
