@@ -138,6 +138,15 @@ class OrdemServicoColaborador(BaseModel):
     horas_normais = db.Column(db.Numeric(5, 2), default=0.00)
     horas_extras = db.Column(db.Numeric(5, 2), default=0.00)
     total_horas = db.Column(db.Numeric(5, 2), default=0.00)  # 8.5 = 8h30min
+    
+    # === CONTROLE DE ADICIONAIS ===
+    # Percentual de adicional cobrado do cliente (pode ser diferente do pago ao colaborador)
+    # None = usar regra padrão, valor definido = usar percentual customizado
+    percentual_adicional_cobranca = db.Column(db.Numeric(5, 2))  # Ex: 50.00 para 50%
+    
+    # Valores para controle de margem
+    valor_hora_custo = db.Column(db.Numeric(10, 2))  # Valor/hora pago ao colaborador
+    valor_hora_receita = db.Column(db.Numeric(10, 2))  # Valor/hora cobrado do cliente
 
     # Controle de deslocamento por colaborador
     km_inicial = db.Column(db.Integer)
@@ -249,3 +258,145 @@ class OrdemServicoColaborador(BaseModel):
         if self.km_inicial is not None and self.km_final is not None and self.km_final >= self.km_inicial:
             return self.km_final - self.km_inicial
         return 0
+    
+    def eh_feriado(self):
+        """Verifica se a data de trabalho é feriado."""
+        if not self.data_trabalho:
+            return False
+        
+        # Lista de feriados nacionais (simplificada)
+        feriados_fixos = [
+            (1, 1),   # Ano Novo
+            (4, 21),  # Tiradentes
+            (5, 1),   # Dia do Trabalho
+            (9, 7),   # Independência
+            (10, 12), # Nossa Senhora Aparecida
+            (11, 2),  # Finados
+            (11, 15), # Proclamação da República
+            (12, 25), # Natal
+        ]
+        
+        mes_dia = (self.data_trabalho.month, self.data_trabalho.day)
+        return mes_dia in feriados_fixos
+    
+    def eh_domingo(self):
+        """Verifica se a data de trabalho é domingo."""
+        if not self.data_trabalho:
+            return False
+        return self.data_trabalho.weekday() == 6  # 6 = domingo
+    
+    def eh_sabado(self):
+        """Verifica se a data de trabalho é sábado."""
+        if not self.data_trabalho:
+            return False
+        return self.data_trabalho.weekday() == 5  # 5 = sábado
+    
+    def tem_horas_apos_17h(self):
+        """Verifica se trabalhou após 17:00 em dia normal."""
+        if not self.hora_saida_tarde and not self.hora_entrada_extra:
+            return False
+        
+        # Se tem hora extra, considera que trabalhou após 17:00
+        if self.hora_entrada_extra:
+            return True
+        
+        # Se a saída da tarde é após 17:00
+        if self.hora_saida_tarde:
+            from datetime import time
+            hora_limite = time(17, 0)
+            return self.hora_saida_tarde > hora_limite
+        
+        return False
+    
+    def calcular_percentual_adicional_padrao(self):
+        """
+        Calcula percentual de adicional baseado em regras trabalhistas:
+        - Após 17:00 em dias normais: 50%
+        - Sábados: 50%
+        - Domingos e feriados: 100%
+        """
+        if self.eh_domingo() or self.eh_feriado():
+            return Decimal('100.00')  # 100%
+        elif self.eh_sabado():
+            return Decimal('50.00')   # 50%
+        elif self.tem_horas_apos_17h():
+            return Decimal('50.00')   # 50%
+        else:
+            return Decimal('0.00')    # Sem adicional
+    
+    def calcular_valores_com_adicional(self, valor_hora_base):
+        """
+        Calcula valores de custo e receita aplicando adicionais.
+        
+        Args:
+            valor_hora_base: Valor base da hora do colaborador (sem adicional)
+        
+        Retorna:
+            tuple: (valor_hora_custo, valor_hora_receita, percentual_adicional_colaborador, percentual_adicional_cliente)
+        """
+        valor_hora_base = Decimal(str(valor_hora_base))
+        
+        # Percentual pago ao colaborador (sempre seguir regras trabalhistas)
+        percentual_colaborador = self.calcular_percentual_adicional_padrao()
+        
+        # Percentual cobrado do cliente (customizável ou igual ao do colaborador)
+        if self.percentual_adicional_cobranca is not None:
+            # Se foi definido um percentual customizado, usar ele
+            percentual_cliente = self.percentual_adicional_cobranca
+        else:
+            # Caso contrário, cobra do cliente o mesmo que paga ao colaborador
+            percentual_cliente = percentual_colaborador
+        
+        # Calcular valor/hora de custo (pago ao colaborador)
+        multiplicador_custo = 1 + (percentual_colaborador / Decimal('100.00'))
+        valor_hora_custo = valor_hora_base * multiplicador_custo
+        
+        # Calcular valor/hora de receita (cobrado do cliente)
+        multiplicador_receita = 1 + (percentual_cliente / Decimal('100.00'))
+        valor_hora_receita = valor_hora_base * multiplicador_receita
+        
+        return (valor_hora_custo, valor_hora_receita, percentual_colaborador, percentual_cliente)
+    
+    def atualizar_valores_com_adicional(self, valor_hora_base):
+        """
+        Atualiza os campos valor_hora_custo e valor_hora_receita.
+        
+        Args:
+            valor_hora_base: Valor base da hora do colaborador
+        """
+        custo, receita, _, _ = self.calcular_valores_com_adicional(valor_hora_base)
+        self.valor_hora_custo = custo
+        self.valor_hora_receita = receita
+    
+    @property
+    def descricao_adicional(self):
+        """Retorna descrição do tipo de adicional aplicado."""
+        if self.eh_domingo():
+            return "Domingo (100%)"
+        elif self.eh_feriado():
+            return "Feriado (100%)"
+        elif self.eh_sabado():
+            return "Sábado (50%)"
+        elif self.tem_horas_apos_17h():
+            return "Após 17h (50%)"
+        else:
+            return "Horário Normal"
+    
+    @property
+    def total_custo(self):
+        """Calcula valor total de custo (pago ao colaborador)."""
+        if self.valor_hora_custo and self.total_horas:
+            return self.valor_hora_custo * self.total_horas
+        return Decimal('0.00')
+    
+    @property
+    def total_receita(self):
+        """Calcula valor total de receita (cobrado do cliente)."""
+        if self.valor_hora_receita and self.total_horas:
+            return self.valor_hora_receita *  self.total_horas
+        return Decimal('0.00')
+    
+    @property
+    def margem_contribuicao(self):
+        """Calcula margem de contribuição (receita - custo)."""
+        return self.total_receita - self.total_custo
