@@ -359,6 +359,60 @@
                                                    name="colaboradores[{{ loop.index0 }}][total_horas]"
                                                    value="{{ colab_trabalho.total_horas_formatado if colab_trabalho.total_horas else '' }}" readonly>
                                         </div>
+                                        
+                                        <!-- === ADICIONAIS DE HORAS EXTRAS === -->
+                                        <div class="col-12"><hr class="border-secondary my-2"></div>
+                                        <div class="col-12 mb-2">
+                                            <small class="text-info">
+                                                <i class="fas fa-percentage me-1"></i>
+                                                <strong>Adicionais:</strong> <span class="text-muted">Sistema calcula automaticamente os % baseado em data/horário (CLT)</span>
+                                            </small>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">
+                                                % CLT <i class="fas fa-info-circle text-info" title="Percentual pago ao colaborador (automático)"></i>
+                                            </label>
+                                            <input type="text" class="form-control bg-secondary text-white border-info colaborador-perc-clt" 
+                                                   name="colaboradores[{{ loop.index0 }}][percentual_clt]" 
+                                                   value="{{ colab_trabalho.percentual_adicional_padrao }}%" readonly>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">
+                                                % Cliente <i class="fas fa-edit text-warning" title="Percentual cobrado do cliente (editável)"></i>
+                                            </label>
+                                            <input type="number" class="form-control bg-dark text-white border-warning colaborador-perc-cliente" 
+                                                   name="colaboradores[{{ loop.index0 }}][percentual_adicional_cobranca]" 
+                                                   value="{{ colab_trabalho.percentual_adicional_cobranca if colab_trabalho.percentual_adicional_cobranca is not none else colab_trabalho.percentual_adicional_padrao }}"
+                                                   step="0.01" min="0" max="200" 
+                                                   onchange="calcularAdicionaisColaborador({{ loop.index0 }})">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">
+                                                R$ Custo/h <i class="fas fa-coins text-danger" title="Valor pago ao colaborador por hora"></i>
+                                            </label>
+                                            <input type="text" class="form-control bg-dark text-danger border-secondary colaborador-valor-custo" 
+                                                   name="colaboradores[{{ loop.index0 }}][valor_custo_display]" 
+                                                   value="R$ {{ '%.2f'|format(colab_trabalho.valor_hora_custo|float) if colab_trabalho.valor_hora_custo else '0.00' }}" readonly>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">
+                                                R$ Receita/h <i class="fas fa-hand-holding-usd text-success" title="Valor cobrado do cliente por hora"></i>
+                                            </label>
+                                            <input type="text" class="form-control bg-dark text-success border-secondary colaborador-valor-receita" 
+                                                   name="colaboradores[{{ loop.index0 }}][valor_receita_display]" 
+                                                   value="R$ {{ '%.2f'|format(colab_trabalho.valor_hora_receita|float) if colab_trabalho.valor_hora_receita else '0.00' }}" readonly>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label text-white">
+                                                Margem/h <i class="fas fa-chart-line" title="Diferença: Receita - Custo"></i>
+                                            </label>
+                                            <input type="text" class="form-control bg-dark border-secondary colaborador-margem" 
+                                                   name="colaboradores[{{ loop.index0 }}][margem_display]" 
+                                                   value="R$ {{ '%.2f'|format((colab_trabalho.margem_contribuicao|float) if colab_trabalho.margem_contribuicao else 0.00) }}" 
+                                                   style="color: {{ 'var(--bs-success)' if colab_trabalho.margem_contribuicao and colab_trabalho.margem_contribuicao > 0 else 'var(--bs-danger)' }};" readonly>
+                                        </div>
+                                        <div class="col-12"><hr class="border-secondary my-2"></div>
+                                        
                                         <div class="col-md-4">
                                             <label class="form-label text-white">KM Inicial</label>
                                             <input type="number" class="form-control bg-dark text-white border-secondary colaborador-km-inicial" 
@@ -2376,6 +2430,9 @@ document.getElementById('tipo_servico')?.addEventListener('change', atualizarMod
 // Contador de linhas de colaboradores
 let colaboradorIndex = {{ ordem.colaboradores_trabalho|length if ordem and ordem.colaboradores_trabalho else 0 }};
 
+// Cache de dados dos colaboradores (para cálculo de adicionais)
+let colaboradoresCache = {};
+
 // Função para adicionar nova linha de colaborador
 function adicionarColaboradorLinha() {
     const lista = document.getElementById('colaboradores_lista');
@@ -2456,6 +2513,58 @@ function adicionarColaboradorLinha() {
                     <input type="text" class="form-control bg-dark text-white border-secondary total-horas-input" 
                            name="colaboradores[${colaboradorIndex}][total_horas]" readonly>
                 </div>
+                
+                <!-- === ADICIONAIS DE HORAS EXTRAS === -->
+                <div class="col-12"><hr class="border-secondary my-2"></div>
+                <div class="col-12 mb-2">
+                    <small class="text-info">
+                        <i class="fas fa-percentage me-1"></i>
+                        <strong>Adicionais:</strong> <span class="text-muted">Preencha a data e horários para calcular os adicionais automaticamente</span>
+                    </small>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">
+                        % CLT <i class="fas fa-info-circle text-info" title="Percentual pago ao colaborador (automático)"></i>
+                    </label>
+                    <input type="text" class="form-control bg-secondary text-white border-info colaborador-perc-clt" 
+                           name="colaboradores[${colaboradorIndex}][percentual_clt]" 
+                           value="0%" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">
+                        % Cliente <i class="fas fa-edit text-warning" title="Percentual cobrado do cliente (editável)"></i>
+                    </label>
+                    <input type="number" class="form-control bg-dark text-white border-warning colaborador-perc-cliente" 
+                           name="colaboradores[${colaboradorIndex}][percentual_adicional_cobranca]" 
+                           value="0" step="0.01" min="0" max="200" 
+                           onchange="calcularAdicionaisColaborador(${colaboradorIndex})">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">
+                        R$ Custo/h <i class="fas fa-coins text-danger" title="Valor pago ao colaborador por hora"></i>
+                    </label>
+                    <input type="text" class="form-control bg-dark text-danger border-secondary colaborador-valor-custo" 
+                           name="colaboradores[${colaboradorIndex}][valor_custo_display]" 
+                           value="R$ 0.00" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">
+                        R$ Receita/h <i class="fas fa-hand-holding-usd text-success" title="Valor cobrado do cliente por hora"></i>
+                    </label>
+                    <input type="text" class="form-control bg-dark text-success border-secondary colaborador-valor-receita" 
+                           name="colaboradores[${colaboradorIndex}][valor_receita_display]" 
+                           value="R$ 0.00" readonly>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-white">
+                        Margem/h <i class="fas fa-chart-line" title="Diferença: Receita - Custo"></i>
+                    </label>
+                    <input type="text" class="form-control bg-dark text-white border-secondary colaborador-margem" 
+                           name="colaboradores[${colaboradorIndex}][margem_display]" 
+                           value="R$ 0.00" readonly>
+                </div>
+                <div class="col-12"><hr class="border-secondary my-2"></div>
+                
                 <div class="col-md-4">
                     <label class="form-label text-white">KM Inicial</label>
                     <input type="number" class="form-control bg-dark text-white border-secondary colaborador-km-inicial" 
@@ -2540,7 +2649,118 @@ function calcularHorasColaborador(index) {
     horasExtrasInput.value = formatarHorasDecimal(horasExtras);
     totalInput.value = formatarHorasDecimal(totalHoras);
 
+    // Calcular adicionais também
+    calcularAdicionaisColaborador(index);
+    
     atualizarTotaisColaboradores();
+}
+
+// ===== CÁLCULO DE ADICIONAIS DE HORAS EXTRAS =====
+function calcularAdicionaisColaborador(index) {
+    const colaboradorSelect = document.querySelector(`[name="colaboradores[${index}][colaborador_id]"]`);
+    const dataTrabalho = document.querySelector(`[name="colaboradores[${index}][data_trabalho]"]`)?.value;
+    const horaEntradaTarde = document.querySelector(`[name="colaboradores[${index}][hora_entrada_tarde]"]`)?.value;
+    const horaSaidaTarde = document.querySelector(`[name="colaboradores[${index}][hora_saida_tarde]"]`)?.value;
+    const horaEntradaExtra = document.querySelector(`[name="colaboradores[${index}][hora_entrada_extra]"]`)?.value;
+    
+    const percCltInput = document.querySelector(`[name="colaboradores[${index}][percentual_clt]"]`);
+    const percClienteInput = document.querySelector(`[name="colaboradores[${index}][percentual_adicional_cobranca]"]`);
+    const valorCustoInput = document.querySelector(`[name="colaboradores[${index}][valor_custo_display]"]`);
+    const valorReceitaInput = document.querySelector(`[name="colaboradores[${index}][valor_receita_display]"]`);
+    const margemInput = document.querySelector(`[name="colaboradores[${index}][margem_display]"]`);
+    
+    if (!colaboradorSelect || !percCltInput) return;
+    
+    const colaboradorId = colaboradorSelect.value;
+    if (!colaboradorId || !colaboradoresCache[colaboradorId]) {
+        // Colaborador não selecionado ou dados não carregados
+        return;
+    }
+    
+    const colaborador = colaboradoresCache[colaboradorId];
+    const valorHoraBase = parseFloat(colaborador.valor_hora) || 0;
+    
+    // Calcular percentual CLT automático
+    let percentualClt = 0;
+    
+    if (dataTrabalho) {
+        const data = new Date(dataTrabalho + 'T12:00:00'); // Força meio-dia para evitar timezone
+        const diaSemana = data.getDay(); // 0=Domingo, 6=Sábado
+        
+        // Lista de feriados nacionais (ano 2026 - ajustar conforme necessário)
+        const feriados = [
+            '2026-01-01', // Ano Novo
+            '2026-04-21', // Tiradentes  
+            '2026-05-01', // Dia do Trabalho
+            '2026-09-07', // Independência
+            '2026-10-12', // N. Sra. Aparecida
+            '2026-11-02', // Finados
+            '2026-11-15', // Proclamação da República
+            '2026-12-25'  // Natal
+        ];
+        
+        const ehFeriado = feriados.includes(dataTrabalho);
+        const ehDomingo = diaSemana === 0;
+        const ehSabado = diaSemana === 6;
+        
+        // Verificar se tem horas após 17h
+        let temHorasApos17h = false;
+        if (horaSaidaTarde) {
+            const [h, m] = horaSaidaTarde.split(':').map(Number);
+            if (h > 17 || (h === 17 && m > 0)) {
+                temHorasApos17h = true;
+            }
+        }
+        if (horaEntradaExtra) {
+            temHorasApos17h = true;
+        }
+        
+        // Aplicar regras de adicional
+        if (ehDomingo || ehFeriado) {
+            percentualClt = 100; // 100% adicional
+        } else if (ehSabado || temHorasApos17h) {
+            percentualClt = 50; // 50% adicional
+        } else {
+            percentualClt = 0; // Sem adicional
+        }
+    }
+    
+    // Atualizar campo % CLT
+    percCltInput.value = percentualClt + '%';
+    
+    // Se % Cliente não foi preenchido ainda, usar o mesmo % CLT
+    let percentualCliente = parseFloat(percClienteInput.value) || 0;
+    if (percentualCliente === 0 && percentualClt > 0) {
+        percentualCliente = percentualClt;
+        percClienteInput.value = percentualCliente;
+    }
+    
+    // Calcular valores
+    const multiplicadorCusto = 1 + (percentualClt / 100);
+    const multiplicadorReceita = 1 + (percentualCliente / 100);
+    
+    const valorCusto = valorHoraBase * multiplicadorCusto;
+    const valorReceita = valorHoraBase * multiplicadorReceita;
+    const margem = valorReceita - valorCusto;
+    
+    // Atualizar campos display
+    if (valorCustoInput) {
+        valorCustoInput.value = 'R$ ' + valorCusto.toFixed(2);
+    }
+    if (valorReceitaInput) {
+        valorReceitaInput.value = 'R$ ' + valorReceita.toFixed(2);
+    }
+    if (margemInput) {
+        margemInput.value = 'R$ ' + margem.toFixed(2);
+        // Colorir conforme margem positiva/negativa
+        if (margem > 0) {
+            margemInput.style.color = 'var(--bs-success)';
+        } else if (margem < 0) {
+            margemInput.style.color = 'var(--bs-danger)';
+        } else {
+            margemInput.style.color = 'var(--bs-warning)';
+        }
+    }
 }
 
 function calcularKmColaborador(index) {
@@ -2624,6 +2844,14 @@ async function carregarColaboradoresSelect(selectElement) {
             selectElement.innerHTML = '<option value="" disabled selected>Selecione um colaborador...</option>';
             const selectedId = selectElement.dataset.selected;
             data.colaboradores.forEach(colab => {
+                // Armazenar dados completos no cache para cálculo de adicionais
+                colaboradoresCache[colab.id] = {
+                    id: colab.id,
+                    nome: colab.nome,
+                    cargo: colab.cargo,
+                    valor_hora: colab.valor_hora || 0
+                };
+                
                 const option = document.createElement('option');
                 option.value = colab.id;
                 option.textContent = `${colab.nome} - ${colab.cargo}`;
@@ -2632,6 +2860,17 @@ async function carregarColaboradoresSelect(selectElement) {
                 }
                 selectElement.appendChild(option);
             });
+            
+            // Após carregar, recalcular adicionais se já tiver colaborador selecionado
+            if (selectElement.value) {
+                const item = selectElement.closest('.colaborador-item');
+                if (item) {
+                    const index = item.getAttribute('data-index');
+                    if (index !== null) {
+                        calcularAdicionaisColaborador(parseInt(index));
+                    }
+                }
+            }
         }
     } catch (error) {
         console.error('Erro ao carregar colaboradores:', error);
@@ -2664,6 +2903,28 @@ document.addEventListener('DOMContentLoaded', function() {
     // Listeners para recalcular total
     document.querySelectorAll('.total-horas-input').forEach(input => {
         input.addEventListener('input', atualizarTotaisColaboradores);
+    });
+    
+    // === LISTENERS PARA ADICIONAIS ===
+    // Listener delegado para mudança de colaborador
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('.colaborador-select')) {
+            const item = e.target.closest('.colaborador-item');
+            if (item) {
+                const index = item.getAttribute('data-index');
+                if (index !== null) {
+                    setTimeout(() => calcularAdicionaisColaborador(parseInt(index)), 100);
+                }
+            }
+        }
+        
+        // Listener para mudança de data de trabalho (recalcula % CLT)
+        if (e.target.matches('[name*="[data_trabalho]"]')) {
+            const match = e.target.name.match(/colaboradores\[(\d+)\]/);
+            if (match) {
+                calcularAdicionaisColaborador(parseInt(match[1]));
+            }
+        }
     });
     
     atualizarModoOperacional();

@@ -17,7 +17,7 @@ from app.ordem_servico.ordem_servico_model import (
     OrdemServico, OrdemServicoItem, OrdemServicoProduto, OrdemServicoParcela, OrdemServicoAnexo
 )
 from app.cliente.cliente_model import Cliente
-from app.colaborador.colaborador_model import OrdemServicoColaborador
+from app.colaborador.colaborador_model import OrdemServicoColaborador, Colaborador
 from app.produto.produto_model import Produto
 from decimal import Decimal
 import decimal
@@ -260,6 +260,14 @@ def processar_colaboradores_os(ordem, form_data):
         hora_saida_extra = parse_hora('hora_saida_extra')
         hora_inicio = hora_entrada_manha or hora_entrada_tarde or hora_entrada_extra or parse_hora('hora_inicio')
         hora_fim = hora_saida_extra or hora_saida_tarde or hora_saida_manha or parse_hora('hora_fim')
+        
+        # Extrair percentual de adicional customizado (se fornecido)
+        percentual_adicional_cobranca = colaborador_data.get('percentual_adicional_cobranca')
+        if percentual_adicional_cobranca:
+            try:
+                percentual_adicional_cobranca = Decimal(str(percentual_adicional_cobranca))
+            except:
+                percentual_adicional_cobranca = None
 
         trabalho = OrdemServicoColaborador(
             ordem_servico_id=ordem.id,
@@ -276,11 +284,17 @@ def processar_colaboradores_os(ordem, form_data):
             km_inicial=safe_int_convert(colaborador_data.get('km_inicial')),
             km_final=safe_int_convert(colaborador_data.get('km_final')),
             descricao_atividade=colaborador_data.get('descricao_atividade', ''),
-            observacoes=colaborador_data.get('observacoes', '')
+            observacoes=colaborador_data.get('observacoes', ''),
+            percentual_adicional_cobranca=percentual_adicional_cobranca
         )
 
         # Sempre calcular automaticamente a partir dos horários detalhados
         trabalho.calcular_horas_automatico()
+        
+        # Calcular valores com adicionais (custo e receita por hora)
+        colaborador_obj = Colaborador.query.get(colaborador_id)
+        if colaborador_obj and colaborador_obj.valor_hora:
+            trabalho.atualizar_valores_com_adicional(colaborador_obj.valor_hora)
 
         total_horas += Decimal(str(trabalho.total_horas or 0))
         total_horas_normais += Decimal(str(trabalho.horas_normais or 0))
