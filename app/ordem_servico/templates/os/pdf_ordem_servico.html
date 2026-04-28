@@ -763,7 +763,9 @@
                     <thead>
                         <tr style="background-color: #1a365d; color: white;">
                             <th style="padding: 10px 12px; text-align: left;">Colaborador / Função</th>
-                            <th style="padding: 10px 12px; text-align: center;">Horas Trabalhadas</th>
+                            <th style="padding: 10px 12px; text-align: center;">Data</th>
+                            <th style="padding: 10px 12px; text-align: center;">Tipo Dia</th>
+                            <th style="padding: 10px 12px; text-align: center;">Horas</th>
                             <th style="padding: 10px 12px; text-align: right;">Valor / hora</th>
                             <th style="padding: 10px 12px; text-align: right; background: #2d5a27;">Total M.O.</th>
                         </tr>
@@ -772,14 +774,30 @@
                         {% set ns = namespace(total_mo=0.0) %}
                         {% for trabalho in ordem.colaboradores_trabalho if trabalho.ativo %}
                             {% set horas = trabalho.total_horas|float if trabalho.total_horas else 0.0 %}
-                            {% set vh = trabalho.colaborador.valor_hora|float if trabalho.colaborador and trabalho.colaborador.valor_hora else 0.0 %}
+                            {# Usar valor_hora_receita se tiver adicional calculado, senão usar valor_hora normal #}
+                            {% set vh = trabalho.valor_hora_receita|float if trabalho.valor_hora_receita else (trabalho.colaborador.valor_hora|float if trabalho.colaborador and trabalho.colaborador.valor_hora else 0.0) %}
                             {% set total = horas * vh %}
                             {% set ns.total_mo = ns.total_mo + total %}
+                            {% set perc_clt = trabalho.percentual_adicional_padrao|float if trabalho.percentual_adicional_padrao else 0.0 %}
                         <tr style="border-bottom: 1px solid #e2e8f0; {% if loop.index is odd %}background:#f8fafc;{% endif %}">
                             <td style="padding: 10px 12px; font-weight: bold;">
                                 {{ trabalho.colaborador.nome if trabalho.colaborador else '—' }}
                                 {% if trabalho.colaborador and trabalho.colaborador.cargo %}
                                 <br><span style="font-size: 9px; color: #718096;">{{ trabalho.colaborador.cargo_formatado }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding: 10px 12px; text-align: center; font-size: 9px;">
+                                {{ trabalho.data_trabalho.strftime('%d/%m/%Y') if trabalho.data_trabalho else '—' }}
+                            </td>
+                            <td style="padding: 10px 12px; text-align: center; font-size: 9px;">
+                                {% if perc_clt == 100 %}
+                                    <span style="color: #dc2626; font-weight: bold;">Feriado/Dom</span><br>
+                                    <span style="font-size: 8px; color: #991b1b;">(+100%)</span>
+                                {% elif perc_clt == 50 %}
+                                    <span style="color: #ea580c; font-weight: bold;">Sáb/Noturno</span><br>
+                                    <span style="font-size: 8px; color: #9a3412;">(+50%)</span>
+                                {% else %}
+                                    <span style="color: #059669;">Normal</span>
                                 {% endif %}
                             </td>
                             <td style="padding: 10px 12px; text-align: center; font-weight: bold; color: #0e7490;">
@@ -788,6 +806,9 @@
                             </td>
                             <td style="padding: 10px 12px; text-align: right; color: #1a365d; font-weight: bold;">
                                 R$ {{ '%.2f'|format(vh)|replace('.', ',') }}/h
+                                {% if perc_clt > 0 %}
+                                <br><span style="font-size: 8px; color: #dc2626;">* c/ adicional</span>
+                                {% endif %}
                             </td>
                             <td style="padding: 10px 12px; text-align: right; font-weight: bold; color: #065f46; background: #f0fdf4; border-left: 2px solid #10b981;">
                                 R$ {{ '%.2f'|format(total)|replace('.', ',') }}
@@ -797,13 +818,18 @@
                     </tbody>
                     <tfoot>
                         <tr style="background: #1a365d; color: white;">
-                            <td colspan="3" style="padding: 12px; text-align: right; font-weight: bold; font-size: 13px; color: #ffffff;">TOTAL MÃO DE OBRA:</td>
+                            <td colspan="5" style="padding: 12px; text-align: right; font-weight: bold; font-size: 13px; color: #ffffff;">TOTAL MÃO DE OBRA:</td>
                             <td style="padding: 12px; text-align: right; font-weight: bold; font-size: 18px; background: #10b981; color: #000000; border-left: 3px solid #065f46;">
                                 R$ {{ '%.2f'|format(ns.total_mo)|replace('.', ',') }}
                             </td>
                         </tr>
                     </tfoot>
                 </table>
+                <div style="margin-top: 10px; padding: 8px; background-color: #fef3c7; border-left: 4px solid #f59e0b;">
+                    <small style="color: #92400e; font-size: 8px;">
+                        <strong>⚠️ Valores com adicionais:</strong> Os valores por hora apresentados já incluem os adicionais de horas extras conforme legislação trabalhista (50% ou 100%).
+                    </small>
+                </div>
             </div>
         </div>
         {% endif %}
@@ -828,68 +854,107 @@
                 </div>
 
                 <p style="font-size:10px; color:#4a5568; margin-bottom: 10px;">
-                    Valores calculados com base no salário/pró-labore mensal dividido por <strong>220 horas</strong> de trabalho.
+                    <strong>CUSTO:</strong> Calculado com base no salário mensal ÷ 220 horas + adicionais CLT (0%, 50% ou 100%).<br>
+                    <strong>RECEITA:</strong> Valor/hora cobrado do cliente + adicionais negociados.
                 </p>
 
                 <!-- Tabela de Fechamento -->
-                <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 9px;">
                     <thead>
                         <tr style="background-color: #1e3a5f; color: white;">
-                            <th style="padding: 9px 10px; text-align: left;">Colaborador / Cargo</th>
-                            <th style="padding: 9px 10px; text-align: center;">Horas<br>Trabalhadas</th>
-                            <th style="padding: 9px 10px; text-align: right;">Salário<br>Mensal</th>
-                            <th style="padding: 9px 10px; text-align: right;">Custo/h<br>(÷ 220h)</th>
-                            <th style="padding: 9px 10px; text-align: right; font-weight: bold; background: #2d5a27; color: white;">VALOR A<br>RECEBER</th>
+                            <th style="padding: 8px; text-align: left; font-size: 9px;">Colaborador</th>
+                            <th style="padding: 8px; text-align: center; font-size: 9px;">Data<br>Trabalho</th>
+                            <th style="padding: 8px; text-align: center; font-size: 9px;">Tipo<br>Dia</th>
+                            <th style="padding: 8px; text-align: center; font-size: 9px;">Horas</th>
+                            <th style="padding: 8px; text-align: right; font-size: 9px; background: #dc2626;">Custo/h<br>(Pago)</th>
+                            <th style="padding: 8px; text-align: right; font-size: 9px; background: #059669;">Receita/h<br>(Cobrado)</th>
+                            <th style="padding: 8px; text-align: right; font-size: 9px; background: #ea580c;">Margem/h</th>
+                            <th style="padding: 8px; text-align: right; font-size: 9px; background: #2d5a27; color: white; font-weight: bold;">Margem<br>Total</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% set ns = namespace(total_a_pagar=0.0) %}
+                        {% set ns = namespace(total_custo=0.0, total_receita=0.0, total_margem=0.0) %}
                         {% for trabalho in ordem.colaboradores_trabalho if trabalho.ativo %}
                             {% set horas = trabalho.total_horas|float if trabalho.total_horas else 0.0 %}
-                            {% set salario = trabalho.colaborador.salario_mensal|float if trabalho.colaborador and trabalho.colaborador.salario_mensal else 0.0 %}
-                            {% set custo_hora = salario / 220.0 if salario > 0 else 0.0 %}
-                            {% set valor_receber = horas * custo_hora %}
-                            {% set ns.total_a_pagar = ns.total_a_pagar + valor_receber %}
+                            {% set custo_hora = trabalho.valor_hora_custo|float if trabalho.valor_hora_custo else 0.0 %}
+                            {% set receita_hora = trabalho.valor_hora_receita|float if trabalho.valor_hora_receita else (trabalho.colaborador.valor_hora|float if trabalho.colaborador and trabalho.colaborador.valor_hora else 0.0) %}
+                            {% set margem_hora = receita_hora - custo_hora %}
+                            {% set total_custo_trab = horas * custo_hora %}
+                            {% set total_receita_trab = horas * receita_hora %}
+                            {% set margem_total_trab = total_receita_trab - total_custo_trab %}
+                            {% set ns.total_custo = ns.total_custo + total_custo_trab %}
+                            {% set ns.total_receita = ns.total_receita + total_receita_trab %}
+                            {% set ns.total_margem = ns.total_margem + margem_total_trab %}
+                            {% set perc_clt = trabalho.percentual_adicional_padrao|float if trabalho.percentual_adicional_padrao else 0.0 %}
                         <tr style="border-bottom: 1px solid #e2e8f0; {% if loop.index is odd %}background:#f8fafc;{% endif %}">
-                            <td style="padding: 10px;">
-                                <strong style="font-size:11px;">{{ trabalho.colaborador.nome if trabalho.colaborador else '—' }}</strong>
+                            <td style="padding: 8px; font-size: 9px;">
+                                <strong>{{ trabalho.colaborador.nome if trabalho.colaborador else '—' }}</strong>
                                 {% if trabalho.colaborador and trabalho.colaborador.cargo %}
-                                <br><span style="color:#718096; font-size:9px;">{{ trabalho.colaborador.cargo_formatado }}</span>
+                                <br><span style="color:#718096; font-size: 8px;">{{ trabalho.colaborador.cargo_formatado }}</span>
                                 {% endif %}
                             </td>
-                            <td style="padding: 10px; text-align: center;">
-                                <strong style="color:#0e7490;">{{ trabalho.total_horas_formatado }}</strong>
-                                <br><span style="font-size:9px; color:#718096;">({{ '%.2f'|format(horas)|replace('.', ',') }}h)</span>
+                            <td style="padding: 8px; text-align: center; font-size: 8px;">
+                                {{ trabalho.data_trabalho.strftime('%d/%m') if trabalho.data_trabalho else '—' }}
                             </td>
-                            <td style="padding: 10px; text-align: right; color:#4a5568;">
-                                {% if salario > 0 %}
-                                    R$ {{ '%.2f'|format(salario)|replace('.', ',') }}
+                            <td style="padding: 8px; text-align: center; font-size: 8px;">
+                                {% if perc_clt == 100 %}
+                                    <span style="color: #dc2626; font-weight: bold;">Feriado</span><br>
+                                    <span style="font-size: 7px; color: #991b1b;">(+100%)</span>
+                                {% elif perc_clt == 50 %}
+                                    <span style="color: #ea580c; font-weight: bold;">HE 50%</span><br>
+                                    <span style="font-size: 7px; color: #9a3412;">(+50%)</span>
                                 {% else %}
-                                    <span style="color:#dc2626;">Não configurado</span>
+                                    <span style="color: #059669;">Normal</span>
                                 {% endif %}
                             </td>
-                            <td style="padding: 10px; text-align: right; color:#4a5568;">
-                                {% if custo_hora > 0 %}
-                                    R$ {{ '%.2f'|format(custo_hora)|replace('.', ',') }}/h
-                                {% else %}—{% endif %}
+                            <td style="padding: 8px; text-align: center; font-weight: bold; color: #0e7490; font-size: 9px;">
+                                {{ '%.2f'|format(horas)|replace('.', ',') }}h
                             </td>
-                            <td style="padding: 10px; text-align: right; font-weight: bold; font-size: 12px; background: #f0fdf4; color: #065f46; border-left: 2px solid #10b981;">
-                                {% if valor_receber > 0 %}
-                                    R$ {{ '%.2f'|format(valor_receber)|replace('.', ',') }}
-                                {% else %}—{% endif %}
+                            <td style="padding: 8px; text-align: right; color: #dc2626; font-weight: bold; background: #fee2e2; font-size: 9px;">
+                                R$ {{ '%.2f'|format(custo_hora)|replace('.', ',') }}
+                            </td>
+                            <td style="padding: 8px; text-align: right; color: #059669; font-weight: bold; background: #d1fae5; font-size: 9px;">
+                                R$ {{ '%.2f'|format(receita_hora)|replace('.', ',') }}
+                            </td>
+                            <td style="padding: 8px; text-align: right; font-weight: bold; background: #fed7aa; font-size: 9px; {% if margem_hora >= 0 %}color: #065f46;{% else %}color: #dc2626;{% endif %}">
+                                R$ {{ '%.2f'|format(margem_hora)|replace('.', ',') }}
+                            </td>
+                            <td style="padding: 8px; text-align: right; font-weight: bold; font-size: 10px; background: #f0fdf4; border-left: 2px solid #10b981; {% if margem_total_trab >= 0 %}color: #065f46;{% else %}color: #dc2626;{% endif %}">
+                                R$ {{ '%.2f'|format(margem_total_trab)|replace('.', ',') }}
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                     <tfoot>
-                        <tr style="background: #1e3a5f; color: white;">
-                            <td colspan="4" style="padding: 12px 10px; text-align: right; font-size: 11px; font-weight: bold;">TOTAL A PAGAR (M.O.):</td>
-                            <td style="padding: 12px 10px; text-align: right; font-size: 14px; font-weight: bold; background: #2d5a27;">
-                                R$ {{ '%.2f'|format(ns.total_a_pagar)|replace('.', ',') }}
+                        <tr style="background: #fee2e2; border-top: 2px solid #dc2626;">
+                            <td colspan="4" style="padding: 8px; text-align: right; font-size: 10px; font-weight: bold; color: #7f1d1d;">TOTAL CUSTO (Pago):</td>
+                            <td colspan="4" style="padding: 8px; text-align: right; font-size: 12px; font-weight: bold; color: #dc2626;">
+                                R$ {{ '%.2f'|format(ns.total_custo)|replace('.', ',') }}
+                            </td>
+                        </tr>
+                        <tr style="background: #d1fae5; border-top: 1px solid #059669;">
+                            <td colspan="4" style="padding: 8px; text-align: right; font-size: 10px; font-weight: bold; color: #14532d;">TOTAL RECEITA (Cobrado):</td>
+                            <td colspan="4" style="padding: 8px; text-align: right; font-size: 12px; font-weight: bold; color: #059669;">
+                                R$ {{ '%.2f'|format(ns.total_receita)|replace('.', ',') }}
+                            </td>
+                        </tr>
+                        <tr style="background: #1e3a5f; color: white; border-top: 2px solid #1e3a5f;">
+                            <td colspan="4" style="padding: 10px; text-align: right; font-size: 11px; font-weight: bold;">MARGEM TOTAL (Lucro):</td>
+                            <td colspan="4" style="padding: 10px; text-align: right; font-size: 16px; font-weight: bold; {% if ns.total_margem >= 0 %}background: #10b981; color: #000000;{% else %}background: #dc2626; color: #ffffff;{% endif %}">
+                                R$ {{ '%.2f'|format(ns.total_margem)|replace('.', ',') }}
                             </td>
                         </tr>
                     </tfoot>
                 </table>
+                
+                <div style="margin-top: 12px; padding: 10px; background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px;">
+                    <small style="color: #92400e; font-size: 8px;">
+                        <strong>📊 LEGENDA:</strong><br>
+                        • <span style="color: #dc2626;">■</span> <strong>Custo/h:</strong> Salário mensal ÷ 220h × (1 + % CLT adicional)<br>
+                        • <span style="color: #059669;">■</span> <strong>Receita/h:</strong> Valor/hora cliente × (1 + % adicional negociado)<br>
+                        • <span style="color: #ea580c;">■</span> <strong>Margem:</strong> Diferença entre receita e custo (verde = lucro, vermelho = prejuízo)
+                    </small>
+                </div>
 
                 <!-- Linhas de assinatura por colaborador -->
                 <div style="margin-top: 20px; padding-top: 14px; border-top: 1px dashed #cbd5e0;">
