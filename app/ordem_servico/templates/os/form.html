@@ -365,12 +365,12 @@
                                         <div class="col-12 mb-2">
                                             <small class="text-info">
                                                 <i class="fas fa-percentage me-1"></i>
-                                                <strong>Adicionais:</strong> <span class="text-muted">Sistema calcula automaticamente os % baseado em data/horário (CLT)</span>
+                                                <strong>Adicionais:</strong> <span class="text-muted">Sistema calcula automaticamente os % baseado em data/horário</span>
                                             </small>
                                         </div>
                                         <div class="col-md-2">
                                             <label class="form-label text-white">
-                                                % CLT <i class="fas fa-info-circle text-info" title="Percentual pago ao colaborador (automático)"></i>
+                                                % Adicional <i class="fas fa-info-circle text-info" title="Percentual pago ao colaborador (automático)"></i>
                                             </label>
                                             <input type="text" class="form-control bg-secondary text-white border-info colaborador-perc-clt" 
                                                    name="colaboradores[{{ loop.index0 }}][percentual_clt]" 
@@ -2524,7 +2524,7 @@ function adicionarColaboradorLinha() {
                 </div>
                 <div class="col-md-2">
                     <label class="form-label text-white">
-                        % CLT <i class="fas fa-info-circle text-info" title="Percentual pago ao colaborador (automático)"></i>
+                        % Adicional <i class="fas fa-info-circle text-info" title="Percentual pago ao colaborador (automático)"></i>
                     </label>
                     <input type="text" class="form-control bg-secondary text-white border-info colaborador-perc-clt" 
                            name="colaboradores[${colaboradorIndex}][percentual_clt]" 
@@ -2726,10 +2726,10 @@ function calcularAdicionaisColaborador(index) {
         }
     }
     
-    // Atualizar campo % CLT
+    // Atualizar campo % Adicional
     percCltInput.value = percentualClt + '%';
     
-    // Se % Cliente não foi preenchido ainda, usar o mesmo % CLT
+    // Se % Cliente não foi preenchido ainda, usar o mesmo % Adicional
     let percentualCliente = parseFloat(percClienteInput.value) || 0;
     if (percentualCliente === 0 && percentualClt > 0) {
         percentualCliente = percentualClt;
@@ -2737,7 +2737,7 @@ function calcularAdicionaisColaborador(index) {
     }
     
     // === CALCULAR VALORES ===
-    // CUSTO: salário mensal ÷ 22 dias ÷ 8.8 horas × (1 + % CLT)
+    // CUSTO: salário mensal ÷ 22 dias ÷ 8.8 horas × (1 + % Adicional)
     let valorCusto = 0;
     if (salarioMensal > 0) {
         const valorHoraBaseCusto = salarioMensal / 22 / 8.8;  // R$ 3000 ÷ 22 ÷ 8.8 = R$ 15,49/h
@@ -2930,7 +2930,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // Listener para mudança de data de trabalho (recalcula % CLT)
+        // Listener para mudança de data de trabalho (recalcula % Adicional)
         if (e.target.matches('[name*="[data_trabalho]"]')) {
             const match = e.target.name.match(/colaboradores\[(\d+)\]/);
             if (match) {
