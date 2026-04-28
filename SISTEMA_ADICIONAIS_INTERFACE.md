@@ -89,10 +89,10 @@ DADOS DO COLABORADOR:
 • Valor/Hora Cliente: R$ 110,00
 
 CUSTO (pago ao colaborador):
-├─ Valor/hora base = R$ 3.000 ÷ 220h = R$ 13,64/h
+├─ Valor/hora base = R$ 3.000 ÷ 22 dias ÷ 8.8h = R$ 15,49/h
 ├─ % CLT = 100% (feriado, obrigatório por lei)
 ├─ Multiplicador = 1 + (100/100) = 2,0
-└─ Valor Custo = R$ 13,64 × 2,0 = R$ 27,28/hora
+└─ Valor Custo = R$ 15,49 × 2,0 = R$ 30,98/hora
 
 RECEITA (cobrada do cliente):  
 ├─ Valor/hora base = R$ 110,00 (cadastrado)
@@ -101,12 +101,12 @@ RECEITA (cobrada do cliente):
 └─ Valor Receita = R$ 110,00 × 1,5 = R$ 165,00/hora
 
 MARGEM:
-└─ Margem = R$ 165,00 - R$ 27,28 = R$ 137,72/hora ✅ LUCRO
+└─ Margem = R$ 165,00 - R$ 30,98 = R$ 134,02/hora ✅ LUCRO
 
 ═══════════════════════════════════════════════
 
 💰 8 HORAS TRABALHADAS:
-   Custo Total: 8h × R$ 27,28 = R$ 218,24
+   Custo Total: 8h × R$ 30,98 = R$ 247,84
    Receita Total: 8h × R$ 165,00 = R$ 1.320,00
    Lucro Total: R$ 1.320,00 - R$ 218,24 = R$ 1.101,76 ✅
 ```
@@ -178,16 +178,16 @@ Horário: 08:00 às 17:00 (8 horas)
 % Cliente: 50% (você negociou)
 
 CUSTO:
-├─ Base: R$ 3.000 ÷ 220 = R$ 13,64/h
-├─ Com adicional: R$ 13,64 × 2,0 = R$ 27,28/h
-└─ Total 8h: 8 × R$ 27,28 = R$ 218,24
+├─ Base: R$ 3.000 ÷ 22 ÷ 8.8 = R$ 15,49/h
+├─ Com adicional: R$ 15,49 × 2,0 = R$ 30,98/h
+└─ Total 8h: 8 × R$ 30,98 = R$ 247,84
 
 RECEITA:
 ├─ Base: R$ 110,00/h
 ├─ Com adicional: R$ 110 × 1,5 = R$ 165,00/h
 └─ Total 8h: 8 × R$ 165,00 = R$ 1.320,00
 
-MARGEM: R$ 1.320,00 - R$ 218,24 = R$ 1.101,76 ✅ LUCRO EXCELENTE
+MARGEM: R$ 1.320,00 - R$ 247,84 = R$ 1.072,16 ✅ LUCRO EXCELENTE
 ```
 
 ### **Exemplo 2: Feriado com Negociação ainda Melhor**

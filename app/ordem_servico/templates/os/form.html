@@ -2737,10 +2737,10 @@ function calcularAdicionaisColaborador(index) {
     }
     
     // === CALCULAR VALORES ===
-    // CUSTO: salário mensal ÷ 220h × (1 + % CLT)
+    // CUSTO: salário mensal ÷ 22 dias ÷ 8.8 horas × (1 + % CLT)
     let valorCusto = 0;
     if (salarioMensal > 0) {
-        const valorHoraBaseCusto = salarioMensal / 220;  // R$ 3000 ÷ 220 = R$ 13,64/h
+        const valorHoraBaseCusto = salarioMensal / 22 / 8.8;  // R$ 3000 ÷ 22 ÷ 8.8 = R$ 15,49/h
         const multiplicadorCusto = 1 + (percentualClt / 100);
         valorCusto = valorHoraBaseCusto * multiplicadorCusto;
     }

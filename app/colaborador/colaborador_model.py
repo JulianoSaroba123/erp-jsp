@@ -354,9 +354,9 @@ class OrdemServicoColaborador(BaseModel):
             percentual_cliente = percentual_colaborador
         
         # === CUSTO: Calcular a partir do salário mensal ===
-        # Dividir por 220 horas/mês (padrão) e aplicar adicional CLT
+        # Dividir por 22 dias e depois por 8.8 horas/dia
         if salario_mensal > 0:
-            valor_hora_base_colaborador = salario_mensal / Decimal('220')  # R$ 3000 ÷ 220 = R$ 13,64/h
+            valor_hora_base_colaborador = salario_mensal / Decimal('22') / Decimal('8.8')  # R$ 3000 ÷ 22 ÷ 8.8 = R$ 15,49/h
             multiplicador_custo = 1 + (percentual_colaborador / Decimal('100.00'))
             valor_hora_custo = valor_hora_base_colaborador * multiplicador_custo
         else:
