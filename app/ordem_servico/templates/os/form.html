@@ -2678,7 +2678,8 @@ function calcularAdicionaisColaborador(index) {
     }
     
     const colaborador = colaboradoresCache[colaboradorId];
-    const valorHoraBase = parseFloat(colaborador.valor_hora) || 0;
+    const salarioMensal = parseFloat(colaborador.salario_mensal) || 0;
+    const valorHoraCliente = parseFloat(colaborador.valor_hora) || 0;
     
     // Calcular percentual CLT automático
     let percentualClt = 0;
@@ -2735,12 +2736,22 @@ function calcularAdicionaisColaborador(index) {
         percClienteInput.value = percentualCliente;
     }
     
-    // Calcular valores
-    const multiplicadorCusto = 1 + (percentualClt / 100);
-    const multiplicadorReceita = 1 + (percentualCliente / 100);
+    // === CALCULAR VALORES ===
+    // CUSTO: salário mensal ÷ 220h × (1 + % CLT)
+    let valorCusto = 0;
+    if (salarioMensal > 0) {
+        const valorHoraBaseCusto = salarioMensal / 220;  // R$ 3000 ÷ 220 = R$ 13,64/h
+        const multiplicadorCusto = 1 + (percentualClt / 100);
+        valorCusto = valorHoraBaseCusto * multiplicadorCusto;
+    }
     
-    const valorCusto = valorHoraBase * multiplicadorCusto;
-    const valorReceita = valorHoraBase * multiplicadorReceita;
+    // RECEITA: valor/hora cliente × (1 + % Cliente)
+    let valorReceita = 0;
+    if (valorHoraCliente > 0) {
+        const multiplicadorReceita = 1 + (percentualCliente / 100);
+        valorReceita = valorHoraCliente * multiplicadorReceita;
+    }
+    
     const margem = valorReceita - valorCusto;
     
     // Atualizar campos display
@@ -2849,7 +2860,8 @@ async function carregarColaboradoresSelect(selectElement) {
                     id: colab.id,
                     nome: colab.nome,
                     cargo: colab.cargo,
-                    valor_hora: colab.valor_hora || 0
+                    valor_hora: colab.valor_hora || 0,
+                    salario_mensal: colab.salario_mensal || 0
                 };
                 
                 const option = document.createElement('option');

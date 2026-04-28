@@ -246,7 +246,8 @@ def api_buscar_ativos():
             'id': c.id,
             'nome': c.nome,
             'cargo': c.cargo_formatado,
-            'valor_hora': float(c.valor_hora or 0)
+            'valor_hora': float(c.valor_hora or 0),
+            'salario_mensal': float(c.salario_mensal or 0)
         } for c in colaboradores]
         
         return jsonify({'sucesso': True, 'colaboradores': resultado})

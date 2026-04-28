@@ -293,8 +293,11 @@ def processar_colaboradores_os(ordem, form_data):
         
         # Calcular valores com adicionais (custo e receita por hora)
         colaborador_obj = Colaborador.query.get(colaborador_id)
-        if colaborador_obj and colaborador_obj.valor_hora:
-            trabalho.atualizar_valores_com_adicional(colaborador_obj.valor_hora)
+        if colaborador_obj:
+            salario = colaborador_obj.salario_mensal or Decimal('0')
+            valor_hora = colaborador_obj.valor_hora or Decimal('0')
+            if salario > 0 or valor_hora > 0:
+                trabalho.atualizar_valores_com_adicional(salario, valor_hora)
 
         total_horas += Decimal(str(trabalho.total_horas or 0))
         total_horas_normais += Decimal(str(trabalho.horas_normais or 0))

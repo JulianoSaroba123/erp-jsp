@@ -324,17 +324,23 @@ class OrdemServicoColaborador(BaseModel):
         else:
             return Decimal('0.00')    # Sem adicional
     
-    def calcular_valores_com_adicional(self, valor_hora_base):
+    def calcular_valores_com_adicional(self, salario_mensal, valor_hora_cliente):
         """
         Calcula valores de custo e receita aplicando adicionais.
         
+        LÓGICA:
+        - CUSTO: salario_mensal ÷ 220h × (1 + % CLT)
+        - RECEITA: valor_hora_cliente × (1 + % Cliente)
+        
         Args:
-            valor_hora_base: Valor base da hora do colaborador (sem adicional)
+            salario_mensal: Salário mensal do colaborador (R$ 3000,00)
+            valor_hora_cliente: Valor/hora cobrado do cliente normal (R$ 110,00)
         
         Retorna:
             tuple: (valor_hora_custo, valor_hora_receita, percentual_adicional_colaborador, percentual_adicional_cliente)
         """
-        valor_hora_base = Decimal(str(valor_hora_base))
+        salario_mensal = Decimal(str(salario_mensal)) if salario_mensal else Decimal('0')
+        valor_hora_cliente = Decimal(str(valor_hora_cliente)) if valor_hora_cliente else Decimal('0')
         
         # Percentual pago ao colaborador (sempre seguir regras trabalhistas)
         percentual_colaborador = self.calcular_percentual_adicional_padrao()
@@ -347,24 +353,34 @@ class OrdemServicoColaborador(BaseModel):
             # Caso contrário, cobra do cliente o mesmo que paga ao colaborador
             percentual_cliente = percentual_colaborador
         
-        # Calcular valor/hora de custo (pago ao colaborador)
-        multiplicador_custo = 1 + (percentual_colaborador / Decimal('100.00'))
-        valor_hora_custo = valor_hora_base * multiplicador_custo
+        # === CUSTO: Calcular a partir do salário mensal ===
+        # Dividir por 220 horas/mês (padrão) e aplicar adicional CLT
+        if salario_mensal > 0:
+            valor_hora_base_colaborador = salario_mensal / Decimal('220')  # R$ 3000 ÷ 220 = R$ 13,64/h
+            multiplicador_custo = 1 + (percentual_colaborador / Decimal('100.00'))
+            valor_hora_custo = valor_hora_base_colaborador * multiplicador_custo
+        else:
+            valor_hora_custo = Decimal('0')
         
-        # Calcular valor/hora de receita (cobrado do cliente)
-        multiplicador_receita = 1 + (percentual_cliente / Decimal('100.00'))
-        valor_hora_receita = valor_hora_base * multiplicador_receita
+        # === RECEITA: Calcular a partir do valor/hora do cliente ===
+        # Aplicar adicional negociado sobre o valor/hora normal
+        if valor_hora_cliente > 0:
+            multiplicador_receita = 1 + (percentual_cliente / Decimal('100.00'))
+            valor_hora_receita = valor_hora_cliente * multiplicador_receita
+        else:
+            valor_hora_receita = Decimal('0')
         
         return (valor_hora_custo, valor_hora_receita, percentual_colaborador, percentual_cliente)
     
-    def atualizar_valores_com_adicional(self, valor_hora_base):
+    def atualizar_valores_com_adicional(self, salario_mensal, valor_hora_cliente):
         """
         Atualiza os campos valor_hora_custo e valor_hora_receita.
         
         Args:
-            valor_hora_base: Valor base da hora do colaborador
+            salario_mensal: Salário mensal do colaborador
+            valor_hora_cliente: Valor/hora cobrado do cliente
         """
-        custo, receita, _, _ = self.calcular_valores_com_adicional(valor_hora_base)
+        custo, receita, _, _ = self.calcular_valores_com_adicional(salario_mensal, valor_hora_cliente)
         self.valor_hora_custo = custo
         self.valor_hora_receita = receita
     
