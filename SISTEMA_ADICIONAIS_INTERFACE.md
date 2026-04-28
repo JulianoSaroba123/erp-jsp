@@ -27,11 +27,11 @@ Permitir que você:
 
 ┌──────────────────────────────────────────────────────────┐
 │ CUSTO (Pago ao Colaborador):                             │
-│ 1. Salário Mensal ÷ 220 horas = Valor/hora base         │
-│    R$ 3.000 ÷ 220h = R$ 13,64/h                         │
+│ 1. Salário Mensal ÷ 22 dias ÷ 8.8h = Valor/hora base   │
+│    R$ 3.000 ÷ 22 ÷ 8.8 = R$ 15,49/h                      │
 │                                                           │
 │ 2. Aplicar % CLT (0%, 50% ou 100%)                      │
-│    Feriado = 100% → R$ 13,64 × 2,0 = R$ 27,28/h        │
+│    Feriado = 100% → R$ 15,49 × 2,0 = R$ 30,98/h        │
 └──────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────┐
@@ -215,9 +215,9 @@ Horário: 09:00 às 13:00 (4 horas)
 % Cliente: 50% (padrão)
 
 CUSTO:
-├─ Base: R$ 2.640 ÷ 220 = R$ 12,00/h
-├─ Com adicional: R$ 12 × 1,5 = R$ 18,00/h
-└─ Total 4h: 4 × R$ 18,00 = R$ 72,00
+├─ Base: R$ 2.640 ÷ 22 ÷ 8.8 = R$ 13,64/h
+├─ Com adicional: R$ 13,64 × 1,5 = R$ 20,46/h
+└─ Total 4h: 4 × R$ 20,46 = R$ 81,84
 
 RECEITA:
 ├─ Base: R$ 90,00/h
@@ -239,9 +239,9 @@ Horário: 08:00 às 18:00 (saída às 18h = tem hora extra)
 % Cliente: 75% (você negociou melhor)
 
 CUSTO:
-├─ Base: R$ 1.760 ÷ 220 = R$ 8,00/h
-├─ Com adicional: R$ 8 × 1,5 = R$ 12,00/h
-└─ Total 10h: 10 × R$ 12,00 = R$ 120,00
+├─ Base: R$ 1.760 ÷ 22 ÷ 8.8 = R$ 9,09/h
+├─ Com adicional: R$ 9,09 × 1,5 = R$ 13,64/h
+└─ Total 10h: 10 × R$ 13,64 = R$ 136,40
 
 RECEITA:
 ├─ Base: R$ 65,00/h
@@ -266,7 +266,7 @@ function calcularAdicionaisColaborador(index) {
     // 1. Busca dados do colaborador (salário + valor/hora)
     // 2. Analisa data e horários
     // 3. Calcula % CLT (0, 50 ou 100)
-    // 4. CUSTO: salário_mensal ÷ 220h × (1 + % CLT)
+    // 4. CUSTO: salário_mensal ÷ 22 ÷ 8.8 × (1 + % CLT)
     // 5. RECEITA: valor_hora × (1 + % Cliente)
     // 6. MARGEM: receita - custo
     // 7. Atualiza interface
@@ -293,7 +293,7 @@ if colaborador_obj:
     trabalho.atualizar_valores_com_adicional(salario, valor_hora)
     
 # Grava no banco:
-# - valor_hora_custo (baseado em salário ÷ 220)
+# - valor_hora_custo (baseado em salário ÷ 22 ÷ 8.8)
 # - valor_hora_receita (baseado em valor/hora cliente)
 ```
 
@@ -370,7 +370,7 @@ valor_hora_receita NUMERIC(10, 2) NULL
 3. **app/colaborador/colaborador_model.py** (modificado)
    - Método `calcular_valores_com_adicional()` alterado para aceitar 2 parâmetros
    - Método `atualizar_valores_com_adicional()` alterado para aceitar 2 parâmetros
-   - Lógica: CUSTO usa salário_mensal ÷ 220, RECEITA usa valor_hora
+   - Lógica: CUSTO usa salário_mensal ÷ 22 ÷ 8.8, RECEITA usa valor_hora
 
 4. **app/colaborador/colaborador_routes.py** (+1 linha)
    - API `/api/buscar_ativos` agora retorna `salario_mensal` também

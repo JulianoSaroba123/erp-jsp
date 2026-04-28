@@ -854,7 +854,7 @@
                 </div>
 
                 <p style="font-size:10px; color:#4a5568; margin-bottom: 10px;">
-                    <strong>CUSTO:</strong> Calculado com base no salário mensal ÷ 220 horas + adicionais CLT (0%, 50% ou 100%).<br>
+                    <strong>CUSTO:</strong> Calculado com base no salário mensal ÷ 22 dias ÷ 8.8 horas + adicionais CLT (0%, 50% ou 100%).<br>
                     <strong>RECEITA:</strong> Valor/hora cobrado do cliente + adicionais negociados.
                 </p>
 
@@ -964,7 +964,7 @@
                     {% for trabalho in ordem.colaboradores_trabalho if trabalho.ativo %}
                         {% set horas = trabalho.total_horas|float if trabalho.total_horas else 0.0 %}
                         {% set salario = trabalho.colaborador.salario_mensal|float if trabalho.colaborador and trabalho.colaborador.salario_mensal else 0.0 %}
-                        {% set custo_hora = salario / 220.0 if salario > 0 else 0.0 %}
+                        {% set custo_hora = (salario / 22.0 / 8.8) if salario > 0 else 0.0 %}
                         {% set valor_receber = horas * custo_hora %}
                     <div style="display: flex; align-items: flex-end; gap: 30px; margin-bottom: 22px;">
                         <div style="flex: 1;">

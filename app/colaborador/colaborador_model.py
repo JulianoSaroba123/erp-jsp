@@ -329,7 +329,7 @@ class OrdemServicoColaborador(BaseModel):
         Calcula valores de custo e receita aplicando adicionais.
         
         LÓGICA:
-        - CUSTO: salario_mensal ÷ 220h × (1 + % CLT)
+        - CUSTO: salario_mensal ÷ 22 dias ÷ 8.8h × (1 + % CLT)
         - RECEITA: valor_hora_cliente × (1 + % Cliente)
         
         Args:
