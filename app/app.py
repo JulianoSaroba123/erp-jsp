@@ -869,6 +869,10 @@ def register_blueprints(app):
     # Blueprint financeiro
     from app.financeiro.financeiro_routes import bp_financeiro
     app.register_blueprint(bp_financeiro, url_prefix='/financeiro')
+    
+    # Blueprint NFS-e
+    from app.financeiro.nfse_routes import bp_nfse
+    app.register_blueprint(bp_nfse)
 
     # Blueprint de configuração do sistema
     from app.configuracao.configuracao_routes import bp_config

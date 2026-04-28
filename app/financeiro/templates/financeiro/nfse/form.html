@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Editar' if nota else 'Nova' }} NFS-e{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-1 text-neon">
+                <i class="fas fa-file-invoice me-2"></i>
+                {{ 'Editar' if nota else 'Nova' }} NFS-e
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('painel.index') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('nfse.listar') }}">NFS-e</a></li>
+                    <li class="breadcrumb-item active">{{ 'Editar' if nota else 'Nova' }}</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <form method="POST" id="formNFSe">
+        <div class="row">
+            <!-- Coluna Principal -->
+            <div class="col-lg-8">
+                
+                <!-- Dados da Nota -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-file-alt me-2"></i>Dados da Nota</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label required">Número</label>
+                                    <input type="text" name="numero" class="form-control" 
+                                           value="{{ nota.numero if nota else '' }}" required
+                                           {{ 'readonly' if nota }}>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Número RPS</label>
+                                    <input type="text" name="numero_rps" class="form-control" 
+                                           value="{{ nota.numero_rps if nota else proximo_rps }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Série RPS</label>
+                                    <input type="text" name="serie_rps" class="form-control" 
+                                           value="{{ nota.serie_rps if nota else '1' }}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label required">Data de Emissão</label>
+                                    <input type="date" name="data_emissao" class="form-control" 
+                                           value="{{ nota.data_emissao.strftime('%Y-%m-%d') if nota else '' }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Competência</label>
+                                    <input type="date" name="competencia" class="form-control" 
+                                           value="{{ nota.competencia.strftime('%Y-%m-%d') if nota and nota.competencia else '' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prestador -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="fas fa-building me-2"></i>Prestador dos Serviços</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if config %}
+                        <div class="alert alert-info">
+                            <strong>{{ config.razao_social }}</strong><br>
+                            CNPJ: {{ config.cnpj }}<br>
+                            {% if config.inscricao_municipal %}
+                            Inscrição Municipal: {{ config.inscricao_municipal }}<br>
+                            {% endif %}
+                            {{ config.logradouro }}, {{ config.numero }} - {{ config.bairro }}<br>
+                            {{ config.cidade }}/{{ config.uf }} - CEP: {{ config.cep }}
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Configure os dados da empresa em <a href="{{ url_for('configuracao.index') }}">Configurações</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Tomador -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0"><i class="fas fa-user-tie me-2"></i>Tomador dos Serviços</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Cliente</label>
+                                    <select name="cliente_id" id="selectCliente" class="form-select">
+                                        <option value="">Selecione ou preencha manualmente</option>
+                                        {% for cliente in clientes %}
+                                        <option value="{{ cliente.id }}" 
+                                                data-nome="{{ cliente.nome }}"
+                                                data-cnpj="{{ cliente.cnpj or cliente.cpf }}"
+                                                data-endereco="{{ cliente.logradouro }}, {{ cliente.numero }} - {{ cliente.bairro }} - {{ cliente.cidade }}/{{ cliente.uf }}"
+                                                data-telefone="{{ cliente.telefone }}"
+                                                data-email="{{ cliente.email }}"
+                                                {% if nota and nota.cliente_id == cliente.id %}selected{% endif %}>
+                                            {{ cliente.nome }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Ordem de Serviço</label>
+                                    <select name="ordem_servico_id" class="form-select">
+                                        <option value="">Nenhuma</option>
+                                        {% for os in ordens_servico %}
+                                        <option value="{{ os.id }}" {% if nota and nota.ordem_servico_id == os.id %}selected{% endif %}>
+                                            OS #{{ os.numero }} - {{ os.cliente.nome if os.cliente else 'Sem cliente' }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label class="form-label required">Nome/Razão Social</label>
+                                    <input type="text" name="tomador_nome" id="tomador_nome" class="form-control" 
+                                           value="{{ nota.tomador_nome if nota else '' }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">CPF/CNPJ</label>
+                                    <input type="text" name="tomador_cnpj_cpf" id="tomador_cnpj_cpf" class="form-control" 
+                                           value="{{ nota.tomador_cnpj_cpf if nota else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Inscrição Municipal</label>
+                                    <input type="text" name="tomador_im" id="tomador_im" class="form-control" 
+                                           value="{{ nota.tomador_im if nota else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Telefone</label>
+                                    <input type="text" name="tomador_telefone" id="tomador_telefone" class="form-control" 
+                                           value="{{ nota.tomador_telefone if nota else '' }}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label class="form-label">Endereço</label>
+                                    <input type="text" name="tomador_endereco" id="tomador_endereco" class="form-control" 
+                                           value="{{ nota.tomador_endereco if nota else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">E-mail</label>
+                                    <input type="email" name="tomador_email" id="tomador_email" class="form-control" 
+                                           value="{{ nota.tomador_email if nota else '' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Serviços -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Discriminação dos Serviços</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label required">Descrição dos Serviços</label>
+                            <textarea name="descricao_servico" class="form-control" rows="6" required>{{ nota.descricao_servico if nota else '' }}</textarea>
+                            <small class="text-muted">Descreva detalhadamente os serviços prestados</small>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Código do Serviço (LC 116/2003)</label>
+                                    <input type="text" name="codigo_servico" class="form-control" 
+                                           value="{{ nota.codigo_servico if nota else '' }}"
+                                           placeholder="Ex: 7.02">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Código CNAE</label>
+                                    <input type="text" name="codigo_cnae" class="form-control" 
+                                           value="{{ nota.codigo_cnae if nota else '' }}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Local de Prestação</label>
+                                    <input type="text" name="local_prestacao" class="form-control" 
+                                           value="{{ nota.local_prestacao if nota else '' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observações -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-comment-alt me-2"></i>Observações</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Observações</label>
+                            <textarea name="observacoes" class="form-control" rows="3">{{ nota.observacoes if nota else '' }}</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Informações Complementares</label>
+                            <textarea name="informacoes_complementares" class="form-control" rows="3">{{ nota.informacoes_complementares if nota else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Coluna Lateral - Valores -->
+            <div class="col-lg-4">
+                
+                <!-- Valores -->
+                <div class="card mb-4 sticky-top" style="top: 20px;">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-dollar-sign me-2"></i>Valores</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label required">Valor dos Serviços</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" name="valor_servicos" id="valor_servicos" class="form-control" 
+                                       step="0.01" min="0" value="{{ nota.valor_servicos if nota else '' }}" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">(-) Deduções</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" name="valor_deducoes" id="valor_deducoes" class="form-control" 
+                                       step="0.01" min="0" value="{{ nota.valor_deducoes if nota else '0' }}">
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h6 class="mb-3">ISS</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Alíquota ISS (%)</label>
+                            <input type="number" name="aliquota_iss" id="aliquota_iss" class="form-control" 
+                                   step="0.01" min="0" max="5" value="{{ nota.aliquota_iss if nota else '2' }}">
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" name="iss_retido" id="iss_retido" class="form-check-input" 
+                                   {% if nota and nota.iss_retido %}checked{% endif %}>
+                            <label class="form-check-label" for="iss_retido">ISS Retido na Fonte</label>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h6 class="mb-3">Retenções Federais</h6>
+                        <div class="mb-3">
+                            <label class="form-label">PIS</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" name="valor_pis" class="form-control" 
+                                       step="0.01" min="0" value="{{ nota.valor_pis if nota else '0' }}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">COFINS</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" name="valor_cofins" class="form-control" 
+                                       step="0.01" min="0" value="{{ nota.valor_cofins if nota else '0' }}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">INSS</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" name="valor_inss" class="form-control" 
+                                       step="0.01" min="0" value="{{ nota.valor_inss if nota else '0' }}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">IRRF</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" name="valor_ir" class="form-control" 
+                                       step="0.01" min="0" value="{{ nota.valor_ir if nota else '0' }}">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">CSLL</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="number" name="valor_csll" class="form-control" 
+                                       step="0.01" min="0" value="{{ nota.valor_csll if nota else '0' }}">
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <h6 class="mb-3">Outras Informações</h6>
+                        <div class="mb-3">
+                            <label class="form-label">Natureza da Operação</label>
+                            <select name="natureza_operacao" class="form-select">
+                                <option value="1" {% if nota and nota.natureza_operacao == '1' %}selected{% endif %}>Tributação no município</option>
+                                <option value="2" {% if nota and nota.natureza_operacao == '2' %}selected{% endif %}>Tributação fora do município</option>
+                                <option value="3" {% if nota and nota.natureza_operacao == '3' %}selected{% endif %}>Isenção</option>
+                                <option value="4" {% if nota and nota.natureza_operacao == '4' %}selected{% endif %}>Imune</option>
+                            </select>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" name="optante_simples" class="form-check-input" 
+                                   {% if nota and nota.optante_simples %}checked{% endif %}>
+                            <label class="form-check-label">Optante do Simples Nacional</label>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" name="incentivo_fiscal" class="form-check-input" 
+                                   {% if nota and nota.incentivo_fiscal %}checked{% endif %}>
+                            <label class="form-check-label">Incentivador Cultural</label>
+                        </div>
+                        
+                        {% if not nota %}
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" name="gerar_lancamento" class="form-check-input" checked>
+                            <label class="form-check-label">Gerar Lançamento Financeiro</label>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('nfse.listar') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Voltar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>{{ 'Atualizar' if nota else 'Emitir' }} NFS-e
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Auto-preencher dados do tomador ao selecionar cliente
+document.getElementById('selectCliente').addEventListener('change', function() {
+    const option = this.options[this.selectedIndex];
+    if (option.value) {
+        document.getElementById('tomador_nome').value = option.dataset.nome || '';
+        document.getElementById('tomador_cnpj_cpf').value = option.dataset.cnpj || '';
+        document.getElementById('tomador_endereco').value = option.dataset.endereco || '';
+        document.getElementById('tomador_telefone').value = option.dataset.telefone || '';
+        document.getElementById('tomador_email').value = option.dataset.email || '';
+    }
+});
+
+// Validação de valores antes de enviar
+document.getElementById('formNFSe').addEventListener('submit', function(e) {
+    const valorServicos = parseFloat(document.getElementById('valor_servicos').value);
+    const valorDeducoes = parseFloat(document.getElementById('valor_deducoes').value) || 0;
+    
+    if (valorDeducoes > valorServicos) {
+        e.preventDefault();
+        alert('O valor das deduções não pode ser maior que o valor dos serviços!');
+        return false;
+    }
+    
+    return true;
+});
+</script>
+
+<style>
+.required::after {
+    content: " *";
+    color: red;
+}
+</style>
+{% endblock %}

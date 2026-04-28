@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+
+{% block title %}Notas Fiscais de Serviço (NFS-e){% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-1 text-neon">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        Notas Fiscais de Serviço (NFS-e)
+                    </h1>
+                    <p class="text-muted">Gerenciamento de NFS-e - Notas de Prestação de Serviços</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('nfse.nova') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        Nova NFS-e
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label">Cliente</label>
+                            <select name="cliente_id" class="form-select">
+                                <option value="">Todos</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente.id }}" {% if request.args.get('cliente_id') == cliente.id|string %}selected{% endif %}>
+                                    {{ cliente.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select">
+                                <option value="">Todos</option>
+                                <option value="EMITIDA" {% if request.args.get('status') == 'EMITIDA' %}selected{% endif %}>Emitida</option>
+                                <option value="CANCELADA" {% if request.args.get('status') == 'CANCELADA' %}selected{% endif %}>Cancelada</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Data Início</label>
+                            <input type="date" name="data_inicio" class="form-control" value="{{ request.args.get('data_inicio', '') }}">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">Data Fim</label>
+                            <input type="date" name="data_fim" class="form-control" value="{{ request.args.get('data_fim', '') }}">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">Buscar</label>
+                            <input type="text" name="busca" class="form-control" placeholder="Número, cliente, serviço..." value="{{ request.args.get('busca', '') }}">
+                        </div>
+
+                        <div class="col-md-1">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de NFS-e -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-table me-2"></i>
+                        NFS-e Emitidas ({{ notas|length }})
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if notas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Número</th>
+                                    <th>Data Emissão</th>
+                                    <th>Tomador</th>
+                                    <th>Descrição</th>
+                                    <th class="text-end">Valor Serviços</th>
+                                    <th class="text-end">ISS</th>
+                                    <th class="text-end">Valor Líquido</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for nota in notas %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ nota.numero }}</strong>
+                                        {% if nota.numero_rps %}
+                                        <br><small class="text-muted">RPS: {{ nota.numero_rps }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ nota.data_emissao.strftime('%d/%m/%Y') }}</td>
+                                    <td>
+                                        <strong>{{ nota.tomador_nome }}</strong>
+                                        {% if nota.tomador_cnpj_cpf %}
+                                        <br><small class="text-muted">{{ nota.tomador_cnpj_cpf }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            {{ nota.descricao_servico }}
+                                        </div>
+                                    </td>
+                                    <td class="text-end">R$ {{ '{:,.2f}'.format(nota.valor_servicos).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                                    <td class="text-end">
+                                        R$ {{ '{:,.2f}'.format(nota.valor_iss or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                                        {% if nota.iss_retido %}
+                                        <br><span class="badge bg-warning text-dark" style="font-size: 0.7rem;">Retido</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>R$ {{ '{:,.2f}'.format(nota.valor_liquido or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if nota.status == 'EMITIDA' %}
+                                        <span class="badge bg-success">Emitida</span>
+                                        {% elif nota.status == 'CANCELADA' %}
+                                        <span class="badge bg-danger">Cancelada</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ nota.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('nfse.visualizar', id=nota.id) }}" class="btn btn-outline-primary" title="Visualizar">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('nfse.gerar_pdf', id=nota.id) }}" class="btn btn-outline-danger" title="Gerar PDF" target="_blank">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </a>
+                                            {% if nota.status != 'CANCELADA' %}
+                                            <a href="{{ url_for('nfse.editar', id=nota.id) }}" class="btn btn-outline-warning" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Nenhuma NFS-e encontrada</p>
+                        <a href="{{ url_for('nfse.nova') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>
+                            Emitir Primeira NFS-e
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo de Totais -->
+    {% if notas %}
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Bruto</h6>
+                    <h3 class="mb-0">R$ {{ '{:,.2f}'.format(notas|sum(attribute='valor_servicos')).replace(',', 'X').replace('.', ',').replace('X', '.') }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h6 class="card-title">Total ISS</h6>
+                    <h3 class="mb-0">R$ {{ '{:,.2f}'.format(notas|sum(attribute='valor_iss')).replace(',', 'X').replace('.', ',').replace('X', '.') }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total Líquido</h6>
+                    <h3 class="mb-0">R$ {{ '{:,.2f}'.format(notas|sum(attribute='valor_liquido')).replace(',', 'X').replace('.', ',').replace('X', '.') }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6 class="card-title">Total de Notas</h6>
+                    <h3 class="mb-0">{{ notas|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
