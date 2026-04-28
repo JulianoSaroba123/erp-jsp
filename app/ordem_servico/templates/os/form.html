@@ -374,7 +374,7 @@
                                             </label>
                                             <input type="text" class="form-control bg-secondary text-white border-info colaborador-perc-clt" 
                                                    name="colaboradores[{{ loop.index0 }}][percentual_clt]" 
-                                                   value="{{ colab_trabalho.percentual_adicional_padrao }}%" readonly>
+                                                   value="{{ colab_trabalho.calcular_percentual_adicional_padrao() }}%" readonly>
                                         </div>
                                         <div class="col-md-2">
                                             <label class="form-label text-white">
@@ -382,7 +382,7 @@
                                             </label>
                                             <input type="number" class="form-control bg-dark text-white border-warning colaborador-perc-cliente" 
                                                    name="colaboradores[{{ loop.index0 }}][percentual_adicional_cobranca]" 
-                                                   value="{{ colab_trabalho.percentual_adicional_cobranca if colab_trabalho.percentual_adicional_cobranca is not none else colab_trabalho.percentual_adicional_padrao }}"
+                                                   value="{{ colab_trabalho.percentual_adicional_cobranca if colab_trabalho.percentual_adicional_cobranca is not none else colab_trabalho.calcular_percentual_adicional_padrao() }}"
                                                    step="0.01" min="0" max="200" 
                                                    onchange="calcularAdicionaisColaborador({{ loop.index0 }})">
                                         </div>
