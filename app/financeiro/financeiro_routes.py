@@ -118,18 +118,20 @@ def dashboard():
 
 @bp_financeiro.route('/lancamentos')
 def listar_lancamentos():
-    """Lista todos os lançamentos financeiros."""
+    """Lista todos os lançamentos financeiros com filtros avançados."""
     try:
         print("DEBUG: Iniciando listar_lancamentos")
         
         # Filtros
-        tipo = request.args.get('tipo')
-        status = request.args.get('status')
-        categoria = request.args.get('categoria')
-        data_inicio = request.args.get('data_inicio')
-        data_fim = request.args.get('data_fim')
+        tipo = request.args.get('tipo', '').strip()
+        status = request.args.get('status', '').strip()
+        categoria = request.args.get('categoria', '').strip()
+        cliente_id = request.args.get('cliente_id', '').strip()
+        fornecedor_id = request.args.get('fornecedor_id', '').strip()
+        data_inicio = request.args.get('data_inicio', '').strip()
+        data_fim = request.args.get('data_fim', '').strip()
         
-        print(f"DEBUG: Filtros: tipo={tipo}, status={status}")
+        print(f"DEBUG: Filtros: tipo={tipo}, status={status}, cliente={cliente_id}, fornecedor={fornecedor_id}")
         
         # Query base
         query = LancamentoFinanceiro.query.filter_by(ativo=True)
@@ -144,17 +146,39 @@ def listar_lancamentos():
         if categoria:
             query = query.filter(LancamentoFinanceiro.categoria == categoria)
         
+        if cliente_id:
+            try:
+                query = query.filter(LancamentoFinanceiro.cliente_id == int(cliente_id))
+            except ValueError:
+                pass
+        
+        if fornecedor_id:
+            try:
+                query = query.filter(LancamentoFinanceiro.fornecedor_id == int(fornecedor_id))
+            except ValueError:
+                pass
+        
         if data_inicio:
-            data_inicio_obj = datetime.strptime(data_inicio, '%Y-%m-%d').date()
-            query = query.filter(LancamentoFinanceiro.data_lancamento >= data_inicio_obj)
+            try:
+                data_inicio_obj = datetime.strptime(data_inicio, '%Y-%m-%d').date()
+                query = query.filter(LancamentoFinanceiro.data_lancamento >= data_inicio_obj)
+            except ValueError:
+                flash('Data de início inválida', 'warning')
         
         if data_fim:
-            data_fim_obj = datetime.strptime(data_fim, '%Y-%m-%d').date()
-            query = query.filter(LancamentoFinanceiro.data_lancamento <= data_fim_obj)
+            try:
+                data_fim_obj = datetime.strptime(data_fim, '%Y-%m-%d').date()
+                query = query.filter(LancamentoFinanceiro.data_lancamento <= data_fim_obj)
+            except ValueError:
+                flash('Data de fim inválida', 'warning')
         
         # Ordenação
         lancamentos = query.order_by(LancamentoFinanceiro.data_lancamento.desc()).all()
         print(f"DEBUG: Encontrados {len(lancamentos)} lançamentos")
+        
+        # Listas para os dropdowns de filtros
+        clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+        fornecedores = Fornecedor.query.filter_by(ativo=True).order_by(Fornecedor.nome).all()
         
         # Categorias para filtro
         categorias = db.session.query(LancamentoFinanceiro.categoria).filter(
@@ -166,11 +190,15 @@ def listar_lancamentos():
         print("DEBUG: Renderizando template")
         return render_template('financeiro/listar_lancamentos.html',
                              lancamentos=lancamentos,
+                             clientes=clientes,
+                             fornecedores=fornecedores,
                              categorias=categorias,
                              filtros={
                                  'tipo': tipo,
                                  'status': status,
                                  'categoria': categoria,
+                                 'cliente_id': cliente_id,
+                                 'fornecedor_id': fornecedor_id,
                                  'data_inicio': data_inicio,
                                  'data_fim': data_fim
                              })

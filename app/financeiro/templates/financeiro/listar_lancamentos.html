@@ -29,11 +29,17 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-filter me-2"></i>
+                        Filtros de Pesquisa
+                    </h6>
+                </div>
                 <div class="card-body">
                     <form method="GET" class="row g-3">
                         <div class="col-md-2">
-                            <label class="form-label">Tipo</label>
-                            <select name="tipo" class="form-select">
+                            <label class="form-label fw-bold">Tipo</label>
+                            <select name="tipo" class="form-select" onchange="this.form.submit()">
                                 <option value="">Todos</option>
                                 <option value="receita" {% if filtros.tipo == 'receita' %}selected{% endif %}>Receita</option>
                                 <option value="despesa" {% if filtros.tipo == 'despesa' %}selected{% endif %}>Despesa</option>
@@ -43,8 +49,8 @@
                         </div>
 
                         <div class="col-md-2">
-                            <label class="form-label">Status</label>
-                            <select name="status" class="form-select">
+                            <label class="form-label fw-bold">Status</label>
+                            <select name="status" class="form-select" onchange="this.form.submit()">
                                 <option value="">Todos</option>
                                 <option value="pendente" {% if filtros.status == 'pendente' %}selected{% endif %}>Pendente</option>
                                 <option value="pago" {% if filtros.status == 'pago' %}selected{% endif %}>Pago</option>
@@ -55,33 +61,47 @@
                         </div>
 
                         <div class="col-md-2">
-                            <label class="form-label">Categoria</label>
-                            <select name="categoria" class="form-select">
-                                <option value="">Todas</option>
-                                {% for categoria in categorias %}
-                                <option value="{{ categoria }}" {% if filtros.categoria == categoria %}selected{% endif %}>
-                                    {{ categoria }}
+                            <label class="form-label fw-bold">Cliente</label>
+                            <select name="cliente_id" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente.id }}" {% if filtros.cliente_id == cliente.id|string %}selected{% endif %}>
+                                    {{ cliente.nome }}
                                 </option>
                                 {% endfor %}
                             </select>
                         </div>
 
                         <div class="col-md-2">
-                            <label class="form-label">Data Início</label>
+                            <label class="form-label fw-bold">Fornecedor</label>
+                            <select name="fornecedor_id" class="form-select" onchange="this.form.submit()">
+                                <option value="">Todos</option>
+                                {% for fornecedor in fornecedores %}
+                                <option value="{{ fornecedor.id }}" {% if filtros.fornecedor_id == fornecedor.id|string %}selected{% endif %}>
+                                    {{ fornecedor.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label fw-bold">Data Início</label>
                             <input type="date" name="data_inicio" class="form-control" value="{{ filtros.data_inicio or '' }}">
                         </div>
 
                         <div class="col-md-2">
-                            <label class="form-label">Data Fim</label>
+                            <label class="form-label fw-bold">Data Fim</label>
                             <input type="date" name="data_fim" class="form-control" value="{{ filtros.data_fim or '' }}">
                         </div>
 
-                        <div class="col-md-2">
-                            <label class="form-label">&nbsp;</label>
-                            <div class="d-grid">
+                        <div class="col-md-12">
+                            <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-search"></i> Filtrar
+                                    <i class="fas fa-search me-2"></i> Filtrar
                                 </button>
+                                <a href="{{ url_for('financeiro.listar_lancamentos') }}" class="btn btn-secondary">
+                                    <i class="fas fa-times me-2"></i> Limpar Filtros
+                                </a>
                             </div>
                         </div>
                     </form>

@@ -541,9 +541,13 @@ def debug_banco():
 @ordem_servico_bp.route('/listar')
 def listar():
     """
-    Lista todas as ordens de serviço ativas.
+    Lista todas as ordens de serviço ativas com filtros avançados.
     
-    Suporte para busca por número, cliente ou status.
+    Filtros disponíveis:
+    - busca: número, título, equipamento ou nome do cliente
+    - status: status da OS
+    - cliente_id: ID do cliente
+    - data_inicio/data_fim: range de datas de abertura
     """
     try:
         # Parâmetros de busca
@@ -551,18 +555,19 @@ def listar():
         status = request.args.get('status', '').strip()
         prioridade = request.args.get('prioridade', '').strip()
         cliente_id = request.args.get('cliente_id', '').strip()
+        data_inicio = request.args.get('data_inicio', '').strip()
+        data_fim = request.args.get('data_fim', '').strip()
         
         # Query principal - filtra OS ativas
-        # FIX: Usar filter() ao invés de filter_by() para evitar erro PostgreSQL
         query = OrdemServico.query.filter(OrdemServico.ativo.is_(True))
         
         # Se o usuário for colaborador, mostra apenas ordens operacionais
         if hasattr(current_user, 'tipo_usuario') and current_user.tipo_usuario == 'colaborador':
             query = query.filter(OrdemServico.tipo_os == 'operacional')
         
-        # Aplica filtros de busca se houver
+        # Aplica filtros
         if busca:
-            query = query.join(Cliente).filter(
+            query = query.join(Cliente, isouter=True).filter(
                 db.or_(
                     OrdemServico.numero.ilike(f'%{busca}%'),
                     OrdemServico.titulo.ilike(f'%{busca}%'),
@@ -583,9 +588,24 @@ def listar():
             except ValueError:
                 pass
         
+        # Filtro por range de datas
+        if data_inicio:
+            try:
+                data_inicio_obj = datetime.strptime(data_inicio, '%Y-%m-%d').date()
+                query = query.filter(OrdemServico.data_abertura >= data_inicio_obj)
+            except ValueError:
+                flash('Data de início inválida', 'warning')
+        
+        if data_fim:
+            try:
+                data_fim_obj = datetime.strptime(data_fim, '%Y-%m-%d').date()
+                query = query.filter(OrdemServico.data_abertura <= data_fim_obj)
+            except ValueError:
+                flash('Data de fim inválida', 'warning')
+        
         ordens = query.order_by(OrdemServico.data_abertura.desc()).all()
         
-        # Lista de clientes para filtro
+        # Lista de clientes para filtro dropdown
         clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
         
         # Estatísticas

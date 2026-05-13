@@ -86,12 +86,23 @@
             <div class="card-body">
 
                 <!-- Barra de Busca e Filtros -->
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <form method="GET" class="d-flex flex-column">
-                            <label class="form-label small">Status</label>
+                <form method="GET" id="formFiltros">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Cliente</label>
+                            <select name="cliente_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                                <option value="">Todos os Clientes</option>
+                                {% for cliente in clientes %}
+                                <option value="{{ cliente.id }}" {{ 'selected' if request.args.get('cliente_id') == cliente.id|string else '' }}>
+                                    {{ cliente.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold">Status</label>
                             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="">Todos os Status</option>
+                                <option value="">Todos</option>
                                 <option value="aberta" {{ 'selected' if request.args.get('status') == 'aberta' else '' }}>Aberta</option>
                                 <option value="em_andamento" {{ 'selected' if request.args.get('status') == 'em_andamento' else '' }}>Em Andamento</option>
                                 <option value="aguardando_pecas" {{ 'selected' if request.args.get('status') == 'aguardando_pecas' else '' }}>Aguardando Peças</option>
@@ -99,44 +110,41 @@
                                 <option value="concluida" {{ 'selected' if request.args.get('status') == 'concluida' else '' }}>Concluída</option>
                                 <option value="cancelada" {{ 'selected' if request.args.get('status') == 'cancelada' else '' }}>Cancelada</option>
                             </select>
-                        </form>
-                    </div>
-                    <div class="col-md-3">
-                        <form method="GET">
-                            <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
-                            <label class="form-label small">Cliente</label>
-                            <input type="text" 
-                                   name="cliente" 
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold">Data Início</label>
+                            <input type="date" 
+                                   name="data_inicio" 
                                    class="form-control form-control-sm" 
-                                   placeholder="Nome do cliente"
-                                   value="{{ request.args.get('cliente', '') }}"
-                                   autocomplete="off">
-                        </form>
-                    </div>
-                    <div class="col-md-3">
-                        <form method="GET">
-                            <input type="hidden" name="status" value="{{ request.args.get('status', '') }}">
-                            <input type="hidden" name="cliente" value="{{ request.args.get('cliente', '') }}">
-                            <label class="form-label small">Número</label>
-                            <input type="text" 
-                                   name="numero" 
+                                   value="{{ request.args.get('data_inicio', '') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold">Data Fim</label>
+                            <input type="date" 
+                                   name="data_fim" 
                                    class="form-control form-control-sm" 
-                                   placeholder="Número da OS"
-                                   value="{{ request.args.get('numero', '') }}"
-                                   autocomplete="off">
-                        </form>
-                    </div>
-                    <div class="col-md-3 d-flex align-items-end">
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-outline-primary btn-sm" onclick="filtrarOrdens()">
-                                <i class="fas fa-search"></i>
-                            </button>
-                            <a href="{{ url_for('ordem_servico.listar') }}" class="btn btn-outline-secondary btn-sm">
-                                <i class="fas fa-times"></i>
-                            </a>
+                                   value="{{ request.args.get('data_fim', '') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold">Número/Título</label>
+                            <input type="text" 
+                                   name="busca" 
+                                   class="form-control form-control-sm" 
+                                   placeholder="Buscar..."
+                                   value="{{ request.args.get('busca', '') }}">
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <div class="d-flex gap-1 w-100">
+                                <button type="submit" class="btn btn-primary btn-sm flex-fill" title="Filtrar">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                <a href="{{ url_for('ordem_servico.listar') }}" class="btn btn-secondary btn-sm" title="Limpar filtros">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </form>
 
                 <!-- Estatísticas -->
                 <div class="row mb-4">
@@ -330,41 +338,17 @@
 </div>
 
 <script>
-function filtrarOrdens() {
-    // Submete todos os formulários de filtro
-    const forms = document.querySelectorAll('form');
-    forms.forEach(form => form.submit());
-}
-
-// Auto-submit nos filtros
+// Auto-submit no campo de busca após digitação
 document.addEventListener('DOMContentLoaded', function() {
-    const statusSelect = document.querySelector('select[name="status"]');
-    const clienteInput = document.querySelector('input[name="cliente"]');
-    const numeroInput = document.querySelector('input[name="numero"]');
-
-    if (statusSelect) {
-        statusSelect.addEventListener('change', function() {
-            this.form.submit();
-        });
-    }
-
-    if (clienteInput) {
+    const buscaInput = document.querySelector('input[name="busca"]');
+    
+    if (buscaInput) {
         let timeoutId;
-        clienteInput.addEventListener('input', function() {
+        buscaInput.addEventListener('input', function() {
             clearTimeout(timeoutId);
             timeoutId = setTimeout(() => {
-                this.form.submit();
-            }, 500);
-        });
-    }
-
-    if (numeroInput) {
-        let timeoutId;
-        numeroInput.addEventListener('input', function() {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                this.form.submit();
-            }, 500);
+                this.closest('form').submit();
+            }, 800);
         });
     }
 });
