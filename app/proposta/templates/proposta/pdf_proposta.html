@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -8,17 +8,12 @@
     <title>Proposta Comercial</title>
     <style>
         /*
-          Template profissional de proposta comercial.
-
-          Este arquivo foi desenhado para harmonizar com o modelo de Ordem
-          de Serviço (OS) utilizado no ERP JSP.  Utiliza as cores extraídas
-          do logotipo da empresa (azul e laranja) e organiza as informações
-          em seções numeradas claramente identificadas.  Para alterar as
-          cores ou fontes basta ajustar as variáveis abaixo.
+          Template profissional de proposta comercial JSP Elétrica Industrial & Solar
+          Padronizado conforme normas comerciais e técnicas industriais
         */
         :root {
-            --primary-color: #002755;   /* azul JSP mais escuro igual fundo da logo */
-            --secondary-color: #f49d16; /* laranja de destaque */
+            --primary-color: #002755;
+            --secondary-color: #f49d16;
             --text-color: #333333;
             --border-color: #dddddd;
             --background-light: #f5f5f5;
@@ -38,21 +33,18 @@
             break-before: page;
         }
         
-        /* Evitar quebras de página dentro dos cards */
         .section {
             page-break-inside: avoid;
             break-inside: avoid;
             margin-bottom: 15px;
         }
         
-        /* Seções pequenas que devem ficar juntas */
         .section.keep-together {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
             display: block;
         }
         
-        /* Para seções maiores, manter cabeçalho junto com conteúdo */
         .section-header {
             page-break-after: avoid !important;
             break-after: avoid !important;
@@ -60,7 +52,6 @@
             break-inside: avoid !important;
         }
         
-        /* Evitar orphans e widows */
         .section-body {
             orphans: 4;
             widows: 4;
@@ -68,7 +59,6 @@
             break-inside: avoid;
         }
         
-        /* Conteúdo de tabelas */
         .items-section {
             page-break-inside: avoid;
             break-inside: avoid;
@@ -156,7 +146,7 @@
             color: var(--text-color);
         }
 
-        /* Tabela de itens com melhor controle */
+        /* Tabela de itens */
         table.items {
             width: 100%;
             border-collapse: collapse;
@@ -182,7 +172,6 @@
             break-after: avoid;
         }
         
-        /* Seções de produtos e serviços */
         .produto-section, .servico-section {
             page-break-inside: avoid;
             break-inside: avoid;
@@ -193,7 +182,6 @@
             page-break-after: avoid;
             break-after: avoid;
         }
-        
 
         /* Resumo financeiro */
         .summary-table {
@@ -224,13 +212,10 @@
             border-spacing: 0;
         }
         .signature-table td {
-            width: 35%;
+            width: 33%;
             padding: 20px 15px;
             vertical-align: top;
             text-align: center;
-        }
-        .signature-table td:nth-child(2) {
-            width: 30%;
         }
         .signature-line {
             border-top: 2px solid var(--primary-color);
@@ -253,7 +238,28 @@
             margin: 4px 0;
         }
         
-        /* Regras específicas para melhor controle de quebras em PDF */
+        /* Cláusulas profissionais */
+        .clausula-legal {
+            background: #fff9e6;
+            border-left: 4px solid var(--secondary-color);
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 10px;
+            line-height: 1.6;
+            border-radius: 4px;
+        }
+        
+        .lista-itens {
+            margin: 10px 0;
+            padding-left: 20px;
+            line-height: 1.8;
+        }
+        
+        .lista-itens li {
+            margin-bottom: 6px;
+        }
+        
+        /* Regras específicas para PDF */
         @media print {
             body {
                 print-color-adjust: exact;
@@ -267,40 +273,9 @@
                 display: block;
             }
             
-            .section-header {
-                page-break-after: avoid !important;
-                break-after: avoid !important;
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-            }
-            
-            .section-body {
-                orphans: 4;
-                widows: 4;
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
-            
-            /* Tabelas não devem quebrar */
             table.items {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
-            }
-            
-            /* Forçar que conteúdo pequeno fique junto */
-            .section-body > div {
-                page-break-inside: avoid;
-                break-inside: avoid;
-            }
-            
-            /* Grids e flexbox para PDF */
-            .grid-container {
-                display: block !important;
-            }
-            
-            .grid-item {
-                display: block !important;
-                margin-bottom: 8px;
             }
         }
     </style>
@@ -309,7 +284,6 @@
     <!-- Cabeçalho -->
     <div class="header">
         <div class="header-logo">
-            <!-- Logo JSP -->
             {% if logo_url %}
             <img src="{{ logo_url }}" alt="Logo JSP">
             {% else %}
@@ -317,9 +291,9 @@
             {% endif %}
         </div>
         <div class="header-info">
-            <h1>{{ config.nome_fantasia if config else 'JSP Soluções' }}</h1>
+            <h1>{{ config.nome_fantasia if config else 'JSP Elétrica Industrial & Solar' }}</h1>
             <div class="details">
-                CNPJ: {{ config.cnpj if config else '12.345.678/0001-90' }}<br>
+                CNPJ: {{ config.cnpj if config else '41.280.764/0001-65' }}<br>
                 {% if config and config.logradouro %}
                 {{ config.logradouro }}{% if config.numero %}, {{ config.numero }}{% endif %}{% if config.bairro %} – {{ config.bairro }}{% endif %}{% if config.cidade %} – {{ config.cidade }}{% endif %}{% if config.uf %}/{{ config.uf }}{% endif %}{% if config.cep %} – CEP {{ config.cep }}{% endif %}<br>
                 {% else %}
@@ -330,6 +304,7 @@
             </div>
         </div>
     </div>
+
     <!-- Título e identificação -->
     <div class="title-row">PROPOSTA COMERCIAL</div>
     <div class="ident-row">
@@ -337,6 +312,7 @@
         <strong>Data de Emissão:</strong> {{ proposta.data_emissao.strftime('%d/%m/%Y') if proposta.data_emissao else '' }}&nbsp;&nbsp;
         <strong>Vendedor:</strong> {{ proposta.vendedor or 'N/A' }}
     </div>
+
     <!-- 01 Dados do Cliente -->
     <div class="section keep-together">
         <div class="section-header"><span class="number">01</span>Dados do Cliente</div>
@@ -369,16 +345,17 @@
             </div>
         </div>
     </div>
-    <!-- 02 Itens da Proposta -->
+
+    <!-- 02 Escopo Técnico -->
     <div class="section items-section">
-        <div class="section-header"><span class="number">02</span>Itens da Proposta</div>
+        <div class="section-header"><span class="number">02</span>Escopo Técnico</div>
         <div class="section-body">
             
             <!-- PRODUTOS -->
             {% if proposta.itens_produto %}
             <div class="produto-section">
             <h4 style="color: var(--primary-color); margin: 10px 0; padding: 8px; background: #e6f2ff; border-left: 4px solid var(--primary-color);">
-                📦 PRODUTOS
+                📦 MATERIAIS E EQUIPAMENTOS
             </h4>
             <table class="items">
                 <tr>
@@ -405,13 +382,13 @@
             {% if proposta.itens_servico %}
             <div class="servico-section">
             <h4 style="color: var(--primary-color); margin: 20px 0 10px 0; padding: 8px; background: #e6ffe6; border-left: 4px solid #28a745;">
-                🔧 SERVIÇOS
+                🔧 SERVIÇOS TÉCNICOS
             </h4>
             <table class="items">
                 <tr>
                     <th style="width:8%; text-align:center;">Item</th>
                     <th style="width:40%;">Descrição</th>
-                    <th style="width:12%; text-align:center;">Tipo</th>
+                    <th style="width:12%; text-align:center;">Modalidade</th>
                     <th style="width:10%; text-align:center;">Qtd</th>
                     <th style="width:15%; text-align:right;">Valor Unit.</th>
                     <th style="width:15%; text-align:right;">Total</th>
@@ -421,17 +398,22 @@
                     <td style="text-align:center;">{{ loop.index + (proposta.itens_produto|length if proposta.itens_produto else 0) }}</td>
                     <td>{{ item.descricao }}</td>
                     <td style="text-align:center;">
-                        {% if item.tipo_servico == 'hora' %}
-                            Por Hora
-                        {% elif item.tipo_servico == 'dia' %}
-                            Por Dia
-                        {% elif item.tipo_servico == 'fechado' %}
-                            Serv. Fechado
+                        {% set tipo = item.tipo_servico|lower if item.tipo_servico else 'fechado' %}
+                        {% set qtd = item.quantidade|float if item.quantidade else 1 %}
+                        {% set valor_unit = item.valor_unitario|float if item.valor_unitario else 0 %}
+                        {% set valor_total = item.valor_total|float if item.valor_total else 0 %}
+                        
+                        {% if tipo == 'hora' %}
+                            Por hora
+                        {% elif tipo == 'dia' %}
+                            Por dia
+                        {% elif tipo == 'fechado' or (qtd == 1 and valor_unit == valor_total) %}
+                            Serviço global
                         {% else %}
-                            {{ item.tipo_servico|title if item.tipo_servico else 'N/A' }}
+                            {{ item.tipo_servico|title if item.tipo_servico else 'Empreitada' }}
                         {% endif %}
                     </td>
-                    <td style="text-align:center;">{{ "{:g}".format(item.quantidade|float) if item.quantidade else '0' }}</td>
+                    <td style="text-align:center;">{{ "{:g}".format(item.quantidade|float) if item.quantidade else '1' }}</td>
                     <td style="text-align:right; white-space: nowrap;">R$ {{ "{:,.2f}".format(item.valor_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                     <td style="text-align:right; white-space: nowrap;">R$ {{ "{:,.2f}".format(item.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                 </tr>
@@ -440,15 +422,14 @@
             </div>
             {% endif %}
             
-            <!-- MENSAGEM SE NÃO HOUVER ITENS -->
             {% if not proposta.itens_produto and not proposta.itens_servico %}
             <div style="text-align:center; padding:30px; color:#666666; background: #f9f9f9; border: 2px dashed #ddd; border-radius: 8px;">
                 <p style="font-size: 14px; margin: 0;">⚠️ Nenhum produto ou serviço adicionado à proposta</p>
             </div>
             {% endif %}
-            
         </div>
     </div>
+
     <!-- 03 Detalhamento da Proposta -->
     <div class="section keep-together">
         <div class="section-header"><span class="number">03</span>Detalhamento da Proposta</div>
@@ -465,6 +446,7 @@
             {% endif %}
         </div>
     </div>
+
     <!-- 04 Resumo Financeiro -->
     <div class="section keep-together" style="border: 2px solid var(--primary-color);">
         <div class="section-header">
@@ -482,19 +464,21 @@
                 <!-- Coluna Esquerda - Valores -->
                 <div style="flex: 1; background: white; border: 1px solid var(--primary-color); padding: 15px;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #ddd;">
-                        <span style="font-weight: bold; color: #333;">SUBTOTAL PRODUTOS</span>
+                        <span style="font-weight: bold; color: #333;">SUBTOTAL MATERIAIS/EQUIPAMENTOS</span>
                         <span style="font-weight: bold; color: #333; white-space: nowrap;">R$ {{ "{:,.2f}".format(subtotal_produtos).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #ddd;">
-                        <span style="font-weight: bold; color: #333;">SUBTOTAL SERVIÇOS</span>
+                        <span style="font-weight: bold; color: #333;">SUBTOTAL SERVIÇOS TÉCNICOS</span>
                         <span style="font-weight: bold; color: #333; white-space: nowrap;">R$ {{ "{:,.2f}".format(subtotal_servicos).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
                     </div>
+                    {% if desconto > 0 %}
                     <div style="display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid #ddd;">
-                        <span style="font-weight: bold; color: #c0392b;">DESCONTO ({{ "{:.2f}".format(desconto).replace('.', ',') }}%)</span>
+                        <span style="font-weight: bold; color: #c0392b;">DESCONTO COMERCIAL ({{ "{:.2f}".format(desconto).replace('.', ',') }}%)</span>
                         <span style="font-weight: bold; color: #c0392b; white-space: nowrap;">- R$ {{ "{:,.2f}".format(valor_desconto).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
                     </div>
+                    {% endif %}
                     <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid var(--primary-color);">
-                        <span style="font-weight: bold; font-size: 16px; color: var(--primary-color);">VALOR TOTAL</span>
+                        <span style="font-weight: bold; font-size: 16px; color: var(--primary-color);">VALOR TOTAL DA PROPOSTA</span>
                         <span style="font-weight: bold; font-size: 16px; color: var(--primary-color); white-space: nowrap;">R$ {{ "{:,.2f}".format(valor_final).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
                     </div>
                 </div>
@@ -502,7 +486,7 @@
                 <!-- Coluna Direita - Dados Bancários -->
                 <div style="flex: 1;">
                     <div style="background: var(--primary-color); color: white; padding: 8px 12px; font-size: 11px; font-weight: bold; text-align: center; margin-bottom: 0;">
-                        DADOS PARA TRANSFERÊNCIA
+                        DADOS PARA TRANSFERÊNCIA/PIX
                     </div>
                     <div style="background: white; border: 1px solid var(--primary-color); border-top: none;">
                         <table style="width: 100%; border-collapse: collapse;">
@@ -520,15 +504,15 @@
                             </tr>
                             <tr>
                                 <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; font-size: 9px;">TITULAR</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.nome_fantasia if (config and config.nome_fantasia) else 'JSP Soluções' }}</td>
+                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.nome_fantasia if (config and config.nome_fantasia) else 'JSP Elétrica Industrial & Solar' }}</td>
                             </tr>
                             <tr>
                                 <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-weight: bold; background: #f8f9fa; font-size: 9px;">CNPJ</td>
-                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.cnpj if (config and config.cnpj) else '12.345.678/0001-90' }}</td>
+                                <td style="padding: 6px 10px; border-bottom: 1px solid #eee; font-size: 9px;">{{ config.cnpj if (config and config.cnpj) else '41.280.764/0001-65' }}</td>
                             </tr>
                             <tr>
-                                <td style="padding: 6px 10px; font-weight: bold; background: #f8f9fa; font-size: 9px;">PIX</td>
-                                <td style="padding: 6px 10px; font-size: 9px;">{{ config.pix if (config and config.pix) else 'contato@jsp.com.br' }}</td>
+                                <td style="padding: 6px 10px; font-weight: bold; background: #f8f9fa; font-size: 9px;">PIX (CNPJ)</td>
+                                <td style="padding: 6px 10px; font-size: 9px;">{{ config.pix if (config and config.pix) else config.cnpj if (config and config.cnpj) else '41.280.764/0001-65' }}</td>
                             </tr>
                         </table>
                     </div>
@@ -536,6 +520,7 @@
             </div>
         </div>
     </div>
+
     <!-- 05 Condições Comerciais -->
     <div class="section keep-together page-break-before">
         <div class="section-header"><span class="number">05</span>Condições Comerciais</div>
@@ -543,20 +528,51 @@
             <div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                 <div class="grid-item">
                     <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">FORMA DE PAGAMENTO</div>
-                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; word-wrap: break-word;">{{ proposta.forma_pagamento or 'pix' }}</div>
+                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; word-wrap: break-word;">
+                        {% set forma_pag = proposta.forma_pagamento|lower if proposta.forma_pagamento else 'a_vista' %}
+                        {% if forma_pag == 'a_vista' or forma_pag == 'a vista' %}
+                            À vista
+                        {% elif forma_pag == 'pix' %}
+                            PIX
+                        {% elif forma_pag == 'boleto' %}
+                            Boleto bancário
+                        {% elif forma_pag == 'parcelado' %}
+                            Parcelado
+                        {% elif forma_pag == 'transferencia' or forma_pag == 'transferência' %}
+                            Transferência bancária
+                        {% elif forma_pag == 'cartao' or forma_pag == 'cartão' %}
+                            Cartão de crédito
+                        {% else %}
+                            {{ proposta.forma_pagamento.replace('_', ' ')|title if proposta.forma_pagamento else 'A definir' }}
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="grid-item">
                     <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">PRAZO DE EXECUÇÃO</div>
-                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">{{ proposta.prazo_execucao or '15' }} dias</div>
+                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">
+                        {% set prazo = proposta.prazo_execucao|string|trim if proposta.prazo_execucao else '' %}
+                        {% if prazo %}
+                            {% set prazo_lower = prazo|lower %}
+                            {% if 'dia' in prazo_lower or 'útil' in prazo_lower or 'util' in prazo_lower or 'corrido' in prazo_lower %}
+                                {{ prazo }}
+                            {% elif prazo.isdigit() %}
+                                {{ prazo }} dias úteis
+                            {% else %}
+                                {{ prazo }}
+                            {% endif %}
+                        {% else %}
+                            A definir conforme cronograma aprovado
+                        {% endif %}
+                    </div>
                 </div>
             </div>
             <div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
                 <div class="grid-item">
-                    <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">GARANTIA</div>
+                    <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">GARANTIA DOS SERVIÇOS</div>
                     <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; word-wrap: break-word;">{{ proposta.garantia or '90 dias' }}</div>
                 </div>
                 <div class="grid-item">
-                    <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">VALIDADE</div>
+                    <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">VALIDADE DA PROPOSTA</div>
                     <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">
                         {% if proposta.valida_ate %}
                             {{ proposta.valida_ate.strftime('%d/%m/%Y') }}
@@ -566,17 +582,21 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Condições de Pagamento Detalhadas -->
             {% if proposta.condicoes_pagamento %}
             <div style="margin-top: 15px;">
-                <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">CONDIÇÕES DE PAGAMENTO DETALHADAS</div>
+                <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">CONDIÇÕES DE PAGAMENTO</div>
                 <div style="padding: 12px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; line-height: 1.6; word-wrap: break-word;">
                     {{ proposta.condicoes_pagamento|replace('\n', '<br>')|safe }}
                 </div>
             </div>
             {% endif %}
             
-            <!-- DEBUG INFO (comentar depois) -->
-            <!-- Forma pagamento: {{ proposta.forma_pagamento }} | Parcelas count: {{ parcelas|length if parcelas else 0 }} -->
+            <!-- Cláusula comercial padrão -->
+            <div class="clausula-legal">
+                <strong>Observação Importante:</strong> Os serviços serão iniciados mediante aprovação formal da proposta e cumprimento da condição inicial de pagamento, quando aplicável. O saldo remanescente ficará vinculado à conclusão técnica e entrega operacional dos serviços contratados. Alterações no escopo após aprovação da proposta estarão sujeitas a novo orçamento e ajuste de prazo.
+            </div>
             
             <!-- PARCELAMENTO -->
             {% if proposta.forma_pagamento == 'parcelado' %}
@@ -628,20 +648,68 @@
                 </div>
                 {% endif %}
             </div>
-                {% else %}
-            <!-- DEBUG: Forma é parcelado mas não há parcelas -->
-            <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px;">
-                <strong>⚠️ Aviso:</strong> Esta proposta está configurada como parcelada, mas as parcelas ainda não foram geradas.
-                <br><small>Edite a proposta e clique em "Visualizar Parcelas" para gerar o detalhamento.</small>
-            </div>
                 {% endif %}
             {% endif %}
+            
+            <!-- Cláusula de garantia profissional -->
+            <div class="clausula-legal" style="margin-top: 20px;">
+                <strong>Abrangência da Garantia:</strong> A garantia cobre exclusivamente os serviços executados pela JSP Elétrica Industrial & Solar, não abrangendo falhas decorrentes de mau uso, desgaste natural, intervenções de terceiros, defeitos ocultos, problemas preexistentes nos equipamentos ou alterações realizadas após a entrega técnica. Peças e componentes fornecidos por terceiros seguem garantia do fabricante.
+            </div>
         </div>
     </div>
-    <!-- 06 Observações -->
+
+    <!-- 06 Itens Não Inclusos -->
+    <div class="section keep-together">
+        <div class="section-header"><span class="number">06</span>Itens Não Inclusos</div>
+        <div class="section-body" style="background: white;">
+            <p style="margin-top: 0; margin-bottom: 12px; line-height: 1.6;">
+                Os seguintes itens não estão inclusos no escopo desta proposta, salvo quando expressamente mencionados na descrição dos serviços:
+            </p>
+            <ul class="lista-itens" style="margin: 0; padding-left: 20px;">
+                <li>Combustível para testes de grupo gerador, salvo quando expressamente previsto no escopo técnico</li>
+                <li>Banco de carga ou carga resistiva para ensaios, salvo disponibilidade e autorização prévia do cliente</li>
+                <li>Adequações civis, bases, alvenaria, pintura, estruturas metálicas ou qualquer infraestrutura predial</li>
+                <li>Substituição de peças, sensores, controladores, cabos, disjuntores, contatores, componentes mecânicos ou elétricos não previstos expressamente na proposta</li>
+                <li>Correções mecânicas no motor diesel, alternador, bomba injetora, turbina ou componentes internos do grupo gerador</li>
+                <li>Cabos de potência externos, eletrocalhas, eletrodutos, conectores, terminações ou infraestrutura adicional não descrita no escopo</li>
+                <li>Serviços em média tensão, subestações, transformadores ou instalações elétricas externas, quando não especificados no escopo</li>
+                <li>Licenças, alvarás, aprovações de concessionárias, laudos técnicos ou documentação regulatória, salvo quando contratado separadamente</li>
+                <li>Alterações, complementações ou serviços adicionais solicitados após aprovação da proposta, que estarão sujeitos a novo orçamento</li>
+            </ul>
+            <div class="clausula-legal" style="margin-top: 15px;">
+                <strong>Importante:</strong> Caso seja identificada a necessidade de serviços ou materiais não inclusos durante a execução, a JSP Elétrica Industrial & Solar informará formalmente o cliente para aprovação prévia e emissão de orçamento complementar. Nenhum serviço adicional será executado sem autorização expressa.
+            </div>
+        </div>
+    </div>
+
+    <!-- 07 Responsabilidades do Cliente -->
+    <div class="section keep-together">
+        <div class="section-header"><span class="number">07</span>Responsabilidades do Cliente</div>
+        <div class="section-body" style="background: white;">
+            <p style="margin-top: 0; margin-bottom: 12px; line-height: 1.6;">
+                Para a correta execução dos serviços contratados, o cliente compromete-se a:
+            </p>
+            <ul class="lista-itens" style="margin: 0; padding-left: 20px;">
+                <li>Disponibilizar acesso livre e seguro ao local de execução dos serviços, durante o horário comercial ou conforme acordado previamente</li>
+                <li>Garantir condições mínimas de segurança, liberação operacional, acompanhamento técnico e cumprimento das normas internas da unidade</li>
+                <li>Disponibilizar ponto de energia elétrica, água, iluminação adequada e instalações sanitárias para a equipe técnica</li>
+                <li>Fornecer combustível quando necessário para testes operacionais de equipamentos, salvo quando expressamente previsto na proposta</li>
+                <li>Disponibilizar documentação técnica existente dos equipamentos, incluindo manuais, diagramas elétricos, histórico de manutenção e relatórios anteriores</li>
+                <li>Informar previamente qualquer restrição operacional, norma de segurança específica, procedimento interno obrigatório ou exigência da unidade</li>
+                <li>Disponibilizar pessoal técnico qualificado para acompanhamento e validação dos serviços, quando aplicável</li>
+                <li>Emitir termo de aceite técnico formalizando a conclusão e entrega dos serviços executados, quando solicitado</li>
+                <li>Comunicar imediatamente qualquer anormalidade observada nos equipamentos ou serviços executados</li>
+            </ul>
+            <div class="clausula-legal" style="margin-top: 15px;">
+                <strong>Observação:</strong> O não cumprimento das responsabilidades acima poderá impactar o prazo de execução, a qualidade técnica dos serviços ou resultar em custos adicionais, que serão formalizados mediante acordo entre as partes.
+            </div>
+        </div>
+    </div>
+
+    <!-- 08 Observações Adicionais -->
     {% if proposta.observacoes %}
     <div class="section keep-together">
-        <div class="section-header"><span class="number">06</span>Observações</div>
+        <div class="section-header"><span class="number">08</span>Observações Adicionais</div>
         <div class="section-body" style="background: white;">
             <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; line-height: 1.6; word-wrap: break-word;">
                 {{ proposta.observacoes|replace('\n', '<br>')|safe }}
@@ -650,13 +718,12 @@
     </div>
     {% endif %}
     
-    <!-- 07 Missão, Visão e Valores -->
+    <!-- 09 Missão, Visão e Valores -->
     {% if config and (config.missao or config.visao or config.valores) %}
     <div class="section page-break-before">
-        <div class="section-header"><span class="number">07</span>Nossos Valores Institucionais</div>
+        <div class="section-header"><span class="number">{% if proposta.observacoes %}09{% else %}08{% endif %}</span>Nossos Valores Institucionais</div>
         <div class="section-body" style="background: white;">
             
-            <!-- Missão - Layout Horizontal -->
             {% if config.missao %}
             <div style="margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
                 <div style="background: var(--primary-color); color: white; padding: 10px 20px; font-weight: bold; font-size: 14px; display: flex; align-items: center;">
@@ -669,7 +736,6 @@
             </div>
             {% endif %}
             
-            <!-- Visão - Layout Horizontal -->
             {% if config.visao %}
             <div style="margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
                 <div style="background: var(--primary-color); color: white; padding: 10px 20px; font-weight: bold; font-size: 14px; display: flex; align-items: center;">
@@ -682,7 +748,6 @@
             </div>
             {% endif %}
             
-            <!-- Valores - Layout Horizontal -->
             {% if config.valores %}
             <div style="margin-bottom: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;">
                 <div style="background: var(--primary-color); color: white; padding: 10px 20px; font-weight: bold; font-size: 14px; display: flex; align-items: center;">
@@ -695,14 +760,13 @@
             </div>
             {% endif %}
             
-            <!-- Frase de Assinatura -->
             {% if config.frase_assinatura %}
             <div style="text-align: center; padding: 20px; background: linear-gradient(45deg, var(--primary-color), #0056b3); color: white; border-radius: 8px; margin-top: 25px;">
                 <div style="font-style: italic; font-size: 14px; line-height: 1.5; margin-bottom: 8px;">
                     "{{ config.frase_assinatura }}"
                 </div>
                 <div style="font-size: 11px; opacity: 0.9; font-weight: 500;">
-                    - {{ config.nome_fantasia if config.nome_fantasia else 'JSP Soluções' }}
+                    - {{ config.nome_fantasia if config.nome_fantasia else 'JSP Elétrica Industrial & Solar' }}
                 </div>
             </div>
             {% endif %}
@@ -710,29 +774,42 @@
     </div>
     {% endif %}
     
-   
-    
-    <!-- 08 Assinaturas -->
+    <!-- Assinaturas -->
     <div class="section keep-together">
-        <div class="section-header"><span class="number">08</span>Assinaturas</div>
+        <div class="section-header"><span class="number">{% if proposta.observacoes %}{% if config and (config.missao or config.visao or config.valores) %}10{% else %}09{% endif %}{% else %}{% if config and (config.missao or config.visao or config.valores) %}09{% else %}08{% endif %}{% endif %}</span>Assinaturas</div>
         <div class="section-body">
+            <p style="text-align: center; margin-bottom: 30px; color: #666; line-height: 1.6;">
+                As partes abaixo identificadas, de comum acordo, assinam a presente proposta comercial<br>
+                em sinal de plena ciência e concordância com os termos e condições estabelecidos.
+            </p>
             <table class="signature-table">
                 <tr>
-                    <td>
+                    <td style="width: 50%; padding-right: 20px;">
                         <div class="signature-line"></div>
-                        <strong>{{ proposta.cliente.nome if proposta.cliente else 'CLIENTE' }}</strong><br>
-                        <span style="font-size: 11px;">CPF/CNPJ: {{ proposta.cliente.cpf_cnpj if proposta.cliente else '_______________' }}</span>
+                        <strong style="font-size: 13px;">{{ proposta.cliente.nome if proposta.cliente else 'CLIENTE / CONTRATANTE' }}</strong><br>
+                        {% if proposta.cliente and proposta.cliente.cpf_cnpj %}
+                        <span style="font-size: 10px;">{{ 'CNPJ' if proposta.cliente.tipo == 'PJ' else 'CPF' }}: {{ proposta.cliente.cpf_cnpj }}</span><br>
+                        {% endif %}
+                        <span style="font-size: 10px; color: #666;">Local e Data: ________________</span>
                     </td>
-                    <td></td>
-                    <td>
+                    <td style="width: 50%; padding-left: 20px;">
                         <div class="signature-line"></div>
-                        <strong>{{ config.nome_fantasia if config else 'JSP Soluções' }}</strong><br>
-                        <span style="font-size: 11px;">Responsável Técnico</span>
+                        <strong style="font-size: 13px;">{{ config.nome_fantasia if config else 'JSP ELÉTRICA INDUSTRIAL & SOLAR' }}</strong><br>
+                        <span style="font-size: 10px;">CNPJ: {{ config.cnpj if config else '41.280.764/0001-65' }}</span><br>
+                        <span style="font-size: 10px; color: #666;">Responsável Técnico / Contratada</span>
                     </td>
                 </tr>
             </table>
         </div>
     </div>
     
+    <!-- Rodapé -->
+    <div class="footer">
+        <p style="font-weight: bold; margin-bottom: 8px;">{{ config.nome_fantasia if config else 'JSP Elétrica Industrial & Solar' }}</p>
+        <p>Proposta Comercial nº {{ proposta.codigo }} | Emitida em {{ proposta.data_emissao.strftime('%d/%m/%Y') if proposta.data_emissao else '' }}</p>
+        <p style="font-size: 9px; margin-top: 8px; color: #666;">
+            Este documento é válido exclusivamente para os fins comerciais aqui descritos. Informações técnicas e comerciais sujeitas a alteração mediante aprovação prévia.
+        </p>
+    </div>
 </body>
 </html>
