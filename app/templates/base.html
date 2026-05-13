@@ -294,6 +294,48 @@
             color: #06b6d4;
             box-shadow: inset 0 0 20px rgba(6,182,212,0.03);
         }
+        
+        /* Cabeçalhos de seção */
+        .nav-section-header {
+            display: flex;
+            align-items: center;
+            padding: 1rem 0.75rem 0.5rem 0.75rem;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #475569;
+            border-bottom: 1px solid rgba(6, 182, 212, 0.1);
+        }
+        
+        .nav-section-header:first-child {
+            margin-top: 0.5rem;
+        }
+        
+        .nav-section-header i {
+            font-size: 0.85rem;
+            color: #06b6d4;
+        }
+        
+        /* Botão de logout destacado */
+        .logout-item {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(6, 182, 212, 0.1);
+        }
+        
+        .logout-link {
+            background: rgba(239, 68, 68, 0.1) !important;
+            color: #ef4444 !important;
+        }
+        
+        .logout-link:hover {
+            background: rgba(239, 68, 68, 0.2) !important;
+            color: #dc2626 !important;
+            transform: translateX(6px);
+        }
 
         /* compact brand logo tweaks */
         .sidebar-brand {
@@ -349,7 +391,15 @@
         <!-- Sidebar Navigation -->
         <nav class="sidebar-nav">
             {% if current_user.is_authenticated and current_user.tipo_usuario|default('usuario') != 'colaborador' %}
-            <!-- Dashboard -->
+            
+            <!-- ═══════════════════════════════════════ -->
+            <!-- VISÃO GERAL -->
+            <!-- ═══════════════════════════════════════ -->
+            <div class="nav-section-header">
+                <i class="fas fa-home me-2"></i>
+                <span>VISÃO GERAL</span>
+            </div>
+            
             <div class="nav-item">
                 <a href="{{ url_for('painel.dashboard') }}" class="nav-link">
                     <i class="nav-icon fas fa-tachometer-alt"></i>
@@ -357,7 +407,14 @@
                 </a>
             </div>
 
-            <!-- Gestão -->
+            <!-- ═══════════════════════════════════════ -->
+            <!-- CADASTROS -->
+            <!-- ═══════════════════════════════════════ -->
+            <div class="nav-section-header">
+                <i class="fas fa-database me-2"></i>
+                <span>CADASTROS</span>
+            </div>
+            
             <div class="nav-item">
                 <a href="{{ url_for('cliente.listar') }}" class="nav-link">
                     <i class="nav-icon fas fa-users"></i>
@@ -383,7 +440,6 @@
                 </a>
             </div>
             
-            <!-- Colaboradores (Apenas Admin) -->
             {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
             <div class="nav-item">
                 <a href="{{ url_for('colaborador.listar') }}" class="nav-link">
@@ -391,10 +447,6 @@
                     <span class="nav-text">Colaboradores</span>
                 </a>
             </div>
-            {% endif %}
-            
-            <!-- Usuários (Apenas Admin) -->
-            {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
             <div class="nav-item">
                 <a href="{{ url_for('usuario.listar') }}" class="nav-link">
                     <i class="nav-icon fas fa-users-cog"></i>
@@ -402,17 +454,21 @@
                 </a>
             </div>
             {% endif %}
-            {% endif %}
 
-            <!-- Operações -->
+            <!-- ═══════════════════════════════════════ -->
+            <!-- OPERAÇÕES -->
+            <!-- ═══════════════════════════════════════ -->
+            <div class="nav-section-header">
+                <i class="fas fa-clipboard-list me-2"></i>
+                <span>OPERAÇÕES</span>
+            </div>
+            
             <div class="nav-item">
                 <a href="{{ url_for('ordem_servico.listar') }}" class="nav-link">
                     <i class="nav-icon fas fa-wrench"></i>
                     <span class="nav-text">Ordens de Serviço</span>
                 </a>
             </div>
-            
-            {% if current_user.is_authenticated and current_user.tipo_usuario|default('usuario') != 'colaborador' %}
             <div class="nav-item">
                 <a href="{{ url_for('proposta.listar_propostas') }}" class="nav-link">
                     <i class="nav-icon fas fa-file-invoice-dollar"></i>
@@ -425,142 +481,6 @@
                     <span class="nav-text">Serviços</span>
                 </a>
             </div>
-
-            <!-- Módulos -->
-            <!-- Financeiro - Com Submenu -->
-            <div class="nav-item">
-                <a href="javascript:void(0)" class="nav-link" onclick="toggleFinanceiroMenu(event)">
-                    <i class="nav-icon fas fa-dollar-sign"></i>
-                    <span class="nav-text">Financeiro</span>
-                    <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem; transform: rotate(0deg);" id="chevronFinanceiro"></i>
-                </a>
-                <div class="nav-submenu" id="financeiroMenu" style="display: none;">
-                    <!-- Dashboard -->
-                    <a href="{{ url_for('financeiro.dashboard') }}" class="nav-link ps-5">
-                        <i class="fas fa-chart-line me-2"></i>
-                        <span>Dashboard</span>
-                    </a>
-                    
-                    <!-- Lançamentos -->
-                    <a href="{{ url_for('financeiro.listar_lancamentos') }}" class="nav-link ps-5">
-                        <i class="fas fa-list me-2"></i>
-                        <span>Lançamentos</span>
-                    </a>
-                    
-                    <div class="dropdown-divider mx-3"></div>
-                    
-                    <!-- Contas a Pagar -->
-                    <a href="{{ url_for('financeiro.contas_pagar') }}" class="nav-link ps-5">
-                        <i class="fas fa-file-invoice-dollar me-2 text-danger"></i>
-                        <span>Contas a Pagar</span>
-                    </a>
-                    
-                    <!-- Contas a Receber -->
-                    <a href="{{ url_for('financeiro.contas_receber') }}" class="nav-link ps-5">
-                        <i class="fas fa-hand-holding-usd me-2 text-success"></i>
-                        <span>Contas a Receber</span>
-                    </a>
-                    
-                    <div class="dropdown-divider mx-3"></div>
-                    
-                    <!-- GESTÃO BANCÁRIA -->
-                    <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
-                        <i class="fas fa-university me-2"></i>
-                        <span>GESTÃO BANCÁRIA</span>
-                    </div>
-                    
-                    <a href="{{ url_for('financeiro.listar_contas_bancarias') }}" class="nav-link ps-6">
-                        <i class="fas fa-wallet me-2 text-primary"></i>
-                        <span>Contas Bancárias</span>
-                    </a>
-                    
-                    <a href="{{ url_for('financeiro.dashboard_contas') }}" class="nav-link ps-6">
-                        <i class="fas fa-chart-area me-2 text-info"></i>
-                        <span>Dashboard Contas</span>
-                    </a>
-                    
-                    <a href="{{ url_for('financeiro.nova_transferencia') }}" class="nav-link ps-6">
-                        <i class="fas fa-exchange-alt me-2 text-warning"></i>
-                        <span>Transferências</span>
-                    </a>
-                    
-                    <a href="{{ url_for('financeiro.conciliacao_bancaria') }}" class="nav-link ps-6">
-                        <i class="fas fa-handshake me-2 text-success"></i>
-                        <span>Conciliação Bancária</span>
-                    </a>
-                    
-                    <div class="dropdown-divider mx-3"></div>
-                    
-                    <!-- DOCUMENTOS FISCAIS -->
-                    <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
-                        <i class="fas fa-file-invoice me-2"></i>
-                        <span>DOCUMENTOS FISCAIS</span>
-                    </div>
-                    
-                    <a href="{{ url_for('financeiro.notas_fiscais_listar') }}" class="nav-link ps-6">
-                        <i class="fas fa-file-invoice-dollar me-2 text-danger"></i>
-                        <span>Notas Fiscais</span>
-                    </a>
-                    
-                    <a href="{{ url_for('nfse.listar') }}" class="nav-link ps-6">
-                        <i class="fas fa-file-contract me-2 text-success"></i>
-                        <span>NFS-e (Serviços)</span>
-                    </a>
-                    
-                    <div class="dropdown-divider mx-3"></div>
-                    
-                    <!-- RELATÓRIOS E ANÁLISES -->
-                    <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
-                        <i class="fas fa-chart-line me-2"></i>
-                        <span>RELATÓRIOS E ANÁLISES</span>
-                    </div>
-                    
-                    <a href="{{ url_for('financeiro.plano_contas') }}" class="nav-link ps-6">
-                        <i class="fas fa-sitemap me-2 text-info"></i>
-                        <span>Plano de Contas</span>
-                    </a>
-                    
-                    <a href="{{ url_for('financeiro.orcamento_anual_dashboard') }}" class="nav-link ps-6">
-                        <i class="fas fa-chart-pie me-2 text-warning"></i>
-                        <span>Orçamento Anual</span>
-                    </a>
-                    
-                    <a href="{{ url_for('financeiro.fluxo_caixa') }}" class="nav-link ps-6">
-                        <i class="fas fa-chart-area me-2 text-info"></i>
-                        <span>Fluxo de Caixa</span>
-                    </a>
-                    
-                    <a href="{{ url_for('financeiro.dre') }}" class="nav-link ps-6">
-                        <i class="fas fa-chart-bar me-2 text-primary"></i>
-                        <span>DRE</span>
-                    </a>
-                    
-                    <div class="dropdown-divider mx-3"></div>
-                    
-                    <!-- GESTÃO DE CUSTOS -->
-                    <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
-                        <i class="fas fa-sitemap me-2"></i>
-                        <span>GESTÃO DE CUSTOS</span>
-                    </div>
-                    
-                    <a href="{{ url_for('financeiro.listar_centros_custo') }}" class="nav-link ps-6">
-                        <i class="fas fa-building me-2 text-success"></i>
-                        <span>Centros de Custo</span>
-                    </a>
-                    
-                    <a href="{{ url_for('financeiro.listar_custos_fixos') }}" class="nav-link ps-6">
-                        <i class="fas fa-repeat me-2 text-warning"></i>
-                        <span>Custos Fixos</span>
-                    </a>
-                </div>
-            </div>
-            
-            <div class="nav-item">
-                <a href="{{ url_for('precificacao.calculadora') }}" class="nav-link">
-                    <i class="nav-icon fas fa-calculator"></i>
-                    <span class="nav-text">Precificação</span>
-                </a>
-            </div>
             <div class="nav-item">
                 <a href="{{ url_for('prospeccao.dashboard') }}" class="nav-link">
                     <i class="nav-icon fas fa-handshake"></i>
@@ -568,7 +488,128 @@
                 </a>
             </div>
 
-            <!-- Energia Solar - Com Submenu -->
+            <!-- ═══════════════════════════════════════ -->
+            <!-- MÓDULOS ESPECIALIZADOS -->
+            <!-- ═══════════════════════════════════════ -->
+            <div class="nav-section-header">
+                <i class="fas fa-th-large me-2"></i>
+                <span>MÓDULOS</span>
+            </div>
+            {% endif %}
+            
+            <!-- Financeiro - Com Submenu Organizado -->
+            <div class="nav-item">
+                <a href="javascript:void(0)" class="nav-link" onclick="toggleFinanceiroMenu(event)">
+                    <i class="nav-icon fas fa-dollar-sign"></i>
+                    <span class="nav-text">Financeiro</span>
+                    <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem; transform: rotate(0deg);" id="chevronFinanceiro"></i>
+                </a>
+                <div class="nav-submenu" id="financeiroMenu" style="display: none;">
+                    <!-- Dashboard e Visão Geral -->
+                    <a href="{{ url_for('financeiro.dashboard') }}" class="nav-link ps-5">
+                        <i class="fas fa-chart-line me-2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('financeiro.listar_lancamentos') }}" class="nav-link ps-5">
+                        <i class="fas fa-list me-2"></i>
+                        <span>Todos os Lançamentos</span>
+                    </a>
+                    
+                    <div class="dropdown-divider mx-3"></div>
+                    
+                    <!-- Contas -->
+                    <a href="{{ url_for('financeiro.contas_pagar') }}" class="nav-link ps-5">
+                        <i class="fas fa-file-invoice-dollar me-2 text-danger"></i>
+                        <span>Contas a Pagar</span>
+                    </a>
+                    <a href="{{ url_for('financeiro.contas_receber') }}" class="nav-link ps-5">
+                        <i class="fas fa-hand-holding-usd me-2 text-success"></i>
+                        <span>Contas a Receber</span>
+                    </a>
+                    
+                    <div class="dropdown-divider mx-3"></div>
+                    
+                    <!-- BANCOS -->
+                    <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
+                        <i class="fas fa-university me-2"></i>
+                        <span>BANCOS</span>
+                    </div>
+                    <a href="{{ url_for('financeiro.listar_contas_bancarias') }}" class="nav-link ps-6">
+                        <i class="fas fa-wallet me-2"></i>
+                        <span>Contas Bancárias</span>
+                    </a>
+                    <a href="{{ url_for('financeiro.dashboard_contas') }}" class="nav-link ps-6">
+                        <i class="fas fa-chart-area me-2"></i>
+                        <span>Dashboard Contas</span>
+                    </a>
+                    <a href="{{ url_for('financeiro.nova_transferencia') }}" class="nav-link ps-6">
+                        <i class="fas fa-exchange-alt me-2"></i>
+                        <span>Transferências</span>
+                    </a>
+                    <a href="{{ url_for('financeiro.conciliacao_bancaria') }}" class="nav-link ps-6">
+                        <i class="fas fa-handshake me-2"></i>
+                        <span>Conciliação</span>
+                    </a>
+                    
+                    <div class="dropdown-divider mx-3"></div>
+                    
+                    <!-- RELATÓRIOS -->
+                    <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
+                        <i class="fas fa-chart-line me-2"></i>
+                        <span>RELATÓRIOS</span>
+                    </div>
+                    <a href="{{ url_for('financeiro.fluxo_caixa') }}" class="nav-link ps-6">
+                        <i class="fas fa-chart-area me-2"></i>
+                        <span>Fluxo de Caixa</span>
+                    </a>
+                    <a href="{{ url_for('financeiro.dre') }}" class="nav-link ps-6">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        <span>DRE</span>
+                    </a>
+                    <a href="{{ url_for('financeiro.plano_contas') }}" class="nav-link ps-6">
+                        <i class="fas fa-sitemap me-2"></i>
+                        <span>Plano de Contas</span>
+                    </a>
+                    <a href="{{ url_for('financeiro.orcamento_anual_dashboard') }}" class="nav-link ps-6">
+                        <i class="fas fa-chart-pie me-2"></i>
+                        <span>Orçamento Anual</span>
+                    </a>
+                    
+                    <div class="dropdown-divider mx-3"></div>
+                    
+                    <!-- CUSTOS -->
+                    <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        <span>CUSTOS</span>
+                    </div>
+                    <a href="{{ url_for('financeiro.listar_centros_custo') }}" class="nav-link ps-6">
+                        <i class="fas fa-building me-2"></i>
+                        <span>Centros de Custo</span>
+                    </a>
+                    <a href="{{ url_for('financeiro.listar_custos_fixos') }}" class="nav-link ps-6">
+                        <i class="fas fa-repeat me-2"></i>
+                        <span>Custos Fixos</span>
+                    </a>
+                    
+                    <div class="dropdown-divider mx-3"></div>
+                    
+                    <!-- DOCUMENTOS FISCAIS -->
+                    <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        <span>FISCAL</span>
+                    </div>
+                    <a href="{{ url_for('financeiro.notas_fiscais_listar') }}" class="nav-link ps-6">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>
+                        <span>Notas Fiscais</span>
+                    </a>
+                    <a href="{{ url_for('nfse.listar') }}" class="nav-link ps-6">
+                        <i class="fas fa-file-contract me-2"></i>
+                        <span>NFS-e</span>
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Energia Solar - Com Submenu Organizado -->
             <div class="nav-item">
                 <a href="javascript:void(0)" class="nav-link" onclick="toggleEnergiaSolarMenu(event)">
                     <i class="nav-icon fas fa-solar-panel"></i>
@@ -576,85 +617,103 @@
                     <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem; transform: rotate(0deg);" id="chevronEnergiaSolar"></i>
                 </a>
                 <div class="nav-submenu" id="energiaSolarMenu" style="display: none;">
-                    <!-- Dashboard -->
+                    <!-- Dashboard e Ferramentas -->
                     <a href="{{ url_for('energia_solar.dashboard') }}" class="nav-link ps-5">
                         <i class="fas fa-chart-line me-2"></i>
                         <span>Dashboard</span>
                     </a>
-                    
-                    <!-- Calculadora -->
                     <a href="{{ url_for('energia_solar.calculadora') }}" class="nav-link ps-5">
                         <i class="fas fa-calculator me-2"></i>
                         <span>Calculadora</span>
                     </a>
-                    
-                    <!-- Projetos -->
                     <a href="{{ url_for('energia_solar.projetos_listar') }}" class="nav-link ps-5">
-                        <i class="fas fa-folder-open me-2 text-warning"></i>
+                        <i class="fas fa-folder-open me-2"></i>
                         <span>Projetos</span>
                     </a>
                     
                     <div class="dropdown-divider mx-3"></div>
                     
-                    <!-- CADASTROS -->
+                    <!-- COMPONENTES -->
                     <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
-                        <i class="fas fa-database me-2"></i>
-                        <span>CADASTROS</span>
+                        <i class="fas fa-microchip me-2"></i>
+                        <span>COMPONENTES</span>
                     </div>
-                    
                     <a href="{{ url_for('energia_solar.placas_listar') }}" class="nav-link ps-6">
-                        <i class="fas fa-solar-panel me-2 text-ciano"></i>
+                        <i class="fas fa-solar-panel me-2"></i>
                         <span>Módulos Solares</span>
                     </a>
                     <a href="{{ url_for('energia_solar.inversores_listar') }}" class="nav-link ps-6">
-                        <i class="fas fa-microchip me-2 text-roxo"></i>
+                        <i class="fas fa-microchip me-2"></i>
                         <span>Inversores</span>
-                    </a>
-                    <a href="{{ url_for('energia_solar.kits_listar') }}" class="nav-link ps-6">
-                        <i class="fas fa-boxes-stacked me-2 text-verde"></i>
-                        <span>Kits Solares</span>
-                    </a>
-                    <a href="{{ url_for('kits_distribuidor.listar') }}" class="nav-link ps-6">
-                        <i class="fas fa-cloud-download-alt me-2 text-warning"></i>
-                        <span>Kits Distribuidores</span>
-                    </a>
-                    <a href="{{ url_for('energia_solar.custos_fixos_listar') }}" class="nav-link ps-6">
-                        <i class="fas fa-money-bill-wave me-2 text-success"></i>
-                        <span>Custos Fixos</span>
-                    </a>
-                    <a href="{{ url_for('concessionaria.listar') }}" class="nav-link ps-6">
-                        <i class="fas fa-bolt me-2 text-warning"></i>
-                        <span>Concessionárias</span>
                     </a>
                     
                     <div class="dropdown-divider mx-3"></div>
                     
-                    <!-- IMPOSTOS -->
+                    <!-- KITS E PRODUTOS -->
                     <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
-                        <i class="fas fa-percentage me-2"></i>
-                        <span>IMPOSTOS</span>
+                        <i class="fas fa-boxes-stacked me-2"></i>
+                        <span>KITS</span>
                     </div>
+                    <a href="{{ url_for('energia_solar.kits_listar') }}" class="nav-link ps-6">
+                        <i class="fas fa-boxes-stacked me-2"></i>
+                        <span>Kits Solares</span>
+                    </a>
+                    <a href="{{ url_for('kits_distribuidor.listar') }}" class="nav-link ps-6">
+                        <i class="fas fa-cloud-download-alt me-2"></i>
+                        <span>Kits Distribuidores</span>
+                    </a>
                     
+                    <div class="dropdown-divider mx-3"></div>
+                    
+                    <!-- CONFIGURAÇÕES -->
+                    <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
+                        <i class="fas fa-cog me-2"></i>
+                        <span>CONFIGURAÇÕES</span>
+                    </div>
+                    <a href="{{ url_for('energia_solar.custos_fixos_listar') }}" class="nav-link ps-6">
+                        <i class="fas fa-money-bill-wave me-2"></i>
+                        <span>Custos Fixos</span>
+                    </a>
+                    <a href="{{ url_for('concessionaria.listar') }}" class="nav-link ps-6">
+                        <i class="fas fa-bolt me-2"></i>
+                        <span>Concessionárias</span>
+                    </a>
                     <a href="{{ url_for('energia_solar.chaves_documentos') }}" class="nav-link ps-6">
-                        <i class="fas fa-file-contract me-2 text-primary"></i>
+                        <i class="fas fa-file-contract me-2"></i>
                         <span>Chaves de Documentos</span>
                     </a>
                 </div>
             </div>
+            
+            <!-- Precificação -->
+            <div class="nav-item">
+                <a href="{{ url_for('precificacao.calculadora') }}" class="nav-link">
+                    <i class="nav-icon fas fa-calculator"></i>
+                    <span class="nav-text">Precificação</span>
+                </a>
+            </div>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!-- SISTEMA -->
+            <!-- ═══════════════════════════════════════ -->
+            <div class="nav-section-header">
+                <i class="fas fa-cog me-2"></i>
+                <span>SISTEMA</span>
+            </div>
+            
+            {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
+            <div class="nav-item">
+                <a href="{{ url_for('configuracao.visualizar') }}" class="nav-link">
+                    <i class="nav-icon fas fa-sliders-h"></i>
+                    <span class="nav-text">Configurações</span>
+                </a>
+            </div>
+            {% endif %}
 
             {% endif %}
             
             <!-- Usuário -->
             {% if current_user.is_authenticated %}
-            <!-- Configurações (Apenas Admin) -->
-            {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
-            <div class="nav-item">
-                <a href="{{ url_for('configuracao.visualizar') }}" class="nav-link">
-                    <i class="nav-icon fas fa-cog"></i>
-                    <span class="nav-text">Configurações</span>
-                </a>
-            </div>
-            {% endif %}
             
             <div class="nav-item">
                 <a href="{{ url_for('auth.perfil') }}" class="nav-link">
@@ -669,11 +728,11 @@
                 </a>
             </div>
             
-            <!-- Logout na sidebar -->
-            <div class="nav-item logout-item">
+            <!-- Logout -->
+            <div class="nav-item logout-item mt-3">
                 <a href="{{ url_for('auth.logout') }}" class="nav-link logout-link">
                     <i class="nav-icon fas fa-sign-out-alt"></i>
-                    <span class="nav-text">Sair</span>
+                    <span class="nav-text">Sair do Sistema</span>
                 </a>
             </div>
             {% endif %}
