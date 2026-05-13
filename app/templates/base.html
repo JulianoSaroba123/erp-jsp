@@ -61,8 +61,8 @@
         
         /* Sidebar - Scroll independente, altura da viewport */
         .sidebar {
-            width: 250px;
-            min-width: 250px;
+            width: 265px;
+            min-width: 265px;
             height: 100vh;
             overflow-y: auto;
             overflow-x: hidden;
@@ -161,7 +161,7 @@
         @media (max-width: 991px) {
             .sidebar {
                 position: fixed;
-                left: -250px;
+                left: -265px;
                 z-index: 1050;
                 transition: left 0.3s ease;
             }
@@ -248,8 +248,8 @@
     <style>
         /* Sidebar visual improvements */
         .sidebar {
-            width: 250px;
-            min-width: 250px;
+            width: 265px;
+            min-width: 265px;
             background: linear-gradient(180deg, rgba(2,6,23,0.95), rgba(3,10,30,0.95));
             border-right: 1px solid rgba(6,182,212,0.06);
             padding: 1.1rem 0.5rem;
@@ -267,6 +267,10 @@
             color: #cbd5e1;
             font-weight:600;
             margin-left:0.6rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 0.9rem;
         }
 
         .sidebar .nav-icon { font-size: 1.05rem; color: #7dd3fc; }
@@ -280,6 +284,8 @@
             margin:0.3rem 0.25rem;
             color:#94a3b8;
             transition: all 0.18s ease;
+            white-space: nowrap;
+            min-width: 0;
         }
 
         .sidebar .nav-link:hover {
@@ -863,7 +869,7 @@
             const sidebarPosition = window.getComputedStyle(sidebar).position;
 
             if (window.innerWidth > 991 && sidebarPosition === 'fixed') {
-                mainContent.style.marginLeft = '250px';
+                mainContent.style.marginLeft = '265px';
                 sidebar.style.left = '0';
             } else {
                 mainContent.style.marginLeft = '';
