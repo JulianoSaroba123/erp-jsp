@@ -880,23 +880,77 @@ def duplicar_proposta(id):
     try:
         proposta_original = Proposta.query.get_or_404(id)
         
-        # Criar nova proposta (código será gerado automaticamente)
+        # Criar nova proposta com TODOS os campos (código será gerado automaticamente)
         nova_proposta = Proposta(
+            # Cliente e dados básicos
             cliente_id=proposta_original.cliente_id,
             titulo=f"CÓPIA - {proposta_original.titulo}",
             descricao=proposta_original.descricao,
-            valor_total=proposta_original.valor_total,
+            observacoes=f"Duplicada de: {proposta_original.codigo}\n\n{proposta_original.observacoes or ''}",
+            
+            # Status sempre volta para pendente
             status='Pendente',
+            
+            # Datas (validade e emissão resetadas)
+            validade=proposta_original.validade,
+            
+            # Responsável
             vendedor=proposta_original.vendedor,
-            forma_pagamento=proposta_original.forma_pagamento,
+            
+            # Informações adicionais
+            prioridade=proposta_original.prioridade,
+            km_estimado=proposta_original.km_estimado,
+            tempo_estimado=proposta_original.tempo_estimado,
+            
+            # Valores
+            valor_produtos=proposta_original.valor_produtos,
+            valor_servicos=proposta_original.valor_servicos,
+            desconto=proposta_original.desconto,
+            valor_total=proposta_original.valor_total,
+            entrada=proposta_original.entrada,
+            
+            # Condições
+            condicoes_pagamento=proposta_original.condicoes_pagamento,
             prazo_execucao=proposta_original.prazo_execucao,
             garantia=proposta_original.garantia,
-            validade=proposta_original.validade,
-            observacoes=f"Duplicada de: {proposta_original.codigo}",
+            forma_pagamento=proposta_original.forma_pagamento,
+            
+            # Dados de parcelamento (se existirem)
+            numero_parcelas=getattr(proposta_original, 'numero_parcelas', None),
+            intervalo_parcelas=getattr(proposta_original, 'intervalo_parcelas', None),
+            data_primeira_parcela=getattr(proposta_original, 'data_primeira_parcela', None),
+            
+            # Itens JSON
             itens_json=proposta_original.itens_json
         )
         
         db.session.add(nova_proposta)
+        db.session.flush()  # Garante que temos o ID da nova proposta
+        
+        # Duplicar parcelas (se existirem)
+        try:
+            from app.proposta.proposta_model import ParcelaProposta
+            parcelas_originais = ParcelaProposta.query.filter_by(
+                proposta_id=proposta_original.id,
+                ativo=True
+            ).all()
+            
+            if parcelas_originais:
+                logger.debug(f"Duplicando {len(parcelas_originais)} parcelas...")
+                for parcela_orig in parcelas_originais:
+                    nova_parcela = ParcelaProposta(
+                        proposta_id=nova_proposta.id,
+                        numero_parcela=parcela_orig.numero_parcela,
+                        valor_parcela=parcela_orig.valor_parcela,
+                        data_vencimento=parcela_orig.data_vencimento,
+                        status='pendente',  # Sempre volta para pendente
+                        descricao=parcela_orig.descricao
+                    )
+                    db.session.add(nova_parcela)
+                logger.debug(f"✅ {len(parcelas_originais)} parcelas duplicadas")
+        except Exception as e:
+            logger.warning(f"Aviso ao duplicar parcelas: {str(e)}")
+        
         db.session.commit()
         
         flash(f'Proposta duplicada com sucesso! Novo código: {nova_proposta.codigo}', 'success')
@@ -905,6 +959,8 @@ def duplicar_proposta(id):
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao duplicar proposta {id}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         flash(f'Erro ao duplicar proposta: {str(e)}', 'error')
         return redirect(url_for('proposta.visualizar_proposta', id=id))
 
