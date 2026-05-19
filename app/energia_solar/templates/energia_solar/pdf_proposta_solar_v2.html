@@ -1406,7 +1406,8 @@
                             </span>
                         </div>
                         <div style="width: 100%; background: #f5f5f5; height: 35px; border-radius: 5px; position: relative;">
-                            <div style="width: {{ "%.1f"|format(min(100, (economia_acum / (economia_anual * 25 * 1.5)) * 100)) }}%; background: linear-gradient(90deg, {{ '#ff9800' if saldo <= 0 else '#4caf50' }} 0%, {{ '#ffa726' if saldo <= 0 else '#66bb6a' }} 100%); height: 100%; border-radius: 5px; padding-left: 10px; line-height: 35px; color: white; font-weight: 700; font-size: 14px;">
+                            {% set percentual_barra = (economia_acum / (economia_anual * 25 * 1.5)) * 100 %}
+                            <div style="width: {{ "%.1f"|format(100 if percentual_barra > 100 else percentual_barra) }}%; background: linear-gradient(90deg, {{ '#ff9800' if saldo <= 0 else '#4caf50' }} 0%, {{ '#ffa726' if saldo <= 0 else '#66bb6a' }} 100%); height: 100%; border-radius: 5px; padding-left: 10px; line-height: 35px; color: white; font-weight: 700; font-size: 14px;">
                                 {{ "%.0f"|format((economia_acum / valor_total * 100)) }}%
                             </div>
                         </div>
