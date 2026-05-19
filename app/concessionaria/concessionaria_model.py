@@ -54,6 +54,8 @@ class Concessionaria(BaseModel):
             'pis': float(self.pis) if self.pis else None,
             'cofins': float(self.cofins) if self.cofins else None,
             'icms': float(self.icms) if self.icms else None,
+            'tarifa_total': float(self.tarifa_total),
+            'tarifa_final': float(self.tarifa_final),
             'data_atualizacao': self.data_atualizacao.strftime('%d/%m/%Y') if self.data_atualizacao else None,
             'ativo': self.ativo
         }
