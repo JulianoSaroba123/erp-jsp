@@ -1815,12 +1815,14 @@ async function carregarItensOrcamento() {
             if (data.itens && data.itens.length > 0) {
                 itensOrcamento = data.itens;
             } else {
-                // Se não houver itens salvos, inicializar com array vazio
+                // Se não houver itens salvos, carregar custos fixos automaticamente
                 itensOrcamento = [];
+                await carregarCustosFixosAutomatico();
             }
         } else {
             console.warn('Não foi possível carregar itens do orçamento');
             itensOrcamento = [];
+            await carregarCustosFixosAutomatico();
         }
     } catch (error) {
         console.error('Erro ao carregar itens:', error);
@@ -1828,6 +1830,44 @@ async function carregarItensOrcamento() {
     }
     
     renderizarItensOrcamento();
+    recalcularOrcamento();
+}
+
+// Carregar custos fixos automaticamente (silenciosamente, sem alertas)
+async function carregarCustosFixosAutomatico() {
+    try {
+        const response = await fetch('/energia-solar/custos-fixos/api/listar');
+        if (!response.ok) {
+            return;
+        }
+        
+        const custosFixos = await response.json();
+        
+        if (!custosFixos || custosFixos.length === 0) {
+            return;
+        }
+        
+        // Encontrar o próximo ID disponível
+        const proximoId = itensOrcamento.length > 0 
+            ? Math.max(...itensOrcamento.map(i => i.id || 0)) + 1 
+            : 1;
+        
+        // Adicionar cada custo fixo ao orçamento
+        custosFixos.forEach((custo, index) => {
+            itensOrcamento.push({
+                id: proximoId + index,
+                descricao: custo.descricao,
+                qtd: custo.qtd || 1,
+                und: custo.unidade || 'UND',
+                valorUnit: custo.valorUnit || 0,
+                lucro: custo.lucro || 0,
+                tipo: custo.faturamento || 'EMPRESA'
+            });
+        });
+        
+    } catch (error) {
+        console.error('Erro ao carregar custos fixos:', error);
+    }
     recalcularOrcamento();
 }
 
