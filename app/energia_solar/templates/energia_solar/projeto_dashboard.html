@@ -1632,11 +1632,11 @@ function atualizarConcessionarias(event) {
                     <button class="btn btn-info" onclick="carregarCustosFixos()" title="Carregar custos fixos cadastrados">
                         <i class="fas fa-sync me-1"></i>Carregar Custos Fixos
                     </button>
-                    <button class="btn btn-secondary" title="Remover item selecionado">
-                        <i class="fas fa-minus"></i>
+                    <button class="btn btn-warning" onclick="limparERecarregarOrcamento()" title="Limpar e adicionar KIT + Custos Fixos">
+                        <i class="fas fa-broom me-1"></i>LIMPAR E RECARREGAR
                     </button>
-                    <button class="btn btn-danger" title="Limpar seleção">
-                        <i class="fas fa-times"></i>
+                    <button class="btn btn-danger" onclick="limparOrcamento()" title="Limpar tudo">
+                        <i class="fas fa-trash"></i>
                     </button>
                 </div>
 
@@ -1845,6 +1845,24 @@ async function carregarItensOrcamento() {
             if (data.itens && data.itens.length > 0) {
                 itensOrcamento = data.itens;
                 console.log('✅ Itens carregados do servidor:', itensOrcamento.length);
+                console.log('📋 Itens:', itensOrcamento.map(i => i.descricao));
+                
+                // SEMPRE verificar se o kit está na lista
+                const temKit = itensOrcamento.some(item => 
+                    item.descricao && (
+                        item.descricao.toUpperCase().includes('KIT') || 
+                        item.descricao.toUpperCase().includes('PLACA') ||
+                        item.descricao.toUpperCase().includes('INVERSOR')
+                    )
+                );
+                
+                console.log('🔍 Tem KIT/PLACA/INVERSOR na lista?', temKit);
+                
+                if (!temKit && dadosProjeto.kit) {
+                    console.log('⚠️ KIT não encontrado! Adicionando agora...');
+                    await adicionarKitAoOrcamento();
+                }
+                
             } else {
                 // Se não houver itens salvos, inicializar vazio
                 itensOrcamento = [];
@@ -1859,7 +1877,7 @@ async function carregarItensOrcamento() {
         itensOrcamento = [];
     }
     
-    // SEMPRE adicionar kit e custos fixos se o array estiver vazio
+    // Se o array estiver vazio, carregar kit e custos fixos
     if (itensOrcamento.length === 0) {
         console.log('🔄 Array vazio, carregando kit e custos fixos...');
         await carregarCustosFixosAutomatico();
@@ -2202,6 +2220,29 @@ function excluirItem(itemId) {
         itensOrcamento = itensOrcamento.filter(i => i.id !== itemId);
         renderizarItensOrcamento();
         recalcularOrcamento();
+    }
+}
+
+// Limpar orçamento
+function limparOrcamento() {
+    if (confirm('⚠️ ATENÇÃO! Isso vai LIMPAR TODOS OS ITENS do orçamento. Confirma?')) {
+        itensOrcamento = [];
+        renderizarItensOrcamento();
+        recalcularOrcamento();
+        alert('✅ Orçamento limpo com sucesso!');
+    }
+}
+
+// Limpar e recarregar do zero (KIT + Custos Fixos)
+async function limparERecarregarOrcamento() {
+    if (confirm('🔄 Isso vai LIMPAR o orçamento atual e recarregar com KIT + Custos Fixos. Confirma?')) {
+        console.log('🧹 Limpando orçamento...');
+        itensOrcamento = [];
+        
+        console.log('🔄 Recarregando do zero...');
+        await carregarCustosFixosAutomatico();
+        
+        alert('✅ Orçamento recarregado com sucesso!');
     }
 }
 
