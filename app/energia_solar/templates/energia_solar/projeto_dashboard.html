@@ -1446,6 +1446,14 @@ function handleSalvarDadosFinanceiros(event) {
         impostos_percentual: document.getElementById('impostos_percentual').value
     };
     
+    console.log('📤 Enviando dados:', data);
+    
+    // Validar se concessionária foi selecionada
+    if (!data.concessionaria_id) {
+        alert('Por favor, selecione uma concessionária');
+        return;
+    }
+    
     fetch(form.action, {
         method: 'POST',
         headers: {
@@ -1453,19 +1461,19 @@ function handleSalvarDadosFinanceiros(event) {
         },
         body: JSON.stringify(data)
     })
-    .then(response => {
-        if (response.ok) {
-            alert('Dados financeiros salvos com sucesso!');
+    .then(response => response.json().then(json => ({json, response})))
+    .then(({json, response}) => {
+        if (response.ok && json.success) {
+            alert(json.message || 'Dados financeiros salvos com sucesso!');
             window.location.reload();
         } else {
-            return response.json().then(err => {
-                alert('Erro ao salvar dados financeiros: ' + (err.message || 'Erro desconhecido'));
-            });
+            console.error('Erro ao salvar:', json);
+            alert('Erro ao salvar dados financeiros: ' + (json.message || 'Erro desconhecido'));
         }
     })
     .catch(error => {
-        console.error('Erro:', error);
-        alert('Erro ao salvar dados financeiros');
+        console.error('Erro de rede ou parse:', error);
+        alert('Erro ao salvar dados financeiros. Verifique o console para detalhes.');
     });
 }
 

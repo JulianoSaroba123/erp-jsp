@@ -1223,25 +1223,39 @@ def projeto_salvar_dados_financeiros(projeto_id):
         # Receber dados JSON
         data = request.get_json()
         
+        # Log para debug
+        print(f"🔍 DEBUG - Dados recebidos: {data}")
+        
         concessionaria_id = data.get('concessionaria_id')
         tarifa_final = data.get('tarifa_final')
         economia_anual = data.get('economia_anual_prevista')
         impostos_percentual = data.get('impostos_percentual')
         
-        # Atualizar projeto
+        print(f"📊 Valores parseados:")
+        print(f"  - concessionaria_id: {concessionaria_id}")
+        print(f"  - tarifa_final: {tarifa_final}")
+        print(f"  - economia_anual: {economia_anual}")
+        print(f"  - impostos_percentual: {impostos_percentual}")
+        
+        # Atualizar projeto com tratamento robusto
         if concessionaria_id:
             projeto.concessionaria_id = int(concessionaria_id)
         
-        if tarifa_final:
-            projeto.tarifa_kwh = float(tarifa_final.replace(',', '.'))
+        if tarifa_final and str(tarifa_final).strip():
+            tarifa_str = str(tarifa_final).replace(',', '.').strip()
+            if tarifa_str:
+                projeto.tarifa_kwh = float(tarifa_str)
         
-        if economia_anual:
+        if economia_anual and str(economia_anual).strip():
             # Remover formatação monetária se houver
             economia_valor = str(economia_anual).replace('R$', '').replace('.', '').replace(',', '.').strip()
-            projeto.economia_anual = float(economia_valor)
+            if economia_valor:
+                projeto.economia_anual = float(economia_valor)
         
-        if impostos_percentual:
-            projeto.aliquota_fio_b = float(str(impostos_percentual).replace(',', '.'))
+        if impostos_percentual and str(impostos_percentual).strip():
+            impostos_str = str(impostos_percentual).replace(',', '.').strip()
+            if impostos_str:
+                projeto.aliquota_fio_b = float(impostos_str)
         
         db.session.commit()
         
