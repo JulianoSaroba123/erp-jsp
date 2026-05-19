@@ -1628,6 +1628,9 @@ function atualizarConcessionarias(event) {
                     <button class="btn btn-success" onclick="adicionarItemOrcamento()" title="Adicionar item">
                         <i class="fas fa-plus"></i>
                     </button>
+                    <button class="btn btn-info" onclick="carregarCustosFixos()" title="Carregar custos fixos cadastrados">
+                        <i class="fas fa-sync me-1"></i>Carregar Custos Fixos
+                    </button>
                     <button class="btn btn-secondary" title="Remover item selecionado">
                         <i class="fas fa-minus"></i>
                     </button>
@@ -1888,6 +1891,63 @@ function adicionarItemOrcamento() {
     });
     renderizarItensOrcamento();
     recalcularOrcamento();
+}
+
+// Carregar custos fixos da API
+async function carregarCustosFixos() {
+    try {
+        const response = await fetch('/energia-solar/custos-fixos-api');
+        if (!response.ok) {
+            throw new Error('Erro ao carregar custos fixos');
+        }
+        
+        const custosFixos = await response.json();
+        
+        if (!custosFixos || custosFixos.length === 0) {
+            alert('Nenhum custo fixo cadastrado com "Aplicar Automaticamente" ativado.');
+            return;
+        }
+        
+        // Encontrar o próximo ID disponível
+        const proximoId = itensOrcamento.length > 0 
+            ? Math.max(...itensOrcamento.map(i => i.id || 0)) + 1 
+            : 1;
+        
+        let custosAdicionados = 0;
+        
+        // Adicionar cada custo fixo ao orçamento
+        custosFixos.forEach((custo, index) => {
+            // Verificar se já existe um item com a mesma descrição
+            const jaExiste = itensOrcamento.some(item => 
+                item.descricao.toLowerCase() === custo.descricao.toLowerCase()
+            );
+            
+            if (!jaExiste) {
+                itensOrcamento.push({
+                    id: proximoId + index,
+                    descricao: custo.descricao,
+                    qtd: custo.qtd || 1,
+                    und: custo.unidade || 'UND',
+                    valorUnit: custo.valorUnit || 0,
+                    lucro: custo.lucro || 0,
+                    tipo: custo.faturamento || 'EMPRESA'
+                });
+                custosAdicionados++;
+            }
+        });
+        
+        if (custosAdicionados > 0) {
+            renderizarItensOrcamento();
+            recalcularOrcamento();
+            alert(`${custosAdicionados} custo(s) fixo(s) adicionado(s) ao orçamento!`);
+        } else {
+            alert('Todos os custos fixos já estão no orçamento.');
+        }
+        
+    } catch (error) {
+        console.error('Erro ao carregar custos fixos:', error);
+        alert('Erro ao carregar custos fixos. Verifique o console para mais detalhes.');
+    }
 }
 
 // Recalcular orçamento
