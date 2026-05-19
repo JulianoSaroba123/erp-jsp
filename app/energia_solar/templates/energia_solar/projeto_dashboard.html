@@ -1155,7 +1155,7 @@
                                         Selecione a Concessionária
                                         <span class="text-danger">*</span>
                                     </span>
-                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="atualizarConcessionarias()" title="Atualizar lista de concessionárias">
+                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="atualizarConcessionarias(event)" title="Atualizar lista de concessionárias">
                                         <i class="fas fa-sync-alt"></i> Atualizar
                                     </button>
                                 </label>
@@ -1470,13 +1470,14 @@ function handleSalvarDadosFinanceiros(event) {
 }
 
 // Função para atualizar lista de concessionárias
-function atualizarConcessionarias() {
+function atualizarConcessionarias(event) {
     const selectConc = document.getElementById('concessionaria_id');
     const valorAtual = selectConc.value; // Preserva seleção atual
+    const botao = event.target.closest('button'); // Pega o botão clicado
     
     // Desabilita botão durante carregamento
-    event.target.disabled = true;
-    event.target.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
+    botao.disabled = true;
+    botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
     
     fetch('/concessionaria/api/listar')
         .then(response => response.json())
@@ -1522,8 +1523,8 @@ function atualizarConcessionarias() {
         })
         .finally(() => {
             // Reabilita botão
-            event.target.disabled = false;
-            event.target.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar';
+            botao.disabled = false;
+            botao.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar';
         });
 }
 </script>
