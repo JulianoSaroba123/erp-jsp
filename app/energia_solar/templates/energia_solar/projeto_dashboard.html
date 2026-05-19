@@ -1479,7 +1479,7 @@ function atualizarConcessionarias(event) {
     botao.disabled = true;
     botao.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
     
-    fetch('/concessionaria/api/listar')
+    fetch('/concessionarias/api/listar')
         .then(response => response.json())
         .then(result => {
             if (result.success) {
