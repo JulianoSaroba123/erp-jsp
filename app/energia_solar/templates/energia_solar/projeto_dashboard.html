@@ -346,11 +346,11 @@
                         <i class="fas fa-tools me-2"></i>Ferramentas
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-file-pdf me-2"></i>Gerar Proposta PDF</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-table me-2"></i>Tabela 12 Anos</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-chart-bar me-2"></i>Tabela 25 Anos</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.projeto_proposta_pdf', projeto_id=projeto.id) }}" target="_blank"><i class="fas fa-file-pdf me-2"></i>Gerar Proposta PDF</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalTabela(12)"><i class="fas fa-table me-2"></i>Tabela 12 Anos</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalTabela(25)"><i class="fas fa-chart-bar me-2"></i>Tabela 25 Anos</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#"><i class="fas fa-file-word me-2"></i>Gerar Documento</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.gerar_documento_word', projeto_id=projeto.id) }}"><i class="fas fa-file-word me-2"></i>Gerar Documento</a></li>
                     </ul>
                 </div>
             </div>
@@ -1284,6 +1284,86 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Tabela de Projeção -->
+<div class="modal fade" id="modalTabelaProjecao" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                <h5 class="modal-title text-white">
+                    <i class="fas fa-chart-line me-2"></i><span id="tituloTabela">Tabela de Projeção</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Projeção Financeira:</strong> Esta tabela mostra a economia estimada e o retorno do investimento ao longo dos anos, considerando uma inflação média de 4.5% a.a. na tarifa de energia.
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered" id="tabelaProjecao">
+                        <thead class="table-primary">
+                            <tr>
+                                <th class="text-center">Ano</th>
+                                <th class="text-center">Tarifa Estimada (R$/kWh)</th>
+                                <th class="text-center">Economia Anual (R$)</th>
+                                <th class="text-center">Economia Acumulada (R$)</th>
+                                <th class="text-center">ROI</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoTabelaProjecao">
+                            <!-- Preenchido por JavaScript -->
+                        </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td colspan="2" class="text-end">TOTAL:</td>
+                                <td class="text-center text-success" id="totalEconomiaAnual">-</td>
+                                <td class="text-center text-success" id="totalEconomiaAcumulada">-</td>
+                                <td class="text-center" id="roiFinal">-</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <small class="text-muted d-block">Investimento Inicial</small>
+                                <h4 class="text-primary mb-0" id="investimentoInicial">R$ 0,00</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <small class="text-muted d-block">Payback Estimado</small>
+                                <h4 class="text-warning mb-0" id="paybackEstimado">0,0 anos</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <small class="text-muted d-block">ROI Final</small>
+                                <h4 class="text-success mb-0" id="roiFinalCard">0%</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Fechar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="exportarTabelaExcel()">
+                    <i class="fas fa-file-excel me-2"></i>Exportar para Excel
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -3522,6 +3602,81 @@ async function carregarDadosCliente(clienteId) {
     } catch (error) {
         console.error('❌ Erro ao carregar dados do cliente:', error);
     }
+}
+
+// ========================================
+// MODAL TABELA DE PROJEÇÃO
+// ========================================
+
+function abrirModalTabela(anos) {
+    // Atualizar título
+    document.getElementById('tituloTabela').textContent = `Tabela de Projeção - ${anos} Anos`;
+    
+    // Dados do projeto (JavaScript)
+    const custoTotal = {{ projeto.custo_total or 0 }};
+    const consumoMensal = {{ projeto.consumo_kwh_mes or 0 }};
+    const tarifaInicial = 0.85; // R$/kWh (média Brasil)
+    const inflacaoAnual = 0.045; // 4.5% ao ano
+    
+    // Gerar tabela
+    gerarTabelaProjecao(anos, custoTotal, consumoMensal, tarifaInicial, inflacaoAnual);
+    
+    // Abrir modal
+    const modal = new bootstrap.Modal(document.getElementById('modalTabelaProjecao'));
+    modal.show();
+}
+
+function gerarTabelaProjecao(anos, custoTotal, consumoMensal, tarifaInicial, inflacaoAnual) {
+    const tbody = document.getElementById('corpoTabelaProjecao');
+    tbody.innerHTML = '';
+    
+    let economiaAcumulada = 0;
+    let anoPayback = null;
+    let economiaTotal = 0;
+    
+    // Calcular economia por ano
+    for (let ano = 1; ano <= anos; ano++) {
+        const tarifa = tarifaInicial * Math.pow(1 + inflacaoAnual, ano - 1);
+        const economiaAnual = consumoMensal * 12 * tarifa;
+        economiaAcumulada += economiaAnual;
+        
+        // Calcular ROI
+        const roi = ((economiaAcumulada - custoTotal) / custoTotal) * 100;
+        
+        // Detectar payback
+        if (!anoPayback && economiaAcumulada >= custoTotal) {
+            anoPayback = ano;
+        }
+        
+        // Adicionar linha
+        const tr = document.createElement('tr');
+        tr.className = ano === anoPayback ? 'table-success' : '';
+        tr.innerHTML = `
+            <td class="text-center">${ano}</td>
+            <td class="text-center">R$ ${tarifa.toFixed(4)}</td>
+            <td class="text-center text-success">R$ ${economiaAnual.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td class="text-center fw-bold ${economiaAcumulada >= custoTotal ? 'text-success' : 'text-warning'}">R$ ${economiaAcumulada.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+            <td class="text-center ${roi >= 0 ? 'text-success' : 'text-danger'}">${roi.toFixed(1)}%</td>
+        `;
+        tbody.appendChild(tr);
+        
+        economiaTotal = economiaAcumulada;
+    }
+    
+    // Atualizar rodapé da tabela
+    const roiFinal = ((economiaTotal - custoTotal) / custoTotal) * 100;
+    document.getElementById('totalEconomiaAcumulada').textContent = `R$ ${economiaTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    document.getElementById('roiFinal').textContent = `${roiFinal.toFixed(1)}%`;
+    
+    // Atualizar cards
+    document.getElementById('investimentoInicial').textContent = `R$ ${custoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    document.getElementById('paybackEstimado').textContent = anoPayback ? `${anoPayback} anos` : `> ${anos} anos`;
+    document.getElementById('roiFinalCard').textContent = `${roiFinal.toFixed(1)}%`;
+}
+
+function exportarTabelaExcel() {
+    // Implementação futura: exportar para Excel
+    alert('Funcionalidade de exportação em desenvolvimento. Use Print Screen por enquanto.');
 }
 </script>
 {% endblock %}
