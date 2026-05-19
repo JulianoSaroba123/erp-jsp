@@ -338,12 +338,20 @@ function editarKit(id) {
         const placaSelect = document.getElementById('edit_placa_id');
         const inversorSelect = document.getElementById('edit_inversor_id');
         
+        console.log('Kit data:', kit);
+        console.log('Placa ID:', kit.placa_id);
+        console.log('Inversor ID:', kit.inversor_id);
+        console.log('Placa select:', placaSelect);
+        console.log('Inversor select:', inversorSelect);
+        
         if (placaSelect && kit.placa_id) {
             placaSelect.value = kit.placa_id;
+            console.log('Placa selecionada:', placaSelect.value);
         }
         
         if (inversorSelect && kit.inversor_id) {
             inversorSelect.value = kit.inversor_id;
+            console.log('Inversor selecionado:', inversorSelect.value);
         }
     }, 100);
     
