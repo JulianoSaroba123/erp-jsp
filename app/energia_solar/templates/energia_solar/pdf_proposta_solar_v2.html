@@ -468,11 +468,11 @@
                     <p style="font-size: 13px; margin: 8px 0;"><strong>Irradiação Solar:</strong> {{ "%.2f"|format(projeto.irradiacao_solar or 4.82) }} kWh/m².dia</p>
                 </div>
                 <div>
-                    {% if projeto.placa %}
-                    <p style="font-size: 13px; margin: 8px 0;"><strong>Módulos:</strong> {{ projeto.placa.fabricante }} {{ projeto.placa.potencia }}W</p>
+                    {% if placa %}
+                    <p style="font-size: 13px; margin: 8px 0;"><strong>Módulos:</strong> {{ placa.fabricante }} {{ placa.potencia }}W</p>
                     {% endif %}
-                    {% if projeto.inversor %}
-                    <p style="font-size: 13px; margin: 8px 0;"><strong>Inversor:</strong> {{ projeto.inversor.fabricante }} {{ projeto.inversor.potencia_nominal }}kW</p>
+                    {% if inversor %}
+                    <p style="font-size: 13px; margin: 8px 0;"><strong>Inversor:</strong> {{ inversor.fabricante }} {{ inversor.potencia_nominal }}kW</p>
                     {% endif %}
                     <p style="font-size: 13px; margin: 8px 0;"><strong>Prazo Total:</strong> 60-90 dias</p>
                 </div>
@@ -986,20 +986,22 @@
         
         {% if projeto.placa %}
         <div class="grid-2">
+            {% if placa %}
             <div class="card" style="text-align: left; background: #e3f2fd;">
                 <h3 style="color: #1976d2; margin-top: 0;">Painel Solar</h3>
-                <p><strong>Modelo:</strong> {{ projeto.placa.modelo }}</p>
-                <p><strong>Fabricante:</strong> {{ projeto.placa.fabricante }}</p>
-                <p><strong>Potência:</strong> {{ projeto.placa.potencia }} Wp</p>
+                <p><strong>Modelo:</strong> {{ placa.modelo }}</p>
+                <p><strong>Fabricante:</strong> {{ placa.fabricante }}</p>
+                <p><strong>Potência:</strong> {{ placa.potencia }} Wp</p>
                 <p><strong>Quantidade:</strong> <span class="badge azul">{{ projeto.qtd_placas or 0 }} unidades</span></p>
             </div>
+            {% endif %}
             
-            {% if projeto.inversor %}
+            {% if inversor %}
             <div class="card" style="text-align: left; background: #fff3e0;">
                 <h3 style="color: #f57c00; margin-top: 0;">Inversor de Frequência</h3>
-                <p><strong>Modelo:</strong> {{ projeto.inversor.modelo }}</p>
-                <p><strong>Fabricante:</strong> {{ projeto.inversor.fabricante }}</p>
-                <p><strong>Potência:</strong> {{ projeto.inversor.potencia_nominal }} kW</p>
+                <p><strong>Modelo:</strong> {{ inversor.modelo }}</p>
+                <p><strong>Fabricante:</strong> {{ inversor.fabricante }}</p>
+                <p><strong>Potência:</strong> {{ inversor.potencia_nominal }} kW</p>
                 <p><strong>Quantidade:</strong> <span class="badge laranja">{{ projeto.qtd_inversores or 0 }} unidade(s)</span></p>
             </div>
             {% endif %}

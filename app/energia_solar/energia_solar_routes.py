@@ -2226,6 +2226,15 @@ def projeto_proposta_pdf(projeto_id):
         if projeto.cliente_id:
             cliente = Cliente.query.get(projeto.cliente_id)
         
+        # Carregar placa e inversor se existirem
+        from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar
+        placa = None
+        inversor = None
+        if projeto.placa_id:
+            placa = PlacaSolar.query.get(projeto.placa_id)
+        if projeto.inversor_id:
+            inversor = InversorSolar.query.get(projeto.inversor_id)
+        
         # Importar configurações da empresa
         from app.configuracao.configuracao_utils import get_config
         config = get_config()
@@ -2256,7 +2265,9 @@ def projeto_proposta_pdf(projeto_id):
                                          cliente=cliente,
                                          logo_url=logo_url,
                                          config=config,
-                                         balanco=balanco)
+                                         balanco=balanco,
+                                         placa=placa,
+                                         inversor=inversor)
             
             # Base URL para resolver outros caminhos relativos
             base_url = f"file:///{project_root.replace(os.sep, '/')}/"
@@ -2289,7 +2300,9 @@ def projeto_proposta_pdf(projeto_id):
                                                     projeto=projeto,
                                                     cliente=cliente,
                                                     config=config,
-                                                    balanco=balanco))
+                                                    balanco=balanco,
+                                                    placa=placa,
+                                                    inversor=inversor))
         html_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
         html_response.headers['Pragma'] = 'no-cache'
         html_response.headers['Expires'] = '0'
