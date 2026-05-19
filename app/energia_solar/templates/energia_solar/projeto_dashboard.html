@@ -1836,6 +1836,10 @@ async function carregarItensOrcamento() {
 // Carregar custos fixos automaticamente (silenciosamente, sem alertas)
 async function carregarCustosFixosAutomatico() {
     try {
+        // Primeiro, adicionar o kit do projeto
+        await adicionarKitAoOrcamento();
+        
+        // Depois, adicionar os custos fixos
         const response = await fetch('/energia-solar/custos-fixos/api/listar');
         if (!response.ok) {
             return;
@@ -1869,6 +1873,53 @@ async function carregarCustosFixosAutomatico() {
         console.error('Erro ao carregar custos fixos:', error);
     }
     recalcularOrcamento();
+}
+
+// Adicionar kit ao orçamento
+async function adicionarKitAoOrcamento() {
+    try {
+        let proximoId = 1;
+        
+        // Dados do projeto disponíveis no template
+        {% if projeto.kit %}
+        itensOrcamento.push({
+            id: proximoId++,
+            descricao: 'KIT {{ projeto.kit.nome|safe }}',
+            qtd: 1,
+            und: 'KIT',
+            valorUnit: {{ projeto.kit.valor_venda or 0 }},
+            lucro: 0,
+            tipo: 'EMPRESA'
+        });
+        {% endif %}
+        
+        {% if projeto.placa and projeto.qtd_placas %}
+        itensOrcamento.push({
+            id: proximoId++,
+            descricao: 'Placa {{ projeto.placa.modelo|safe }} - {{ projeto.placa.potencia }}W',
+            qtd: {{ projeto.qtd_placas }},
+            und: 'UN',
+            valorUnit: {{ projeto.placa.valor_venda or 0 }},
+            lucro: 0,
+            tipo: 'EMPRESA'
+        });
+        {% endif %}
+        
+        {% if projeto.inversor and projeto.qtd_inversores %}
+        itensOrcamento.push({
+            id: proximoId++,
+            descricao: 'Inversor {{ projeto.inversor.modelo|safe }} - {{ projeto.inversor.potencia }}kW',
+            qtd: {{ projeto.qtd_inversores }},
+            und: 'UN',
+            valorUnit: {{ projeto.inversor.valor_venda or 0 }},
+            lucro: 0,
+            tipo: 'EMPRESA'
+        });
+        {% endif %}
+        
+    } catch (error) {
+        console.error('Erro ao adicionar kit ao orçamento:', error);
+    }
 }
 
 // Renderizar tabela
