@@ -965,53 +965,67 @@
         <h3 style="margin-top: 30px;">Componentes Adicionais Inclusos:</h3>
         
         <div class="lista-equipamentos">
-            <div class="equipamento">
-                <div class="equipamento-detalhe">
-                    ✅ <strong>String Box CC</strong> - Com proteção 2 entradas/2 saídas (com DPS)
+            {% if kit and kit.outras_informacoes %}
+                <!-- Se houver kit com descrição, usar a descrição do kit -->
+                {% for linha in kit.outras_informacoes.split('\n') %}
+                    {% if linha.strip() %}
+                    <div class="equipamento">
+                        <div class="equipamento-detalhe">
+                            ✅ {{ linha }}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <!-- Fallback: itens padrão -->
+                <div class="equipamento">
+                    <div class="equipamento-detalhe">
+                        ✅ <strong>String Box CC</strong> - Com proteção 2 entradas/2 saídas (com DPS)
+                    </div>
                 </div>
-            </div>
-            
-            <div class="equipamento">
-                <div class="equipamento-detalhe">
-                    ✅ <strong>String Box CA</strong> - Com disjuntor bifásico adequado para o inversor
+                
+                <div class="equipamento">
+                    <div class="equipamento-detalhe">
+                        ✅ <strong>String Box CA</strong> - Com disjuntor bifásico adequado para o inversor
+                    </div>
                 </div>
-            </div>
-            
-            <div class="equipamento">
-                <div class="equipamento-detalhe">
-                    ✅ <strong>Cabeamento Solar</strong> - Cabo CC preto e vermelho 4.00mm² (metragem conforme projeto)
+                
+                <div class="equipamento">
+                    <div class="equipamento-detalhe">
+                        ✅ <strong>Cabeamento Solar</strong> - Cabo CC preto e vermelho 4.00mm² (metragem conforme projeto)
+                    </div>
                 </div>
-            </div>
-            
-            <div class="equipamento">
-                <div class="equipamento-detalhe">
-                    ✅ <strong>Estrutura de Fixação</strong> - {{ projeto.estrutura_fixacao or 'Kit estrutura em alumínio para telhado cerâmico' }}
+                
+                <div class="equipamento">
+                    <div class="equipamento-detalhe">
+                        ✅ <strong>Estrutura de Fixação</strong> - {{ projeto.estrutura_fixacao or 'Kit estrutura em alumínio para telhado cerâmico' }}
+                    </div>
                 </div>
-            </div>
-            
-            <div class="equipamento">
-                <div class="equipamento-detalhe">
-                    ✅ <strong>Conectores MC4</strong> - Par de conectores para cabos 2,5/4/6mm²
+                
+                <div class="equipamento">
+                    <div class="equipamento-detalhe">
+                        ✅ <strong>Conectores MC4</strong> - Par de conectores para cabos 2,5/4/6mm²
+                    </div>
                 </div>
-            </div>
-            
-            <div class="equipamento">
-                <div class="equipamento-detalhe">
-                    ✅ <strong>Projeto Elétrico</strong> - Completo conforme normas ANEEL
+                
+                <div class="equipamento">
+                    <div class="equipamento-detalhe">
+                        ✅ <strong>Projeto Elétrico</strong> - Completo conforme normas ANEEL
+                    </div>
                 </div>
-            </div>
-            
-            <div class="equipamento">
-                <div class="equipamento-detalhe">
-                    ✅ <strong>Instalação Completa</strong> - Mão de obra especializada com garantia
+                
+                <div class="equipamento">
+                    <div class="equipamento-detalhe">
+                        ✅ <strong>Instalação Completa</strong> - Mão de obra especializada com garantia
+                    </div>
                 </div>
-            </div>
-            
-            <div class="equipamento">
-                <div class="equipamento-detalhe">
-                    ✅ <strong>Homologação</strong> - Documentação e acompanhamento junto à concessionária
+                
+                <div class="equipamento">
+                    <div class="equipamento-detalhe">
+                        ✅ <strong>Homologação</strong> - Documentação e acompanhamento junto à concessionária
+                    </div>
                 </div>
-            </div>
+            {% endif %}
         </div>
         
         <div class="footer-pagina">
@@ -1033,7 +1047,6 @@
             <div class="equipamento">
                 <div class="equipamento-header">
                     <div class="equipamento-nome">String Box CC</div>
-                    <div class="equipamento-qtd">1 und</div>
                 </div>
                 <div class="equipamento-detalhe">
                     • Caixa de proteção para corrente contínua<br>
@@ -1046,7 +1059,6 @@
             <div class="equipamento">
                 <div class="equipamento-header">
                     <div class="equipamento-nome">Cabos Solares CC</div>
-                    <div class="equipamento-qtd">{{ projeto.qtd_placas * 2 if projeto.qtd_placas else 12 }}m</div>
                 </div>
                 <div class="equipamento-detalhe">
                     • Cabo solar 4mm² ou 6mm² (conforme projeto)<br>
@@ -1059,7 +1071,6 @@
             <div class="equipamento">
                 <div class="equipamento-header">
                     <div class="equipamento-nome">Conectores MC4</div>
-                    <div class="equipamento-qtd">{{ projeto.qtd_placas * 2 if projeto.qtd_placas else 12 }} pares</div>
                 </div>
                 <div class="equipamento-detalhe">
                     • Conectores macho e fêmea<br>
@@ -1072,7 +1083,6 @@
             <div class="equipamento">
                 <div class="equipamento-header">
                     <div class="equipamento-nome">Estrutura de Fixação</div>
-                    <div class="equipamento-qtd">1 kit</div>
                 </div>
                 <div class="equipamento-detalhe">
                     • Perfis de alumínio anodizado<br>
@@ -1085,7 +1095,6 @@
             <div class="equipamento">
                 <div class="equipamento-header">
                     <div class="equipamento-nome">Sistema de Proteção CA</div>
-                    <div class="equipamento-qtd">1 kit</div>
                 </div>
                 <div class="equipamento-detalhe">
                     • Disjuntor de proteção CA<br>

@@ -2275,9 +2275,12 @@ def projeto_proposta_pdf(projeto_id):
             cliente = Cliente.query.get(projeto.cliente_id)
         
         # Carregar placa e inversor se existirem
-        from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar
+        from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar, KitSolar
         placa = None
         inversor = None
+        kit = None
+        if projeto.kit_id:
+            kit = KitSolar.query.get(projeto.kit_id)
         if projeto.placa_id:
             placa = PlacaSolar.query.get(projeto.placa_id)
         if projeto.inversor_id:
@@ -2315,7 +2318,8 @@ def projeto_proposta_pdf(projeto_id):
                                          config=config,
                                          balanco=balanco,
                                          placa=placa,
-                                         inversor=inversor)
+                                         inversor=inversor,
+                                         kit=kit)
             
             # Base URL para resolver outros caminhos relativos
             base_url = f"file:///{project_root.replace(os.sep, '/')}/"
@@ -2350,7 +2354,8 @@ def projeto_proposta_pdf(projeto_id):
                                                     config=config,
                                                     balanco=balanco,
                                                     placa=placa,
-                                                    inversor=inversor))
+                                                    inversor=inversor,
+                                                    kit=kit))
         html_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
         html_response.headers['Pragma'] = 'no-cache'
         html_response.headers['Expires'] = '0'
