@@ -254,6 +254,56 @@
             border-right: 1px solid rgba(6,182,212,0.06);
             padding: 1.1rem 0.5rem;
             transition: width 0.25s ease, min-width 0.25s ease;
+            position: relative;
+        }
+        
+        /* Indicador de scroll na sidebar */
+        .sidebar::after {
+            content: '⬇ Role para ver mais';
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            width: 245px;
+            text-align: center;
+            padding: 0.5rem;
+            background: linear-gradient(to top, rgba(6,182,212,0.9), transparent);
+            color: #fff;
+            font-size: 0.75rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            border-radius: 8px;
+            z-index: 10;
+        }
+        
+        .sidebar:not(.scrolled-to-bottom)::after {
+            opacity: 1;
+        }
+        
+        /* Esconder indicador no mobile quando sidebar está fechada */
+        @media (max-width: 991px) {
+            .sidebar:not(.show)::after {
+                opacity: 0 !important;
+            }
+        }
+        
+        /* Custom scrollbar para sidebar */
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(6,182,212,0.5);
+            border-radius: 4px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(6,182,212,0.8);
         }
 
         .sidebar .sidebar-brand {
@@ -908,6 +958,29 @@
                     item.classList.add('active');
                 }
             });
+            
+            // Controlar indicador de scroll na sidebar
+            const sidebar = document.getElementById('sidebar');
+            if (sidebar) {
+                function checkSidebarScroll() {
+                    const isAtBottom = sidebar.scrollHeight - sidebar.scrollTop <= sidebar.clientHeight + 50;
+                    if (isAtBottom) {
+                        sidebar.classList.add('scrolled-to-bottom');
+                    } else {
+                        sidebar.classList.remove('scrolled-to-bottom');
+                    }
+                }
+                
+                sidebar.addEventListener('scroll', checkSidebarScroll);
+                checkSidebarScroll(); // Check initial state
+                
+                // Auto-scroll suave para ver mais opções (opcional)
+                setTimeout(() => {
+                    if (sidebar.scrollTop === 0 && sidebar.scrollHeight > sidebar.clientHeight) {
+                        console.log('💡 Dica: Role a sidebar para baixo para ver mais opções!');
+                    }
+                }, 2000);
+            }
         });
 
         window.addEventListener('pageshow', syncSidebarLayout);
