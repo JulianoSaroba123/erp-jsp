@@ -1393,40 +1393,51 @@ document.addEventListener('DOMContentLoaded', function() {
         const tarifaTotal = parseFloat(selected.dataset.tarifaTotal);
         const tarifaFinal = parseFloat(selected.dataset.tarifaFinal);
         
-        // Preencher campos
-        document.getElementById('te_display').value = te.toFixed(4);
-        document.getElementById('tusd_display').value = tusd.toFixed(4);
-        document.getElementById('tarifa_total_display').value = tarifaTotal.toFixed(4);
-        document.getElementById('pis_display').value = pis.toFixed(2);
-        document.getElementById('cofins_display').value = cofins.toFixed(2);
-        document.getElementById('icms_display').value = icms.toFixed(2);
+        // Preencher campos com verificação
+        const teEl = document.getElementById('te_display');
+        const tusdEl = document.getElementById('tusd_display');
+        const tarifaTotalEl = document.getElementById('tarifa_total_display');
+        const pisEl = document.getElementById('pis_display');
+        const cofinsEl = document.getElementById('cofins_display');
+        const icmsEl = document.getElementById('icms_display');
+        const impostosEl = document.getElementById('impostos_display');
+        const impostosPercentEl = document.getElementById('impostos_percentual');
+        const tarifaFinalEl = document.getElementById('tarifa_final');
+        const economiaEl = document.getElementById('economia_anual_prevista');
+        
+        if (teEl) teEl.value = te.toFixed(4);
+        if (tusdEl) tusdEl.value = tusd.toFixed(4);
+        if (tarifaTotalEl) tarifaTotalEl.value = tarifaTotal.toFixed(4);
+        if (pisEl) pisEl.value = pis.toFixed(2);
+        if (cofinsEl) cofinsEl.value = cofins.toFixed(2);
+        if (icmsEl) icmsEl.value = icms.toFixed(2);
         
         // Impostos totais
         const impostosTotal = pis + cofins + icms;
-        document.getElementById('impostos_display').value = impostosTotal.toFixed(2);
-        document.getElementById('impostos_percentual').value = impostosTotal.toFixed(2);
+        if (impostosEl) impostosEl.value = impostosTotal.toFixed(2);
+        if (impostosPercentEl) impostosPercentEl.value = impostosTotal.toFixed(2);
         
         // Tarifa final
-        document.getElementById('tarifa_final').value = tarifaFinal.toFixed(4);
+        if (tarifaFinalEl) tarifaFinalEl.value = tarifaFinal.toFixed(4);
         
         // Calcular economia anual
         const consumoMensal = {{ projeto.consumo_kwh_mes or 0 }};
         const economiaMensal = consumoMensal * tarifaFinal;
         const economiaAnual = economiaMensal * 12;
         
-        document.getElementById('economia_anual_prevista').value = economiaAnual.toFixed(2).replace('.', ',');
+        if (economiaEl) economiaEl.value = economiaAnual.toFixed(2).replace('.', ',');
         
     } else {
-        // Limpar campos
-        document.getElementById('te_display').value = '';
-        document.getElementById('tusd_display').value = '';
-        document.getElementById('tarifa_total_display').value = '';
-        document.getElementById('pis_display').value = '';
-        document.getElementById('cofins_display').value = '';
-        document.getElementById('icms_display').value = '';
-        document.getElementById('impostos_display').value = '';
-        document.getElementById('tarifa_final').value = '';
-        document.getElementById('economia_anual_prevista').value = '';
+        // Limpar campos com verificação
+        const campos = [
+            'te_display', 'tusd_display', 'tarifa_total_display',
+            'pis_display', 'cofins_display', 'icms_display',
+            'impostos_display', 'tarifa_final', 'economia_anual_prevista'
+        ];
+        campos.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
     }
         });
     }
@@ -1440,6 +1451,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    
+    // Event listeners para financiamento
+    const valorFinanciadoEl = document.getElementById('valor_financiado');
+    const nMesesEl = document.getElementById('n_meses');
+    const jurosMensalEl = document.getElementById('juros_mensal');
+    
+    if (valorFinanciadoEl) valorFinanciadoEl.addEventListener('input', calcularFinanciamento);
+    if (nMesesEl) nMesesEl.addEventListener('change', calcularFinanciamento);
+    if (jurosMensalEl) jurosMensalEl.addEventListener('input', calcularFinanciamento);
+    
+    // Event listener para modal de orçamento
+    const modalOrcamento = document.getElementById('modalOrcamento');
+    if (modalOrcamento) {
+        modalOrcamento.addEventListener('show.bs.modal', function() {
+            carregarItensOrcamento();
+        });
+    }
+    
+    // Event listener para modal de financiamento
+    const modalFinanciamento = document.getElementById('modalFinanciamento');
+    if (modalFinanciamento) {
+        modalFinanciamento.addEventListener('show.bs.modal', function () {
+            if (!dadosFinanciamentoCarregados) {
+                carregarDadosFinanciamento();
+                dadosFinanciamentoCarregados = true;
+            }
+        });
+    }
+    
 }); // Fecha DOMContentLoaded
 
 // Handler para salvar dados financeiros e recarregar página
@@ -1748,11 +1788,6 @@ function atualizarConcessionarias(event) {
 <script>
 // Dados do orçamento
 let itensOrcamento = [];
-
-// Carregar itens ao abrir modal
-document.getElementById('modalOrcamento').addEventListener('show.bs.modal', function() {
-    carregarItensOrcamento();
-});
 
 // Formatar número como moeda brasileira
 function formatarMoeda(valor) {
@@ -2499,19 +2534,6 @@ function calcularTotalFaturamento() {
 <script>
 // Financiamento - Cálculo e Salvar
 let dadosFinanciamentoCarregados = false;
-
-// Carregar dados do financiamento quando abrir modal
-document.getElementById('modalFinanciamento').addEventListener('show.bs.modal', function () {
-    if (!dadosFinanciamentoCarregados) {
-        carregarDadosFinanciamento();
-        dadosFinanciamentoCarregados = true;
-    }
-});
-
-// Calcular em tempo real
-document.getElementById('valor_financiado').addEventListener('input', calcularFinanciamento);
-document.getElementById('n_meses').addEventListener('change', calcularFinanciamento);
-document.getElementById('juros_mensal').addEventListener('input', calcularFinanciamento);
 
 function calcularFinanciamento() {
     const valorFinanciado = parseFloat(document.getElementById('valor_financiado').value) || 0;
