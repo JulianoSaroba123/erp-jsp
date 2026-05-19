@@ -1780,6 +1780,31 @@ function atualizarConcessionarias(event) {
 // Dados do orçamento
 let itensOrcamento = [];
 
+// Dados do projeto para uso no JavaScript
+const dadosProjeto = {
+    kit: {% if projeto.kit %}{ 
+        id: {{ projeto.kit.id }}, 
+        nome: '{{ projeto.kit.nome|safe }}', 
+        valor: {{ projeto.kit.valor_venda or 0 }}
+    }{% else %}null{% endif %},
+    placa: {% if projeto.placa %}{ 
+        id: {{ projeto.placa.id }}, 
+        modelo: '{{ projeto.placa.modelo|safe }}', 
+        potencia: {{ projeto.placa.potencia or 0 }},
+        valor: {{ projeto.placa.valor_venda or 0 }}
+    }{% else %}null{% endif %},
+    qtd_placas: {{ projeto.qtd_placas or 0 }},
+    inversor: {% if projeto.inversor %}{ 
+        id: {{ projeto.inversor.id }}, 
+        modelo: '{{ projeto.inversor.modelo|safe }}', 
+        potencia: {{ projeto.inversor.potencia or 0 }},
+        valor: {{ projeto.inversor.valor_venda or 0 }}
+    }{% else %}null{% endif %},
+    qtd_inversores: {{ projeto.qtd_inversores or 0 }}
+};
+
+console.log('📊 Dados do projeto carregados:', dadosProjeto);
+
 // Formatar número como moeda brasileira
 function formatarMoeda(valor) {
     return parseFloat(valor).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -1885,54 +1910,56 @@ async function adicionarKitAoOrcamento() {
         
         let itensAdicionados = 0;
         
-        // Dados do projeto disponíveis no template
-        {% if projeto.kit %}
-        console.log('✅ Projeto tem KIT: {{ projeto.kit.nome|safe }}');
-        itensOrcamento.push({
-            id: proximoId++,
-            descricao: 'KIT {{ projeto.kit.nome|safe }}',
-            qtd: 1,
-            und: 'KIT',
-            valorUnit: {{ projeto.kit.valor_venda or 0 }},
-            lucro: 0,
-            tipo: 'EMPRESA'
-        });
-        itensAdicionados++;
-        {% else %}
-        console.log('❌ Projeto SEM kit');
-        {% endif %}
+        // Adicionar KIT se existir
+        if (dadosProjeto.kit) {
+            console.log('✅ Adicionando KIT:', dadosProjeto.kit.nome);
+            itensOrcamento.push({
+                id: proximoId++,
+                descricao: `KIT ${dadosProjeto.kit.nome}`,
+                qtd: 1,
+                und: 'KIT',
+                valorUnit: dadosProjeto.kit.valor,
+                lucro: 0,
+                tipo: 'EMPRESA'
+            });
+            itensAdicionados++;
+        } else {
+            console.log('❌ Projeto SEM kit');
+        }
         
-        {% if projeto.placa and projeto.qtd_placas %}
-        console.log('✅ Projeto tem PLACAS: {{ projeto.placa.modelo|safe }} (qtd: {{ projeto.qtd_placas }})');
-        itensOrcamento.push({
-            id: proximoId++,
-            descricao: 'Placa {{ projeto.placa.modelo|safe }} - {{ projeto.placa.potencia }}W',
-            qtd: {{ projeto.qtd_placas }},
-            und: 'UN',
-            valorUnit: {{ projeto.placa.valor_venda or 0 }},
-            lucro: 0,
-            tipo: 'EMPRESA'
-        });
-        itensAdicionados++;
-        {% else %}
-        console.log('❌ Projeto SEM placas');
-        {% endif %}
+        // Adicionar PLACAS se existirem
+        if (dadosProjeto.placa && dadosProjeto.qtd_placas > 0) {
+            console.log('✅ Adicionando PLACAS:', dadosProjeto.placa.modelo, 'Qtd:', dadosProjeto.qtd_placas);
+            itensOrcamento.push({
+                id: proximoId++,
+                descricao: `Placa ${dadosProjeto.placa.modelo} - ${dadosProjeto.placa.potencia}W`,
+                qtd: dadosProjeto.qtd_placas,
+                und: 'UN',
+                valorUnit: dadosProjeto.placa.valor,
+                lucro: 0,
+                tipo: 'EMPRESA'
+            });
+            itensAdicionados++;
+        } else {
+            console.log('❌ Projeto SEM placas');
+        }
         
-        {% if projeto.inversor and projeto.qtd_inversores %}
-        console.log('✅ Projeto tem INVERSORES: {{ projeto.inversor.modelo|safe }} (qtd: {{ projeto.qtd_inversores }})');
-        itensOrcamento.push({
-            id: proximoId++,
-            descricao: 'Inversor {{ projeto.inversor.modelo|safe }} - {{ projeto.inversor.potencia }}kW',
-            qtd: {{ projeto.qtd_inversores }},
-            und: 'UN',
-            valorUnit: {{ projeto.inversor.valor_venda or 0 }},
-            lucro: 0,
-            tipo: 'EMPRESA'
-        });
-        itensAdicionados++;
-        {% else %}
-        console.log('❌ Projeto SEM inversores');
-        {% endif %}
+        // Adicionar INVERSORES se existirem
+        if (dadosProjeto.inversor && dadosProjeto.qtd_inversores > 0) {
+            console.log('✅ Adicionando INVERSORES:', dadosProjeto.inversor.modelo, 'Qtd:', dadosProjeto.qtd_inversores);
+            itensOrcamento.push({
+                id: proximoId++,
+                descricao: `Inversor ${dadosProjeto.inversor.modelo} - ${dadosProjeto.inversor.potencia}kW`,
+                qtd: dadosProjeto.qtd_inversores,
+                und: 'UN',
+                valorUnit: dadosProjeto.inversor.valor,
+                lucro: 0,
+                tipo: 'EMPRESA'
+            });
+            itensAdicionados++;
+        } else {
+            console.log('❌ Projeto SEM inversores');
+        }
         
         console.log('📊 Total de equipamentos adicionados:', itensAdicionados);
         console.log('📦 Itens no orçamento depois:', itensOrcamento.length);
