@@ -1663,23 +1663,26 @@ function aplicarFormatacao(input, itemId) {
     atualizarItem(itemId, 'valorUnit', valor);
 }
 
-// Carregar itens do orçamento
-function carregarItensOrcamento() {
-    itensOrcamento = [
-        {id: 1, descricao: 'KIT GERADOR ENERGIA SOLAR 10,53 KWP - INVERSOR CRESCER', qtd: 1, und: 'UND', valorUnit: 14548.85, lucro: 0, tipo: 'EMPRESA'},
-        {id: 2, descricao: 'COMISSÃO DE VENDEDORA', qtd: 1, und: '0,1', valorUnit: 1454.90, lucro: 0, tipo: 'EMPRESA'},
-        {id: 3, descricao: 'COMISSÃO DE INDICAÇÃO', qtd: 1, und: '0,03', valorUnit: 872.00, lucro: 0, tipo: 'EMPRESA'},
-        {id: 4, descricao: 'COMISSÃO DE VENDA', qtd: 1, und: '0,05', valorUnit: 0.00, lucro: 0, tipo: 'EMPRESA'},
-        {id: 5, descricao: 'DESCONTO ESTADUAL', qtd: 1, und: '0,06', valorUnit: 0.00, lucro: 0, tipo: 'EMPRESA'},
-        {id: 6, descricao: 'DESCONTO MUNICIPAL', qtd: 1, und: '0,02', valorUnit: 261.00, lucro: 0, tipo: 'EMPRESA'},
-        {id: 7, descricao: 'DESCONTO PARA FECHAMENTO', qtd: 1, und: '0,03', valorUnit: 0.00, lucro: 0, tipo: 'EMPRESA'},
-        {id: 8, descricao: 'DESLOCAMENTO', qtd: 1, und: 'UND', valorUnit: 80.00, lucro: 0, tipo: 'EMPRESA'},
-        {id: 9, descricao: 'INSTALAÇÃO DOS MÓDULOS', qtd: 18, und: 'UND', valorUnit: 90.00, lucro: 5, tipo: 'EMPRESA'},
-        {id: 10, descricao: 'INSTALAÇÃO INVERSORES', qtd: 1, und: 'UND', valorUnit: 90.00, lucro: 5, tipo: 'EMPRESA'},
-        {id: 11, descricao: 'MATERIAL CA', qtd: 1, und: 'KIT', valorUnit: 1500.00, lucro: 3, tipo: 'EMPRESA'},
-        {id: 12, descricao: 'PROJETO', qtd: 1, und: 'UND', valorUnit: 200.00, lucro: 0, tipo: 'EMPRESA'},
-        {id: 13, descricao: 'TRT', qtd: 1, und: 'UND', valorUnit: 150.00, lucro: 5, tipo: 'EMPRESA'}
-    ];
+// Carregar itens do orçamento do servidor
+async function carregarItensOrcamento() {
+    try {
+        const response = await fetch(`/energia-solar/projetos/{{ projeto.id }}/orcamento`);
+        if (response.ok) {
+            const data = await response.json();
+            if (data.itens && data.itens.length > 0) {
+                itensOrcamento = data.itens;
+            } else {
+                // Se não houver itens salvos, inicializar com array vazio
+                itensOrcamento = [];
+            }
+        } else {
+            console.warn('Não foi possível carregar itens do orçamento');
+            itensOrcamento = [];
+        }
+    } catch (error) {
+        console.error('Erro ao carregar itens:', error);
+        itensOrcamento = [];
+    }
     
     renderizarItensOrcamento();
     recalcularOrcamento();
@@ -1816,9 +1819,48 @@ function excluirItem(itemId) {
 }
 
 // Salvar orçamento
-function salvarOrcamento() {
-    alert('Orçamento salvo com sucesso!');
-    bootstrap.Modal.getInstance(document.getElementById('modalOrcamento')).hide();
+async function salvarOrcamento() {
+    try {
+        const response = await fetch(`/energia-solar/projetos/{{ projeto.id }}/orcamento`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                itens: itensOrcamento,
+                custo_total: calcularTotalCusto(),
+                valor_venda: calcularTotalFaturamento()
+            })
+        });
+        
+        if (response.ok) {
+            alert('Orçamento salvo com sucesso!');
+            bootstrap.Modal.getInstance(document.getElementById('modalOrcamento')).hide();
+            // Recarregar a página para atualizar os valores
+            window.location.reload();
+        } else {
+            const error = await response.json();
+            alert('Erro ao salvar orçamento: ' + (error.message || 'Erro desconhecido'));
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao salvar orçamento');
+    }
+}
+
+// Funções auxiliares para cálculo
+function calcularTotalCusto() {
+    return itensOrcamento.reduce((total, item) => {
+        return total + (item.qtd * item.valorUnit);
+    }, 0);
+}
+
+function calcularTotalFaturamento() {
+    return itensOrcamento.reduce((total, item) => {
+        const valorTotal = item.qtd * item.valorUnit;
+        const lucroValor = valorTotal * (item.lucro / 100);
+        return total + valorTotal + lucroValor;
+    }, 0);
 }
 </script>
 

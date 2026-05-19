@@ -1250,6 +1250,54 @@ def projeto_salvar_dados_financeiros(projeto_id):
         return jsonify({'success': False, 'message': f'Erro ao salvar dados financeiros: {str(e)}'}), 400
 
 
+@energia_solar_bp.route('/projetos/<int:projeto_id>/orcamento', methods=['GET'])
+@login_required
+def projeto_buscar_orcamento(projeto_id):
+    """Busca itens do orçamento do projeto"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    try:
+        projeto = ProjetoSolar.query.get_or_404(projeto_id)
+        
+        # Retornar itens salvos no campo componentes_extras
+        itens = projeto.componentes_extras if projeto.componentes_extras else []
+        
+        return jsonify({'itens': itens})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Erro ao buscar orçamento: {str(e)}'}), 400
+
+
+@energia_solar_bp.route('/projetos/<int:projeto_id>/orcamento', methods=['POST'])
+@login_required
+def projeto_salvar_orcamento(projeto_id):
+    """Salva itens do orçamento do projeto"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    from flask import jsonify
+    
+    try:
+        projeto = ProjetoSolar.query.get_or_404(projeto_id)
+        
+        # Receber dados JSON
+        data = request.get_json()
+        itens = data.get('itens', [])
+        custo_total = data.get('custo_total', 0)
+        valor_venda = data.get('valor_venda', 0)
+        
+        # Salvar itens no campo componentes_extras
+        projeto.componentes_extras = itens
+        projeto.custo_total = custo_total
+        projeto.valor_venda = valor_venda
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Orçamento salvo com sucesso!'})
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'Erro ao salvar orçamento: {str(e)}'}), 400
+
+
 @energia_solar_bp.route('/projetos/<int:projeto_id>/dados-tecnicos', methods=['POST'])
 @login_required
 def projeto_salvar_dados_tecnicos(projeto_id):
