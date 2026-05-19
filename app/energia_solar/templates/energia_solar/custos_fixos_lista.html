@@ -10,9 +10,9 @@
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="fas fa-money-bill-wave me-2 text-success"></i>Custos Fixos</h2>
-        <a href="{{ url_for('financeiro.novo_custo_fixo') }}" class="btn btn-success">
-            <i class="fas fa-plus me-2"></i>Novo Custo Fixo
+        <h2><i class="fas fa-solar-panel me-2 text-warning"></i>Custos Fixos de Energia Solar</h2>
+        <a href="{{ url_for('energia_solar.custo_fixo_novo') }}" class="btn btn-success">
+            <i class="fas fa-plus me-2"></i>Novo Custo Fixo Solar
         </a>
     </div>
 
@@ -23,44 +23,46 @@
                 <table class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th width="28%">Nome</th>
+                            <th width="30%">Descrição</th>
                             <th width="12%" class="text-center">Categoria</th>
-                            <th width="12%" class="text-end">Valor Mensal</th>
-                            <th width="10%" class="text-center">Dia Venc.</th>
-                            <th width="14%">Prox. Venc.</th>
-                            <th width="8%" class="text-center">Auto</th>
+                            <th width="10%" class="text-end">Qtd.</th>
+                            <th width="12%" class="text-end">Valor Unit.</th>
+                            <th width="10%" class="text-center">Lucro %</th>
+                            <th width="12%" class="text-center">Aplicar Auto</th>
                             <th width="8%" class="text-center">Status</th>
-                            <th width="8%" class="text-center">Acoes</th>
+                            <th width="6%" class="text-center">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for custo in custos %}
                         <tr>
                             <td>
-                                <strong>{{ custo.nome }}</strong>
-                                {% if custo.descricao %}
-                                <div class="small text-muted">{{ custo.descricao[:60] }}{% if custo.descricao|length > 60 %}...{% endif %}</div>
+                                <strong>{{ custo.descricao }}</strong>
+                                {% if custo.observacoes %}
+                                <div class="small text-muted">{{ custo.observacoes[:60] }}{% if custo.observacoes|length > 60 %}...{% endif %}</div>
                                 {% endif %}
                             </td>
                             <td class="text-center">
+                                {% if custo.categoria %}
                                 <span class="badge bg-secondary">{{ custo.categoria }}</span>
-                            </td>
-                            <td class="text-end">
-                                <strong>{{ custo.valor_formatado }}</strong>
-                            </td>
-                            <td class="text-center">{{ custo.dia_vencimento }}</td>
-                            <td>
-                                {% if custo.proximo_vencimento %}
-                                {{ custo.proximo_vencimento.strftime('%d/%m/%Y') }}
                                 {% else %}
                                 <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
+                            <td class="text-end">
+                                {{ "%.2f"|format(custo.quantidade) }} {{ custo.unidade }}
+                            </td>
+                            <td class="text-end">
+                                <strong>R$ {{ "%.2f"|format(custo.valor_unitario) }}</strong>
+                            </td>
                             <td class="text-center">
-                                {% if custo.gerar_automaticamente %}
-                                <i class="fas fa-check-circle text-success" title="Gerar automaticamente"></i>
+                                {{ "%.2f"|format(custo.lucro_percentual) }}%
+                            </td>
+                            <td class="text-center">
+                                {% if custo.aplicar_automaticamente %}
+                                <i class="fas fa-check-circle text-success" title="Aplicar automaticamente"></i>
                                 {% else %}
-                                <i class="fas fa-times-circle text-muted" title="Nao gerar"></i>
+                                <i class="fas fa-times-circle text-muted" title="Não aplicar"></i>
                                 {% endif %}
                             </td>
                             <td class="text-center">
@@ -72,11 +74,11 @@
                             </td>
                             <td class="text-center">
                                 <div class="btn-group btn-group-sm">
-                                    <a href="{{ url_for('financeiro.editar_custo_fixo', id=custo.id) }}"
+                                    <a href="{{ url_for('energia_solar.custo_fixo_editar', custo_id=custo.id) }}"
                                        class="btn btn-outline-primary" title="Editar">
                                         <i class="fas fa-edit"></i>
                                     </a>
-                                    <form method="POST" action="{{ url_for('financeiro.excluir_custo_fixo', id=custo.id) }}"
+                                    <form method="POST" action="{{ url_for('energia_solar.custo_fixo_excluir', custo_id=custo.id) }}"
                                           style="display: inline;"
                                           onsubmit="return confirm('Tem certeza que deseja excluir este custo fixo?');">
                                         <button class="btn btn-outline-danger" type="submit" title="Excluir">
@@ -95,12 +97,13 @@
 
     <div class="alert alert-info mt-3">
         <i class="fas fa-info-circle me-2"></i>
-        <strong>Esta lista mostra os Custos Fixos do Financeiro</strong> (usados nos lancamentos recorrentes).
+        <strong>Custos Fixos de Energia Solar</strong> são aplicados automaticamente em novos projetos quando marcados como "Aplicar Auto". 
+        Exemplos: comissões, descontos, custos de instalação padrão, etc.
     </div>
     {% else %}
     <div class="alert alert-warning">
-        <h4><i class="fas fa-exclamation-triangle me-2"></i>Nenhum custo fixo cadastrado</h4>
-        <p class="mb-0">Clique em "Novo Custo Fixo" para cadastrar comissões, descontos e outros custos que se repetem em todos os projetos.</p>
+        <h4><i class="fas fa-exclamation-triangle me-2"></i>Nenhum custo fixo de solar cadastrado</h4>
+        <p class="mb-0">Clique em "Novo Custo Fixo Solar" para cadastrar comissões, descontos e outros custos que devem aparecer automaticamente em todos os projetos solares.</p>
     </div>
     {% endif %}
 </div>

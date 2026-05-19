@@ -2107,14 +2107,13 @@ def projeto_recalcular_geracao(projeto_id):
 @energia_solar_bp.route('/custos-fixos')
 @login_required
 def custos_fixos_listar():
-    """Lista todos os custos fixos cadastrados"""
+    """Lista todos os custos fixos cadastrados para energia solar"""
     try:
-        from app.financeiro.financeiro_model import CustoFixo
-
-        custos = CustoFixo.query.order_by(CustoFixo.dia_vencimento).all()
+        # Buscar custos fixos DE ENERGIA SOLAR, não os custos gerais da empresa
+        custos = CustoPadraoSolar.query.filter_by(ativo=True).order_by(CustoPadraoSolar.descricao).all()
         return render_template('energia_solar/custos_fixos_lista.html', custos=custos)
     except Exception as e:
-        logger.error(f"❌ Erro ao listar custos fixos: {e}")
+        logger.error(f"❌ Erro ao listar custos fixos de solar: {e}")
         import traceback
         traceback.print_exc()
         flash(f'Erro ao carregar custos fixos: {str(e)}', 'error')
