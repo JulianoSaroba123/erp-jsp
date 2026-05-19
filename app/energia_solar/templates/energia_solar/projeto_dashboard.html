@@ -1487,41 +1487,29 @@ function handleSalvarDadosFinanceiros(event) {
     event.preventDefault();
     const form = event.target;
     
-    // Buscar elementos com verificação
-    const concessionariaEl = document.getElementById('concessionaria_id');
-    const tarifaEl = document.getElementById('tarifa_final');
-    const economiaEl = document.getElementById('economia_anual_prevista');
-    const impostosEl = document.getElementById('impostos_percentual');
-    
-    // Verificar se todos os elementos existem
-    if (!concessionariaEl || !tarifaEl || !economiaEl || !impostosEl) {
-        console.error('❌ Elementos não encontrados:', {
-            concessionariaEl: !!concessionariaEl,
-            tarifaEl: !!tarifaEl,
-            economiaEl: !!economiaEl,
-            impostosEl: !!impostosEl
-        });
-        alert('Erro: Campos do formulário não encontrados. Recarregue a página.');
-        return;
-    }
-    
-    // Coletar dados manualmente (incluindo campos readonly)
-    const data = {
-        concessionaria_id: concessionariaEl.value,
-        tarifa_final: tarifaEl.value,
-        economia_anual_prevista: economiaEl.value,
-        impostos_percentual: impostosEl.value
-    };
-    
-    console.log('📤 Enviando dados:', data);
-    
-    // Validar se concessionária foi selecionada
-    if (!data.concessionaria_id) {
-        alert('Por favor, selecione uma concessionária');
-        return;
-    }
-    
-    fetch(form.action, {
+    try {
+        // Coletar dados manualmente (incluindo campos readonly)
+        const concessionariaId = document.getElementById('concessionaria_id')?.value || '';
+        const tarifaFinal = document.getElementById('tarifa_final')?.value || '';
+        const economiaAnual = document.getElementById('economia_anual_prevista')?.value || '';
+        const impostosPercentual = document.getElementById('impostos_percentual')?.value || '';
+        
+        // Validar se concessionária foi selecionada
+        if (!concessionariaId) {
+            alert('Por favor, selecione uma concessionária');
+            return;
+        }
+        
+        const data = {
+            concessionaria_id: concessionariaId,
+            tarifa_final: tarifaFinal,
+            economia_anual_prevista: economiaAnual,
+            impostos_percentual: impostosPercentual
+        };
+        
+        console.log('📤 Enviando dados:', data);
+        
+        fetch(form.action, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -1542,6 +1530,11 @@ function handleSalvarDadosFinanceiros(event) {
         console.error('Erro de rede ou parse:', error);
         alert('Erro ao salvar dados financeiros. Verifique o console para detalhes.');
     });
+    
+    } catch (error) {
+        console.error('❌ Erro ao processar formulário:', error);
+        alert('Erro: ' + error.message + '. Tente recarregar a página.');
+    }
 }
 
 // Função para atualizar lista de concessionárias
