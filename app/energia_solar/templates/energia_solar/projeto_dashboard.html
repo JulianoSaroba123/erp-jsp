@@ -1645,6 +1645,7 @@ function atualizarConcessionarias(event) {
                             <tr>
                                 <th>DESCRIÇÃO</th>
                                 <th width="150" class="text-end">VALOR</th>
+                                <th width="100" class="text-center">AÇÕES</th>
                             </tr>
                         </thead>
                         <tbody id="itensOrcamento">
@@ -1866,6 +1867,9 @@ async function carregarCustosFixosAutomatico() {
     } catch (error) {
         console.error('Erro ao carregar custos fixos:', error);
     }
+    
+    // Renderizar os itens após carregar kit e custos fixos
+    renderizarItensOrcamento();
     recalcularOrcamento();
 }
 
@@ -1952,6 +1956,14 @@ function renderizarItensOrcamento() {
         tr.innerHTML = `
             <td>${item.descricao}</td>
             <td class="text-end fw-bold">${formatarMoeda(faturamento)}</td>
+            <td class="text-center" width="100">
+                <button class="btn btn-sm btn-primary" onclick="abrirModalEdicao(${item.id})" title="Editar">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="excluirItem(${item.id})" title="Excluir">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
