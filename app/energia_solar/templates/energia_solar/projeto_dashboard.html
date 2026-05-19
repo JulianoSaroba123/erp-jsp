@@ -1150,9 +1150,14 @@
                                 <i class="fas fa-bolt me-2"></i>Concessionária de Energia
                             </h6>
                             <div class="mb-3">
-                                <label class="form-label fw-bold">
-                                    Selecione a Concessionária
-                                    <span class="text-danger">*</span>
+                                <label class="form-label fw-bold d-flex justify-content-between align-items-center">
+                                    <span>
+                                        Selecione a Concessionária
+                                        <span class="text-danger">*</span>
+                                    </span>
+                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="atualizarConcessionarias()" title="Atualizar lista de concessionárias">
+                                        <i class="fas fa-sync-alt"></i> Atualizar
+                                    </button>
                                 </label>
                                 <select class="form-select" id="concessionaria_id" name="concessionaria_id" required>
                                     <option value="">Escolha uma concessionária...</option>
@@ -1462,6 +1467,64 @@ function handleSalvarDadosFinanceiros(event) {
         console.error('Erro:', error);
         alert('Erro ao salvar dados financeiros');
     });
+}
+
+// Função para atualizar lista de concessionárias
+function atualizarConcessionarias() {
+    const selectConc = document.getElementById('concessionaria_id');
+    const valorAtual = selectConc.value; // Preserva seleção atual
+    
+    // Desabilita botão durante carregamento
+    event.target.disabled = true;
+    event.target.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Atualizando...';
+    
+    fetch('/concessionaria/api/listar')
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                // Limpa select
+                selectConc.innerHTML = '<option value="">Escolha uma concessionária...</option>';
+                
+                // Popula com novos dados
+                result.data.forEach(conc => {
+                    const option = document.createElement('option');
+                    option.value = conc.id;
+                    option.setAttribute('data-te', conc.te || 0);
+                    option.setAttribute('data-tusd', conc.tusd || 0);
+                    option.setAttribute('data-pis', conc.pis || 0);
+                    option.setAttribute('data-cofins', conc.cofins || 0);
+                    option.setAttribute('data-icms', conc.icms || 0);
+                    option.setAttribute('data-tarifa-total', (parseFloat(conc.te || 0) + parseFloat(conc.tusd || 0)).toFixed(4));
+                    option.setAttribute('data-tarifa-final', conc.tarifa_final);
+                    option.textContent = `${conc.nome} - ${conc.regiao} (${parseFloat(conc.tarifa_final).toFixed(4)} R$/kWh)`;
+                    
+                    // Restaura seleção se ainda existe
+                    if (conc.id == valorAtual) {
+                        option.selected = true;
+                    }
+                    
+                    selectConc.appendChild(option);
+                });
+                
+                // Dispara evento change para atualizar campos
+                if (valorAtual) {
+                    selectConc.dispatchEvent(new Event('change'));
+                }
+                
+                alert('Lista de concessionárias atualizada!');
+            } else {
+                alert('Erro ao carregar concessionárias');
+            }
+        })
+        .catch(error => {
+            console.error('Erro:', error);
+            alert('Erro ao atualizar concessionárias');
+        })
+        .finally(() => {
+            // Reabilita botão
+            event.target.disabled = false;
+            event.target.innerHTML = '<i class="fas fa-sync-alt"></i> Atualizar';
+        });
 }
 </script>
 
