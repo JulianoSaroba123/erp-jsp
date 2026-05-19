@@ -1896,7 +1896,7 @@ function adicionarItemOrcamento() {
 // Carregar custos fixos da API
 async function carregarCustosFixos() {
     try {
-        const response = await fetch('/energia-solar/custos-fixos-api');
+        const response = await fetch('/energia-solar/custos-fixos/api/listar');
         if (!response.ok) {
             throw new Error('Erro ao carregar custos fixos');
         }
