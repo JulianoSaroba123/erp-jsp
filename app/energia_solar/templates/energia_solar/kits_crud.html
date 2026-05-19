@@ -270,10 +270,10 @@ function editarKit(id) {
             
             <div class="col-md-8">
                 <label class="form-label">Selecione a Placa *</label>
-                <select class="form-select" name="placa_id" required>
+                <select class="form-select" name="placa_id" id="edit_placa_id" required>
                     <option value="">Escolha...</option>
                     {% for placa in placas %}
-                    <option value="{{ placa.id }}" ${kit.placa_id == {{ placa.id }} ? 'selected' : ''}>
+                    <option value="{{ placa.id }}">
                         {{ placa.fabricante }} / {{ placa.modelo }} / {{ placa.potencia }} Wp
                     </option>
                     {% endfor %}
@@ -293,10 +293,10 @@ function editarKit(id) {
             
             <div class="col-md-8">
                 <label class="form-label">Selecione o Inversor *</label>
-                <select class="form-select" name="inversor_id" required>
+                <select class="form-select" name="inversor_id" id="edit_inversor_id" required>
                     <option value="">Escolha...</option>
                     {% for inversor in inversores %}
-                    <option value="{{ inversor.id }}" ${kit.inversor_id == {{ inversor.id }} ? 'selected' : ''}>
+                    <option value="{{ inversor.id }}">
                         {{ inversor.fabricante }} / {{ inversor.modelo }} / {{ inversor.potencia_nominal }} kW
                     </option>
                     {% endfor %}
@@ -332,6 +332,20 @@ function editarKit(id) {
             </div>
         </div>
     `;
+    
+    // Selecionar os valores corretos nos selects após o innerHTML ser definido
+    setTimeout(() => {
+        const placaSelect = document.getElementById('edit_placa_id');
+        const inversorSelect = document.getElementById('edit_inversor_id');
+        
+        if (placaSelect && kit.placa_id) {
+            placaSelect.value = kit.placa_id;
+        }
+        
+        if (inversorSelect && kit.inversor_id) {
+            inversorSelect.value = kit.inversor_id;
+        }
+    }, 100);
     
     // Abrir modal e ir para aba de edição
     const modal = new bootstrap.Modal(document.getElementById('modalCRUD'));
