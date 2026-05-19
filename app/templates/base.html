@@ -79,7 +79,6 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            z-index: 1;
         }
         
         /* Wrapper de conteúdo - Cresce para empurrar footer para baixo */
@@ -87,8 +86,7 @@
             flex: 1 0 auto;
             padding: 1.5rem;
             position: relative;
-            z-index: 1;
-            min-height: 300px; /* Debug: altura mínima visível */
+            min-height: 300px;
         }
         
         /* Footer - Sempre no final, horizontal */
@@ -111,7 +109,6 @@
             padding: 1rem 1.5rem;
             flex-shrink: 0;
             position: relative;
-            z-index: 2;
         }
         
         .breadcrumb-modern {
@@ -274,6 +271,33 @@
             transition: opacity 0.3s ease;
             border-radius: 8px;
             z-index: 10;
+        }
+        
+        /* Garantir que modais fiquem sempre acessíveis */
+        .modal {
+            z-index: 1055 !important;
+        }
+        
+        .modal-backdrop {
+            z-index: 1050 !important;
+        }
+        
+        /* Garantir que campos de formulário em modais sejam clicáveis */
+        .modal .form-control,
+        .modal .form-select,
+        .modal input,
+        .modal select,
+        .modal textarea,
+        .modal button {
+            pointer-events: auto !important;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Garantir que o conteúdo do modal fique por cima do backdrop */
+        .modal-content {
+            position: relative;
+            z-index: 1;
         }
         
         .sidebar:not(.scrolled-to-bottom)::after {
