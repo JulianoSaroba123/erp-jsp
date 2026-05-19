@@ -959,93 +959,54 @@
                 }
             });
             
-            // Controlar indicador de scroll na sidebar
+            // Controlar indicador de scroll na sidebar (throttled para performance)
             const sidebar = document.getElementById('sidebar');
             if (sidebar) {
+                let scrollTimeout;
                 function checkSidebarScroll() {
-                    const isAtBottom = sidebar.scrollHeight - sidebar.scrollTop <= sidebar.clientHeight + 50;
-                    if (isAtBottom) {
-                        sidebar.classList.add('scrolled-to-bottom');
-                    } else {
-                        sidebar.classList.remove('scrolled-to-bottom');
-                    }
+                    clearTimeout(scrollTimeout);
+                    scrollTimeout = setTimeout(() => {
+                        const isAtBottom = sidebar.scrollHeight - sidebar.scrollTop <= sidebar.clientHeight + 50;
+                        if (isAtBottom) {
+                            sidebar.classList.add('scrolled-to-bottom');
+                        } else {
+                            sidebar.classList.remove('scrolled-to-bottom');
+                        }
+                    }, 100); // Throttle de 100ms
                 }
                 
-                sidebar.addEventListener('scroll', checkSidebarScroll);
-                checkSidebarScroll(); // Check initial state
-                
-                // Auto-scroll suave para ver mais opções (opcional)
-                setTimeout(() => {
-                    if (sidebar.scrollTop === 0 && sidebar.scrollHeight > sidebar.clientHeight) {
-                        console.log('💡 Dica: Role a sidebar para baixo para ver mais opções!');
-                    }
-                }, 2000);
+                sidebar.addEventListener('scroll', checkSidebarScroll, { passive: true });
+                setTimeout(checkSidebarScroll, 500); // Check inicial com delay
             }
         });
 
         window.addEventListener('pageshow', syncSidebarLayout);
         window.addEventListener('resize', syncSidebarLayout);
         
-        // Diagnóstico imediato da sidebar
+        // Diagnóstico da sidebar - DESABILITADO (causava conflitos)
+        // Para debug manual, abra o console e execute: diagnosticarSidebar()
+        /*
         function diagnosticarSidebar() {
             console.log('🔍 DIAGNÓSTICO DA SIDEBAR:');
-            
             const sidebar = document.querySelector('.sidebar');
             if (!sidebar) {
                 console.error('❌ Sidebar não encontrada!');
                 return;
             }
-            
             console.log('✅ Sidebar encontrada');
-            
             const links = sidebar.querySelectorAll('.nav-link');
             console.log(`📋 ${links.length} links encontrados`);
-            
-            links.forEach((link, index) => {
-                const style = window.getComputedStyle(link);
-                console.log(`Link ${index + 1} (${link.textContent.trim()}):`, {
-                    href: link.href,
-                    pointerEvents: style.pointerEvents,
-                    zIndex: style.zIndex,
-                    position: style.position,
-                    display: style.display
-                });
-                
-                // Testar clique programático
-                link.addEventListener('click', function(e) {
-                    console.log(`🎯 CLIQUE CAPTURADO: ${link.textContent.trim()}`);
-                });
-            });
         }
+        */
         
-        // Executar diagnóstico após carregamento
-        setTimeout(diagnosticarSidebar, 1000);
-        
-        // Função global para testar cliques
+        // Função global para testar cliques (debug manual)
         window.testarCliqueSidebar = function(texto) {
             const links = document.querySelectorAll('.sidebar .nav-link');
             const link = Array.from(links).find(l => l.textContent.includes(texto));
             if (link) {
-                console.log('🎯 Testando clique em:', link.textContent.trim());
                 link.click();
-            } else {
-                console.error('❌ Link não encontrado:', texto);
             }
         };
-        
-        // Função para debug visual
-        window.debugSidebar = function() {
-            const sidebar = document.querySelector('.sidebar');
-            sidebar.classList.toggle('sidebar-debug');
-            console.log('🎨 Debug visual da sidebar ativado/desativado');
-        };
-        
-        // Função para mostrar loader
-        function showLoader(element) {
-            const loader = document.createElement('div');
-            loader.className = 'loader mx-auto';
-            element.appendChild(loader);
-        }
         
         // Função para confirmar exclusão
         function confirmarExclusao(nome, url) {
@@ -1062,16 +1023,6 @@
                 bsAlert.close();
             });
         }, 5000);
-
-        // Smooth transitions
-        document.addEventListener('DOMContentLoaded', function() {
-            document.body.style.opacity = '0';
-            document.body.style.transition = 'opacity 0.3s ease';
-            
-            setTimeout(function() {
-                document.body.style.opacity = '1';
-            }, 100);
-        });
     </script>
     
     <!-- PWA Installation Script -->
