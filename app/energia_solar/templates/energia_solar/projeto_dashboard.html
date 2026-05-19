@@ -1465,6 +1465,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalOrcamento = document.getElementById('modalOrcamento');
     if (modalOrcamento) {
         modalOrcamento.addEventListener('show.bs.modal', function() {
+            console.log('🚀 Modal de orçamento aberto, carregando itens...');
             carregarItensOrcamento();
         });
     }
@@ -1828,46 +1829,74 @@ function aplicarFormatacao(input, itemId) {
 
 // Carregar itens do orçamento do servidor
 async function carregarItensOrcamento() {
+    console.log('🔄 Iniciando carregamento de itens...');
+    
     try {
-        const response = await fetch(`/energia-solar/projetos/{{ projeto.id }}/orcamento`);
+        const url = `/energia-solar/projetos/{{ projeto.id }}/orcamento`;
+        console.log('🌐 Fazendo fetch:', url);
+        
+        const response = await fetch(url);
+        console.log('📡 Response status:', response.status);
+        
         if (response.ok) {
             const data = await response.json();
+            console.log('📦 Data recebido:', data);
+            
             if (data.itens && data.itens.length > 0) {
                 itensOrcamento = data.itens;
+                console.log('✅ Itens carregados do servidor:', itensOrcamento.length);
             } else {
-                // Se não houver itens salvos, carregar custos fixos automaticamente
+                // Se não houver itens salvos, inicializar vazio
                 itensOrcamento = [];
-                await carregarCustosFixosAutomatico();
+                console.log('📦 Nenhum item salvo, iniciando vazio');
             }
         } else {
-            console.warn('Não foi possível carregar itens do orçamento');
+            console.warn('⚠️ Response não OK, status:', response.status);
             itensOrcamento = [];
-            await carregarCustosFixosAutomatico();
         }
     } catch (error) {
-        console.error('Erro ao carregar itens:', error);
+        console.error('❌ Erro ao carregar itens:', error);
         itensOrcamento = [];
     }
     
+    // SEMPRE adicionar kit e custos fixos se o array estiver vazio
+    if (itensOrcamento.length === 0) {
+        console.log('🔄 Array vazio, carregando kit e custos fixos...');
+        await carregarCustosFixosAutomatico();
+    } else {
+        console.log('✅ Já existem itens, pulando carga automática');
+    }
+    
+    console.log('🎨 Chamando renderização...');
     renderizarItensOrcamento();
     recalcularOrcamento();
+    console.log('✅ Carregamento concluído!');
 }
 
 // Carregar custos fixos automaticamente (silenciosamente, sem alertas)
 async function carregarCustosFixosAutomatico() {
+    console.log('🔧 carregarCustosFixosAutomatico() iniciada');
+    
     try {
         // Primeiro, adicionar o kit do projeto
+        console.log('1️⃣ Adicionando kit do projeto...');
         await adicionarKitAoOrcamento();
+        console.log('✅ Kit adicionado, total de itens:', itensOrcamento.length);
         
         // Depois, adicionar os custos fixos
+        console.log('2️⃣ Buscando custos fixos...');
         const response = await fetch('/energia-solar/custos-fixos/api/listar');
+        
         if (!response.ok) {
+            console.warn('⚠️ Custos fixos: response não OK');
             return;
         }
         
         const custosFixos = await response.json();
+        console.log('📦 Custos fixos recebidos:', custosFixos.length);
         
         if (!custosFixos || custosFixos.length === 0) {
+            console.log('⚠️ Nenhum custo fixo disponível');
             return;
         }
         
@@ -1875,6 +1904,8 @@ async function carregarCustosFixosAutomatico() {
         const proximoId = itensOrcamento.length > 0 
             ? Math.max(...itensOrcamento.map(i => i.id || 0)) + 1 
             : 1;
+        
+        console.log('🆔 Próximo ID:', proximoId);
         
         // Adicionar cada custo fixo ao orçamento
         custosFixos.forEach((custo, index) => {
@@ -1887,13 +1918,17 @@ async function carregarCustosFixosAutomatico() {
                 lucro: custo.lucro || 0,
                 tipo: custo.faturamento || 'EMPRESA'
             });
+            console.log(`  ✅ Custo ${index + 1}: ${custo.descricao}`);
         });
         
+        console.log('✅ Total de itens após custos fixos:', itensOrcamento.length);
+        
     } catch (error) {
-        console.error('Erro ao carregar custos fixos:', error);
+        console.error('❌ Erro ao carregar custos fixos:', error);
     }
     
     // Renderizar os itens após carregar kit e custos fixos
+    console.log('🎨 Renderizando após carga automática...');
     renderizarItensOrcamento();
     recalcularOrcamento();
 }
@@ -1972,12 +2007,29 @@ async function adicionarKitAoOrcamento() {
 // Renderizar tabela
 function renderizarItensOrcamento() {
     const tbody = document.getElementById('itensOrcamento');
+    
+    console.log('🎨 Renderizando itens do orçamento...');
+    console.log('📊 Total de itens:', itensOrcamento.length);
+    console.log('📋 Itens:', itensOrcamento);
+    
+    if (!tbody) {
+        console.error('❌ Elemento tbody não encontrado!');
+        return;
+    }
+    
     tbody.innerHTML = '';
+    
+    if (itensOrcamento.length === 0) {
+        console.warn('⚠️ Nenhum item para renderizar');
+        return;
+    }
     
     itensOrcamento.forEach((item, index) => {
         const valorTotal = item.qtd * item.valorUnit;
         const lucroValor = valorTotal * (item.lucro / 100);
         const faturamento = valorTotal + lucroValor;
+        
+        console.log(`  Item ${index + 1}: ${item.descricao} = R$ ${faturamento.toFixed(2)}`);
         
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -1994,6 +2046,8 @@ function renderizarItensOrcamento() {
         `;
         tbody.appendChild(tr);
     });
+    
+    console.log('✅ Renderização concluída');
 }
 
 // Atualizar item
