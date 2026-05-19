@@ -45,6 +45,8 @@ class KitSolar(db.Model):
             'outras_informacoes': self.outras_informacoes,
             'potencia_kwp': self.potencia_kwp,
             'preco': self.preco,
+            'placa_id': self.placa_id,
+            'inversor_id': self.inversor_id,
             'qtd_placas': self.qtd_placas,
             'qtd_inversores': self.qtd_inversores,
             'placa': self.placa.to_dict() if self.placa else None,
