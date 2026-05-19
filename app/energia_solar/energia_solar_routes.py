@@ -1220,11 +1220,13 @@ def projeto_salvar_dados_financeiros(projeto_id):
     try:
         projeto = ProjetoSolar.query.get_or_404(projeto_id)
         
-        # Receber dados do formulário
-        concessionaria_id = request.form.get('concessionaria_id')
-        tarifa_final = request.form.get('tarifa_final')
-        economia_anual = request.form.get('economia_anual_prevista')
-        impostos_percentual = request.form.get('impostos_percentual')
+        # Receber dados JSON
+        data = request.get_json()
+        
+        concessionaria_id = data.get('concessionaria_id')
+        tarifa_final = data.get('tarifa_final')
+        economia_anual = data.get('economia_anual_prevista')
+        impostos_percentual = data.get('impostos_percentual')
         
         # Atualizar projeto
         if concessionaria_id:
@@ -1235,11 +1237,11 @@ def projeto_salvar_dados_financeiros(projeto_id):
         
         if economia_anual:
             # Remover formatação monetária se houver
-            economia_valor = economia_anual.replace('R$', '').replace('.', '').replace(',', '.').strip()
+            economia_valor = str(economia_anual).replace('R$', '').replace('.', '').replace(',', '.').strip()
             projeto.economia_anual = float(economia_valor)
         
         if impostos_percentual:
-            projeto.aliquota_fio_b = float(impostos_percentual.replace(',', '.'))
+            projeto.aliquota_fio_b = float(str(impostos_percentual).replace(',', '.'))
         
         db.session.commit()
         

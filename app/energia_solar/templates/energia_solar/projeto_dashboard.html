@@ -1433,16 +1433,29 @@ function handleSalvarDadosFinanceiros(event) {
     event.preventDefault();
     const form = event.target;
     
+    // Coletar dados manualmente (incluindo campos readonly)
+    const data = {
+        concessionaria_id: document.getElementById('concessionaria_id').value,
+        tarifa_final: document.getElementById('tarifa_final').value,
+        economia_anual_prevista: document.getElementById('economia_anual_prevista').value,
+        impostos_percentual: document.getElementById('impostos_percentual').value
+    };
+    
     fetch(form.action, {
         method: 'POST',
-        body: new FormData(form)
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
     })
     .then(response => {
         if (response.ok) {
-            // Recarregar a página para atualizar os dados
+            alert('Dados financeiros salvos com sucesso!');
             window.location.reload();
         } else {
-            alert('Erro ao salvar dados financeiros');
+            return response.json().then(err => {
+                alert('Erro ao salvar dados financeiros: ' + (err.message || 'Erro desconhecido'));
+            });
         }
     })
     .catch(error => {
