@@ -1501,17 +1501,21 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('➕ Adicionando equipamentos do projeto...');
             await adicionarKitAoOrcamento();
             
-            // PASSO 5: Se não houver itens além dos equipamentos, carregar custos fixos
+            // PASSO 5: Garantir que custos fixos estejam carregados
+            console.log('🔍 Verificando custos fixos...');
             const itensSemEquipamento = itensOrcamento.filter(item => {
                 const origem = item.origem || '';
                 return !['kit_projeto', 'placa_projeto', 'inversor_projeto'].includes(origem);
             });
             
-            if (itensSemEquipamento.length === 0) {
-                console.log('📦 Nenhum custo fixo encontrado, carregando automático...');
+            console.log(`📊 Itens sem equipamento: ${itensSemEquipamento.length}`);
+            
+            // Se tiver menos de 3 itens (sem equipamentos), carregar custos fixos
+            if (itensSemEquipamento.length < 3) {
+                console.log('📦 Poucos custos fixos, carregando todos...');
                 await carregarCustosFixosAutomatico();
             } else {
-                console.log('✅ Custos fixos já carregados do servidor');
+                console.log('✅ Custos fixos já carregados');
             }
             
             // PASSO 6: Renderizar tabela
