@@ -5,6 +5,9 @@ O campo `kit_id` foi adicionado no código, mas **não existe no banco de dados 
 
 Por isso o kit não aparece no modal de orçamento.
 
+## ✅ CORREÇÃO APLICADA
+O script foi **corrigido** para usar SQL direto em vez do ORM do SQLAlchemy, evitando conflitos com campos que não existem no banco do Render.
+
 ---
 
 ## ✅ SOLUÇÃO: RODAR MIGRAÇÃO NO RENDER
@@ -107,6 +110,9 @@ Projeto                                R$ 200,00    [✏️] [🗑️]
 
 ### **Erro: "column kit_id already exists"**
 ✅ **Significa que a coluna já foi adicionada!** Pule para o PASSO 4 e teste.
+
+### **Erro: "column calculo_energia_solar.local_instalacao does not exist"**
+✅ **JÁ CORRIGIDO!** Esse erro ocorria porque o script usava ORM. Agora usa SQL direto. Faça `git pull` no Render e tente novamente.
 
 ### **Erro: "Projeto 6 não encontrado"**
 ❌ O projeto realmente não existe no banco. Crie um novo projeto para testar.
