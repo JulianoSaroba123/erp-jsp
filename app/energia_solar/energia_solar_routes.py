@@ -1214,56 +1214,61 @@ def projeto_dashboard(projeto_id):
 @login_required
 def projeto_salvar_dados_financeiros(projeto_id):
     """Salva dados financeiros do projeto"""
-    from app.energia_solar.catalogo_model import ProjetoSolar
-    from flask import jsonify
-    
     try:
         projeto = ProjetoSolar.query.get_or_404(projeto_id)
-        
-        # Receber dados JSON
-        data = request.get_json()
-        
-        # Log para debug
-        print(f"🔍 DEBUG - Dados recebidos: {data}")
-        
-        concessionaria_id = data.get('concessionaria_id')
-        tarifa_final = data.get('tarifa_final')
-        economia_anual = data.get('economia_anual_prevista')
-        impostos_percentual = data.get('impostos_percentual')
-        
-        print(f"📊 Valores parseados:")
-        print(f"  - concessionaria_id: {concessionaria_id}")
-        print(f"  - tarifa_final: {tarifa_final}")
-        print(f"  - economia_anual: {economia_anual}")
-        print(f"  - impostos_percentual: {impostos_percentual}")
-        
-        # Atualizar projeto com tratamento robusto
-        if concessionaria_id:
-            projeto.concessionaria_id = int(concessionaria_id)
-        
-        if tarifa_final and str(tarifa_final).strip():
-            tarifa_str = str(tarifa_final).replace(',', '.').strip()
-            if tarifa_str:
-                projeto.tarifa_kwh = float(tarifa_str)
-        
-        if economia_anual and str(economia_anual).strip():
-            # Remover formatação monetária se houver
-            economia_valor = str(economia_anual).replace('R$', '').replace('.', '').replace(',', '.').strip()
-            if economia_valor:
-                projeto.economia_anual = float(economia_valor)
-        
-        if impostos_percentual and str(impostos_percentual).strip():
-            impostos_str = str(impostos_percentual).replace(',', '.').strip()
-            if impostos_str:
-                projeto.aliquota_fio_b = float(impostos_str)
-        
+
+        data = request.get_json(silent=True) or request.form
+
+        def parse_decimal_br(valor, default=0):
+            if valor is None:
+                return default
+            valor = str(valor).strip()
+            if not valor:
+                return default
+            valor = valor.replace("R$", "").replace(" ", "")
+            if "," in valor:
+                valor = valor.replace(".", "").replace(",", ".")
+            try:
+                return float(valor)
+            except (ValueError, TypeError):
+                return default
+
+        concessionaria_id = data.get("concessionaria_id")
+        tarifa_final = data.get("tarifa_final")
+        economia_anual_prevista = data.get("economia_anual_prevista")
+        impostos_percentual = data.get("impostos_percentual")
+
+        projeto.concessionaria_id = int(concessionaria_id) if concessionaria_id else None
+        projeto.tarifa_kwh = parse_decimal_br(tarifa_final, 0)
+        projeto.economia_anual = parse_decimal_br(economia_anual_prevista, 0)
+        projeto.impostos_percentual = parse_decimal_br(impostos_percentual, 0)
+
+        consumo = float(projeto.consumo_kwh_mes or 0)
+        tarifa = float(projeto.tarifa_kwh or 0)
+        projeto.economia_mensal = consumo * tarifa if consumo > 0 and tarifa > 0 else 0
+
         db.session.commit()
-        
-        return jsonify({'success': True, 'message': 'Dados financeiros salvos com sucesso!'})
-        
+
+        return jsonify({
+            "success": True,
+            "message": "Dados financeiros salvos com sucesso!",
+            "dados_salvos": {
+                "projeto_id": projeto.id,
+                "concessionaria_id": projeto.concessionaria_id,
+                "tarifa_kwh": float(projeto.tarifa_kwh or 0),
+                "economia_mensal": float(projeto.economia_mensal or 0),
+                "economia_anual": float(projeto.economia_anual or 0),
+                "impostos_percentual": float(projeto.impostos_percentual or 0)
+            }
+        })
+
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'message': f'Erro ao salvar dados financeiros: {str(e)}'}), 400
+        current_app.logger.exception("Erro ao salvar dados financeiros do projeto solar")
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
 
 
 @energia_solar_bp.route('/projetos/<int:projeto_id>/orcamento', methods=['GET'])
@@ -2192,7 +2197,7 @@ def custo_fixo_editar(custo_id):
 @energia_solar_bp.route('/custos-fixos/<int:custo_id>/excluir', methods=['POST'])
 @login_required
 def custo_fixo_excluir(custo_id):
-    """Excluir custo fixo"""
+    """Exclui custo fixo"""
     custo = CustoPadraoSolar.query.get_or_404(custo_id)
     
     try:
