@@ -10,8 +10,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app import create_app
 from app.extensoes import db
-from app.energia_solar.energia_solar_model import CalculoEnergiaSolar
-from app.energia_solar.catalogo_model import KitSolar
 from sqlalchemy import text, inspect
 
 def adicionar_coluna_kit_id():
@@ -67,6 +65,7 @@ def adicionar_coluna_kit_id():
 def tentar_inferir_kit():
     """
     Tenta inferir qual kit cada projeto está usando baseado nas placas e inversores selecionados
+    USANDO SQL DIRETO para evitar conflito com campos que não existem no banco
     """
     app = create_app()
     
@@ -74,85 +73,127 @@ def tentar_inferir_kit():
         try:
             print('\n🔍 Tentando inferir kit_id dos projetos...')
             
-            # Buscar todos os projetos
-            projetos = CalculoEnergiaSolar.query.all()
-            print(f'📊 Total de projetos: {len(projetos)}')
-            
-            for projeto in projetos:
-                if projeto.kit_id:
-                    print(f'  ⏭️ Projeto {projeto.id} já tem kit_id: {projeto.kit_id}')
-                    continue
+            # Usar SQL direto em vez de ORM
+            with db.engine.connect() as conn:
+                # Buscar projetos sem kit_id
+                result = conn.execute(text(
+                    'SELECT id, placa_id, inversor_id, kit_id '
+                    'FROM calculo_energia_solar'
+                ))
+                projetos = result.fetchall()
+                print(f'📊 Total de projetos: {len(projetos)}')
                 
-                # Tentar encontrar kit que combine com placa_id e inversor_id
-                if projeto.placa_id and projeto.inversor_id:
-                    kit = KitSolar.query.filter_by(
-                        placa_id=projeto.placa_id,
-                        inversor_id=projeto.inversor_id
-                    ).first()
+                for row in projetos:
+                    projeto_id, placa_id, inversor_id, kit_id = row
                     
-                    if kit:
-                        projeto.kit_id = kit.id
-                        print(f'  ✅ Projeto {projeto.id}: kit_id definido como {kit.id} ({kit.fabricante} - {kit.descricao})')
+                    if kit_id:
+                        print(f'  ⏭️ Projeto {projeto_id} já tem kit_id: {kit_id}')
+                        continue
+                    
+                    # Tentar encontrar kit que combine com placa_id e inversor_id
+                    if placa_id and inversor_id:
+                        result_kit = conn.execute(text(
+                            'SELECT id, fabricante, descricao '
+                            'FROM kit_solar '
+                            'WHERE placa_id = :placa_id AND inversor_id = :inversor_id '
+                            'LIMIT 1'
+                        ), {'placa_id': placa_id, 'inversor_id': inversor_id})
+                        
+                        kit_row = result_kit.fetchone()
+                        
+                        if kit_row:
+                            kit_id_encontrado, fabricante, descricao = kit_row
+                            # Atualizar projeto com kit_id
+                            conn.execute(text(
+                                'UPDATE calculo_energia_solar '
+                                'SET kit_id = :kit_id '
+                                'WHERE id = :projeto_id'
+                            ), {'kit_id': kit_id_encontrado, 'projeto_id': projeto_id})
+                            conn.commit()
+                            print(f'  ✅ Projeto {projeto_id}: kit_id definido como {kit_id_encontrado} ({fabricante} - {descricao})')
+                        else:
+                            print(f'  ⚠️ Projeto {projeto_id}: nenhum kit encontrado para placa_id={placa_id} e inversor_id={inversor_id}')
                     else:
-                        print(f'  ⚠️ Projeto {projeto.id}: nenhum kit encontrado para placa_id={projeto.placa_id} e inversor_id={projeto.inversor_id}')
-                else:
-                    print(f'  ⚠️ Projeto {projeto.id}: sem placa_id ou inversor_id')
+                        print(f'  ⚠️ Projeto {projeto_id}: sem placa_id ou inversor_id')
             
-            db.session.commit()
             print('\n✅ Inferência concluída!')
             return True
             
         except Exception as e:
-            db.session.rollback()
             print(f'❌ Erro ao inferir kit: {e}')
             return False
 
 def verificar_projeto_6():
-    """Verifica especificamente o projeto 6"""
+    """Verifica especificamente o projeto 6 USANDO SQL DIRETO"""
     app = create_app()
     
     with app.app_context():
         try:
             print('\n🔍 Verificando Projeto #6...')
-            projeto = CalculoEnergiaSolar.query.get(6)
             
-            if not projeto:
-                print('❌ Projeto 6 não encontrado!')
-                return
-            
-            print(f'\n📊 Dados do Projeto 6:')
-            print(f'  ID: {projeto.id}')
-            print(f'  Nome Cliente: {projeto.nome_cliente}')
-            print(f'  kit_id: {projeto.kit_id}')
-            print(f'  placa_id: {projeto.placa_id}')
-            print(f'  inversor_id: {projeto.inversor_id}')
-            
-            if projeto.kit_id:
-                kit = KitSolar.query.get(projeto.kit_id)
-                if kit:
-                    print(f'\n✅ KIT ENCONTRADO:')
-                    print(f'  ID: {kit.id}')
-                    print(f'  Fabricante: {kit.fabricante}')
-                    print(f'  Descrição: {kit.descricao}')
-                    print(f'  Preço: R$ {kit.preco:,.2f}')
-                    print(f'  nome_exibicao: {kit.nome_exibicao}')
-                    print(f'  valor_orcamento: {kit.valor_orcamento}')
-            else:
-                print('\n⚠️ Projeto 6 não tem kit_id definido')
+            # Usar SQL direto
+            with db.engine.connect() as conn:
+                # Buscar projeto 6
+                result = conn.execute(text(
+                    'SELECT id, nome_cliente, kit_id, placa_id, inversor_id '
+                    'FROM calculo_energia_solar '
+                    'WHERE id = :projeto_id'
+                ), {'projeto_id': 6})
                 
-                # Verificar se existem kits compatíveis
-                if projeto.placa_id and projeto.inversor_id:
-                    kits = KitSolar.query.filter_by(
-                        placa_id=projeto.placa_id,
-                        inversor_id=projeto.inversor_id
-                    ).all()
+                projeto = result.fetchone()
+                
+                if not projeto:
+                    print('❌ Projeto 6 não encontrado!')
+                    return
+                
+                projeto_id, nome_cliente, kit_id, placa_id, inversor_id = projeto
+                
+                print(f'\n📊 Dados do Projeto 6:')
+                print(f'  ID: {projeto_id}')
+                print(f'  Nome Cliente: {nome_cliente}')
+                print(f'  kit_id: {kit_id}')
+                print(f'  placa_id: {placa_id}')
+                print(f'  inversor_id: {inversor_id}')
+                
+                if kit_id:
+                    # Buscar dados do kit
+                    result_kit = conn.execute(text(
+                        'SELECT id, fabricante, descricao, preco '
+                        'FROM kit_solar '
+                        'WHERE id = :kit_id'
+                    ), {'kit_id': kit_id})
                     
-                    if kits:
-                        print(f'\n💡 Kits compatíveis encontrados: {len(kits)}')
-                        for kit in kits:
-                            print(f'  - Kit {kit.id}: {kit.fabricante} - {kit.descricao} (R$ {kit.preco:,.2f})')
-                    else:
-                        print('\n❌ Nenhum kit compatível encontrado')
+                    kit = result_kit.fetchone()
+                    
+                    if kit:
+                        kit_id, fabricante, descricao, preco = kit
+                        print(f'\n✅ KIT ENCONTRADO:')
+                        print(f'  ID: {kit_id}')
+                        print(f'  Fabricante: {fabricante}')
+                        print(f'  Descrição: {descricao}')
+                        print(f'  Preço: R$ {preco:,.2f}')
+                        print(f'  nome_exibicao: {fabricante} - {descricao}')
+                        print(f'  valor_orcamento: {preco}')
+                else:
+                    print('\n⚠️ Projeto 6 não tem kit_id definido')
+                    
+                    # Verificar se existem kits compatíveis
+                    if placa_id and inversor_id:
+                        result_kits = conn.execute(text(
+                            'SELECT id, fabricante, descricao, preco '
+                            'FROM kit_solar '
+                            'WHERE placa_id = :placa_id AND inversor_id = :inversor_id'
+                        ), {'placa_id': placa_id, 'inversor_id': inversor_id})
+                        
+                        kits = result_kits.fetchall()
+                        
+                        if kits:
+                            print(f'\n💡 Kits compatíveis encontrados: {len(kits)}')
+                            for kit in kits:
+                                kit_id, fabricante, descricao, preco = kit
+                                print(f'  - Kit {kit_id}: {fabricante} - {descricao} (R$ {preco:,.2f})')
+                        else:
+                            print('\n❌ Nenhum kit compatível encontrado')
                         
         except Exception as e:
             print(f'❌ Erro ao verificar projeto 6: {e}')
