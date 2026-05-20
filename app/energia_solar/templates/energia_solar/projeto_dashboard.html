@@ -1383,6 +1383,9 @@ document.addEventListener('DOMContentLoaded', function() {
         concessionariaSelect.addEventListener('change', function() {
     const selected = this.options[this.selectedIndex];
     
+    console.log('🔄 Evento change disparado!');
+    console.log('📍 Opção selecionada:', selected.value, selected.text);
+    
     if (selected.value) {
         // Pegar dados da concessionária
         const te = parseFloat(selected.dataset.te);
@@ -1392,6 +1395,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const icms = parseFloat(selected.dataset.icms);
         const tarifaTotal = parseFloat(selected.dataset.tarifaTotal);
         const tarifaFinal = parseFloat(selected.dataset.tarifaFinal);
+        
+        console.log('📊 Dados extraídos:', { te, tusd, pis, cofins, icms, tarifaTotal, tarifaFinal });
         
         // Preencher campos com verificação
         const teEl = document.getElementById('te_display');
@@ -1427,7 +1432,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (economiaEl) economiaEl.value = economiaAnual.toFixed(2).replace('.', ',');
         
+        console.log('✅ Campos preenchidos com sucesso!');
+        
     } else {
+        console.log('⚠️ Nenhum valor selecionado, limpando campos...');
+        
         // Limpar campos com verificação
         const campos = [
             'te_display', 'tusd_display', 'tarifa_total_display',
@@ -1444,10 +1453,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Carregar dados ao abrir o modal se já tiver concessionária selecionada
     const modal = document.getElementById('modalDadosFinanceiros');
-    if (modal && concessionariaSelect) {
+    if (modal) {
         modal.addEventListener('show.bs.modal', function() {
-            if (concessionariaSelect.value) {
-                concessionariaSelect.dispatchEvent(new Event('change'));
+            console.log('🔓 Modal de dados financeiros aberto');
+            
+            const selectConc = document.getElementById('concessionaria_id');
+            if (selectConc) {
+                console.log('📋 Concessionária selecionada:', selectConc.value);
+                
+                // Aguardar modal estar completamente renderizado
+                setTimeout(() => {
+                    if (selectConc.value) {
+                        console.log('🔄 Disparando evento change para carregar dados...');
+                        selectConc.dispatchEvent(new Event('change'));
+                    } else {
+                        console.log('⚠️ Nenhuma concessionária selecionada');
+                    }
+                }, 100);
             }
         });
     }
