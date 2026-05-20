@@ -51,6 +51,8 @@ class CalculoEnergiaSolar(db.Model):
     cliente_grupo = db.Column(db.String(10))  # A, B, etc
     
     # Equipamentos Selecionados
+    kit_id = db.Column(db.Integer, db.ForeignKey('kit_solar.id'), nullable=True)  # FK para KitSolar
+    
     placa_id = db.Column(db.Integer)  # FK para PlacaSolar
     placa_modelo = db.Column(db.String(100))
     placa_fabricante = db.Column(db.String(100))
@@ -64,6 +66,9 @@ class CalculoEnergiaSolar(db.Model):
     inversor_fabricante = db.Column(db.String(100))
     inversor_potencia = db.Column(db.Float)  # kW
     inversor_tipo = db.Column(db.String(50))  # String, Micro, Híbrido
+    
+    # Relacionamentos
+    kit = db.relationship('KitSolar', foreign_keys=[kit_id], lazy='joined')
     
     # Sistema Calculado
     potencia_sistema = db.Column(db.Float)  # kWp
@@ -137,6 +142,33 @@ class CalculoEnergiaSolar(db.Model):
     usuario_id = db.Column(db.Integer, nullable=True)
     status = db.Column(db.String(20), default='em_aberto')  # em_aberto, a_visitar, aprovado, instalado
     etapa_projeto = db.Column(db.String(20), default='calculo')  # calculo, orcamento, contrato, instalacao
+    
+    # Propriedades auxiliares para templates
+    @property
+    def placa(self):
+        """Retorna o objeto PlacaSolar se placa_id estiver definido"""
+        if self.placa_id:
+            from app.energia_solar.catalogo_model import PlacaSolar
+            return PlacaSolar.query.get(self.placa_id)
+        return None
+    
+    @property
+    def inversor(self):
+        """Retorna o objeto InversorSolar se inversor_id estiver definido"""
+        if self.inversor_id:
+            from app.energia_solar.catalogo_model import InversorSolar
+            return InversorSolar.query.get(self.inversor_id)
+        return None
+    
+    @property
+    def qtd_placas(self):
+        """Retorna número de placas"""
+        return self.numero_paineis or self.qtd_placas_instalacao or 0
+    
+    @property
+    def qtd_inversores(self):
+        """Retorna número de inversores"""
+        return self.numero_inversores or self.qtd_inversores_instalacao or 0
     
     def __repr__(self):
         return f'<CalculoEnergiaSolar {self.nome_cliente} - {self.potencia_sistema}kWp>'

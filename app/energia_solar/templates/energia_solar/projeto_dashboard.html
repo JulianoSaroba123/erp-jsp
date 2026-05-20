@@ -1467,23 +1467,60 @@ document.addEventListener('DOMContentLoaded', function() {
         modalOrcamento.addEventListener('show.bs.modal', async function() {
             console.log('🚀 Modal de orçamento aberto');
             
-            // SEMPRE garantir que o kit está presente
-            console.log('🔍 Verificando se projeto tem kit...');
-            if (dadosProjeto.kit || dadosProjeto.placa || dadosProjeto.inversor) {
-                console.log('✅ Projeto tem equipamentos, forçando adição ao orçamento');
-                
-                // Limpar itens relacionados a kit primeiro
-                itensOrcamento = itensOrcamento.filter(item => {
-                    const desc = item.descricao.toUpperCase();
-                    return !desc.includes('KIT') && !desc.includes('PLACA') && !desc.includes('INVERSOR');
-                });
-                
-                // Adicionar kit/placa/inversor
-                await adicionarKitAoOrcamento();
+            // PASSO 1: Limpar equipamentos automáticos antigos da memória
+            console.log('🧹 Limpando equipamentos automáticos antigos...');
+            const itensAntes = itensOrcamento.length;
+            itensOrcamento = itensOrcamento.filter(item => {
+                const origem = item.origem || '';
+                const desc = String(item.descricao || '').toUpperCase();
+                const isEquipamentoAutomatico = ['kit_projeto', 'placa_projeto', 'inversor_projeto'].includes(origem) ||
+                                               desc.startsWith('KIT FOTOVOLTAICO') ||
+                                               desc.startsWith('PLACA ') ||
+                                               desc.startsWith('INVERSOR ');
+                return !isEquipamentoAutomatico;
+            });
+            console.log(`  🗑️ Removidos ${itensAntes - itensOrcamento.length} equipamentos antigos`);
+            
+            // PASSO 2: Carregar itens salvos do servidor
+            console.log('📡 Carregando itens do servidor...');
+            await carregarItensOrcamento();
+            
+            // PASSO 3: Remover equipamentos automáticos que vieram do servidor
+            console.log('🧹 Removendo equipamentos automáticos do servidor...');
+            const itensAntesRemocao = itensOrcamento.length;
+            itensOrcamento = itensOrcamento.filter(item => {
+                const desc = String(item.descricao || '').toUpperCase();
+                const isEquipamento = desc.startsWith('KIT FOTOVOLTAICO') ||
+                                     desc.startsWith('PLACA ') ||
+                                     desc.startsWith('INVERSOR ');
+                return !isEquipamento;
+            });
+            console.log(`  🗑️ Removidos ${itensAntesRemocao - itensOrcamento.length} equipamentos do servidor`);
+            
+            // PASSO 4: Adicionar kit/placa/inversor do projeto
+            console.log('➕ Adicionando equipamentos do projeto...');
+            await adicionarKitAoOrcamento();
+            
+            // PASSO 5: Se não houver itens além dos equipamentos, carregar custos fixos
+            const itensSemEquipamento = itensOrcamento.filter(item => {
+                const origem = item.origem || '';
+                return !['kit_projeto', 'placa_projeto', 'inversor_projeto'].includes(origem);
+            });
+            
+            if (itensSemEquipamento.length === 0) {
+                console.log('📦 Nenhum custo fixo encontrado, carregando automático...');
+                await carregarCustosFixosAutomatico();
+            } else {
+                console.log('✅ Custos fixos já carregados do servidor');
             }
             
-            // Depois carregar resto
-            await carregarItensOrcamento();
+            // PASSO 6: Renderizar tabela
+            console.log('🎨 Renderizando tabela...');
+            renderizarItensOrcamento();
+            
+            // PASSO 7: Recalcular orçamento
+            recalcularOrcamento();
+            console.log('✅ Modal de orçamento pronto!');
         });
     }
     
@@ -1800,28 +1837,30 @@ let itensOrcamento = [];
 
 // Dados do projeto para uso no JavaScript
 const dadosProjeto = {
-    kit: {% if projeto.kit %}{ 
-        id: {{ projeto.kit.id }}, 
-        nome: '{{ projeto.kit.nome|safe }}', 
-        valor: {{ projeto.kit.valor_venda or 0 }}
+    kit: {% if projeto.kit %}{
+        id: {{ projeto.kit.id }},
+        nome: "{{ projeto.kit.nome_exibicao|e }}",
+        valor: {{ projeto.kit.valor_orcamento }}
     }{% else %}null{% endif %},
-    placa: {% if projeto.placa %}{ 
-        id: {{ projeto.placa.id }}, 
-        modelo: '{{ projeto.placa.modelo|safe }}', 
+    
+    placa: {% if projeto.placa %}{
+        id: {{ projeto.placa.id }},
+        modelo: "{{ projeto.placa.modelo|e }}",
         potencia: {{ projeto.placa.potencia or 0 }},
-        valor: {{ projeto.placa.valor_venda or 0 }}
+        valor: {{ projeto.placa.preco_venda or projeto.placa.preco_custo or 0 }}
     }{% else %}null{% endif %},
     qtd_placas: {{ projeto.qtd_placas or 0 }},
-    inversor: {% if projeto.inversor %}{ 
-        id: {{ projeto.inversor.id }}, 
-        modelo: '{{ projeto.inversor.modelo|safe }}', 
+    
+    inversor: {% if projeto.inversor %}{
+        id: {{ projeto.inversor.id }},
+        modelo: "{{ projeto.inversor.modelo|e }}",
         potencia: {{ projeto.inversor.potencia or 0 }},
-        valor: {{ projeto.inversor.valor_venda or 0 }}
+        valor: {{ projeto.inversor.preco_venda or projeto.inversor.preco_custo or 0 }}
     }{% else %}null{% endif %},
     qtd_inversores: {{ projeto.qtd_inversores or 0 }}
 };
 
-console.log('📊 Dados do projeto carregados:', dadosProjeto);
+console.log('📊 dadosProjeto carregado:', dadosProjeto);
 
 // Formatar número como moeda brasileira
 function formatarMoeda(valor) {
@@ -1962,65 +2001,95 @@ async function carregarCustosFixosAutomatico() {
     recalcularOrcamento();
 }
 
-// Adicionar kit ao orçamento
+// Função auxiliar para verificar duplicados por origem ou prefixo de descrição
+function itemJaExistePorOrigemOuDescricao(origem, prefixoDescricao) {
+    return itensOrcamento.some(item => {
+        const desc = String(item.descricao || '').toUpperCase();
+        const itemOrigem = item.origem || '';
+        return itemOrigem === origem || desc.startsWith(prefixoDescricao.toUpperCase());
+    });
+}
+
+// Adicionar kit ao orçamento (REGRA: Kit OU placas+inversores, nunca ambos)
 async function adicionarKitAoOrcamento() {
     try {
         console.log('🔧 adicionarKitAoOrcamento() chamada');
         console.log('📦 Itens no orçamento antes:', itensOrcamento.length);
         
         let proximoId = itensOrcamento.length > 0 
-            ? Math.max(...itensOrcamento.map(i => i.id || 0)) + 1 
+            ? Math.max(...itensOrcamento.map(i => parseInt(i.id) || 0)) + 1 
             : 1;
         
         let itensAdicionados = 0;
         
-        // Adicionar KIT se existir
+        // REGRA 1: Se existe KIT, adicionar SOMENTE o kit
         if (dadosProjeto.kit) {
+            // Verificar se já existe kit
+            if (itemJaExistePorOrigemOuDescricao('kit_projeto', 'KIT FOTOVOLTAICO')) {
+                console.log('⏭️ Kit já existe no orçamento, pulando');
+                return;
+            }
+            
             console.log('✅ Adicionando KIT:', dadosProjeto.kit.nome);
             itensOrcamento.push({
                 id: proximoId++,
-                descricao: `KIT ${dadosProjeto.kit.nome}`,
+                descricao: `KIT FOTOVOLTAICO - ${dadosProjeto.kit.nome}`,
                 qtd: 1,
                 und: 'KIT',
-                valorUnit: dadosProjeto.kit.valor,
+                valorUnit: parseFloat(dadosProjeto.kit.valor) || 0,
                 lucro: 0,
-                tipo: 'EMPRESA'
+                tipo: 'EMPRESA',
+                origem: 'kit_projeto'
             });
             itensAdicionados++;
-        } else {
-            console.log('❌ Projeto SEM kit');
+            console.log('📊 Total de equipamentos adicionados:', itensAdicionados);
+            console.log('📦 Itens no orçamento depois:', itensOrcamento.length);
+            return; // IMPORTANTE: não adicionar placa/inversor se tem kit
         }
+        
+        // REGRA 2: Se NÃO existe KIT, adicionar PLACAS e INVERSORES
+        console.log('⚠️ Projeto SEM kit, verificando fallback para placa/inversor');
         
         // Adicionar PLACAS se existirem
         if (dadosProjeto.placa && dadosProjeto.qtd_placas > 0) {
-            console.log('✅ Adicionando PLACAS:', dadosProjeto.placa.modelo, 'Qtd:', dadosProjeto.qtd_placas);
-            itensOrcamento.push({
-                id: proximoId++,
-                descricao: `Placa ${dadosProjeto.placa.modelo} - ${dadosProjeto.placa.potencia}W`,
-                qtd: dadosProjeto.qtd_placas,
-                und: 'UN',
-                valorUnit: dadosProjeto.placa.valor,
-                lucro: 0,
-                tipo: 'EMPRESA'
-            });
-            itensAdicionados++;
+            if (!itemJaExistePorOrigemOuDescricao('placa_projeto', 'PLACA ')) {
+                console.log('✅ Adicionando PLACAS:', dadosProjeto.placa.modelo, 'Qtd:', dadosProjeto.qtd_placas);
+                itensOrcamento.push({
+                    id: proximoId++,
+                    descricao: `Placa ${dadosProjeto.placa.modelo} - ${dadosProjeto.placa.potencia}W`,
+                    qtd: dadosProjeto.qtd_placas,
+                    und: 'UN',
+                    valorUnit: parseFloat(dadosProjeto.placa.valor) || 0,
+                    lucro: 0,
+                    tipo: 'EMPRESA',
+                    origem: 'placa_projeto'
+                });
+                itensAdicionados++;
+            } else {
+                console.log('⏭️ Placa já existe, pulando');
+            }
         } else {
             console.log('❌ Projeto SEM placas');
         }
         
         // Adicionar INVERSORES se existirem
         if (dadosProjeto.inversor && dadosProjeto.qtd_inversores > 0) {
-            console.log('✅ Adicionando INVERSORES:', dadosProjeto.inversor.modelo, 'Qtd:', dadosProjeto.qtd_inversores);
-            itensOrcamento.push({
-                id: proximoId++,
-                descricao: `Inversor ${dadosProjeto.inversor.modelo} - ${dadosProjeto.inversor.potencia}kW`,
-                qtd: dadosProjeto.qtd_inversores,
-                und: 'UN',
-                valorUnit: dadosProjeto.inversor.valor,
-                lucro: 0,
-                tipo: 'EMPRESA'
-            });
-            itensAdicionados++;
+            if (!itemJaExistePorOrigemOuDescricao('inversor_projeto', 'INVERSOR ')) {
+                console.log('✅ Adicionando INVERSORES:', dadosProjeto.inversor.modelo, 'Qtd:', dadosProjeto.qtd_inversores);
+                itensOrcamento.push({
+                    id: proximoId++,
+                    descricao: `Inversor ${dadosProjeto.inversor.modelo} - ${dadosProjeto.inversor.potencia}kW`,
+                    qtd: dadosProjeto.qtd_inversores,
+                    und: 'UN',
+                    valorUnit: parseFloat(dadosProjeto.inversor.valor) || 0,
+                    lucro: 0,
+                    tipo: 'EMPRESA',
+                    origem: 'inversor_projeto'
+                });
+                itensAdicionados++;
+            } else {
+                console.log('⏭️ Inversor já existe, pulando');
+            }
         } else {
             console.log('❌ Projeto SEM inversores');
         }
@@ -2095,7 +2164,9 @@ function atualizarItem(id, campo, valor) {
 
 // Adicionar novo item
 function adicionarItemOrcamento() {
-    const novoId = Math.max(...itensOrcamento.map(i => i.id)) + 1;
+    const novoId = itensOrcamento.length > 0
+        ? Math.max(...itensOrcamento.map(i => parseInt(i.id) || 0)) + 1
+        : 1;
     itensOrcamento.push({
         id: novoId,
         descricao: 'Novo Item',

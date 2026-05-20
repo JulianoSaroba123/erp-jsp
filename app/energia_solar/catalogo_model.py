@@ -37,6 +37,18 @@ class KitSolar(db.Model):
     data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     ativo = db.Column(db.Boolean, default=True)
     
+    @property
+    def nome_exibicao(self):
+        """Retorna nome do kit para exibição"""
+        if self.fabricante and self.descricao:
+            return f"{self.fabricante} - {self.descricao}"
+        return self.descricao or self.fabricante or f"Kit Fotovoltaico #{self.id}"
+    
+    @property
+    def valor_orcamento(self):
+        """Retorna valor do kit para orçamento (preco)"""
+        return self.preco or 0
+    
     def to_dict(self):
         return {
             'id': self.id,
