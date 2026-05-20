@@ -8,83 +8,168 @@
 **Erro atual:**
 ```
 column calculo_energia_solar.placa_id does not exist
+column calculo_energia_solar.local_instalacao does not exist
 ```
 
 O model Python está tentando acessar 94 colunas, mas o PostgreSQL no Render tem apenas 32.
 
 ---
 
-## ✅ SOLUÇÃO IMEDIATA
+## ✅ SOLUÇÃO DEFINITIVA - SCRIPT COMPLETO
 
-Rodar script atualizado que **detecta quais colunas existem** antes de tentar adicionar.
+Rodar script que **adiciona TODAS as 62 colunas faltantes** no PostgreSQL do Render.
 
 ### **COMANDO NO RENDER SHELL:**
 
 ```bash
-python adicionar_kit_id_coluna.py
+python migrar_schema_completo_render.py
 ```
+
+**⏱️ TEMPO:** 2-5 minutos  
+**🔒 SEGURANÇA:** Preserva dados, não faz DROP/RECREATE  
+**♻️ IDEMPOTENTE:** Pode rodar múltiplas vezes sem quebrar
 
 ---
 
-## 📊 O QUE O SCRIPT FAZ AGORA
+## 📊 O QUE O SCRIPT FAZ
 
-1. **Lista colunas existentes** no banco do Render (32 colunas)
-2. **Verifica colunas essenciais:**
-   - `kit_id` ✅/❌
-   - `placa_id` ✅/❌
-   - `inversor_id` ✅/❌
-3. **Adiciona APENAS as que faltam:**
-   - `kit_id INTEGER` (se não existir)
-   - Se `placa_id` e `inversor_id` não existirem, **AVISA** mas não quebra
-4. **Tenta inferir kit_id** (só se `placa_id` e `inversor_id` existirem)
-5. **Mostra dados do Projeto #6** (usando apenas colunas disponíveis)
+1. **Audita schema atual:**
+   - Lista todas as colunas existentes no PostgreSQL
+   - Identifica exatamente quais estão faltando
+   - Exemplo: "📋 32 colunas existentes | ❌ 62 colunas faltantes"
+
+2. **Adiciona colunas faltantes:**
+   - Usa `ALTER TABLE ADD COLUMN IF NOT EXISTS`
+   - Preserva dados existentes (não faz DROP)
+   - Tipos SQL corretos para PostgreSQL:
+     * TEXT para strings
+     * NUMERIC(12,2) para valores monetários
+     * INTEGER para IDs e contadores
+     * TIMESTAMP para datas
+
+3. **Adiciona Foreign Keys:**
+   - `kit_id` → `kit_solar(id)`
+   - `placa_id` → `placa_solar(id)`
+   - `inversor_id` → `inversor_solar(id)`
+
+4. **Relatório final:**
+   - ✅ X colunas adicionadas
+   - ❌ Y erros (se houver)
+   - 📋 Total após migração: 94 colunas
 
 ---
 
 ## 📋 OUTPUT ESPERADO
 
-### **Caso 1: kit_id não existe**
+### **✅ SUCESSO COMPLETO:**
 ```
-✅ Coluna kit_id adicionada com sucesso!
-✅ Foreign Key adicionada com sucesso!
+🔍 AUDITORIA DO SCHEMA
+============================================================
+📋 Colunas existentes no banco: 32
+❌ Colunas faltantes: 62
+
+🔧 INICIANDO MIGRAÇÃO
+============================================================
+  ✅ local_instalacao              (TEXT)
+  ✅ consumo_mensal                (NUMERIC(12,2))
+  ✅ tarifa_energia                (NUMERIC(12,4))
+  ✅ kit_id                        (INTEGER)
+  ✅ placa_id                      (INTEGER)
+  ✅ inversor_id                   (INTEGER)
+  ... (57 linhas omitidas)
+
+📊 RESULTADO DA MIGRAÇÃO
+============================================================
+✅ Colunas adicionadas: 62
+❌ Erros: 0
+📋 Total de colunas após migração: 94
+
+🎉 MIGRAÇÃO COMPLETA!
+   Banco agora possui todas as 94 colunas.
+
+🔗 ADICIONANDO FOREIGN KEYS
+============================================================
+  ✅ FK fk_calculo_energia_kit adicionada
+  ✅ FK fk_calculo_energia_placa adicionada
+  ✅ FK fk_calculo_energia_inversor adicionada
+
+✅ MIGRAÇÃO FINALIZADA COM SUCESSO!
 ```
 
-### **Caso 2: placa_id não existe**
+### **⚠️ MIGRAÇÃO PARCIAL (raro):**
 ```
-⚠️ Coluna placa_id não existe! Execute adicionar_coluna_kit_id() primeiro.
-⚠️ Colunas necessárias não existem no banco:
-  placa_id: ❌
-  inversor_id: ❌
-⚠️ Não é possível inferir kit automaticamente.
-```
+📊 RESULTADO DA MIGRAÇÃO
+============================================================
+✅ Colunas adicionadas: 60
+❌ Erros: 2
+📋 Total de colunas após migração: 92
 
-### **Caso 3: Projeto #6 sem erro**
+⚠️ MIGRAÇÃO PARCIAL
+   Esperado: 94 colunas
+   Atual: 92 colunas
+   Faltam: 2 colunas
 ```
-🔍 Verificando Projeto #6...
-
-📊 Dados do Projeto 6:
-  id: 6
-  nome_cliente: Cliente Exemplo
-  kit_id: 5
-  
-✅ KIT ENCONTRADO:
-  ID: 5
-  Fabricante: DEYE
-  Descrição: Kit 5.6kWp
-  Preço: R$ 2.800,00
-```
+→ Se isso acontecer, **me envie o log completo**
 
 ---
 
-## 🛠️ SE PLACA_ID NÃO EXISTIR
+## 🚀 PLANO DE AÇÃO COMPLETO
 
-O Render pode ter uma estrutura diferente. Precisaremos:
+### **PASSO 1: Rodar migração no Render (5 min)**
 
-1. **Identificar quais são as 32 colunas reais** do banco
-2. **Ver se há campos alternativos** para placa/inversor
-3. **Adaptar a estratégia** de acordo
+```bash
+python migrar_schema_completo_render.py
+```
 
-### **Comando para listar as 32 colunas:**
+📸 **Aguarde até ver:** `✅ MIGRAÇÃO FINALIZADA COM SUCESSO!`
+
+### **PASSO 2: Testar no navegador (2 min)**
+
+1. Abrir: https://erp-jsp-th5o.onrender.com/energia-solar/projetos/6/dashboard
+2. Pressionar **Ctrl+F5** (limpar cache)
+3. Abrir Console (F12)
+4. Clicar "💰 Editar Orçamento"
+5. Verificar Console:
+   ```javascript
+   dadosProjeto.kit: {id: 5, nome: "Kit 5.6kWp", valor: 2800}
+   ```
+6. Verificar tabela do modal:
+   - ✅ "KIT FOTOVOLTAICO - Kit 5.6kWp" deve aparecer
+   - ✅ Valor: R$ 2.800,00
+
+### **PASSO 3: Verificar orçamento completo (1 min)**
+
+- Kit aparece? ✅
+- Placas aparecem? ✅
+- Inversores aparecem? ✅
+- Custos fixos aparecem? ✅
+- Usuário pode editar valores? ✅
+
+---
+
+## 🔧 SE ALGO DER ERRADO
+
+### **Erro: "table calculo_energia_solar does not exist"**
+```bash
+# Criar tabela primeiro
+python scripts/criar_tabelas.py
+# Depois rodar migração
+python migrar_schema_completo_render.py
+```
+
+### **Erro: "permission denied"**
+→ Usuário do Render não tem permissão para ALTER TABLE  
+→ **Contate suporte do Render** ou verifique usuário do banco
+
+### **Erro: "syntax error near..."**
+→ PostgreSQL pode ter versão diferente  
+→ **Me envie o erro completo** para adaptar SQL
+
+---
+
+## 📝 VALIDAÇÃO FINAL
+
+Após rodar o script, execute este comando para **confirmar 94 colunas:**
 
 ```bash
 python -c "
@@ -96,65 +181,49 @@ app = create_app()
 with app.app_context():
     inspector = inspect(db.engine)
     cols = [col['name'] for col in inspector.get_columns('calculo_energia_solar')]
-    print(f'Total: {len(cols)} colunas')
-    for i, col in enumerate(cols, 1):
-        print(f'{i:2}. {col}')
+    print(f'✅ Total de colunas: {len(cols)}')
+    
+    essenciais = ['kit_id', 'placa_id', 'inversor_id', 'local_instalacao', 'consumo_mensal']
+    for col in essenciais:
+        existe = '✅' if col in cols else '❌'
+        print(f'{existe} {col}')
 "
 ```
 
----
-
-## 🎯 JAVASCRIPT CORRIGIDO
-
-O JavaScript agora usa **campos que existem COM CERTEZA** no `kit_solar`:
-
-```javascript
-kit: {
-    id: {{ projeto.kit.id }},
-    nome: "{{ projeto.kit.descricao|e }}",  // ✅ campo real
-    valor: {{ projeto.kit.preco or 0 }}      // ✅ campo real
-}
+**OUTPUT ESPERADO:**
+```
+✅ Total de colunas: 94
+✅ kit_id
+✅ placa_id
+✅ inversor_id
+✅ local_instalacao
+✅ consumo_mensal
 ```
 
-**Antes (ERRADO):**
-- `projeto.kit.nome_exibicao` ❌ (property, pode não funcionar)
-- `projeto.kit.valor_orcamento` ❌ (property, pode não funcionar)
+---
 
-**Agora (CORRETO):**
-- `projeto.kit.descricao` ✅ (coluna real da tabela)
-- `projeto.kit.preco` ✅ (coluna real da tabela)
+## ⏱️ CRONOGRAMA
+
+| Etapa | Tempo | Ação |
+|-------|-------|------|
+| 1️⃣ Migração | 5 min | `python migrar_schema_completo_render.py` |
+| 2️⃣ Validação | 1 min | Verificar output "94 colunas" |
+| 3️⃣ Teste dashboard | 2 min | Abrir projeto #6, testar modal |
+| 4️⃣ Verificação final | 1 min | Kit aparece no orçamento? |
+| **TOTAL** | **9 min** | ✅ Problema resolvido |
 
 ---
 
-## 🚀 PLANO DE AÇÃO
+## 🎯 RESULTADO FINAL
 
-### **AGORA (Render Shell):**
+Após rodar a migração com sucesso:
 
-```bash
-python adicionar_kit_id_coluna.py
-```
-
-📸 **Me envie o output completo!**
-
-### **Se kit_id for adicionado:**
-✅ Testar no navegador:
-1. https://erp-jsp-th5o.onrender.com/energia-solar/projetos/6/dashboard
-2. Ctrl+F5
-3. Abrir Console (F12)
-4. Clicar "Editar Orçamento"
-5. Verificar se kit aparece
-
-### **Se placa_id não existir:**
-⚠️ Rodar comando para listar as 32 colunas  
-⚠️ Me enviar output para adaptar estratégia
-
----
-
-## ⏱️ TEMPO
-
-- **5 minutos** se `kit_id` for adicionado com sucesso
-- **10-15 minutos** se precisar diagnosticar as 32 colunas reais
-- **20-30 minutos** se precisar criar migration completa
+✅ **Banco do Render:** 94 colunas (igual ao local)  
+✅ **Model Python:** Funciona sem UndefinedColumn errors  
+✅ **Projeto #6:** Dashboard carrega sem erros  
+✅ **Modal orçamento:** Kit aparece automaticamente  
+✅ **JavaScript:** Usa campos reais (descricao, preco)  
+✅ **SISTEMA FUNCIONANDO:** 100%
 
 ---
 
@@ -163,7 +232,7 @@ python adicionar_kit_id_coluna.py
 **RODE AGORA NO RENDER:**
 
 ```bash
-python adicionar_kit_id_coluna.py
+python migrar_schema_completo_render.py
 ```
 
-E me envie **screenshot ou copiar/colar** do output!
+E me envie **screenshot ou copiar/colar** do output completo!
