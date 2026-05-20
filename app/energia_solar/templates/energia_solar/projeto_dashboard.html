@@ -1839,8 +1839,8 @@ let itensOrcamento = [];
 const dadosProjeto = {
     kit: {% if projeto.kit %}{
         id: {{ projeto.kit.id }},
-        nome: "{{ projeto.kit.nome_exibicao|e }}",
-        valor: {{ projeto.kit.valor_orcamento }}
+        nome: "{{ projeto.kit.descricao|e }}",
+        valor: {{ projeto.kit.preco or 0 }}
     }{% else %}null{% endif %},
     
     placa: {% if projeto.placa %}{
@@ -1849,7 +1849,7 @@ const dadosProjeto = {
         potencia: {{ projeto.placa.potencia or 0 }},
         valor: {{ projeto.placa.preco_venda or projeto.placa.preco_custo or 0 }}
     }{% else %}null{% endif %},
-    qtd_placas: {{ projeto.qtd_placas or 0 }},
+    qtd_placas: {{ projeto.qtd_placas or projeto.numero_paineis or 0 }},
     
     inversor: {% if projeto.inversor %}{
         id: {{ projeto.inversor.id }},
@@ -1857,7 +1857,7 @@ const dadosProjeto = {
         potencia: {{ projeto.inversor.potencia or 0 }},
         valor: {{ projeto.inversor.preco_venda or projeto.inversor.preco_custo or 0 }}
     }{% else %}null{% endif %},
-    qtd_inversores: {{ projeto.qtd_inversores or 0 }}
+    qtd_inversores: {{ projeto.qtd_inversores or projeto.numero_inversores or 0 }}
 };
 
 console.log('📊 dadosProjeto carregado:', dadosProjeto);
