@@ -1655,7 +1655,7 @@ function atualizarConcessionarias(event) {
                     selectConc.appendChild(option);
                 });
                 
-                // Dispara evento change para atualizar campos
+                // Disparar evento change para atualizar campos
                 if (valorAtual) {
                     selectConc.dispatchEvent(new Event('change'));
                 }
@@ -2351,6 +2351,7 @@ function recalcularOrcamento() {
 // Abrir modal de edição
 function abrirModalEdicao(itemId) {
     const item = itensOrcamento.find(i => i.id === itemId);
+    
     if (!item) return;
     
     document.getElementById('editItemId').value = item.id;
@@ -3546,7 +3547,7 @@ function atualizarLayoutVisual() {
         console.log(`🔄 Orientação PAISAGEM: ${larguraPlaca}m × ${comprimentoPlaca}m`);
     }
     
-    // Calcular área total (adicionar 10cm de espaçamento entre placas)
+    // Calcular área total (adicionar 10cm de espaçamento)
     const espacamento = 0.10;
     const largura = (colunas * larguraPlaca) + ((colunas - 1) * espacamento);
     const comprimento = (linhas * comprimentoPlaca) + ((linhas - 1) * espacamento);
@@ -4092,7 +4093,7 @@ window.addEventListener('DOMContentLoaded', function() {
             } else if (this.value === 'bifasica') {
                 tipoEntrada.value = 'bifasico';
             } else if (this.value === 'trifasica') {
-                tipoEntrada.value = 'trifasico';
+                tipoEntrada.value = 'trifasica';
             }
             // Disparar evento change no tipo_entrada para atualizar qtd_fases
             tipoEntrada.dispatchEvent(new Event('change'));
