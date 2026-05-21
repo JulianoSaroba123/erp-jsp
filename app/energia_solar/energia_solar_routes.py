@@ -2366,6 +2366,9 @@ def projeto_proposta_pdf(projeto_id):
             import weasyprint
             from flask import current_app
             
+            # Definir project_root para base_url
+            project_root = os.path.dirname(current_app.root_path)
+            
             # Usar logo base64 das configurações se disponível
             logo_url = None
             if config and config.logo_base64:
@@ -2373,7 +2376,6 @@ def projeto_proposta_pdf(projeto_id):
                 logger.info("✅ Usando logo_base64 das configurações (Solar)")
             else:
                 # Fallback para logo padrão se não houver base64
-                project_root = os.path.dirname(current_app.root_path)
                 logo_path = os.path.join(project_root, "static", "img", "JSP.jpg")
                 logo_url = f"file:///{logo_path.replace(os.sep, '/')}"
                 logger.warning("⚠️ Logo base64 não encontrada, usando logo padrão (Solar)")
