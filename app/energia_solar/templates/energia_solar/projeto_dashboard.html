@@ -1486,66 +1486,38 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listener para modal de orçamento
     const modalOrcamento = document.getElementById('modalOrcamento');
     if (modalOrcamento) {
-        modalOrcamento.addEventListener('show.bs.modal', async function() {
+        modalOrcamento.addEventListener("show.bs.modal", async function() {
             console.log('🚀 Modal de orçamento aberto');
             
-            // PASSO 1: Limpar equipamentos automáticos antigos da memória
-            console.log('🧹 Limpando equipamentos automáticos antigos...');
-            const itensAntes = itensOrcamento.length;
-            itensOrcamento = itensOrcamento.filter(item => {
-                const origem = item.origem || '';
-                const desc = String(item.descricao || '').toUpperCase();
-                const isEquipamentoAutomatico = ['kit_projeto', 'placa_projeto', 'inversor_projeto'].includes(origem) ||
-                                               desc.startsWith('KIT FOTOVOLTAICO') ||
-                                               desc.startsWith('PLACA ') ||
-                                               desc.startsWith('INVERSOR ');
-                return !isEquipamentoAutomatico;
-            });
-            console.log(`  🗑️ Removidos ${itensAntes - itensOrcamento.length} equipamentos antigos`);
-            
-            // PASSO 2: Carregar itens salvos do servidor
-            console.log('📡 Carregando itens do servidor...');
+            // 1. Carrega itens salvos do backend
             await carregarItensOrcamento();
             
-            // PASSO 3: Remover equipamentos automáticos que vieram do servidor
-            console.log('🧹 Removendo equipamentos automáticos do servidor...');
-            const itensAntesRemocao = itensOrcamento.length;
+            // 2. Remove equipamentos automáticos antigos para evitar duplicidade
             itensOrcamento = itensOrcamento.filter(item => {
-                const desc = String(item.descricao || '').toUpperCase();
-                const isEquipamento = desc.startsWith('KIT FOTOVOLTAICO') ||
-                                     desc.startsWith('PLACA ') ||
-                                     desc.startsWith('INVERSOR ');
-                return !isEquipamento;
-            });
-            console.log(`  🗑️ Removidos ${itensAntesRemocao - itensOrcamento.length} equipamentos do servidor`);
-            
-            // PASSO 4: Kit removido - usuário adiciona manualmente
-            console.log('ℹ️ Kit será adicionado manualmente pelo usuário');
-            
-            // PASSO 5: Garantir que custos fixos estejam carregados
-            console.log('🔍 Verificando custos fixos...');
-            const itensSemEquipamento = itensOrcamento.filter(item => {
-                const origem = item.origem || '';
-                return !['kit_projeto', 'placa_projeto', 'inversor_projeto'].includes(origem);
+                const desc = String(item.descricao || "").toUpperCase();
+                
+                if (["kit_projeto", "placa_projeto", "inversor_projeto"].includes(item.origem)) {
+                    return false;
+                }
+                
+                if (desc.startsWith("KIT FOTOVOLTAICO")) return false;
+                if (desc.startsWith("PLACA ")) return false;
+                if (desc.startsWith("INVERSOR ")) return false;
+                
+                return true;
             });
             
-            console.log(`📊 Itens sem equipamento: ${itensSemEquipamento.length}`);
+            // 3. Adiciona kit, ou placa/inversor se não houver kit
+            await adicionarKitAoOrcamento();
             
-            // Se tiver menos de 3 itens (sem equipamentos), carregar custos fixos
-            if (itensSemEquipamento.length < 3) {
-                console.log('📦 Poucos custos fixos, carregando todos...');
-                await carregarCustosFixosAutomatico();
-            } else {
-                console.log('✅ Custos fixos já carregados');
-            }
+            // 4. Garante custos fixos
+            await carregarCustosFixosAutomatico();
             
-            // PASSO 6: Renderizar tabela
-            console.log('🎨 Renderizando tabela...');
+            // 5. Renderiza e recalcula
             renderizarItensOrcamento();
-            
-            // PASSO 7: Recalcular orçamento
             recalcularOrcamento();
-            console.log('✅ Modal de orçamento pronto!');
+            
+            console.log('📦 Itens finais do orçamento:', itensOrcamento);
         });
     }
     
@@ -1926,28 +1898,30 @@ let itensOrcamento = [];
 const dadosProjeto = {
     kit: {% if projeto.kit %}{
         id: {{ projeto.kit.id }},
-        nome: "{{ projeto.kit.descricao|e }}",
-        valor: {{ projeto.kit.preco or 0 }}
+        descricao: "{{ projeto.kit.descricao|e }}",
+        preco: {{ projeto.kit.preco or 0 }},
+        potencia_kwp: {{ projeto.kit.potencia_kwp or 0 }},
+        qtd_placas: {{ projeto.kit.qtd_placas or 0 }}
     }{% else %}null{% endif %},
     
     placa: {% if projeto.placa %}{
         id: {{ projeto.placa.id }},
         modelo: "{{ projeto.placa.modelo|e }}",
         potencia: {{ projeto.placa.potencia or 0 }},
-        valor: {{ projeto.placa.preco_venda or projeto.placa.preco_custo or 0 }}
+        valor: {{ projeto.placa.preco_venda or projeto.placa.valor_venda or 0 }}
     }{% else %}null{% endif %},
-    qtd_placas: {{ projeto.qtd_placas or projeto.numero_paineis or 0 }},
+    qtd_placas: {{ projeto.qtd_placas or projeto.qtd_placas_instalacao or projeto.numero_paineis or 0 }},
     
     inversor: {% if projeto.inversor %}{
         id: {{ projeto.inversor.id }},
         modelo: "{{ projeto.inversor.modelo|e }}",
         potencia: {{ projeto.inversor.potencia or 0 }},
-        valor: {{ projeto.inversor.preco_venda or projeto.inversor.preco_custo or 0 }}
+        valor: {{ projeto.inversor.preco_venda or projeto.inversor.valor_venda or 0 }}
     }{% else %}null{% endif %},
-    qtd_inversores: {{ projeto.qtd_inversores or projeto.numero_inversores or 0 }}
+    qtd_inversores: {{ projeto.qtd_inversores or projeto.qtd_inversores_instalacao or projeto.numero_inversores or 0 }}
 };
 
-console.log('📊 dadosProjeto carregado:', dadosProjeto);
+console.log('📊 dadosProjeto orçamento:', dadosProjeto);
 
 // Formatar número como moeda brasileira
 function formatarMoeda(valor) {
@@ -1972,120 +1946,92 @@ function aplicarFormatacao(input, itemId) {
 
 // Carregar itens do orçamento do servidor
 async function carregarItensOrcamento() {
-    console.log('🔄 Iniciando carregamento de itens do servidor...');
+    console.log('🔄 Carregando itens salvos do orçamento...');
     
     try {
-        const url = `/energia-solar/projetos/{{ projeto.id }}/orcamento`;
-        console.log('🌐 Fazendo fetch:', url);
+        const response = await fetch(`/energia-solar/projetos/{{ projeto.id }}/orcamento`);
         
-        const response = await fetch(url);
-        console.log('📡 Response status:', response.status);
-        
-        if (response.ok) {
-            const data = await response.json();
-            console.log('📦 Data recebido:', data);
-            
-            if (data.itens && data.itens.length > 0) {
-                console.log('✅ Itens carregados do servidor:', data.itens.length);
-                console.log('📋 Descrições:', data.itens.map(i => i.descricao));
-                
-                // Adicionar apenas itens que NÃO são kit/placa/inversor (já foram adicionados)
-                data.itens.forEach(item => {
-                    const desc = item.descricao.toUpperCase();
-                    const isEquipamento = desc.includes('KIT') || desc.includes('PLACA') || desc.includes('INVERSOR');
-                    
-                    if (!isEquipamento) {
-                        // Verificar se já existe
-                        const jaExiste = itensOrcamento.some(i => i.descricao === item.descricao);
-                        if (!jaExiste) {
-                            itensOrcamento.push(item);
-                            console.log('  ➕ Adicionado:', item.descricao);
-                        }
-                    } else {
-                        console.log('  ⏭️ Pulado (equipamento):', item.descricao);
-                    }
-                });
-            } else {
-                console.log('📦 Nenhum item salvo no servidor');
-            }
-        } else {
-            console.warn('⚠️ Response não OK, status:', response.status);
+        if (!response.ok) {
+            console.warn('⚠️ Não foi possível carregar orçamento salvo.');
+            return;
         }
+        
+        const data = await response.json();
+        console.log('📦 Itens salvos recebidos:', data);
+        
+        itensOrcamento = [];
+        
+        if (data.itens && Array.isArray(data.itens)) {
+            itensOrcamento = data.itens.map((item, index) => ({
+                id: item.id || index + 1,
+                descricao: item.descricao || "Item sem descrição",
+                qtd: parseFloat(item.qtd) || 1,
+                und: item.und || item.unidade || "UN",
+                valorUnit: parseFloat(item.valorUnit || item.valor_unitario || item.valor || 0),
+                lucro: parseFloat(item.lucro) || 0,
+                tipo: item.tipo || item.faturamento || "EMPRESA",
+                origem: item.origem || null
+            }));
+        }
+        
+        console.log('📦 Itens carregados no array:', itensOrcamento);
+        
     } catch (error) {
-        console.error('❌ Erro ao carregar itens:', error);
+        console.error('❌ Erro ao carregar itens do orçamento:', error);
+        itensOrcamento = [];
     }
-    
-    // Se ainda estiver vazio, carregar custos fixos
-    if (itensOrcamento.length === 0) {
-        console.log('📦 Or çamento vazio, carregando custos fixos...');
-        await carregarCustosFixosAutomatico();
-    }
-    
-    console.log('🎨 Chamando renderização...');
-    renderizarItensOrcamento();
-    recalcularOrcamento();
-    console.log('✅ Carregamento concluído! Total de itens:', itensOrcamento.length);
 }
 
-// Carregar custos fixos automaticamente (silenciosamente, sem alertas)
+// Carregar custos fixos automaticamente
 async function carregarCustosFixosAutomatico() {
     console.log('🔧 carregarCustosFixosAutomatico() iniciada');
     
     try {
-        console.log('📦 Buscando custos fixos...');
-        const response = await fetch('/energia-solar/custos-fixos/api/listar');
+        const response = await fetch("/energia-solar/custos-fixos/api/listar");
         
         if (!response.ok) {
-            console.warn('⚠️ Custos fixos: response não OK');
+            console.warn('⚠️ Erro ao buscar custos fixos.');
             return;
         }
         
         const custosFixos = await response.json();
-        console.log('📦 Custos fixos recebidos:', custosFixos.length);
+        console.log('📦 Custos fixos recebidos:', custosFixos);
         
-        if (!custosFixos || custosFixos.length === 0) {
-            console.log('⚠️ Nenhum custo fixo disponível');
+        if (!custosFixos || !Array.isArray(custosFixos) || custosFixos.length === 0) {
+            console.warn('⚠️ Nenhum custo fixo encontrado.');
             return;
         }
         
-        // Encontrar o próximo ID disponível
-        const proximoId = itensOrcamento.length > 0 
-            ? Math.max(...itensOrcamento.map(i => i.id || 0)) + 1 
+        let proximoId = itensOrcamento.length > 0
+            ? Math.max(...itensOrcamento.map(i => parseInt(i.id) || 0)) + 1
             : 1;
         
-        console.log('🆔 Próximo ID:', proximoId);
-        
-        // Adicionar cada custo fixo ao orçamento
-        custosFixos.forEach((custo, index) => {
-            // Verificar se já existe
-            const jaExiste = itensOrcamento.some(i => i.descricao === custo.descricao);
+        custosFixos.forEach(custo => {
+            const descricao = custo.descricao || "Custo fixo";
+            
+            const jaExiste = itensOrcamento.some(item =>
+                String(item.descricao || "").trim().toLowerCase() === descricao.trim().toLowerCase()
+            );
             
             if (!jaExiste) {
                 itensOrcamento.push({
-                    id: proximoId + index,
-                    descricao: custo.descricao,
-                    qtd: custo.qtd || 1,
-                    und: custo.unidade || 'UND',
-                    valorUnit: custo.valorUnit || 0,
-                    lucro: custo.lucro || 0,
-                    tipo: custo.faturamento || 'EMPRESA'
+                    id: proximoId++,
+                    descricao: descricao,
+                    qtd: parseFloat(custo.qtd) || 1,
+                    und: custo.unidade || custo.und || "UN",
+                    valorUnit: parseFloat(custo.valorUnit || custo.valor_unitario || custo.valor || 0),
+                    lucro: parseFloat(custo.lucro) || 0,
+                    tipo: custo.faturamento || custo.tipo || "EMPRESA",
+                    origem: "custo_fixo"
                 });
-                console.log(`  ✅ Custo ${index + 1}: ${custo.descricao}`);
-            } else {
-                console.log(`  ⏭️ Custo já existe: ${custo.descricao}`);
             }
         });
         
-        console.log('✅ Total de itens após custos fixos:', itensOrcamento.length);
+        console.log('✅ Itens após carregar custos fixos:', itensOrcamento);
         
     } catch (error) {
         console.error('❌ Erro ao carregar custos fixos:', error);
     }
-    
-    // Renderizar os itens após carregar custos fixos
-    console.log('🎨 Renderizando após carga automática...');
-    renderizarItensOrcamento();
-    recalcularOrcamento();
 }
 
 // Função auxiliar para verificar duplicados por origem ou prefixo de descrição
@@ -2101,88 +2047,85 @@ function itemJaExistePorOrigemOuDescricao(origem, prefixoDescricao) {
 async function adicionarKitAoOrcamento() {
     try {
         console.log('🔧 adicionarKitAoOrcamento() chamada');
-        console.log('📦 Itens no orçamento antes:', itensOrcamento.length);
+        console.log('� dadosProjeto:', dadosProjeto);
         
-        let proximoId = itensOrcamento.length > 0 
-            ? Math.max(...itensOrcamento.map(i => parseInt(i.id) || 0)) + 1 
+        let proximoId = itensOrcamento.length > 0
+            ? Math.max(...itensOrcamento.map(i => parseInt(i.id) || 0)) + 1
             : 1;
         
-        let itensAdicionados = 0;
-        
-        // REGRA 1: Se existe KIT, adicionar SOMENTE o kit
-        if (dadosProjeto.kit) {
-            // Verificar se já existe kit
-            if (itemJaExistePorOrigemOuDescricao('kit_projeto', 'KIT FOTOVOLTAICO')) {
-                console.log('⏭️ Kit já existe no orçamento, pulando');
-                return;
+        // Se houver kit, ele é o equipamento principal
+        if (dadosProjeto.kit && dadosProjeto.kit.id) {
+            const jaExisteKit = itensOrcamento.some(item => {
+                const desc = String(item.descricao || "").toUpperCase();
+                return item.origem === "kit_projeto" || desc.startsWith("KIT FOTOVOLTAICO");
+            });
+            
+            if (!jaExisteKit) {
+                const precoKit = parseFloat(dadosProjeto.kit.preco) || 0;
+                const descricaoKit = dadosProjeto.kit.descricao || "Kit Fotovoltaico";
+                
+                console.log('✅ Kit detectado:', descricaoKit);
+                console.log('💰 Preço do kit:', precoKit);
+                
+                itensOrcamento.unshift({
+                    id: proximoId++,
+                    descricao: `KIT FOTOVOLTAICO - ${descricaoKit}`,
+                    qtd: 1,
+                    und: "KIT",
+                    valorUnit: precoKit,
+                    lucro: 0,
+                    tipo: "EMPRESA",
+                    origem: "kit_projeto"
+                });
+            } else {
+                console.log('⏭️ Kit já existe no orçamento. Não duplicar.');
             }
             
-            console.log('✅ Adicionando KIT:', dadosProjeto.kit.nome);
-            itensOrcamento.push({
-                id: proximoId++,
-                descricao: `KIT FOTOVOLTAICO - ${dadosProjeto.kit.nome}`,
-                qtd: 1,
-                und: 'KIT',
-                valorUnit: parseFloat(dadosProjeto.kit.valor) || 0,
-                lucro: 0,
-                tipo: 'EMPRESA',
-                origem: 'kit_projeto'
-            });
-            itensAdicionados++;
-            console.log('📊 Total de equipamentos adicionados:', itensAdicionados);
-            console.log('📦 Itens no orçamento depois:', itensOrcamento.length);
-            return; // IMPORTANTE: não adicionar placa/inversor se tem kit
+            return;
         }
         
-        // REGRA 2: Se NÃO existe KIT, adicionar PLACAS e INVERSORES
-        console.log('⚠️ Projeto SEM kit, verificando fallback para placa/inversor');
+        // Fallback: sem kit, adiciona placa e inversor
+        console.warn('⚠️ Projeto sem kit. Usando fallback placa/inversor.');
         
-        // Adicionar PLACAS se existirem
         if (dadosProjeto.placa && dadosProjeto.qtd_placas > 0) {
-            if (!itemJaExistePorOrigemOuDescricao('placa_projeto', 'PLACA ')) {
-                console.log('✅ Adicionando PLACAS:', dadosProjeto.placa.modelo, 'Qtd:', dadosProjeto.qtd_placas);
-                itensOrcamento.push({
+            const jaExistePlaca = itensOrcamento.some(item => {
+                const desc = String(item.descricao || "").toUpperCase();
+                return item.origem === "placa_projeto" || desc.startsWith("PLACA ");
+            });
+            
+            if (!jaExistePlaca) {
+                itensOrcamento.unshift({
                     id: proximoId++,
                     descricao: `Placa ${dadosProjeto.placa.modelo} - ${dadosProjeto.placa.potencia}W`,
-                    qtd: dadosProjeto.qtd_placas,
-                    und: 'UN',
+                    qtd: parseFloat(dadosProjeto.qtd_placas) || 0,
+                    und: "UN",
                     valorUnit: parseFloat(dadosProjeto.placa.valor) || 0,
                     lucro: 0,
-                    tipo: 'EMPRESA',
-                    origem: 'placa_projeto'
+                    tipo: "EMPRESA",
+                    origem: "placa_projeto"
                 });
-                itensAdicionados++;
-            } else {
-                console.log('⏭️ Placa já existe, pulando');
             }
-        } else {
-            console.log('❌ Projeto SEM placas');
         }
         
-        // Adicionar INVERSORES se existirem
         if (dadosProjeto.inversor && dadosProjeto.qtd_inversores > 0) {
-            if (!itemJaExistePorOrigemOuDescricao('inversor_projeto', 'INVERSOR ')) {
-                console.log('✅ Adicionando INVERSORES:', dadosProjeto.inversor.modelo, 'Qtd:', dadosProjeto.qtd_inversores);
-                itensOrcamento.push({
+            const jaExisteInversor = itensOrcamento.some(item => {
+                const desc = String(item.descricao || "").toUpperCase();
+                return item.origem === "inversor_projeto" || desc.startsWith("INVERSOR ");
+            });
+            
+            if (!jaExisteInversor) {
+                itensOrcamento.unshift({
                     id: proximoId++,
                     descricao: `Inversor ${dadosProjeto.inversor.modelo} - ${dadosProjeto.inversor.potencia}kW`,
-                    qtd: dadosProjeto.qtd_inversores,
-                    und: 'UN',
+                    qtd: parseFloat(dadosProjeto.qtd_inversores) || 0,
+                    und: "UN",
                     valorUnit: parseFloat(dadosProjeto.inversor.valor) || 0,
                     lucro: 0,
-                    tipo: 'EMPRESA',
-                    origem: 'inversor_projeto'
+                    tipo: "EMPRESA",
+                    origem: "inversor_projeto"
                 });
-                itensAdicionados++;
-            } else {
-                console.log('⏭️ Inversor já existe, pulando');
             }
-        } else {
-            console.log('❌ Projeto SEM inversores');
         }
-        
-        console.log('📊 Total de equipamentos adicionados:', itensAdicionados);
-        console.log('📦 Itens no orçamento depois:', itensOrcamento.length);
         
     } catch (error) {
         console.error('❌ Erro ao adicionar kit ao orçamento:', error);
