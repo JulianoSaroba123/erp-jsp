@@ -2383,8 +2383,11 @@ def projeto_proposta_pdf(projeto_id):
             import weasyprint
             from flask import current_app
             
+            logger.info(f"📄 Gerando proposta PDF para projeto {projeto_id}")
+            
             # Definir project_root para base_url
             project_root = os.path.dirname(current_app.root_path)
+            logger.info(f"📁 Project root: {project_root}")
             
             # Usar logo base64 das configurações se disponível
             logo_url = None
@@ -2397,6 +2400,7 @@ def projeto_proposta_pdf(projeto_id):
                 logo_url = f"file:///{logo_path.replace(os.sep, '/')}"
                 logger.warning("⚠️ Logo base64 não encontrada, usando logo padrão (Solar)")
             
+            logger.info("🎨 Renderizando template HTML...")
             # Renderizar template HTML
             html_content = render_template('energia_solar/pdf_proposta_solar_v2.html', 
                                          projeto=projeto,
@@ -2408,11 +2412,16 @@ def projeto_proposta_pdf(projeto_id):
                                          inversor=inversor,
                                          kit=kit)
             
+            logger.info("✅ Template HTML renderizado com sucesso")
+            
             # Base URL para resolver outros caminhos relativos
             base_url = f"file:///{project_root.replace(os.sep, '/')}/"
             
+            logger.info("📝 Convertendo HTML para PDF com WeasyPrint...")
             # Gerar PDF
             pdf = weasyprint.HTML(string=html_content, base_url=base_url).write_pdf()
+            
+            logger.info(f"✅ PDF gerado com sucesso! Tamanho: {len(pdf)} bytes")
             
             # Criar resposta com headers anti-cache
             response = make_response(pdf)
@@ -2427,32 +2436,22 @@ def projeto_proposta_pdf(projeto_id):
             
         except ImportError as e:
             # WeasyPrint não instalado
-            logger.error(f"WeasyPrint não encontrado: {str(e)}")
-            flash(f'Biblioteca PDF não disponível - instale: pip install weasyprint', 'warning')
+            logger.error(f"❌ WeasyPrint não encontrado: {str(e)}")
+            flash(f'Biblioteca PDF não disponível. Entre em contato com o suporte.', 'error')
+            return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
         except Exception as e:
             # Outro erro na geração do PDF
-            logger.error(f"Erro ao gerar PDF: {str(e)}")
-            flash(f'Erro ao gerar PDF: {str(e)} - exibindo HTML', 'warning')
-        
-        # Fallback para HTML em caso de erro
-        html_response = make_response(render_template('energia_solar/pdf_proposta_solar_v2.html', 
-                                                    projeto=projeto,
-                                                    cliente=cliente,
-                                                    config=config,
-                                                    balanco=balanco,
-                                                    placa=placa,
-                                                    inversor=inversor,
-                                                    kit=kit))
-        html_response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
-        html_response.headers['Pragma'] = 'no-cache'
-        html_response.headers['Expires'] = '0'
-        html_response.headers['Last-Modified'] = 'Wed, 11 Jan 1984 05:00:00 GMT'
-        
-        return html_response
+            import traceback
+            logger.error(f"❌ Erro ao gerar PDF proposta: {str(e)}")
+            logger.error(f"Stack trace: {traceback.format_exc()}")
+            flash(f'Erro ao gerar PDF: {str(e)}', 'error')
+            return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
             
     except Exception as e:
-        logger.error(f"Erro ao gerar PDF da proposta solar {projeto_id}: {str(e)}")
-        flash(f'Erro ao gerar PDF: {str(e)}', 'error')
+        logger.error(f"❌ Erro crítico ao processar proposta PDF projeto {projeto_id}: {str(e)}")
+        import traceback
+        logger.error(f"Stack trace: {traceback.format_exc()}")
+        flash(f'Erro crítico ao processar requisição: {str(e)}', 'error')
         return redirect(url_for('energia_solar.projetos'))
 
 
