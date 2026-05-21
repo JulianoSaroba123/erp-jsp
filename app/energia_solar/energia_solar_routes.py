@@ -89,9 +89,10 @@ def calcular_balanco_energetico(projeto):
             'autossuficiencia': float (% de energia própria)
         }
     """
-    consumo = projeto.consumo_kwh_mes or 0
-    geracao = projeto.geracao_estimada_mes or 0
-    simultaneidade_decimal = (projeto.simultaneidade or 35) / 100  # Converte % para decimal (35% = 0.35)
+    # Converter TODOS os campos Decimal para float para evitar TypeError
+    consumo = float(projeto.consumo_kwh_mes or 0)
+    geracao = float(projeto.geracao_estimada_mes or 0)
+    simultaneidade_decimal = float(projeto.simultaneidade or 35) / 100  # Converte % para decimal (35% = 0.35)
     tarifa = float(projeto.tarifa_kwh or 1.04)  # Converte Decimal para float
     
     # Consumo mínimo obrigatório da concessionária
@@ -1269,7 +1270,7 @@ def projeto_salvar_dados_financeiros(projeto_id):
         
         # Recalcular economia anual com base na economia mensal
         if projeto.economia_mensal > 0:
-            projeto.economia_anual = projeto.economia_mensal * 12
+            projeto.economia_anual = float(projeto.economia_mensal) * 12
         
         # Calcular payback (investimento / economia anual)
         if projeto.valor_venda and projeto.economia_anual and projeto.economia_anual > 0:
@@ -1389,7 +1390,7 @@ def projeto_salvar_dados_tecnicos(projeto_id):
                 placa = PlacaSolar.query.get(projeto.placa_id)
                 if placa:
                     projeto.potencia_kwp = (projeto.qtd_placas * placa.potencia) / 1000
-                    projeto.geracao_estimada_mes = projeto.potencia_kwp * 4.5 * 30 * 0.8
+                    projeto.geracao_estimada_mes = float(projeto.potencia_kwp) * 4.5 * 30 * 0.8
         else:
             # Kit fotovoltaico
             projeto.kit_id = int(request.form.get('kit_id')) if request.form.get('kit_id') else None
@@ -1401,7 +1402,7 @@ def projeto_salvar_dados_tecnicos(projeto_id):
                 if kit:
                     projeto.potencia_kwp = kit.potencia_kwp
                     projeto.qtd_placas = kit.qtd_placas
-                    projeto.geracao_estimada_mes = projeto.potencia_kwp * 4.5 * 30 * 0.8
+                    projeto.geracao_estimada_mes = float(projeto.potencia_kwp) * 4.5 * 30 * 0.8
         
         # Perda de eficiência anual
         print("📍 Etapa 3: Perda de Eficiência e Inversores")
@@ -1440,7 +1441,7 @@ def projeto_salvar_dados_tecnicos(projeto_id):
         # Calcular economia mensal e payback (se houver tarifa salva)
         if projeto.tarifa_kwh and projeto.consumo_kwh_mes:
             projeto.economia_mensal = float(projeto.consumo_kwh_mes) * float(projeto.tarifa_kwh)
-            projeto.economia_anual = projeto.economia_mensal * 12
+            projeto.economia_anual = float(projeto.economia_mensal) * 12
             
             # Calcular payback (anos = investimento / economia anual)
             if projeto.valor_venda and projeto.economia_anual and projeto.economia_anual > 0:
