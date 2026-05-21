@@ -92,7 +92,7 @@ def calcular_balanco_energetico(projeto):
     consumo = projeto.consumo_kwh_mes or 0
     geracao = projeto.geracao_estimada_mes or 0
     simultaneidade_decimal = (projeto.simultaneidade or 35) / 100  # Converte % para decimal (35% = 0.35)
-    tarifa = projeto.tarifa_kwh or 1.04
+    tarifa = float(projeto.tarifa_kwh or 1.04)  # Converte Decimal para float
     
     # Consumo mínimo obrigatório da concessionária
     tipo_instalacao = projeto.tipo_instalacao or 'monofasica'
@@ -1190,8 +1190,8 @@ def projeto_dashboard(projeto_id):
     if not inversor and projeto.inversor_id:
         inversor = InversorSolar.query.get(projeto.inversor_id)
     
-    # Calcular KPIs adicionais se necessário
-    economia_mensal = (projeto.consumo_kwh_mes or 0) * (projeto.tarifa_kwh or 0)
+    # Calcular KPIs adicionais se necessário (convertendo Decimal para float)
+    economia_mensal = float(projeto.consumo_kwh_mes or 0) * float(projeto.tarifa_kwh or 0)
     economia_anual = economia_mensal * 12
     
     # Buscar concessionárias para o select
