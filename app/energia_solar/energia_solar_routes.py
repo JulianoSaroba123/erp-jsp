@@ -2494,7 +2494,7 @@ def projeto_dashboard_pdf(projeto_id):
             from datetime import datetime
             
             # Renderizar template HTML
-            html_content = render_template('energia_solar/pdf_projeto_dashboard.html', 
+            html_content = render_template('energia_solar/pdf_projeto_dashboard_v2.html', 
                                          projeto=projeto,
                                          cliente=cliente,
                                          placa=placa,

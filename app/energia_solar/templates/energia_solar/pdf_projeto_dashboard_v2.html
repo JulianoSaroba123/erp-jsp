@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Relatório Técnico - Projeto {{ projeto.id }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #333;
+            line-height: 1.5;
+            background: #fff;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #003d82 0%, #0066cc 100%);
+            padding: 40px 50px;
+            color: #ffffff;
+        }
+        
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffffff;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+        
+        .header-title {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .header-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* KPIs */
+        .kpis {
+            display: table;
+            width: 100%;
+            background: #f8f9fa;
+            border-bottom: 3px solid #0066cc;
+        }
+        
+        .kpi-card {
+            display: table-cell;
+            width: 25%;
+            padding: 30px 20px;
+            text-align: center;
+            border-right: 1px solid #dee2e6;
+        }
+        
+        .kpi-card:last-child {
+            border-right: none;
+        }
+        
+        .kpi-label {
+            font-size: 11px;
+            color: #6c757d;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .kpi-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #0066cc;
+            line-height: 1.2;
+        }
+        
+        .kpi-unit {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        /* Content */
+        .content {
+            padding: 40px 50px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            color: #0066cc;
+            margin: 30px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #0066cc;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        
+        .section-title.first {
+            margin-top: 0;
+        }
+        
+        /* Info Grid */
+        .info-grid {
+            display: table;
+            width: 100%;
+            margin: 20px 0;
+        }
+        
+        .info-row {
+            display: table-row;
+        }
+        
+        .info-cell {
+            display: table-cell;
+            width: 50%;
+            padding: 15px 20px;
+            border-left: 3px solid #0066cc;
+            background: #f8f9fa;
+            margin-bottom: 10px;
+        }
+        
+        .info-cell:nth-child(even) {
+            padding-left: 30px;
+        }
+        
+        .info-label {
+            font-size: 11px;
+            color: #6c757d;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-size: 16px;
+            color: #333;
+            font-weight: 600;
+        }
+        
+        /* Highlight Box */
+        .highlight-box {
+            background: #e8f5e9;
+            border: 2px solid #4caf50;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .highlight-label {
+            font-size: 13px;
+            color: #2e7d32;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .highlight-value {
+            font-size: 36px;
+            color: #2e7d32;
+            font-weight: bold;
+        }
+        
+        .highlight-subtext {
+            font-size: 13px;
+            color: #558b2f;
+            margin-top: 5px;
+        }
+        
+        /* Footer */
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 50px;
+            text-align: center;
+            border-top: 2px solid #0066cc;
+            margin-top: 40px;
+        }
+        
+        .footer-text {
+            font-size: 12px;
+            color: #6c757d;
+        }
+        
+        /* Tabela */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        table thead {
+            background: #0066cc;
+            color: white;
+        }
+        
+        table th {
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 13px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        table tbody tr {
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        table td {
+            padding: 10px 15px;
+            font-size: 14px;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">⚡ ERP JSP V3.0</div>
+        <div class="header-title">Relatório Técnico - Projeto Solar</div>
+        <div class="header-subtitle">Projeto #{{ projeto.id }} • {{ cliente.nome if cliente else projeto.nome_cliente }}</div>
+    </div>
+    
+    <!-- KPIs -->
+    <div class="kpis">
+        <div class="kpi-card">
+            <div class="kpi-label">Capacidade</div>
+            <div class="kpi-value">{{ "%.2f"|format(projeto.potencia_kwp or 0) }}</div>
+            <div class="kpi-unit">kWp</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Consumo Mensal</div>
+            <div class="kpi-value">{{ "{:,.0f}".format(projeto.consumo_kwh_mes or 0).replace(',', '.') }}</div>
+            <div class="kpi-unit">kWh/mês</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Economia Mensal</div>
+            <div class="kpi-value">{{ "{:,.0f}".format(economia_mensal).replace(',', '.') }}</div>
+            <div class="kpi-unit">R$/mês</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-label">Valor do Projeto</div>
+            <div class="kpi-value">{{ "{:,.0f}".format(projeto.valor_total or 0).replace(',', '.') }}</div>
+            <div class="kpi-unit">R$</div>
+        </div>
+    </div>
+    
+    <!-- Content -->
+    <div class="content">
+        <!-- Configuração do Sistema -->
+        <h2 class="section-title first">⚙ Configuração do Sistema</h2>
+        
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-cell">
+                    <div class="info-label">Módulos Fotovoltaicos</div>
+                    <div class="info-value">
+                        {% if placa %}
+                            {{ projeto.quantidade_placas or 0 }}x {{ placa.modelo }} - {{ placa.potencia_w }}W
+                        {% else %}
+                            {{ projeto.quantidade_placas or 0 }} módulos
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-cell">
+                    <div class="info-label">Inversor</div>
+                    <div class="info-value">
+                        {% if inversor %}
+                            {{ inversor.modelo }} - {{ inversor.potencia_kw }}kW
+                        {% else %}
+                            Não especificado
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-cell">
+                    <div class="info-label">Tipo de Instalação</div>
+                    <div class="info-value">{{ projeto.tipo_instalacao|capitalize if projeto.tipo_instalacao else 'Monofásica' }}</div>
+                </div>
+                <div class="info-cell">
+                    <div class="info-label">Conexão</div>
+                    <div class="info-value">{{ projeto.conexao|capitalize if projeto.conexao else 'Bifásico' }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dados Técnicos -->
+        <h2 class="section-title">📊 Dados Técnicos</h2>
+        
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-cell">
+                    <div class="info-label">Geração Estimada</div>
+                    <div class="info-value">{{ "{:,.0f}".format(projeto.geracao_estimada_mes or 0).replace(',', '.') }} kWh/mês</div>
+                </div>
+                <div class="info-cell">
+                    <div class="info-label">Área Necessária</div>
+                    <div class="info-value">
+                        {% if projeto.area_necessaria %}
+                            {{ "%.1f"|format(projeto.area_necessaria) }} m²
+                        {% else %}
+                            Não calculada
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-cell">
+                    <div class="info-label">Irradiação Solar</div>
+                    <div class="info-value">{{ "%.2f"|format(projeto.irradiacao_solar or 5.5) }} kWh/m²/dia</div>
+                </div>
+                <div class="info-cell">
+                    <div class="info-label">Taxa de Performance</div>
+                    <div class="info-value">{{ projeto.taxa_performance or 80 }}%</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Análise Financeira -->
+        <h2 class="section-title">💰 Análise Financeira</h2>
+        
+        <div class="highlight-box">
+            <div class="highlight-label">Economia Anual Estimada</div>
+            <div class="highlight-value">R$ {{ "{:,.2f}".format(economia_anual).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+            <div class="highlight-subtext">
+                {% if projeto.payback_anos %}
+                    Payback estimado em {{ "%.1f"|format(projeto.payback_anos) }} anos
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-cell">
+                    <div class="info-label">Tarifa de Energia</div>
+                    <div class="info-value">R$ {{ "%.4f"|format(projeto.tarifa_kwh or 0) }}/kWh</div>
+                </div>
+                <div class="info-cell">
+                    <div class="info-label">Custo do Projeto</div>
+                    <div class="info-value">R$ {{ "{:,.2f}".format(projeto.custo_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                </div>
+            </div>
+        </div>
+        
+        {% if projeto.impostos_percentual %}
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-cell">
+                    <div class="info-label">Impostos</div>
+                    <div class="info-value">{{ "%.2f"|format(projeto.impostos_percentual) }}%</div>
+                </div>
+                <div class="info-cell">
+                    <div class="info-label">Margem de Lucro</div>
+                    <div class="info-value">
+                        {% if projeto.margem_lucro_percentual %}
+                            {{ "%.2f"|format(projeto.margem_lucro_percentual) }}%
+                        {% else %}
+                            Não informada
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Cliente e Localização -->
+        <h2 class="section-title">📍 Cliente e Localização</h2>
+        
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-cell">
+                    <div class="info-label">Cliente</div>
+                    <div class="info-value">{{ cliente.nome if cliente else projeto.nome_cliente }}</div>
+                </div>
+                <div class="info-cell">
+                    <div class="info-label">Documento</div>
+                    <div class="info-value">
+                        {% if cliente %}
+                            {{ cliente.cpf_cnpj if cliente.cpf_cnpj else 'Não informado' }}
+                        {% else %}
+                            Não informado
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-grid">
+            <div class="info-row">
+                <div class="info-cell">
+                    <div class="info-label">Endereço</div>
+                    <div class="info-value">
+                        {% if projeto.endereco %}
+                            {{ projeto.endereco }}
+                        {% elif cliente and cliente.logradouro %}
+                            {{ cliente.logradouro }}{% if cliente.numero %}, {{ cliente.numero }}{% endif %}
+                        {% else %}
+                            Não informado
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="info-cell">
+                    <div class="info-label">Cidade/Estado</div>
+                    <div class="info-value">
+                        {% if projeto.cidade %}
+                            {{ projeto.cidade }}{% if projeto.estado %}/{{ projeto.estado }}{% endif %}
+                        {% elif cliente %}
+                            {{ cliente.cidade if cliente.cidade else 'Não informado' }}{% if cliente.estado %}/{{ cliente.estado }}{% endif %}
+                        {% else %}
+                            Não informado
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-text">
+            Relatório gerado em {{ now().strftime('%d/%m/%Y às %H:%M') }} | ERP JSP v3.0 - Sistema de Gestão Solar
+        </div>
+    </div>
+</body>
+</html>
