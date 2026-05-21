@@ -2347,11 +2347,19 @@ def projeto_proposta_pdf(projeto_id):
             inversor = InversorSolar.query.get(projeto.inversor_id)
         
         # Importar configurações da empresa
-        from app.configuracao.configuracao_utils import get_config
-        config = get_config()
+        try:
+            from app.configuracao.configuracao_utils import get_config
+            config = get_config()
+        except Exception as e:
+            logger.warning(f"Não foi possível carregar configurações: {e}")
+            config = None
         
         # Calcular balanço energético para gráficos
-        balanco = calcular_balanco_energetico(projeto)
+        try:
+            balanco = calcular_balanco_energetico(projeto)
+        except Exception as e:
+            logger.error(f"Erro ao calcular balanço energético: {e}")
+            balanco = {}
         
         # Tentar gerar PDF com WeasyPrint
         try:
