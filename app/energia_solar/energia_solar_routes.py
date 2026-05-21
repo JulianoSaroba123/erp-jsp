@@ -2359,7 +2359,24 @@ def projeto_proposta_pdf(projeto_id):
             balanco = calcular_balanco_energetico(projeto)
         except Exception as e:
             logger.error(f"Erro ao calcular balanço energético: {e}")
-            balanco = {}
+            # Retornar valores padrão em caso de erro
+            balanco = {
+                'consumo_mensal': 0,
+                'geracao_mensal': 0,
+                'consumo_simultaneo': 0,
+                'consumo_noturno': 0,
+                'excedente_rede': 0,
+                'deficit_dia': 0,
+                'total_da_rede': 0,
+                'creditos_kwh': 0,
+                'consumo_minimo': 30,
+                'tipo_instalacao': 'Monofasica',
+                'consumo_liquido': 0,
+                'economia_mensal': 0,
+                'autossuficiencia': 0,
+                'custo_sem_solar': 0,
+                'custo_com_solar': 0
+            }
         
         # Tentar gerar PDF com WeasyPrint
         try:
