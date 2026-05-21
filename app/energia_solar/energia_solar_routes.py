@@ -1151,6 +1151,21 @@ def projeto_dashboard(projeto_id):
     
     projeto = ProjetoSolar.query.get_or_404(projeto_id)
     
+    # 🔍 DEBUG: Verificar se o projeto tem kit carregado
+    print("=" * 60)
+    print("🔍 DEBUG PROJETO SOLAR - Dashboard")
+    print("=" * 60)
+    print(f"Projeto ID: {projeto.id}")
+    print(f"kit_id: {projeto.kit_id}")
+    print(f"projeto.kit: {projeto.kit}")
+    if projeto.kit:
+        print(f"  Kit ID: {projeto.kit.id}")
+        print(f"  Kit descrição: {projeto.kit.descricao}")
+        print(f"  Kit preço: {projeto.kit.preco}")
+    else:
+        print("  ⚠️ PROBLEMA: projeto.kit é None mesmo com kit_id!")
+    print("=" * 60)
+    
     # Buscar dados do cliente
     cliente = None
     if projeto.cliente_id:

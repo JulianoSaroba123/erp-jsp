@@ -334,6 +334,11 @@ class ProjetoSolar(db.Model):
     data_atualizacao = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     usuario_criador = db.Column(db.String(100))
     
+    # Relacionamentos para carregar equipamentos completos
+    kit = db.relationship('KitSolar', foreign_keys=[kit_id], lazy='joined')
+    placa = db.relationship('PlacaSolar', foreign_keys=[placa_id], lazy='joined')
+    inversor = db.relationship('InversorSolar', foreign_keys=[inversor_id], lazy='joined')
+    
     def to_dict(self):
         return {
             'id': self.id,
