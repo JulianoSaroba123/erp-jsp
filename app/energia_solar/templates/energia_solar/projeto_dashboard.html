@@ -1457,19 +1457,61 @@ document.addEventListener('DOMContentLoaded', function() {
         modal.addEventListener('show.bs.modal', function() {
             console.log('🔓 Modal de dados financeiros aberto');
             
+            // 1. Primeiro, preencher com valores salvos do projeto (se existirem)
+            const tarifaSalva = {{ projeto.tarifa_kwh|default(0) }};
+            const economiaSalva = {{ projeto.economia_anual|default(0) }};
+            const impostosSalvos = {{ projeto.impostos_percentual|default(0) }};
+            
+            console.log('💾 Valores salvos no projeto:', {
+                tarifa: tarifaSalva,
+                economia: economiaSalva,
+                impostos: impostosSalvos
+            });
+            
+            if (tarifaSalva > 0) {
+                const tarifaFinalEl = document.getElementById('tarifa_final');
+                if (tarifaFinalEl) {
+                    tarifaFinalEl.value = tarifaSalva.toFixed(4);
+                    console.log('✅ Tarifa final preenchida:', tarifaSalva.toFixed(4));
+                }
+            }
+            
+            if (economiaSalva > 0) {
+                const economiaEl = document.getElementById('economia_anual_prevista');
+                if (economiaEl) {
+                    economiaEl.value = economiaSalva.toFixed(2).replace('.', ',');
+                    console.log('✅ Economia anual preenchida:', economiaSalva.toFixed(2));
+                }
+            }
+            
+            if (impostosSalvos > 0) {
+                const impostosPercentEl = document.getElementById('impostos_percentual');
+                const impostosDisplayEl = document.getElementById('impostos_display');
+                if (impostosPercentEl) {
+                    impostosPercentEl.value = impostosSalvos.toFixed(2);
+                    console.log('✅ Impostos percentual preenchido:', impostosSalvos.toFixed(2));
+                }
+                if (impostosDisplayEl) {
+                    impostosDisplayEl.value = impostosSalvos.toFixed(2);
+                }
+            }
+            
+            // 2. Se tiver concessionária selecionada mas não tiver valores salvos, calcular
             const selectConc = document.getElementById('concessionaria_id');
-            if (selectConc) {
+            if (selectConc && selectConc.value) {
                 console.log('📋 Concessionária selecionada:', selectConc.value);
                 
-                // Aguardar modal estar completamente renderizado
-                setTimeout(() => {
-                    if (selectConc.value) {
-                        console.log('🔄 Disparando evento change para carregar dados...');
+                // Só disparar evento change se não houver valores salvos
+                if (tarifaSalva === 0 || economiaSalva === 0) {
+                    setTimeout(() => {
+                        console.log('🔄 Disparando evento change para calcular dados...');
                         selectConc.dispatchEvent(new Event('change'));
-                    } else {
-                        console.log('⚠️ Nenhuma concessionária selecionada');
-                    }
-                }, 100);
+                    }, 100);
+                } else {
+                    console.log('📊 Usando valores salvos existentes');
+                }
+            } else {
+                console.log('⚠️ Nenhuma concessionária selecionada');
             }
         });
     }
