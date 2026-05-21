@@ -2429,6 +2429,87 @@ def projeto_proposta_pdf(projeto_id):
         return redirect(url_for('energia_solar.projetos'))
 
 
+@energia_solar_bp.route('/projetos/<int:projeto_id>/dashboard-pdf')
+@login_required
+def projeto_dashboard_pdf(projeto_id):
+    """Gera PDF moderno e futurista do dashboard do projeto"""
+    from app.energia_solar.catalogo_model import ProjetoSolar, PlacaSolar, InversorSolar
+    
+    try:
+        # Carregar projeto
+        projeto = ProjetoSolar.query.get_or_404(projeto_id)
+        
+        # Carregar cliente se existir
+        cliente = None
+        if projeto.cliente_id:
+            cliente = Cliente.query.get(projeto.cliente_id)
+        
+        # Carregar placa e inversor
+        placa = None
+        inversor = None
+        if projeto.placa_id:
+            placa = PlacaSolar.query.get(projeto.placa_id)
+        if projeto.inversor_id:
+            inversor = InversorSolar.query.get(projeto.inversor_id)
+        
+        # Calcular economia se não estiver salva
+        economia_mensal = float(projeto.economia_mensal or 0)
+        economia_anual = float(projeto.economia_anual or 0)
+        
+        if economia_mensal == 0 and projeto.consumo_kwh_mes and projeto.tarifa_kwh:
+            economia_mensal = float(projeto.consumo_kwh_mes) * float(projeto.tarifa_kwh)
+            economia_anual = economia_mensal * 12
+        
+        # Tentar gerar PDF com WeasyPrint
+        try:
+            import weasyprint
+            from flask import current_app
+            from datetime import datetime
+            
+            # Renderizar template HTML
+            html_content = render_template('energia_solar/pdf_projeto_dashboard.html', 
+                                         projeto=projeto,
+                                         cliente=cliente,
+                                         placa=placa,
+                                         inversor=inversor,
+                                         economia_mensal=economia_mensal,
+                                         economia_anual=economia_anual,
+                                         now=datetime.now)
+            
+            # Base URL para resolver caminhos relativos
+            project_root = os.path.dirname(current_app.root_path)
+            base_url = f"file:///{project_root.replace(os.sep, '/')}/"
+            
+            # Gerar PDF
+            pdf = weasyprint.HTML(string=html_content, base_url=base_url).write_pdf()
+            
+            # Criar resposta com headers anti-cache
+            response = make_response(pdf)
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = f'inline; filename=projeto_solar_{projeto_id}_dashboard.pdf'
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            
+            logger.info(f"✅ PDF do dashboard gerado com sucesso para projeto {projeto_id}")
+            return response
+            
+        except ImportError:
+            logger.error("WeasyPrint não instalado")
+            flash('Biblioteca PDF não disponível - instale: pip install weasyprint', 'warning')
+            return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+            
+        except Exception as e:
+            logger.error(f"Erro ao gerar PDF: {str(e)}")
+            flash(f'Erro ao gerar PDF: {str(e)}', 'error')
+            return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+            
+    except Exception as e:
+        logger.error(f"Erro ao processar PDF do dashboard {projeto_id}: {str(e)}")
+        flash(f'Erro ao processar requisição: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.projetos'))
+
+
 @energia_solar_bp.route('/projetos/<int:projeto_id>/gerar-documento-word', methods=['GET', 'POST'])
 @login_required
 def gerar_documento_word(projeto_id):

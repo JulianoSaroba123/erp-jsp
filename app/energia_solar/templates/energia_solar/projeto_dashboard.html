@@ -347,6 +347,8 @@
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="{{ url_for('energia_solar.projeto_proposta_pdf', projeto_id=projeto.id) }}" target="_blank"><i class="fas fa-file-pdf me-2"></i>Gerar Proposta PDF</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.projeto_dashboard_pdf', projeto_id=projeto.id) }}" target="_blank"><i class="fas fa-file-contract me-2 text-primary"></i>Relatório Técnico PDF</a></li>
+                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalTabela(12)"><i class="fas fa-table me-2"></i>Tabela 12 Anos</a></li>
                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalTabela(25)"><i class="fas fa-chart-bar me-2"></i>Tabela 25 Anos</a></li>
                         <li><hr class="dropdown-divider"></li>
