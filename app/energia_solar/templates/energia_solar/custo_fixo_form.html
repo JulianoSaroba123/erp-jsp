@@ -73,6 +73,8 @@
                             <option value="h" {{ 'selected' if custo and custo.unidade == 'h' else '' }}>Hora (H)</option>
                             <option value="dia" {{ 'selected' if custo and custo.unidade == 'dia' else '' }}>Dia (DIA)</option>
                             <option value="svc" {{ 'selected' if custo and custo.unidade == 'svc' else '' }}>Serviço (SVC)</option>
+                            <option value="%" {{ 'selected' if custo and custo.unidade == '%' else '' }}>Porcentagem (%)</option>
+                            <option value="km" {{ 'selected' if custo and custo.unidade == 'km' else '' }}>KM Rodado (KM)</option>
                         </select>
                     </div>
 
@@ -132,4 +134,38 @@
         </div>
     </form>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const unidadeSelect = document.getElementById('unidade');
+        const valorLabel = document.querySelector('label[for="valor_unitario"]');
+        const valorInput = document.getElementById('valor_unitario');
+        const valorHelp = valorLabel.nextElementSibling;
+        
+        function updateValorField() {
+            if (unidadeSelect.value === '%') {
+                valorLabel.innerHTML = 'Percentual (%)';
+                valorHelp.innerHTML = 'Digite o percentual (ex: 5 para 5%)';
+                valorHelp.className = 'text-info';
+                valorInput.placeholder = 'Ex: 5 (para 5% de desconto)';
+            } else if (unidadeSelect.value === 'km') {
+                valorLabel.innerHTML = 'Valor por KM (R$)';
+                valorHelp.innerHTML = 'Digite o valor cobrado por quilômetro rodado';
+                valorHelp.className = 'text-muted';
+                valorInput.placeholder = 'Ex: 2.50';
+            } else {
+                valorLabel.innerHTML = 'Valor Unitário (R$)';
+                valorHelp.innerHTML = '0 para percentuais';
+                valorHelp.className = 'text-muted';
+                valorInput.placeholder = '';
+            }
+        }
+        
+        // Atualiza ao carregar a página
+        updateValorField();
+        
+        // Atualiza ao mudar a unidade
+        unidadeSelect.addEventListener('change', updateValorField);
+    });
+</script>
 {% endblock %}
