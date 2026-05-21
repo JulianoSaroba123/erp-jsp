@@ -1190,9 +1190,14 @@ def projeto_dashboard(projeto_id):
     if not inversor and projeto.inversor_id:
         inversor = InversorSolar.query.get(projeto.inversor_id)
     
-    # Calcular KPIs adicionais se necessário (convertendo Decimal para float)
-    economia_mensal = float(projeto.consumo_kwh_mes or 0) * float(projeto.tarifa_kwh or 0)
-    economia_anual = economia_mensal * 12
+    # Usar valores salvos no banco, ou calcular se não existirem (convertendo Decimal para float)
+    if projeto.economia_mensal and projeto.economia_mensal > 0:
+        economia_mensal = float(projeto.economia_mensal)
+        economia_anual = float(projeto.economia_anual) if projeto.economia_anual else economia_mensal * 12
+    else:
+        # Recalcular se não houver valores salvos
+        economia_mensal = float(projeto.consumo_kwh_mes or 0) * float(projeto.tarifa_kwh or 0)
+        economia_anual = economia_mensal * 12
     
     # Buscar concessionárias para o select
     from app.concessionaria.concessionaria_model import Concessionaria
@@ -1261,6 +1266,14 @@ def projeto_salvar_dados_financeiros(projeto_id):
         consumo = float(projeto.consumo_kwh_mes or 0)
         tarifa = float(projeto.tarifa_kwh or 0)
         projeto.economia_mensal = consumo * tarifa if consumo > 0 and tarifa > 0 else 0
+        
+        # Recalcular economia anual com base na economia mensal
+        if projeto.economia_mensal > 0:
+            projeto.economia_anual = projeto.economia_mensal * 12
+        
+        # Calcular payback (investimento / economia anual)
+        if projeto.valor_venda and projeto.economia_anual and projeto.economia_anual > 0:
+            projeto.payback_anos = float(projeto.valor_venda) / float(projeto.economia_anual)
 
         db.session.commit()
 
@@ -1420,6 +1433,18 @@ def projeto_salvar_dados_tecnicos(projeto_id):
                 espacamento = 0.10
                 projeto.largura_area = (projeto.colunas_placas * largura_placa) + ((projeto.colunas_placas - 1) * espacamento)
                 projeto.comprimento_area = (projeto.linhas_placas * comprimento_placa) + ((projeto.linhas_placas - 1) * espacamento)
+                
+                # Calcular área necessária total
+                projeto.area_necessaria = projeto.largura_area * projeto.comprimento_area if projeto.largura_area and projeto.comprimento_area else 0
+        
+        # Calcular economia mensal e payback (se houver tarifa salva)
+        if projeto.tarifa_kwh and projeto.consumo_kwh_mes:
+            projeto.economia_mensal = float(projeto.consumo_kwh_mes) * float(projeto.tarifa_kwh)
+            projeto.economia_anual = projeto.economia_mensal * 12
+            
+            # Calcular payback (anos = investimento / economia anual)
+            if projeto.valor_venda and projeto.economia_anual and projeto.economia_anual > 0:
+                projeto.payback_anos = float(projeto.valor_venda) / float(projeto.economia_anual)
         
         # Aba 4: Demais Informações (campos antigos mantidos)
         print("📍 Etapa 4: Demais Informações")
