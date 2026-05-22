@@ -2409,6 +2409,10 @@ def projeto_proposta_pdf(projeto_id):
             tarifa_kwh = float(projeto.tarifa_kwh or 1.04)
             simultaneidade = float(projeto.simultaneidade or 35)
             geracao_estimada_mes = float(projeto.geracao_estimada_mes or 0)
+            valor_venda = float(projeto.valor_venda or 0)
+            potencia_kwp = float(projeto.potencia_kwp or 0)
+            irradiacao_solar = float(projeto.irradiacao_solar or 4.82)
+            payback_anos = float(projeto.payback_anos or 0)
             
             # Renderizar template HTML
             html_content = render_template('energia_solar/pdf_proposta_solar_v2.html', 
@@ -2423,7 +2427,11 @@ def projeto_proposta_pdf(projeto_id):
                                          consumo_kwh_mes=consumo_kwh_mes,
                                          tarifa_kwh=tarifa_kwh,
                                          simultaneidade=simultaneidade,
-                                         geracao_estimada_mes=geracao_estimada_mes)
+                                         geracao_estimada_mes=geracao_estimada_mes,
+                                         valor_venda=valor_venda,
+                                         potencia_kwp=potencia_kwp,
+                                         irradiacao_solar=irradiacao_solar,
+                                         payback_anos=payback_anos)
             
             logger.info("✅ Template HTML renderizado com sucesso")
             

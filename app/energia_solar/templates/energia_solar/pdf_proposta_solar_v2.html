@@ -498,7 +498,7 @@
         <div style="background: white; padding: 30px; border-radius: 10px; border: 2px solid #e0e0e0; margin: 20px 0;">
             <h3 style="text-align: center; color: #002755; margin-bottom: 30px;">Distribuição de Custos</h3>
             
-            {% set total = projeto.valor_venda or 1 %}
+            {% set total = valor_venda if valor_venda > 0 else 1 %}
             {% set perc_equipamentos = ((projeto.custo_equipamentos or 0) / total * 100) if total > 0 else 0 %}
             {% set perc_instalacao = ((projeto.custo_instalacao or 0) / total * 100) if total > 0 else 0 %}
             {% set perc_projeto = ((projeto.custo_projeto or 0) / total * 100) if total > 0 else 0 %}
@@ -1308,7 +1308,7 @@
                 <div class="card">
                     <div class="card-label">Economia em 25 anos</div>
                     <div class="card-value" style="color: #2196f3; font-size: 20px;">
-                        {% set economia_25 = (geracao_estimada_mes * tarifa_kwh * 12 * 25) - (projeto.valor_venda or 0) %}
+                        {% set economia_25 = (geracao_estimada_mes * tarifa_kwh * 12 * 25) - valor_venda %}
                         R$ {{ "{:,.0f}".format(economia_25 if economia_25 > 0 else 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}
                     </div>
                     <div style="font-size: 11px; color: #666; margin-top: 5px;">economia líquida</div>
@@ -1321,8 +1321,8 @@
             <ul style="margin-top: 15px; line-height: 2; font-size: 14px;">
                 <li><strong>Reajuste anual da tarifa de energia:</strong> 10,00% (média histórica)</li>
                 <li><strong>Vida útil do sistema fotovoltaico:</strong> 25 anos (garantia do fabricante)</li>
-                <li><strong>Retorno do investimento:</strong> {{ "%.1f"|format(projeto.payback_anos or 0) }} ano(s)</li>
-                <li><strong>ROI (Retorno sobre investimento):</strong> Aproximadamente {{ "%.0f"|format((economia_25 / (projeto.valor_venda or 1)) * 100 if projeto.valor_venda and projeto.valor_venda > 0 else 0) }}% em 25 anos</li>
+                <li><strong>Retorno do investimento:</strong> {{ "%.1f"|format(payback_anos) }} ano(s)</li>
+                <li><strong>ROI (Retorno sobre investimento):</strong> Aproximadamente {{ "%.0f"|format((economia_25 / valor_venda) * 100 if valor_venda > 0 else 0) }}% em 25 anos</li>
             </ul>
         </div>
         
