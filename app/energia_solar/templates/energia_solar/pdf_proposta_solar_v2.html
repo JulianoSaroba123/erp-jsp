@@ -565,62 +565,6 @@
         <h2>💰 Composição do Investimento</h2>
         <p style="margin-bottom: 30px; font-size: 14px;">Entenda como está distribuído o valor total do sistema</p>
         
-        <div style="background: white; padding: 30px; border-radius: 10px; border: 2px solid #e0e0e0; margin: 20px 0;">
-            <h3 style="text-align: center; color: #002755; margin-bottom: 30px;">Distribuição de Custos</h3>
-            
-            {% set total = valor_venda if valor_venda > 0 else 1 %}
-            {% set perc_equipamentos = ((projeto.custo_equipamentos or 0) / total * 100) if total > 0 else 0 %}
-            {% set perc_instalacao = ((projeto.custo_instalacao or 0) / total * 100) if total > 0 else 0 %}
-            {% set perc_projeto = ((projeto.custo_projeto or 0) / total * 100) if total > 0 else 0 %}
-            
-            <!-- Gráfico de Barras Horizontal -->
-            <div style="margin: 40px 0;">
-                <div style="margin-bottom: 25px;">
-                    <div style="font-size: 14px; font-weight: 600; color: #666; margin-bottom: 8px; overflow: hidden;">
-                        <span style="float: left;">Equipamentos ({{ "%.1f"|format(perc_equipamentos) }}%)</span>
-                        <span style="float: right; color: #002755;">R$ {{ "{:,.2f}".format(projeto.custo_equipamentos or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
-                    </div>
-                    <div style="width: 100%; background: #f5f5f5; height: 45px; border-radius: 5px; position: relative;">
-                        <div style="width: {{ "%.1f"|format(perc_equipamentos) }}%; background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%); height: 100%; border-radius: 5px; text-align: right; padding-right: 15px; line-height: 45px; color: white; font-weight: 700; font-size: 18px;">
-                            {{ "%.0f"|format(perc_equipamentos) }}%
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 25px;">
-                    <div style="font-size: 14px; font-weight: 600; color: #666; margin-bottom: 8px; overflow: hidden;">
-                        <span style="float: left;">Instalação e Mão de Obra ({{ "%.1f"|format(perc_instalacao) }}%)</span>
-                        <span style="float: right; color: #002755;">R$ {{ "{:,.2f}".format(projeto.custo_instalacao or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
-                    </div>
-                    <div style="width: 100%; background: #f5f5f5; height: 45px; border-radius: 5px; position: relative;">
-                        <div style="width: {{ "%.1f"|format(perc_instalacao) }}%; background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%); height: 100%; border-radius: 5px; text-align: right; padding-right: 15px; line-height: 45px; color: white; font-weight: 700; font-size: 18px;">
-                            {{ "%.0f"|format(perc_instalacao) }}%
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="margin-bottom: 25px;">
-                    <div style="font-size: 14px; font-weight: 600; color: #666; margin-bottom: 8px; overflow: hidden;">
-                        <span style="float: left;">Projeto e Homologação ({{ "%.1f"|format(perc_projeto) }}%)</span>
-                        <span style="float: right; color: #002755;">R$ {{ "{:,.2f}".format(projeto.custo_projeto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
-                    </div>
-                    <div style="width: 100%; background: #f5f5f5; height: 45px; border-radius: 5px; position: relative;">
-                        <div style="width: {{ "%.1f"|format(perc_projeto) }}%; background: linear-gradient(90deg, #ff9800 0%, #ffa726 100%); height: 100%; border-radius: 5px; text-align: right; padding-right: 15px; line-height: 45px; color: white; font-weight: 700; font-size: 18px;">
-                            {{ "%.0f"|format(perc_projeto) }}%
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Total -->
-            <div style="background: linear-gradient(135deg, #002755 0%, #004488 100%); padding: 25px; border-radius: 8px; margin-top: 40px; color: white;">
-                <div style="overflow: hidden;">
-                    <div style="float: left; font-size: 20px; font-weight: 700;">INVESTIMENTO TOTAL</div>
-                    <div style="float: right; font-size: 28px; font-weight: 700;">R$ {{ "{:,.2f}".format(projeto.valor_venda or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
-                </div>
-            </div>
-        </div>
-        
         <!-- Detalhamento dos Equipamentos -->
         <div class="box destaque" style="margin-top: 30px;">
             <h3 style="margin-top: 0;">🔧 O que está incluído nos Equipamentos:</h3>
