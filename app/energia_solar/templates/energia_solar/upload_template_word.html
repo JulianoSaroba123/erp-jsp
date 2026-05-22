@@ -53,25 +53,44 @@
 
         <div class="col-md-4">
             <div class="card">
-                <div class="card-header bg-success text-white">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">📋 Variáveis Disponíveis</h6>
+                    <button class="btn btn-sm btn-light" type="button" data-bs-toggle="modal" data-bs-target="#modalVariaveis">
+                        📖 Ver Todas (40+)
+                    </button>
                 </div>
                 <div class="card-body" style="max-height: 500px; overflow-y: auto;">
-                    <p class="small text-muted">Copie e cole no Word:</p>
+                    <p class="small text-muted">Use no Word com chaves duplas: <code>{{"{{"}}NOME_CLIENTE{{}}}}</code></p>
                     
                     <div class="accordion accordion-flush" id="accordionVariaveis">
                         <div class="accordion-item">
                             <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCliente">
-                                    👤 Cliente
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCliente">
+                                    👤 Cliente (5)
                                 </button>
                             </h2>
-                            <div id="collapseCliente" class="accordion-collapse collapse">
-                                <div class="accordion-body">
-                                    <code>[nome_cliente]</code><br>
-                                    <code>[cidade]</code><br>
-                                    <code>[estado]</code><br>
-                                    <code>[endereco]</code>
+                            <div id="collapseCliente" class="accordion-collapse collapse show">
+                                <div class="accordion-body small">
+                                    <code>{{"{{"}}NOME_CLIENTE{{}}}}</code><br>
+                                    <code>{{"{{"}}CPF_CNPJ_CLIENTE{{}}}}</code><br>
+                                    <code>{{"{{"}}CIDADE{{}}}}</code><br>
+                                    <code>{{"{{"}}ESTADO{{}}}}</code><br>
+                                    <code>{{"{{"}}ENDERECO_CLIENTE{{}}}}</code>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseProjeto">
+                                    📋 Projeto (3)
+                                </button>
+                            </h2>
+                            <div id="collapseProjeto" class="accordion-collapse collapse">
+                                <div class="accordion-body small">
+                                    <code>{{"{{"}}NUMERO_PROJETO{{}}}}</code><br>
+                                    <code>{{"{{"}}DATA_PROPOSTA{{}}}}</code><br>
+                                    <code>{{"{{"}}VALIDADE_PROPOSTA{{}}}}</code>
                                 </div>
                             </div>
                         </div>
@@ -79,44 +98,336 @@
                         <div class="accordion-item">
                             <h2 class="accordion-header">
                                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSistema">
-                                    🔋 Sistema
+                                    ⚡ Sistema (8)
                                 </button>
                             </h2>
                             <div id="collapseSistema" class="accordion-collapse collapse">
-                                <div class="accordion-body">
-                                    <code>[qtd_placas]</code><br>
-                                    <code>[potencia_kwp]</code><br>
-                                    <code>[geracao_estimada_mes]</code><br>
-                                    <code>[tipo_instalacao]</code>
+                                <div class="accordion-body small">
+                                    <code>{{"{{"}}POTENCIA_SISTEMA{{}}}}</code><br>
+                                    <code>{{"{{"}}QTD_MODULOS{{}}}}</code><br>
+                                    <code>{{"{{"}}MODELO_MODULO{{}}}}</code><br>
+                                    <code>{{"{{"}}FABRICANTE_MODULO{{}}}}</code><br>
+                                    <code>{{"{{"}}POTENCIA_MODULO{{}}}}</code><br>
+                                    <code>{{"{{"}}MODELO_INVERSOR{{}}}}</code><br>
+                                    <code>{{"{{"}}FABRICANTE_INVERSOR{{}}}}</code><br>
+                                    <code>{{"{{"}}AREA_NECESSARIA{{}}}}</code>
                                 </div>
                             </div>
                         </div>
 
                         <div class="accordion-item">
                             <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEconomia">
-                                    💰 Economia
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGeracao">
+                                    📊 Geração (6)
                                 </button>
                             </h2>
-                            <div id="collapseEconomia" class="accordion-collapse collapse">
-                                <div class="accordion-body">
-                                    <code>[economia_mensal]</code><br>
-                                    <code>[economia_anual]</code><br>
-                                    <code>[consumo_minimo]</code><br>
-                                    <code>[valor_total]</code>
+                            <div id="collapseGeracao" class="accordion-collapse collapse">
+                                <div class="accordion-body small">
+                                    <code>{{"{{"}}GERACAO_MENSAL{{}}}}</code><br>
+                                    <code>{{"{{"}}GERACAO_ANUAL{{}}}}</code><br>
+                                    <code>{{"{{"}}CONSUMO_MENSAL{{}}}}</code><br>
+                                    <code>{{"{{"}}CONSUMO_ANUAL{{}}}}</code><br>
+                                    <code>{{"{{"}}AREA_NECESSARIA{{}}}}</code><br>
+                                    <code>{{"{{"}}IRRADIACAO_SOLAR{{}}}}</code>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="mt-3">
-                        <a href="{{ url_for('static', filename='VARIAVEIS_WORD.md') }}" class="btn btn-sm btn-outline-primary w-100" target="_blank">
-                            📖 Ver Lista Completa
-                        </a>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFinanceiro">
+                                    💰 Financeiro (9)
+                                </button>
+                            </h2>
+                            <div id="collapseFinanceiro" class="accordion-collapse collapse">
+                                <div class="accordion-body small">
+                                    <code>{{"{{"}}VALOR_INVESTIMENTO{{}}}}</code><br>
+                                    <code>{{"{{"}}CUSTO_EQUIPAMENTOS{{}}}}</code><br>
+                                    <code>{{"{{"}}CUSTO_INSTALACAO{{}}}}</code><br>
+                                    <code>{{"{{"}}CUSTO_PROJETO{{}}}}</code><br>
+                                    <code>{{"{{"}}ECONOMIA_MENSAL{{}}}}</code><br>
+                                    <code>{{"{{"}}ECONOMIA_ANUAL{{}}}}</code><br>
+                                    <code>{{"{{"}}ECONOMIA_25_ANOS{{}}}}</code><br>
+                                    <code>{{"{{"}}PAYBACK{{}}}}</code><br>
+                                    <code>{{"{{"}}ROI_25_ANOS{{}}}}</code>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEmpresa">
+                                    🏢 Empresa (5)
+                                </button>
+                            </h2>
+                            <div id="collapseEmpresa" class="accordion-collapse collapse">
+                                <div class="accordion-body small">
+                                    <code>{{"{{"}}NOME_EMPRESA{{}}}}</code><br>
+                                    <code>{{"{{"}}CNPJ_EMPRESA{{}}}}</code><br>
+                                    <code>{{"{{"}}TELEFONE_EMPRESA{{}}}}</code><br>
+                                    <code>{{"{{"}}EMAIL_EMPRESA{{}}}}</code><br>
+                                    <code>{{"{{"}}SITE_EMPRESA{{}}}}</code>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Modal com Lista Completa de Variáveis -->
+<div class="modal fade" id="modalVariaveis" tabindex="-1" aria-labelledby="modalVariaveisLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalVariaveisLabel">📋 Lista Completa de Variáveis (40+)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>💡 Como usar:</strong> Copie o código com as chaves duplas <code>{{"{{"}}VARIAVEL{{}}}}</code> e cole no seu documento Word.
+                </div>
+
+                <h6 class="fw-bold text-primary mt-4">👤 Dados do Cliente (5 variáveis)</h6>
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50%;">Variável</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        <tr>
+                            <td><code>{{"{{"}}NOME_CLIENTE{{}}}}</code></td>
+                            <td>Nome ou razão social</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}CPF_CNPJ_CLIENTE{{}}}}</code></td>
+                            <td>CPF ou CNPJ</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}CIDADE{{}}}}</code></td>
+                            <td>Cidade do cliente/projeto</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}ESTADO{{}}}}</code></td>
+                            <td>Estado (UF)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}ENDERECO_CLIENTE{{}}}}</code></td>
+                            <td>Endereço completo</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h6 class="fw-bold text-primary mt-4">📋 Dados do Projeto (3 variáveis)</h6>
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50%;">Variável</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        <tr>
+                            <td><code>{{"{{"}}NUMERO_PROJETO{{}}}}</code></td>
+                            <td>ID/Número do projeto</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}DATA_PROPOSTA{{}}}}</code></td>
+                            <td>Data de emissão (hoje)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}VALIDADE_PROPOSTA{{}}}}</code></td>
+                            <td>Data de validade (+30 dias)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h6 class="fw-bold text-primary mt-4">⚡ Dados Técnicos (8 variáveis)</h6>
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50%;">Variável</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        <tr>
+                            <td><code>{{"{{"}}POTENCIA_SISTEMA{{}}}}</code></td>
+                            <td>Potência total (kWp)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}QTD_MODULOS{{}}}}</code></td>
+                            <td>Quantidade de módulos</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}POTENCIA_MODULO{{}}}}</code></td>
+                            <td>Potência por módulo (W)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}MODELO_MODULO{{}}}}</code></td>
+                            <td>Modelo do módulo</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}FABRICANTE_MODULO{{}}}}</code></td>
+                            <td>Fabricante do módulo</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}MODELO_INVERSOR{{}}}}</code></td>
+                            <td>Modelo do inversor</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}FABRICANTE_INVERSOR{{}}}}</code></td>
+                            <td>Fabricante do inversor</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}POTENCIA_INVERSOR{{}}}}</code></td>
+                            <td>Potência do inversor (W)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h6 class="fw-bold text-primary mt-4">📊 Geração e Consumo (7 variáveis)</h6>
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50%;">Variável</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        <tr>
+                            <td><code>{{"{{"}}GERACAO_MENSAL{{}}}}</code></td>
+                            <td>Geração mensal estimada (kWh)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}GERACAO_ANUAL{{}}}}</code></td>
+                            <td>Geração anual (kWh)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}CONSUMO_MENSAL{{}}}}</code></td>
+                            <td>Consumo mensal atual (kWh)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}CONSUMO_ANUAL{{}}}}</code></td>
+                            <td>Consumo anual (kWh)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}AREA_NECESSARIA{{}}}}</code></td>
+                            <td>Área necessária (m²)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}IRRADIACAO_SOLAR{{}}}}</code></td>
+                            <td>Irradiação média (kWh/m².dia)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h6 class="fw-bold text-primary mt-4">💰 Valores Financeiros (9 variáveis)</h6>
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50%;">Variável</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        <tr>
+                            <td><code>{{"{{"}}VALOR_INVESTIMENTO{{}}}}</code></td>
+                            <td>Valor total (R$)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}ECONOMIA_MENSAL{{}}}}</code></td>
+                            <td>Economia por mês (R$)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}ECONOMIA_ANUAL{{}}}}</code></td>
+                            <td>Economia por ano (R$)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}ECONOMIA_25_ANOS{{}}}}</code></td>
+                            <td>Economia em 25 anos (R$)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}PAYBACK{{}}}}</code></td>
+                            <td>Tempo de retorno (anos)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}ROI_25_ANOS{{}}}}</code></td>
+                            <td>ROI em 25 anos (%)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h6 class="fw-bold text-primary mt-4">💵 Custos Detalhados (3 variáveis)</h6>
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50%;">Variável</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        <tr>
+                            <td><code>{{"{{"}}CUSTO_EQUIPAMENTOS{{}}}}</code></td>
+                            <td>Custo dos equipamentos (R$)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}CUSTO_INSTALACAO{{}}}}</code></td>
+                            <td>Custo da instalação (R$)</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}CUSTO_PROJETO{{}}}}</code></td>
+                            <td>Custo do projeto (R$)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h6 class="fw-bold text-primary mt-4">🏢 Dados da Empresa (5 variáveis)</h6>
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50%;">Variável</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        <tr>
+                            <td><code>{{"{{"}}NOME_EMPRESA{{}}}}</code></td>
+                            <td>Nome da empresa</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}CNPJ_EMPRESA{{}}}}</code></td>
+                            <td>CNPJ da empresa</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}TELEFONE_EMPRESA{{}}}}</code></td>
+                            <td>Telefone da empresa</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}EMAIL_EMPRESA{{}}}}</code></td>
+                            <td>E-mail da empresa</td>
+                        </tr>
+                        <tr>
+                            <td><code>{{"{{"}}SITE_EMPRESA{{}}}}</code></td>
+                            <td>Site da empresa</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="alert alert-success mt-4">
+                    <strong>✅ Total: 40+ variáveis disponíveis</strong><br>
+                    Use chaves duplas <code>{{"{{"}}VARIAVEL{{}}}}</code> no Word e o sistema substitui automaticamente!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
