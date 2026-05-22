@@ -10,6 +10,7 @@ from app.energia_solar.custo_fixo_model import CustoPadraoSolar
 from app.cliente.cliente_model import Cliente
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from pathlib import Path
 import math
 import os
 import logging
@@ -2771,27 +2772,41 @@ def projeto_proposta_word_pdf(projeto_id):
     4. Tenta converter para PDF usando LibreOffice (se disponível)
     5. Retorna PDF (preferencial) ou DOCX (fallback)
     """
-    from pathlib import Path
-    from flask import send_file
-    from app.energia_solar.proposta_word_service import gerar_docx_proposta, converter_docx_para_pdf
-    
     logger.info(f"📄 Iniciando geração de proposta Word para projeto {projeto_id}")
     
     try:
         # Buscar projeto
+        logger.info(f"🔍 Buscando projeto {projeto_id}...")
         projeto = ProjetoSolar.query.get_or_404(projeto_id)
+        logger.info(f"✅ Projeto encontrado: {projeto.id}")
+        
+        # Importar funções do service
+        logger.info(f"📦 Importando serviços Word...")
+        try:
+            from app.energia_solar.proposta_word_service import gerar_docx_proposta, converter_docx_para_pdf
+            logger.info(f"✅ Serviços importados com sucesso")
+        except ImportError as e:
+            logger.error(f"❌ Erro ao importar proposta_word_service: {e}")
+            flash(f'Erro ao carregar módulo Word: {str(e)}', 'error')
+            return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
         
         # Definir caminhos
+        logger.info(f"📁 Definindo caminhos de arquivos...")
         base_path = Path("app/energia_solar")
         template_path = base_path / "templates_word" / "proposta_solar_modelo.docx"
         output_dir = base_path / "documentos_gerados"
-        output_dir.mkdir(exist_ok=True)
+        
+        logger.info(f"📂 Criando diretório de saída: {output_dir}")
+        output_dir.mkdir(parents=True, exist_ok=True)
         
         # Verificar se template existe
+        logger.info(f"🔍 Verificando existência do template: {template_path}")
         if not template_path.exists():
             logger.error(f"❌ Template Word não encontrado: {template_path}")
-            flash(f'Template Word não encontrado. Por favor, crie o modelo em {template_path}', 'error')
+            flash(f'Template Word não encontrado. Por favor, crie o modelo em: {template_path}', 'error')
             return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+        
+        logger.info(f"✅ Template encontrado!")
         
         # Nome do arquivo baseado no projeto
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -2799,17 +2814,28 @@ def projeto_proposta_word_pdf(projeto_id):
         docx_path = output_dir / f"{nome_arquivo_base}.docx"
         pdf_path = output_dir / f"{nome_arquivo_base}.pdf"
         
+        logger.info(f"📝 Arquivo DOCX: {docx_path}")
+        logger.info(f"📄 Arquivo PDF: {pdf_path}")
+        
         # Gerar DOCX preenchido
         logger.info(f"🔧 Gerando DOCX com dados do projeto...")
-        gerar_docx_proposta(projeto, template_path, docx_path)
+        try:
+            gerar_docx_proposta(projeto, str(template_path), str(docx_path))
+            logger.info(f"✅ DOCX gerado com sucesso!")
+        except Exception as e:
+            logger.error(f"❌ Erro ao gerar DOCX: {e}")
+            import traceback
+            logger.error(f"Stack trace: {traceback.format_exc()}")
+            flash(f'Erro ao gerar documento Word: {str(e)}', 'error')
+            return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
         
         # Tentar converter para PDF
         logger.info(f"📝 Tentando converter DOCX para PDF...")
-        pdf_gerado = converter_docx_para_pdf(docx_path, pdf_path)
+        pdf_gerado = converter_docx_para_pdf(str(docx_path), str(pdf_path))
         
         # Retornar PDF se gerado, senão DOCX
         if pdf_gerado and Path(pdf_gerado).exists():
-            logger.info(f"✅ Enviando PDF ao usuário")
+            logger.info(f"✅ PDF gerado! Enviando ao usuário...")
             return send_file(
                 pdf_gerado,
                 mimetype='application/pdf',
@@ -2817,20 +2843,20 @@ def projeto_proposta_word_pdf(projeto_id):
                 download_name=f"proposta_projeto_{projeto_id}.pdf"
             )
         else:
-            logger.warning(f"⚠️ PDF não gerado, enviando DOCX ao usuário")
+            logger.warning(f"⚠️ PDF não gerado (LibreOffice não disponível). Enviando DOCX...")
             flash('LibreOffice não disponível. Gerando arquivo Word (.docx) ao invés de PDF.', 'warning')
             return send_file(
-                docx_path,
+                str(docx_path),
                 mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 as_attachment=True,
                 download_name=f"proposta_projeto_{projeto_id}.docx"
             )
             
     except Exception as e:
-        logger.error(f"❌ Erro ao gerar proposta Word: {str(e)}")
+        logger.error(f"❌ Erro crítico ao gerar proposta Word: {str(e)}")
         import traceback
-        logger.error(f"Stack trace: {traceback.format_exc()}")
-        flash(f'Erro ao gerar proposta: {str(e)}', 'error')
+        logger.error(f"Stack trace completo: {traceback.format_exc()}")
+        flash(f'Erro ao acessar funcionalidade Word: {str(e)}', 'error')
         return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
 
 

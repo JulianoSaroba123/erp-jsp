@@ -12,6 +12,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Importar modelos no topo do arquivo para evitar problemas de contexto
+try:
+    from app.cliente.cliente_model import Cliente
+    from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar
+    from app.configuracao.configuracao_utils import carregar_configuracao
+    MODELS_IMPORTED = True
+except ImportError as e:
+    logger.warning(f"Não foi possível importar modelos: {e}")
+    MODELS_IMPORTED = False
+
 
 def formatar_moeda(valor):
     """Formata valor numérico para padrão brasileiro R$ 1.234,56"""
@@ -118,9 +128,11 @@ def montar_contexto_proposta(projeto):
 
     # Cliente
     cliente = None
-    if hasattr(projeto, 'cliente_id') and projeto.cliente_id:
-        from app.cliente.cliente_model import Cliente
-        cliente = Cliente.query.get(projeto.cliente_id)
+    if MODELS_IMPORTED and hasattr(projeto, 'cliente_id') and projeto.cliente_id:
+        try:
+            cliente = Cliente.query.get(projeto.cliente_id)
+        except Exception as e:
+            logger.warning(f"Erro ao buscar cliente: {e}")
     
     cliente_nome = cliente.nome_razao_social if cliente else "Cliente não informado"
     cliente_cidade = cliente.cidade if cliente else ""
@@ -128,15 +140,19 @@ def montar_contexto_proposta(projeto):
 
     # Placa solar
     placa = None
-    if hasattr(projeto, 'placa_id') and projeto.placa_id:
-        from app.energia_solar.catalogo_model import PlacaSolar
-        placa = PlacaSolar.query.get(projeto.placa_id)
+    if MODELS_IMPORTED and hasattr(projeto, 'placa_id') and projeto.placa_id:
+        try:
+            placa = PlacaSolar.query.get(projeto.placa_id)
+        except Exception as e:
+            logger.warning(f"Erro ao buscar placa: {e}")
 
     # Inversor
     inversor = None
-    if hasattr(projeto, 'inversor_id') and projeto.inversor_id:
-        from app.energia_solar.catalogo_model import InversorSolar
-        inversor = InversorSolar.query.get(projeto.inversor_id)
+    if MODELS_IMPORTED and hasattr(projeto, 'inversor_id') and projeto.inversor_id:
+        try:
+            inversor = InversorSolar.query.get(projeto.inversor_id)
+        except Exception as e:
+            logger.warning(f"Erro ao buscar inversor: {e}")
 
     # Montar contexto completo com todos os placeholders
     contexto = {
@@ -192,17 +208,17 @@ def montar_contexto_proposta(projeto):
     }
 
     # Tentar carregar dados da empresa de configuração
-    try:
-        from app.configuracao.configuracao_utils import carregar_configuracao
-        config = carregar_configuracao()
-        if config:
-            contexto["NOME_EMPRESA"] = config.nome_fantasia or contexto["NOME_EMPRESA"]
-            contexto["CNPJ_EMPRESA"] = config.cnpj or ""
-            contexto["TELEFONE_EMPRESA"] = config.telefone or contexto["TELEFONE_EMPRESA"]
-            contexto["EMAIL_EMPRESA"] = config.email or contexto["EMAIL_EMPRESA"]
-            contexto["SITE_EMPRESA"] = config.site or ""
-    except Exception as e:
-        logger.warning(f"Não foi possível carregar configurações da empresa: {e}")
+    if MODELS_IMPORTED:
+        try:
+            config = carregar_configuracao()
+            if config:
+                contexto["NOME_EMPRESA"] = config.nome_fantasia or contexto["NOME_EMPRESA"]
+                contexto["CNPJ_EMPRESA"] = config.cnpj or ""
+                contexto["TELEFONE_EMPRESA"] = config.telefone or contexto["TELEFONE_EMPRESA"]
+                contexto["EMAIL_EMPRESA"] = config.email or contexto["EMAIL_EMPRESA"]
+                contexto["SITE_EMPRESA"] = config.site or ""
+        except Exception as e:
+            logger.warning(f"Não foi possível carregar configurações da empresa: {e}")
 
     return contexto
 
