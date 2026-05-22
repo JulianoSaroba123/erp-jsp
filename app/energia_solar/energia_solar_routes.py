@@ -152,6 +152,200 @@ def calcular_balanco_energetico(projeto):
     }
 
 
+def montar_contexto_proposta_solar(projeto):
+    """
+    Função centralizadora para preparar TODOS os dados da proposta comercial.
+    
+    Calcula valores financeiros, técnicos e energéticos de forma unificada.
+    Evita inconsistências entre diferentes páginas do PDF.
+    
+    Args:
+        projeto: Instância de ProjetoSolar
+    
+    Returns:
+        dict: Contexto completo com todos os valores normalizados
+    """
+    from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar, KitSolar
+    from app.cliente.cliente_model import Cliente
+    
+    # ============================================================================
+    # 1. VALORES FINANCEIROS PRINCIPAIS
+    # ============================================================================
+    
+    # Valor oficial da proposta (ordem de prioridade)
+    valor_total_investimento = float(
+        projeto.valor_venda or 
+        projeto.preco_final or 
+        projeto.valor_orcamento or 
+        projeto.custo_total or 
+        0
+    )
+    
+    # Custos detalhados (para composição)
+    custo_equipamentos = float(projeto.custo_equipamentos or 0)
+    custo_instalacao = float(projeto.custo_instalacao or 0)
+    custo_projeto = float(projeto.custo_projeto or 0)
+    
+    # Se os custos estão zerados mas temos valor total, estimar proporção
+    if valor_total_investimento > 0 and (custo_equipamentos + custo_instalacao + custo_projeto) == 0:
+        custo_equipamentos = valor_total_investimento * 0.65  # 65% equipamentos
+        custo_instalacao = valor_total_investimento * 0.25   # 25% instalação
+        custo_projeto = valor_total_investimento * 0.10      # 10% projeto/homologação
+    
+    # ============================================================================
+    # 2. NORMALIZAÇÃO DE PERCENTUAIS
+    # ============================================================================
+    
+    def normalizar_percentual(valor, padrao=35):
+        """Converte valores entre 0-1 para 0-100% e vice-versa"""
+        if valor is None:
+            return padrao
+        valor = float(valor)
+        # Se valor está entre 0 e 1, assume que é decimal (0.8 = 80%)
+        if 0 < valor <= 1:
+            return valor * 100
+        # Senão, já está em percentual
+        return valor
+    
+    simultaneidade_percentual = normalizar_percentual(projeto.simultaneidade, 35)
+    simultaneidade_decimal = simultaneidade_percentual / 100
+    
+    # ============================================================================
+    # 3. DADOS TÉCNICOS
+    # ============================================================================
+    
+    consumo_kwh_mes = float(projeto.consumo_kwh_mes or 0)
+    geracao_estimada_mes = float(projeto.geracao_estimada_mes or 0)
+    tarifa_kwh = float(projeto.tarifa_kwh or 1.04)
+    potencia_kwp = float(projeto.potencia_kwp or 0)
+    irradiacao_solar = float(projeto.irradiacao_solar or 4.82)
+    qtd_placas = int(projeto.qtd_placas or 0)
+    
+    # Carregar equipamentos
+    placa = None
+    inversor = None
+    kit = None
+    if projeto.placa_id:
+        placa = PlacaSolar.query.get(projeto.placa_id)
+    if projeto.inversor_id:
+        inversor = InversorSolar.query.get(projeto.inversor_id)
+    if projeto.kit_id:
+        kit = KitSolar.query.get(projeto.kit_id)
+    
+    potencia_placa_w = placa.potencia if placa else 605
+    
+    # ============================================================================
+    # 4. ÁREA NECESSÁRIA (nunca 0.0 se há módulos)
+    # ============================================================================
+    
+    area_necessaria = float(projeto.area_necessaria or 0)
+    
+    if area_necessaria == 0 and qtd_placas > 0:
+        # Estimar: cada placa ocupa aprox. 2.5m²
+        area_necessaria = qtd_placas * 2.5
+    
+    # ============================================================================
+    # 5. BALANÇO ENERGÉTICO
+    # ============================================================================
+    
+    try:
+        balanco = calcular_balanco_energetico(projeto)
+    except Exception as e:
+        logger.error(f"Erro ao calcular balanço: {e}")
+        balanco = {
+            'consumo_mensal': consumo_kwh_mes,
+            'geracao_mensal': geracao_estimada_mes,
+            'economia_mensal': 0,
+            'autossuficiencia': 0,
+            'consumo_simultaneo': 0,
+            'consumo_noturno': 0,
+            'excedente_rede': 0,
+            'consumo_liquido': 0,
+            'custo_sem_solar': 0,
+            'custo_com_solar': 0
+        }
+    
+    economia_mensal = balanco.get('economia_mensal', 0)
+    economia_anual = economia_mensal * 12
+    
+    # ============================================================================
+    # 6. PAYBACK E ROI (sempre com valores consistentes)
+    # ============================================================================
+    
+    payback_anos = (valor_total_investimento / economia_anual) if economia_anual > 0 else 0
+    
+    # Economia em 25 anos (com inflação média de 4.5% a.a. na tarifa)
+    inflacao_energia = 1.045
+    economia_25_anos = 0
+    for ano in range(1, 26):
+        economia_ano = economia_anual * (inflacao_energia ** ano)
+        economia_25_anos += economia_ano
+    
+    economia_25_anos_liquida = economia_25_anos - valor_total_investimento
+    roi_percentual = ((economia_25_anos_liquida / valor_total_investimento) * 100) if valor_total_investimento > 0 else 0
+    
+    # ============================================================================
+    # 7. CLIENTE
+    # ============================================================================
+    
+    cliente = None
+    if projeto.cliente_id:
+        cliente = Cliente.query.get(projeto.cliente_id)
+    
+    # ============================================================================
+    # 8. CONFIGURAÇÃO DA EMPRESA
+    # ============================================================================
+    
+    try:
+        from app.configuracao.configuracao_utils import get_config
+        config = get_config()
+    except Exception as e:
+        logger.warning(f"Não foi possível carregar configurações: {e}")
+        config = None
+    
+    # ============================================================================
+    # 9. RETORNAR CONTEXTO COMPLETO
+    # ============================================================================
+    
+    return {
+        # Financeiro
+        'valor_total_investimento': valor_total_investimento,
+        'custo_equipamentos': custo_equipamentos,
+        'custo_instalacao': custo_instalacao,
+        'custo_projeto': custo_projeto,
+        'tarifa_kwh': tarifa_kwh,
+        'economia_mensal': economia_mensal,
+        'economia_anual': economia_anual,
+        'economia_25_anos': economia_25_anos,
+        'economia_25_anos_liquida': economia_25_anos_liquida,
+        'payback_anos': payback_anos,
+        'roi_percentual': roi_percentual,
+        
+        # Técnico
+        'consumo_kwh_mes': consumo_kwh_mes,
+        'geracao_estimada_mes': geracao_estimada_mes,
+        'potencia_kwp': potencia_kwp,
+        'irradiacao_solar': irradiacao_solar,
+        'qtd_placas': qtd_placas,
+        'potencia_placa_w': potencia_placa_w,
+        'area_necessaria': area_necessaria,
+        'simultaneidade_percentual': simultaneidade_percentual,
+        'simultaneidade_decimal': simultaneidade_decimal,
+        
+        # Balanço Energético
+        'balanco': balanco,
+        'autossuficiencia': balanco.get('autossuficiencia', 0),
+        
+        # Entidades
+        'projeto': projeto,
+        'cliente': cliente,
+        'placa': placa,
+        'inversor': inversor,
+        'kit': kit,
+        'config': config
+    }
+
+
 @energia_solar_bp.route('/datasheet/<path:filename>')
 @login_required
 def ver_datasheet(filename):
@@ -2330,61 +2524,17 @@ def projeto_proposta_pdf(projeto_id):
         # Carregar projeto
         projeto = ProjetoSolar.query.get_or_404(projeto_id)
         
-        # Carregar cliente se existir
-        cliente = None
-        if projeto.cliente_id:
-            cliente = Cliente.query.get(projeto.cliente_id)
+        logger.info(f"📄 Gerando proposta PDF para projeto {projeto_id}")
         
-        # Carregar placa e inversor se existirem
-        from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar, KitSolar
-        placa = None
-        inversor = None
-        kit = None
-        if projeto.kit_id:
-            kit = KitSolar.query.get(projeto.kit_id)
-        if projeto.placa_id:
-            placa = PlacaSolar.query.get(projeto.placa_id)
-        if projeto.inversor_id:
-            inversor = InversorSolar.query.get(projeto.inversor_id)
-        
-        # Importar configurações da empresa
-        try:
-            from app.configuracao.configuracao_utils import get_config
-            config = get_config()
-        except Exception as e:
-            logger.warning(f"Não foi possível carregar configurações: {e}")
-            config = None
-        
-        # Calcular balanço energético para gráficos
-        try:
-            balanco = calcular_balanco_energetico(projeto)
-        except Exception as e:
-            logger.error(f"Erro ao calcular balanço energético: {e}")
-            # Retornar valores padrão em caso de erro
-            balanco = {
-                'consumo_mensal': 0,
-                'geracao_mensal': 0,
-                'consumo_simultaneo': 0,
-                'consumo_noturno': 0,
-                'excedente_rede': 0,
-                'deficit_dia': 0,
-                'total_da_rede': 0,
-                'creditos_kwh': 0,
-                'consumo_minimo': 30,
-                'tipo_instalacao': 'Monofasica',
-                'consumo_liquido': 0,
-                'economia_mensal': 0,
-                'autossuficiencia': 0,
-                'custo_sem_solar': 0,
-                'custo_com_solar': 0
-            }
+        # ===========================================================================
+        # USAR FUNÇÃO CENTRALIZADORA PARA CALCULAR TODOS OS VALORES
+        # ===========================================================================
+        contexto = montar_contexto_proposta_solar(projeto)
         
         # Tentar gerar PDF com WeasyPrint
         try:
             import weasyprint
             from flask import current_app
-            
-            logger.info(f"📄 Gerando proposta PDF para projeto {projeto_id}")
             
             # Definir project_root para base_url
             project_root = os.path.dirname(current_app.root_path)
@@ -2392,6 +2542,7 @@ def projeto_proposta_pdf(projeto_id):
             
             # Usar logo base64 das configurações se disponível
             logo_url = None
+            config = contexto.get('config')
             if config and config.logo_base64:
                 logo_url = config.logo_base64
                 logger.info("✅ Usando logo_base64 das configurações (Solar)")
@@ -2403,35 +2554,43 @@ def projeto_proposta_pdf(projeto_id):
             
             logger.info("🎨 Renderizando template HTML...")
             
-            # Converter valores Decimal para float ANTES de passar para template
-            # Isso evita erros de "unsupported operand type(s)" no Jinja2
-            consumo_kwh_mes = float(projeto.consumo_kwh_mes or 0)
-            tarifa_kwh = float(projeto.tarifa_kwh or 1.04)
-            simultaneidade = float(projeto.simultaneidade or 35)
-            geracao_estimada_mes = float(projeto.geracao_estimada_mes or 0)
-            valor_venda = float(projeto.valor_venda or 0)
-            potencia_kwp = float(projeto.potencia_kwp or 0)
-            irradiacao_solar = float(projeto.irradiacao_solar or 4.82)
-            payback_anos = float(projeto.payback_anos or 0)
-            
-            # Renderizar template HTML
+            # ===========================================================================
+            # PASSAR CONTEXTO COMPLETO PARA O TEMPLATE
+            # ===========================================================================
             html_content = render_template('energia_solar/pdf_proposta_solar_v2.html', 
-                                         projeto=projeto,
-                                         cliente=cliente,
-                                         logo_url=logo_url,
-                                         config=config,
-                                         balanco=balanco,
-                                         placa=placa,
-                                         inversor=inversor,
-                                         kit=kit,
-                                         consumo_kwh_mes=consumo_kwh_mes,
-                                         tarifa_kwh=tarifa_kwh,
-                                         simultaneidade=simultaneidade,
-                                         geracao_estimada_mes=geracao_estimada_mes,
-                                         valor_venda=valor_venda,
-                                         potencia_kwp=potencia_kwp,
-                                         irradiacao_solar=irradiacao_solar,
-                                         payback_anos=payback_anos)
+                                         # Entidades
+                                         projeto=contexto['projeto'],
+                                         cliente=contexto['cliente'],
+                                         placa=contexto['placa'],
+                                         inversor=contexto['inversor'],
+                                         kit=contexto['kit'],
+                                         config=contexto['config'],
+                                         balanco=contexto['balanco'],
+                                         
+                                         # Valores financeiros (TODOS consistentes)
+                                         valor_venda=contexto['valor_total_investimento'],
+                                         valor_total=contexto['valor_total_investimento'],
+                                         custo_equipamentos=contexto['custo_equipamentos'],
+                                         custo_instalacao=contexto['custo_instalacao'],
+                                         custo_projeto=contexto['custo_projeto'],
+                                         economia_mensal=contexto['economia_mensal'],
+                                         economia_anual=contexto['economia_anual'],
+                                         economia_25_anos=contexto['economia_25_anos'],
+                                         payback_anos=contexto['payback_anos'],
+                                         roi_percentual=contexto['roi_percentual'],
+                                         
+                                         # Valores técnicos (normalizados)
+                                         consumo_kwh_mes=contexto['consumo_kwh_mes'],
+                                         geracao_estimada_mes=contexto['geracao_estimada_mes'],
+                                         potencia_kwp=contexto['potencia_kwp'],
+                                         tarifa_kwh=contexto['tarifa_kwh'],
+                                         irradiacao_solar=contexto['irradiacao_solar'],
+                                         area_necessaria=contexto['area_necessaria'],
+                                         simultaneidade=contexto['simultaneidade_percentual'],
+                                         simultaneidade_percentual=contexto['simultaneidade_percentual'],
+                                         
+                                         # Extras
+                                         logo_url=logo_url)
             
             logger.info("✅ Template HTML renderizado com sucesso")
             

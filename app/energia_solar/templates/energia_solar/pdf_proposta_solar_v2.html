@@ -516,7 +516,7 @@
             <div class="grid-2" style="margin: 15px 0 0 0;">
                 <div style="padding-right: 10px;">
                     <p style="font-size: 13px; margin: 10px 0; line-height: 1.6;"><strong>Consumo Médio:</strong> {{ "%.0f"|format(consumo_kwh_mes) }} kWh/mês</p>
-                    <p style="font-size: 13px; margin: 10px 0; line-height: 1.6;"><strong>Área Necessária:</strong> {{ "%.1f"|format(projeto.area_necessaria or 0) }} m²</p>
+                    <p style="font-size: 13px; margin: 10px 0; line-height: 1.6;"><strong>Área Necessária:</strong> {{ "%.1f"|format(area_necessaria) }} m²</p>
                     <p style="font-size: 13px; margin: 10px 0; line-height: 1.6;"><strong>Irradiação Solar:</strong> {{ "%.2f"|format(irradiacao_solar) }} kWh/m².dia</p>
                 </div>
                 <div style="padding-left: 10px;">
@@ -821,7 +821,7 @@
                 <div class="card">
                     <div class="card-icon">📐</div>
                     <div class="card-label">Área Necessária</div>
-                    <div class="card-value">{{ "%.1f"|format(projeto.area_necessaria or 0) }} m²</div>
+                    <div class="card-value">{{ "%.1f"|format(area_necessaria) }} m²</div>
                 </div>
             </div>
         </div>
@@ -1191,19 +1191,19 @@
             <table style="margin-top: 10px; font-size: 13px;">
                 <tr style="background: white;">
                     <td style="font-weight: 600; padding: 8px;">Custo Equipamentos</td>
-                    <td class="text-right" style="font-weight: 600; padding: 8px;">R$ {{ "{:,.2f}".format(projeto.custo_equipamentos or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                    <td class="text-right" style="font-weight: 600; padding: 8px;">R$ {{ "{:,.2f}".format(custo_equipamentos).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                 </tr>
                 <tr style="background: white;">
                     <td style="font-weight: 600; padding: 8px;">Custo Instalação</td>
-                    <td class="text-right" style="font-weight: 600; padding: 8px;">R$ {{ "{:,.2f}".format(projeto.custo_instalacao or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                    <td class="text-right" style="font-weight: 600; padding: 8px;">R$ {{ "{:,.2f}".format(custo_instalacao).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                 </tr>
                 <tr style="background: white;">
                     <td style="font-weight: 600; padding: 8px;">Custo Projeto</td>
-                    <td class="text-right" style="font-weight: 600; padding: 8px;">R$ {{ "{:,.2f}".format(projeto.custo_projeto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                    <td class="text-right" style="font-weight: 600; padding: 8px;">R$ {{ "{:,.2f}".format(custo_projeto).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                 </tr>
                 <tr style="background: #4caf50; color: white;">
                     <td style="font-size: 15px; font-weight: 700; padding: 12px 8px;">VALOR TOTAL DO INVESTIMENTO</td>
-                    <td class="text-right" style="font-size: 18px; font-weight: 700; padding: 12px 8px;">R$ {{ "{:,.2f}".format(projeto.valor_venda or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                    <td class="text-right" style="font-size: 18px; font-weight: 700; padding: 12px 8px;">R$ {{ "{:,.2f}".format(valor_venda).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                 </tr>
             </table>
         </div>
@@ -1304,18 +1304,11 @@
         <h2>Indicadores de Viabilidade do Investimento</h2>
         <p style="margin-bottom: 18px; font-size: 13px;">Análise financeira detalhada do retorno sobre o investimento</p>
         
-        {% set valor_total = projeto.preco_final or 10153.98 %}
-        {% set economia_mensal = balanco.economia_mensal if balanco else 280 %}
-        {% set economia_anual = economia_mensal * 12 %}
-        {% set payback_anos = (valor_total / economia_anual) if economia_anual > 0 else 0 %}
-        {% set economia_25_anos = (economia_anual * 25) - valor_total %}
-        {% set roi_percentual = ((economia_25_anos / valor_total) * 100) if valor_total > 0 else 0 %}
-        
         <div class="grid-2" style="margin-bottom: 12px;">
             <div class="card" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-color: #1976d2; padding: 15px;">
                 <div class="card-icon" style="color: #1976d2; font-size: 32px;">💰</div>
                 <div class="card-label" style="font-size: 12px;">Valor Total do Sistema</div>
-                <div class="card-value" style="color: #1976d2; font-size: 24px;">R$ {{ "{:,.2f}".format(valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                <div class="card-value" style="color: #1976d2; font-size: 24px;">R$ {{ "{:,.2f}".format(valor_venda).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
                 <p style="font-size: 10px; color: #666; margin-top: 6px;">Investimento inicial completo</p>
             </div>
             
@@ -1353,7 +1346,7 @@
                 
                 {% for ano in anos_marcos %}
                     {% set economia_acum = economia_anual * ano * (((1 + 0.045) ** ano - 1) / 0.045) %}
-                    {% set saldo = economia_acum - valor_total %}
+                    {% set saldo = economia_acum - valor_venda %}
                     
                     <div style="margin-bottom: 12px;">
                         <div style="font-size: 11px; font-weight: 600; color: #666; margin-bottom: 5px; overflow: hidden;">
@@ -1366,7 +1359,7 @@
                         <div style="width: 100%; background: #f5f5f5; height: 25px; border-radius: 5px; position: relative;">
                             {% set percentual_barra = (economia_acum / (economia_anual * 25 * 1.5)) * 100 %}
                             <div style="width: {{ "%.1f"|format(100 if percentual_barra > 100 else percentual_barra) }}%; background: linear-gradient(90deg, {{ '#ff9800' if saldo <= 0 else '#4caf50' }} 0%, {{ '#ffa726' if saldo <= 0 else '#66bb6a' }} 100%); height: 100%; border-radius: 5px; padding-left: 10px; line-height: 25px; color: white; font-weight: 700; font-size: 12px;">
-                                {{ "%.0f"|format((economia_acum / valor_total * 100)) }}%
+                                {{ "%.0f"|format((economia_acum / valor_venda * 100)) }}%
                             </div>
                         </div>
                     </div>
@@ -1394,8 +1387,8 @@
                 <tbody>
                     {% for ano in [1, 3, 5, 10, 15, 20, 25] %}
                     {% set economia_acum = economia_anual * ano %}
-                    {% set saldo = economia_acum - valor_total %}
-                    {% set percent = ((economia_acum / valor_total) * 100) if valor_total > 0 else 0 %}
+                    {% set saldo = economia_acum - valor_venda %}
+                    {% set percent = ((economia_acum / valor_venda) * 100) if valor_venda > 0 else 0 %}
                     <tr>
                         <td style="padding: 6px;">{{ ano }} ano{{ 's' if ano > 1 else '' }}</td>
                         <td style="text-align: right; font-weight: 600; color: #4caf50; padding: 6px;">R$ {{ "{:,.0f}".format(economia_acum).replace(',', '.') }}</td>
@@ -1410,7 +1403,7 @@
         <div class="box verde" style="margin-top: 15px; padding: 15px;">
             <h3 style="margin: 0 0 10px; font-size: 14px;">✅ Conclusão da Análise</h3>
             <p style="font-size: 12px; line-height: 1.6;">
-                Com um investimento de <strong>R$ {{ "{:,.2f}".format(valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>, você terá um payback de aproximadamente <strong>{{ "%.1f"|format(payback_anos) }} anos</strong>. 
+                Com um investimento de <strong>R$ {{ "{:,.2f}".format(valor_venda).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>, você terá um payback de aproximadamente <strong>{{ "%.1f"|format(payback_anos) }} anos</strong>. 
                 Após este período, toda a economia gerada será lucro líquido. Em 25 anos, a economia total chegará a <strong>R$ {{ "{:,.2f}".format(economia_25_anos).replace(',', 'X').replace('.', ',').replace('X', '.') }}</strong>, 
                 representando um ROI de <strong>{{ "%.0f"|format(roi_percentual) }}%</strong> sobre o capital investido.
             </p>
