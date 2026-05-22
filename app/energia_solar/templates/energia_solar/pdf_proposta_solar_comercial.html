@@ -545,7 +545,7 @@
                     <div class="card">
                         <h3 style="margin-top: 0; color: #003366;">02 - Dimensionamento</h3>
                         
-                        <p style="margin: 8px 0;"><strong>Localidade:</strong> {{ projeto.localidade or cliente.cidade if cliente else 'N/A' }}</p>
+                        <p style="margin: 8px 0;"><strong>Localidade:</strong> {{ projeto.localidade or (cliente.cidade if cliente else 'N/A') }}</p>
                         <p style="margin: 8px 0;"><strong>Irradiação Solar Média:</strong> {{ "%.2f"|format(irradiacao_solar) }} kWh/m².dia</p>
                         <p style="margin: 8px 0;"><strong>Potência do Sistema:</strong> {{ "%.2f"|format(potencia_kwp) }} kWp</p>
                         <p style="margin: 8px 0;"><strong>Geração Estimada Mensal:</strong> {{ "%.0f"|format(geracao_mensal_kwh) }} kWh/mês</p>
