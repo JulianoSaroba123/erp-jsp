@@ -2402,6 +2402,14 @@ def projeto_proposta_pdf(projeto_id):
                 logger.warning("⚠️ Logo base64 não encontrada, usando logo padrão (Solar)")
             
             logger.info("🎨 Renderizando template HTML...")
+            
+            # Converter valores Decimal para float ANTES de passar para template
+            # Isso evita erros de "unsupported operand type(s)" no Jinja2
+            consumo_kwh_mes = float(projeto.consumo_kwh_mes or 0)
+            tarifa_kwh = float(projeto.tarifa_kwh or 1.04)
+            simultaneidade = float(projeto.simultaneidade or 35)
+            geracao_estimada_mes = float(projeto.geracao_estimada_mes or 0)
+            
             # Renderizar template HTML
             html_content = render_template('energia_solar/pdf_proposta_solar_v2.html', 
                                          projeto=projeto,
@@ -2411,7 +2419,11 @@ def projeto_proposta_pdf(projeto_id):
                                          balanco=balanco,
                                          placa=placa,
                                          inversor=inversor,
-                                         kit=kit)
+                                         kit=kit,
+                                         consumo_kwh_mes=consumo_kwh_mes,
+                                         tarifa_kwh=tarifa_kwh,
+                                         simultaneidade=simultaneidade,
+                                         geracao_estimada_mes=geracao_estimada_mes)
             
             logger.info("✅ Template HTML renderizado com sucesso")
             

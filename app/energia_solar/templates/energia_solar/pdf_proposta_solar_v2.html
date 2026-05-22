@@ -762,12 +762,12 @@
                 <div>
                     <strong>Grupo:</strong> B (Baixa Tensão)<br>
                     <strong>Consumo médio mensal:</strong> {{ "%.0f"|format(projeto.consumo_kwh_mes or 0) }} kWh/Mês<br>
-                    <strong>Consumo médio anual:</strong> {{ "%.0f"|format((projeto.consumo_kwh_mes or 0) * 12) }} kWh/Ano
+                    <strong>Consumo médio anual:</strong> {{ "%.0f"|format(consumo_kwh_mes * 12) }} kWh/Ano
                 </div>
                 <div>
-                    <strong>Preço do kWh:</strong> R$ {{ "%.2f"|format(projeto.tarifa_kwh or 1.04) }}<br>
-                    <strong>Gasto mensal atual:</strong> R$ {{ "%.2f"|format((projeto.consumo_kwh_mes or 0) * (projeto.tarifa_kwh or 1.04)) }}<br>
-                    <strong>Gasto anual atual:</strong> R$ {{ "%.2f"|format((projeto.consumo_kwh_mes or 0) * (projeto.tarifa_kwh or 1.04) * 12) }}
+                    <strong>Preço do kWh:</strong> R$ {{ "%.2f"|format(tarifa_kwh) }}<br>
+                    <strong>Gasto mensal atual:</strong> R$ {{ "%.2f"|format(consumo_kwh_mes * tarifa_kwh) }}<br>
+                    <strong>Gasto anual atual:</strong> R$ {{ "%.2f"|format(consumo_kwh_mes * tarifa_kwh * 12) }}
                 </div>
             </div>
         </div>
@@ -866,7 +866,7 @@
                     <td class="text-right" style="font-weight: 600;">{{ "%.0f"|format(balanco.consumo_mensal) }} kWh</td>
                 </tr>
                 <tr style="background: #f0f7f0;">
-                    <td style="padding-left: 20px;">└ Consumo durante o dia ({{ "%.1f"|format((projeto.simultaneidade or 0.35) * 100) }}% simultaneidade)</td>
+                    <td style="padding-left: 20px;">└ Consumo durante o dia ({{ "%.1f"|format(simultaneidade) }}% simultaneidade)</td>
                     <td class="text-right">{{ "%.0f"|format(balanco.consumo_simultaneo) }} kWh</td>
                 </tr>
                 <tr style="background: #f0f7f0;">
@@ -907,7 +907,7 @@
             <div class="card" style="background: #ffebee; border-color: #f44336;">
                 <div style="font-size: 14px; color: #666; margin-bottom: 10px;">💡 Fatura SEM Sistema Solar</div>
                 <div style="font-size: 28px; font-weight: 700; color: #d32f2f;">R$ {{ "{:,.2f}".format(balanco.custo_sem_solar).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
-                <div style="font-size: 11px; color: #666; margin-top: 5px;">{{ "%.0f"|format(balanco.consumo_mensal) }} kWh × R$ {{ "%.2f"|format(projeto.tarifa_kwh or 1.04) }}</div>
+                <div style="font-size: 11px; color: #666; margin-top: 5px;">{{ "%.0f"|format(balanco.consumo_mensal) }} kWh × R$ {{ "%.2f"|format(tarifa_kwh) }}</div>
             </div>
             
             <div class="card" style="background: #e8f5e9; border-color: #4caf50;">
@@ -1292,7 +1292,7 @@
                 <div class="card">
                     <div class="card-label">Economia Mensal Média</div>
                     <div class="card-value" style="color: #4caf50; font-size: 20px;">
-                        R$ {{ "{:,.2f}".format(((projeto.geracao_estimada_mes or 0) * (projeto.tarifa_kwh or 1.04)) - 100).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                        R$ {{ "{:,.2f}".format((geracao_estimada_mes * tarifa_kwh) - 100).replace(',', 'X').replace('.', ',').replace('X', '.') }}
                     </div>
                     <div style="font-size: 11px; color: #666; margin-top: 5px;">por mês</div>
                 </div>
@@ -1308,7 +1308,7 @@
                 <div class="card">
                     <div class="card-label">Economia em 25 anos</div>
                     <div class="card-value" style="color: #2196f3; font-size: 20px;">
-                        {% set economia_25 = ((projeto.geracao_estimada_mes or 0) * (projeto.tarifa_kwh or 1.04) * 12 * 25) - ((projeto.valor_venda or 0)) %}
+                        {% set economia_25 = (geracao_estimada_mes * tarifa_kwh * 12 * 25) - (projeto.valor_venda or 0) %}
                         R$ {{ "{:,.0f}".format(economia_25 if economia_25 > 0 else 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}
                     </div>
                     <div style="font-size: 11px; color: #666; margin-top: 5px;">economia líquida</div>
