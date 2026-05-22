@@ -2190,6 +2190,13 @@ def projeto_visualizar(projeto_id):
                          word_disponivel=word_disponivel)
 
 
+@energia_solar_bp.route('/projetos/<int:projeto_id>/detalhes')
+@login_required
+def projeto_detalhes(projeto_id):
+    """Alias para projeto_dashboard (compatibilidade)"""
+    return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+
+
 @energia_solar_bp.route('/projetos/<int:projeto_id>/editar')
 @login_required
 def projeto_editar(projeto_id):
