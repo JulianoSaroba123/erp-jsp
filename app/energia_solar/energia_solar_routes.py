@@ -2760,6 +2760,80 @@ def projeto_proposta_comercial_pdf(projeto_id):
         return redirect(url_for('energia_solar.projetos'))
 
 
+@energia_solar_bp.route('/projetos/<int:projeto_id>/proposta-word-pdf', methods=['GET'])
+@login_required
+def projeto_proposta_word_pdf(projeto_id):
+    """
+    Gera proposta comercial a partir de modelo Word (.docx)
+    1. Carrega template Word com placeholders
+    2. Substitui placeholders com dados reais do projeto
+    3. Salva DOCX preenchido
+    4. Tenta converter para PDF usando LibreOffice (se disponível)
+    5. Retorna PDF (preferencial) ou DOCX (fallback)
+    """
+    from pathlib import Path
+    from flask import send_file
+    from app.energia_solar.proposta_word_service import gerar_docx_proposta, converter_docx_para_pdf
+    
+    logger.info(f"📄 Iniciando geração de proposta Word para projeto {projeto_id}")
+    
+    try:
+        # Buscar projeto
+        projeto = ProjetoSolar.query.get_or_404(projeto_id)
+        
+        # Definir caminhos
+        base_path = Path("app/energia_solar")
+        template_path = base_path / "templates_word" / "proposta_solar_modelo.docx"
+        output_dir = base_path / "documentos_gerados"
+        output_dir.mkdir(exist_ok=True)
+        
+        # Verificar se template existe
+        if not template_path.exists():
+            logger.error(f"❌ Template Word não encontrado: {template_path}")
+            flash(f'Template Word não encontrado. Por favor, crie o modelo em {template_path}', 'error')
+            return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+        
+        # Nome do arquivo baseado no projeto
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nome_arquivo_base = f"proposta_projeto_{projeto_id}_{timestamp}"
+        docx_path = output_dir / f"{nome_arquivo_base}.docx"
+        pdf_path = output_dir / f"{nome_arquivo_base}.pdf"
+        
+        # Gerar DOCX preenchido
+        logger.info(f"🔧 Gerando DOCX com dados do projeto...")
+        gerar_docx_proposta(projeto, template_path, docx_path)
+        
+        # Tentar converter para PDF
+        logger.info(f"📝 Tentando converter DOCX para PDF...")
+        pdf_gerado = converter_docx_para_pdf(docx_path, pdf_path)
+        
+        # Retornar PDF se gerado, senão DOCX
+        if pdf_gerado and Path(pdf_gerado).exists():
+            logger.info(f"✅ Enviando PDF ao usuário")
+            return send_file(
+                pdf_gerado,
+                mimetype='application/pdf',
+                as_attachment=True,
+                download_name=f"proposta_projeto_{projeto_id}.pdf"
+            )
+        else:
+            logger.warning(f"⚠️ PDF não gerado, enviando DOCX ao usuário")
+            flash('LibreOffice não disponível. Gerando arquivo Word (.docx) ao invés de PDF.', 'warning')
+            return send_file(
+                docx_path,
+                mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                as_attachment=True,
+                download_name=f"proposta_projeto_{projeto_id}.docx"
+            )
+            
+    except Exception as e:
+        logger.error(f"❌ Erro ao gerar proposta Word: {str(e)}")
+        import traceback
+        logger.error(f"Stack trace: {traceback.format_exc()}")
+        flash(f'Erro ao gerar proposta: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+
+
 @energia_solar_bp.route('/projetos/<int:projeto_id>/dashboard-pdf')
 @login_required
 def projeto_dashboard_pdf(projeto_id):
