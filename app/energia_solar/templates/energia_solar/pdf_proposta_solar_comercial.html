@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Proposta Comercial - Projeto Nº {{ projeto.id }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333;
+        }
+
+        /* Cores JSP */
+        .cor-azul { color: #003366; }
+        .cor-amarelo { color: #ffcc00; }
+        .bg-azul { background-color: #003366; }
+        .bg-amarelo { background-color: #ffcc00; }
+        .bg-azul-claro { background-color: #e6f2ff; }
+        .bg-cinza-claro { background-color: #f5f5f5; }
+
+        /* Estrutura de página */
+        .pagina {
+            page-break-after: always;
+            position: relative;
+            width: 210mm;
+            height: 297mm;
+            padding: 0;
+            background: white;
+        }
+
+        .pagina:last-child {
+            page-break-after: avoid;
+        }
+
+        /* Cabeçalho padrão (páginas 2+) */
+        .header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: linear-gradient(135deg, #003366 0%, #004d99 100%);
+            padding: 10px 30px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header .logo {
+            max-height: 35px;
+            max-width: 150px;
+        }
+
+        .header .info {
+            text-align: right;
+            font-size: 9pt;
+        }
+
+        /* Rodapé padrão */
+        .footer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: #003366;
+            color: white;
+            padding: 10px 30px;
+            font-size: 8pt;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer .contato {
+            flex: 1;
+        }
+
+        .footer .pagina-num {
+            font-weight: bold;
+            font-size: 9pt;
+        }
+
+        /* Conteúdo da página */
+        .conteudo {
+            position: absolute;
+            top: 50px;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            padding: 25px 30px;
+            overflow: hidden;
+        }
+
+        .conteudo-completo {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        /* Títulos */
+        h1 {
+            font-size: 20pt;
+            font-weight: 700;
+            color: #003366;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid #ffcc00;
+        }
+
+        h2 {
+            font-size: 16pt;
+            font-weight: 600;
+            color: #003366;
+            margin: 15px 0 10px 0;
+        }
+
+        h3 {
+            font-size: 13pt;
+            font-weight: 600;
+            color: #003366;
+            margin: 10px 0 8px 0;
+        }
+
+        /* Cards e blocos */
+        .card {
+            background: #f8f9fa;
+            border-left: 4px solid #003366;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+
+        .card-destaque {
+            background: linear-gradient(135deg, #e6f2ff 0%, #fff 100%);
+            border: 2px solid #003366;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+        }
+
+        .bloco-numerado {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin: 8px 0;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .bloco-numerado .numero {
+            background: #003366;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14pt;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .bloco-numerado .texto {
+            flex: 1;
+            padding-top: 3px;
+        }
+
+        /* Grid 2 colunas */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 15px 0;
+        }
+
+        /* Tabelas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 10pt;
+        }
+
+        table th {
+            background: #003366;
+            color: white;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        table td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        table tr:hover {
+            background: #e6f2ff;
+        }
+
+        .text-right {
+            text-align: right !important;
+        }
+
+        .text-center {
+            text-align: center !important;
+        }
+
+        /* Valor em destaque */
+        .valor-destaque {
+            background: #003366;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .valor-destaque .label {
+            font-size: 11pt;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+
+        .valor-destaque .valor {
+            font-size: 28pt;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        /* Linha de assinatura */
+        .linha-assinatura {
+            margin-top: 60px;
+            text-align: center;
+        }
+
+        .linha-assinatura hr {
+            border: none;
+            border-top: 2px solid #333;
+            width: 300px;
+            margin: 0 auto 5px auto;
+        }
+
+        /* Utilitários */
+        .mt-5 { margin-top: 5px; }
+        .mt-10 { margin-top: 10px; }
+        .mt-15 { margin-top: 15px; }
+        .mt-20 { margin-top: 20px; }
+        .mb-5 { margin-bottom: 5px; }
+        .mb-10 { margin-bottom: 10px; }
+        .mb-15 { margin-bottom: 15px; }
+        .mb-20 { margin-bottom: 20px; }
+        .bold { font-weight: 600; }
+        .small { font-size: 9pt; }
+        
+        /* CAPA ESPECÍFICA */
+        .capa {
+            background: linear-gradient(135deg, #003366 0%, #004d99 50%, #0066cc 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .capa::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            background: #ffcc00;
+            opacity: 0.1;
+            border-radius: 50%;
+        }
+
+        .capa::after {
+            content: '';
+            position: absolute;
+            bottom: -150px;
+            left: -150px;
+            width: 500px;
+            height: 500px;
+            background: #ffcc00;
+            opacity: 0.08;
+            border-radius: 50%;
+        }
+
+        .capa-conteudo {
+            position: relative;
+            z-index: 1;
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        .capa-titulo {
+            font-size: 32pt;
+            font-weight: 700;
+            margin: 40px 0 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .capa-subtitulo {
+            font-size: 18pt;
+            margin-bottom: 60px;
+            opacity: 0.95;
+        }
+
+        .capa-cliente {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 12px;
+            margin: 40px auto;
+            max-width: 500px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .capa-cliente .label {
+            font-size: 10pt;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .capa-cliente .valor {
+            font-size: 16pt;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .capa-rodape {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            right: 40px;
+            text-align: center;
+            font-size: 9pt;
+            opacity: 0.9;
+        }
+
+        .capa-rodape .empresa {
+            font-size: 14pt;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .capa-rodape .contato {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ========================================
+         PÁGINA 1: CAPA COMERCIAL
+    ======================================== -->
+    <div class="pagina capa">
+        <div class="capa-conteudo">
+            {% if config and config.logo_base64 %}
+            <img src="{{ config.logo_base64 }}" alt="Logo" style="max-width: 200px; max-height: 80px; margin-bottom: 30px;">
+            {% endif %}
+
+            <div class="capa-titulo">PROPOSTA COMERCIAL</div>
+            <div class="capa-subtitulo">Sistema de Energia Solar Fotovoltaica</div>
+
+            <div class="capa-cliente">
+                <div class="label">Cliente</div>
+                <div class="valor">{{ cliente.nome_razao_social if cliente else 'Cliente' }}</div>
+                
+                <div class="label">Projeto Nº</div>
+                <div class="valor">{{ projeto.id }}</div>
+                
+                <div class="label">Data de Emissão</div>
+                <div class="valor">{{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else data_emissao }}</div>
+                
+                <div class="label">Validade</div>
+                <div class="valor">30 dias</div>
+            </div>
+
+            <div style="margin-top: 60px; font-size: 14pt; font-weight: 600; color: #ffcc00;">
+                ☀️ Invista em Energia Limpa e Econômica
+            </div>
+        </div>
+
+        <div class="capa-rodape">
+            <div class="empresa">{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</div>
+            <div class="contato">📞 {{ config.telefone if config else '(15) 99670-2036' }}</div>
+            <div class="contato">✉️ {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}</div>
+            {% if config and config.site %}<div class="contato">🌐 {{ config.site }}</div>{% endif %}
+        </div>
+    </div>
+
+    <!-- ========================================
+         PÁGINA 2: COMO FUNCIONA O SISTEMA
+    ======================================== -->
+    <div class="pagina">
+        <div class="header">
+            {% if config and config.logo_base64 %}
+            <img src="{{ config.logo_base64 }}" alt="Logo" class="logo">
+            {% endif %}
+            <div class="info">
+                <div><strong>Projeto Nº {{ projeto.id }}</strong></div>
+                <div>{{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else data_emissao }}</div>
+            </div>
+        </div>
+
+        <div class="conteudo">
+            <h1>Como Funciona o Sistema Solar Fotovoltaico</h1>
+            
+            <p style="margin-bottom: 20px;">
+                O sistema fotovoltaico transforma a luz do sol em energia elétrica limpa e renovável,
+                reduzindo significativamente os custos com a conta de luz.
+            </p>
+
+            <div class="bloco-numerado">
+                <div class="numero">1</div>
+                <div class="texto">
+                    <strong>Captação da Luz Solar</strong><br>
+                    Os módulos fotovoltaicos instalados no telhado ou solo captam a radiação solar
+                    e convertem em energia elétrica em corrente contínua (CC).
+                </div>
+            </div>
+
+            <div class="bloco-numerado">
+                <div class="numero">2</div>
+                <div class="texto">
+                    <strong>Conversão da Energia</strong><br>
+                    O inversor solar converte a energia de corrente contínua (CC) em corrente alternada (CA),
+                    compatível com a rede elétrica e os equipamentos da residência/empresa.
+                </div>
+            </div>
+
+            <div class="bloco-numerado">
+                <div class="numero">3</div>
+                <div class="texto">
+                    <strong>Alimentação do Imóvel</strong><br>
+                    A energia gerada é consumida prioritariamente pelos equipamentos ligados no imóvel,
+                    reduzindo ou zerando o consumo da rede elétrica.
+                </div>
+            </div>
+
+            <div class="bloco-numerado">
+                <div class="numero">4</div>
+                <div class="texto">
+                    <strong>Injeção do Excedente na Rede</strong><br>
+                    Quando a geração é maior que o consumo instantâneo, o excedente é automaticamente
+                    injetado na rede da distribuidora, gerando créditos de energia.
+                </div>
+            </div>
+
+            <div class="bloco-numerado">
+                <div class="numero">5</div>
+                <div class="texto">
+                    <strong>Compensação e Economia</strong><br>
+                    O medidor bidirecional registra a energia injetada e consumida. Os créditos gerados
+                    podem ser utilizados em até 60 meses, garantindo economia contínua na fatura.
+                </div>
+            </div>
+
+            <div class="card-destaque mt-20">
+                <h3 style="margin-top: 0; color: #003366;">💡 Benefícios do Sistema</h3>
+                <ul style="margin-left: 20px; line-height: 1.8;">
+                    <li><strong>Economia imediata</strong> na conta de luz</li>
+                    <li><strong>Valorização</strong> do imóvel</li>
+                    <li><strong>Energia limpa</strong> e sustentável</li>
+                    <li><strong>Baixa manutenção</strong> e alta durabilidade (25+ anos)</li>
+                    <li><strong>Proteção</strong> contra aumentos na tarifa de energia</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="contato">
+                <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong> • 
+                {{ config.telefone if config else '(15) 99670-2036' }} • 
+                {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}
+            </div>
+            <div class="pagina-num">Página 2 de 12</div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         PÁGINA 3: DETALHES DA PROPOSTA
+    ======================================== -->
+    <div class="pagina">
+        <div class="header">
+            {% if config and config.logo_base64 %}
+            <img src="{{ config.logo_base64 }}" alt="Logo" class="logo">
+            {% endif %}
+            <div class="info">
+                <div><strong>Projeto Nº {{ projeto.id }}</strong></div>
+                <div>{{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else data_emissao }}</div>
+            </div>
+        </div>
+
+        <div class="conteudo">
+            <h1>Detalhes da Proposta</h1>
+
+            <div class="grid-2">
+                <div>
+                    <div class="card">
+                        <h3 style="margin-top: 0; color: #003366;">01 - Características do Cliente</h3>
+                        
+                        <p style="margin: 8px 0;"><strong>Grupo Tarifário:</strong> {{ grupo_tarifario }}</p>
+                        <p style="margin: 8px 0;"><strong>Consumo Médio Mensal:</strong> {{ "%.0f"|format(consumo_kwh_mes) }} kWh</p>
+                        <p style="margin: 8px 0;"><strong>Consumo Médio Anual:</strong> {{ "%.0f"|format(consumo_kwh_mes * 12) }} kWh</p>
+                        <p style="margin: 8px 0;"><strong>Preço do kWh:</strong> R$ {{ "%.4f"|format(tarifa_kwh) }}</p>
+                        
+                        {% set gasto_mensal = consumo_kwh_mes * tarifa_kwh %}
+                        {% set gasto_anual = gasto_mensal * 12 %}
+                        
+                        <p style="margin: 8px 0;"><strong>Gasto Mensal Atual:</strong> 
+                            <span style="color: #d32f2f; font-weight: 600;">R$ {{ "{:,.2f}".format(gasto_mensal).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
+                        </p>
+                        <p style="margin: 8px 0;"><strong>Gasto Anual Atual:</strong> 
+                            <span style="color: #d32f2f; font-weight: 600;">R$ {{ "{:,.2f}".format(gasto_anual).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="card">
+                        <h3 style="margin-top: 0; color: #003366;">02 - Dimensionamento</h3>
+                        
+                        <p style="margin: 8px 0;"><strong>Localidade:</strong> {{ projeto.localidade or cliente.cidade if cliente else 'N/A' }}</p>
+                        <p style="margin: 8px 0;"><strong>Irradiação Solar Média:</strong> {{ "%.2f"|format(irradiacao_solar) }} kWh/m².dia</p>
+                        <p style="margin: 8px 0;"><strong>Potência do Sistema:</strong> {{ "%.2f"|format(potencia_kwp) }} kWp</p>
+                        <p style="margin: 8px 0;"><strong>Geração Estimada Mensal:</strong> {{ "%.0f"|format(geracao_mensal_kwh) }} kWh/mês</p>
+                        <p style="margin: 8px 0;"><strong>Área Necessária:</strong> {{ "%.1f"|format(area_necessaria) }} m²</p>
+                        <p style="margin: 8px 0;"><strong>Quantidade de Módulos:</strong> {{ qtd_modulos }}</p>
+                        {% if inversor %}
+                        <p style="margin: 8px 0;"><strong>Inversor:</strong> {{ inversor.fabricante }} {{ inversor.potencia }}W</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-destaque mt-15">
+                <h3 style="margin-top: 0; color: #003366;">📊 Resumo do Projeto</h3>
+                <p style="font-size: 10pt; line-height: 1.7;">
+                    O sistema fotovoltaico dimensionado possui potência de <strong>{{ "%.2f"|format(potencia_kwp) }} kWp</strong>,
+                    composto por <strong>{{ qtd_modulos }} módulos solares</strong> de alta eficiência.
+                    A geração estimada é de <strong>{{ "%.0f"|format(geracao_mensal_kwh) }} kWh/mês</strong>,
+                    suficiente para cobrir praticamente todo o consumo atual de <strong>{{ "%.0f"|format(consumo_kwh_mes) }} kWh/mês</strong>,
+                    proporcionando economia imediata na fatura de energia.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="contato">
+                <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong> • 
+                {{ config.telefone if config else '(15) 99670-2036' }} • 
+                {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}
+            </div>
+            <div class="pagina-num">Página 3 de 12</div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         PÁGINA 4: GERAÇÃO MENSAL ESTIMADA
+    ======================================== -->
+    <div class="pagina">
+        <div class="header">
+            {% if config and config.logo_base64 %}
+            <img src="{{ config.logo_base64 }}" alt="Logo" class="logo">
+            {% endif %}
+            <div class="info">
+                <div><strong>Projeto Nº {{ projeto.id }}</strong></div>
+                <div>{{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else data_emissao }}</div>
+            </div>
+        </div>
+
+        <div class="conteudo">
+            <h1>Geração de Energia Mês a Mês</h1>
+
+            <p style="margin-bottom: 15px;">
+                Projeção mensal de geração e economia com o sistema fotovoltaico instalado.
+                Valores consideram a irradiação solar típica de cada mês.
+            </p>
+
+            {% if balanco and balanco.get('meses') %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mês</th>
+                        <th class="text-right">Consumo (kWh)</th>
+                        <th class="text-right">Geração (kWh)</th>
+                        <th class="text-right">Fatura Sem Sistema</th>
+                        <th class="text-right">Fatura Com Sistema</th>
+                        <th class="text-right">Economia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mes in balanco.meses %}
+                    <tr>
+                        <td>{{ mes.nome }}</td>
+                        <td class="text-right">{{ "%.0f"|format(mes.consumo) }}</td>
+                        <td class="text-right">{{ "%.0f"|format(mes.geracao) }}</td>
+                        <td class="text-right">R$ {{ "%.2f"|format(mes.fatura_sem_sistema).replace('.', ',') }}</td>
+                        <td class="text-right">R$ {{ "%.2f"|format(mes.fatura_com_sistema).replace('.', ',') }}</td>
+                        <td class="text-right" style="color: #4caf50; font-weight: 600;">R$ {{ "%.2f"|format(mes.economia).replace('.', ',') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot style="background: #e6f2ff; font-weight: 600;">
+                    <tr>
+                        <td>TOTAL ANUAL</td>
+                        <td class="text-right">{{ "%.0f"|format(consumo_kwh_mes * 12) }}</td>
+                        <td class="text-right">{{ "%.0f"|format(geracao_mensal_kwh * 12) }}</td>
+                        <td class="text-right">R$ {{ "{:,.2f}".format(gasto_mensal * 12).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td class="text-right">R$ {{ "{:,.2f}".format(custo_disponibilidade * 12).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td class="text-right" style="color: #4caf50;">R$ {{ "{:,.2f}".format(economia_anual).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% else %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mês</th>
+                        <th class="text-right">Consumo (kWh)</th>
+                        <th class="text-right">Geração (kWh)</th>
+                        <th class="text-right">Fatura Sem Sistema</th>
+                        <th class="text-right">Fatura Com Sistema</th>
+                        <th class="text-right">Economia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mes in ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'] %}
+                    <tr>
+                        <td>{{ mes }}</td>
+                        <td class="text-right">{{ "%.0f"|format(consumo_kwh_mes) }}</td>
+                        <td class="text-right">{{ "%.0f"|format(geracao_mensal_kwh) }}</td>
+                        <td class="text-right">R$ {{ "%.2f"|format(gasto_mensal).replace('.', ',') }}</td>
+                        <td class="text-right">R$ {{ "%.2f"|format(custo_disponibilidade).replace('.', ',') }}</td>
+                        <td class="text-right" style="color: #4caf50; font-weight: 600;">R$ {{ "%.2f"|format(economia_mensal).replace('.', ',') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot style="background: #e6f2ff; font-weight: 600;">
+                    <tr>
+                        <td>TOTAL ANUAL</td>
+                        <td class="text-right">{{ "%.0f"|format(consumo_kwh_mes * 12) }}</td>
+                        <td class="text-right">{{ "%.0f"|format(geracao_mensal_kwh * 12) }}</td>
+                        <td class="text-right">R$ {{ "{:,.2f}".format(gasto_mensal * 12).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td class="text-right">R$ {{ "{:,.2f}".format(custo_disponibilidade * 12).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td class="text-right" style="color: #4caf50;">R$ {{ "{:,.2f}".format(economia_anual).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% endif %}
+
+            <div class="card-destaque mt-15">
+                <p style="text-align: center; font-size: 11pt;">
+                    <strong>💰 Economia Anual Estimada:</strong>
+                    <span style="font-size: 18pt; color: #4caf50; font-weight: 700; margin-left: 10px;">
+                        R$ {{ "{:,.2f}".format(economia_anual).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                    </span>
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="contato">
+                <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong> • 
+                {{ config.telefone if config else '(15) 99670-2036' }} • 
+                {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}
+            </div>
+            <div class="pagina-num">Página 4 de 12</div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         PÁGINA 5: PROJEÇÃO DE GERAÇÃO EM 25 ANOS
+    ======================================== -->
+    <div class="pagina">
+        <div class="header">
+            {% if config and config.logo_base64 %}
+            <img src="{{ config.logo_base64 }}" alt="Logo" class="logo">
+            {% endif %}
+            <div class="info">
+                <div><strong>Projeto Nº {{ projeto.id }}</strong></div>
+                <div>{{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else data_emissao }}</div>
+            </div>
+        </div>
+
+        <div class="conteudo">
+            <h1>Projeção de Geração em 25 Anos</h1>
+
+            <p style="margin-bottom: 15px;">
+                Os módulos fotovoltaicos possuem garantia de geração de 25 anos com degradação média de 0,7% ao ano.
+            </p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ano</th>
+                        <th class="text-right">Eficiência do Sistema</th>
+                        <th class="text-right">Geração Anual (kWh)</th>
+                        <th class="text-right">Geração Acumulada (kWh)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set geracao_anual_inicial = geracao_mensal_kwh * 12 %}
+                    {% set acumulado = 0 %}
+                    {% for ano in range(1, 26) %}
+                        {% set eficiencia = 100 - (ano - 1) * 0.7 %}
+                        {% set geracao_ano = geracao_anual_inicial * (eficiencia / 100) %}
+                        {% set acumulado = acumulado + geracao_ano %}
+                        {% if ano <= 5 or ano % 5 == 0 or ano == 25 %}
+                        <tr>
+                            <td>Ano {{ ano }}</td>
+                            <td class="text-right">{{ "%.1f"|format(eficiencia) }}%</td>
+                            <td class="text-right">{{ "{:,.0f}".format(geracao_ano).replace(',', '.') }}</td>
+                            <td class="text-right">{{ "{:,.0f}".format(acumulado).replace(',', '.') }}</td>
+                        </tr>
+                        {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="grid-2 mt-20">
+                <div class="card">
+                    <h3 style="margin-top: 0; color: #003366;">📈 Geração Total</h3>
+                    <p style="font-size: 10pt; line-height: 1.7;">
+                        Em 25 anos, o sistema terá gerado aproximadamente
+                        <strong style="color: #4caf50;">{{ "{:,.0f}".format(acumulado).replace(',', '.') }} kWh</strong>
+                        de energia limpa e renovável.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-top: 0; color: #003366;">🌱 Impacto Ambiental</h3>
+                    <p style="font-size: 10pt; line-height: 1.7;">
+                        Equivalente a plantar aproximadamente
+                        <strong style="color: #4caf50;">{{ "%.0f"|format(acumulado * 0.0008) }} árvores</strong>
+                        ou evitar a emissão de
+                        <strong style="color: #4caf50;">{{ "%.0f"|format(acumulado * 0.5) }} kg de CO₂</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card-destaque mt-15">
+                <h3 style="margin-top: 0; color: #003366;">💡 Durabilidade e Garantias</h3>
+                <ul style="margin-left: 20px; line-height: 1.8; font-size: 10pt;">
+                    <li><strong>Garantia do fabricante:</strong> 12 anos contra defeitos de fabricação</li>
+                    <li><strong>Garantia de geração:</strong> 25 anos (mínimo 80% da potência nominal)</li>
+                    <li><strong>Vida útil estimada:</strong> 30+ anos com manutenção adequada</li>
+                    <li><strong>Degradação anual:</strong> Máximo 0,7% ao ano</li>
+                    <li><strong>Inversor:</strong> Garantia de 5 anos (extensível para 10 anos)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="contato">
+                <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong> • 
+                {{ config.telefone if config else '(15) 99670-2036' }} • 
+                {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}
+            </div>
+            <div class="pagina-num">Página 5 de 12</div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         PÁGINA 6: EQUIPAMENTOS E ESCOPO TÉCNICO
+    ======================================== -->
+    <div class="pagina">
+        <div class="header">
+            {% if config and config.logo_base64 %}
+            <img src="{{ config.logo_base64 }}" alt="Logo" class="logo">
+            {% endif %}
+            <div class="info">
+                <div><strong>Projeto Nº {{ projeto.id }}</strong></div>
+                <div>{{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else data_emissao }}</div>
+            </div>
+        </div>
+
+        <div class="conteudo">
+            <h1>Equipamentos e Escopo Técnico</h1>
+
+            <h2>Módulos Fotovoltaicos</h2>
+            {% if placa %}
+            <div class="card">
+                <div class="grid-2">
+                    <div>
+                        <p style="margin: 5px 0;"><strong>Fabricante:</strong> {{ placa.fabricante }}</p>
+                        <p style="margin: 5px 0;"><strong>Modelo:</strong> {{ placa.modelo }}</p>
+                        <p style="margin: 5px 0;"><strong>Potência:</strong> {{ placa.potencia }}W</p>
+                    </div>
+                    <div>
+                        <p style="margin: 5px 0;"><strong>Tecnologia:</strong> {{ placa.tecnologia or 'Monocristalino' }}</p>
+                        <p style="margin: 5px 0;"><strong>Eficiência:</strong> {{ placa.eficiencia or 'Alta' }}</p>
+                        <p style="margin: 5px 0;"><strong>Quantidade:</strong> {{ qtd_modulos }} unidades</p>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card">
+                <p><strong>Quantidade:</strong> {{ qtd_modulos }} módulos de alta eficiência</p>
+            </div>
+            {% endif %}
+
+            <h2>Inversor Solar</h2>
+            {% if inversor %}
+            <div class="card">
+                <div class="grid-2">
+                    <div>
+                        <p style="margin: 5px 0;"><strong>Fabricante:</strong> {{ inversor.fabricante }}</p>
+                        <p style="margin: 5px 0;"><strong>Modelo:</strong> {{ inversor.modelo }}</p>
+                        <p style="margin: 5px 0;"><strong>Potência:</strong> {{ inversor.potencia }}W</p>
+                    </div>
+                    <div>
+                        <p style="margin: 5px 0;"><strong>Tipo:</strong> {{ inversor.tipo or 'Grid-Tie' }}</p>
+                        <p style="margin: 5px 0;"><strong>Quantidade:</strong> {{ qtd_inversores or 1 }} unidade(s)</p>
+                        <p style="margin: 5px 0;"><strong>Garantia:</strong> 5 anos (extensível)</p>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="card">
+                <p><strong>Inversor</strong> dimensionado conforme potência do sistema</p>
+            </div>
+            {% endif %}
+
+            <h2>Materiais e Instalação Inclusos</h2>
+            <div class="card">
+                <ul style="margin-left: 20px; line-height: 2; font-size: 10pt;">
+                    <li>✓ Estrutura de fixação em alumínio (telhado ou solo)</li>
+                    <li>✓ String box CC com proteções DPS e disjuntores</li>
+                    <li>✓ Cabos solares 6mm² (bitola adequada)</li>
+                    <li>✓ Conectores MC4 originais</li>
+                    <li>✓ Quadro de proteção CA</li>
+                    <li>✓ Eletrodutos, conduítes e acessórios de fixação</li>
+                    <li>✓ Sistema de aterramento conforme NBR 5410</li>
+                    <li>✓ Mão de obra especializada</li>
+                    <li>✓ Projeto elétrico e memorial descritivo</li>
+                    <li>✓ ART (Anotação de Responsabilidade Técnica)</li>
+                    <li>✓ Documentação para homologação na distribuidora</li>
+                </ul>
+            </div>
+
+            <h2>Etapas da Instalação</h2>
+            <div class="grid-2">
+                <div class="bloco-numerado">
+                    <div class="numero">1</div>
+                    <div class="texto">
+                        <strong>Projeto e Documentação</strong><br>
+                        <span class="small">Elaboração do projeto elétrico e documentação para a distribuidora</span>
+                    </div>
+                </div>
+
+                <div class="bloco-numerado">
+                    <div class="numero">2</div>
+                    <div class="texto">
+                        <strong>Instalação Física</strong><br>
+                        <span class="small">Montagem da estrutura, módulos e cabeamento</span>
+                    </div>
+                </div>
+
+                <div class="bloco-numerado">
+                    <div class="numero">3</div>
+                    <div class="texto">
+                        <strong>Conexão Elétrica</strong><br>
+                        <span class="small">Instalação do inversor e conexões CA/CC</span>
+                    </div>
+                </div>
+
+                <div class="bloco-numerado">
+                    <div class="numero">4</div>
+                    <div class="texto">
+                        <strong>Homologação</strong><br>
+                        <span class="small">Vistoria e aprovação pela distribuidora de energia</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="contato">
+                <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong> • 
+                {{ config.telefone if config else '(15) 99670-2036' }} • 
+                {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}
+            </div>
+            <div class="pagina-num">Página 6 de 12</div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         PÁGINA 7: VALOR DO INVESTIMENTO
+    ======================================== -->
+    <div class="pagina">
+        <div class="header">
+            {% if config and config.logo_base64 %}
+            <img src="{{ config.logo_base64 }}" alt="Logo" class="logo">
+            {% endif %}
+            <div class="info">
+                <div><strong>Projeto Nº {{ projeto.id }}</strong></div>
+                <div>{{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else data_emissao }}</div>
+            </div>
+        </div>
+
+        <div class="conteudo">
+            <h1>Valor do Investimento</h1>
+
+            <div class="valor-destaque">
+                <div class="label">INVESTIMENTO TOTAL</div>
+                <div class="valor">R$ {{ "{:,.2f}".format(valor_venda).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+            </div>
+
+            <h2>Composição do Investimento</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th class="text-right">Valor</th>
+                        <th class="text-right">%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Equipamentos (Módulos + Inversor + Kit)</td>
+                        <td class="text-right">R$ {{ "{:,.2f}".format(custo_equipamentos).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td class="text-right">{{ "%.0f"|format((custo_equipamentos / valor_venda * 100) if valor_venda > 0 else 0) }}%</td>
+                    </tr>
+                    <tr>
+                        <td>Instalação e Mão de Obra</td>
+                        <td class="text-right">R$ {{ "{:,.2f}".format(custo_instalacao).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td class="text-right">{{ "%.0f"|format((custo_instalacao / valor_venda * 100) if valor_venda > 0 else 0) }}%</td>
+                    </tr>
+                    <tr>
+                        <td>Projeto, Homologação e ART</td>
+                        <td class="text-right">R$ {{ "{:,.2f}".format(custo_projeto).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td class="text-right">{{ "%.0f"|format((custo_projeto / valor_venda * 100) if valor_venda > 0 else 0) }}%</td>
+                    </tr>
+                </tbody>
+                <tfoot style="background: #003366; color: white; font-weight: 700;">
+                    <tr>
+                        <td>TOTAL</td>
+                        <td class="text-right">R$ {{ "{:,.2f}".format(valor_venda).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td class="text-right">100%</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <h2 class="mt-20">Comparação de Faturas</h2>
+            <div class="grid-2">
+                <div class="card-destaque">
+                    <h3 style="margin-top: 0; color: #d32f2f; text-align: center;">❌ SEM Sistema Solar</h3>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <div style="font-size: 10pt; margin-bottom: 5px;">Fatura Mensal</div>
+                        <div style="font-size: 24pt; font-weight: 700; color: #d32f2f;">
+                            R$ {{ "{:,.2f}".format(gasto_mensal).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <div style="font-size: 10pt; margin-bottom: 5px;">Fatura Anual</div>
+                        <div style="font-size: 20pt; font-weight: 700; color: #d32f2f;">
+                            R$ {{ "{:,.2f}".format(gasto_anual).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-destaque" style="border-color: #4caf50;">
+                    <h3 style="margin-top: 0; color: #4caf50; text-align: center;">✅ COM Sistema Solar</h3>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <div style="font-size: 10pt; margin-bottom: 5px;">Fatura Mensal</div>
+                        <div style="font-size: 24pt; font-weight: 700; color: #4caf50;">
+                            R$ {{ "{:,.2f}".format(custo_disponibilidade).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin: 20px 0;">
+                        <div style="font-size: 10pt; margin-bottom: 5px;">Fatura Anual</div>
+                        <div style="font-size: 20pt; font-weight: 700; color: #4caf50;">
+                            R$ {{ "{:,.2f}".format(custo_disponibilidade * 12).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-destaque mt-15" style="background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%); color: white; border: none;">
+                <h3 style="margin-top: 0; color: white; text-align: center; font-size: 14pt;">💰 ECONOMIA MENSAL</h3>
+                <div style="text-align: center; font-size: 28pt; font-weight: 700; margin: 10px 0;">
+                    R$ {{ "{:,.2f}".format(economia_mensal).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                </div>
+                <div style="text-align: center; font-size: 11pt; opacity: 0.95;">
+                    Economia anual de R$ {{ "{:,.2f}".format(economia_anual).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="contato">
+                <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong> • 
+                {{ config.telefone if config else '(15) 99670-2036' }} • 
+                {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}
+            </div>
+            <div class="pagina-num">Página 7 de 12</div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         PÁGINA 8: RETORNO FINANCEIRO
+    ======================================== -->
+    <div class="pagina">
+        <div class="header">
+            {% if config and config.logo_base64 %}
+            <img src="{{ config.logo_base64 }}" alt="Logo" class="logo">
+            {% endif %}
+            <div class="info">
+                <div><strong>Projeto Nº {{ projeto.id }}</strong></div>
+                <div>{{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else data_emissao }}</div>
+            </div>
+        </div>
+
+        <div class="conteudo">
+            <h1>Retorno Financeiro e Projeção</h1>
+
+            <div class="grid-2 mb-15">
+                <div class="card-destaque">
+                    <h3 style="margin-top: 0; color: #003366; text-align: center;">⏱️ Payback</h3>
+                    <div style="text-align: center; font-size: 36pt; font-weight: 700; color: #ffcc00; margin: 10px 0;">
+                        {{ "%.1f"|format(payback_anos) }}
+                    </div>
+                    <div style="text-align: center; font-size: 12pt; color: #666;">anos</div>
+                    <p class="small mt-10" style="text-align: center;">
+                        Tempo estimado para recuperar o investimento através da economia gerada
+                    </p>
+                </div>
+
+                <div class="card-destaque">
+                    <h3 style="margin-top: 0; color: #003366; text-align: center;">📈 ROI em 25 anos</h3>
+                    <div style="text-align: center; font-size: 36pt; font-weight: 700; color: #4caf50; margin: 10px 0;">
+                        {{ "%.0f"|format(roi_percentual) }}%
+                    </div>
+                    <div style="text-align: center; font-size: 12pt; color: #666;">retorno sobre investimento</div>
+                    <p class="small mt-10" style="text-align: center;">
+                        Economia total de R$ {{ "{:,.2f}".format(economia_25_anos).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                    </p>
+                </div>
+            </div>
+
+            <h2>Projeção de Retorno Financeiro</h2>
+            <table style="font-size: 9pt;">
+                <thead>
+                    <tr>
+                        <th>Ano</th>
+                        <th class="text-right">Economia Anual</th>
+                        <th class="text-right">Economia Acumulada</th>
+                        <th class="text-right">Saldo Líquido</th>
+                        <th class="text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ano in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 25] %}
+                        {% set economia_ano = economia_anual * ((1.045) ** ano) %}
+                        {% set economia_acum_inflacao = 0 %}
+                        {% for a in range(1, ano + 1) %}
+                            {% set economia_acum_inflacao = economia_acum_inflacao + (economia_anual * ((1.045) ** a)) %}
+                        {% endfor %}
+                        {% set saldo = economia_acum_inflacao - valor_venda %}
+                        <tr>
+                            <td>Ano {{ ano }}</td>
+                            <td class="text-right">R$ {{ "{:,.0f}".format(economia_ano).replace(',', '.') }}</td>
+                            <td class="text-right">R$ {{ "{:,.0f}".format(economia_acum_inflacao).replace(',', '.') }}</td>
+                            <td class="text-right" style="color: {{ '#4caf50' if saldo > 0 else '#ff9800' }}; font-weight: 600;">
+                                R$ {{ "{:,.0f}".format(saldo).replace(',', '.') }}
+                            </td>
+                            <td class="text-center">
+                                {% if saldo > 0 %}
+                                <span style="background: #4caf50; color: white; padding: 3px 8px; border-radius: 4px; font-size: 8pt; font-weight: 600;">LUCRO</span>
+                                {% else %}
+                                <span style="background: #ff9800; color: white; padding: 3px 8px; border-radius: 4px; font-size: 8pt; font-weight: 600;">INVESTIMENTO</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="card mt-15" style="background: #e8f5e9;">
+                <p style="font-size: 10pt; line-height: 1.7; text-align: center;">
+                    <strong>💡 Observação:</strong> Os cálculos consideram reajuste médio de 4,5% ao ano na tarifa de energia elétrica,
+                    baseado no histórico de reajustes das distribuidoras. A economia real pode variar conforme 
+                    o consumo efetivo e os reajustes tarifários aplicados.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="contato">
+                <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong> • 
+                {{ config.telefone if config else '(15) 99670-2036' }} • 
+                {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}
+            </div>
+            <div class="pagina-num">Página 8 de 12</div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         PÁGINA 9: PAGAMENTO E ENTREGA
+    ======================================== -->
+    <div class="pagina">
+        <div class="header">
+            {% if config and config.logo_base64 %}
+            <img src="{{ config.logo_base64 }}" alt="Logo" class="logo">
+            {% endif %}
+            <div class="info">
+                <div><strong>Projeto Nº {{ projeto.id }}</strong></div>
+                <div>{{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else data_emissao }}</div>
+            </div>
+        </div>
+
+        <div class="conteudo">
+            <h1>Condições de Pagamento e Entrega</h1>
+
+            <h2>💳 Formas de Pagamento</h2>
+            
+            {% if projeto.forma_pagamento %}
+            <div class="card-destaque">
+                <h3 style="margin-top: 0; color: #003366;">Condições Oferecidas</h3>
+                <p style="font-size: 11pt; line-height: 1.8; white-space: pre-line;">{{ projeto.forma_pagamento }}</p>
+            </div>
+            {% else %}
+            <div class="grid-2">
+                <div class="card">
+                    <h3 style="margin-top: 0; color: #003366;">💰 À Vista</h3>
+                    <p style="font-size: 11pt; line-height: 1.7;">
+                        Pagamento integral via PIX, transferência bancária ou dinheiro.
+                        <br><br>
+                        <strong style="color: #4caf50;">Condições especiais disponíveis</strong>
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-top: 0; color: #003366;">💳 Parcelado</h3>
+                    <p style="font-size: 11pt; line-height: 1.7;">
+                        Parcelamento em cartão de crédito ou financiamento bancário.
+                        <br><br>
+                        <strong>Consulte condições e taxas</strong>
+                    </p>
+                </div>
+            </div>
+
+            <div class="card mt-15" style="background: #fff3e0; border-color: #ff9800;">
+                <p style="font-size: 10pt; line-height: 1.7;">
+                    <strong>⚠️ Importante:</strong> Financiamentos e parcelamentos estão sujeitos a análise de crédito
+                    e aprovação pela instituição financeira. Taxas e condições podem variar.
+                </p>
+            </div>
+            {% endif %}
+
+            <h2 class="mt-20">📦 Prazo de Entrega e Instalação</h2>
+            <div class="card">
+                <table style="margin: 0;">
+                    <tr style="background: white;">
+                        <td style="border: none; padding: 10px; width: 40%;"><strong>Elaboração do Projeto:</strong></td>
+                        <td style="border: none; padding: 10px;">5 a 7 dias úteis após confirmação do pedido</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="border: none; padding: 10px;"><strong>Aprovação na Distribuidora:</strong></td>
+                        <td style="border: none; padding: 10px;">30 a 45 dias (prazo da concessionária)</td>
+                    </tr>
+                    <tr style="background: white;">
+                        <td style="border: none; padding: 10px;"><strong>Instalação do Sistema:</strong></td>
+                        <td style="border: none; padding: 10px;">3 a 5 dias úteis</td>
+                    </tr>
+                    <tr style="background: #f8f9fa;">
+                        <td style="border: none; padding: 10px;"><strong>Vistoria e Homologação Final:</strong></td>
+                        <td style="border: none; padding: 10px;">15 a 30 dias (prazo da concessionária)</td>
+                    </tr>
+                    <tr style="background: #e6f2ff;">
+                        <td style="border: none; padding: 10px;"><strong>PRAZO TOTAL ESTIMADO:</strong></td>
+                        <td style="border: none; padding: 10px;"><strong>60 a 90 dias</strong></td>
+                    </tr>
+                </table>
+            </div>
+
+            <h2 class="mt-20">📋 Etapas do Processo</h2>
+            <div class="bloco-numerado">
+                <div class="numero">1</div>
+                <div class="texto">
+                    <strong>Aprovação da Proposta e Pagamento</strong><br>
+                    <span class="small">Assinatura do contrato e início do processo</span>
+                </div>
+            </div>
+
+            <div class="bloco-numerado">
+                <div class="numero">2</div>
+                <div class="texto">
+                    <strong>Projeto Elétrico e Documentação</strong><br>
+                    <span class="small">Elaboração do projeto conforme normas técnicas e ANEEL</span>
+                </div>
+            </div>
+
+            <div class="bloco-numerado">
+                <div class="numero">3</div>
+                <div class="texto">
+                    <strong>Protocolo na Distribuidora</strong><br>
+                    <span class="small">Envio da documentação para análise e aprovação</span>
+                </div>
+            </div>
+
+            <div class="bloco-numerado">
+                <div class="numero">4</div>
+                <div class="texto">
+                    <strong>Instalação Física</strong><br>
+                    <span class="small">Montagem dos equipamentos e estruturas por equipe especializada</span>
+                </div>
+            </div>
+
+            <div class="bloco-numerado">
+                <div class="numero">5</div>
+                <div class="texto">
+                    <strong>Vistoria e Ativação</strong><br>
+                    <span class="small">Vistoria pela distribuidora e troca do medidor (se necessário)</span>
+                </div>
+            </div>
+
+            <div class="bloco-numerado">
+                <div class="numero">6</div>
+                <div class="texto">
+                    <strong>Sistema em Funcionamento</strong><br>
+                    <span class="small">Sistema ligado e gerando economia imediata</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="contato">
+                <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong> • 
+                {{ config.telefone if config else '(15) 99670-2036' }} • 
+                {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}
+            </div>
+            <div class="pagina-num">Página 9 de 12</div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         PÁGINA 10: CONSIDERAÇÕES FINAIS
+    ======================================== -->
+    <div class="pagina">
+        <div class="header">
+            {% if config and config.logo_base64 %}
+            <img src="{{ config.logo_base64 }}" alt="Logo" class="logo">
+            {% endif %}
+            <div class="info">
+                <div><strong>Projeto Nº {{ projeto.id }}</strong></div>
+                <div>{{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else data_emissao }}</div>
+            </div>
+        </div>
+
+        <div class="conteudo">
+            <h1>Considerações Finais e Validade</h1>
+
+            <h2>📝 Observações Importantes</h2>
+
+            <div class="card">
+                <h3 style="margin-top: 0; color: #003366;">Sobre a Geração de Energia</h3>
+                <ul style="margin-left: 20px; line-height: 1.8; font-size: 10pt;">
+                    <li>A geração de energia é <strong>estimada</strong> com base em dados de irradiação solar
+                        da localidade e pode variar conforme condições climáticas.</li>
+                    <li>Sombreamentos, poeira, sujeira e outros fatores externos podem reduzir temporariamente
+                        a eficiência do sistema.</li>
+                    <li>Recomenda-se limpeza periódica dos módulos (a cada 6 meses) para manter a eficiência.</li>
+                    <li>O sistema não gera energia durante a noite. Durante períodos sem geração suficiente,
+                        a energia será suprida pela rede elétrica convencional.</li>
+                </ul>
+            </div>
+
+            <div class="card mt-15">
+                <h3 style="margin-top: 0; color: #003366;">Sobre o Dimensionamento</h3>
+                <ul style="margin-left: 20px; line-height: 1.8; font-size: 10pt;">
+                    <li>O sistema foi dimensionado com base no <strong>consumo médio informado</strong> pelo cliente.</li>
+                    <li>Variações significativas no consumo podem impactar a cobertura energética do sistema.</li>
+                    <li>Em caso de ampliação futura, o sistema pode ser expandido com módulos adicionais.</li>
+                    <li>O dimensionamento considera a <strong>disponibilidade de área</strong> informada e
+                        características da instalação.</li>
+                </ul>
+            </div>
+
+            <div class="card mt-15">
+                <h3 style="margin-top: 0; color: #003366;">Sobre a Instalação</h3>
+                <ul style="margin-left: 20px; line-height: 1.8; font-size: 10pt;">
+                    <li>A instalação será realizada por equipe técnica especializada e certificada.</li>
+                    <li>Serão seguidas todas as normas técnicas brasileiras (NBR 5410, NBR 16690, etc.).</li>
+                    <li>O projeto elétrico será assinado por engenheiro responsável com emissão de ART.</li>
+                    <li>A estrutura de fixação é dimensionada conforme carga de vento e tipo de telhado.</li>
+                    <li>Eventuais adequações na infraestrutura elétrica existente podem gerar custos adicionais.</li>
+                </ul>
+            </div>
+
+            <div class="card mt-15">
+                <h3 style="margin-top: 0; color: #003366;">Sobre Garantias e Assistência</h3>
+                <ul style="margin-left: 20px; line-height: 1.8; font-size: 10pt;">
+                    <li><strong>Módulos:</strong> Garantia de 12 anos contra defeitos + 25 anos de geração mínima</li>
+                    <li><strong>Inversor:</strong> Garantia de 5 anos (extensível para 10 anos)</li>
+                    <li><strong>Instalação:</strong> Garantia de 12 meses contra defeitos de instalação</li>
+                    <li><strong>Assistência técnica:</strong> Suporte técnico disponível durante toda vida útil do sistema</li>
+                </ul>
+            </div>
+
+            <h2 class="mt-20">⏰ Validade da Proposta</h2>
+            <div class="card-destaque">
+                <p style="font-size: 11pt; line-height: 1.8; text-align: center;">
+                    Esta proposta tem validade de <strong style="color: #003366; font-size: 14pt;">30 dias</strong>
+                    a partir da data de emissão.
+                    <br><br>
+                    Após este período, valores e condições estão sujeitos a reajustes conforme
+                    <strong>variação cambial, disponibilidade de equipamentos e condições de mercado</strong>.
+                </p>
+            </div>
+
+            <div class="card mt-15" style="background: #e3f2fd; border-color: #2196f3;">
+                <p style="font-size: 10pt; line-height: 1.7; text-align: center;">
+                    <strong>💡 Dúvidas?</strong> Nossa equipe está à disposição para esclarecer qualquer questão
+                    e auxiliar no processo de aquisição do seu sistema fotovoltaico.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="contato">
+                <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong> • 
+                {{ config.telefone if config else '(15) 99670-2036' }} • 
+                {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}
+            </div>
+            <div class="pagina-num">Página 10 de 12</div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         PÁGINA 11: DADOS DA EMPRESA
+    ======================================== -->
+    <div class="pagina">
+        <div class="header">
+            {% if config and config.logo_base64 %}
+            <img src="{{ config.logo_base64 }}" alt="Logo" class="logo">
+            {% endif %}
+            <div class="info">
+                <div><strong>Projeto Nº {{ projeto.id }}</strong></div>
+                <div>{{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else data_emissao }}</div>
+            </div>
+        </div>
+
+        <div class="conteudo">
+            <h1>Informações da Empresa</h1>
+
+            <div class="card-destaque" style="text-align: center; padding: 30px;">
+                {% if config and config.logo_base64 %}
+                <img src="{{ config.logo_base64 }}" alt="Logo" style="max-width: 250px; max-height: 100px; margin-bottom: 20px;">
+                {% endif %}
+                
+                <h2 style="color: #003366; margin: 15px 0;">{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</h2>
+                
+                {% if config and config.razao_social %}
+                <p style="font-size: 11pt; margin: 5px 0;">{{ config.razao_social }}</p>
+                {% endif %}
+                
+                {% if config and config.cnpj %}
+                <p style="font-size: 10pt; margin: 5px 0; color: #666;">CNPJ: {{ config.cnpj }}</p>
+                {% endif %}
+            </div>
+
+            <h2>📍 Endereço</h2>
+            <div class="card">
+                {% if config %}
+                <p style="font-size: 11pt; line-height: 1.8;">
+                    {% if config.endereco %}{{ config.endereco }}{% endif %}
+                    {% if config.numero %}, {{ config.numero }}{% endif %}
+                    {% if config.complemento %} - {{ config.complemento }}{% endif %}
+                    <br>
+                    {% if config.bairro %}{{ config.bairro }} - {% endif %}
+                    {% if config.cidade %}{{ config.cidade }}{% endif %}
+                    {% if config.estado %}/{{ config.estado }}{% endif %}
+                    {% if config.cep %} - CEP: {{ config.cep }}{% endif %}
+                </p>
+                {% else %}
+                <p style="font-size: 11pt;">Informações de endereço não disponíveis</p>
+                {% endif %}
+            </div>
+
+            <h2>📞 Contatos</h2>
+            <div class="grid-2">
+                <div class="card">
+                    <h3 style="margin-top: 0; color: #003366;">Telefones</h3>
+                    {% if config and config.telefone %}
+                    <p style="font-size: 11pt; margin: 8px 0;">📱 {{ config.telefone }}</p>
+                    {% endif %}
+                    {% if config and config.celular %}
+                    <p style="font-size: 11pt; margin: 8px 0;">📱 {{ config.celular }}</p>
+                    {% endif %}
+                    {% if not config or (not config.telefone and not config.celular) %}
+                    <p style="font-size: 11pt; margin: 8px 0;">📱 (15) 99670-2036</p>
+                    {% endif %}
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-top: 0; color: #003366;">E-mail e Internet</h3>
+                    {% if config and config.email %}
+                    <p style="font-size: 11pt; margin: 8px 0;">✉️ {{ config.email }}</p>
+                    {% else %}
+                    <p style="font-size: 11pt; margin: 8px 0;">✉️ atendimento@eletricasaroba.com.br</p>
+                    {% endif %}
+                    {% if config and config.site %}
+                    <p style="font-size: 11pt; margin: 8px 0;">🌐 {{ config.site }}</p>
+                    {% endif %}
+                    {% if config and config.instagram %}
+                    <p style="font-size: 11pt; margin: 8px 0;">📷 {{ config.instagram }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <h2>👨‍💼 Equipe Técnica</h2>
+            <div class="card">
+                {% if config and config.responsavel_tecnico %}
+                <p style="font-size: 11pt; line-height: 1.8;">
+                    <strong>Responsável Técnico:</strong> {{ config.responsavel_tecnico }}<br>
+                    {% if config.crea %}<strong>CREA:</strong> {{ config.crea }}{% endif %}
+                </p>
+                {% else %}
+                <p style="font-size: 11pt; line-height: 1.8;">
+                    Equipe de engenheiros e técnicos especializados em energia solar fotovoltaica,
+                    com certificações e treinamentos constantes junto aos fabricantes.
+                </p>
+                {% endif %}
+            </div>
+
+            <div class="card-destaque mt-20" style="background: linear-gradient(135deg, #003366 0%, #004d99 100%); color: white; border: none;">
+                <h3 style="margin-top: 0; color: white; text-align: center;">🌟 Por que escolher a {{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}?</h3>
+                <div class="grid-2" style="margin-top: 15px;">
+                    <ul style="margin-left: 20px; line-height: 2; font-size: 10pt;">
+                        <li>✓ Experiência comprovada em energia solar</li>
+                        <li>✓ Equipamentos de alta qualidade</li>
+                        <li>✓ Equipe técnica qualificada</li>
+                    </ul>
+                    <ul style="margin-left: 20px; line-height: 2; font-size: 10pt;">
+                        <li>✓ Suporte técnico especializado</li>
+                        <li>✓ Garantia e assistência técnica</li>
+                        <li>✓ Compromisso com a sustentabilidade</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="contato">
+                <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong> • 
+                {{ config.telefone if config else '(15) 99670-2036' }} • 
+                {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}
+            </div>
+            <div class="pagina-num">Página 11 de 12</div>
+        </div>
+    </div>
+
+    <!-- ========================================
+         PÁGINA 12: ACEITE E ASSINATURA
+    ======================================== -->
+    <div class="pagina">
+        <div class="header">
+            {% if config and config.logo_base64 %}
+            <img src="{{ config.logo_base64 }}" alt="Logo" class="logo">
+            {% endif %}
+            <div class="info">
+                <div><strong>Projeto Nº {{ projeto.id }}</strong></div>
+                <div>{{ projeto.data_criacao.strftime('%d/%m/%Y') if projeto.data_criacao else data_emissao }}</div>
+            </div>
+        </div>
+
+        <div class="conteudo">
+            <h1>Aceite da Proposta</h1>
+
+            <div class="card-destaque" style="padding: 25px;">
+                <p style="font-size: 11pt; line-height: 1.8; text-align: justify;">
+                    Eu, <strong>{{ cliente.nome_razao_social if cliente else '___________________________________' }}</strong>,
+                    {% if cliente and cliente.cpf_cnpj %}
+                    inscrito(a) no CPF/CNPJ sob nº <strong>{{ cliente.cpf_cnpj }}</strong>,
+                    {% endif %}
+                    declaro estar ciente e de acordo com todas as condições apresentadas nesta proposta comercial
+                    para fornecimento e instalação de sistema de energia solar fotovoltaica.
+                </p>
+                
+                <p style="font-size: 11pt; line-height: 1.8; text-align: justify; margin-top: 15px;">
+                    Confirmo que recebi todas as informações necessárias sobre o projeto, equipamentos, prazos,
+                    valores, condições de pagamento e garantias, e autorizo a 
+                    <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong>
+                    a dar início aos procedimentos de instalação conforme descrito.
+                </p>
+            </div>
+
+            <h2 class="mt-20">Resumo do Investimento</h2>
+            <div class="valor-destaque">
+                <div class="label">VALOR TOTAL DA PROPOSTA</div>
+                <div class="valor">R$ {{ "{:,.2f}".format(valor_venda).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
+                <div style="font-size: 10pt; margin-top: 10px; opacity: 0.9;">
+                    Payback: {{ "%.1f"|format(payback_anos) }} anos | ROI 25 anos: {{ "%.0f"|format(roi_percentual) }}%
+                </div>
+            </div>
+
+            <div style="margin-top: 60px;">
+                <div class="linha-assinatura">
+                    <hr>
+                    <p style="font-size: 10pt; margin-top: 8px;">
+                        <strong>{{ cliente.nome_razao_social if cliente else 'Cliente' }}</strong>
+                        {% if cliente and cliente.cpf_cnpj %}<br>CPF/CNPJ: {{ cliente.cpf_cnpj }}{% endif %}
+                    </p>
+                    <p class="small" style="margin-top: 5px; color: #666;">Assinatura do Cliente</p>
+                </div>
+
+                <div class="linha-assinatura">
+                    <hr>
+                    <p style="font-size: 10pt; margin-top: 8px;">
+                        <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong>
+                        {% if config and config.cnpj %}<br>CNPJ: {{ config.cnpj }}{% endif %}
+                    </p>
+                    <p class="small" style="margin-top: 5px; color: #666;">Representante da Empresa</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 40px; text-align: center;">
+                <p style="font-size: 10pt; color: #666;">
+                    Local: _________________________________ Data: ____/____/________
+                </p>
+            </div>
+
+            <div class="card mt-20" style="background: #e8f5e9; border-color: #4caf50;">
+                <p style="font-size: 10pt; text-align: center; line-height: 1.7;">
+                    <strong style="color: #4caf50;">✅ Obrigado por escolher a {{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}!</strong>
+                    <br>
+                    Estamos prontos para transformar a luz do sol em economia para você.
+                </p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="contato">
+                <strong>{{ config.nome_fantasia if config else 'JSP Elétrica & Solar' }}</strong> • 
+                {{ config.telefone if config else '(15) 99670-2036' }} • 
+                {{ config.email if config else 'atendimento@eletricasaroba.com.br' }}
+            </div>
+            <div class="pagina-num">Página 12 de 12</div>
+        </div>
+    </div>
+
+</body>
+</html>

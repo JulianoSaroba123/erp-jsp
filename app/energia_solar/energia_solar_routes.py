@@ -2635,6 +2635,131 @@ def projeto_proposta_pdf(projeto_id):
         return redirect(url_for('energia_solar.projetos'))
 
 
+@energia_solar_bp.route('/projetos/<int:projeto_id>/proposta-comercial-pdf')
+@login_required
+def projeto_proposta_comercial_pdf(projeto_id):
+    """Gera PDF da proposta comercial profissional (modelo de 12 páginas)"""
+    from app.energia_solar.catalogo_model import ProjetoSolar
+    
+    try:
+        # Carregar projeto
+        projeto = ProjetoSolar.query.get_or_404(projeto_id)
+        
+        logger.info(f"📄 Gerando proposta COMERCIAL PDF para projeto {projeto_id}")
+        
+        # ===========================================================================
+        # USAR FUNÇÃO CENTRALIZADORA PARA CALCULAR TODOS OS VALORES
+        # ===========================================================================
+        contexto = montar_contexto_proposta_solar(projeto)
+        
+        # Tentar gerar PDF com WeasyPrint
+        try:
+            import weasyprint
+            from flask import current_app
+            from datetime import datetime, timedelta
+            
+            # Definir project_root para base_url
+            project_root = os.path.dirname(current_app.root_path)
+            logger.info(f"📁 Project root: {project_root}")
+            
+            # Calcular data de emissão e validade
+            data_emissao = datetime.now().strftime('%d/%m/%Y')
+            data_validade = (datetime.now() + timedelta(days=30)).strftime('%d/%m/%Y')
+            
+            # Valores adicionais para o template comercial
+            grupo_tarifario = "Grupo B (Baixa Tensão)"  # Pode ser melhorado com campo no banco
+            qtd_inversores = contexto.get('qtd_inversores', 1)
+            geracao_mensal_kwh = contexto.get('geracao_estimada_mes', 0)
+            custo_disponibilidade = 30.0  # Valor típico de custo de disponibilidade
+            gasto_mensal = contexto['consumo_kwh_mes'] * contexto['tarifa_kwh']
+            
+            logger.info("🎨 Renderizando template HTML comercial...")
+            
+            # ===========================================================================
+            # PASSAR CONTEXTO COMPLETO PARA O TEMPLATE COMERCIAL
+            # ===========================================================================
+            html_content = render_template('energia_solar/pdf_proposta_solar_comercial.html', 
+                                         # Entidades
+                                         projeto=contexto['projeto'],
+                                         cliente=contexto['cliente'],
+                                         placa=contexto['placa'],
+                                         inversor=contexto['inversor'],
+                                         kit=contexto['kit'],
+                                         config=contexto['config'],
+                                         balanco=contexto['balanco'],
+                                         
+                                         # Valores financeiros (TODOS consistentes)
+                                         valor_venda=contexto['valor_total_investimento'],
+                                         custo_equipamentos=contexto['custo_equipamentos'],
+                                         custo_instalacao=contexto['custo_instalacao'],
+                                         custo_projeto=contexto['custo_projeto'],
+                                         economia_mensal=contexto['economia_mensal'],
+                                         economia_anual=contexto['economia_anual'],
+                                         economia_25_anos=contexto['economia_25_anos'],
+                                         payback_anos=contexto['payback_anos'],
+                                         roi_percentual=contexto['roi_percentual'],
+                                         
+                                         # Valores técnicos (normalizados)
+                                         consumo_kwh_mes=contexto['consumo_kwh_mes'],
+                                         geracao_mensal_kwh=geracao_mensal_kwh,
+                                         potencia_kwp=contexto['potencia_kwp'],
+                                         tarifa_kwh=contexto['tarifa_kwh'],
+                                         irradiacao_solar=contexto['irradiacao_solar'],
+                                         area_necessaria=contexto['area_necessaria'],
+                                         simultaneidade=contexto['simultaneidade_percentual'],
+                                         qtd_modulos=contexto.get('qtd_modulos', 0),
+                                         qtd_inversores=qtd_inversores,
+                                         
+                                         # Extras específicos do template comercial
+                                         data_emissao=data_emissao,
+                                         data_validade=data_validade,
+                                         grupo_tarifario=grupo_tarifario,
+                                         custo_disponibilidade=custo_disponibilidade,
+                                         gasto_mensal=gasto_mensal)
+            
+            logger.info("✅ Template HTML comercial renderizado com sucesso")
+            
+            # Base URL para resolver outros caminhos relativos
+            base_url = f"file:///{project_root.replace(os.sep, '/')}/"
+            
+            logger.info("📝 Convertendo HTML para PDF com WeasyPrint...")
+            # Gerar PDF
+            pdf = weasyprint.HTML(string=html_content, base_url=base_url).write_pdf()
+            
+            logger.info(f"✅ PDF comercial gerado com sucesso! Tamanho: {len(pdf)} bytes")
+            
+            # Criar resposta com headers anti-cache
+            response = make_response(pdf)
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = f'inline; filename=proposta_comercial_solar_{projeto_id}.pdf'
+            response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+            response.headers['Last-Modified'] = 'Wed, 11 Jan 1984 05:00:00 GMT'
+            
+            return response
+            
+        except ImportError as e:
+            # WeasyPrint não instalado
+            logger.error(f"❌ WeasyPrint não encontrado: {str(e)}")
+            flash(f'Biblioteca PDF não disponível. Entre em contato com o suporte.', 'error')
+            return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+        except Exception as e:
+            # Outro erro na geração do PDF
+            import traceback
+            logger.error(f"❌ Erro ao gerar PDF comercial: {str(e)}")
+            logger.error(f"Stack trace: {traceback.format_exc()}")
+            flash(f'Erro ao gerar PDF: {str(e)}', 'error')
+            return redirect(url_for('energia_solar.projeto_dashboard', projeto_id=projeto_id))
+            
+    except Exception as e:
+        logger.error(f"❌ Erro crítico ao processar proposta comercial PDF projeto {projeto_id}: {str(e)}")
+        import traceback
+        logger.error(f"Stack trace: {traceback.format_exc()}")
+        flash(f'Erro crítico ao processar requisição: {str(e)}', 'error')
+        return redirect(url_for('energia_solar.projetos'))
+
+
 @energia_solar_bp.route('/projetos/<int:projeto_id>/dashboard-pdf')
 @login_required
 def projeto_dashboard_pdf(projeto_id):
