@@ -493,7 +493,7 @@
         
         <!-- Investimento e Retorno -->
         <div class="grid-2" style="margin-top: 35px;">
-            <div class="box destaque" style="min-height: 160px;">
+            <div class="box destaque" style="min-height: 160px; clear: none; float: left; width: 48.5%; margin-right: 3%;">
                 <h3 style="margin-top: 0; color: #002755; text-align: center; font-size: 16px;">💵 Investimento Total</h3>
                 <div style="text-align: center; padding: 15px 10px;">
                     <div style="font-size: 44px; font-weight: 700; color: #002755; line-height: 1.2;">R$ {{ "{:,.2f}".format(valor_venda).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div>
@@ -501,7 +501,7 @@
                 </div>
             </div>
             
-            <div class="box verde" style="min-height: 160px;">
+            <div class="box verde" style="min-height: 160px; clear: none; float: left; width: 48.5%; margin-right: 0;">
                 <h3 style="margin-top: 0; color: #4caf50; text-align: center; font-size: 16px;">📈 Retorno do Investimento</h3>
                 <div style="text-align: center; padding: 15px 10px;">
                     <div style="font-size: 44px; font-weight: 700; color: #4caf50; line-height: 1.2;">{{ "%.1f"|format(payback_anos) }} anos</div>
