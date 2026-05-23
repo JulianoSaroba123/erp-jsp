@@ -10,6 +10,120 @@ import tempfile
 from xml.sax.saxutils import escape
 
 
+def _to_float(value, default=0.0):
+    try:
+        return float(value)
+    except Exception:
+        return default
+
+
+def _serie_consumo_12_meses(projeto):
+    """Retorna lista com 12 valores de consumo mensal."""
+    base = _to_float(getattr(projeto, 'consumo_kwh_mes', 0), 0)
+    historico = getattr(projeto, 'historico_consumo', None)
+    meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+
+    if isinstance(historico, dict):
+        valores = []
+        for m in meses:
+            # suporta chaves em formatos diferentes
+            v = historico.get(m)
+            if v is None:
+                v = historico.get(m.lower())
+            if v is None:
+                v = historico.get(m.upper())
+            valores.append(_to_float(v, base))
+        if any(valores):
+            return valores
+
+    return [base for _ in range(12)]
+
+
+def _serie_geracao_12_meses(projeto):
+    """Retorna lista com 12 valores de geração mensal com sazonalidade simples."""
+    base = _to_float(getattr(projeto, 'geracao_estimada_mes', 0), 0)
+    fatores = [0.93, 0.92, 0.95, 0.98, 1.02, 1.06, 1.08, 1.07, 1.03, 1.00, 0.97, 0.94]
+    return [base * f for f in fatores]
+
+
+def _montar_tabela_12_meses_texto(projeto):
+    meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    consumo = _serie_consumo_12_meses(projeto)
+    geracao = _serie_geracao_12_meses(projeto)
+
+    linhas = ['Mes | Consumo (kWh) | Geracao (kWh) | Saldo (kWh)']
+    for i, mes in enumerate(meses):
+        saldo = geracao[i] - consumo[i]
+        linhas.append(f"{mes} | {consumo[i]:.0f} | {geracao[i]:.0f} | {saldo:.0f}")
+    return '\n'.join(linhas)
+
+
+def _montar_tabela_25_anos_texto(projeto):
+    economia_mensal = _to_float(getattr(projeto, 'economia_mensal', 0), 0)
+    reajuste = _to_float(getattr(projeto, 'perda_eficiencia_anual', 0.8), 0.8)
+    # Interpretação: campo vem em %, usamos como crescimento de tarifa/economia para projeção.
+    taxa = reajuste / 100.0
+
+    linhas = ['Ano | Economia Anual (R$) | Economia Acumulada (R$)']
+    acumulado = 0.0
+    economia_ano_base = economia_mensal * 12
+    for ano in range(1, 26):
+        economia_ano = economia_ano_base * ((1 + taxa) ** (ano - 1))
+        acumulado += economia_ano
+        linhas.append(f"{ano} | {economia_ano:.2f} | {acumulado:.2f}")
+    return '\n'.join(linhas)
+
+
+def _montar_grafico_12_meses_csv(projeto):
+    meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    consumo = _serie_consumo_12_meses(projeto)
+    geracao = _serie_geracao_12_meses(projeto)
+
+    linhas = ['Mes,Consumo_kWh,Geracao_kWh']
+    for i, mes in enumerate(meses):
+        linhas.append(f"{mes},{consumo[i]:.0f},{geracao[i]:.0f}")
+    return '\n'.join(linhas)
+
+
+def _montar_grafico_25_anos_csv(projeto):
+    economia_mensal = _to_float(getattr(projeto, 'economia_mensal', 0), 0)
+    reajuste = _to_float(getattr(projeto, 'perda_eficiencia_anual', 0.8), 0.8)
+    taxa = reajuste / 100.0
+
+    linhas = ['Ano,Economia_Anual_R$,Economia_Acumulada_R$']
+    acumulado = 0.0
+    economia_ano_base = economia_mensal * 12
+    for ano in range(1, 26):
+        economia_ano = economia_ano_base * ((1 + taxa) ** (ano - 1))
+        acumulado += economia_ano
+        linhas.append(f"{ano},{economia_ano:.2f},{acumulado:.2f}")
+    return '\n'.join(linhas)
+
+
+def _montar_grafico_payback_csv(projeto):
+    investimento = _to_float(
+        getattr(projeto, 'valor_venda', None)
+        or getattr(projeto, 'valor_orcamento', None)
+        or getattr(projeto, 'custo_total', None)
+        or 0,
+        0,
+    )
+    economia_mensal = _to_float(getattr(projeto, 'economia_mensal', 0), 0)
+    payback_anos = _to_float(
+        getattr(projeto, 'payback_anos', None)
+        or getattr(projeto, 'payback', None)
+        or 0,
+        0,
+    )
+    meses = max(24, int(payback_anos * 12) + 12)
+
+    linhas = ['Mes,Investimento_R$,Economia_Acumulada_R$']
+    for m in range(0, meses + 1):
+        economia_acumulada = economia_mensal * m
+        linhas.append(f"{m},{investimento:.2f},{economia_acumulada:.2f}")
+    return '\n'.join(linhas)
+
+
 def _substituir_texto_paragrafo(paragrafo, variaveis):
     """Substitui placeholders em múltiplos formatos no parágrafo."""
     if not paragrafo.text:
@@ -315,17 +429,17 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
     variaveis.update({
         'fatura_media_mensal_sem_sistema': f"{float(fatura_media or 0):.2f}",
         'fatura_minima': f"{float((fatura_media or 0) * 0.1):.2f}",
-        'grafico_consumo_geracao_12_meses': '-',
-        'grafico_consumo_geracao_25_anos': '-',
-        'grafico_pay_back': '-',
+        'grafico_consumo_geracao_12_meses': _montar_grafico_12_meses_csv(projeto),
+        'grafico_consumo_geracao_25_anos': _montar_grafico_25_anos_csv(projeto),
+        'grafico_pay_back': _montar_grafico_payback_csv(projeto),
         'kit_descricao': kit_desc,
         'kit_outras_inf': getattr(projeto, 'observacoes', '') or '',
         'orcamento_valor_nota': f"{float(valor_nota or 0):.2f}",
         'payback_ano_lei_14300': f"{float(payback_anos or 0):.1f}",
         'payback_roi_lei_14300': f"{float(payback_anos or 0):.1f}",
         'reajuste_anual': f"{float(getattr(projeto, 'perda_eficiencia_anual', 0.8) or 0.8):.2f}",
-        'tabela_12_meses': '-',
-        'tabela_25_anos': '-',
+        'tabela_12_meses': _montar_tabela_12_meses_texto(projeto),
+        'tabela_25_anos': _montar_tabela_25_anos_texto(projeto),
     })
     
     # Adicionar variáveis do balanço se fornecido
