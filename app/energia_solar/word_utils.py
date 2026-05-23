@@ -17,6 +17,15 @@ def _to_float(value, default=0.0):
         return default
 
 
+def _bar(valor, maximo, largura=16, char='#'):
+    """Gera barra ASCII proporcional para visual tipo dashboard."""
+    maximo = max(1.0, _to_float(maximo, 1.0))
+    valor = max(0.0, _to_float(valor, 0.0))
+    preenchido = int(round((valor / maximo) * largura))
+    preenchido = max(0, min(largura, preenchido))
+    return (char * preenchido) + ('.' * (largura - preenchido))
+
+
 def _serie_consumo_12_meses(projeto):
     """Retorna lista com 12 valores de consumo mensal."""
     base = _to_float(getattr(projeto, 'consumo_kwh_mes', 0), 0)
@@ -51,10 +60,22 @@ def _montar_tabela_12_meses_texto(projeto):
     consumo = _serie_consumo_12_meses(projeto)
     geracao = _serie_geracao_12_meses(projeto)
 
-    linhas = ['Mes | Consumo (kWh) | Geracao (kWh) | Saldo (kWh)']
+    linhas = [
+        'SOLAR GRID :: 12M PERFORMANCE',
+        'Mes | Consumo(kWh) | Geracao(kWh) | Saldo(kWh) | Nivel',
+        '----+--------------+--------------+------------+----------------',
+    ]
+    pico = max(max(consumo), max(geracao), 1)
     for i, mes in enumerate(meses):
         saldo = geracao[i] - consumo[i]
-        linhas.append(f"{mes} | {consumo[i]:.0f} | {geracao[i]:.0f} | {saldo:.0f}")
+        barra = _bar(geracao[i], pico)
+        linhas.append(f"{mes:>3} | {consumo[i]:>12.0f} | {geracao[i]:>12.0f} | {saldo:>10.0f} | {barra}")
+
+    total_c = sum(consumo)
+    total_g = sum(geracao)
+    total_s = total_g - total_c
+    linhas.append('----+--------------+--------------+------------+----------------')
+    linhas.append(f"TOT | {total_c:>12.0f} | {total_g:>12.0f} | {total_s:>10.0f} |")
     return '\n'.join(linhas)
 
 
@@ -64,13 +85,19 @@ def _montar_tabela_25_anos_texto(projeto):
     # Interpretação: campo vem em %, usamos como crescimento de tarifa/economia para projeção.
     taxa = reajuste / 100.0
 
-    linhas = ['Ano | Economia Anual (R$) | Economia Acumulada (R$)']
+    linhas = [
+        'ECONOMIC TIMELINE :: 25Y FORECAST',
+        'Ano | Economia Anual (R$) | Acumulado (R$) | Evolucao',
+        '----+----------------------+----------------+----------------',
+    ]
     acumulado = 0.0
     economia_ano_base = economia_mensal * 12
+    maior_anual = economia_ano_base * ((1 + taxa) ** 24) if economia_ano_base else 1
     for ano in range(1, 26):
         economia_ano = economia_ano_base * ((1 + taxa) ** (ano - 1))
         acumulado += economia_ano
-        linhas.append(f"{ano} | {economia_ano:.2f} | {acumulado:.2f}")
+        barra = _bar(economia_ano, maior_anual)
+        linhas.append(f"{ano:>3} | {economia_ano:>20.2f} | {acumulado:>14.2f} | {barra}")
     return '\n'.join(linhas)
 
 
@@ -79,9 +106,17 @@ def _montar_grafico_12_meses_csv(projeto):
     consumo = _serie_consumo_12_meses(projeto)
     geracao = _serie_geracao_12_meses(projeto)
 
-    linhas = ['Mes,Consumo_kWh,Geracao_kWh']
+    linhas = [
+        'CHART DATA :: CONSUMO x GERACAO (12M)',
+        'Mes | Consumo | Geracao | Delta | C-Bar             | G-Bar',
+        '----+---------+---------+-------+-------------------+-------------------',
+    ]
+    pico = max(max(consumo), max(geracao), 1)
     for i, mes in enumerate(meses):
-        linhas.append(f"{mes},{consumo[i]:.0f},{geracao[i]:.0f}")
+        delta = geracao[i] - consumo[i]
+        c_bar = _bar(consumo[i], pico, largura=19)
+        g_bar = _bar(geracao[i], pico, largura=19)
+        linhas.append(f"{mes:>3} | {consumo[i]:>7.0f} | {geracao[i]:>7.0f} | {delta:>5.0f} | {c_bar} | {g_bar}")
     return '\n'.join(linhas)
 
 
@@ -90,13 +125,19 @@ def _montar_grafico_25_anos_csv(projeto):
     reajuste = _to_float(getattr(projeto, 'perda_eficiencia_anual', 0.8), 0.8)
     taxa = reajuste / 100.0
 
-    linhas = ['Ano,Economia_Anual_R$,Economia_Acumulada_R$']
+    linhas = [
+        'CHART DATA :: ECONOMIA 25 ANOS',
+        'Ano | Economia_Anual | Economia_Acumulada | Curva',
+        '----+----------------+--------------------+----------------',
+    ]
     acumulado = 0.0
     economia_ano_base = economia_mensal * 12
+    maior_anual = economia_ano_base * ((1 + taxa) ** 24) if economia_ano_base else 1
     for ano in range(1, 26):
         economia_ano = economia_ano_base * ((1 + taxa) ** (ano - 1))
         acumulado += economia_ano
-        linhas.append(f"{ano},{economia_ano:.2f},{acumulado:.2f}")
+        linha = _bar(economia_ano, maior_anual)
+        linhas.append(f"{ano:>3} | {economia_ano:>14.2f} | {acumulado:>18.2f} | {linha}")
     return '\n'.join(linhas)
 
 
@@ -117,10 +158,18 @@ def _montar_grafico_payback_csv(projeto):
     )
     meses = max(24, int(payback_anos * 12) + 12)
 
-    linhas = ['Mes,Investimento_R$,Economia_Acumulada_R$']
-    for m in range(0, meses + 1):
+    payback_mes_estimado = int(round(investimento / economia_mensal)) if economia_mensal > 0 else 0
+
+    linhas = [
+        'CHART DATA :: CURVA DE PAYBACK',
+        f'Investimento (R$): {investimento:.2f} | Economia mensal (R$): {economia_mensal:.2f} | Payback estimado: {payback_mes_estimado} meses',
+        'Mes | Investimento | Economia_Acumulada | Progresso',
+        '----+-------------+--------------------+----------------',
+    ]
+    for m in range(0, meses + 1, 2):
         economia_acumulada = economia_mensal * m
-        linhas.append(f"{m},{investimento:.2f},{economia_acumulada:.2f}")
+        progresso = _bar(economia_acumulada, max(investimento, economia_acumulada, 1))
+        linhas.append(f"{m:>3} | {investimento:>11.2f} | {economia_acumulada:>18.2f} | {progresso}")
     return '\n'.join(linhas)
 
 
@@ -190,7 +239,14 @@ def _substituir_placeholders_xml_docx(caminho_docx, variaveis):
 
                     for variavel, valor in variaveis.items():
                         chave = str(variavel)
-                        valor_xml = escape(str(valor))
+                        valor_str = str(valor)
+
+                        # Para blocos multiline (tabelas/graficos), deixamos python-docx
+                        # aplicar no nível de parágrafo para preservar melhor as quebras.
+                        if '\n' in valor_str:
+                            continue
+
+                        valor_xml = escape(valor_str)
 
                         placeholders = [
                             f'[{chave}]', f'[{chave.upper()}]', f'[{chave.lower()}]',
