@@ -33,6 +33,9 @@ Use estes placeholders no seu template Word. Eles serão automaticamente substit
 | `{{CIDADE}}` | Cidade do cliente ou projeto | Sorocaba |
 | `{{ESTADO}}` | Estado (UF) | SP |
 | `{{ENDERECO_CLIENTE}}` | Endereço completo | Rua das Flores, 123 |
+| `{{TELEFONE_CLIENTE}}` | Telefone do cliente | (15) 99999-9999 |
+| `{{EMAIL_CLIENTE}}` | E-mail do cliente | cliente@email.com |
+| `{{CEP_CLIENTE}}` | CEP do cliente | 18000-000 |
 
 ### 📋 Dados do Projeto
 | Placeholder | Descrição | Exemplo |
@@ -52,6 +55,10 @@ Use estes placeholders no seu template Word. Eles serão automaticamente substit
 | `{{MODELO_INVERSOR}}` | Modelo do inversor | SG10RT |
 | `{{FABRICANTE_INVERSOR}}` | Fabricante do inversor | Sungrow |
 | `{{POTENCIA_INVERSOR}}` | Potência do inversor | 10000W |
+| `{{TIPO_INSTALACAO}}` | Tipo de instalação | Telhado |
+| `{{GARANTIA_MODULOS}}` | Garantia dos módulos | 25 anos (potência) / 12 anos (produto) |
+| `{{GARANTIA_INVERSOR}}` | Garantia do inversor | 10 anos |
+| `{{VIDA_UTIL_SISTEMA}}` | Vida útil do sistema | 25 anos |
 
 ### 📊 Geração e Consumo
 | Placeholder | Descrição | Exemplo |
@@ -62,6 +69,8 @@ Use estes placeholders no seu template Word. Eles serão automaticamente substit
 | `{{CONSUMO_ANUAL}}` | Consumo anual | 14.400 kWh/ano |
 | `{{AREA_NECESSARIA}}` | Área de telhado necessária | 65,00 m² |
 | `{{IRRADIACAO_SOLAR}}` | Irradiação solar média | 5,20 kWh/m².dia |
+| `{{PRECO_KWH}}` | Preço do kWh de energia | R$ 0,8500 |
+| `{{TARIFA_ENERGIA}}` | Tarifa de energia (mesma coisa) | R$ 0,8500 |
 
 ### 💰 Valores Financeiros
 | Placeholder | Descrição | Exemplo |
@@ -72,6 +81,10 @@ Use estes placeholders no seu template Word. Eles serão automaticamente substit
 | `{{ECONOMIA_25_ANOS}}` | Economia em 25 anos (com inflação) | R$ 528.000,00 |
 | `{{PAYBACK}}` | Tempo de retorno do investimento | 1,9 anos |
 | `{{ROI_25_ANOS}}` | ROI em 25 anos (%) | 1.753% |
+| `{{CONTA_LUZ_ATUAL}}` | Valor atual da conta de luz | R$ 1.248,00 |
+| `{{CONTA_LUZ_FUTURA}}` | Valor futuro da conta (taxa mínima) | R$ 124,80 |
+| `{{REDUCAO_PERCENTUAL}}` | Percentual de redução da conta | 90% |
+| `{{PERCENTUAL_COMPENSACAO}}` | Percentual de compensação | 100% |
 
 ### 💵 Custos Detalhados
 | Placeholder | Descrição | Exemplo |
@@ -79,6 +92,14 @@ Use estes placeholders no seu template Word. Eles serão automaticamente substit
 | `{{CUSTO_EQUIPAMENTOS}}` | Custo dos equipamentos | R$ 18.523,38 |
 | `{{CUSTO_INSTALACAO}}` | Custo da instalação | R$ 7.124,38 |
 | `{{CUSTO_PROJETO}}` | Custo do projeto | R$ 2.849,75 |
+
+### 📋 Condições Comerciais
+| Placeholder | Descrição | Exemplo |
+|------------|-----------|---------|
+| `{{FORMA_PAGAMENTO}}` | Forma de pagamento | À vista ou parcelado |
+| `{{PRAZO_ENTREGA}}` | Prazo de entrega dos equipamentos | 45 dias úteis |
+| `{{PRAZO_INSTALACAO}}` | Prazo de instalação | 7 a 15 dias úteis |
+| `{{PRAZO_TOTAL}}` | Prazo total do projeto | 60 dias úteis |
 
 ### 🏢 Dados da Empresa
 | Placeholder | Descrição | Exemplo |

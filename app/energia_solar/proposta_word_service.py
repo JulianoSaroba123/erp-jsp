@@ -125,6 +125,9 @@ def montar_contexto_proposta(projeto):
     area = float(getattr(projeto, "area_necessaria", None) or 0)
     if area == 0 and qtd_modulos:
         area = float(qtd_modulos) * 2.5
+    
+    # Tarifa de energia
+    preco_kwh = float(getattr(projeto, 'preco_kwh', None) or getattr(projeto, 'tarifa_energia', None) or 0.85)
 
     # Cliente
     cliente = None
@@ -162,6 +165,9 @@ def montar_contexto_proposta(projeto):
         "CIDADE": cliente_cidade or getattr(projeto, "localidade", "") or "",
         "ESTADO": cliente_estado or "",
         "ENDERECO_CLIENTE": cliente.endereco if cliente and cliente.endereco else "",
+        "TELEFONE_CLIENTE": cliente.telefone if cliente and hasattr(cliente, 'telefone') else "",
+        "EMAIL_CLIENTE": cliente.email if cliente and hasattr(cliente, 'email') else "",
+        "CEP_CLIENTE": cliente.cep if cliente and hasattr(cliente, 'cep') else "",
         
         # Dados do projeto
         "NUMERO_PROJETO": str(getattr(projeto, "id", "")),
@@ -177,6 +183,10 @@ def montar_contexto_proposta(projeto):
         "MODELO_INVERSOR": inversor.modelo if inversor else "",
         "FABRICANTE_INVERSOR": inversor.fabricante if inversor else "",
         "POTENCIA_INVERSOR": f"{inversor.potencia}W" if inversor else "",
+        "TIPO_INSTALACAO": getattr(projeto, 'tipo_instalacao', None) or "Telhado",
+        "GARANTIA_MODULOS": "25 anos (potência) / 12 anos (produto)",
+        "GARANTIA_INVERSOR": "10 anos",
+        "VIDA_UTIL_SISTEMA": "25 anos",
         
         # Geração e consumo
         "GERACAO_MENSAL": f"{formatar_numero(getattr(projeto, 'geracao_estimada_mes', 0), 0)} kWh/mês",
@@ -185,6 +195,8 @@ def montar_contexto_proposta(projeto):
         "CONSUMO_ANUAL": f"{formatar_numero(float(getattr(projeto, 'consumo_kwh_mes', 0) or 0) * 12, 0)} kWh/ano",
         "AREA_NECESSARIA": f"{formatar_numero(area, 2)} m²",
         "IRRADIACAO_SOLAR": f"{formatar_numero(getattr(projeto, 'irradiacao_solar', 5.0), 2)} kWh/m².dia",
+        "PRECO_KWH": f"R$ {formatar_numero(preco_kwh, 4)}",
+        "TARIFA_ENERGIA": f"R$ {formatar_numero(preco_kwh, 4)}",
         
         # Valores financeiros
         "VALOR_INVESTIMENTO": formatar_moeda(valor_total),
@@ -193,11 +205,21 @@ def montar_contexto_proposta(projeto):
         "ECONOMIA_25_ANOS": formatar_moeda(economia_25),
         "PAYBACK": f"{formatar_numero(payback, 1)} anos",
         "ROI_25_ANOS": f"{formatar_numero(roi_25, 0)}%",
+        "CONTA_LUZ_ATUAL": formatar_moeda(economia_mensal),  # Economia = valor da conta
+        "CONTA_LUZ_FUTURA": formatar_moeda(float(economia_mensal) * 0.1),  # ~10% (taxa mínima)
+        "REDUCAO_PERCENTUAL": "90%",  # Redução típica
+        "PERCENTUAL_COMPENSACAO": formatar_numero(float(getattr(projeto, 'simultaneity_factor', None) or 100), 0) + "%",
         
         # Custos detalhados
         "CUSTO_EQUIPAMENTOS": formatar_moeda(getattr(projeto, 'custo_equipamentos', 0)),
         "CUSTO_INSTALACAO": formatar_moeda(getattr(projeto, 'custo_instalacao', 0)),
         "CUSTO_PROJETO": formatar_moeda(getattr(projeto, 'custo_projeto', 0)),
+        
+        # Condições comerciais
+        "FORMA_PAGAMENTO": getattr(projeto, 'forma_pagamento', None) or "À vista ou parcelado",
+        "PRAZO_ENTREGA": getattr(projeto, 'prazo_entrega', None) or "45 dias úteis",
+        "PRAZO_INSTALACAO": "7 a 15 dias úteis após entrega dos equipamentos",
+        "PRAZO_TOTAL": "60 dias úteis (aproximadamente)",
         
         # Dados da empresa (configuração)
         "NOME_EMPRESA": "JSP Elétrica & Solar",
