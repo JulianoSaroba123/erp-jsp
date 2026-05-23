@@ -271,6 +271,62 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'empresa_email': config.email if config else 'atendimento@eletricasaroba.com.br',
         'empresa_site': 'www.eletricasaroba.com.br',
     }
+
+    # Variáveis extras encontradas em modelos comerciais personalizados
+    valor_conta_luz = getattr(projeto, 'valor_conta_luz', None)
+    consumo_kwh = getattr(projeto, 'consumo_kwh_mes', None)
+    tarifa_kwh = getattr(projeto, 'tarifa_kwh', None)
+    fatura_media = 0
+    if valor_conta_luz:
+        try:
+            fatura_media = float(valor_conta_luz)
+        except Exception:
+            fatura_media = 0
+    elif consumo_kwh and tarifa_kwh:
+        try:
+            fatura_media = float(consumo_kwh) * float(tarifa_kwh)
+        except Exception:
+            fatura_media = 0
+
+    valor_nota = (
+        getattr(projeto, 'valor_nota_fiscal', None)
+        or getattr(projeto, 'valor_venda', None)
+        or getattr(projeto, 'valor_orcamento', None)
+        or getattr(projeto, 'custo_total', None)
+        or 0
+    )
+
+    kit_desc = ''
+    kit_obj = getattr(projeto, 'kit', None)
+    if kit_obj:
+        kit_desc = (
+            getattr(kit_obj, 'descricao', None)
+            or getattr(kit_obj, 'nome', None)
+            or getattr(kit_obj, 'modelo', None)
+            or ''
+        )
+
+    payback_anos = (
+        getattr(projeto, 'payback_anos', None)
+        or getattr(projeto, 'payback', None)
+        or 0
+    )
+
+    variaveis.update({
+        'fatura_media_mensal_sem_sistema': f"{float(fatura_media or 0):.2f}",
+        'fatura_minima': f"{float((fatura_media or 0) * 0.1):.2f}",
+        'grafico_consumo_geracao_12_meses': '-',
+        'grafico_consumo_geracao_25_anos': '-',
+        'grafico_pay_back': '-',
+        'kit_descricao': kit_desc,
+        'kit_outras_inf': getattr(projeto, 'observacoes', '') or '',
+        'orcamento_valor_nota': f"{float(valor_nota or 0):.2f}",
+        'payback_ano_lei_14300': f"{float(payback_anos or 0):.1f}",
+        'payback_roi_lei_14300': f"{float(payback_anos or 0):.1f}",
+        'reajuste_anual': f"{float(getattr(projeto, 'perda_eficiencia_anual', 0.8) or 0.8):.2f}",
+        'tabela_12_meses': '-',
+        'tabela_25_anos': '-',
+    })
     
     # Adicionar variáveis do balanço se fornecido
     if balanco:
