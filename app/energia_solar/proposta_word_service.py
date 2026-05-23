@@ -9,6 +9,10 @@ from docx import Document
 import subprocess
 import os
 import logging
+import zipfile
+import tempfile
+import shutil
+from xml.sax.saxutils import escape
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +47,7 @@ def formatar_numero(valor, casas=2):
 def substituir_texto_em_paragrafos(doc, contexto):
     """Substitui placeholders {{CHAVE}} nos parágrafos do documento"""
     for p in doc.paragraphs:
-        for chave, valor in contexto.items():
-            placeholder = "{{" + chave + "}}"
-            if placeholder in p.text:
-                # Substitui preservando formatação básica
-                for run in p.runs:
-                    if placeholder in run.text:
-                        run.text = run.text.replace(placeholder, str(valor))
+        substituir_em_paragrafo_preservando_basico(p, contexto)
 
 
 def substituir_texto_em_tabelas(doc, contexto):
@@ -58,12 +56,67 @@ def substituir_texto_em_tabelas(doc, contexto):
         for linha in tabela.rows:
             for celula in linha.cells:
                 for p in celula.paragraphs:
+                    substituir_em_paragrafo_preservando_basico(p, contexto)
+
+
+def substituir_texto_em_headers_footers(doc, contexto):
+    """Substitui placeholders em cabeçalhos e rodapés de todas as seções."""
+    for section in doc.sections:
+        for p in section.header.paragraphs:
+            substituir_em_paragrafo_preservando_basico(p, contexto)
+        for tabela in section.header.tables:
+            for linha in tabela.rows:
+                for celula in linha.cells:
+                    for p in celula.paragraphs:
+                        substituir_em_paragrafo_preservando_basico(p, contexto)
+
+        for p in section.footer.paragraphs:
+            substituir_em_paragrafo_preservando_basico(p, contexto)
+        for tabela in section.footer.tables:
+            for linha in tabela.rows:
+                for celula in linha.cells:
+                    for p in celula.paragraphs:
+                        substituir_em_paragrafo_preservando_basico(p, contexto)
+
+
+def substituir_placeholders_xml_docx(docx_path, contexto):
+    """
+    Fallback robusto: substitui placeholders diretamente nos XMLs do .docx.
+    Cobre casos como text boxes/shapes onde python-docx não alcança bem.
+    """
+    substituicoes = 0
+    xml_files_alvo = ("word/document.xml", "word/header", "word/footer")
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
+        tmp_path = tmp.name
+
+    try:
+        with zipfile.ZipFile(docx_path, "r") as zin, zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+
+                if item.filename.endswith(".xml") and item.filename.startswith(xml_files_alvo):
+                    texto = data.decode("utf-8")
+                    texto_original = texto
+
                     for chave, valor in contexto.items():
                         placeholder = "{{" + chave + "}}"
-                        if placeholder in p.text:
-                            for run in p.runs:
-                                if placeholder in run.text:
-                                    run.text = run.text.replace(placeholder, str(valor))
+                        if placeholder in texto:
+                            # Escapa caracteres especiais para manter XML válido
+                            valor_xml = escape(str(valor))
+                            texto = texto.replace(placeholder, valor_xml)
+
+                    if texto != texto_original:
+                        data = texto.encode("utf-8")
+                        substituicoes += 1
+
+                zout.writestr(item, data)
+
+        shutil.move(tmp_path, docx_path)
+        return substituicoes
+    finally:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 
 def substituir_em_paragrafo_preservando_basico(paragrafo, contexto):
@@ -266,9 +319,15 @@ def gerar_docx_proposta(projeto, template_path, output_path):
     logger.info(f"✏️ Substituindo {len(contexto)} placeholders no documento")
     substituir_texto_em_paragrafos(doc, contexto)
     substituir_texto_em_tabelas(doc, contexto)
+    substituir_texto_em_headers_footers(doc, contexto)
     
     logger.info(f"💾 Salvando documento preenchido: {output_path}")
     doc.save(output_path)
+
+    # Fallback para elementos não cobertos pelo python-docx (ex.: text boxes)
+    arquivos_xml_alterados = substituir_placeholders_xml_docx(output_path, contexto)
+    if arquivos_xml_alterados > 0:
+        logger.info(f"✅ Fallback XML aplicado em {arquivos_xml_alterados} arquivo(s) interno(s) do DOCX")
     
     logger.info(f"✅ Documento DOCX gerado com sucesso!")
     return output_path
