@@ -61,7 +61,8 @@ def _substituir_placeholders_xml_docx(caminho_docx, variaveis):
     Fallback robusto no XML interno do DOCX.
     Cobre text boxes/shapes e estruturas que python-docx não percorre bem.
     """
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as tmp:
+    base_dir = os.path.dirname(os.path.abspath(caminho_docx)) or None
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.docx', dir=base_dir) as tmp:
         tmp_saida = tmp.name
 
     try:
@@ -95,9 +96,10 @@ def _substituir_placeholders_xml_docx(caminho_docx, variaveis):
 
                 zout.writestr(item, data)
 
+        # Mesmo diretório evita erro de cross-device em ambientes como Render
         os.replace(tmp_saida, caminho_docx)
     finally:
-        if os.path.exists(tmp_saida):
+        if 'tmp_saida' in locals() and os.path.exists(tmp_saida):
             os.remove(tmp_saida)
 
 
