@@ -311,5 +311,18 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
     campos_config = _coletar_campos_simples(config)
     for k, v in campos_config.items():
         variaveis.setdefault(f'empresa_{k}', v)
+
+    # Unificar com o contexto completo usado na rota de proposta comercial.
+    # Isso garante placeholders como DATA_PROPOSTA, VALIDADE_PROPOSTA,
+    # VALOR_INVESTIMENTO, PAYBACK etc. também no fluxo de upload.
+    try:
+        from app.energia_solar.proposta_word_service import montar_contexto_proposta
+
+        contexto_completo = montar_contexto_proposta(projeto)
+        if isinstance(contexto_completo, dict):
+            variaveis.update(contexto_completo)
+    except Exception:
+        # Mantém compatibilidade mesmo que o contexto completo falhe por algum motivo.
+        pass
     
     return _expandir_aliases_variaveis(variaveis)
