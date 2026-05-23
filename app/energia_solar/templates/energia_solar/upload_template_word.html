@@ -23,7 +23,7 @@
                             <label for="template" class="form-label fw-bold">Selecione o arquivo .docx com as variáveis:</label>
                             <input type="file" class="form-control" id="template" name="template" accept=".docx" required>
                             <div class="form-text">
-                                Apenas arquivos .docx são permitidos. Use as variáveis entre colchetes como <code>[nome_cliente]</code>
+                                Apenas arquivos .docx são permitidos. Você pode usar <code>{% raw %}{{NOME_CLIENTE}}{% endraw %}</code> ou <code>[nome_cliente]</code>.
                             </div>
                         </div>
 
@@ -31,7 +31,7 @@
                             <h6 class="alert-heading">💡 Como usar:</h6>
                             <ol class="mb-0">
                                 <li>Abra seu documento Word</li>
-                                <li>Digite as variáveis entre colchetes, ex: <code>[nome_cliente]</code></li>
+                                <li>Digite as variáveis, ex: <code>{% raw %}{{NOME_CLIENTE}}{% endraw %}</code> ou <code>[nome_cliente]</code></li>
                                 <li>Salve o arquivo .docx</li>
                                 <li>Faça upload aqui</li>
                                 <li>Baixe o documento final com os dados reais</li>

@@ -7,6 +7,38 @@ import io
 import os
 
 
+def _substituir_texto_paragrafo(paragrafo, variaveis):
+    """Substitui placeholders em formato [chave] e {{CHAVE}} (maiúsc./minúsc.)."""
+    if not paragrafo.text:
+        return
+
+    texto_original = paragrafo.text
+    texto_novo = texto_original
+
+    for variavel, valor in variaveis.items():
+        chave = str(variavel)
+        valor_str = str(valor)
+
+        placeholders = [
+            f'[{chave}]',
+            f'[{chave.upper()}]',
+            f'{{{{{chave}}}}}',
+            f'{{{{{chave.upper()}}}}}',
+        ]
+
+        for ph in placeholders:
+            if ph in texto_novo:
+                texto_novo = texto_novo.replace(ph, valor_str)
+
+    if texto_novo != texto_original:
+        for run in paragrafo.runs:
+            run.text = ''
+        if paragrafo.runs:
+            paragrafo.runs[0].text = texto_novo
+        else:
+            paragrafo.add_run(texto_novo)
+
+
 def substituir_variaveis_word(template_path, variaveis):
     """
     Substitui variáveis em um template Word
@@ -22,41 +54,24 @@ def substituir_variaveis_word(template_path, variaveis):
     
     # Substituir em parágrafos
     for paragrafo in doc.paragraphs:
-        for variavel, valor in variaveis.items():
-            if f'[{variavel}]' in paragrafo.text:
-                # Substituir no texto completo
-                for run in paragrafo.runs:
-                    if f'[{variavel}]' in run.text:
-                        run.text = run.text.replace(f'[{variavel}]', str(valor))
+        _substituir_texto_paragrafo(paragrafo, variaveis)
     
     # Substituir em tabelas
     for tabela in doc.tables:
         for linha in tabela.rows:
             for celula in linha.cells:
                 for paragrafo in celula.paragraphs:
-                    for variavel, valor in variaveis.items():
-                        if f'[{variavel}]' in paragrafo.text:
-                            for run in paragrafo.runs:
-                                if f'[{variavel}]' in run.text:
-                                    run.text = run.text.replace(f'[{variavel}]', str(valor))
+                    _substituir_texto_paragrafo(paragrafo, variaveis)
     
     # Substituir em cabeçalhos e rodapés
     for secao in doc.sections:
         # Cabeçalho
         for paragrafo in secao.header.paragraphs:
-            for variavel, valor in variaveis.items():
-                if f'[{variavel}]' in paragrafo.text:
-                    for run in paragrafo.runs:
-                        if f'[{variavel}]' in run.text:
-                            run.text = run.text.replace(f'[{variavel}]', str(valor))
+            _substituir_texto_paragrafo(paragrafo, variaveis)
         
         # Rodapé
         for paragrafo in secao.footer.paragraphs:
-            for variavel, valor in variaveis.items():
-                if f'[{variavel}]' in paragrafo.text:
-                    for run in paragrafo.runs:
-                        if f'[{variavel}]' in run.text:
-                            run.text = run.text.replace(f'[{variavel}]', str(valor))
+            _substituir_texto_paragrafo(paragrafo, variaveis)
     
     return doc
 
@@ -159,5 +174,20 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
             'economia_25_anos': f"{balanco.get('economia_mensal', 0) * 12 * 25:.2f}",
             'consumo_minimo': balanco.get('consumo_minimo', 30),
         })
+
+    # Aliases para templates em formato comercial (maiúsculas) e fluxo legado
+    variaveis.update({
+        'NOME_CLIENTE': (
+            (cliente.nome_razao_social if cliente and hasattr(cliente, 'nome_razao_social') else None)
+            or (cliente.razao_social if cliente and hasattr(cliente, 'razao_social') else None)
+            or (cliente.nome if cliente and hasattr(cliente, 'nome') else None)
+            or projeto.nome_cliente
+            or ''
+        ),
+        'NUMERO_PROJETO': projeto.id or '',
+        'CPF_CNPJ_CLIENTE': cliente.cpf_cnpj if cliente and hasattr(cliente, 'cpf_cnpj') else '',
+        'CIDADE': (cliente.cidade if cliente and hasattr(cliente, 'cidade') else None) or projeto.cidade or '',
+        'ESTADO': (cliente.estado if cliente and hasattr(cliente, 'estado') else None) or projeto.estado or '',
+    })
     
     return variaveis
