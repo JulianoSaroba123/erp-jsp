@@ -5,10 +5,13 @@ from docx import Document
 from docx.shared import Inches
 import io
 import os
+import zipfile
+import tempfile
+from xml.sax.saxutils import escape
 
 
 def _substituir_texto_paragrafo(paragrafo, variaveis):
-    """Substitui placeholders em formato [chave] e {{CHAVE}} (maiúsc./minúsc.)."""
+    """Substitui placeholders em múltiplos formatos no parágrafo."""
     if not paragrafo.text:
         return
 
@@ -22,8 +25,22 @@ def _substituir_texto_paragrafo(paragrafo, variaveis):
         placeholders = [
             f'[{chave}]',
             f'[{chave.upper()}]',
+            f'[{chave.lower()}]',
             f'{{{{{chave}}}}}',
             f'{{{{{chave.upper()}}}}}',
+            f'{{{{{chave.lower()}}}}}',
+            f'{{{chave}}}',
+            f'{{{chave.upper()}}}',
+            f'{{{chave.lower()}}}',
+            f'<<{chave}>>',
+            f'<<{chave.upper()}>>',
+            f'<<{chave.lower()}>>',
+            f'${{{chave}}}',
+            f'${{{chave.upper()}}}',
+            f'${{{chave.lower()}}}',
+            f'%{chave}%',
+            f'%{chave.upper()}%',
+            f'%{chave.lower()}%',
         ]
 
         for ph in placeholders:
@@ -39,6 +56,76 @@ def _substituir_texto_paragrafo(paragrafo, variaveis):
             paragrafo.add_run(texto_novo)
 
 
+def _substituir_placeholders_xml_docx(caminho_docx, variaveis):
+    """
+    Fallback robusto no XML interno do DOCX.
+    Cobre text boxes/shapes e estruturas que python-docx não percorre bem.
+    """
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.docx') as tmp:
+        tmp_saida = tmp.name
+
+    try:
+        with zipfile.ZipFile(caminho_docx, 'r') as zin, zipfile.ZipFile(tmp_saida, 'w', zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+
+                if item.filename.startswith('word/') and item.filename.endswith('.xml'):
+                    xml = data.decode('utf-8')
+                    xml_novo = xml
+
+                    for variavel, valor in variaveis.items():
+                        chave = str(variavel)
+                        valor_xml = escape(str(valor))
+
+                        placeholders = [
+                            f'[{chave}]', f'[{chave.upper()}]', f'[{chave.lower()}]',
+                            f'{{{{{chave}}}}}', f'{{{{{chave.upper()}}}}}', f'{{{{{chave.lower()}}}}}',
+                            f'{{{chave}}}', f'{{{chave.upper()}}}', f'{{{chave.lower()}}}',
+                            f'<<{chave}>>', f'<<{chave.upper()}>>', f'<<{chave.lower()}>>',
+                            f'${{{chave}}}', f'${{{chave.upper()}}}', f'${{{chave.lower()}}}',
+                            f'%{chave}%', f'%{chave.upper()}%', f'%{chave.lower()}%',
+                        ]
+
+                        for ph in placeholders:
+                            if ph in xml_novo:
+                                xml_novo = xml_novo.replace(ph, valor_xml)
+
+                    if xml_novo != xml:
+                        data = xml_novo.encode('utf-8')
+
+                zout.writestr(item, data)
+
+        os.replace(tmp_saida, caminho_docx)
+    finally:
+        if os.path.exists(tmp_saida):
+            os.remove(tmp_saida)
+
+
+def _expandir_aliases_variaveis(variaveis):
+    """Gera aliases de chave em maiúsculas e minúsculas para máxima compatibilidade."""
+    expandidas = {}
+    for chave, valor in variaveis.items():
+        c = str(chave)
+        expandidas[c] = valor
+        expandidas[c.upper()] = valor
+        expandidas[c.lower()] = valor
+    return expandidas
+
+
+def _coletar_campos_simples(obj):
+    """Coleta atributos escalares simples de um objeto SQLAlchemy/model."""
+    if not obj:
+        return {}
+
+    dados = {}
+    for chave, valor in vars(obj).items():
+        if chave.startswith('_'):
+            continue
+        if isinstance(valor, (str, int, float, bool)) or valor is None:
+            dados[chave] = '' if valor is None else valor
+    return dados
+
+
 def substituir_variaveis_word(template_path, variaveis):
     """
     Substitui variáveis em um template Word
@@ -50,6 +137,11 @@ def substituir_variaveis_word(template_path, variaveis):
     Returns:
         Document object com as substituições feitas
     """
+    variaveis = _expandir_aliases_variaveis(variaveis)
+
+    # Primeiro aplica fallback XML para cobrir caixas de texto e elementos complexos
+    _substituir_placeholders_xml_docx(template_path, variaveis)
+
     doc = Document(template_path)
     
     # Substituir em parágrafos
@@ -68,10 +160,20 @@ def substituir_variaveis_word(template_path, variaveis):
         # Cabeçalho
         for paragrafo in secao.header.paragraphs:
             _substituir_texto_paragrafo(paragrafo, variaveis)
+        for tabela in secao.header.tables:
+            for linha in tabela.rows:
+                for celula in linha.cells:
+                    for paragrafo in celula.paragraphs:
+                        _substituir_texto_paragrafo(paragrafo, variaveis)
         
         # Rodapé
         for paragrafo in secao.footer.paragraphs:
             _substituir_texto_paragrafo(paragrafo, variaveis)
+        for tabela in secao.footer.tables:
+            for linha in tabela.rows:
+                for celula in linha.cells:
+                    for paragrafo in celula.paragraphs:
+                        _substituir_texto_paragrafo(paragrafo, variaveis)
     
     return doc
 
@@ -143,7 +245,11 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'inversor_potencia': f"{inversor.potencia_nominal}W" if inversor and hasattr(inversor, 'potencia_nominal') and inversor.potencia_nominal else '',
         'inversor_tensao_entrada': f"{inversor.tensao_mppt_min}-{inversor.tensao_mppt_max}V" if inversor and hasattr(inversor, 'tensao_mppt_min') and inversor.tensao_mppt_min else '',
         'inversor_tensao_saida': inversor.tensao_saida if inversor and hasattr(inversor, 'tensao_saida') else '220V',
-        'inversor_eficiencia': f"{inversor.eficiencia}%" if inversor and hasattr(inversor, 'eficiencia') and inversor.eficiencia else '',
+        'inversor_eficiencia': (
+            f"{inversor.eficiencia_maxima}%"
+            if inversor and hasattr(inversor, 'eficiencia_maxima') and inversor.eficiencia_maxima
+            else ''
+        ),
         'inversor_garantia': '10 anos',
         'inversor_monitoramento': 'WiFi/App',
         
@@ -189,5 +295,19 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'CIDADE': (cliente.cidade if cliente and hasattr(cliente, 'cidade') else None) or projeto.cidade or '',
         'ESTADO': (cliente.estado if cliente and hasattr(cliente, 'estado') else None) or projeto.estado or '',
     })
+
+    # Expor campos simples automaticamente para aceitar qualquer placeholder útil no documento
+    campos_projeto = _coletar_campos_simples(projeto)
+    for k, v in campos_projeto.items():
+        variaveis.setdefault(k, v)
+        variaveis.setdefault(f'projeto_{k}', v)
+
+    campos_cliente = _coletar_campos_simples(cliente)
+    for k, v in campos_cliente.items():
+        variaveis.setdefault(f'cliente_{k}', v)
+
+    campos_config = _coletar_campos_simples(config)
+    for k, v in campos_config.items():
+        variaveis.setdefault(f'empresa_{k}', v)
     
-    return variaveis
+    return _expandir_aliases_variaveis(variaveis)
