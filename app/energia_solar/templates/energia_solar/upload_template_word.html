@@ -56,7 +56,7 @@
                 <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">📋 Variáveis Disponíveis</h6>
                     <button class="btn btn-sm btn-light" type="button" data-bs-toggle="modal" data-bs-target="#modalVariaveis">
-                        📖 Ver Todas (40+)
+                        📖 Ver Todas (69+)
                     </button>
                 </div>
                 <div class="card-body" style="max-height: 500px; overflow-y: auto;">
@@ -170,6 +170,31 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExtras">
+                                    🧩 Extras do Modelo (13)
+                                </button>
+                            </h2>
+                            <div id="collapseExtras" class="accordion-collapse collapse">
+                                <div class="accordion-body small">
+                                    <code>{% raw %}{{fatura_media_mensal_sem_sistema}}{% endraw %}</code><br>
+                                    <code>{% raw %}{{fatura_minima}}{% endraw %}</code><br>
+                                    <code>{% raw %}{{kit_descricao}}{% endraw %}</code><br>
+                                    <code>{% raw %}{{kit_outras_inf}}{% endraw %}</code><br>
+                                    <code>{% raw %}{{orcamento_valor_nota}}{% endraw %}</code><br>
+                                    <code>{% raw %}{{payback_ano_lei_14300}}{% endraw %}</code><br>
+                                    <code>{% raw %}{{payback_roi_lei_14300}}{% endraw %}</code><br>
+                                    <code>{% raw %}{{reajuste_anual}}{% endraw %}</code><br>
+                                    <code>{% raw %}{{grafico_consumo_geracao_12_meses}}{% endraw %}</code><br>
+                                    <code>{% raw %}{{grafico_consumo_geracao_25_anos}}{% endraw %}</code><br>
+                                    <code>{% raw %}{{grafico_pay_back}}{% endraw %}</code><br>
+                                    <code>{% raw %}{{tabela_12_meses}}{% endraw %}</code><br>
+                                    <code>{% raw %}{{tabela_25_anos}}{% endraw %}</code>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -182,7 +207,7 @@
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="modalVariaveisLabel">📋 Lista Completa de Variáveis (40+)</h5>
+                <h5 class="modal-title" id="modalVariaveisLabel">📋 Lista Completa de Variáveis (69+)</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -418,8 +443,72 @@
                     </tbody>
                 </table>
 
+                <h6 class="fw-bold text-primary mt-4">🧩 Extras do Modelo (13 variáveis)</h6>
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50%;">Variável</th>
+                            <th>Descrição</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        <tr>
+                            <td><code>{% raw %}{{fatura_media_mensal_sem_sistema}}{% endraw %}</code></td>
+                            <td>Fatura média mensal sem sistema</td>
+                        </tr>
+                        <tr>
+                            <td><code>{% raw %}{{fatura_minima}}{% endraw %}</code></td>
+                            <td>Fatura mínima estimada</td>
+                        </tr>
+                        <tr>
+                            <td><code>{% raw %}{{kit_descricao}}{% endraw %}</code></td>
+                            <td>Descrição do kit</td>
+                        </tr>
+                        <tr>
+                            <td><code>{% raw %}{{kit_outras_inf}}{% endraw %}</code></td>
+                            <td>Informações adicionais do kit</td>
+                        </tr>
+                        <tr>
+                            <td><code>{% raw %}{{orcamento_valor_nota}}{% endraw %}</code></td>
+                            <td>Valor de nota/orçamento</td>
+                        </tr>
+                        <tr>
+                            <td><code>{% raw %}{{payback_ano_lei_14300}}{% endraw %}</code></td>
+                            <td>Payback ano base Lei 14.300</td>
+                        </tr>
+                        <tr>
+                            <td><code>{% raw %}{{payback_roi_lei_14300}}{% endraw %}</code></td>
+                            <td>Payback/ROI cenário Lei 14.300</td>
+                        </tr>
+                        <tr>
+                            <td><code>{% raw %}{{reajuste_anual}}{% endraw %}</code></td>
+                            <td>Reajuste anual considerado</td>
+                        </tr>
+                        <tr>
+                            <td><code>{% raw %}{{grafico_consumo_geracao_12_meses}}{% endraw %}</code></td>
+                            <td>Placeholder para gráfico 12 meses</td>
+                        </tr>
+                        <tr>
+                            <td><code>{% raw %}{{grafico_consumo_geracao_25_anos}}{% endraw %}</code></td>
+                            <td>Placeholder para gráfico 25 anos</td>
+                        </tr>
+                        <tr>
+                            <td><code>{% raw %}{{grafico_pay_back}}{% endraw %}</code></td>
+                            <td>Placeholder para gráfico de payback</td>
+                        </tr>
+                        <tr>
+                            <td><code>{% raw %}{{tabela_12_meses}}{% endraw %}</code></td>
+                            <td>Placeholder para tabela 12 meses</td>
+                        </tr>
+                        <tr>
+                            <td><code>{% raw %}{{tabela_25_anos}}{% endraw %}</code></td>
+                            <td>Placeholder para tabela 25 anos</td>
+                        </tr>
+                    </tbody>
+                </table>
+
                 <div class="alert alert-success mt-4">
-                    <strong>✅ Total: 40+ variáveis disponíveis</strong><br>
+                    <strong>✅ Total: 69+ variáveis disponíveis</strong><br>
                     Use chaves duplas <code>{% raw %}{{VARIAVEL}}{% endraw %}</code> no Word e o sistema substitui automaticamente!
                 </div>
             </div>
