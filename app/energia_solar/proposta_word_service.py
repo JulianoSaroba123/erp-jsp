@@ -344,16 +344,18 @@ def gerar_docx_proposta(projeto, template_path, output_path):
     Returns:
         Path do arquivo gerado
     """
-    logger.info(f"📄 Carregando template Word: {template_path}")
-    doc = Document(template_path)
-    
     logger.info(f"🔧 Montando contexto do projeto {projeto.id}")
     contexto = montar_contexto_proposta(projeto)
-    
+
+    # Usa o mesmo motor robusto da rotina de upload para suportar:
+    # - múltiplos formatos de placeholder
+    # - fallback XML
+    # - placeholders visuais de gráficos/tabelas
+    from app.energia_solar.word_utils import substituir_variaveis_word
+
+    logger.info(f"📄 Carregando template Word: {template_path}")
     logger.info(f"✏️ Substituindo {len(contexto)} placeholders no documento")
-    substituir_texto_em_paragrafos(doc, contexto)
-    substituir_texto_em_tabelas(doc, contexto)
-    substituir_texto_em_headers_footers(doc, contexto)
+    doc = substituir_variaveis_word(template_path, contexto)
     
     logger.info(f"💾 Salvando documento preenchido: {output_path}")
     doc.save(output_path)
