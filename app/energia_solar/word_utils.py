@@ -301,16 +301,186 @@ def _gerar_imagem_tabela_12m(variaveis):
     return out
 
 
+def _serie_economia_25_anos_variaveis(variaveis):
+    """Gera série de economia anual e acumulada para 25 anos."""
+    economia_mensal = _to_float_text(variaveis.get('economia_mensal', 0), 0)
+    reajuste = _to_float_text(variaveis.get('reajuste_anual', variaveis.get('perda_eficiencia_anual', 0.8)), 0.8)
+    taxa = reajuste / 100.0
+
+    economia_base_anual = economia_mensal * 12
+    anual = []
+    acumulada = []
+    soma = 0.0
+    for ano in range(1, 26):
+        v = economia_base_anual * ((1 + taxa) ** (ano - 1))
+        soma += v
+        anual.append(v)
+        acumulada.append(soma)
+    return anual, acumulada
+
+
+def _gerar_imagem_grafico_economia_25_anos(variaveis):
+    """Gera gráfico visual da projeção de economia para 25 anos."""
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+        matplotlib.set_loglevel('warning')
+        logging.getLogger('matplotlib').setLevel(logging.WARNING)
+        import matplotlib.pyplot as plt
+    except Exception:
+        return None
+
+    anual, acumulada = _serie_economia_25_anos_variaveis(variaveis)
+    if max(acumulada) <= 0:
+        return None
+
+    anos = list(range(1, 26))
+
+    fig, ax1 = plt.subplots(figsize=(10.8, 4.6), dpi=170)
+    fig.patch.set_facecolor('#FFFFFF')
+    ax1.set_facecolor('#FCFDFE')
+
+    bars = ax1.bar(
+        anos,
+        anual,
+        color='#9FD0FF',
+        edgecolor='#6FB3F2',
+        linewidth=0.5,
+        label='Economia anual (R$)'
+    )
+
+    ax2 = ax1.twinx()
+    ax2.plot(anos, acumulada, color='#1B9E5A', linewidth=2.2, marker='o', markersize=3.5, label='Economia acumulada (R$)')
+    ax2.fill_between(anos, acumulada, color='#C7F0D9', alpha=0.35)
+
+    ax1.set_xlim(0.2, 25.8)
+    ax1.set_xticks([1, 3, 5, 7, 10, 13, 16, 19, 22, 25])
+    ax1.set_xlabel('Ano', fontsize=9, color='#394B59')
+    ax1.set_ylabel('Economia anual (R$)', fontsize=9, color='#2F6AA6')
+    ax2.set_ylabel('Economia acumulada (R$)', fontsize=9, color='#1B9E5A')
+
+    ax1.grid(axis='y', color='#DFE7EF', linewidth=0.8, alpha=0.9)
+    ax1.set_axisbelow(True)
+
+    for side in ['top', 'right']:
+        ax1.spines[side].set_visible(False)
+    ax1.spines['left'].set_color('#C9D6E2')
+    ax1.spines['bottom'].set_color('#C9D6E2')
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
+    ax2.spines['right'].set_color('#C9D6E2')
+
+    # Destaque executivo
+    ax1.text(
+        0.01,
+        0.98,
+        f'Acumulado em 25 anos: {_fmt_rs(acumulada[-1])}  |  Economia no 1o ano: {_fmt_rs(anual[0])}',
+        transform=ax1.transAxes,
+        ha='left',
+        va='top',
+        fontsize=8,
+        color='#1F3A56',
+        bbox=dict(boxstyle='round,pad=0.25', fc='#EEF5FF', ec='#C9DDF7', lw=0.7)
+    )
+
+    # Rótulos pontuais para leitura rápida
+    for idx in [0, 9, 24]:
+        b = bars[idx]
+        ax1.text(
+            b.get_x() + b.get_width() / 2,
+            b.get_height() + (max(anual) * 0.015),
+            _fmt_rs(anual[idx]).replace('R$ ', ''),
+            ha='center',
+            va='bottom',
+            fontsize=7,
+            color='#2F6AA6'
+        )
+
+    ax2.text(25, acumulada[-1], _fmt_rs(acumulada[-1]), fontsize=7, color='#1B9E5A', ha='right', va='bottom')
+
+    ax1.set_title('Estimativa de geracao para os proximos 25 anos', loc='left', fontsize=12, fontweight='bold', color='#143A67', pad=12)
+
+    h1, l1 = ax1.get_legend_handles_labels()
+    h2, l2 = ax2.get_legend_handles_labels()
+    ax1.legend(h1 + h2, l1 + l2, loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=2, fontsize=8, frameon=False)
+
+    fig.tight_layout()
+    out = io.BytesIO()
+    fig.savefig(out, format='png', bbox_inches='tight', transparent=False)
+    plt.close(fig)
+    out.seek(0)
+    return out
+
+
+def _gerar_imagem_tabela_25_anos(variaveis):
+    """Gera tabela visual resumida da projeção para 25 anos."""
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+        matplotlib.set_loglevel('warning')
+        logging.getLogger('matplotlib').setLevel(logging.WARNING)
+        import matplotlib.pyplot as plt
+    except Exception:
+        return None
+
+    anual, acumulada = _serie_economia_25_anos_variaveis(variaveis)
+    if max(acumulada) <= 0:
+        return None
+
+    anos_idx = [0, 1, 2, 4, 9, 14, 19, 24]  # anos 1,2,3,5,10,15,20,25
+    linhas = []
+    for i in anos_idx:
+        ano = i + 1
+        linhas.append([str(ano), _fmt_rs(anual[i]), _fmt_rs(acumulada[i])])
+
+    colunas = ['Ano', 'Economia anual', 'Economia acumulada']
+
+    fig, ax = plt.subplots(figsize=(8.6, 3.6), dpi=170)
+    fig.patch.set_facecolor('#FFFFFF')
+    ax.axis('off')
+
+    tabela = ax.table(cellText=linhas, colLabels=colunas, loc='center', cellLoc='center')
+    tabela.auto_set_font_size(False)
+    tabela.set_fontsize(8)
+    tabela.scale(1, 1.23)
+
+    for c_idx in range(len(colunas)):
+        cell = tabela[(0, c_idx)]
+        cell.set_facecolor('#EAF1FB')
+        cell.set_edgecolor('#C9D8EB')
+        cell.set_text_props(weight='bold', color='#133A66')
+
+    for r_idx in range(1, len(linhas) + 1):
+        bg = '#FFFFFF' if r_idx % 2 == 1 else '#F8FBFF'
+        for c_idx in range(len(colunas)):
+            cell = tabela[(r_idx, c_idx)]
+            cell.set_facecolor(bg)
+            cell.set_edgecolor('#E3EAF2')
+
+    ax.set_title('Resumo de economia projetada - 25 anos', loc='left', fontsize=11, fontweight='bold', color='#143A67', pad=10)
+
+    fig.tight_layout()
+    out = io.BytesIO()
+    fig.savefig(out, format='png', bbox_inches='tight', transparent=False)
+    plt.close(fig)
+    out.seek(0)
+    return out
+
+
 def _substituir_placeholders_graficos_doc(doc, variaveis):
     """Substitui placeholders de gráfico por imagens reais quando o placeholder está sozinho."""
     img_12m = _gerar_imagem_grafico_consumo_geracao_12m(variaveis)
     img_tab_12m = _gerar_imagem_tabela_12m(variaveis)
+    img_25a = _gerar_imagem_grafico_economia_25_anos(variaveis)
+    img_tab_25a = _gerar_imagem_tabela_25_anos(variaveis)
 
-    if img_12m is None and img_tab_12m is None:
+    if img_12m is None and img_tab_12m is None and img_25a is None and img_tab_25a is None:
         return
 
     ph_12m = _placeholder_variantes('grafico_consumo_geracao_12_meses')
     ph_tab_12m = _placeholder_variantes('tabela_12_meses')
+    ph_25a = _placeholder_variantes('grafico_consumo_geracao_25_anos')
+    ph_tab_25a = _placeholder_variantes('tabela_25_anos')
 
     def _aplicar_paragrafo(paragrafo):
         txt = (paragrafo.text or '').strip()
@@ -324,6 +494,16 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
                 run.text = ''
             run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
             run.add_picture(io.BytesIO(img_tab_12m.getvalue()), width=Inches(6.5))
+        elif txt in ph_25a and img_25a is not None:
+            for run in paragrafo.runs:
+                run.text = ''
+            run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
+            run.add_picture(io.BytesIO(img_25a.getvalue()), width=Inches(6.5))
+        elif txt in ph_tab_25a and img_tab_25a is not None:
+            for run in paragrafo.runs:
+                run.text = ''
+            run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
+            run.add_picture(io.BytesIO(img_tab_25a.getvalue()), width=Inches(6.1))
 
     for paragrafo in doc.paragraphs:
         _aplicar_paragrafo(paragrafo)
