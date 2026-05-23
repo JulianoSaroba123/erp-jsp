@@ -16,15 +16,21 @@ from xml.sax.saxutils import escape
 
 logger = logging.getLogger(__name__)
 
-# Importar modelos no topo do arquivo para evitar problemas de contexto
+# Importar modelos separadamente da configuração para não bloquear o contexto
 try:
     from app.cliente.cliente_model import Cliente
     from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar
-    from app.configuracao.configuracao_utils import carregar_configuracao
     MODELS_IMPORTED = True
 except ImportError as e:
     logger.warning(f"Não foi possível importar modelos: {e}")
     MODELS_IMPORTED = False
+
+try:
+    from app.configuracao.configuracao_utils import carregar_configuracao
+    CONFIG_IMPORTED = True
+except ImportError as e:
+    logger.warning(f"Não foi possível importar configuração da empresa: {e}")
+    CONFIG_IMPORTED = False
 
 
 def formatar_moeda(valor):
@@ -190,7 +196,16 @@ def montar_contexto_proposta(projeto):
         except Exception as e:
             logger.warning(f"Erro ao buscar cliente: {e}")
     
-    cliente_nome = cliente.nome_razao_social if cliente else "Cliente não informado"
+    if cliente:
+        cliente_nome = (
+            getattr(cliente, "nome_razao_social", None)
+            or getattr(cliente, "razao_social", None)
+            or getattr(cliente, "nome", None)
+            or getattr(cliente, "nome_fantasia", None)
+            or "Cliente não informado"
+        )
+    else:
+        cliente_nome = "Cliente não informado"
     cliente_cidade = cliente.cidade if cliente else ""
     cliente_estado = cliente.estado if cliente else ""
 
@@ -209,6 +224,25 @@ def montar_contexto_proposta(projeto):
             inversor = InversorSolar.query.get(projeto.inversor_id)
         except Exception as e:
             logger.warning(f"Erro ao buscar inversor: {e}")
+
+    # Compatibilidade de campos do inversor entre versões/modelos
+    inversor_potencia = ""
+    if inversor:
+        pot_inv = (
+            getattr(inversor, "potencia", None)
+            or getattr(inversor, "potencia_nominal", None)
+            or getattr(inversor, "potencia_maxima", None)
+        )
+        if pot_inv is not None:
+            try:
+                # Potência nominal do catálogo está em kW
+                inversor_potencia = f"{formatar_numero(float(pot_inv), 2)} kW"
+            except Exception:
+                inversor_potencia = str(pot_inv)
+
+    garantia_inversor = "10 anos"
+    if inversor and getattr(inversor, "garantia_anos", None):
+        garantia_inversor = f"{int(inversor.garantia_anos)} anos"
 
     # Montar contexto completo com todos os placeholders
     contexto = {
@@ -235,10 +269,10 @@ def montar_contexto_proposta(projeto):
         "FABRICANTE_MODULO": placa.fabricante if placa else "",
         "MODELO_INVERSOR": inversor.modelo if inversor else "",
         "FABRICANTE_INVERSOR": inversor.fabricante if inversor else "",
-        "POTENCIA_INVERSOR": f"{inversor.potencia}W" if inversor else "",
+        "POTENCIA_INVERSOR": inversor_potencia,
         "TIPO_INSTALACAO": getattr(projeto, 'tipo_instalacao', None) or "Telhado",
         "GARANTIA_MODULOS": "25 anos (potência) / 12 anos (produto)",
-        "GARANTIA_INVERSOR": "10 anos",
+        "GARANTIA_INVERSOR": garantia_inversor,
         "VIDA_UTIL_SISTEMA": "25 anos",
         
         # Geração e consumo
@@ -283,7 +317,7 @@ def montar_contexto_proposta(projeto):
     }
 
     # Tentar carregar dados da empresa de configuração
-    if MODELS_IMPORTED:
+    if CONFIG_IMPORTED:
         try:
             config = carregar_configuracao()
             if config:
