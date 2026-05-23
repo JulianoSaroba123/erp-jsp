@@ -7,6 +7,7 @@ import io
 import os
 import zipfile
 import tempfile
+import logging
 from xml.sax.saxutils import escape
 
 
@@ -43,15 +44,67 @@ def _to_float_text(value, default=0.0):
         return default
 
 
+def _fmt_kwh(value):
+    """Formata energia em kWh com separador de milhar estilo PT-BR."""
+    n = int(round(_to_float_text(value, 0)))
+    return f'{n:,}'.replace(',', '.')
+
+
+def _fmt_rs(value):
+    """Formata moeda em real com 2 casas no padrão PT-BR."""
+    n = _to_float_text(value, 0.0)
+    txt = f'{n:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.')
+    return f'R$ {txt}'
+
+
+def _normalizar_series_12m(consumo_base, geracao_base):
+    """Cria perfil mensal mais orgânico para consumo e geração."""
+    # Consumo tende a oscilar menos que geração, simulando sazonalidade e uso.
+    fatores_consumo = [1.03, 1.02, 1.01, 1.00, 0.98, 0.97, 0.96, 0.97, 0.99, 1.01, 1.03, 1.04]
+    fatores_geracao = [0.93, 0.92, 0.95, 0.98, 1.02, 1.06, 1.08, 1.07, 1.03, 1.00, 0.97, 0.94]
+    consumo = [consumo_base * f for f in fatores_consumo]
+    geracao = [geracao_base * f for f in fatores_geracao]
+    return consumo, geracao
+
+
 def _serie_consumo_12_meses_variaveis(variaveis):
+    meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
     base = _to_float_text(variaveis.get('consumo_kwh_mes', 0), 0)
-    return [base for _ in range(12)]
+
+    valores = []
+    for m in meses:
+        v = (
+            variaveis.get(f'consumo_{m}')
+            or variaveis.get(f'consumo_kwh_{m}')
+            or variaveis.get(f'consumo_{m}_kwh')
+        )
+        valores.append(_to_float_text(v, 0))
+
+    if any(v > 0 for v in valores):
+        return [v if v > 0 else base for v in valores]
+
+    consumo, _ = _normalizar_series_12m(base, _to_float_text(variaveis.get('geracao_estimada_mes', 0), 0))
+    return consumo
 
 
 def _serie_geracao_12_meses_variaveis(variaveis):
+    meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
     base = _to_float_text(variaveis.get('geracao_estimada_mes', 0), 0)
-    fatores = [0.93, 0.92, 0.95, 0.98, 1.02, 1.06, 1.08, 1.07, 1.03, 1.00, 0.97, 0.94]
-    return [base * f for f in fatores]
+
+    valores = []
+    for m in meses:
+        v = (
+            variaveis.get(f'geracao_{m}')
+            or variaveis.get(f'geracao_kwh_{m}')
+            or variaveis.get(f'geracao_{m}_kwh')
+        )
+        valores.append(_to_float_text(v, 0))
+
+    if any(v > 0 for v in valores):
+        return [v if v > 0 else base for v in valores]
+
+    _, geracao = _normalizar_series_12m(_to_float_text(variaveis.get('consumo_kwh_mes', 0), 0), base)
+    return geracao
 
 
 def _placeholder_variantes(chave):
@@ -72,6 +125,7 @@ def _gerar_imagem_grafico_consumo_geracao_12m(variaveis):
         import matplotlib
         matplotlib.use('Agg')
         matplotlib.set_loglevel('warning')
+        logging.getLogger('matplotlib').setLevel(logging.WARNING)
         import matplotlib.pyplot as plt
     except Exception:
         return None
@@ -87,20 +141,69 @@ def _gerar_imagem_grafico_consumo_geracao_12m(variaveis):
     if max(consumo + geracao) <= 0:
         return None
 
-    fig, ax = plt.subplots(figsize=(10.5, 3.6), dpi=150)
+    fig, ax = plt.subplots(figsize=(10.8, 4.5), dpi=170)
+    fig.patch.set_facecolor('#FFFFFF')
+    ax.set_facecolor('#FCFDFE')
     x = list(range(len(meses)))
-    largura = 0.34
+    largura = 0.36
 
-    ax.bar([i - largura / 2 for i in x], consumo, width=largura, color='#F2A9A4', label='CONSUMO KWh')
-    ax.bar([i + largura / 2 for i in x], geracao, width=largura, color='#6AD17E', label='GERACAO KWh')
-    ax.plot(x, consumo_simult, color='#0D6EFD', marker='o', linewidth=1.6, label='CONS. SIMUL. KWh')
+    consumo_bar = ax.bar(
+        [i - largura / 2 for i in x],
+        consumo,
+        width=largura,
+        color='#F4A7A7',
+        edgecolor='#E68E8E',
+        linewidth=0.4,
+        label='Consumo (kWh)'
+    )
+    geracao_bar = ax.bar(
+        [i + largura / 2 for i in x],
+        geracao,
+        width=largura,
+        color='#7AD98D',
+        edgecolor='#57C470',
+        linewidth=0.4,
+        label='Geracao (kWh)'
+    )
+    ax.plot(x, consumo_simult, color='#0B6AE0', marker='o', markersize=4, linewidth=1.8, label='Consumo simultaneo')
 
     ax.set_xticks(x)
-    ax.set_xticklabels([str(i + 1) for i in x], fontsize=8)
-    ax.set_ylabel('kWh/mes', fontsize=8)
-    ax.grid(axis='y', color='#E8E8E8', linewidth=0.8)
+    ax.set_xticklabels(meses, fontsize=8)
+    ax.set_ylabel('kWh/mes', fontsize=9, color='#394B59')
+    ax.set_ylim(0, max(max(consumo), max(geracao)) * 1.22)
+    ax.grid(axis='y', color='#DFE7EF', linewidth=0.8, alpha=0.9)
     ax.set_axisbelow(True)
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10), ncol=3, fontsize=7, frameon=False)
+
+    for side in ['top', 'right']:
+        ax.spines[side].set_visible(False)
+    ax.spines['left'].set_color('#C9D6E2')
+    ax.spines['bottom'].set_color('#C9D6E2')
+
+    # Destaque do ganho anual aproximado para leitura executiva.
+    energia_gerada_ano = sum(geracao)
+    energia_consumida_ano = sum(consumo)
+    delta_ano = energia_gerada_ano - energia_consumida_ano
+    ax.text(
+        0.01,
+        0.98,
+        f'Geracao anual: {_fmt_kwh(energia_gerada_ano)} kWh  |  Consumo anual: {_fmt_kwh(energia_consumida_ano)} kWh  |  Saldo: {_fmt_kwh(delta_ano)} kWh',
+        transform=ax.transAxes,
+        ha='left',
+        va='top',
+        fontsize=8,
+        color='#1F3A56',
+        bbox=dict(boxstyle='round,pad=0.25', fc='#EEF5FF', ec='#C9DDF7', lw=0.7)
+    )
+
+    # Rótulos discretos para melhorar leitura sem poluir.
+    for idx in [0, 5, 11]:
+        ax.text(consumo_bar[idx].get_x() + consumo_bar[idx].get_width() / 2, consumo[idx] + 8, _fmt_kwh(consumo[idx]),
+                ha='center', va='bottom', fontsize=7, color='#914F4F')
+        ax.text(geracao_bar[idx].get_x() + geracao_bar[idx].get_width() / 2, geracao[idx] + 8, _fmt_kwh(geracao[idx]),
+                ha='center', va='bottom', fontsize=7, color='#2F7A42')
+
+    ax.set_title('Geracao de energia - estimativa mes a mes', loc='left', fontsize=12, fontweight='bold', color='#143A67', pad=12)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=3, fontsize=8, frameon=False)
 
     fig.tight_layout()
 
@@ -117,6 +220,7 @@ def _gerar_imagem_tabela_12m(variaveis):
         import matplotlib
         matplotlib.use('Agg')
         matplotlib.set_loglevel('warning')
+        logging.getLogger('matplotlib').setLevel(logging.WARNING)
         import matplotlib.pyplot as plt
     except Exception:
         return None
@@ -148,49 +252,46 @@ def _gerar_imagem_tabela_12m(variaveis):
         total_sem += sem_sistema
         total_com += com_sistema
 
-        linhas.append([
-            mes,
-            f'{c:.0f}',
-            f'{g:.0f}',
-            f'{saldo:.0f}',
-            f'R$ {tarifa:.2f}',
-            f'R$ {sem_sistema:.2f}',
-            f'R$ {com_sistema:.2f}',
-        ])
+        linhas.append([mes, _fmt_kwh(c), _fmt_kwh(g), _fmt_kwh(saldo), _fmt_rs(tarifa), _fmt_rs(sem_sistema), _fmt_rs(com_sistema)])
 
-    linhas.append([
-        'Total 12m',
-        f'{total_consumo:.0f}',
-        f'{total_geracao:.0f}',
-        f'{(total_geracao - total_consumo):.0f}',
-        '-',
-        f'R$ {total_sem:.2f}',
-        f'R$ {total_com:.2f}',
-    ])
+    linhas.append(['Total 12m', _fmt_kwh(total_consumo), _fmt_kwh(total_geracao), _fmt_kwh(total_geracao - total_consumo), '-', _fmt_rs(total_sem), _fmt_rs(total_com)])
 
     colunas = ['Mes', 'Consumo (kWh)', 'Geracao (kWh)', 'Saldo (kWh)', 'Tarifa', 'Fatura sem sistema', 'Fatura com sistema']
 
-    fig_h = 0.42 * (len(linhas) + 1)
-    fig, ax = plt.subplots(figsize=(10.8, fig_h), dpi=150)
+    fig_h = 0.46 * (len(linhas) + 1)
+    fig, ax = plt.subplots(figsize=(10.8, fig_h), dpi=170)
+    fig.patch.set_facecolor('#FFFFFF')
     ax.axis('off')
 
     tabela = ax.table(cellText=linhas, colLabels=colunas, loc='center', cellLoc='center')
     tabela.auto_set_font_size(False)
-    tabela.set_fontsize(7)
-    tabela.scale(1, 1.18)
+    tabela.set_fontsize(8)
+    tabela.scale(1, 1.24)
 
     # Header com destaque visual
     for c_idx in range(len(colunas)):
         cell = tabela[(0, c_idx)]
-        cell.set_facecolor('#F2F4F7')
-        cell.set_text_props(weight='bold')
+        cell.set_facecolor('#EAF1FB')
+        cell.set_edgecolor('#C9D8EB')
+        cell.set_text_props(weight='bold', color='#133A66')
+
+    # Zebra striping para facilitar leitura de linha.
+    for r_idx in range(1, len(linhas)):
+        bg = '#FFFFFF' if r_idx % 2 == 1 else '#F8FBFF'
+        for c_idx in range(len(colunas)):
+            cell = tabela[(r_idx, c_idx)]
+            cell.set_facecolor(bg)
+            cell.set_edgecolor('#E3EAF2')
 
     # Linha de total em destaque suave
     total_row_index = len(linhas)
     for c_idx in range(len(colunas)):
         cell = tabela[(total_row_index, c_idx)]
-        cell.set_facecolor('#F7FAFC')
-        cell.set_text_props(weight='bold')
+        cell.set_facecolor('#EAF7EE')
+        cell.set_edgecolor('#CBE8D3')
+        cell.set_text_props(weight='bold', color='#155D2D')
+
+    ax.set_title('Resumo financeiro e energetico - 12 meses', loc='left', fontsize=11, fontweight='bold', color='#143A67', pad=10)
 
     fig.tight_layout()
     out = io.BytesIO()
