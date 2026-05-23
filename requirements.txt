@@ -36,3 +36,4 @@ weasyprint>=61.2
 Pillow>=10.0.0
 # Document Processing
 python-docx==1.1.2
+matplotlib>=3.8.0

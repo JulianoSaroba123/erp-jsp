@@ -26,6 +26,231 @@ def _bar(valor, maximo, largura=16, char='#'):
     return (char * preenchido) + ('.' * (largura - preenchido))
 
 
+def _to_float_text(value, default=0.0):
+    """Converte texto numérico em float, aceitando vírgula decimal."""
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    try:
+        txt = str(value).strip().replace('R$', '').replace(' ', '')
+        if ',' in txt and '.' in txt:
+            txt = txt.replace('.', '').replace(',', '.')
+        else:
+            txt = txt.replace(',', '.')
+        return float(txt)
+    except Exception:
+        return default
+
+
+def _serie_consumo_12_meses_variaveis(variaveis):
+    base = _to_float_text(variaveis.get('consumo_kwh_mes', 0), 0)
+    return [base for _ in range(12)]
+
+
+def _serie_geracao_12_meses_variaveis(variaveis):
+    base = _to_float_text(variaveis.get('geracao_estimada_mes', 0), 0)
+    fatores = [0.93, 0.92, 0.95, 0.98, 1.02, 1.06, 1.08, 1.07, 1.03, 1.00, 0.97, 0.94]
+    return [base * f for f in fatores]
+
+
+def _placeholder_variantes(chave):
+    c = str(chave)
+    return {
+        f'[{c}]', f'[{c.upper()}]', f'[{c.lower()}]',
+        f'{{{{{c}}}}}', f'{{{{{c.upper()}}}}}', f'{{{{{c.lower()}}}}}',
+        f'{{{c}}}', f'{{{c.upper()}}}', f'{{{c.lower()}}}',
+        f'<<{c}>>', f'<<{c.upper()}>>', f'<<{c.lower()}>>',
+        f'${{{c}}}', f'${{{c.upper()}}}', f'${{{c.lower()}}}',
+        f'%{c}%', f'%{c.upper()}%', f'%{c.lower()}%',
+    }
+
+
+def _gerar_imagem_grafico_consumo_geracao_12m(variaveis):
+    """Gera gráfico visual (barra + linha) para consumo x geração em 12 meses."""
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+        matplotlib.set_loglevel('warning')
+        import matplotlib.pyplot as plt
+    except Exception:
+        return None
+
+    meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    consumo = _serie_consumo_12_meses_variaveis(variaveis)
+    geracao = _serie_geracao_12_meses_variaveis(variaveis)
+
+    simult = _to_float_text(variaveis.get('simultaneidade', 35), 35)
+    consumo_simult = [c * (simult / 100.0) for c in consumo]
+
+    # Valores zerados indicam que não há base suficiente para desenhar o gráfico.
+    if max(consumo + geracao) <= 0:
+        return None
+
+    fig, ax = plt.subplots(figsize=(10.5, 3.6), dpi=150)
+    x = list(range(len(meses)))
+    largura = 0.34
+
+    ax.bar([i - largura / 2 for i in x], consumo, width=largura, color='#F2A9A4', label='CONSUMO KWh')
+    ax.bar([i + largura / 2 for i in x], geracao, width=largura, color='#6AD17E', label='GERACAO KWh')
+    ax.plot(x, consumo_simult, color='#0D6EFD', marker='o', linewidth=1.6, label='CONS. SIMUL. KWh')
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([str(i + 1) for i in x], fontsize=8)
+    ax.set_ylabel('kWh/mes', fontsize=8)
+    ax.grid(axis='y', color='#E8E8E8', linewidth=0.8)
+    ax.set_axisbelow(True)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.10), ncol=3, fontsize=7, frameon=False)
+
+    fig.tight_layout()
+
+    out = io.BytesIO()
+    fig.savefig(out, format='png', bbox_inches='tight', transparent=False)
+    plt.close(fig)
+    out.seek(0)
+    return out
+
+
+def _gerar_imagem_tabela_12m(variaveis):
+    """Gera tabela visual de 12 meses para inserir no DOCX."""
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+        matplotlib.set_loglevel('warning')
+        import matplotlib.pyplot as plt
+    except Exception:
+        return None
+
+    meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+    consumo = _serie_consumo_12_meses_variaveis(variaveis)
+    geracao = _serie_geracao_12_meses_variaveis(variaveis)
+    tarifa = _to_float_text(variaveis.get('tarifa_kwh', 0), 0)
+    fatura_min = _to_float_text(variaveis.get('fatura_minima', 0), 0)
+
+    if max(consumo + geracao) <= 0:
+        return None
+
+    linhas = []
+    total_consumo = 0.0
+    total_geracao = 0.0
+    total_sem = 0.0
+    total_com = 0.0
+
+    for i, mes in enumerate(meses):
+        c = consumo[i]
+        g = geracao[i]
+        saldo = g - c
+        sem_sistema = c * tarifa
+        com_sistema = fatura_min
+
+        total_consumo += c
+        total_geracao += g
+        total_sem += sem_sistema
+        total_com += com_sistema
+
+        linhas.append([
+            mes,
+            f'{c:.0f}',
+            f'{g:.0f}',
+            f'{saldo:.0f}',
+            f'R$ {tarifa:.2f}',
+            f'R$ {sem_sistema:.2f}',
+            f'R$ {com_sistema:.2f}',
+        ])
+
+    linhas.append([
+        'Total 12m',
+        f'{total_consumo:.0f}',
+        f'{total_geracao:.0f}',
+        f'{(total_geracao - total_consumo):.0f}',
+        '-',
+        f'R$ {total_sem:.2f}',
+        f'R$ {total_com:.2f}',
+    ])
+
+    colunas = ['Mes', 'Consumo (kWh)', 'Geracao (kWh)', 'Saldo (kWh)', 'Tarifa', 'Fatura sem sistema', 'Fatura com sistema']
+
+    fig_h = 0.42 * (len(linhas) + 1)
+    fig, ax = plt.subplots(figsize=(10.8, fig_h), dpi=150)
+    ax.axis('off')
+
+    tabela = ax.table(cellText=linhas, colLabels=colunas, loc='center', cellLoc='center')
+    tabela.auto_set_font_size(False)
+    tabela.set_fontsize(7)
+    tabela.scale(1, 1.18)
+
+    # Header com destaque visual
+    for c_idx in range(len(colunas)):
+        cell = tabela[(0, c_idx)]
+        cell.set_facecolor('#F2F4F7')
+        cell.set_text_props(weight='bold')
+
+    # Linha de total em destaque suave
+    total_row_index = len(linhas)
+    for c_idx in range(len(colunas)):
+        cell = tabela[(total_row_index, c_idx)]
+        cell.set_facecolor('#F7FAFC')
+        cell.set_text_props(weight='bold')
+
+    fig.tight_layout()
+    out = io.BytesIO()
+    fig.savefig(out, format='png', bbox_inches='tight', transparent=False)
+    plt.close(fig)
+    out.seek(0)
+    return out
+
+
+def _substituir_placeholders_graficos_doc(doc, variaveis):
+    """Substitui placeholders de gráfico por imagens reais quando o placeholder está sozinho."""
+    img_12m = _gerar_imagem_grafico_consumo_geracao_12m(variaveis)
+    img_tab_12m = _gerar_imagem_tabela_12m(variaveis)
+
+    if img_12m is None and img_tab_12m is None:
+        return
+
+    ph_12m = _placeholder_variantes('grafico_consumo_geracao_12_meses')
+    ph_tab_12m = _placeholder_variantes('tabela_12_meses')
+
+    def _aplicar_paragrafo(paragrafo):
+        txt = (paragrafo.text or '').strip()
+        if txt in ph_12m and img_12m is not None:
+            for run in paragrafo.runs:
+                run.text = ''
+            run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
+            run.add_picture(io.BytesIO(img_12m.getvalue()), width=Inches(6.2))
+        elif txt in ph_tab_12m and img_tab_12m is not None:
+            for run in paragrafo.runs:
+                run.text = ''
+            run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
+            run.add_picture(io.BytesIO(img_tab_12m.getvalue()), width=Inches(6.5))
+
+    for paragrafo in doc.paragraphs:
+        _aplicar_paragrafo(paragrafo)
+
+    for tabela in doc.tables:
+        for linha in tabela.rows:
+            for celula in linha.cells:
+                for paragrafo in celula.paragraphs:
+                    _aplicar_paragrafo(paragrafo)
+
+    for secao in doc.sections:
+        for paragrafo in secao.header.paragraphs:
+            _aplicar_paragrafo(paragrafo)
+        for tabela in secao.header.tables:
+            for linha in tabela.rows:
+                for celula in linha.cells:
+                    for paragrafo in celula.paragraphs:
+                        _aplicar_paragrafo(paragrafo)
+
+        for paragrafo in secao.footer.paragraphs:
+            _aplicar_paragrafo(paragrafo)
+        for tabela in secao.footer.tables:
+            for linha in tabela.rows:
+                for celula in linha.cells:
+                    for paragrafo in celula.paragraphs:
+                        _aplicar_paragrafo(paragrafo)
+
+
 def _serie_consumo_12_meses(projeto):
     """Retorna lista com 12 valores de consumo mensal."""
     base = _to_float(getattr(projeto, 'consumo_kwh_mes', 0), 0)
@@ -243,7 +468,7 @@ def _substituir_placeholders_xml_docx(caminho_docx, variaveis):
 
                         # Para blocos multiline (tabelas/graficos), deixamos python-docx
                         # aplicar no nível de parágrafo para preservar melhor as quebras.
-                        if '\n' in valor_str:
+                        if '\n' in valor_str or chave.lower().startswith('grafico_'):
                             continue
 
                         valor_xml = escape(valor_str)
@@ -315,6 +540,10 @@ def substituir_variaveis_word(template_path, variaveis):
     _substituir_placeholders_xml_docx(template_path, variaveis)
 
     doc = Document(template_path)
+
+    # Troca placeholders de gráficos por imagens reais quando possível.
+    # Deve ocorrer antes da substituição textual para não perder o marcador.
+    _substituir_placeholders_graficos_doc(doc, variaveis)
     
     # Substituir em parágrafos
     for paragrafo in doc.paragraphs:
