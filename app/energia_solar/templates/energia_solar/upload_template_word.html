@@ -23,7 +23,7 @@
                             <label for="template" class="form-label fw-bold">Selecione o arquivo .docx com as variáveis:</label>
                             <input type="file" class="form-control" id="template" name="template" accept=".docx" required>
                             <div class="form-text">
-                                Apenas arquivos .docx são permitidos. Você pode usar <code>{% raw %}{{NOME_CLIENTE}}{% endraw %}</code> ou <code>[nome_cliente]</code>.
+                                Apenas arquivos .docx são permitidos. Padrão oficial: <code>{% raw %}{{NOME_CLIENTE}}{% endraw %}</code>.
                             </div>
                         </div>
 
@@ -31,7 +31,7 @@
                             <h6 class="alert-heading">💡 Como usar:</h6>
                             <ol class="mb-0">
                                 <li>Abra seu documento Word</li>
-                                <li>Digite as variáveis, ex: <code>{% raw %}{{NOME_CLIENTE}}{% endraw %}</code> ou <code>[nome_cliente]</code></li>
+                                <li>Digite as variáveis no padrão <code>{% raw %}{{VARIAVEL}}{% endraw %}</code>, ex: <code>{% raw %}{{NOME_CLIENTE}}{% endraw %}</code></li>
                                 <li>Salve o arquivo .docx</li>
                                 <li>Faça upload aqui</li>
                                 <li>Baixe o documento final com os dados reais</li>
@@ -214,7 +214,7 @@
             </div>
             <div class="modal-body">
                 <div class="alert alert-info">
-                    <strong>💡 Como usar:</strong> Copie o código com as chaves duplas <code>{% raw %}{{VARIAVEL}}{% endraw %}</code> e cole no seu documento Word.
+                    <strong>💡 Padrão da lista:</strong> Use sempre <code>{% raw %}{{VARIAVEL}}{% endraw %}</code> (maiúsculas e com chaves duplas).
                 </div>
 
                 <h6 class="fw-bold text-primary mt-4">👤 Dados do Cliente (5 variáveis)</h6>
@@ -455,63 +455,63 @@
                     </thead>
                     <tbody class="small">
                         <tr>
-                            <td><code>{% raw %}{{fatura_media_mensal_sem_sistema}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{FATURA_MEDIA_MENSAL_SEM_SISTEMA}}{% endraw %}</code></td>
                             <td>Fatura média mensal sem sistema</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{fatura_minima}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{FATURA_MINIMA}}{% endraw %}</code></td>
                             <td>Fatura mínima estimada</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{kit_descricao}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{KIT_DESCRICAO}}{% endraw %}</code></td>
                             <td>Descrição do kit</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{kit_outras_inf}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{KIT_OUTRAS_INF}}{% endraw %}</code></td>
                             <td>Informações adicionais do kit</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{outras_descricoes}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{OUTRAS_DESCRICOES}}{% endraw %}</code></td>
                             <td>Outras descrições (alias de observações)</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{outras_descricao}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{OUTRAS_DESCRICAO}}{% endraw %}</code></td>
                             <td>Outra descrição (alias alternativo)</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{orcamento_valor_nota}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{ORCAMENTO_VALOR_NOTA}}{% endraw %}</code></td>
                             <td>Valor de nota/orçamento</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{payback_ano_lei_14300}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{PAYBACK_ANO_LEI_14300}}{% endraw %}</code></td>
                             <td>Payback ano base Lei 14.300</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{payback_roi_lei_14300}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{PAYBACK_ROI_LEI_14300}}{% endraw %}</code></td>
                             <td>Payback/ROI cenário Lei 14.300</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{reajuste_anual}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{REAJUSTE_ANUAL}}{% endraw %}</code></td>
                             <td>Reajuste anual considerado</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{grafico_consumo_geracao_12_meses}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{GRAFICO_CONSUMO_GERACAO_12_MESES}}{% endraw %}</code></td>
                             <td>Placeholder para gráfico 12 meses</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{grafico_consumo_geracao_25_anos}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{GRAFICO_CONSUMO_GERACAO_25_ANOS}}{% endraw %}</code></td>
                             <td>Placeholder para gráfico 25 anos</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{grafico_pay_back}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{GRAFICO_PAY_BACK}}{% endraw %}</code></td>
                             <td>Placeholder para gráfico de payback</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{tabela_12_meses}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{TABELA_12_MESES}}{% endraw %}</code></td>
                             <td>Placeholder para tabela 12 meses</td>
                         </tr>
                         <tr>
-                            <td><code>{% raw %}{{tabela_25_anos}}{% endraw %}</code></td>
+                            <td><code>{% raw %}{{TABELA_25_ANOS}}{% endraw %}</code></td>
                             <td>Placeholder para tabela 25 anos</td>
                         </tr>
                     </tbody>
