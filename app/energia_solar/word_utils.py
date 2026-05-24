@@ -254,6 +254,52 @@ def _placeholder_variantes(chave):
     }
 
 
+def _calcular_tarifa_financeira_projeto(projeto, tarifa_padrao=0.85):
+    """Obtém tarifa efetiva considerando concessionária e aplicações TE/TUSD."""
+    tarifa = _extract_first_float(getattr(projeto, 'tarifa_kwh', None), 0)
+
+    try:
+        from app.concessionaria.concessionaria_model import Concessionaria
+
+        concessionaria_id = getattr(projeto, 'concessionaria_id', None)
+        if concessionaria_id:
+            conc = Concessionaria.query.get(concessionaria_id)
+            if conc:
+                te = _to_float(getattr(conc, 'te', 0), 0)
+                tusd = _to_float(getattr(conc, 'tusd', 0), 0)
+                pis = _to_float(getattr(conc, 'pis', 0), 0)
+                cofins = _to_float(getattr(conc, 'cofins', 0), 0)
+                icms = _to_float(getattr(conc, 'icms', 0), 0)
+
+                aplicar_pis_te = getattr(projeto, 'aplicar_pis_te', True)
+                aplicar_cofins_te = getattr(projeto, 'aplicar_cofins_te', True)
+                aplicar_icms_te = getattr(projeto, 'aplicar_icms_te', True)
+                aplicar_pis_tusd = getattr(projeto, 'aplicar_pis_tusd', True)
+                aplicar_cofins_tusd = getattr(projeto, 'aplicar_cofins_tusd', True)
+                aplicar_icms_tusd = getattr(projeto, 'aplicar_icms_tusd', True)
+
+                perc_te = (
+                    (pis if aplicar_pis_te else 0)
+                    + (cofins if aplicar_cofins_te else 0)
+                    + (icms if aplicar_icms_te else 0)
+                )
+                perc_tusd = (
+                    (pis if aplicar_pis_tusd else 0)
+                    + (cofins if aplicar_cofins_tusd else 0)
+                    + (icms if aplicar_icms_tusd else 0)
+                )
+
+                tarifa_calc = (te * (1 + perc_te / 100.0)) + (tusd * (1 + perc_tusd / 100.0))
+                if tarifa_calc > 0:
+                    tarifa = tarifa_calc
+    except Exception:
+        pass
+
+    if tarifa <= 0:
+        tarifa = tarifa_padrao
+    return tarifa
+
+
 def _gerar_imagem_grafico_consumo_geracao_12m(variaveis):
     """Gera gráfico visual (barra + linha) para consumo x geração em 12 meses."""
     try:
@@ -479,6 +525,16 @@ def _serie_economia_25_anos_variaveis(variaveis):
         or 0,
         0,
     )
+
+    if economia_mensal <= 0:
+        economia_anual = _to_float_text(
+            variaveis.get('economia_anual')
+            or variaveis.get('ECONOMIA_ANUAL')
+            or 0,
+            0,
+        )
+        if economia_anual > 0:
+            economia_mensal = economia_anual / 12.0
 
     if economia_mensal <= 0:
         payback_anos = _extract_first_float(
@@ -1171,9 +1227,6 @@ def substituir_variaveis_word(template_path, variaveis):
     variaveis = _expandir_aliases_variaveis(variaveis)
     variaveis = _normalizar_variaveis_financeiras(variaveis)
     variaveis = _expandir_aliases_variaveis(variaveis)
-
-    # Primeiro aplica fallback XML para cobrir caixas de texto e elementos complexos
-    _substituir_placeholders_xml_docx(template_path, variaveis)
 
     doc = Document(template_path)
 
