@@ -891,6 +891,14 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
     ph_tab_25a = _placeholder_variantes('tabela_25_anos')
     ph_payback = _placeholder_variantes('grafico_pay_back') | _placeholder_variantes('grafico_payback')
 
+    resumo_25 = str(
+        variaveis.get('grafico_consumo_geracao_25_anos_texto')
+        or variaveis.get('GRAFICO_CONSUMO_GERACAO_25_ANOS_TEXTO')
+        or (
+            f"Economia projetada em 25 anos: {variaveis.get('ECONOMIA_25_ANOS') or variaveis.get('economia_25_anos') or '-'}"
+        )
+    )
+
     def _aplicar_paragrafo(paragrafo):
         txt = (paragrafo.text or '').strip()
         if not txt:
@@ -911,7 +919,7 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
                     or ''
                 ),
             ),
-            (ph_25a, img_25a, 6.5, None),
+            (ph_25a, img_25a, 6.5, resumo_25),
             (
                 ph_tab_25a,
                 img_tab_25a,
@@ -938,13 +946,16 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
         if not encontrou_marcador:
             return
 
-        # Se houver texto além dos placeholders, não remove o conteúdo do usuário.
-        if texto_limpo.replace('\n', '').replace('\r', '').strip():
-            return
+        # Se houver texto além dos placeholders, preserva o conteúdo e anexa
+        # imagem/texto no final do parágrafo.
+        placeholder_only = not texto_limpo.replace('\n', '').replace('\r', '').strip()
 
-        for run in paragrafo.runs:
-            run.text = ''
-        run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
+        if placeholder_only:
+            for run in paragrafo.runs:
+                run.text = ''
+            run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
+        else:
+            run = paragrafo.runs[-1] if paragrafo.runs else paragrafo.add_run()
 
         inseriu = False
         for ph_set, img, width, fallback_texto in marcadores:
@@ -952,7 +963,7 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
                 continue
 
             if img is not None:
-                if inseriu:
+                if inseriu or not placeholder_only:
                     run.add_break()
                 run.add_picture(io.BytesIO(img.getvalue()), width=Inches(width))
                 inseriu = True
@@ -960,7 +971,7 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
 
             # Se a imagem não puder ser gerada, não deixa o bloco sumir.
             if fallback_texto:
-                if inseriu:
+                if inseriu or not placeholder_only:
                     run.add_break()
                 run.add_text(fallback_texto)
                 inseriu = True
@@ -1636,6 +1647,7 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
 
     outras_descricoes = (
         kit_outras_inf
+        or kit_desc
         or getattr(projeto, 'observacoes', None)
         or getattr(projeto, 'descricao', None)
         or ''
@@ -1668,6 +1680,9 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'grafico_consumo_geracao_12_meses': '',
         'grafico_consumo_geracao_25_anos': '',
         'grafico_pay_back': '',
+        'grafico_consumo_geracao_25_anos_texto': (
+            f"Economia projetada em 25 anos: {_fmt_rs(economia_25_calc)}"
+        ),
         'kit_descricao': kit_desc,
         'kit_outras_inf': outras_descricoes,
         'kit_outras_informacoes': outras_descricoes,
@@ -1683,18 +1698,21 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'payback_roi_lei_14300': f"{float(payback_anos or 0):.1f}",
         'reajuste_anual': f"{float(getattr(projeto, 'acrescimo_anual_percentual', None) or getattr(projeto, 'reajuste_anual_energia', None) or 10.0):.2f}",
         'acrescimo_anual_percentual': f"{float(getattr(projeto, 'acrescimo_anual_percentual', None) or getattr(projeto, 'reajuste_anual_energia', None) or 10.0):.2f}",
-        'tabela_12_meses': '',
-        'tabela_25_anos': '',
+        'tabela_12_meses': _montar_tabela_12_meses_texto(projeto),
+        'tabela_25_anos': _montar_tabela_25_anos_texto(projeto),
     })
     
     # Adicionar variáveis do balanço se fornecido
     if balanco:
+        economia_balanco = _extract_first_float(balanco.get('economia_mensal', 0), 0)
+        if economia_balanco <= 0:
+            economia_balanco = economia_mensal_calc
         variaveis.update({
             'consumo_simultaneo': f"{balanco.get('consumo_simultaneo', 0):.0f}",
             'excedente_kwh': f"{balanco.get('excedente_rede', 0):.0f}",
-            'economia_mensal': f"{balanco.get('economia_mensal', 0):.2f}",
-            'economia_anual': f"{balanco.get('economia_mensal', 0) * 12:.2f}",
-            'economia_25_anos': f"{balanco.get('economia_mensal', 0) * 12 * 25:.2f}",
+            'economia_mensal': f"{economia_balanco:.2f}",
+            'economia_anual': f"{economia_balanco * 12:.2f}",
+            'economia_25_anos': f"{economia_balanco * 12 * 25:.2f}",
             'consumo_minimo': balanco.get('consumo_minimo', 30),
         })
 

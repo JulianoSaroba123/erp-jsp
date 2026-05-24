@@ -479,6 +479,7 @@ def montar_contexto_proposta(projeto):
 
     kit_outras_inf = (
         (getattr(kit, 'outras_informacoes', None) if kit else None)
+        or kit_desc
         or getattr(projeto, 'observacoes', None)
         or getattr(projeto, 'descricao', None)
         or ""
