@@ -561,6 +561,23 @@ def _serie_economia_25_anos_variaveis(variaveis):
         if consumo > 0 and tarifa > 0:
             economia_mensal = consumo * tarifa * 0.9
 
+    if economia_mensal <= 0:
+        consumo_serie = _serie_consumo_12_meses_variaveis(variaveis)
+        consumo_medio = (sum(consumo_serie) / len(consumo_serie)) if consumo_serie else 0
+        tarifa = _to_float_text(variaveis.get('tarifa_kwh'), 0)
+        if tarifa <= 0:
+            tarifa = _to_float_text(variaveis.get('preco_kwh'), 0)
+        if tarifa <= 0:
+            tarifa = 0.85
+
+        if consumo_medio > 0 and tarifa > 0:
+            tipo_instalacao = variaveis.get('tipo_instalacao') or variaveis.get('TIPO_INSTALACAO') or 'monofasica'
+            consumo_minimo_kwh = _consumo_minimo_kwh_por_tipo(tipo_instalacao)
+            adicionais = _to_float_text(variaveis.get('iluminacao_publica'), 0) + _to_float_text(variaveis.get('demais_custos'), 0)
+            fatura_sem = consumo_medio * tarifa
+            fatura_com = (consumo_minimo_kwh * tarifa) + adicionais
+            economia_mensal = max(fatura_sem - fatura_com, fatura_sem * 0.6)
+
     reajuste = _to_float_text(
         variaveis.get('acrescimo_anual_percentual')
         or variaveis.get('reajuste_anual_energia')
@@ -857,6 +874,13 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
     img_25a = _gerar_imagem_grafico_economia_25_anos(variaveis)
     img_tab_25a = _gerar_imagem_tabela_25_anos(variaveis)
     img_payback = _gerar_imagem_grafico_payback(variaveis)
+
+    # Se a projeção de 25 anos não estiver disponível, usa visual de 12 meses
+    # para evitar fallback textual com tabela/CSV no documento final.
+    if img_25a is None and img_12m is not None:
+        img_25a = io.BytesIO(img_12m.getvalue())
+    if img_tab_25a is None and img_tab_12m is not None:
+        img_tab_25a = io.BytesIO(img_tab_12m.getvalue())
 
     if img_12m is None and img_tab_12m is None and img_25a is None and img_tab_25a is None and img_payback is None:
         return
@@ -1546,9 +1570,10 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'economia_anual': f"{float(economia_anual_calc or 0):.2f}",
         'economia_25_anos': f"{float(economia_25_calc or 0):.2f}",
         'economia_total_25_anos': f"{float(economia_25_calc or 0):.2f}",
-        'grafico_consumo_geracao_12_meses': _montar_grafico_12_meses_csv(projeto),
-        'grafico_consumo_geracao_25_anos': _montar_grafico_25_anos_csv(projeto),
-        'grafico_pay_back': _montar_grafico_payback_csv(projeto),
+        # Placeholders visuais devem ser preenchidos por imagem, não por texto ASCII.
+        'grafico_consumo_geracao_12_meses': '',
+        'grafico_consumo_geracao_25_anos': '',
+        'grafico_pay_back': '',
         'kit_descricao': kit_desc,
         'kit_outras_inf': outras_descricoes,
         'kit_outras_informacoes': outras_descricoes,
@@ -1564,8 +1589,8 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'payback_roi_lei_14300': f"{float(payback_anos or 0):.1f}",
         'reajuste_anual': f"{float(getattr(projeto, 'acrescimo_anual_percentual', None) or getattr(projeto, 'reajuste_anual_energia', None) or 10.0):.2f}",
         'acrescimo_anual_percentual': f"{float(getattr(projeto, 'acrescimo_anual_percentual', None) or getattr(projeto, 'reajuste_anual_energia', None) or 10.0):.2f}",
-        'tabela_12_meses': _montar_tabela_12_meses_texto(projeto),
-        'tabela_25_anos': _montar_tabela_25_anos_texto(projeto),
+        'tabela_12_meses': '',
+        'tabela_25_anos': '',
     })
     
     # Adicionar variáveis do balanço se fornecido
