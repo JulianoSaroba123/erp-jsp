@@ -1247,6 +1247,44 @@
                         </div>
                     </div>
 
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h6 class="text-secondary mb-3">
+                                <i class="fas fa-sliders-h me-2"></i>Aplicação dos Impostos na Energia Compensada
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="aplicar_pis_te" checked>
+                                        <label class="form-check-label" for="aplicar_pis_te">Aplicar PIS na TE compensada</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="aplicar_cofins_te" checked>
+                                        <label class="form-check-label" for="aplicar_cofins_te">Aplicar COFINS na TE compensada</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="aplicar_icms_te" checked>
+                                        <label class="form-check-label" for="aplicar_icms_te">Aplicar ICMS na TE compensada</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="aplicar_pis_tusd" checked>
+                                        <label class="form-check-label" for="aplicar_pis_tusd">Aplicar PIS na TUSD compensada</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="aplicar_cofins_tusd" checked>
+                                        <label class="form-check-label" for="aplicar_cofins_tusd">Aplicar COFINS na TUSD compensada</label>
+                                    </div>
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" id="aplicar_icms_tusd" checked>
+                                        <label class="form-check-label" for="aplicar_icms_tusd">Aplicar ICMS na TUSD compensada</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Tarifa Final e Economia -->
                     <div class="row mb-4">
                         <div class="col-md-12">
@@ -1750,6 +1788,69 @@ function atualizarConcessionarias(event) {
 
 // Event listener para preencher campos ao selecionar concessionária
 document.addEventListener('DOMContentLoaded', function() {
+    function calcularTarifaComAplicacoes(selectedOption) {
+        if (!selectedOption || !selectedOption.value) {
+            return;
+        }
+
+        const te = parseFloat(selectedOption.getAttribute('data-te') || 0);
+        const tusd = parseFloat(selectedOption.getAttribute('data-tusd') || 0);
+        const pis = parseFloat(selectedOption.getAttribute('data-pis') || 0);
+        const cofins = parseFloat(selectedOption.getAttribute('data-cofins') || 0);
+        const icms = parseFloat(selectedOption.getAttribute('data-icms') || 0);
+
+        const aplicarPisTe = document.getElementById('aplicar_pis_te')?.checked ?? true;
+        const aplicarCofinsTe = document.getElementById('aplicar_cofins_te')?.checked ?? true;
+        const aplicarIcmsTe = document.getElementById('aplicar_icms_te')?.checked ?? true;
+        const aplicarPisTusd = document.getElementById('aplicar_pis_tusd')?.checked ?? true;
+        const aplicarCofinsTusd = document.getElementById('aplicar_cofins_tusd')?.checked ?? true;
+        const aplicarIcmsTusd = document.getElementById('aplicar_icms_tusd')?.checked ?? true;
+
+        const percTe =
+            (aplicarPisTe ? pis : 0) +
+            (aplicarCofinsTe ? cofins : 0) +
+            (aplicarIcmsTe ? icms : 0);
+        const percTusd =
+            (aplicarPisTusd ? pis : 0) +
+            (aplicarCofinsTusd ? cofins : 0) +
+            (aplicarIcmsTusd ? icms : 0);
+
+        const teComp = te * (1 + (percTe / 100));
+        const tusdComp = tusd * (1 + (percTusd / 100));
+
+        const tarifaTotal = te + tusd;
+        const tarifaFinal = teComp + tusdComp;
+        const impostosEfetivos = tarifaTotal > 0
+            ? ((tarifaFinal / tarifaTotal) - 1) * 100
+            : 0;
+
+        document.getElementById('te_display').value = te.toFixed(4);
+        document.getElementById('tusd_display').value = tusd.toFixed(4);
+        document.getElementById('tarifa_total_display').value = tarifaTotal.toFixed(4);
+        document.getElementById('pis_display').value = pis.toFixed(2);
+        document.getElementById('cofins_display').value = cofins.toFixed(2);
+        document.getElementById('icms_display').value = icms.toFixed(2);
+        document.getElementById('impostos_display').value = impostosEfetivos.toFixed(2);
+
+        document.getElementById('impostos_percentual').value = impostosEfetivos.toFixed(2);
+        document.getElementById('tarifa_final').value = tarifaFinal.toFixed(4);
+
+        const consumoMensal = parseFloat('{{ projeto.consumo_kwh_mes or 0 }}') || 0;
+        const economiaMensal = consumoMensal * tarifaFinal;
+        const economiaAnual = economiaMensal * 12;
+        document.getElementById('economia_anual_prevista').value = economiaAnual.toFixed(2);
+
+        console.log('✅ Tarifa recalculada com aplicações:', {
+            te,
+            tusd,
+            percTe,
+            percTusd,
+            tarifaTotal,
+            tarifaFinal,
+            impostosEfetivos
+        });
+    }
+
     const selectConc = document.getElementById('concessionaria_id');
     
     if (selectConc) {
@@ -1757,41 +1858,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedOption = this.options[this.selectedIndex];
             
             if (selectedOption.value) {
-                // Pegar valores dos data-attributes
-                const te = parseFloat(selectedOption.getAttribute('data-te') || 0);
-                const tusd = parseFloat(selectedOption.getAttribute('data-tusd') || 0);
-                const pis = parseFloat(selectedOption.getAttribute('data-pis') || 0);
-                const cofins = parseFloat(selectedOption.getAttribute('data-cofins') || 0);
-                const icms = parseFloat(selectedOption.getAttribute('data-icms') || 0);
-                const tarifaFinal = parseFloat(selectedOption.getAttribute('data-tarifa-final') || 0);
-                
-                // Calcular valores
-                const tarifaTotal = te + tusd;
-                const impostosTotal = pis + cofins + icms;
-                
-                // Preencher campos de exibição
-                document.getElementById('te_display').value = te.toFixed(4);
-                document.getElementById('tusd_display').value = tusd.toFixed(4);
-                document.getElementById('tarifa_total_display').value = tarifaTotal.toFixed(4);
-                document.getElementById('pis_display').value = pis.toFixed(2);
-                document.getElementById('cofins_display').value = cofins.toFixed(2);
-                document.getElementById('icms_display').value = icms.toFixed(2);
-                document.getElementById('impostos_display').value = impostosTotal.toFixed(2);
-                
-                // Preencher campos hidden/readonly que serão salvos
-                document.getElementById('impostos_percentual').value = impostosTotal.toFixed(2);
-                document.getElementById('tarifa_final').value = tarifaFinal.toFixed(4);
-                
-                // Calcular economia anual
-                const consumoMensal = parseFloat('{{ projeto.consumo_kwh_mes or 0 }}') || 0;
-                const economiaMensal = consumoMensal * tarifaFinal;
-                const economiaAnual = economiaMensal * 12;
-                
-                document.getElementById('economia_anual_prevista').value = economiaAnual.toFixed(2);
-                
-                console.log('✅ Campos preenchidos:', {
-                    te, tusd, tarifaTotal, impostosTotal, tarifaFinal, economiaAnual
-                });
+                calcularTarifaComAplicacoes(selectedOption);
             } else {
                 // Limpar campos se nenhuma concessionária selecionada
                 ['te_display', 'tusd_display', 'tarifa_total_display', 'pis_display', 
@@ -1799,6 +1866,25 @@ document.addEventListener('DOMContentLoaded', function() {
                  'economia_anual_prevista', 'impostos_percentual'].forEach(id => {
                     const campo = document.getElementById(id);
                     if (campo) campo.value = '';
+                });
+            }
+        });
+
+        [
+            'aplicar_pis_te',
+            'aplicar_cofins_te',
+            'aplicar_icms_te',
+            'aplicar_pis_tusd',
+            'aplicar_cofins_tusd',
+            'aplicar_icms_tusd'
+        ].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', function() {
+                    const selectedOption = selectConc.options[selectConc.selectedIndex];
+                    if (selectedOption && selectedOption.value) {
+                        calcularTarifaComAplicacoes(selectedOption);
+                    }
                 });
             }
         });
