@@ -127,6 +127,7 @@ def _gerar_imagem_grafico_consumo_geracao_12m(variaveis):
         matplotlib.set_loglevel('warning')
         logging.getLogger('matplotlib').setLevel(logging.WARNING)
         import matplotlib.pyplot as plt
+        import matplotlib.patheffects as pe
     except Exception:
         return None
 
@@ -141,9 +142,9 @@ def _gerar_imagem_grafico_consumo_geracao_12m(variaveis):
     if max(consumo + geracao) <= 0:
         return None
 
-    fig, ax = plt.subplots(figsize=(10.8, 4.5), dpi=170)
+    fig, ax = plt.subplots(figsize=(11.2, 4.9), dpi=190)
     fig.patch.set_facecolor('#FFFFFF')
-    ax.set_facecolor('#FCFDFE')
+    ax.set_facecolor('#F7FBFF')
     x = list(range(len(meses)))
     largura = 0.36
 
@@ -151,25 +152,31 @@ def _gerar_imagem_grafico_consumo_geracao_12m(variaveis):
         [i - largura / 2 for i in x],
         consumo,
         width=largura,
-        color='#F4A7A7',
-        edgecolor='#E68E8E',
-        linewidth=0.4,
+        color='#27B4FF',
+        edgecolor='#0A7FC2',
+        linewidth=0.9,
         label='Consumo (kWh)'
     )
     geracao_bar = ax.bar(
         [i + largura / 2 for i in x],
         geracao,
         width=largura,
-        color='#7AD98D',
-        edgecolor='#57C470',
-        linewidth=0.4,
+        color='#6FF2A9',
+        edgecolor='#2EA866',
+        linewidth=0.9,
         label='Geracao (kWh)'
     )
-    ax.plot(x, consumo_simult, color='#0B6AE0', marker='o', markersize=4, linewidth=1.8, label='Consumo simultaneo')
+    line_simult, = ax.plot(x, consumo_simult, color='#FF5E84', marker='o', markersize=4.3, linewidth=2.0, label='Consumo simultaneo')
+
+    # Pseudo-3D: sombra nas barras e glow na linha.
+    for b in list(consumo_bar) + list(geracao_bar):
+        b.set_path_effects([pe.SimplePatchShadow(offset=(1.2, -1.2), alpha=0.28), pe.Normal()])
+    line_simult.set_path_effects([pe.Stroke(linewidth=3.4, foreground='#FFC4D2', alpha=0.8), pe.Normal()])
 
     ax.set_xticks(x)
-    ax.set_xticklabels(meses, fontsize=8)
-    ax.set_ylabel('kWh/mes', fontsize=9, color='#394B59')
+    ax.set_xticklabels(meses, fontsize=10, fontweight='bold')
+    ax.tick_params(axis='y', labelsize=10)
+    ax.set_ylabel('kWh/mes', fontsize=10, color='#24384D', fontweight='bold')
     ax.set_ylim(0, max(max(consumo), max(geracao)) * 1.22)
     ax.grid(axis='y', color='#DFE7EF', linewidth=0.8, alpha=0.9)
     ax.set_axisbelow(True)
@@ -190,7 +197,7 @@ def _gerar_imagem_grafico_consumo_geracao_12m(variaveis):
         transform=ax.transAxes,
         ha='left',
         va='top',
-        fontsize=8,
+        fontsize=9,
         color='#1F3A56',
         bbox=dict(boxstyle='round,pad=0.25', fc='#EEF5FF', ec='#C9DDF7', lw=0.7)
     )
@@ -198,12 +205,12 @@ def _gerar_imagem_grafico_consumo_geracao_12m(variaveis):
     # Rótulos discretos para melhorar leitura sem poluir.
     for idx in [0, 5, 11]:
         ax.text(consumo_bar[idx].get_x() + consumo_bar[idx].get_width() / 2, consumo[idx] + 8, _fmt_kwh(consumo[idx]),
-                ha='center', va='bottom', fontsize=7, color='#914F4F')
+                ha='center', va='bottom', fontsize=8, color='#0A5A87', fontweight='bold')
         ax.text(geracao_bar[idx].get_x() + geracao_bar[idx].get_width() / 2, geracao[idx] + 8, _fmt_kwh(geracao[idx]),
-                ha='center', va='bottom', fontsize=7, color='#2F7A42')
+                ha='center', va='bottom', fontsize=8, color='#1C7547', fontweight='bold')
 
-    ax.set_title('Geracao de energia - estimativa mes a mes', loc='left', fontsize=12, fontweight='bold', color='#143A67', pad=12)
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=3, fontsize=8, frameon=False)
+    ax.set_title('Geracao de energia - estimativa mes a mes', loc='left', fontsize=14, fontweight='bold', color='#0E2C4D', pad=12)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=3, fontsize=9, frameon=False)
 
     fig.tight_layout()
 
@@ -265,19 +272,19 @@ def _gerar_imagem_tabela_12m(variaveis):
 
     tabela = ax.table(cellText=linhas, colLabels=colunas, loc='center', cellLoc='center')
     tabela.auto_set_font_size(False)
-    tabela.set_fontsize(8)
+    tabela.set_fontsize(9)
     tabela.scale(1, 1.24)
 
     # Header com destaque visual
     for c_idx in range(len(colunas)):
         cell = tabela[(0, c_idx)]
-        cell.set_facecolor('#EAF1FB')
-        cell.set_edgecolor('#C9D8EB')
-        cell.set_text_props(weight='bold', color='#133A66')
+        cell.set_facecolor('#0F2F53')
+        cell.set_edgecolor('#28507A')
+        cell.set_text_props(weight='bold', color='#E9F6FF')
 
     # Zebra striping para facilitar leitura de linha.
     for r_idx in range(1, len(linhas)):
-        bg = '#FFFFFF' if r_idx % 2 == 1 else '#F8FBFF'
+        bg = '#FFFFFF' if r_idx % 2 == 1 else '#EEF6FF'
         for c_idx in range(len(colunas)):
             cell = tabela[(r_idx, c_idx)]
             cell.set_facecolor(bg)
@@ -287,11 +294,11 @@ def _gerar_imagem_tabela_12m(variaveis):
     total_row_index = len(linhas)
     for c_idx in range(len(colunas)):
         cell = tabela[(total_row_index, c_idx)]
-        cell.set_facecolor('#EAF7EE')
-        cell.set_edgecolor('#CBE8D3')
-        cell.set_text_props(weight='bold', color='#155D2D')
+        cell.set_facecolor('#DDFBEA')
+        cell.set_edgecolor('#9FD4B5')
+        cell.set_text_props(weight='bold', color='#0E5A2D')
 
-    ax.set_title('Resumo financeiro e energetico - 12 meses', loc='left', fontsize=11, fontweight='bold', color='#143A67', pad=10)
+    ax.set_title('Resumo financeiro e energetico - 12 meses', loc='left', fontsize=12, fontweight='bold', color='#0E2C4D', pad=10)
 
     fig.tight_layout()
     out = io.BytesIO()
@@ -327,6 +334,7 @@ def _gerar_imagem_grafico_economia_25_anos(variaveis):
         matplotlib.set_loglevel('warning')
         logging.getLogger('matplotlib').setLevel(logging.WARNING)
         import matplotlib.pyplot as plt
+        import matplotlib.patheffects as pe
     except Exception:
         return None
 
@@ -336,28 +344,35 @@ def _gerar_imagem_grafico_economia_25_anos(variaveis):
 
     anos = list(range(1, 26))
 
-    fig, ax1 = plt.subplots(figsize=(10.8, 4.6), dpi=170)
+    fig, ax1 = plt.subplots(figsize=(11.2, 4.9), dpi=190)
     fig.patch.set_facecolor('#FFFFFF')
-    ax1.set_facecolor('#FCFDFE')
+    ax1.set_facecolor('#F7FBFF')
 
     bars = ax1.bar(
         anos,
         anual,
-        color='#9FD0FF',
-        edgecolor='#6FB3F2',
-        linewidth=0.5,
+        color='#41B8FF',
+        edgecolor='#0E7FC3',
+        linewidth=0.9,
         label='Economia anual (R$)'
     )
 
     ax2 = ax1.twinx()
-    ax2.plot(anos, acumulada, color='#1B9E5A', linewidth=2.2, marker='o', markersize=3.5, label='Economia acumulada (R$)')
-    ax2.fill_between(anos, acumulada, color='#C7F0D9', alpha=0.35)
+    linha_acum, = ax2.plot(anos, acumulada, color='#12B76A', linewidth=2.4, marker='o', markersize=3.8, label='Economia acumulada (R$)')
+    ax2.fill_between(anos, acumulada, color='#BFF2D7', alpha=0.38)
+
+    for b in bars:
+        b.set_path_effects([pe.SimplePatchShadow(offset=(1.2, -1.2), alpha=0.28), pe.Normal()])
+    linha_acum.set_path_effects([pe.Stroke(linewidth=3.6, foreground='#9BF0C8', alpha=0.85), pe.Normal()])
 
     ax1.set_xlim(0.2, 25.8)
     ax1.set_xticks([1, 3, 5, 7, 10, 13, 16, 19, 22, 25])
-    ax1.set_xlabel('Ano', fontsize=9, color='#394B59')
-    ax1.set_ylabel('Economia anual (R$)', fontsize=9, color='#2F6AA6')
-    ax2.set_ylabel('Economia acumulada (R$)', fontsize=9, color='#1B9E5A')
+    ax1.set_xlabel('Ano', fontsize=10, color='#24384D', fontweight='bold')
+    ax1.set_ylabel('Economia anual (R$)', fontsize=10, color='#1C5D8F', fontweight='bold')
+    ax2.set_ylabel('Economia acumulada (R$)', fontsize=10, color='#147A49', fontweight='bold')
+    ax1.tick_params(axis='x', labelsize=10)
+    ax1.tick_params(axis='y', labelsize=10)
+    ax2.tick_params(axis='y', labelsize=10)
 
     ax1.grid(axis='y', color='#DFE7EF', linewidth=0.8, alpha=0.9)
     ax1.set_axisbelow(True)
@@ -378,7 +393,7 @@ def _gerar_imagem_grafico_economia_25_anos(variaveis):
         transform=ax1.transAxes,
         ha='left',
         va='top',
-        fontsize=8,
+        fontsize=9,
         color='#1F3A56',
         bbox=dict(boxstyle='round,pad=0.25', fc='#EEF5FF', ec='#C9DDF7', lw=0.7)
     )
@@ -392,17 +407,17 @@ def _gerar_imagem_grafico_economia_25_anos(variaveis):
             _fmt_rs(anual[idx]).replace('R$ ', ''),
             ha='center',
             va='bottom',
-            fontsize=7,
+            fontsize=8,
             color='#2F6AA6'
         )
 
-    ax2.text(25, acumulada[-1], _fmt_rs(acumulada[-1]), fontsize=7, color='#1B9E5A', ha='right', va='bottom')
+    ax2.text(25, acumulada[-1], _fmt_rs(acumulada[-1]), fontsize=8, color='#147A49', ha='right', va='bottom', fontweight='bold')
 
-    ax1.set_title('Estimativa de geracao para os proximos 25 anos', loc='left', fontsize=12, fontweight='bold', color='#143A67', pad=12)
+    ax1.set_title('Estimativa de geracao para os proximos 25 anos', loc='left', fontsize=14, fontweight='bold', color='#0E2C4D', pad=12)
 
     h1, l1 = ax1.get_legend_handles_labels()
     h2, l2 = ax2.get_legend_handles_labels()
-    ax1.legend(h1 + h2, l1 + l2, loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=2, fontsize=8, frameon=False)
+    ax1.legend(h1 + h2, l1 + l2, loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=2, fontsize=9, frameon=False)
 
     fig.tight_layout()
     out = io.BytesIO()
@@ -441,23 +456,23 @@ def _gerar_imagem_tabela_25_anos(variaveis):
 
     tabela = ax.table(cellText=linhas, colLabels=colunas, loc='center', cellLoc='center')
     tabela.auto_set_font_size(False)
-    tabela.set_fontsize(8)
+    tabela.set_fontsize(9)
     tabela.scale(1, 1.23)
 
     for c_idx in range(len(colunas)):
         cell = tabela[(0, c_idx)]
-        cell.set_facecolor('#EAF1FB')
-        cell.set_edgecolor('#C9D8EB')
-        cell.set_text_props(weight='bold', color='#133A66')
+        cell.set_facecolor('#0F2F53')
+        cell.set_edgecolor('#28507A')
+        cell.set_text_props(weight='bold', color='#E9F6FF')
 
     for r_idx in range(1, len(linhas) + 1):
-        bg = '#FFFFFF' if r_idx % 2 == 1 else '#F8FBFF'
+        bg = '#FFFFFF' if r_idx % 2 == 1 else '#EEF6FF'
         for c_idx in range(len(colunas)):
             cell = tabela[(r_idx, c_idx)]
             cell.set_facecolor(bg)
             cell.set_edgecolor('#E3EAF2')
 
-    ax.set_title('Resumo de economia projetada - 25 anos', loc='left', fontsize=11, fontweight='bold', color='#143A67', pad=10)
+    ax.set_title('Resumo de economia projetada - 25 anos', loc='left', fontsize=12, fontweight='bold', color='#0E2C4D', pad=10)
 
     fig.tight_layout()
     out = io.BytesIO()
@@ -475,6 +490,7 @@ def _gerar_imagem_grafico_payback(variaveis):
         matplotlib.set_loglevel('warning')
         logging.getLogger('matplotlib').setLevel(logging.WARNING)
         import matplotlib.pyplot as plt
+        import matplotlib.patheffects as pe
     except Exception:
         return None
 
@@ -500,29 +516,32 @@ def _gerar_imagem_grafico_payback(variaveis):
     meses = list(range(0, horizonte + 1))
     acumulada = [economia_mensal * m for m in meses]
 
-    fig, ax = plt.subplots(figsize=(10.8, 4.5), dpi=170)
+    fig, ax = plt.subplots(figsize=(11.2, 4.8), dpi=190)
     fig.patch.set_facecolor('#FFFFFF')
-    ax.set_facecolor('#FCFDFE')
+    ax.set_facecolor('#F7FBFF')
 
-    ax.plot(meses, acumulada, color='#1B9E5A', linewidth=2.3, label='Economia acumulada (R$)')
-    ax.fill_between(meses, acumulada, color='#C7F0D9', alpha=0.35)
+    line_pay, = ax.plot(meses, acumulada, color='#16B36A', linewidth=2.5, label='Economia acumulada (R$)')
+    ax.fill_between(meses, acumulada, color='#BAF2D5', alpha=0.38)
+    line_pay.set_path_effects([pe.Stroke(linewidth=3.8, foreground='#8EE9BE', alpha=0.85), pe.Normal()])
 
-    ax.axhline(investimento, color='#C74646', linewidth=1.6, linestyle='--', label='Investimento inicial (R$)')
-    ax.axvline(payback_meses, color='#0B6AE0', linewidth=1.4, linestyle=':', label=f'Payback: {payback_meses} meses')
+    ax.axhline(investimento, color='#E64A63', linewidth=1.8, linestyle='--', label='Investimento inicial (R$)')
+    ax.axvline(payback_meses, color='#0A84D0', linewidth=1.6, linestyle=':', label=f'Payback: {payback_meses} meses')
 
-    ax.scatter([payback_meses], [investimento], color='#0B6AE0', s=30, zorder=4)
+    ax.scatter([payback_meses], [investimento], color='#0A84D0', edgecolors='white', linewidths=0.8, s=45, zorder=4)
     ax.text(
         payback_meses,
         investimento,
         f'  Retorno em {payback_meses} meses',
-        fontsize=8,
-        color='#0B6AE0',
+        fontsize=9,
+        color='#0A84D0',
         va='bottom',
         ha='left'
     )
 
-    ax.set_xlabel('Meses', fontsize=9, color='#394B59')
-    ax.set_ylabel('Valor acumulado (R$)', fontsize=9, color='#394B59')
+    ax.set_xlabel('Meses', fontsize=10, color='#24384D', fontweight='bold')
+    ax.set_ylabel('Valor acumulado (R$)', fontsize=10, color='#24384D', fontweight='bold')
+    ax.tick_params(axis='x', labelsize=10)
+    ax.tick_params(axis='y', labelsize=10)
     ax.set_xlim(0, horizonte)
     ax.set_ylim(0, max(acumulada[-1], investimento) * 1.12)
     ax.grid(axis='y', color='#DFE7EF', linewidth=0.8, alpha=0.9)
@@ -533,7 +552,7 @@ def _gerar_imagem_grafico_payback(variaveis):
     ax.spines['left'].set_color('#C9D6E2')
     ax.spines['bottom'].set_color('#C9D6E2')
 
-    ax.set_title('Curva de payback do investimento', loc='left', fontsize=12, fontweight='bold', color='#143A67', pad=12)
+    ax.set_title('Curva de payback do investimento', loc='left', fontsize=14, fontweight='bold', color='#0E2C4D', pad=12)
     ax.text(
         0.01,
         0.98,
@@ -541,12 +560,12 @@ def _gerar_imagem_grafico_payback(variaveis):
         transform=ax.transAxes,
         ha='left',
         va='top',
-        fontsize=8,
+        fontsize=9,
         color='#1F3A56',
         bbox=dict(boxstyle='round,pad=0.25', fc='#EEF5FF', ec='#C9DDF7', lw=0.7)
     )
 
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=3, fontsize=8, frameon=False)
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=3, fontsize=9, frameon=False)
 
     fig.tight_layout()
     out = io.BytesIO()
