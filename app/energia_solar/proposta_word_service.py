@@ -480,7 +480,7 @@ def montar_contexto_proposta(projeto):
         # Dados do projeto
         "NUMERO_PROJETO": str(getattr(projeto, "id", "")),
         "DATA_PROPOSTA": datetime.now().strftime("%d/%m/%Y"),
-        "VALIDADE_PROPOSTA": (datetime.now() + timedelta(days=30)).strftime("%d/%m/%Y"),
+        "VALIDADE_PROPOSTA": (datetime.now() + timedelta(days=15)).strftime("%d/%m/%Y"),
         
         # Dados técnicos
         "POTENCIA_SISTEMA": f"{formatar_numero(getattr(projeto, 'potencia_kwp', 0), 2)} kWp",

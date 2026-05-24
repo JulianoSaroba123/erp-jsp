@@ -2711,7 +2711,7 @@ def projeto_proposta_comercial_pdf(projeto_id):
             
             # Calcular data de emissão e validade
             data_emissao = datetime.now().strftime('%d/%m/%Y')
-            data_validade = (datetime.now() + timedelta(days=30)).strftime('%d/%m/%Y')
+            data_validade = (datetime.now() + timedelta(days=15)).strftime('%d/%m/%Y')
             
             # Valores adicionais para o template comercial
             grupo_tarifario = "Grupo B (Baixa Tensão)"  # Pode ser melhorado com campo no banco

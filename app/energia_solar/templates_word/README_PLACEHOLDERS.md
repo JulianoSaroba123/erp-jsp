@@ -42,7 +42,7 @@ Use estes placeholders no seu template Word. Eles serão automaticamente substit
 |------------|-----------|---------|
 | `{{NUMERO_PROJETO}}` | ID/Número do projeto | 456 |
 | `{{DATA_PROPOSTA}}` | Data de emissão da proposta | 22/05/2025 |
-| `{{VALIDADE_PROPOSTA}}` | Data de validade (30 dias) | 21/06/2025 |
+| `{{VALIDADE_PROPOSTA}}` | Data de validade (15 dias) | 06/06/2025 |
 
 ### ⚡ Dados Técnicos
 | Placeholder | Descrição | Exemplo |
