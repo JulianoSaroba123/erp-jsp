@@ -975,21 +975,21 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
                     _aplicar_paragrafo(paragrafo)
 
     for secao in doc.sections:
-        for paragrafo in secao.header.paragraphs:
-            _aplicar_paragrafo(paragrafo)
-        for tabela in secao.header.tables:
-            for linha in tabela.rows:
-                for celula in linha.cells:
-                    for paragrafo in celula.paragraphs:
-                        _aplicar_paragrafo(paragrafo)
-
-        for paragrafo in secao.footer.paragraphs:
-            _aplicar_paragrafo(paragrafo)
-        for tabela in secao.footer.tables:
-            for linha in tabela.rows:
-                for celula in linha.cells:
-                    for paragrafo in celula.paragraphs:
-                        _aplicar_paragrafo(paragrafo)
+        for bloco in [
+            secao.header,
+            secao.first_page_header,
+            secao.even_page_header,
+            secao.footer,
+            secao.first_page_footer,
+            secao.even_page_footer,
+        ]:
+            for paragrafo in bloco.paragraphs:
+                _aplicar_paragrafo(paragrafo)
+            for tabela in bloco.tables:
+                for linha in tabela.rows:
+                    for celula in linha.cells:
+                        for paragrafo in celula.paragraphs:
+                            _aplicar_paragrafo(paragrafo)
 
 
 def _serie_consumo_12_meses(projeto):
@@ -1196,22 +1196,29 @@ def _substituir_texto_paragrafo(paragrafo, variaveis):
                 texto_novo = texto_novo.replace(ph, valor_str)
 
     if texto_novo != texto_original:
-        # Se o parágrafo tiver imagens/desenhos embutidos, não limpamos os runs
-        # para evitar apagar o fundo do cabeçalho/rodapé.
-        tem_desenho = any(
-            ('<w:drawing' in run._element.xml) or ('<w:pict' in run._element.xml) or ('<w:object' in run._element.xml)
-            for run in paragrafo.runs
-        )
-
-        if tem_desenho:
-            return
-
+        # Atualiza apenas runs de texto puro para não apagar imagens/desenhos.
         for run in paragrafo.runs:
-            run.text = ''
-        if paragrafo.runs:
-            paragrafo.runs[0].text = texto_novo
-        else:
-            paragrafo.add_run(texto_novo)
+            if ('<w:drawing' in run._element.xml) or ('<w:pict' in run._element.xml) or ('<w:object' in run._element.xml):
+                continue
+
+            run_text = run.text or ''
+            run_novo = run_text
+            for variavel, valor in variaveis.items():
+                chave = str(variavel)
+                valor_str = str(valor)
+                for ph in [
+                    f'[{chave}]', f'[{chave.upper()}]', f'[{chave.lower()}]',
+                    f'{{{{{chave}}}}}', f'{{{{{chave.upper()}}}}}', f'{{{{{chave.lower()}}}}}',
+                    f'{{{chave}}}', f'{{{chave.upper()}}}', f'{{{chave.lower()}}}',
+                    f'<<{chave}>>', f'<<{chave.upper()}>>', f'<<{chave.lower()}>>',
+                    f'${{{chave}}}', f'${{{chave.upper()}}}', f'${{{chave.lower()}}}',
+                    f'%{chave}%', f'%{chave.upper()}%', f'%{chave.lower()}%',
+                ]:
+                    if ph in run_novo:
+                        run_novo = run_novo.replace(ph, valor_str)
+
+            if run_novo != run_text:
+                run.text = run_novo
 
 
 def _substituir_placeholders_xml_docx(caminho_docx, variaveis):
@@ -1222,6 +1229,20 @@ def _substituir_placeholders_xml_docx(caminho_docx, variaveis):
     base_dir = os.path.dirname(os.path.abspath(caminho_docx)) or None
     with tempfile.NamedTemporaryFile(delete=False, suffix='.docx', dir=base_dir) as tmp:
         tmp_saida = tmp.name
+
+    regex_cache = {}
+
+    def _regex_placeholder_fragmentado(placeholder):
+        if placeholder in regex_cache:
+            return regex_cache[placeholder]
+        if not placeholder:
+            regex_cache[placeholder] = None
+            return None
+        separador_tags = r'(?:<[^>]+>)*'
+        partes = [re.escape(ch) for ch in placeholder]
+        padrao = separador_tags.join(partes)
+        regex_cache[placeholder] = re.compile(padrao)
+        return regex_cache[placeholder]
 
     try:
         with zipfile.ZipFile(caminho_docx, 'r') as zin, zipfile.ZipFile(tmp_saida, 'w', zipfile.ZIP_DEFLATED) as zout:
@@ -1255,6 +1276,11 @@ def _substituir_placeholders_xml_docx(caminho_docx, variaveis):
                         for ph in placeholders:
                             if ph in xml_novo:
                                 xml_novo = xml_novo.replace(ph, valor_xml)
+                                continue
+
+                            regex_ph = _regex_placeholder_fragmentado(ph)
+                            if regex_ph is not None:
+                                xml_novo = regex_ph.sub(valor_xml, xml_novo)
 
                     if xml_novo != xml:
                         data = xml_novo.encode('utf-8')
