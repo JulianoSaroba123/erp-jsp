@@ -8,6 +8,7 @@ import os
 import zipfile
 import tempfile
 import logging
+import re
 from xml.sax.saxutils import escape
 
 
@@ -40,6 +41,22 @@ def _to_float_text(value, default=0.0):
         else:
             txt = txt.replace(',', '.')
         return float(txt)
+    except Exception:
+        return default
+
+
+def _extract_first_float(value, default=0.0):
+    """Extrai o primeiro número de uma string (ex.: '3,0 anos' -> 3.0)."""
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
+        return float(value)
+    txt = str(value)
+    m = re.search(r'-?\d+[\.,]?\d*', txt)
+    if not m:
+        return default
+    try:
+        return float(m.group(0).replace(',', '.'))
     except Exception:
         return default
 
@@ -310,7 +327,46 @@ def _gerar_imagem_tabela_12m(variaveis):
 
 def _serie_economia_25_anos_variaveis(variaveis):
     """Gera série de economia anual e acumulada para 25 anos."""
-    economia_mensal = _to_float_text(variaveis.get('economia_mensal', 0), 0)
+    investimento = _to_float_text(
+        variaveis.get('valor_total')
+        or variaveis.get('orcamento_valor_nota')
+        or variaveis.get('VALOR_INVESTIMENTO')
+        or 0,
+        0.0,
+    )
+
+    economia_mensal = _to_float_text(
+        variaveis.get('economia_mensal')
+        or variaveis.get('ECONOMIA_MENSAL')
+        or 0,
+        0,
+    )
+
+    if economia_mensal <= 0:
+        payback_anos = _extract_first_float(
+            variaveis.get('payback_ano_lei_14300')
+            or variaveis.get('payback_roi_lei_14300')
+            or variaveis.get('PAYBACK')
+            or variaveis.get('payback')
+            or variaveis.get('payback_anos')
+            or 0,
+            0.0,
+        )
+        if investimento > 0 and payback_anos > 0:
+            economia_mensal = investimento / (payback_anos * 12.0)
+
+    if economia_mensal <= 0:
+        fatura_sem = _to_float_text(variaveis.get('fatura_media_mensal_sem_sistema'), 0)
+        fatura_com = _to_float_text(variaveis.get('fatura_minima'), 0)
+        if fatura_sem > 0:
+            economia_mensal = max(fatura_sem - fatura_com, fatura_sem * 0.85)
+
+    if economia_mensal <= 0:
+        consumo = _to_float_text(variaveis.get('consumo_kwh_mes'), 0)
+        tarifa = _to_float_text(variaveis.get('tarifa_kwh'), 0)
+        if consumo > 0 and tarifa > 0:
+            economia_mensal = consumo * tarifa * 0.9
+
     reajuste = _to_float_text(variaveis.get('reajuste_anual', variaveis.get('perda_eficiencia_anual', 0.8)), 0.8)
     taxa = reajuste / 100.0
 
@@ -507,6 +563,25 @@ def _gerar_imagem_grafico_payback(variaveis):
         or 0,
         0.0,
     )
+
+    if economia_mensal <= 0:
+        payback_anos = _extract_first_float(
+            variaveis.get('payback_ano_lei_14300')
+            or variaveis.get('payback_roi_lei_14300')
+            or variaveis.get('PAYBACK')
+            or variaveis.get('payback')
+            or variaveis.get('payback_anos')
+            or 0,
+            0.0,
+        )
+        if investimento > 0 and payback_anos > 0:
+            economia_mensal = investimento / (payback_anos * 12.0)
+
+    if economia_mensal <= 0:
+        fatura_sem = _to_float_text(variaveis.get('fatura_media_mensal_sem_sistema'), 0)
+        fatura_com = _to_float_text(variaveis.get('fatura_minima'), 0)
+        if fatura_sem > 0:
+            economia_mensal = max(fatura_sem - fatura_com, fatura_sem * 0.85)
 
     if investimento <= 0 or economia_mensal <= 0:
         return None
@@ -746,6 +821,9 @@ def _montar_grafico_25_anos_csv(projeto):
     reajuste = _to_float(getattr(projeto, 'perda_eficiencia_anual', 0.8), 0.8)
     taxa = reajuste / 100.0
 
+    if economia_mensal <= 0:
+        return 'Dados insuficientes para projeção de economia em 25 anos.'
+
     linhas = [
         'CHART DATA :: ECONOMIA 25 ANOS',
         'Ano | Economia_Anual | Economia_Acumulada | Curva',
@@ -777,6 +855,12 @@ def _montar_grafico_payback_csv(projeto):
         or 0,
         0,
     )
+
+    if economia_mensal <= 0 and investimento > 0 and payback_anos > 0:
+        economia_mensal = investimento / (payback_anos * 12.0)
+
+    if economia_mensal <= 0:
+        return 'Dados insuficientes para curva de payback.'
     meses = max(24, int(payback_anos * 12) + 12)
 
     payback_mes_estimado = int(round(investimento / economia_mensal)) if economia_mensal > 0 else 0
@@ -1083,6 +1167,26 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         except Exception:
             fatura_media = 0
 
+    # Economia mensal robusta para evitar zeros indevidos em gráficos/tabelas.
+    economia_mensal_calc = _to_float(
+        getattr(projeto, 'economia_mensal', None)
+        or getattr(projeto, 'economia', None)
+        or 0,
+        0,
+    )
+
+    if economia_mensal_calc <= 0:
+        if fatura_media > 0:
+            economia_mensal_calc = fatura_media * 0.9
+        elif consumo_kwh and tarifa_kwh:
+            try:
+                economia_mensal_calc = float(consumo_kwh) * float(tarifa_kwh) * 0.9
+            except Exception:
+                economia_mensal_calc = 0
+
+    economia_anual_calc = economia_mensal_calc * 12
+    economia_25_calc = economia_anual_calc * 25
+
     valor_nota = (
         getattr(projeto, 'valor_nota_fiscal', None)
         or getattr(projeto, 'valor_venda', None)
@@ -1116,6 +1220,14 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
     variaveis.update({
         'fatura_media_mensal_sem_sistema': f"{float(fatura_media or 0):.2f}",
         'fatura_minima': f"{float((fatura_media or 0) * 0.1):.2f}",
+        'fatura_sem_sistema': f"{float(fatura_media or 0):.2f}",
+        'fatura_com_sistema': f"{float((fatura_media or 0) * 0.1):.2f}",
+        'fatura_com_sistema_rs': f"R$ {float((fatura_media or 0) * 0.1):.2f}",
+        'fatura_sem_sistema_rs': f"R$ {float(fatura_media or 0):.2f}",
+        'economia_mensal': f"{float(economia_mensal_calc or 0):.2f}",
+        'economia_anual': f"{float(economia_anual_calc or 0):.2f}",
+        'economia_25_anos': f"{float(economia_25_calc or 0):.2f}",
+        'economia_total_25_anos': f"{float(economia_25_calc or 0):.2f}",
         'grafico_consumo_geracao_12_meses': _montar_grafico_12_meses_csv(projeto),
         'grafico_consumo_geracao_25_anos': _montar_grafico_25_anos_csv(projeto),
         'grafico_pay_back': _montar_grafico_payback_csv(projeto),
