@@ -390,6 +390,19 @@ def montar_contexto_proposta(projeto):
     if reducao_percentual <= 0:
         reducao_percentual = 90
 
+    kit_outras_inf = (
+        (getattr(kit, 'outras_informacoes', None) if kit else None)
+        or getattr(projeto, 'observacoes', None)
+        or getattr(projeto, 'descricao', None)
+        or ""
+    )
+
+    kit_desc = (
+        (getattr(kit, 'descricao', None) if kit else None)
+        or getattr(projeto, 'descricao', None)
+        or ""
+    )
+
     # Montar contexto completo com todos os placeholders
     contexto = {
         # Dados do cliente
@@ -430,6 +443,7 @@ def montar_contexto_proposta(projeto):
         "IRRADIACAO_SOLAR": f"{formatar_numero(getattr(projeto, 'irradiacao_solar', 5.0), 2)} kWh/m².dia",
         "PRECO_KWH": f"R$ {formatar_numero(preco_kwh, 4)}",
         "TARIFA_ENERGIA": f"R$ {formatar_numero(preco_kwh, 4)}",
+        "tarifa_kwh": f"{preco_kwh:.4f}",
         
         # Valores financeiros
         "VALOR_INVESTIMENTO": formatar_moeda(valor_total),
@@ -446,8 +460,20 @@ def montar_contexto_proposta(projeto):
         "FATURA_COM_SISTEMA": formatar_moeda(conta_luz_futura),
         "fatura_sem_sistema": f"{valor_conta_luz:.2f}",
         "fatura_com_sistema": f"{conta_luz_futura:.2f}",
+        "fatura_minima": f"{conta_luz_futura:.2f}",
+        "fatura_media_mensal_sem_sistema": f"{valor_conta_luz:.2f}",
         "fatura_sem_sistema_rs": formatar_moeda(valor_conta_luz),
         "fatura_com_sistema_rs": formatar_moeda(conta_luz_futura),
+
+        # Campos adicionais de kit/outros detalhes
+        "KIT_DESCRICAO": kit_desc,
+        "kit_descricao": kit_desc,
+        "kit_outras_inf": kit_outras_inf,
+        "kit_outras_informacoes": kit_outras_inf,
+        "outras_informacoes_kit": kit_outras_inf,
+        "outras_informacoes": kit_outras_inf,
+        "OUTRAS_DESCRICOES": kit_outras_inf,
+        "outras_descricoes": kit_outras_inf,
         
         # Custos detalhados
         "CUSTO_EQUIPAMENTOS": formatar_moeda(getattr(projeto, 'custo_equipamentos', 0)),

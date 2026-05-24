@@ -74,6 +74,72 @@ def _fmt_rs(value):
     return f'R$ {txt}'
 
 
+def _normalizar_variaveis_financeiras(variaveis):
+    """Garante campos financeiros essenciais para evitar placeholders zerados."""
+    consumo = _to_float_text(variaveis.get('consumo_kwh_mes'), 0)
+
+    tarifa = _to_float_text(variaveis.get('tarifa_kwh'), 0)
+    if tarifa <= 0:
+        tarifa = _to_float_text(variaveis.get('tarifa_energia'), 0)
+    if tarifa <= 0:
+        tarifa = _to_float_text(variaveis.get('preco_kwh'), 0)
+
+    fatura_sem = _to_float_text(variaveis.get('fatura_sem_sistema'), 0)
+    if fatura_sem <= 0:
+        fatura_sem = _to_float_text(variaveis.get('fatura_media_mensal_sem_sistema'), 0)
+    if fatura_sem <= 0:
+        fatura_sem = _to_float_text(variaveis.get('conta_luz_atual'), 0)
+
+    if fatura_sem <= 0 and consumo > 0 and tarifa > 0:
+        fatura_sem = consumo * tarifa
+
+    if tarifa <= 0 and consumo > 0 and fatura_sem > 0:
+        tarifa = fatura_sem / max(consumo, 1.0)
+
+    if tarifa <= 0:
+        tarifa = 0.85
+
+    economia_mensal = _to_float_text(variaveis.get('economia_mensal'), 0)
+    if economia_mensal <= 0:
+        economia_mensal = _to_float_text(variaveis.get('ECONOMIA_MENSAL'), 0)
+    if economia_mensal <= 0 and fatura_sem > 0:
+        economia_mensal = fatura_sem * 0.9
+
+    fatura_com = _to_float_text(variaveis.get('fatura_com_sistema'), 0)
+    if fatura_com <= 0:
+        fatura_com = _to_float_text(variaveis.get('fatura_minima'), 0)
+    if fatura_com <= 0:
+        fatura_com = _to_float_text(variaveis.get('conta_luz_futura'), 0)
+
+    if fatura_com <= 0 and fatura_sem > 0:
+        minimo = fatura_sem * 0.1
+        fatura_com = max(fatura_sem - economia_mensal, minimo)
+
+    if fatura_sem <= 0 and fatura_com > 0:
+        fatura_sem = fatura_com / 0.1
+
+    if fatura_com > fatura_sem > 0:
+        fatura_com = fatura_sem * 0.1
+
+    variaveis.update({
+        'tarifa_kwh': f'{tarifa:.4f}',
+        'preco_kwh': f'R$ {tarifa:.4f}',
+        'tarifa_energia': f'R$ {tarifa:.4f}',
+        'fatura_media_mensal_sem_sistema': f'{fatura_sem:.2f}',
+        'fatura_sem_sistema': f'{fatura_sem:.2f}',
+        'fatura_com_sistema': f'{fatura_com:.2f}',
+        'fatura_minima': f'{fatura_com:.2f}',
+        'conta_luz_atual': f'{fatura_sem:.2f}',
+        'conta_luz_futura': f'{fatura_com:.2f}',
+        'fatura_sem_sistema_rs': _fmt_rs(fatura_sem),
+        'fatura_com_sistema_rs': _fmt_rs(fatura_com),
+        'conta_luz_atual_rs': _fmt_rs(fatura_sem),
+        'conta_luz_futura_rs': _fmt_rs(fatura_com),
+    })
+
+    return variaveis
+
+
 def _normalizar_series_12m(consumo_base, geracao_base):
     """Cria perfil mensal mais orgânico para consumo e geração."""
     # Consumo tende a oscilar menos que geração, simulando sazonalidade e uso.
@@ -253,7 +319,27 @@ def _gerar_imagem_tabela_12m(variaveis):
     consumo = _serie_consumo_12_meses_variaveis(variaveis)
     geracao = _serie_geracao_12_meses_variaveis(variaveis)
     tarifa = _to_float_text(variaveis.get('tarifa_kwh', 0), 0)
+    if tarifa <= 0:
+        tarifa = _to_float_text(variaveis.get('tarifa_energia', 0), 0)
+    if tarifa <= 0:
+        tarifa = _to_float_text(variaveis.get('preco_kwh', 0), 0)
+
+    fatura_sem_ref = _to_float_text(variaveis.get('fatura_sem_sistema', 0), 0)
+    if fatura_sem_ref <= 0:
+        fatura_sem_ref = _to_float_text(variaveis.get('fatura_media_mensal_sem_sistema', 0), 0)
+
     fatura_min = _to_float_text(variaveis.get('fatura_minima', 0), 0)
+    if fatura_min <= 0:
+        fatura_min = _to_float_text(variaveis.get('fatura_com_sistema', 0), 0)
+
+    media_consumo = sum(consumo) / max(len(consumo), 1)
+    if tarifa <= 0 and media_consumo > 0 and fatura_sem_ref > 0:
+        tarifa = fatura_sem_ref / media_consumo
+    if tarifa <= 0:
+        tarifa = 0.85
+
+    if fatura_min <= 0 and fatura_sem_ref > 0:
+        fatura_min = fatura_sem_ref * 0.1
 
     if max(consumo + geracao) <= 0:
         return None
@@ -1015,6 +1101,8 @@ def substituir_variaveis_word(template_path, variaveis):
         Document object com as substituições feitas
     """
     variaveis = _expandir_aliases_variaveis(variaveis)
+    variaveis = _normalizar_variaveis_financeiras(variaveis)
+    variaveis = _expandir_aliases_variaveis(variaveis)
 
     # Primeiro aplica fallback XML para cobrir caixas de texto e elementos complexos
     _substituir_placeholders_xml_docx(template_path, variaveis)
@@ -1274,8 +1362,14 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
             or ''
         )
 
+    kit_outras_inf = (
+        (getattr(kit_obj, 'outras_informacoes', None) if kit_obj else None)
+        or ''
+    )
+
     outras_descricoes = (
-        getattr(projeto, 'observacoes', None)
+        kit_outras_inf
+        or getattr(projeto, 'observacoes', None)
         or getattr(projeto, 'descricao', None)
         or ''
     )
@@ -1306,6 +1400,9 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'grafico_pay_back': _montar_grafico_payback_csv(projeto),
         'kit_descricao': kit_desc,
         'kit_outras_inf': outras_descricoes,
+        'kit_outras_informacoes': outras_descricoes,
+        'outras_informacoes_kit': outras_descricoes,
+        'outras_informacoes': outras_descricoes,
         # Aliases para modelos que usam nomenclatura diferente
         'outras_descricoes': outras_descricoes,
         'outras_descricoes_kit': outras_descricoes,
