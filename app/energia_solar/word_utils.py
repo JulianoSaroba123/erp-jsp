@@ -1101,6 +1101,12 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
             or ''
         )
 
+    outras_descricoes = (
+        getattr(projeto, 'observacoes', None)
+        or getattr(projeto, 'descricao', None)
+        or ''
+    )
+
     payback_anos = (
         getattr(projeto, 'payback_anos', None)
         or getattr(projeto, 'payback', None)
@@ -1114,7 +1120,12 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'grafico_consumo_geracao_25_anos': _montar_grafico_25_anos_csv(projeto),
         'grafico_pay_back': _montar_grafico_payback_csv(projeto),
         'kit_descricao': kit_desc,
-        'kit_outras_inf': getattr(projeto, 'observacoes', '') or '',
+        'kit_outras_inf': outras_descricoes,
+        # Aliases para modelos que usam nomenclatura diferente
+        'outras_descricoes': outras_descricoes,
+        'outras_descricoes_kit': outras_descricoes,
+        'outras_descricao': outras_descricoes,
+        'descricao_complementar': outras_descricoes,
         'orcamento_valor_nota': f"{float(valor_nota or 0):.2f}",
         'payback_ano_lei_14300': f"{float(payback_anos or 0):.1f}",
         'payback_roi_lei_14300': f"{float(payback_anos or 0):.1f}",
