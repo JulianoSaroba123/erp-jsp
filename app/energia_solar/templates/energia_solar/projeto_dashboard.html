@@ -1248,6 +1248,17 @@
                     </div>
 
                     <div class="row mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Valor da Tarifa com Impostos (R$/kWh)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input type="text" class="form-control bg-success-subtle fw-bold" id="tarifa_com_impostos_display" readonly>
+                                <span class="input-group-text">/kWh</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
                         <div class="col-md-12">
                             <h6 class="text-secondary mb-3">
                                 <i class="fas fa-sliders-h me-2"></i>Aplicação dos Impostos na Energia Compensada
@@ -1498,6 +1509,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const impostosEl = document.getElementById('impostos_display');
         const impostosPercentEl = document.getElementById('impostos_percentual');
         const tarifaFinalEl = document.getElementById('tarifa_final');
+        const tarifaComImpostosEl = document.getElementById('tarifa_com_impostos_display');
         const economiaEl = document.getElementById('economia_anual_prevista');
         
         if (teEl) teEl.value = te.toFixed(4);
@@ -1514,6 +1526,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Tarifa final
         if (tarifaFinalEl) tarifaFinalEl.value = tarifaFinal.toFixed(4);
+        if (tarifaComImpostosEl) tarifaComImpostosEl.value = tarifaFinal.toFixed(4);
         
         // Calcular economia anual
         const consumoMensal = {{ projeto.consumo_kwh_mes or 0 }};
@@ -1531,7 +1544,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const campos = [
             'te_display', 'tusd_display', 'tarifa_total_display',
             'pis_display', 'cofins_display', 'icms_display',
-            'impostos_display', 'tarifa_final', 'economia_anual_prevista'
+            'impostos_display', 'tarifa_final', 'tarifa_com_impostos_display', 'economia_anual_prevista'
         ];
         campos.forEach(id => {
             const el = document.getElementById(id);
@@ -1560,9 +1573,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (tarifaSalva > 0) {
                 const tarifaFinalEl = document.getElementById('tarifa_final');
+                const tarifaComImpostosEl = document.getElementById('tarifa_com_impostos_display');
                 if (tarifaFinalEl) {
                     tarifaFinalEl.value = tarifaSalva.toFixed(4);
                     console.log('✅ Tarifa final preenchida:', tarifaSalva.toFixed(4));
+                }
+                if (tarifaComImpostosEl) {
+                    tarifaComImpostosEl.value = tarifaSalva.toFixed(4);
                 }
             }
             
@@ -1846,6 +1863,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('impostos_percentual').value = impostosEfetivos.toFixed(2);
         document.getElementById('tarifa_final').value = tarifaFinal.toFixed(4);
+        document.getElementById('tarifa_com_impostos_display').value = tarifaFinal.toFixed(4);
 
         const consumoMensal = parseFloat('{{ projeto.consumo_kwh_mes or 0 }}') || 0;
         const economiaMensal = consumoMensal * tarifaFinal;
@@ -1874,7 +1892,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 // Limpar campos se nenhuma concessionária selecionada
                 ['te_display', 'tusd_display', 'tarifa_total_display', 'pis_display', 
-                 'cofins_display', 'icms_display', 'impostos_display', 'tarifa_final', 
+                 'cofins_display', 'icms_display', 'impostos_display', 'tarifa_final', 'tarifa_com_impostos_display',
                  'economia_anual_prevista', 'impostos_percentual'].forEach(id => {
                     const campo = document.getElementById(id);
                     if (campo) campo.value = '';
