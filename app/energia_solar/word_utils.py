@@ -1072,11 +1072,62 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
     Returns:
         Dict com todas as variáveis disponíveis
     """
-    from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar
+    from app.energia_solar.catalogo_model import KitSolar, PlacaSolar, InversorSolar
     
-    # Carregar placa e inversor
+    # Carregar kit/placa/inversor
+    kit = getattr(projeto, 'kit', None)
+    if not kit and getattr(projeto, 'kit_id', None):
+        kit = KitSolar.query.get(projeto.kit_id)
+
     placa = PlacaSolar.query.get(projeto.placa_id) if projeto.placa_id else None
     inversor = InversorSolar.query.get(projeto.inversor_id) if projeto.inversor_id else None
+
+    # Fallback: quando projeto usa modo kit, os componentes podem não estar em placa_id/inversor_id.
+    if not placa and kit and getattr(kit, 'placa', None):
+        placa = kit.placa
+    if not inversor and kit and getattr(kit, 'inversor', None):
+        inversor = kit.inversor
+
+    placa_modelo = (
+        (placa.modelo if placa else None)
+        or getattr(projeto, 'placa_modelo', None)
+        or getattr(projeto, 'modulo_modelo', None)
+        or getattr(projeto, 'modelo_modulo', None)
+        or ''
+    )
+    placa_fabricante = (
+        (placa.fabricante if placa else None)
+        or getattr(projeto, 'placa_fabricante', None)
+        or getattr(projeto, 'fabricante_modulo', None)
+        or ''
+    )
+    placa_potencia_val = (
+        (placa.potencia if placa and getattr(placa, 'potencia', None) else None)
+        or getattr(projeto, 'placa_potencia', None)
+        or getattr(projeto, 'potencia_modulo', None)
+        or getattr(projeto, 'modulo_potencia', None)
+    )
+    placa_potencia_num = _extract_first_float(placa_potencia_val, 0)
+    placa_potencia = f"{placa_potencia_num:.0f}W" if placa_potencia_num > 0 else ''
+
+    inversor_modelo = (
+        (inversor.modelo if inversor else None)
+        or getattr(projeto, 'inversor_modelo', None)
+        or ''
+    )
+    inversor_fabricante = (
+        (inversor.fabricante if inversor else None)
+        or getattr(projeto, 'inversor_fabricante', None)
+        or ''
+    )
+    inversor_potencia_val = (
+        (inversor.potencia_nominal if inversor and hasattr(inversor, 'potencia_nominal') else None)
+        or (inversor.potencia_maxima if inversor and hasattr(inversor, 'potencia_maxima') else None)
+        or getattr(projeto, 'inversor_potencia', None)
+        or getattr(projeto, 'potencia_inversor', None)
+    )
+    inversor_potencia_num = _extract_first_float(inversor_potencia_val, 0)
+    inversor_potencia = f"{inversor_potencia_num:.1f}kW" if inversor_potencia_num > 0 else ''
     
     variaveis = {
         # Projeto
@@ -1111,9 +1162,9 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'tipo_instalacao': (projeto.tipo_instalacao or 'monofasica').capitalize(),
         
         # Placas
-        'placa_fabricante': placa.fabricante if placa else '',
-        'placa_modelo': placa.modelo if placa else '',
-        'placa_potencia': f"{placa.potencia}W" if placa and placa.potencia else '',
+        'placa_fabricante': placa_fabricante,
+        'placa_modelo': placa_modelo,
+        'placa_potencia': placa_potencia,
         'placa_tensao': f"{placa.tensao_maxima_potencia}V" if placa and hasattr(placa, 'tensao_maxima_potencia') and placa.tensao_maxima_potencia else '',
         'placa_corrente': f"{placa.corrente_maxima_potencia}A" if placa and hasattr(placa, 'corrente_maxima_potencia') and placa.corrente_maxima_potencia else '',
         'placa_eficiencia': f"{placa.eficiencia}%" if placa and hasattr(placa, 'eficiencia') and placa.eficiencia else '',
@@ -1121,9 +1172,9 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'placa_tecnologia': placa.tecnologia if placa and hasattr(placa, 'tecnologia') else '',
         
         # Inversor
-        'inversor_fabricante': inversor.fabricante if inversor else '',
-        'inversor_modelo': inversor.modelo if inversor else '',
-        'inversor_potencia': f"{inversor.potencia_nominal}W" if inversor and hasattr(inversor, 'potencia_nominal') and inversor.potencia_nominal else '',
+        'inversor_fabricante': inversor_fabricante,
+        'inversor_modelo': inversor_modelo,
+        'inversor_potencia': inversor_potencia,
         'inversor_tensao_entrada': f"{inversor.tensao_mppt_min}-{inversor.tensao_mppt_max}V" if inversor and hasattr(inversor, 'tensao_mppt_min') and inversor.tensao_mppt_min else '',
         'inversor_tensao_saida': inversor.tensao_saida if inversor and hasattr(inversor, 'tensao_saida') else '220V',
         'inversor_eficiencia': (
@@ -1156,12 +1207,18 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
     consumo_kwh = getattr(projeto, 'consumo_kwh_mes', None)
     tarifa_kwh = getattr(projeto, 'tarifa_kwh', None)
     fatura_media = 0
-    if valor_conta_luz:
-        try:
-            fatura_media = float(valor_conta_luz)
-        except Exception:
-            fatura_media = 0
-    elif consumo_kwh and tarifa_kwh:
+
+    for fonte in [
+        valor_conta_luz,
+        getattr(projeto, 'fatura_media_mensal_sem_sistema', None),
+        getattr(projeto, 'fatura_sem_sistema', None),
+        getattr(projeto, 'conta_luz_atual', None),
+    ]:
+        fatura_media = _extract_first_float(fonte, 0)
+        if fatura_media > 0:
+            break
+
+    if fatura_media <= 0 and consumo_kwh and tarifa_kwh:
         try:
             fatura_media = float(consumo_kwh) * float(tarifa_kwh)
         except Exception:
@@ -1183,6 +1240,18 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
                 economia_mensal_calc = float(consumo_kwh) * float(tarifa_kwh) * 0.9
             except Exception:
                 economia_mensal_calc = 0
+
+    # Se a economia existe mas a fatura não foi informada, estima fatura sem sistema.
+    if fatura_media <= 0 and economia_mensal_calc > 0:
+        fatura_media = economia_mensal_calc / 0.9
+
+    fatura_com_sistema = _extract_first_float(getattr(projeto, 'fatura_com_sistema', None), 0)
+    if fatura_com_sistema <= 0 and fatura_media > 0:
+        minimo = fatura_media * 0.1
+        fatura_com_sistema = max(fatura_media - economia_mensal_calc, minimo)
+
+    if fatura_com_sistema > fatura_media > 0:
+        fatura_com_sistema = fatura_media * 0.1
 
     economia_anual_calc = economia_mensal_calc * 12
     economia_25_calc = economia_anual_calc * 25
@@ -1219,11 +1288,15 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
 
     variaveis.update({
         'fatura_media_mensal_sem_sistema': f"{float(fatura_media or 0):.2f}",
-        'fatura_minima': f"{float((fatura_media or 0) * 0.1):.2f}",
+        'fatura_minima': f"{float(fatura_com_sistema or 0):.2f}",
         'fatura_sem_sistema': f"{float(fatura_media or 0):.2f}",
-        'fatura_com_sistema': f"{float((fatura_media or 0) * 0.1):.2f}",
-        'fatura_com_sistema_rs': f"R$ {float((fatura_media or 0) * 0.1):.2f}",
-        'fatura_sem_sistema_rs': f"R$ {float(fatura_media or 0):.2f}",
+        'fatura_com_sistema': f"{float(fatura_com_sistema or 0):.2f}",
+        'fatura_com_sistema_rs': _fmt_rs(fatura_com_sistema),
+        'fatura_sem_sistema_rs': _fmt_rs(fatura_media),
+        'conta_luz_atual': f"{float(fatura_media or 0):.2f}",
+        'conta_luz_futura': f"{float(fatura_com_sistema or 0):.2f}",
+        'conta_luz_atual_rs': _fmt_rs(fatura_media),
+        'conta_luz_futura_rs': _fmt_rs(fatura_com_sistema),
         'economia_mensal': f"{float(economia_mensal_calc or 0):.2f}",
         'economia_anual': f"{float(economia_anual_calc or 0):.2f}",
         'economia_25_anos': f"{float(economia_25_calc or 0):.2f}",

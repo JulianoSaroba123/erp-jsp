@@ -13,13 +13,14 @@ import zipfile
 import tempfile
 import shutil
 from xml.sax.saxutils import escape
+import re
 
 logger = logging.getLogger(__name__)
 
 # Importar modelos separadamente da configuração para não bloquear o contexto
 try:
     from app.cliente.cliente_model import Cliente
-    from app.energia_solar.catalogo_model import PlacaSolar, InversorSolar
+    from app.energia_solar.catalogo_model import KitSolar, PlacaSolar, InversorSolar
     MODELS_IMPORTED = True
 except ImportError as e:
     logger.warning(f"Não foi possível importar modelos: {e}")
@@ -48,6 +49,38 @@ def formatar_numero(valor, casas=2):
         return f"{float(valor or 0):.{casas}f}".replace(".", ",")
     except Exception:
         return "0"
+
+
+def _to_float_flex(valor, default=0.0):
+    """Converte número aceitando strings com R$, vírgula e separador de milhar."""
+    if valor is None:
+        return default
+    if isinstance(valor, (int, float)):
+        return float(valor)
+    try:
+        txt = str(valor).strip().replace("R$", "").replace(" ", "")
+        if "," in txt and "." in txt:
+            txt = txt.replace(".", "").replace(",", ".")
+        else:
+            txt = txt.replace(",", ".")
+        return float(txt)
+    except Exception:
+        return default
+
+
+def _extract_first_float(valor, default=0.0):
+    """Extrai o primeiro número de texto como float (ex.: '3,0 anos' -> 3.0)."""
+    if valor is None:
+        return default
+    if isinstance(valor, (int, float)):
+        return float(valor)
+    m = re.search(r"-?\d+[\.,]?\d*", str(valor))
+    if not m:
+        return default
+    try:
+        return float(m.group(0).replace(",", "."))
+    except Exception:
+        return default
 
 
 def substituir_texto_em_paragrafos(doc, contexto):
@@ -153,20 +186,68 @@ def montar_contexto_proposta(projeto):
     """
     
     # Valor total do investimento (prioridade: valor_venda > valor_orcamento > custo_total)
-    valor_total = (
-        getattr(projeto, "valor_venda", None)
-        or getattr(projeto, "valor_orcamento", None)
-        or getattr(projeto, "custo_total", None)
-        or 0
-    )
-    valor_total = float(valor_total or 0)
+    valor_total = 0.0
+    for fonte in [
+        getattr(projeto, "valor_venda", None),
+        getattr(projeto, "valor_orcamento", None),
+        getattr(projeto, "valor_nota_fiscal", None),
+        getattr(projeto, "custo_total", None),
+    ]:
+        valor_total = _to_float_flex(fonte, 0)
+        if valor_total > 0:
+            break
 
     # Economia mensal e anual
-    economia_mensal = float(getattr(projeto, "economia_mensal", None) or 0)
-    economia_anual = float(getattr(projeto, "economia_anual", None) or (economia_mensal * 12))
+    economia_mensal = _to_float_flex(
+        getattr(projeto, "economia_mensal", None)
+        or getattr(projeto, "economia", None),
+        0,
+    )
+
+    valor_conta_luz = _to_float_flex(
+        getattr(projeto, "valor_conta_luz", None)
+        or getattr(projeto, "fatura_sem_sistema", None)
+        or getattr(projeto, "fatura_media_mensal_sem_sistema", None)
+        or getattr(projeto, "conta_luz_atual", None),
+        0,
+    )
+
+    consumo_mensal = _to_float_flex(getattr(projeto, 'consumo_kwh_mes', None), 0)
+    preco_kwh = _to_float_flex(
+        getattr(projeto, 'preco_kwh', None)
+        or getattr(projeto, 'tarifa_energia', None)
+        or getattr(projeto, 'tarifa_kwh', None),
+        0,
+    )
+
+    if valor_conta_luz <= 0 and consumo_mensal > 0 and preco_kwh > 0:
+        valor_conta_luz = consumo_mensal * preco_kwh
+
+    payback_informado = _extract_first_float(
+        getattr(projeto, 'payback_anos', None)
+        or getattr(projeto, 'payback', None),
+        0,
+    )
+
+    if economia_mensal <= 0 and payback_informado > 0 and valor_total > 0:
+        economia_mensal = valor_total / (payback_informado * 12)
+
+    if economia_mensal <= 0 and valor_conta_luz > 0:
+        economia_mensal = valor_conta_luz * 0.9
+
+    if valor_conta_luz <= 0 and economia_mensal > 0:
+        valor_conta_luz = economia_mensal / 0.9
+
+    conta_luz_futura = _to_float_flex(getattr(projeto, 'fatura_com_sistema', None), 0)
+    if conta_luz_futura <= 0 and valor_conta_luz > 0:
+        conta_luz_futura = max(valor_conta_luz - economia_mensal, valor_conta_luz * 0.1)
+
+    economia_anual = _to_float_flex(getattr(projeto, "economia_anual", None), 0)
+    if economia_anual <= 0 and economia_mensal > 0:
+        economia_anual = economia_mensal * 12
 
     # Payback
-    payback = valor_total / economia_anual if economia_anual > 0 else 0
+    payback = payback_informado or (valor_total / economia_anual if economia_anual > 0 else 0)
 
     # ROI e economia em 25 anos
     economia_25 = economia_anual * 25
@@ -185,8 +266,8 @@ def montar_contexto_proposta(projeto):
     if area == 0 and qtd_modulos:
         area = float(qtd_modulos) * 2.5
     
-    # Tarifa de energia
-    preco_kwh = float(getattr(projeto, 'preco_kwh', None) or getattr(projeto, 'tarifa_energia', None) or 0.85)
+    if preco_kwh <= 0:
+        preco_kwh = 0.85
 
     # Cliente
     cliente = None
@@ -210,6 +291,13 @@ def montar_contexto_proposta(projeto):
     cliente_estado = cliente.estado if cliente else ""
 
     # Placa solar
+    kit = None
+    if MODELS_IMPORTED and hasattr(projeto, 'kit_id') and projeto.kit_id:
+        try:
+            kit = KitSolar.query.get(projeto.kit_id)
+        except Exception as e:
+            logger.warning(f"Erro ao buscar kit: {e}")
+
     placa = None
     if MODELS_IMPORTED and hasattr(projeto, 'placa_id') and projeto.placa_id:
         try:
@@ -225,8 +313,52 @@ def montar_contexto_proposta(projeto):
         except Exception as e:
             logger.warning(f"Erro ao buscar inversor: {e}")
 
+    if not placa and kit and getattr(kit, 'placa', None):
+        placa = kit.placa
+    if not inversor and kit and getattr(kit, 'inversor', None):
+        inversor = kit.inversor
+
+    if not qtd_modulos and kit and getattr(kit, 'qtd_placas', None):
+        qtd_modulos = kit.qtd_placas
+
+    modelo_modulo = (
+        (placa.modelo if placa else None)
+        or getattr(projeto, 'placa_modelo', None)
+        or getattr(projeto, 'modulo_modelo', None)
+        or getattr(projeto, 'modelo_modulo', None)
+        or (kit.descricao if kit else None)
+        or "Conforme kit selecionado"
+    )
+    fabricante_modulo = (
+        (placa.fabricante if placa else None)
+        or getattr(projeto, 'placa_fabricante', None)
+        or getattr(projeto, 'fabricante_modulo', None)
+        or (kit.fabricante if kit else None)
+        or "-"
+    )
+    potencia_modulo_num = _extract_first_float(
+        (placa.potencia if placa and getattr(placa, 'potencia', None) else None)
+        or getattr(projeto, 'placa_potencia', None)
+        or getattr(projeto, 'potencia_modulo', None),
+        0,
+    )
+    if potencia_modulo_num <= 0 and kit and getattr(kit, 'potencia_kwp', None) and qtd_modulos:
+        potencia_modulo_num = (_to_float_flex(kit.potencia_kwp, 0) * 1000.0) / max(int(qtd_modulos), 1)
+    potencia_modulo = f"{potencia_modulo_num:.0f}W" if potencia_modulo_num > 0 else "-"
+
+    modelo_inversor = (
+        (inversor.modelo if inversor else None)
+        or getattr(projeto, 'inversor_modelo', None)
+        or "-"
+    )
+    fabricante_inversor = (
+        (inversor.fabricante if inversor else None)
+        or getattr(projeto, 'inversor_fabricante', None)
+        or "-"
+    )
+
     # Compatibilidade de campos do inversor entre versões/modelos
-    inversor_potencia = ""
+    inversor_potencia = "-"
     if inversor:
         pot_inv = (
             getattr(inversor, "potencia", None)
@@ -239,10 +371,24 @@ def montar_contexto_proposta(projeto):
                 inversor_potencia = f"{formatar_numero(float(pot_inv), 2)} kW"
             except Exception:
                 inversor_potencia = str(pot_inv)
+    if inversor_potencia in ("", "-"):
+        pot_inv = _extract_first_float(
+            getattr(projeto, 'inversor_potencia', None)
+            or getattr(projeto, 'potencia_inversor', None),
+            0,
+        )
+        if pot_inv > 0:
+            inversor_potencia = f"{formatar_numero(pot_inv, 2)} kW"
 
     garantia_inversor = "10 anos"
     if inversor and getattr(inversor, "garantia_anos", None):
         garantia_inversor = f"{int(inversor.garantia_anos)} anos"
+
+    reducao_percentual = 0
+    if valor_conta_luz > 0:
+        reducao_percentual = ((valor_conta_luz - conta_luz_futura) / valor_conta_luz) * 100
+    if reducao_percentual <= 0:
+        reducao_percentual = 90
 
     # Montar contexto completo com todos os placeholders
     contexto = {
@@ -264,11 +410,11 @@ def montar_contexto_proposta(projeto):
         # Dados técnicos
         "POTENCIA_SISTEMA": f"{formatar_numero(getattr(projeto, 'potencia_kwp', 0), 2)} kWp",
         "QTD_MODULOS": str(qtd_modulos),
-        "POTENCIA_MODULO": f"{placa.potencia}W" if placa else "",
-        "MODELO_MODULO": placa.modelo if placa else "",
-        "FABRICANTE_MODULO": placa.fabricante if placa else "",
-        "MODELO_INVERSOR": inversor.modelo if inversor else "",
-        "FABRICANTE_INVERSOR": inversor.fabricante if inversor else "",
+        "POTENCIA_MODULO": potencia_modulo,
+        "MODELO_MODULO": modelo_modulo,
+        "FABRICANTE_MODULO": fabricante_modulo,
+        "MODELO_INVERSOR": modelo_inversor,
+        "FABRICANTE_INVERSOR": fabricante_inversor,
         "POTENCIA_INVERSOR": inversor_potencia,
         "TIPO_INSTALACAO": getattr(projeto, 'tipo_instalacao', None) or "Telhado",
         "GARANTIA_MODULOS": "25 anos (potência) / 12 anos (produto)",
@@ -278,8 +424,8 @@ def montar_contexto_proposta(projeto):
         # Geração e consumo
         "GERACAO_MENSAL": f"{formatar_numero(getattr(projeto, 'geracao_estimada_mes', 0), 0)} kWh/mês",
         "GERACAO_ANUAL": f"{formatar_numero(float(getattr(projeto, 'geracao_estimada_mes', 0) or 0) * 12, 0)} kWh/ano",
-        "CONSUMO_MENSAL": f"{formatar_numero(getattr(projeto, 'consumo_kwh_mes', 0), 0)} kWh/mês",
-        "CONSUMO_ANUAL": f"{formatar_numero(float(getattr(projeto, 'consumo_kwh_mes', 0) or 0) * 12, 0)} kWh/ano",
+        "CONSUMO_MENSAL": f"{formatar_numero(consumo_mensal, 0)} kWh/mês",
+        "CONSUMO_ANUAL": f"{formatar_numero(consumo_mensal * 12, 0)} kWh/ano",
         "AREA_NECESSARIA": f"{formatar_numero(area, 2)} m²",
         "IRRADIACAO_SOLAR": f"{formatar_numero(getattr(projeto, 'irradiacao_solar', 5.0), 2)} kWh/m².dia",
         "PRECO_KWH": f"R$ {formatar_numero(preco_kwh, 4)}",
@@ -292,10 +438,16 @@ def montar_contexto_proposta(projeto):
         "ECONOMIA_25_ANOS": formatar_moeda(economia_25),
         "PAYBACK": f"{formatar_numero(payback, 1)} anos",
         "ROI_25_ANOS": f"{formatar_numero(roi_25, 0)}%",
-        "CONTA_LUZ_ATUAL": formatar_moeda(economia_mensal),  # Economia = valor da conta
-        "CONTA_LUZ_FUTURA": formatar_moeda(float(economia_mensal) * 0.1),  # ~10% (taxa mínima)
-        "REDUCAO_PERCENTUAL": "90%",  # Redução típica
+        "CONTA_LUZ_ATUAL": formatar_moeda(valor_conta_luz),
+        "CONTA_LUZ_FUTURA": formatar_moeda(conta_luz_futura),
+        "REDUCAO_PERCENTUAL": f"{formatar_numero(reducao_percentual, 0)}%",
         "PERCENTUAL_COMPENSACAO": formatar_numero(float(getattr(projeto, 'simultaneity_factor', None) or 100), 0) + "%",
+        "FATURA_SEM_SISTEMA": formatar_moeda(valor_conta_luz),
+        "FATURA_COM_SISTEMA": formatar_moeda(conta_luz_futura),
+        "fatura_sem_sistema": f"{valor_conta_luz:.2f}",
+        "fatura_com_sistema": f"{conta_luz_futura:.2f}",
+        "fatura_sem_sistema_rs": formatar_moeda(valor_conta_luz),
+        "fatura_com_sistema_rs": formatar_moeda(conta_luz_futura),
         
         # Custos detalhados
         "CUSTO_EQUIPAMENTOS": formatar_moeda(getattr(projeto, 'custo_equipamentos', 0)),
