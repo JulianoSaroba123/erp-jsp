@@ -1282,6 +1282,55 @@
                         </div>
                     </div>
 
+                    <!-- Custos adicionais e reajuste anual da tarifa -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Iluminação Pública (R$)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input
+                                    type="number"
+                                    class="form-control"
+                                    id="iluminacao_publica"
+                                    name="iluminacao_publica"
+                                    value="{{ '%.2f'|format(projeto.iluminacao_publica or 0) }}"
+                                    min="0"
+                                    step="0.01"
+                                >
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Outros Valores (R$)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">R$</span>
+                                <input
+                                    type="number"
+                                    class="form-control"
+                                    id="demais_custos"
+                                    name="demais_custos"
+                                    value="{{ '%.2f'|format(projeto.demais_custos or 0) }}"
+                                    min="0"
+                                    step="0.01"
+                                >
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">Reajuste Anual da Tarifa (%)</label>
+                            <div class="input-group">
+                                <input
+                                    type="number"
+                                    class="form-control"
+                                    id="reajuste_anual_energia"
+                                    name="reajuste_anual_energia"
+                                    value="{{ '%.2f'|format(projeto.reajuste_anual_energia or 10) }}"
+                                    min="0"
+                                    step="0.01"
+                                >
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -1590,6 +1639,9 @@ function handleSalvarDadosFinanceiros(event) {
         const tarifaFinal = document.getElementById('tarifa_final')?.value || '';
         const economiaAnual = document.getElementById('economia_anual_prevista')?.value || '';
         const impostosPercentual = document.getElementById('impostos_percentual')?.value || '';
+        const iluminacaoPublica = document.getElementById('iluminacao_publica')?.value || '0';
+        const demaisCustos = document.getElementById('demais_custos')?.value || '0';
+        const reajusteAnualEnergia = document.getElementById('reajuste_anual_energia')?.value || '10';
         
         // Validar se concessionária foi selecionada
         if (!concessionariaId) {
@@ -1601,7 +1653,10 @@ function handleSalvarDadosFinanceiros(event) {
             concessionaria_id: concessionariaId,
             tarifa_final: tarifaFinal,
             economia_anual_prevista: economiaAnual,
-            impostos_percentual: impostosPercentual
+            impostos_percentual: impostosPercentual,
+            iluminacao_publica: iluminacaoPublica,
+            demais_custos: demaisCustos,
+            reajuste_anual_energia: reajusteAnualEnergia
         };
         
         console.log('📤 Enviando dados:', data);

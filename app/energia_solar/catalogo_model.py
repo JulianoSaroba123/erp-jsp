@@ -315,6 +315,9 @@ class ProjetoSolar(db.Model):
     
     # Análise Financeira Expandida
     taxa_disponibilidade = db.Column(db.Float)  # R$/mês
+    iluminacao_publica = db.Column(db.Float, default=0)  # R$/mês
+    demais_custos = db.Column(db.Float, default=0)  # R$/mês
+    reajuste_anual_energia = db.Column(db.Float, default=10.0)  # % ao ano
     economia_mensal = db.Column(db.Numeric(12, 2), default=0)  # R$/mês
     tempo_retorno = db.Column(db.Float)  # anos (payback)
     impostos_percentual = db.Column(db.Numeric(8, 2), default=0)  # % de impostos

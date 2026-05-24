@@ -1453,11 +1453,17 @@ def projeto_salvar_dados_financeiros(projeto_id):
         tarifa_final = data.get("tarifa_final")
         economia_anual_prevista = data.get("economia_anual_prevista")
         impostos_percentual = data.get("impostos_percentual")
+        iluminacao_publica = data.get("iluminacao_publica")
+        demais_custos = data.get("demais_custos")
+        reajuste_anual_energia = data.get("reajuste_anual_energia")
 
         projeto.concessionaria_id = int(concessionaria_id) if concessionaria_id else None
         projeto.tarifa_kwh = parse_decimal_br(tarifa_final, 0)
         projeto.economia_anual = parse_decimal_br(economia_anual_prevista, 0)
         projeto.impostos_percentual = parse_decimal_br(impostos_percentual, 0)
+        projeto.iluminacao_publica = parse_decimal_br(iluminacao_publica, 0)
+        projeto.demais_custos = parse_decimal_br(demais_custos, 0)
+        projeto.reajuste_anual_energia = parse_decimal_br(reajuste_anual_energia, 10)
 
         consumo = float(projeto.consumo_kwh_mes or 0)
         tarifa = float(projeto.tarifa_kwh or 0)
@@ -1482,7 +1488,10 @@ def projeto_salvar_dados_financeiros(projeto_id):
                 "tarifa_kwh": float(projeto.tarifa_kwh or 0),
                 "economia_mensal": float(projeto.economia_mensal or 0),
                 "economia_anual": float(projeto.economia_anual or 0),
-                "impostos_percentual": float(projeto.impostos_percentual or 0)
+                "impostos_percentual": float(projeto.impostos_percentual or 0),
+                "iluminacao_publica": float(getattr(projeto, 'iluminacao_publica', 0) or 0),
+                "demais_custos": float(getattr(projeto, 'demais_custos', 0) or 0),
+                "reajuste_anual_energia": float(getattr(projeto, 'reajuste_anual_energia', 10) or 10)
             }
         })
 
