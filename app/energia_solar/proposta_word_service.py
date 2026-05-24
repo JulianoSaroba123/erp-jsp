@@ -143,6 +143,7 @@ def substituir_placeholders_xml_docx(docx_path, contexto):
     Cobre casos como text boxes/shapes onde python-docx não alcança bem.
     """
     substituicoes = 0
+    regex_cache = {}
 
     def _placeholder_variantes(chave):
         c = str(chave)
@@ -154,6 +155,24 @@ def substituir_placeholders_xml_docx(docx_path, contexto):
             f'${{{c}}}', f'${{{c.upper()}}}', f'${{{c.lower()}}}',
             f'%{c}%', f'%{c.upper()}%', f'%{c.lower()}%',
         }
+
+    def _regex_placeholder_fragmentado(placeholder):
+        """
+        Compila regex que encontra placeholder mesmo quebrado por tags XML,
+        ex.: "{{DATA_PROPOSTA}}" dividido em múltiplos <w:t>...</w:t>.
+        """
+        if placeholder in regex_cache:
+            return regex_cache[placeholder]
+
+        if not placeholder:
+            regex_cache[placeholder] = None
+            return None
+
+        separador_tags = r'(?:<[^>]+>)*'
+        partes = [re.escape(ch) for ch in placeholder]
+        padrao = separador_tags.join(partes)
+        regex_cache[placeholder] = re.compile(padrao)
+        return regex_cache[placeholder]
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
         tmp_path = tmp.name
@@ -172,6 +191,12 @@ def substituir_placeholders_xml_docx(docx_path, contexto):
                         for placeholder in _placeholder_variantes(chave):
                             if placeholder in texto:
                                 texto = texto.replace(placeholder, valor_xml)
+                                continue
+
+                            # Fallback para placeholders quebrados entre tags.
+                            regex_ph = _regex_placeholder_fragmentado(placeholder)
+                            if regex_ph is not None:
+                                texto, _ = regex_ph.subn(valor_xml, texto)
 
                     if texto != texto_original:
                         data = texto.encode("utf-8")

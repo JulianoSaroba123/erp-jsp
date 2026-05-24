@@ -529,4 +529,111 @@
     </div>
 </div>
 
+<style>
+    #modalVariaveis code.copyable-variable {
+        cursor: pointer;
+        user-select: all;
+        transition: background-color 0.15s ease;
+    }
+
+    #modalVariaveis code.copyable-variable:hover {
+        background-color: rgba(25, 135, 84, 0.18);
+    }
+
+    #copyVariableToast {
+        position: fixed;
+        right: 18px;
+        bottom: 18px;
+        z-index: 2000;
+        background: #198754;
+        color: #fff;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transform: translateY(8px);
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    #copyVariableToast.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+</style>
+
+<div id="copyVariableToast" aria-live="polite" role="status">Variavel copiada</div>
+
+<script>
+    (function () {
+        const modal = document.getElementById('modalVariaveis');
+        const toast = document.getElementById('copyVariableToast');
+        let toastTimer = null;
+
+        if (!modal || !toast) {
+            return;
+        }
+
+        const showToast = (text) => {
+            toast.textContent = text || 'Variavel copiada';
+            toast.classList.add('show');
+
+            if (toastTimer) {
+                clearTimeout(toastTimer);
+            }
+
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 1400);
+        };
+
+        const copyText = async (text) => {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(text);
+                return true;
+            }
+
+            const tmp = document.createElement('textarea');
+            tmp.value = text;
+            tmp.setAttribute('readonly', 'readonly');
+            tmp.style.position = 'absolute';
+            tmp.style.left = '-9999px';
+            document.body.appendChild(tmp);
+            tmp.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(tmp);
+            return ok;
+        };
+
+        modal.querySelectorAll('td code').forEach((el) => {
+            el.classList.add('copyable-variable');
+            el.title = 'Clique para copiar';
+        });
+
+        modal.addEventListener('click', async (event) => {
+            const target = event.target.closest('code.copyable-variable');
+            if (!target) {
+                return;
+            }
+
+            const value = (target.textContent || '').trim();
+            if (!value) {
+                return;
+            }
+
+            try {
+                const copied = await copyText(value);
+                if (copied) {
+                    showToast(`Copiado: ${value}`);
+                } else {
+                    showToast('Nao foi possivel copiar');
+                }
+            } catch (e) {
+                showToast('Nao foi possivel copiar');
+            }
+        });
+    })();
+</script>
+
 {% endblock %}
