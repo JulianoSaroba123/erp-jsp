@@ -886,7 +886,7 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
         return
 
     ph_12m = _placeholder_variantes('grafico_consumo_geracao_12_meses')
-    ph_tab_12m = _placeholder_variantes('tabela_12_meses')
+    ph_tab_12m = _placeholder_variantes('tabela_12_meses') | _placeholder_variantes('tabela_12_mses')
     ph_25a = _placeholder_variantes('grafico_consumo_geracao_25_anos')
     ph_tab_25a = _placeholder_variantes('tabela_25_anos')
     ph_payback = _placeholder_variantes('grafico_pay_back') | _placeholder_variantes('grafico_payback')
@@ -897,18 +897,39 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
             return
 
         marcadores = [
-            (ph_12m, img_12m, 6.2),
-            (ph_tab_12m, img_tab_12m, 6.5),
-            (ph_25a, img_25a, 6.5),
-            (ph_tab_25a, img_tab_25a, 6.1),
-            (ph_payback, img_payback, 6.5),
+            # (placeholders, imagem, largura, fallback_texto)
+            (ph_12m, img_12m, 6.2, None),
+            (
+                ph_tab_12m,
+                img_tab_12m,
+                6.5,
+                str(
+                    variaveis.get('tabela_12_meses')
+                    or variaveis.get('TABELA_12_MESES')
+                    or variaveis.get('tabela_12_mses')
+                    or variaveis.get('TABELA_12_MSES')
+                    or ''
+                ),
+            ),
+            (ph_25a, img_25a, 6.5, None),
+            (
+                ph_tab_25a,
+                img_tab_25a,
+                6.1,
+                str(
+                    variaveis.get('tabela_25_anos')
+                    or variaveis.get('TABELA_25_ANOS')
+                    or ''
+                ),
+            ),
+            (ph_payback, img_payback, 6.5, None),
         ]
 
         # Troca também quando há mais de um placeholder no mesmo parágrafo.
         # Exemplo: "[grafico_25]\n[tabela_25]".
         texto_limpo = txt
         encontrou_marcador = False
-        for ph_set, _, _ in marcadores:
+        for ph_set, _, _, _ in marcadores:
             for ph in ph_set:
                 if ph in texto_limpo:
                     encontrou_marcador = True
@@ -926,13 +947,22 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
         run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
 
         inseriu = False
-        for ph_set, img, width in marcadores:
-            if img is None:
+        for ph_set, img, width, fallback_texto in marcadores:
+            if not any(ph in txt for ph in ph_set):
                 continue
-            if any(ph in txt for ph in ph_set):
+
+            if img is not None:
                 if inseriu:
                     run.add_break()
                 run.add_picture(io.BytesIO(img.getvalue()), width=Inches(width))
+                inseriu = True
+                continue
+
+            # Se a imagem não puder ser gerada, não deixa o bloco sumir.
+            if fallback_texto:
+                if inseriu:
+                    run.add_break()
+                run.add_text(fallback_texto)
                 inseriu = True
 
     for paragrafo in doc.paragraphs:
