@@ -1196,6 +1196,16 @@ def _substituir_texto_paragrafo(paragrafo, variaveis):
                 texto_novo = texto_novo.replace(ph, valor_str)
 
     if texto_novo != texto_original:
+        # Se o parágrafo tiver imagens/desenhos embutidos, não limpamos os runs
+        # para evitar apagar o fundo do cabeçalho/rodapé.
+        tem_desenho = any(
+            ('<w:drawing' in run._element.xml) or ('<w:pict' in run._element.xml) or ('<w:object' in run._element.xml)
+            for run in paragrafo.runs
+        )
+
+        if tem_desenho:
+            return
+
         for run in paragrafo.runs:
             run.text = ''
         if paragrafo.runs:
