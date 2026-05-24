@@ -3000,7 +3000,11 @@ def gerar_documento_word(projeto_id):
             return redirect(url_for('energia_solar.projeto_visualizar', projeto_id=projeto_id))
         
         try:
-            from app.energia_solar.word_utils import substituir_variaveis_word, gerar_variaveis_projeto
+            from app.energia_solar.word_utils import (
+                substituir_variaveis_word,
+                gerar_variaveis_projeto,
+                _substituir_placeholders_xml_docx,
+            )
         except Exception as e:
             flash(f'Erro ao carregar módulo Word: {str(e)}', 'error')
             return redirect(url_for('energia_solar.projeto_visualizar', projeto_id=projeto_id))
@@ -3052,14 +3056,21 @@ def gerar_documento_word(projeto_id):
                 # Substituir variáveis
                 doc = substituir_variaveis_word(temp_path, variaveis)
                 
-                # Salvar em memória
-                output = io.BytesIO()
-                doc.save(output)
+                # Salvar em arquivo temporário e aplicar fallback XML para textboxes/shapes
+                temp_output_path = os.path.join(UPLOAD_FOLDER, 'temp_output.docx')
+                doc.save(temp_output_path)
+                _substituir_placeholders_xml_docx(temp_output_path, variaveis)
+
+                # Carregar resultado final em memória
+                with open(temp_output_path, 'rb') as f_out:
+                    output = io.BytesIO(f_out.read())
                 output.seek(0)
                 
                 # Remover arquivo temporário
                 if os.path.exists(temp_path):
                     os.remove(temp_path)
+                if os.path.exists(temp_output_path):
+                    os.remove(temp_output_path)
                 
                 # Gerar nome do arquivo
                 filename = f"Proposta_Solar_{projeto.id}_{projeto.nome_cliente.replace(' ', '_')}.docx"

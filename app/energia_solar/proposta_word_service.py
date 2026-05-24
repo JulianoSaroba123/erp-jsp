@@ -494,7 +494,9 @@ def montar_contexto_proposta(projeto):
     contexto = {
         # Dados do cliente
         "NOME_CLIENTE": cliente_nome,
+        "cliente_nome": cliente_nome,
         "CPF_CNPJ_CLIENTE": cliente.cpf_cnpj if cliente and cliente.cpf_cnpj else "",
+        "cliente_cpf_cnpj": cliente.cpf_cnpj if cliente and cliente.cpf_cnpj else "",
         "CIDADE": cliente_cidade or getattr(projeto, "localidade", "") or "",
         "ESTADO": cliente_estado or "",
         "ENDERECO_CLIENTE": cliente.endereco if cliente and cliente.endereco else "",
@@ -504,7 +506,10 @@ def montar_contexto_proposta(projeto):
         
         # Dados do projeto
         "NUMERO_PROJETO": str(getattr(projeto, "id", "")),
+        "id_projeto": str(getattr(projeto, "id", "")),
+        "numero_projeto": str(getattr(projeto, "id", "")),
         "DATA_PROPOSTA": datetime.now().strftime("%d/%m/%Y"),
+        "data_proposta": datetime.now().strftime("%d/%m/%Y"),
         "VALIDADE_PROPOSTA": (datetime.now() + timedelta(days=15)).strftime("%d/%m/%Y"),
         
         # Dados técnicos

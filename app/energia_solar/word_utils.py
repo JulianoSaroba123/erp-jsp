@@ -1236,6 +1236,18 @@ def _expandir_aliases_variaveis(variaveis):
         expandidas[c] = valor
         expandidas[c.upper()] = valor
         expandidas[c.lower()] = valor
+
+    # Aliases legados usados em modelos antigos
+    if 'NOME_CLIENTE' in expandidas:
+        expandidas['cliente_nome'] = expandidas['NOME_CLIENTE']
+    if 'CPF_CNPJ_CLIENTE' in expandidas:
+        expandidas['cliente_cpf_cnpj'] = expandidas['CPF_CNPJ_CLIENTE']
+    if 'NUMERO_PROJETO' in expandidas:
+        expandidas['id_projeto'] = expandidas['NUMERO_PROJETO']
+        expandidas['numero_projeto'] = expandidas['NUMERO_PROJETO']
+    if 'DATA_PROPOSTA' in expandidas:
+        expandidas['data_proposta'] = expandidas['DATA_PROPOSTA']
+
     return expandidas
 
 
@@ -1285,25 +1297,25 @@ def substituir_variaveis_word(template_path, variaveis):
                 for paragrafo in celula.paragraphs:
                     _substituir_texto_paragrafo(paragrafo, variaveis)
     
-    # Substituir em cabeçalhos e rodapés
+    # Substituir em cabeçalhos e rodapés (inclui primeira página e pares/ímpares)
     for secao in doc.sections:
-        # Cabeçalho
-        for paragrafo in secao.header.paragraphs:
-            _substituir_texto_paragrafo(paragrafo, variaveis)
-        for tabela in secao.header.tables:
-            for linha in tabela.rows:
-                for celula in linha.cells:
-                    for paragrafo in celula.paragraphs:
-                        _substituir_texto_paragrafo(paragrafo, variaveis)
-        
-        # Rodapé
-        for paragrafo in secao.footer.paragraphs:
-            _substituir_texto_paragrafo(paragrafo, variaveis)
-        for tabela in secao.footer.tables:
-            for linha in tabela.rows:
-                for celula in linha.cells:
-                    for paragrafo in celula.paragraphs:
-                        _substituir_texto_paragrafo(paragrafo, variaveis)
+        blocos_hf = [
+            secao.header,
+            secao.first_page_header,
+            secao.even_page_header,
+            secao.footer,
+            secao.first_page_footer,
+            secao.even_page_footer,
+        ]
+
+        for bloco in blocos_hf:
+            for paragrafo in bloco.paragraphs:
+                _substituir_texto_paragrafo(paragrafo, variaveis)
+            for tabela in bloco.tables:
+                for linha in tabela.rows:
+                    for celula in linha.cells:
+                        for paragrafo in celula.paragraphs:
+                            _substituir_texto_paragrafo(paragrafo, variaveis)
     
     return doc
 
