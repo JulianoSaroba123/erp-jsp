@@ -467,20 +467,111 @@ def _gerar_imagem_tabela_25_anos(variaveis):
     return out
 
 
+def _gerar_imagem_grafico_payback(variaveis):
+    """Gera gráfico visual da curva de payback (investimento x economia acumulada)."""
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+        matplotlib.set_loglevel('warning')
+        logging.getLogger('matplotlib').setLevel(logging.WARNING)
+        import matplotlib.pyplot as plt
+    except Exception:
+        return None
+
+    investimento = _to_float_text(
+        variaveis.get('valor_total')
+        or variaveis.get('orcamento_valor_nota')
+        or variaveis.get('VALOR_INVESTIMENTO')
+        or 0,
+        0.0,
+    )
+    economia_mensal = _to_float_text(
+        variaveis.get('economia_mensal')
+        or variaveis.get('ECONOMIA_MENSAL')
+        or 0,
+        0.0,
+    )
+
+    if investimento <= 0 or economia_mensal <= 0:
+        return None
+
+    payback_meses = max(1, int(round(investimento / economia_mensal)))
+    horizonte = max(36, payback_meses + 24)
+    meses = list(range(0, horizonte + 1))
+    acumulada = [economia_mensal * m for m in meses]
+
+    fig, ax = plt.subplots(figsize=(10.8, 4.5), dpi=170)
+    fig.patch.set_facecolor('#FFFFFF')
+    ax.set_facecolor('#FCFDFE')
+
+    ax.plot(meses, acumulada, color='#1B9E5A', linewidth=2.3, label='Economia acumulada (R$)')
+    ax.fill_between(meses, acumulada, color='#C7F0D9', alpha=0.35)
+
+    ax.axhline(investimento, color='#C74646', linewidth=1.6, linestyle='--', label='Investimento inicial (R$)')
+    ax.axvline(payback_meses, color='#0B6AE0', linewidth=1.4, linestyle=':', label=f'Payback: {payback_meses} meses')
+
+    ax.scatter([payback_meses], [investimento], color='#0B6AE0', s=30, zorder=4)
+    ax.text(
+        payback_meses,
+        investimento,
+        f'  Retorno em {payback_meses} meses',
+        fontsize=8,
+        color='#0B6AE0',
+        va='bottom',
+        ha='left'
+    )
+
+    ax.set_xlabel('Meses', fontsize=9, color='#394B59')
+    ax.set_ylabel('Valor acumulado (R$)', fontsize=9, color='#394B59')
+    ax.set_xlim(0, horizonte)
+    ax.set_ylim(0, max(acumulada[-1], investimento) * 1.12)
+    ax.grid(axis='y', color='#DFE7EF', linewidth=0.8, alpha=0.9)
+    ax.set_axisbelow(True)
+
+    for side in ['top', 'right']:
+        ax.spines[side].set_visible(False)
+    ax.spines['left'].set_color('#C9D6E2')
+    ax.spines['bottom'].set_color('#C9D6E2')
+
+    ax.set_title('Curva de payback do investimento', loc='left', fontsize=12, fontweight='bold', color='#143A67', pad=12)
+    ax.text(
+        0.01,
+        0.98,
+        f'Investimento: {_fmt_rs(investimento)}  |  Economia mensal: {_fmt_rs(economia_mensal)}',
+        transform=ax.transAxes,
+        ha='left',
+        va='top',
+        fontsize=8,
+        color='#1F3A56',
+        bbox=dict(boxstyle='round,pad=0.25', fc='#EEF5FF', ec='#C9DDF7', lw=0.7)
+    )
+
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=3, fontsize=8, frameon=False)
+
+    fig.tight_layout()
+    out = io.BytesIO()
+    fig.savefig(out, format='png', bbox_inches='tight', transparent=False)
+    plt.close(fig)
+    out.seek(0)
+    return out
+
+
 def _substituir_placeholders_graficos_doc(doc, variaveis):
     """Substitui placeholders de gráfico por imagens reais quando o placeholder está sozinho."""
     img_12m = _gerar_imagem_grafico_consumo_geracao_12m(variaveis)
     img_tab_12m = _gerar_imagem_tabela_12m(variaveis)
     img_25a = _gerar_imagem_grafico_economia_25_anos(variaveis)
     img_tab_25a = _gerar_imagem_tabela_25_anos(variaveis)
+    img_payback = _gerar_imagem_grafico_payback(variaveis)
 
-    if img_12m is None and img_tab_12m is None and img_25a is None and img_tab_25a is None:
+    if img_12m is None and img_tab_12m is None and img_25a is None and img_tab_25a is None and img_payback is None:
         return
 
     ph_12m = _placeholder_variantes('grafico_consumo_geracao_12_meses')
     ph_tab_12m = _placeholder_variantes('tabela_12_meses')
     ph_25a = _placeholder_variantes('grafico_consumo_geracao_25_anos')
     ph_tab_25a = _placeholder_variantes('tabela_25_anos')
+    ph_payback = _placeholder_variantes('grafico_pay_back') | _placeholder_variantes('grafico_payback')
 
     def _aplicar_paragrafo(paragrafo):
         txt = (paragrafo.text or '').strip()
@@ -504,6 +595,11 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
                 run.text = ''
             run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
             run.add_picture(io.BytesIO(img_tab_25a.getvalue()), width=Inches(6.1))
+        elif txt in ph_payback and img_payback is not None:
+            for run in paragrafo.runs:
+                run.text = ''
+            run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
+            run.add_picture(io.BytesIO(img_payback.getvalue()), width=Inches(6.5))
 
     for paragrafo in doc.paragraphs:
         _aplicar_paragrafo(paragrafo)
