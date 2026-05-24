@@ -1449,6 +1449,18 @@ def projeto_salvar_dados_financeiros(projeto_id):
             except (ValueError, TypeError):
                 return default
 
+        def parse_bool(valor, default=True):
+            if valor is None:
+                return default
+            if isinstance(valor, bool):
+                return valor
+            txt = str(valor).strip().lower()
+            if txt in ("1", "true", "on", "sim", "yes"):
+                return True
+            if txt in ("0", "false", "off", "nao", "não", "no"):
+                return False
+            return default
+
         concessionaria_id = data.get("concessionaria_id")
         tarifa_final = data.get("tarifa_final")
         economia_anual_prevista = data.get("economia_anual_prevista")
@@ -1456,6 +1468,12 @@ def projeto_salvar_dados_financeiros(projeto_id):
         iluminacao_publica = data.get("iluminacao_publica")
         demais_custos = data.get("demais_custos")
         reajuste_anual_energia = data.get("reajuste_anual_energia")
+        aplicar_pis_te = data.get("aplicar_pis_te")
+        aplicar_cofins_te = data.get("aplicar_cofins_te")
+        aplicar_icms_te = data.get("aplicar_icms_te")
+        aplicar_pis_tusd = data.get("aplicar_pis_tusd")
+        aplicar_cofins_tusd = data.get("aplicar_cofins_tusd")
+        aplicar_icms_tusd = data.get("aplicar_icms_tusd")
 
         projeto.concessionaria_id = int(concessionaria_id) if concessionaria_id else None
         projeto.tarifa_kwh = parse_decimal_br(tarifa_final, 0)
@@ -1464,6 +1482,12 @@ def projeto_salvar_dados_financeiros(projeto_id):
         projeto.iluminacao_publica = parse_decimal_br(iluminacao_publica, 0)
         projeto.demais_custos = parse_decimal_br(demais_custos, 0)
         projeto.reajuste_anual_energia = parse_decimal_br(reajuste_anual_energia, 10)
+        projeto.aplicar_pis_te = parse_bool(aplicar_pis_te, True)
+        projeto.aplicar_cofins_te = parse_bool(aplicar_cofins_te, True)
+        projeto.aplicar_icms_te = parse_bool(aplicar_icms_te, True)
+        projeto.aplicar_pis_tusd = parse_bool(aplicar_pis_tusd, True)
+        projeto.aplicar_cofins_tusd = parse_bool(aplicar_cofins_tusd, True)
+        projeto.aplicar_icms_tusd = parse_bool(aplicar_icms_tusd, True)
 
         consumo = float(projeto.consumo_kwh_mes or 0)
         tarifa = float(projeto.tarifa_kwh or 0)
@@ -1491,7 +1515,13 @@ def projeto_salvar_dados_financeiros(projeto_id):
                 "impostos_percentual": float(projeto.impostos_percentual or 0),
                 "iluminacao_publica": float(getattr(projeto, 'iluminacao_publica', 0) or 0),
                 "demais_custos": float(getattr(projeto, 'demais_custos', 0) or 0),
-                "reajuste_anual_energia": float(getattr(projeto, 'reajuste_anual_energia', 10) or 10)
+                "reajuste_anual_energia": float(getattr(projeto, 'reajuste_anual_energia', 10) or 10),
+                "aplicar_pis_te": bool(getattr(projeto, 'aplicar_pis_te', True)),
+                "aplicar_cofins_te": bool(getattr(projeto, 'aplicar_cofins_te', True)),
+                "aplicar_icms_te": bool(getattr(projeto, 'aplicar_icms_te', True)),
+                "aplicar_pis_tusd": bool(getattr(projeto, 'aplicar_pis_tusd', True)),
+                "aplicar_cofins_tusd": bool(getattr(projeto, 'aplicar_cofins_tusd', True)),
+                "aplicar_icms_tusd": bool(getattr(projeto, 'aplicar_icms_tusd', True))
             }
         })
 

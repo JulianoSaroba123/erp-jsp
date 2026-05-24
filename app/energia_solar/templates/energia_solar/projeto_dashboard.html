@@ -1255,29 +1255,29 @@
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="aplicar_pis_te" checked>
+                                        <input class="form-check-input" type="checkbox" id="aplicar_pis_te" {% if projeto.aplicar_pis_te is none or projeto.aplicar_pis_te %}checked{% endif %}>
                                         <label class="form-check-label" for="aplicar_pis_te">Aplicar PIS na TE compensada</label>
                                     </div>
                                     <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="aplicar_cofins_te" checked>
+                                        <input class="form-check-input" type="checkbox" id="aplicar_cofins_te" {% if projeto.aplicar_cofins_te is none or projeto.aplicar_cofins_te %}checked{% endif %}>
                                         <label class="form-check-label" for="aplicar_cofins_te">Aplicar COFINS na TE compensada</label>
                                     </div>
                                     <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="aplicar_icms_te" checked>
+                                        <input class="form-check-input" type="checkbox" id="aplicar_icms_te" {% if projeto.aplicar_icms_te is none or projeto.aplicar_icms_te %}checked{% endif %}>
                                         <label class="form-check-label" for="aplicar_icms_te">Aplicar ICMS na TE compensada</label>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="aplicar_pis_tusd" checked>
+                                        <input class="form-check-input" type="checkbox" id="aplicar_pis_tusd" {% if projeto.aplicar_pis_tusd is none or projeto.aplicar_pis_tusd %}checked{% endif %}>
                                         <label class="form-check-label" for="aplicar_pis_tusd">Aplicar PIS na TUSD compensada</label>
                                     </div>
                                     <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="aplicar_cofins_tusd" checked>
+                                        <input class="form-check-input" type="checkbox" id="aplicar_cofins_tusd" {% if projeto.aplicar_cofins_tusd is none or projeto.aplicar_cofins_tusd %}checked{% endif %}>
                                         <label class="form-check-label" for="aplicar_cofins_tusd">Aplicar COFINS na TUSD compensada</label>
                                     </div>
                                     <div class="form-check mb-2">
-                                        <input class="form-check-input" type="checkbox" id="aplicar_icms_tusd" checked>
+                                        <input class="form-check-input" type="checkbox" id="aplicar_icms_tusd" {% if projeto.aplicar_icms_tusd is none or projeto.aplicar_icms_tusd %}checked{% endif %}>
                                         <label class="form-check-label" for="aplicar_icms_tusd">Aplicar ICMS na TUSD compensada</label>
                                     </div>
                                 </div>
@@ -1680,6 +1680,12 @@ function handleSalvarDadosFinanceiros(event) {
         const iluminacaoPublica = document.getElementById('iluminacao_publica')?.value || '0';
         const demaisCustos = document.getElementById('demais_custos')?.value || '0';
         const reajusteAnualEnergia = document.getElementById('reajuste_anual_energia')?.value || '10';
+        const aplicarPisTe = !!document.getElementById('aplicar_pis_te')?.checked;
+        const aplicarCofinsTe = !!document.getElementById('aplicar_cofins_te')?.checked;
+        const aplicarIcmsTe = !!document.getElementById('aplicar_icms_te')?.checked;
+        const aplicarPisTusd = !!document.getElementById('aplicar_pis_tusd')?.checked;
+        const aplicarCofinsTusd = !!document.getElementById('aplicar_cofins_tusd')?.checked;
+        const aplicarIcmsTusd = !!document.getElementById('aplicar_icms_tusd')?.checked;
         
         // Validar se concessionária foi selecionada
         if (!concessionariaId) {
@@ -1694,7 +1700,13 @@ function handleSalvarDadosFinanceiros(event) {
             impostos_percentual: impostosPercentual,
             iluminacao_publica: iluminacaoPublica,
             demais_custos: demaisCustos,
-            reajuste_anual_energia: reajusteAnualEnergia
+            reajuste_anual_energia: reajusteAnualEnergia,
+            aplicar_pis_te: aplicarPisTe,
+            aplicar_cofins_te: aplicarCofinsTe,
+            aplicar_icms_te: aplicarIcmsTe,
+            aplicar_pis_tusd: aplicarPisTusd,
+            aplicar_cofins_tusd: aplicarCofinsTusd,
+            aplicar_icms_tusd: aplicarIcmsTusd
         };
         
         console.log('📤 Enviando dados:', data);
