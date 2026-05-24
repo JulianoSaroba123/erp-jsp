@@ -893,31 +893,47 @@ def _substituir_placeholders_graficos_doc(doc, variaveis):
 
     def _aplicar_paragrafo(paragrafo):
         txt = (paragrafo.text or '').strip()
-        if txt in ph_12m and img_12m is not None:
-            for run in paragrafo.runs:
-                run.text = ''
-            run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
-            run.add_picture(io.BytesIO(img_12m.getvalue()), width=Inches(6.2))
-        elif txt in ph_tab_12m and img_tab_12m is not None:
-            for run in paragrafo.runs:
-                run.text = ''
-            run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
-            run.add_picture(io.BytesIO(img_tab_12m.getvalue()), width=Inches(6.5))
-        elif txt in ph_25a and img_25a is not None:
-            for run in paragrafo.runs:
-                run.text = ''
-            run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
-            run.add_picture(io.BytesIO(img_25a.getvalue()), width=Inches(6.5))
-        elif txt in ph_tab_25a and img_tab_25a is not None:
-            for run in paragrafo.runs:
-                run.text = ''
-            run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
-            run.add_picture(io.BytesIO(img_tab_25a.getvalue()), width=Inches(6.1))
-        elif txt in ph_payback and img_payback is not None:
-            for run in paragrafo.runs:
-                run.text = ''
-            run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
-            run.add_picture(io.BytesIO(img_payback.getvalue()), width=Inches(6.5))
+        if not txt:
+            return
+
+        marcadores = [
+            (ph_12m, img_12m, 6.2),
+            (ph_tab_12m, img_tab_12m, 6.5),
+            (ph_25a, img_25a, 6.5),
+            (ph_tab_25a, img_tab_25a, 6.1),
+            (ph_payback, img_payback, 6.5),
+        ]
+
+        # Troca também quando há mais de um placeholder no mesmo parágrafo.
+        # Exemplo: "[grafico_25]\n[tabela_25]".
+        texto_limpo = txt
+        encontrou_marcador = False
+        for ph_set, _, _ in marcadores:
+            for ph in ph_set:
+                if ph in texto_limpo:
+                    encontrou_marcador = True
+                    texto_limpo = texto_limpo.replace(ph, '')
+
+        if not encontrou_marcador:
+            return
+
+        # Se houver texto além dos placeholders, não remove o conteúdo do usuário.
+        if texto_limpo.replace('\n', '').replace('\r', '').strip():
+            return
+
+        for run in paragrafo.runs:
+            run.text = ''
+        run = paragrafo.runs[0] if paragrafo.runs else paragrafo.add_run()
+
+        inseriu = False
+        for ph_set, img, width in marcadores:
+            if img is None:
+                continue
+            if any(ph in txt for ph in ph_set):
+                if inseriu:
+                    run.add_break()
+                run.add_picture(io.BytesIO(img.getvalue()), width=Inches(width))
+                inseriu = True
 
     for paragrafo in doc.paragraphs:
         _aplicar_paragrafo(paragrafo)
