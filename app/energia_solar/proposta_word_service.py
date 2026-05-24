@@ -143,7 +143,17 @@ def substituir_placeholders_xml_docx(docx_path, contexto):
     Cobre casos como text boxes/shapes onde python-docx não alcança bem.
     """
     substituicoes = 0
-    xml_files_alvo = ("word/document.xml", "word/header", "word/footer")
+
+    def _placeholder_variantes(chave):
+        c = str(chave)
+        return {
+            f'[{c}]', f'[{c.upper()}]', f'[{c.lower()}]',
+            f'{{{{{c}}}}}', f'{{{{{c.upper()}}}}}', f'{{{{{c.lower()}}}}}',
+            f'{{{c}}}', f'{{{c.upper()}}}', f'{{{c.lower()}}}',
+            f'<<{c}>>', f'<<{c.upper()}>>', f'<<{c.lower()}>>',
+            f'${{{c}}}', f'${{{c.upper()}}}', f'${{{c.lower()}}}',
+            f'%{c}%', f'%{c.upper()}%', f'%{c.lower()}%',
+        }
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
         tmp_path = tmp.name
@@ -153,16 +163,15 @@ def substituir_placeholders_xml_docx(docx_path, contexto):
             for item in zin.infolist():
                 data = zin.read(item.filename)
 
-                if item.filename.endswith(".xml") and item.filename.startswith(xml_files_alvo):
+                if item.filename.endswith(".xml") and item.filename.startswith("word/"):
                     texto = data.decode("utf-8")
                     texto_original = texto
 
                     for chave, valor in contexto.items():
-                        placeholder = "{{" + chave + "}}"
-                        if placeholder in texto:
-                            # Escapa caracteres especiais para manter XML válido
-                            valor_xml = escape(str(valor))
-                            texto = texto.replace(placeholder, valor_xml)
+                        valor_xml = escape(str(valor))
+                        for placeholder in _placeholder_variantes(chave):
+                            if placeholder in texto:
+                                texto = texto.replace(placeholder, valor_xml)
 
                     if texto != texto_original:
                         data = texto.encode("utf-8")
