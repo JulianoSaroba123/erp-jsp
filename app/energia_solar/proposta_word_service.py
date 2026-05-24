@@ -83,6 +83,25 @@ def _extract_first_float(valor, default=0.0):
         return default
 
 
+def _normalizar_tipo_instalacao(valor):
+    txt = (str(valor or '').strip().lower())
+    if 'tri' in txt:
+        return 'trifasica'
+    if 'bi' in txt:
+        return 'bifasica'
+    return 'monofasica'
+
+
+def _consumo_minimo_kwh_por_tipo(tipo_instalacao):
+    tipo = _normalizar_tipo_instalacao(tipo_instalacao)
+    mapa = {
+        'monofasica': 30.0,
+        'bifasica': 50.0,
+        'trifasica': 100.0,
+    }
+    return mapa.get(tipo, 30.0)
+
+
 def substituir_texto_em_paragrafos(doc, contexto):
     """Substitui placeholders {{CHAVE}} nos parágrafos do documento"""
     for p in doc.paragraphs:
@@ -238,9 +257,38 @@ def montar_contexto_proposta(projeto):
     if valor_conta_luz <= 0 and economia_mensal > 0:
         valor_conta_luz = economia_mensal / 0.9
 
+    if preco_kwh <= 0:
+        preco_kwh = 0.85
+
+    tipo_instalacao_norm = _normalizar_tipo_instalacao(getattr(projeto, 'tipo_instalacao', None) or 'monofasica')
+    consumo_minimo_kwh = _consumo_minimo_kwh_por_tipo(tipo_instalacao_norm)
+
+    adicionais_fatura = 0.0
+    for chave in [
+        'iluminacao_publica',
+        'demais_custos',
+        'outros_custos',
+        'adicionais_fatura',
+        'cip',
+        'taxa_disponibilidade',
+        'taxa_iluminacao_publica',
+    ]:
+        adicionais_fatura += _to_float_flex(getattr(projeto, chave, None), 0)
+
+    fatura_minima_tecnica = (consumo_minimo_kwh * preco_kwh) + adicionais_fatura
+
     conta_luz_futura = _to_float_flex(getattr(projeto, 'fatura_com_sistema', None), 0)
     if conta_luz_futura <= 0 and valor_conta_luz > 0:
-        conta_luz_futura = max(valor_conta_luz - economia_mensal, valor_conta_luz * 0.1)
+        conta_luz_futura = max(valor_conta_luz - economia_mensal, fatura_minima_tecnica)
+
+    if conta_luz_futura > 0:
+        conta_luz_futura = max(conta_luz_futura, fatura_minima_tecnica)
+
+    if valor_conta_luz > 0 and valor_conta_luz < fatura_minima_tecnica:
+        valor_conta_luz = fatura_minima_tecnica
+
+    if conta_luz_futura > valor_conta_luz > 0:
+        conta_luz_futura = valor_conta_luz
 
     economia_anual = _to_float_flex(getattr(projeto, "economia_anual", None), 0)
     if economia_anual <= 0 and economia_mensal > 0:
@@ -266,8 +314,13 @@ def montar_contexto_proposta(projeto):
     if area == 0 and qtd_modulos:
         area = float(qtd_modulos) * 2.5
     
-    if preco_kwh <= 0:
-        preco_kwh = 0.85
+    acrescimo_anual_percentual = _to_float_flex(
+        getattr(projeto, 'acrescimo_anual_percentual', None)
+        or getattr(projeto, 'reajuste_anual_energia', None)
+        or getattr(projeto, 'reajuste_anual', None)
+        or 10.0,
+        10.0,
+    )
 
     # Cliente
     cliente = None
@@ -429,7 +482,7 @@ def montar_contexto_proposta(projeto):
         "MODELO_INVERSOR": modelo_inversor,
         "FABRICANTE_INVERSOR": fabricante_inversor,
         "POTENCIA_INVERSOR": inversor_potencia,
-        "TIPO_INSTALACAO": getattr(projeto, 'tipo_instalacao', None) or "Telhado",
+        "TIPO_INSTALACAO": getattr(projeto, 'tipo_instalacao', None) or "monofasica",
         "GARANTIA_MODULOS": "25 anos (potência) / 12 anos (produto)",
         "GARANTIA_INVERSOR": garantia_inversor,
         "VIDA_UTIL_SISTEMA": "25 anos",
@@ -444,6 +497,12 @@ def montar_contexto_proposta(projeto):
         "PRECO_KWH": f"R$ {formatar_numero(preco_kwh, 4)}",
         "TARIFA_ENERGIA": f"R$ {formatar_numero(preco_kwh, 4)}",
         "tarifa_kwh": f"{preco_kwh:.4f}",
+        "CONSUMO_MINIMO_KWH": f"{consumo_minimo_kwh:.0f}",
+        "consumo_minimo_kwh": f"{consumo_minimo_kwh:.0f}",
+        "FATURA_MINIMA_TECNICA": formatar_moeda(fatura_minima_tecnica),
+        "fatura_minima_tecnica": f"{fatura_minima_tecnica:.2f}",
+        "ADICIONAIS_FATURA": formatar_moeda(adicionais_fatura),
+        "adicionais_fatura": f"{adicionais_fatura:.2f}",
         
         # Valores financeiros
         "VALOR_INVESTIMENTO": formatar_moeda(valor_total),
@@ -464,6 +523,10 @@ def montar_contexto_proposta(projeto):
         "fatura_media_mensal_sem_sistema": f"{valor_conta_luz:.2f}",
         "fatura_sem_sistema_rs": formatar_moeda(valor_conta_luz),
         "fatura_com_sistema_rs": formatar_moeda(conta_luz_futura),
+        "ACRESCIMO_ANUAL_PERCENTUAL": f"{formatar_numero(acrescimo_anual_percentual, 2)}%",
+        "acrescimo_anual_percentual": f"{acrescimo_anual_percentual:.2f}",
+        "REAJUSTE_ANUAL": f"{formatar_numero(acrescimo_anual_percentual, 2)}%",
+        "reajuste_anual": f"{acrescimo_anual_percentual:.2f}",
 
         # Campos adicionais de kit/outros detalhes
         "KIT_DESCRICAO": kit_desc,

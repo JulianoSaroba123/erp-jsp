@@ -74,6 +74,25 @@ def _fmt_rs(value):
     return f'R$ {txt}'
 
 
+def _normalizar_tipo_instalacao(valor):
+    txt = (str(valor or '').strip().lower())
+    if 'tri' in txt:
+        return 'trifasica'
+    if 'bi' in txt:
+        return 'bifasica'
+    return 'monofasica'
+
+
+def _consumo_minimo_kwh_por_tipo(tipo_instalacao):
+    tipo = _normalizar_tipo_instalacao(tipo_instalacao)
+    mapa = {
+        'monofasica': 30.0,
+        'bifasica': 50.0,
+        'trifasica': 100.0,
+    }
+    return mapa.get(tipo, 30.0)
+
+
 def _normalizar_variaveis_financeiras(variaveis):
     """Garante campos financeiros essenciais para evitar placeholders zerados."""
     consumo = _to_float_text(variaveis.get('consumo_kwh_mes'), 0)
@@ -99,6 +118,23 @@ def _normalizar_variaveis_financeiras(variaveis):
     if tarifa <= 0:
         tarifa = 0.85
 
+    tipo_instalacao = variaveis.get('tipo_instalacao') or variaveis.get('TIPO_INSTALACAO') or 'monofasica'
+    consumo_minimo_kwh = _consumo_minimo_kwh_por_tipo(tipo_instalacao)
+
+    adicionais = 0.0
+    for chave in [
+        'iluminacao_publica',
+        'demais_custos',
+        'outros_custos',
+        'adicionais_fatura',
+        'cip',
+        'taxa_disponibilidade',
+        'taxa_iluminacao_publica',
+    ]:
+        adicionais += _to_float_text(variaveis.get(chave), 0)
+
+    fatura_minima_tecnica = (consumo_minimo_kwh * tarifa) + adicionais
+
     economia_mensal = _to_float_text(variaveis.get('economia_mensal'), 0)
     if economia_mensal <= 0:
         economia_mensal = _to_float_text(variaveis.get('ECONOMIA_MENSAL'), 0)
@@ -112,14 +148,27 @@ def _normalizar_variaveis_financeiras(variaveis):
         fatura_com = _to_float_text(variaveis.get('conta_luz_futura'), 0)
 
     if fatura_com <= 0 and fatura_sem > 0:
-        minimo = fatura_sem * 0.1
-        fatura_com = max(fatura_sem - economia_mensal, minimo)
+        fatura_com = max(fatura_sem - economia_mensal, fatura_minima_tecnica)
+
+    if fatura_com > 0:
+        fatura_com = max(fatura_com, fatura_minima_tecnica)
+
+    if fatura_sem > 0 and fatura_sem < fatura_minima_tecnica:
+        fatura_sem = fatura_minima_tecnica
 
     if fatura_sem <= 0 and fatura_com > 0:
         fatura_sem = fatura_com / 0.1
 
     if fatura_com > fatura_sem > 0:
-        fatura_com = fatura_sem * 0.1
+        fatura_com = fatura_sem
+
+    acrescimo_anual = _to_float_text(
+        variaveis.get('acrescimo_anual_percentual')
+        or variaveis.get('reajuste_anual_energia')
+        or variaveis.get('reajuste_anual')
+        or 10.0,
+        10.0,
+    )
 
     variaveis.update({
         'tarifa_kwh': f'{tarifa:.4f}',
@@ -129,8 +178,11 @@ def _normalizar_variaveis_financeiras(variaveis):
         'fatura_sem_sistema': f'{fatura_sem:.2f}',
         'fatura_com_sistema': f'{fatura_com:.2f}',
         'fatura_minima': f'{fatura_com:.2f}',
+        'fatura_minima_tecnica': f'{fatura_minima_tecnica:.2f}',
         'conta_luz_atual': f'{fatura_sem:.2f}',
         'conta_luz_futura': f'{fatura_com:.2f}',
+        'consumo_minimo_kwh': f'{consumo_minimo_kwh:.0f}',
+        'acrescimo_anual_percentual': f'{acrescimo_anual:.2f}',
         'fatura_sem_sistema_rs': _fmt_rs(fatura_sem),
         'fatura_com_sistema_rs': _fmt_rs(fatura_com),
         'conta_luz_atual_rs': _fmt_rs(fatura_sem),
@@ -453,7 +505,13 @@ def _serie_economia_25_anos_variaveis(variaveis):
         if consumo > 0 and tarifa > 0:
             economia_mensal = consumo * tarifa * 0.9
 
-    reajuste = _to_float_text(variaveis.get('reajuste_anual', variaveis.get('perda_eficiencia_anual', 0.8)), 0.8)
+    reajuste = _to_float_text(
+        variaveis.get('acrescimo_anual_percentual')
+        or variaveis.get('reajuste_anual_energia')
+        or variaveis.get('reajuste_anual')
+        or 10.0,
+        10.0,
+    )
     taxa = reajuste / 100.0
 
     economia_base_anual = economia_mensal * 12
@@ -863,7 +921,12 @@ def _montar_tabela_12_meses_texto(projeto):
 
 def _montar_tabela_25_anos_texto(projeto):
     economia_mensal = _to_float(getattr(projeto, 'economia_mensal', 0), 0)
-    reajuste = _to_float(getattr(projeto, 'perda_eficiencia_anual', 0.8), 0.8)
+    reajuste = _to_float(
+        getattr(projeto, 'acrescimo_anual_percentual', None)
+        or getattr(projeto, 'reajuste_anual_energia', None)
+        or 10.0,
+        10.0,
+    )
     # Interpretação: campo vem em %, usamos como crescimento de tarifa/economia para projeção.
     taxa = reajuste / 100.0
 
@@ -904,7 +967,12 @@ def _montar_grafico_12_meses_csv(projeto):
 
 def _montar_grafico_25_anos_csv(projeto):
     economia_mensal = _to_float(getattr(projeto, 'economia_mensal', 0), 0)
-    reajuste = _to_float(getattr(projeto, 'perda_eficiencia_anual', 0.8), 0.8)
+    reajuste = _to_float(
+        getattr(projeto, 'acrescimo_anual_percentual', None)
+        or getattr(projeto, 'reajuste_anual_energia', None)
+        or 10.0,
+        10.0,
+    )
     taxa = reajuste / 100.0
 
     if economia_mensal <= 0:
@@ -1333,13 +1401,41 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
     if fatura_media <= 0 and economia_mensal_calc > 0:
         fatura_media = economia_mensal_calc / 0.9
 
+    tipo_instalacao = getattr(projeto, 'tipo_instalacao', None) or 'monofasica'
+    consumo_minimo_kwh = _consumo_minimo_kwh_por_tipo(tipo_instalacao)
+
+    adicionais = 0.0
+    for chave in [
+        'iluminacao_publica',
+        'demais_custos',
+        'outros_custos',
+        'adicionais_fatura',
+        'cip',
+        'taxa_disponibilidade',
+        'taxa_iluminacao_publica',
+    ]:
+        adicionais += _extract_first_float(getattr(projeto, chave, None), 0)
+
+    tarifa_num = _extract_first_float(tarifa_kwh, 0)
+    if tarifa_num <= 0 and fatura_media > 0 and consumo_kwh:
+        tarifa_num = _extract_first_float(fatura_media / max(float(consumo_kwh), 1.0), 0)
+    if tarifa_num <= 0:
+        tarifa_num = 0.85
+
+    fatura_minima_tecnica = (consumo_minimo_kwh * tarifa_num) + adicionais
+
     fatura_com_sistema = _extract_first_float(getattr(projeto, 'fatura_com_sistema', None), 0)
     if fatura_com_sistema <= 0 and fatura_media > 0:
-        minimo = fatura_media * 0.1
-        fatura_com_sistema = max(fatura_media - economia_mensal_calc, minimo)
+        fatura_com_sistema = max(fatura_media - economia_mensal_calc, fatura_minima_tecnica)
+
+    if fatura_com_sistema > 0:
+        fatura_com_sistema = max(fatura_com_sistema, fatura_minima_tecnica)
+
+    if fatura_media > 0 and fatura_media < fatura_minima_tecnica:
+        fatura_media = fatura_minima_tecnica
 
     if fatura_com_sistema > fatura_media > 0:
-        fatura_com_sistema = fatura_media * 0.1
+        fatura_com_sistema = fatura_media
 
     economia_anual_calc = economia_mensal_calc * 12
     economia_25_calc = economia_anual_calc * 25
@@ -1383,6 +1479,7 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
     variaveis.update({
         'fatura_media_mensal_sem_sistema': f"{float(fatura_media or 0):.2f}",
         'fatura_minima': f"{float(fatura_com_sistema or 0):.2f}",
+        'fatura_minima_tecnica': f"{float(fatura_minima_tecnica or 0):.2f}",
         'fatura_sem_sistema': f"{float(fatura_media or 0):.2f}",
         'fatura_com_sistema': f"{float(fatura_com_sistema or 0):.2f}",
         'fatura_com_sistema_rs': _fmt_rs(fatura_com_sistema),
@@ -1391,6 +1488,7 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'conta_luz_futura': f"{float(fatura_com_sistema or 0):.2f}",
         'conta_luz_atual_rs': _fmt_rs(fatura_media),
         'conta_luz_futura_rs': _fmt_rs(fatura_com_sistema),
+        'consumo_minimo_kwh': f"{float(consumo_minimo_kwh or 0):.0f}",
         'economia_mensal': f"{float(economia_mensal_calc or 0):.2f}",
         'economia_anual': f"{float(economia_anual_calc or 0):.2f}",
         'economia_25_anos': f"{float(economia_25_calc or 0):.2f}",
@@ -1411,7 +1509,8 @@ def gerar_variaveis_projeto(projeto, cliente=None, config=None, balanco=None):
         'orcamento_valor_nota': f"{float(valor_nota or 0):.2f}",
         'payback_ano_lei_14300': f"{float(payback_anos or 0):.1f}",
         'payback_roi_lei_14300': f"{float(payback_anos or 0):.1f}",
-        'reajuste_anual': f"{float(getattr(projeto, 'perda_eficiencia_anual', 0.8) or 0.8):.2f}",
+        'reajuste_anual': f"{float(getattr(projeto, 'acrescimo_anual_percentual', None) or getattr(projeto, 'reajuste_anual_energia', None) or 10.0):.2f}",
+        'acrescimo_anual_percentual': f"{float(getattr(projeto, 'acrescimo_anual_percentual', None) or getattr(projeto, 'reajuste_anual_energia', None) or 10.0):.2f}",
         'tabela_12_meses': _montar_tabela_12_meses_texto(projeto),
         'tabela_25_anos': _montar_tabela_25_anos_texto(projeto),
     })
