@@ -84,6 +84,8 @@
             padding: 20px;
             margin: 20px 0;
             border-radius: 5px;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         
         .box.destaque {
@@ -112,6 +114,8 @@
             width: 48%;
             float: left;
             margin-right: 4%;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         
         .grid-2 > div:last-child {
@@ -128,6 +132,8 @@
             width: 31%;
             float: left;
             margin-right: 3.5%;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         
         .grid-3 > div:last-child {
@@ -140,6 +146,8 @@
             border-radius: 8px;
             padding: 20px;
             text-align: center;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         
         .card-icon {
@@ -381,6 +389,76 @@
         
         .badge.vermelho {
             background: #f44336;
+        }
+        
+        /* REGRAS DE IMPRESSÃO PARA LAYOUT HORIZONTAL E ANTI-QUEBRA */
+        .timeline-item,
+        table,
+        tr,
+        td,
+        th,
+        .grafico-container {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+        
+        @media print {
+            .grid-2,
+            .grid-3 {
+                display: table;
+                table-layout: fixed;
+                width: 100%;
+            }
+            
+            .grid-2 > div,
+            .grid-3 > div {
+                float: none !important;
+                display: table-cell;
+                vertical-align: top;
+            }
+            
+            .grid-2 > div {
+                width: 50%;
+                margin-right: 0;
+                padding-right: 10px;
+            }
+            
+            .grid-2 > div:last-child {
+                padding-right: 0;
+                padding-left: 10px;
+            }
+            
+            .grid-3 > div {
+                width: 33.33%;
+                margin-right: 0;
+                padding-right: 8px;
+            }
+            
+            .grid-3 > div:last-child {
+                padding-right: 0;
+            }
+            
+            .pagina,
+            .box,
+            .card,
+            .timeline,
+            .timeline-item,
+            .grafico-container,
+            table,
+            tr,
+            td,
+            th,
+            h2,
+            h3 {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            
+            h2,
+            h3 {
+                page-break-after: avoid;
+                break-after: avoid;
+            }
         }
     </style>
 </head>
