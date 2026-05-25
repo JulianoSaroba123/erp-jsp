@@ -1338,6 +1338,83 @@ def chaves_documentos():
     return render_template('energia_solar/chaves_documentos.html', variaveis=variaveis, projeto=projeto)
 
 
+def recalcular_valores_projeto(projeto):
+    """
+    Recalcula automaticamente todos os valores derivados do projeto
+    
+    Esta função garante que campos calculados sejam sempre atualizados:
+    - Economia mensal e anual
+    - Área necessária  
+    - Nome do cliente (se vinculado)
+    - Custo total
+    - Valor de venda
+    
+    Args:
+        projeto: Instância de ProjetoSolar
+    
+    Returns:
+        projeto: Instância atualizada (não faz commit)
+    """
+    try:
+        # 1. ECONOMIA MENSAL - Calcular se consumo e tarifa existirem
+        if projeto.consumo_kwh_mes and projeto.tarifa_kwh:
+            consumo = float(projeto.consumo_kwh_mes)
+            tarifa = float(projeto.tarifa_kwh)
+            if consumo > 0 and tarifa > 0:
+                projeto.economia_mensal = round(consumo * tarifa, 2)
+                projeto.economia_anual = round(projeto.economia_mensal * 12, 2)
+                logger.info(f"✅ Projeto #{projeto.id}: Economia calculada R$ {projeto.economia_mensal:.2f}/mês")
+        
+        # 2. ÁREA NECESSÁRIA - Calcular baseado nas dimensões da placa
+        if projeto.qtd_placas and projeto.placa_id:
+            try:
+                placa = PlacaSolar.query.get(projeto.placa_id)
+                if placa and placa.comprimento and placa.largura:
+                    comprimento = float(placa.comprimento)
+                    largura = float(placa.largura)
+                    if comprimento > 0 and largura > 0:
+                        projeto.area_necessaria = round(comprimento * largura * projeto.qtd_placas, 2)
+                        logger.info(f"✅ Projeto #{projeto.id}: Área calculada {projeto.area_necessaria:.2f} m²")
+            except Exception as e:
+                logger.warning(f"⚠️ Erro ao calcular área: {e}")
+        
+        # 3. NOME DO CLIENTE - Buscar do cliente vinculado se estiver vazio
+        if not projeto.nome_cliente and projeto.cliente_id:
+            try:
+                cliente = Cliente.query.get(projeto.cliente_id)
+                if cliente:
+                    projeto.nome_cliente = cliente.nome
+                    logger.info(f"✅ Projeto #{projeto.id}: Nome do cliente atualizado: {cliente.nome}")
+            except Exception as e:
+                logger.warning(f"⚠️ Erro ao buscar nome do cliente: {e}")
+        
+        # 4. CUSTO TOTAL - Somar todos os custos
+        custo_eq = float(projeto.custo_equipamentos or 0)
+        custo_inst = float(projeto.custo_instalacao or 0)
+        custo_proj = float(projeto.custo_projeto or 0)
+        
+        if custo_eq > 0 or custo_inst > 0 or custo_proj > 0:
+            projeto.custo_total = round(custo_eq + custo_inst + custo_proj, 2)
+            logger.info(f"✅ Projeto #{projeto.id}: Custo total R$ {projeto.custo_total:.2f}")
+        
+        # 5. VALOR DE VENDA - Calcular com margem de lucro
+        if projeto.custo_total and projeto.margem_lucro:
+            margem = 1 + (float(projeto.margem_lucro) / 100)
+            projeto.valor_venda = round(float(projeto.custo_total) * margem, 2)
+            logger.info(f"✅ Projeto #{projeto.id}: Valor de venda R$ {projeto.valor_venda:.2f}")
+        
+        # 6. PAYBACK - Calcular tempo de retorno
+        if projeto.valor_venda and projeto.economia_anual and projeto.economia_anual > 0:
+            projeto.payback_anos = round(float(projeto.valor_venda) / float(projeto.economia_anual), 2)
+            logger.info(f"✅ Projeto #{projeto.id}: Payback {projeto.payback_anos:.1f} anos")
+        
+        return projeto
+        
+    except Exception as e:
+        logger.error(f"❌ Erro ao recalcular valores do projeto #{projeto.id}: {e}")
+        return projeto
+
+
 @energia_solar_bp.route('/projetos/<int:projeto_id>/dashboard')
 @login_required
 def projeto_dashboard(projeto_id):
@@ -1500,6 +1577,9 @@ def projeto_salvar_dados_financeiros(projeto_id):
         # Calcular payback (investimento / economia anual)
         if projeto.valor_venda and projeto.economia_anual and projeto.economia_anual > 0:
             projeto.payback_anos = float(projeto.valor_venda) / float(projeto.economia_anual)
+
+        # 🔄 Recalcular automaticamente todos os valores derivados
+        projeto = recalcular_valores_projeto(projeto)
 
         db.session.commit()
 
