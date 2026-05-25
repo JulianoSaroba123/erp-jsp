@@ -2604,7 +2604,7 @@ def projeto_proposta_pdf(projeto_id):
             # ===========================================================================
             # PASSAR CONTEXTO COMPLETO PARA O TEMPLATE
             # ===========================================================================
-            html_content = render_template('energia_solar/pdf_proposta_solar_v3.html', 
+            html_content = render_template('energia_solar/pdf_proposta_solar_v2.html', 
                                          # Entidades
                                          projeto=contexto['projeto'],
                                          cliente=contexto['cliente'],
