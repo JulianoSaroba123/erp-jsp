@@ -224,20 +224,13 @@ def executar_excel():
         
         # 1. Cálculos
         calculos = CalculoEnergiaSolar.query.all()
-        calculos_data = [{k: v for k, v in vars(calc).items() if not k.startswith('_')} for calc in calculos]
-        criar_aba('Cálculos', calculos_data, ['ID', 'Consumo Mensal', 'Irradiação', 'Potência Sistema', 'Data'])
+        calculos_data = [calc.to_dict() for calc in calculos]
+        criar_aba('Cálculos', calculos_data, ['ID', 'Consumo Mensal KWh', 'Potência Sistema KWp', 'Qtd Placas'])
         
         # 2. Projetos
         projetos = ProjetoSolar.query.all()
-        projetos_data = [{
-            'id': p.id,
-            'nome': p.nome,
-            'cliente': p.cliente,
-            'potencia_kwp': p.potencia_kwp,
-            'status': p.status,
-            'data_criacao': p.data_criacao
-        } for p in projetos]
-        criar_aba('Projetos', projetos_data, ['ID', 'Nome', 'Cliente', 'Potencia KWp', 'Status', 'Data Criação'])
+        projetos_data = [p.to_dict() for p in projetos]
+        criar_aba('Projetos', projetos_data, ['ID', 'Cliente ID', 'Nome Cliente', 'Potência KWp', 'Status', 'Custo Total'])
         
         # 3. Kits
         kits = KitSolar.query.filter_by(ativo=True).all()
@@ -256,7 +249,7 @@ def executar_excel():
         
         # 6. Custos Padrão
         custos = CustoPadraoSolar.query.filter_by(ativo=True).all()
-        custos_data = [{k: v for k, v in vars(custo).items() if not k.startswith('_')} for custo in custos]
+        custos_data = [custo.to_dict() for custo in custos]
         criar_aba('Custos Padrão', custos_data, ['ID', 'Descrição', 'Valor', 'Tipo'])
         
         # 7. Itens de Orçamento
