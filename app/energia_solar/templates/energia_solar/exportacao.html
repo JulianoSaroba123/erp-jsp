@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}Exportação e Importação - Energia Solar{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-2">
+                <i class="fas fa-file-export text-warning"></i>
+                Exportação e Importação de Dados
+            </h2>
+            <p class="text-muted mb-0">
+                Faça backup ou restaure dados do módulo de Energia Solar
+            </p>
+        </div>
+    </div>
+
+    <!-- Estatísticas do Banco -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning fs-2 mb-2"><i class="fas fa-calculator"></i></div>
+                    <h4 class="mb-0">{{ stats.calculos }}</h4>
+                    <small class="text-muted">Cálculos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning fs-2 mb-2"><i class="fas fa-solar-panel"></i></div>
+                    <h4 class="mb-0">{{ stats.projetos }}</h4>
+                    <small class="text-muted">Projetos</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning fs-2 mb-2"><i class="fas fa-box-open"></i></div>
+                    <h4 class="mb-0">{{ stats.kits }}</h4>
+                    <small class="text-muted">Kits</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning fs-2 mb-2"><i class="fas fa-solar-panel"></i></div>
+                    <h4 class="mb-0">{{ stats.placas }}</h4>
+                    <small class="text-muted">Placas</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning fs-2 mb-2"><i class="fas fa-bolt"></i></div>
+                    <h4 class="mb-0">{{ stats.inversores }}</h4>
+                    <small class="text-muted">Inversores</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="text-warning fs-2 mb-2"><i class="fas fa-dollar-sign"></i></div>
+                    <h4 class="mb-0">{{ stats.custos }}</h4>
+                    <small class="text-muted">Custos</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Painel de Exportação -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-download"></i>
+                        Exportar Dados
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Crie um backup de todos os dados do módulo Energia Solar em formato JSON.
+                    </p>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>O que será exportado:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Cálculos de Energia Solar</li>
+                            <li>Projetos Solares</li>
+                            <li>Kits, Placas e Inversores</li>
+                            <li>Custos Padrão</li>
+                            <li>Itens de Orçamento</li>
+                        </ul>
+                    </div>
+
+                    <button type="button" class="btn btn-success btn-lg w-100" onclick="executarExportacao()">
+                        <i class="fas fa-file-export"></i>
+                        Exportar Agora
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Painel de Importação -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-upload"></i>
+                        Importar Dados
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">
+                        Restaure dados a partir de um arquivo de exportação (.json).
+                    </p>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Atenção:</strong> A importação com "Limpar dados existentes" irá <strong>APAGAR</strong> todos os dados atuais antes de importar!
+                    </div>
+
+                    <form id="formImportacao" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="arquivoImport" class="form-label">
+                                <i class="fas fa-file-upload"></i> Selecionar arquivo JSON
+                            </label>
+                            <input type="file" class="form-control" id="arquivoImport" name="arquivo" accept=".json" required>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="limparAntes" name="limpar_antes">
+                            <label class="form-check-label text-danger" for="limparAntes">
+                                <strong>Limpar dados existentes antes de importar</strong>
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-file-import"></i>
+                            Importar Dados
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Exportações -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-archive"></i>
+                        Exportações Disponíveis
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if arquivos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th><i class="fas fa-file"></i> Arquivo</th>
+                                    <th><i class="fas fa-calendar"></i> Data</th>
+                                    <th><i class="fas fa-weight"></i> Tamanho</th>
+                                    <th class="text-end"><i class="fas fa-cog"></i> Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="listaArquivos">
+                                {% for arquivo in arquivos %}
+                                <tr data-filename="{{ arquivo.nome }}">
+                                    <td>
+                                        <i class="fas fa-file-alt text-success me-2"></i>
+                                        <code>{{ arquivo.nome }}</code>
+                                    </td>
+                                    <td>{{ arquivo.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ arquivo.tamanho_mb }} MB</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ url_for('exportacao.download', filename=arquivo.nome) }}" 
+                                           class="btn btn-sm btn-success" title="Baixar">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-danger" 
+                                                onclick="excluirArquivo('{{ arquivo.nome }}')" title="Excluir">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>Nenhuma exportação disponível.</p>
+                        <p class="small">Clique em "Exportar Agora" para criar seu primeiro backup.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Progresso -->
+<div class="modal fade" id="modalProgresso" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-5">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                    <span class="visually-hidden">Processando...</span>
+                </div>
+                <h5 id="textoProgresso">Processando...</h5>
+                <p class="text-muted mb-0" id="detalheProgresso">Aguarde...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Exportação
+function executarExportacao() {
+    // Mostrar modal de progresso
+    $('#textoProgresso').text('Exportando dados...');
+    $('#detalheProgresso').text('Aguarde enquanto geramos o arquivo de exportação');
+    $('#modalProgresso').modal('show');
+
+    fetch('{{ url_for("exportacao.executar") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        $('#modalProgresso').modal('hide');
+        
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Exportação Concluída!',
+                html: `
+                    <p><strong>${data.total_registros} registros exportados</strong></p>
+                    <ul class="list-unstyled text-start">
+                        <li>✅ ${data.detalhes.calculos} Cálculos</li>
+                        <li>✅ ${data.detalhes.projetos} Projetos</li>
+                        <li>✅ ${data.detalhes.kits} Kits</li>
+                        <li>✅ ${data.detalhes.placas} Placas</li>
+                        <li>✅ ${data.detalhes.inversores} Inversores</li>
+                        <li>✅ ${data.detalhes.custos} Custos Padrão</li>
+                        <li>✅ ${data.detalhes.itens} Itens Orçamento</li>
+                    </ul>
+                    <p class="mt-3"><code>${data.filename}</code></p>
+                `,
+                confirmButtonText: 'OK'
+            }).then(() => {
+                // Recarregar página para mostrar novo arquivo
+                location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro na Exportação',
+                text: data.error || 'Erro desconhecido'
+            });
+        }
+    })
+    .catch(error => {
+        $('#modalProgresso').modal('hide');
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro na Exportação',
+            text: 'Erro: ' + error.message
+        });
+    });
+}
+
+// Importação
+document.getElementById('formImportacao').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const arquivo = document.getElementById('arquivoImport').files[0];
+    const limparAntes = document.getElementById('limparAntes').checked;
+    
+    if (!arquivo) {
+        Swal.fire('Erro', 'Selecione um arquivo', 'error');
+        return;
+    }
+
+    // Confirmar se vai limpar dados
+    if (limparAntes) {
+        Swal.fire({
+            title: 'ATENÇÃO!',
+            html: '<strong class="text-danger">Você está prestes a APAGAR TODOS os dados existentes!</strong><br><br>Deseja continuar?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Sim, limpar e importar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                executarImportacao(arquivo, limparAntes);
+            }
+        });
+    } else {
+        executarImportacao(arquivo, limparAntes);
+    }
+});
+
+function executarImportacao(arquivo, limparAntes) {
+    // Mostrar modal de progresso
+    $('#textoProgresso').text('Importando dados...');
+    $('#detalheProgresso').text('Aguarde enquanto processamos o arquivo');
+    $('#modalProgresso').modal('show');
+
+    const formData = new FormData();
+    formData.append('arquivo', arquivo);
+    formData.append('limpar_antes', limparAntes);
+
+    fetch('{{ url_for("exportacao.importar") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        $('#modalProgresso').modal('hide');
+        
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Importação Concluída!',
+                html: `
+                    <p><strong>${data.total_registros} registros importados</strong></p>
+                    <ul class="list-unstyled text-start">
+                        <li>✅ ${data.detalhes.calculos} Cálculos</li>
+                        <li>✅ ${data.detalhes.projetos} Projetos</li>
+                        <li>✅ ${data.detalhes.kits} Kits</li>
+                        <li>✅ ${data.detalhes.placas} Placas</li>
+                        <li>✅ ${data.detalhes.inversores} Inversores</li>
+                        <li>✅ ${data.detalhes.custos} Custos Padrão</li>
+                        <li>✅ ${data.detalhes.itens} Itens Orçamento</li>
+                    </ul>
+                `,
+                confirmButtonText: 'OK'
+            }).then(() => {
+                // Recarregar página para atualizar estatísticas
+                location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Erro na Importação',
+                text: data.error || 'Erro desconhecido'
+            });
+        }
+    })
+    .catch(error => {
+        $('#modalProgresso').modal('hide');
+        Swal.fire({
+            icon: 'error',
+            title: 'Erro na Importação',
+            text: 'Erro: ' + error.message
+        });
+    });
+}
+
+// Excluir arquivo
+function excluirArquivo(filename) {
+    Swal.fire({
+        title: 'Confirmar Exclusão',
+        text: `Deseja excluir o arquivo ${filename}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sim, excluir',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`{{ url_for("exportacao.excluir", filename="FILENAME") }}`.replace('FILENAME', filename), {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remover linha da tabela
+                    $(`tr[data-filename="${filename}"]`).fadeOut(300, function() {
+                        $(this).remove();
+                        // Verificar se não há mais arquivos
+                        if ($('#listaArquivos tr').length === 0) {
+                            location.reload();
+                        }
+                    });
+                    
+                    Swal.fire('Excluído!', 'Arquivo excluído com sucesso.', 'success');
+                } else {
+                    Swal.fire('Erro', data.error || 'Erro ao excluir arquivo', 'error');
+                }
+            })
+            .catch(error => {
+                Swal.fire('Erro', 'Erro: ' + error.message, 'error');
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

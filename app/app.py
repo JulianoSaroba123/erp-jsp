@@ -903,6 +903,10 @@ def register_blueprints(app):
     # Blueprint de energia solar
     from app.energia_solar.energia_solar_routes import energia_solar_bp
     app.register_blueprint(energia_solar_bp)
+    
+    # Blueprint de exportação/importação de energia solar
+    from app.energia_solar.exportacao_routes import exportacao_bp
+    app.register_blueprint(exportacao_bp)
 
     # Blueprint de concessionárias
     from app.concessionaria.concessionaria_routes import concessionaria_bp

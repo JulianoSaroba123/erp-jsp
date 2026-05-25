@@ -198,6 +198,31 @@ uploads/configuracao/*
 !uploads/configuracao/.gitkeep
 !uploads/configuracao/JSP_15_x_15_mm.jpg
 
+# Pastas de build e temporários
+build/
+build_temp/
+temp_docx/
+temp_docx_check/
+*.zip
+final_working/
+
+# Executáveis gerados
+*.exe
+dist/
+
+# Backups de DB antigos
+*_OLD_*.db
+erp_old*.db
+test.db
+
+# Alembic antigo
+alembic.ini.old
+
+# Scripts de manutenção (já organizados)
+# scripts_manutencao/ mantém estrutura organizada, mas ignora temporários
+scripts_manutencao/**/*.pyc
+scripts_manutencao/**/__pycache__/
+
 # Arquivos de configuração local
 config_backup.py
 app_backup.py

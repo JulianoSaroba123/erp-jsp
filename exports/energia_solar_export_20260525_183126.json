@@ -1,0 +1,147 @@
+{
+  "data_exportacao": "2026-05-25T18:31:24.991801",
+  "versao": "3.0",
+  "modulo": "Energia Solar",
+  "calculos_energia_solar": [],
+  "projetos_solares": [
+    {
+      "id": 2,
+      "numero": "141",
+      "cliente_id": null,
+      "status": "rascunho",
+      "potencia_sistema": null,
+      "valor_total": null,
+      "data_criacao": "2026-01-10T15:04:19.527497"
+    },
+    {
+      "id": 3,
+      "numero": null,
+      "cliente_id": 2,
+      "status": "rascunho",
+      "potencia_sistema": null,
+      "valor_total": null,
+      "data_criacao": "2026-01-15T19:23:59.557503"
+    }
+  ],
+  "kits_solares": [
+    {
+      "id": 1,
+      "fabricante": "JNG",
+      "descricao": "GERADOR ENERGIA SOLAR 2,93 KWP - INVERSOR SOLPLANET 3KWP -WI-FI - MÓDULO DMEG BIFACIAL 585W",
+      "outras_informacoes": "STRING BOX CC C/ BF 2 ENTRADAS/2 SAÍDAS (COM DPS)\r\nSTRING BOX CA C/ DJ BIFÁSICO 20A- PARA INV ATÉ 3KW SOLIS/SOLPLANET\r\nCABO SOLAR CC PRETO  4.00MM²\r\nCABO SOLAR CC VERMELHO 4.00MM²\r\nKIT ESTRUTURA | CERAMICA | 4 MOD - (S/ PERFIL H36 SLIM)\r\nPERFIL P/ PAINEL FOTOVOLTAICO | 2,40M | FIX.LATERAL MD-H36 SLIM\r\nPAR CONECTOR MC4 P/ SISTEMA FOTOVOLTAICO P/CABO 2,5/ 4/ 6MM²",
+      "potencia_kwp": 2.93,
+      "preco": 5533.16,
+      "qtd_placas": 5,
+      "qtd_inversores": 1,
+      "placa_id": 1,
+      "inversor_id": 1,
+      "data_cadastro": "2026-01-08T16:15:52.769355"
+    }
+  ],
+  "placas_solares": [
+    {
+      "id": 1,
+      "modelo": "DM585M10RT-B72HSW",
+      "fabricante": "DMEGC SOLAR",
+      "potencia": 585.0,
+      "comprimento": 2405.0,
+      "largura": 1134.0,
+      "espessura": 30.0,
+      "peso": null,
+      "num_celulas": 156,
+      "eficiencia": 20.0,
+      "preco": null,
+      "data_cadastro": "2026-01-07T18:19:01.158151"
+    }
+  ],
+  "inversores_solares": [
+    {
+      "id": 1,
+      "modelo": "ASW 3000-S-G2",
+      "fabricante": "SOLPLANET",
+      "tipo": "On-Grid",
+      "potencia_nominal": 3.0,
+      "potencia_maxima": null,
+      "tensao_entrada_min": null,
+      "tensao_entrada_max": null,
+      "tensao_mppt_min": null,
+      "tensao_mppt_max": null,
+      "num_mppt": 2,
+      "strings_por_mppt": null,
+      "eficiencia_maxima": 97.5,
+      "fases": "Monofásico",
+      "garantia_anos": 5,
+      "grau_protecao": null,
+      "preco_venda": 3000.0,
+      "preco_custo": null
+    }
+  ],
+  "custos_padrao": [
+    {
+      "id": 2,
+      "descricao": "Instalação de Módulos ",
+      "unidade": "un",
+      "quantidade": 1.0,
+      "valor_unitario": 100.0,
+      "lucro_percentual": 5.0,
+      "faturamento": "EMPRESA",
+      "tipo": "CUSTO_FIXO",
+      "categoria": "Técnica",
+      "aplicar_automaticamente": true,
+      "observacoes": ""
+    },
+    {
+      "id": 4,
+      "descricao": "Deslocamento ",
+      "unidade": "km",
+      "quantidade": 1.0,
+      "valor_unitario": 1.5,
+      "lucro_percentual": 0,
+      "faturamento": "EMPRESA",
+      "tipo": "CUSTO_FIXO",
+      "categoria": "Logística",
+      "aplicar_automaticamente": true,
+      "observacoes": ""
+    },
+    {
+      "id": 3,
+      "descricao": "Desconto da Distribuidora",
+      "unidade": "%",
+      "quantidade": 1.0,
+      "valor_unitario": 9.0,
+      "lucro_percentual": 0,
+      "faturamento": "EMPRESA",
+      "tipo": "TAXA",
+      "categoria": "Administrativa",
+      "aplicar_automaticamente": true,
+      "observacoes": ""
+    },
+    {
+      "id": 5,
+      "descricao": "Projeto",
+      "unidade": "un",
+      "quantidade": 1.0,
+      "valor_unitario": 200.0,
+      "lucro_percentual": 0,
+      "faturamento": "EMPRESA",
+      "tipo": "CUSTO_FIXO",
+      "categoria": "Técnica",
+      "aplicar_automaticamente": true,
+      "observacoes": ""
+    },
+    {
+      "id": 6,
+      "descricao": "TRT",
+      "unidade": "un",
+      "quantidade": 1.0,
+      "valor_unitario": 100.0,
+      "lucro_percentual": 0,
+      "faturamento": "EMPRESA",
+      "tipo": "CUSTO_FIXO",
+      "categoria": "Técnica",
+      "aplicar_automaticamente": true,
+      "observacoes": ""
+    }
+  ],
+  "orcamento_itens": []
+}
