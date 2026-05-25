@@ -14,6 +14,9 @@ from decimal import Decimal
 import os
 import json
 import logging
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl.utils import get_column_letter
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +35,7 @@ def index():
         
         if os.path.exists(exports_dir):
             for filename in os.listdir(exports_dir):
-                if filename.startswith('energia_solar_export_') and filename.endswith('.json'):
+                if filename.startswith('energia_solar_export_') and (filename.endswith('.json') or filename.endswith('.xlsx')):
                     filepath = os.path.join(exports_dir, filename)
                     stat = os.stat(filepath)
                     arquivos_export.append({
@@ -40,7 +43,8 @@ def index():
                         'tamanho': stat.st_size,
                         'tamanho_mb': round(stat.st_size / 1024 / 1024, 2),
                         'data_criacao': datetime.fromtimestamp(stat.st_ctime),
-                        'pode_baixar': True
+                        'pode_baixar': True,
+                        'tipo': 'Excel' if filename.endswith('.xlsx') else 'JSON'
                     })
             
             # Ordenar por data (mais recente primeiro)
@@ -174,13 +178,139 @@ def executar():
         }), 500
 
 
+@exportacao_bp.route('/executar-excel', methods=['POST'])
+@login_required
+def executar_excel():
+    """Executa exportação de dados em formato Excel"""
+    try:
+        logger.info("🔄 Iniciando exportação Excel...")
+        
+        # Criar workbook
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)  # Remove a aba padrão
+        
+        # Estilos
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="0066CC", end_color="0066CC", fill_type="solid")
+        center_align = Alignment(horizontal="center", vertical="center")
+        
+        def criar_aba(titulo, dados, colunas):
+            """Cria uma aba no Excel com os dados"""
+            ws = wb.create_sheet(title=titulo)
+            
+            # Cabeçalhos
+            for col_num, coluna in enumerate(colunas, 1):
+                cell = ws.cell(row=1, column=col_num)
+                cell.value = coluna
+                cell.font = header_font
+                cell.fill = header_fill
+                cell.alignment = center_align
+            
+            # Dados
+            for row_num, item in enumerate(dados, 2):
+                for col_num, coluna in enumerate(colunas, 1):
+                    valor = item.get(coluna.lower().replace(' ', '_'), '')
+                    if isinstance(valor, datetime):
+                        valor = valor.strftime('%d/%m/%Y %H:%M')
+                    elif isinstance(valor, Decimal):
+                        valor = float(valor)
+                    ws.cell(row=row_num, column=col_num, value=valor)
+            
+            # Ajustar largura das colunas
+            for col_num, _ in enumerate(colunas, 1):
+                ws.column_dimensions[get_column_letter(col_num)].width = 15
+            
+            return len(dados)
+        
+        # 1. Cálculos
+        calculos = CalculoEnergiaSolar.query.all()
+        calculos_data = [{k: v for k, v in vars(calc).items() if not k.startswith('_')} for calc in calculos]
+        criar_aba('Cálculos', calculos_data, ['ID', 'Consumo Mensal', 'Irradiação', 'Potência Sistema', 'Data'])
+        
+        # 2. Projetos
+        projetos = ProjetoSolar.query.all()
+        projetos_data = [{
+            'id': p.id,
+            'nome': p.nome,
+            'cliente': p.cliente,
+            'potencia_kwp': p.potencia_kwp,
+            'status': p.status,
+            'data_criacao': p.data_criacao
+        } for p in projetos]
+        criar_aba('Projetos', projetos_data, ['ID', 'Nome', 'Cliente', 'Potencia KWp', 'Status', 'Data Criação'])
+        
+        # 3. Kits
+        kits = KitSolar.query.filter_by(ativo=True).all()
+        kits_data = [kit.to_dict() for kit in kits]
+        criar_aba('Kits', kits_data, ['ID', 'Nome', 'Potência', 'Preço', 'Fabricante'])
+        
+        # 4. Placas
+        placas = PlacaSolar.query.filter_by(ativo=True).all()
+        placas_data = [placa.to_dict() for placa in placas]
+        criar_aba('Placas', placas_data, ['ID', 'Modelo', 'Potência', 'Eficiência', 'Preço', 'Fabricante'])
+        
+        # 5. Inversores
+        inversores = InversorSolar.query.filter_by(ativo=True).all()
+        inversores_data = [inv.to_dict() for inv in inversores]
+        criar_aba('Inversores', inversores_data, ['ID', 'Modelo', 'Potência', 'Tipo', 'Preço', 'Fabricante'])
+        
+        # 6. Custos Padrão
+        custos = CustoPadraoSolar.query.filter_by(ativo=True).all()
+        custos_data = [{k: v for k, v in vars(custo).items() if not k.startswith('_')} for custo in custos]
+        criar_aba('Custos Padrão', custos_data, ['ID', 'Descrição', 'Valor', 'Tipo'])
+        
+        # 7. Itens de Orçamento
+        itens = OrcamentoItem.query.all()
+        itens_data = [item.to_dict() for item in itens]
+        criar_aba('Orçamento', itens_data, ['ID', 'Descrição', 'Quantidade', 'Preço Unitário', 'Total'])
+        
+        # Criar pasta exports se não existir
+        exports_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'exports')
+        os.makedirs(exports_dir, exist_ok=True)
+        
+        # Nome do arquivo com timestamp
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'energia_solar_export_{timestamp}.xlsx'
+        filepath = os.path.join(exports_dir, filename)
+        
+        # Salvar Excel
+        wb.save(filepath)
+        
+        total_registros = len(calculos) + len(projetos) + len(kits) + len(placas) + len(inversores) + len(custos) + len(itens)
+        
+        logger.info(f"✅ Exportação Excel concluída: {total_registros} registros")
+        
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'total_registros': total_registros,
+            'detalhes': {
+                'calculos': len(calculos),
+                'projetos': len(projetos),
+                'kits': len(kits),
+                'placas': len(placas),
+                'inversores': len(inversores),
+                'custos': len(custos),
+                'itens': len(itens)
+            }
+        })
+    
+    except Exception as e:
+        logger.error(f"❌ Erro na exportação Excel: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @exportacao_bp.route('/download/<filename>')
 @login_required
 def download(filename):
     """Download de arquivo de exportação"""
     try:
         # Validar nome do arquivo
-        if not filename.startswith('energia_solar_export_') or not filename.endswith('.json'):
+        valid_extensions = ('.json', '.xlsx')
+        if not filename.startswith('energia_solar_export_') or not filename.endswith(valid_extensions):
             flash('Arquivo inválido', 'error')
             return redirect(url_for('exportacao.index'))
         

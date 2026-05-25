@@ -102,10 +102,20 @@
                         </ul>
                     </div>
 
-                    <button type="button" class="btn btn-success btn-lg w-100" onclick="executarExportacao()">
-                        <i class="fas fa-file-export"></i>
-                        Exportar Agora
-                    </button>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button type="button" class="btn btn-success btn-lg w-100" onclick="executarExportacao('json')">
+                                <i class="fas fa-file-code"></i>
+                                Exportar JSON
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button type="button" class="btn btn-primary btn-lg w-100" onclick="executarExportacao('excel')">
+                                <i class="fas fa-file-excel"></i>
+                                Exportar Excel
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -171,6 +181,7 @@
                             <thead class="table-light">
                                 <tr>
                                     <th><i class="fas fa-file"></i> Arquivo</th>
+                                    <th><i class="fas fa-tag"></i> Tipo</th>
                                     <th><i class="fas fa-calendar"></i> Data</th>
                                     <th><i class="fas fa-weight"></i> Tamanho</th>
                                     <th class="text-end"><i class="fas fa-cog"></i> Ações</th>
@@ -180,8 +191,19 @@
                                 {% for arquivo in arquivos %}
                                 <tr data-filename="{{ arquivo.nome }}">
                                     <td>
-                                        <i class="fas fa-file-alt text-success me-2"></i>
+                                        {% if arquivo.tipo == 'Excel' %}
+                                        <i class="fas fa-file-excel text-success me-2"></i>
+                                        {% else %}
+                                        <i class="fas fa-file-code text-info me-2"></i>
+                                        {% endif %}
                                         <code>{{ arquivo.nome }}</code>
+                                    </td>
+                                    <td>
+                                        {% if arquivo.tipo == 'Excel' %}
+                                        <span class="badge bg-success">Excel</span>
+                                        {% else %}
+                                        <span class="badge bg-info">JSON</span>
+                                        {% endif %}
                                     </td>
                                     <td>{{ arquivo.data_criacao.strftime('%d/%m/%Y %H:%M') }}</td>
                                     <td>
@@ -235,13 +257,18 @@
 {% block extra_js %}
 <script>
 // Exportação
-function executarExportacao() {
+function executarExportacao(tipo = 'json') {
     // Mostrar modal de progresso
-    $('#textoProgresso').text('Exportando dados...');
+    const tipoTexto = tipo === 'excel' ? 'Excel' : 'JSON';
+    $('#textoProgresso').text(`Exportando dados em ${tipoTexto}...`);
     $('#detalheProgresso').text('Aguarde enquanto geramos o arquivo de exportação');
     $('#modalProgresso').modal('show');
 
-    fetch('{{ url_for("exportacao.executar") }}', {
+    const url = tipo === 'excel' 
+        ? '{{ url_for("exportacao.executar_excel") }}'
+        : '{{ url_for("exportacao.executar") }}';
+
+    fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -252,9 +279,10 @@ function executarExportacao() {
         $('#modalProgresso').modal('hide');
         
         if (data.success) {
+            const iconeTipo = tipo === 'excel' ? '📊' : '📄';
             Swal.fire({
                 icon: 'success',
-                title: 'Exportação Concluída!',
+                title: `Exportação ${tipoTexto} Concluída!`,
                 html: `
                     <p><strong>${data.total_registros} registros exportados</strong></p>
                     <ul class="list-unstyled text-start">
@@ -266,7 +294,7 @@ function executarExportacao() {
                         <li>✅ ${data.detalhes.custos} Custos Padrão</li>
                         <li>✅ ${data.detalhes.itens} Itens Orçamento</li>
                     </ul>
-                    <p class="mt-3"><code>${data.filename}</code></p>
+                    <p class="mt-3">${iconeTipo} <code>${data.filename}</code></p>
                 `,
                 confirmButtonText: 'OK'
             }).then(() => {
