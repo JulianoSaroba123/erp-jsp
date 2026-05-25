@@ -2872,8 +2872,14 @@ def projeto_proposta_word_pdf(projeto_id):
     3. Salva DOCX preenchido
     4. Tenta converter para PDF usando LibreOffice (se disponível)
     5. Retorna PDF (preferencial) ou DOCX (fallback)
+    
+    Parâmetros URL:
+        tipo: Tipo do documento (Proposta, Contrato, Orcamento, etc.) - padrão: Proposta
     """
-    logger.info(f"📄 Iniciando geração de proposta Word para projeto {projeto_id}")
+    # Obter tipo de documento da query string (padrão: Proposta)
+    tipo_documento = request.args.get('tipo', 'Proposta').capitalize()
+    
+    logger.info(f"📄 Iniciando geração de {tipo_documento} Word para projeto {projeto_id}")
     
     try:
         # Buscar projeto
@@ -2943,9 +2949,9 @@ def projeto_proposta_word_pdf(projeto_id):
             except Exception as e:
                 logger.warning(f"⚠️ Erro ao buscar cliente: {e}")
         
-        # Gerar nomes descritivos
-        nome_pdf = formatar_nome_arquivo('Proposta', projeto_id, cliente, 'pdf')
-        nome_docx = formatar_nome_arquivo('Proposta', projeto_id, cliente, 'docx')
+        # Gerar nomes descritivos com o tipo de documento especificado
+        nome_pdf = formatar_nome_arquivo(tipo_documento, projeto_id, cliente, 'pdf')
+        nome_docx = formatar_nome_arquivo(tipo_documento, projeto_id, cliente, 'docx')
         
         # Retornar PDF se gerado, senão DOCX
         if pdf_gerado and Path(pdf_gerado).exists():
@@ -3064,7 +3070,15 @@ def projeto_dashboard_pdf(projeto_id):
 @energia_solar_bp.route('/projetos/<int:projeto_id>/gerar-documento-word', methods=['GET', 'POST'])
 @login_required
 def gerar_documento_word(projeto_id):
-    """Upload de template Word e geração de documento final"""
+    """
+    Upload de template Word e geração de documento final
+    
+    Parâmetros URL:
+        tipo: Tipo do documento (Proposta, Contrato, Procuracao, Declaracao) - padrão: Proposta
+    """
+    # Obter tipo de documento da query string
+    tipo_documento = request.args.get('tipo', 'Proposta').capitalize()
+    
     try:
         # Verificar se python-docx está disponível
         try:
@@ -3092,6 +3106,11 @@ def gerar_documento_word(projeto_id):
         projeto = ProjetoSolar.query.get_or_404(projeto_id)
         
         if request.method == 'POST':
+            # Obter tipo de documento do formulário (sobrescreve query string se fornecido)
+            tipo_documento_form = request.form.get('tipo_documento', tipo_documento)
+            if tipo_documento_form:
+                tipo_documento = tipo_documento_form.capitalize()
+            
             # Verificar se arquivo foi enviado
             if 'template' not in request.files:
                 flash('Nenhum arquivo selecionado', 'error')
@@ -3146,8 +3165,8 @@ def gerar_documento_word(projeto_id):
                 if os.path.exists(temp_output_path):
                     os.remove(temp_output_path)
                 
-                # Gerar nome do arquivo
-                filename = f"Proposta_Solar_{projeto.id}_{projeto.nome_cliente.replace(' ', '_')}.docx"
+                # Gerar nome descritivo do arquivo com tipo de documento
+                filename = formatar_nome_arquivo(tipo_documento, projeto_id, cliente, 'docx')
                 
                 # Retornar arquivo
                 return send_file(

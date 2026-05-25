@@ -20,6 +20,19 @@
                 <div class="card-body">
                     <form method="POST" enctype="multipart/form-data">
                         <div class="mb-4">
+                            <label for="tipo_documento" class="form-label fw-bold">Tipo de Documento:</label>
+                            <select class="form-select" id="tipo_documento" name="tipo_documento" required>
+                                <option value="Proposta" selected>📋 Proposta Comercial</option>
+                                <option value="Contrato">📝 Contrato Prestação</option>
+                                <option value="Procuracao">🔏 Procuração</option>
+                                <option value="Declaracao">📄 Declaração Não Renováveis</option>
+                            </select>
+                            <div class="form-text">
+                                Selecione o tipo de documento que será gerado. Isso afetará o nome do arquivo final.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
                             <label for="template" class="form-label fw-bold">Selecione o arquivo .docx com as variáveis:</label>
                             <input type="file" class="form-control" id="template" name="template" accept=".docx" required>
                             <div class="form-text">

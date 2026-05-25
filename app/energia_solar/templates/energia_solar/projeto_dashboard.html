@@ -346,14 +346,21 @@
                         <i class="fas fa-tools me-2"></i>Ferramentas
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.projeto_proposta_pdf', projeto_id=projeto.id) }}" target="_blank"><i class="fas fa-file-pdf me-2"></i>Gerar Proposta PDF</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.projeto_proposta_word_pdf', projeto_id=projeto.id) }}" target="_blank"><i class="fas fa-file-word me-2 text-primary"></i>Proposta Comercial (Word/PDF)</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.projeto_dashboard_pdf', projeto_id=projeto.id) }}" target="_blank"><i class="fas fa-file-contract me-2 text-secondary"></i>Relatório Técnico PDF</a></li>
+                        <li><h6 class="dropdown-header">📄 Documentos Word/PDF</h6></li>
+                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.projeto_proposta_word_pdf', projeto_id=projeto.id, tipo='Proposta') }}" target="_blank"><i class="fas fa-file-invoice me-2 text-primary"></i>Proposta Comercial</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.projeto_proposta_word_pdf', projeto_id=projeto.id, tipo='Contrato') }}" target="_blank"><i class="fas fa-file-signature me-2 text-success"></i>Contrato Prestação</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.projeto_proposta_word_pdf', projeto_id=projeto.id, tipo='Procuracao') }}" target="_blank"><i class="fas fa-file-contract me-2 text-info"></i>Procuração</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.projeto_proposta_word_pdf', projeto_id=projeto.id, tipo='Declaracao') }}" target="_blank"><i class="fas fa-file-alt me-2 text-warning"></i>Declaração Não Renováveis</a></li>
                         <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">📊 Relatórios PDF</h6></li>
+                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.projeto_proposta_pdf', projeto_id=projeto.id) }}" target="_blank"><i class="fas fa-file-pdf me-2"></i>Proposta PDF (V2)</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.projeto_dashboard_pdf', projeto_id=projeto.id) }}" target="_blank"><i class="fas fa-file-contract me-2 text-secondary"></i>Relatório Técnico</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><h6 class="dropdown-header">📈 Análises</h6></li>
                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalTabela(12)"><i class="fas fa-table me-2"></i>Tabela 12 Anos</a></li>
                         <li><a class="dropdown-item" href="javascript:void(0)" onclick="abrirModalTabela(25)"><i class="fas fa-chart-bar me-2"></i>Tabela 25 Anos</a></li>
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.gerar_documento_word', projeto_id=projeto.id) }}"><i class="fas fa-file-word me-2"></i>Gerar Documento</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('energia_solar.gerar_documento_word', projeto_id=projeto.id) }}"><i class="fas fa-upload me-2"></i>Upload Template Personalizado</a></li>
                     </ul>
                 </div>
             </div>
