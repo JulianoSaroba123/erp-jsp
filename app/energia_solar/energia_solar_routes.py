@@ -2561,6 +2561,53 @@ def admin_recalcular_todos_custos():
     return render_template('energia_solar/admin_recalcular_custos.html', projetos=projetos)
 
 
+def formatar_nome_arquivo(tipo_documento, projeto_id, cliente=None, extensao='pdf'):
+    """
+    Formata nome descritivo para arquivos gerados.
+    Exemplo: 'Proposta-JSPELE-0003 - Alessandro Silva.pdf'
+    
+    Args:
+        tipo_documento: Tipo do documento (Proposta, Contrato, Dashboard, etc)
+        projeto_id: ID do projeto
+        cliente: Objeto cliente (opcional)
+        extensao: Extensão do arquivo (pdf, docx, etc)
+    
+    Returns:
+        String formatada para nome do arquivo
+    """
+    # Número formatado com zeros à esquerda (4 dígitos)
+    numero_formatado = str(projeto_id).zfill(4)
+    
+    # Identificação do cliente
+    if cliente:
+        # Priorizar nome/razão social
+        nome_cliente = (
+            getattr(cliente, 'nome_razao_social', None) or
+            getattr(cliente, 'razao_social', None) or
+            getattr(cliente, 'nome', None) or
+            getattr(cliente, 'nome_fantasia', None)
+        )
+        
+        if nome_cliente:
+            # Limpar caracteres inválidos para nome de arquivo
+            identificacao = nome_cliente.strip()[:50]  # Limitar tamanho
+            identificacao = ''.join(c for c in identificacao if c.isalnum() or c in (' ', '-', '_'))
+        else:
+            # Usar CPF/CNPJ se não tiver nome
+            cpf_cnpj = getattr(cliente, 'cpf_cnpj', None)
+            if cpf_cnpj:
+                identificacao = f"CPF {cpf_cnpj}"
+            else:
+                identificacao = f"Cliente ID {cliente.id}"
+    else:
+        identificacao = f"Projeto {projeto_id}"
+    
+    # Montar nome final
+    nome_arquivo = f"{tipo_documento}-JSPELE-{numero_formatado} - {identificacao}.{extensao}"
+    
+    return nome_arquivo
+
+
 @energia_solar_bp.route('/projetos/<int:projeto_id>/proposta-pdf')
 @login_required
 def projeto_proposta_pdf(projeto_id):
@@ -2650,10 +2697,14 @@ def projeto_proposta_pdf(projeto_id):
             
             logger.info(f"✅ PDF gerado com sucesso! Tamanho: {len(pdf)} bytes")
             
+            # Gerar nome descritivo do arquivo
+            nome_arquivo = formatar_nome_arquivo('Proposta', projeto_id, contexto.get('cliente'), 'pdf')
+            logger.info(f"📁 Nome do arquivo: {nome_arquivo}")
+            
             # Criar resposta com headers anti-cache
             response = make_response(pdf)
             response.headers['Content-Type'] = 'application/pdf'
-            response.headers['Content-Disposition'] = f'inline; filename=proposta_solar_{projeto_id}.pdf'
+            response.headers['Content-Disposition'] = f'inline; filename="{nome_arquivo}"'
             response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
             response.headers['Pragma'] = 'no-cache'
             response.headers['Expires'] = '0'
@@ -2775,10 +2826,14 @@ def projeto_proposta_comercial_pdf(projeto_id):
             
             logger.info(f"✅ PDF comercial gerado com sucesso! Tamanho: {len(pdf)} bytes")
             
+            # Gerar nome descritivo do arquivo
+            nome_arquivo = formatar_nome_arquivo('Proposta Comercial', projeto_id, contexto.get('cliente'), 'pdf')
+            logger.info(f"📁 Nome do arquivo: {nome_arquivo}")
+            
             # Criar resposta com headers anti-cache
             response = make_response(pdf)
             response.headers['Content-Type'] = 'application/pdf'
-            response.headers['Content-Disposition'] = f'inline; filename=proposta_comercial_solar_{projeto_id}.pdf'
+            response.headers['Content-Disposition'] = f'inline; filename="{nome_arquivo}"'
             response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
             response.headers['Pragma'] = 'no-cache'
             response.headers['Expires'] = '0'
@@ -2879,23 +2934,38 @@ def projeto_proposta_word_pdf(projeto_id):
         logger.info(f"📝 Tentando converter DOCX para PDF...")
         pdf_gerado = converter_docx_para_pdf(str(docx_path), str(pdf_path))
         
+        # Buscar cliente para nome do arquivo
+        cliente = None
+        if projeto.cliente_id:
+            try:
+                from app.cliente.cliente_model import Cliente
+                cliente = Cliente.query.get(projeto.cliente_id)
+            except Exception as e:
+                logger.warning(f"⚠️ Erro ao buscar cliente: {e}")
+        
+        # Gerar nomes descritivos
+        nome_pdf = formatar_nome_arquivo('Proposta', projeto_id, cliente, 'pdf')
+        nome_docx = formatar_nome_arquivo('Proposta', projeto_id, cliente, 'docx')
+        
         # Retornar PDF se gerado, senão DOCX
         if pdf_gerado and Path(pdf_gerado).exists():
             logger.info(f"✅ PDF gerado! Enviando ao usuário...")
+            logger.info(f"📁 Nome do arquivo: {nome_pdf}")
             return send_file(
                 pdf_gerado,
                 mimetype='application/pdf',
                 as_attachment=True,
-                download_name=f"proposta_projeto_{projeto_id}.pdf"
+                download_name=nome_pdf
             )
         else:
             logger.warning(f"⚠️ PDF não gerado (LibreOffice não disponível). Enviando DOCX...")
+            logger.info(f"📁 Nome do arquivo: {nome_docx}")
             flash('LibreOffice não disponível. Gerando arquivo Word (.docx) ao invés de PDF.', 'warning')
             return send_file(
                 str(docx_path),
                 mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 as_attachment=True,
-                download_name=f"proposta_projeto_{projeto_id}.docx"
+                download_name=nome_docx
             )
             
     except Exception as e:
@@ -2960,10 +3030,14 @@ def projeto_dashboard_pdf(projeto_id):
             # Gerar PDF
             pdf = weasyprint.HTML(string=html_content, base_url=base_url).write_pdf()
             
+            # Gerar nome descritivo do arquivo
+            nome_arquivo = formatar_nome_arquivo('Dashboard', projeto_id, cliente, 'pdf')
+            logger.info(f"📁 Nome do arquivo: {nome_arquivo}")
+            
             # Criar resposta com headers anti-cache
             response = make_response(pdf)
             response.headers['Content-Type'] = 'application/pdf'
-            response.headers['Content-Disposition'] = f'inline; filename=projeto_solar_{projeto_id}_dashboard.pdf'
+            response.headers['Content-Disposition'] = f'inline; filename="{nome_arquivo}"'
             response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
             response.headers['Pragma'] = 'no-cache'
             response.headers['Expires'] = '0'
