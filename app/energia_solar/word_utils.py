@@ -1324,6 +1324,12 @@ def _expandir_aliases_variaveis(variaveis):
         expandidas['numero_projeto'] = expandidas['NUMERO_PROJETO']
     if 'DATA_PROPOSTA' in expandidas:
         expandidas['data_proposta'] = expandidas['DATA_PROPOSTA']
+    
+    # Aliases curtos para placeholders comuns no template
+    if 'VALOR_INVESTIMENTO' in expandidas:
+        expandidas['VALOR'] = expandidas['VALOR_INVESTIMENTO']
+    if 'NOME_EMPRESA' in expandidas:
+        expandidas['EMPRESA'] = expandidas['NOME_EMPRESA']
 
     return expandidas
 
