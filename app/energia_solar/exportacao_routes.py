@@ -17,6 +17,7 @@ import logging
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
+import pytz
 
 logger = logging.getLogger(__name__)
 
@@ -86,9 +87,13 @@ def executar():
                 return obj.isoformat()
             raise TypeError(f"Tipo {type(obj)} não serializável")
         
+        # Timezone de Brasília
+        tz_brasilia = pytz.timezone('America/Sao_Paulo')
+        agora = datetime.now(tz_brasilia)
+        
         dados_exportados = {
             'metadata': {
-                'data_exportacao': datetime.now().isoformat(),
+                'data_exportacao': agora.isoformat(),
                 'versao': '1.0',
                 'usuario': current_user.nome if hasattr(current_user, 'nome') else 'Sistema'
             }
@@ -135,8 +140,9 @@ def executar():
         exports_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'exports')
         os.makedirs(exports_dir, exist_ok=True)
         
-        # Nome do arquivo com timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        # Nome do arquivo com timestamp (horário de Brasília)
+        tz_brasilia = pytz.timezone('America/Sao_Paulo')
+        timestamp = datetime.now(tz_brasilia).strftime('%Y%m%d_%H%M%S')
         filename = f'energia_solar_export_{timestamp}.json'
         filepath = os.path.join(exports_dir, filename)
         
@@ -280,8 +286,9 @@ def executar_excel():
         exports_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'exports')
         os.makedirs(exports_dir, exist_ok=True)
         
-        # Nome do arquivo com timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        # Nome do arquivo com timestamp (horário de Brasília)
+        tz_brasilia = pytz.timezone('America/Sao_Paulo')
+        timestamp = datetime.now(tz_brasilia).strftime('%Y%m%d_%H%M%S')
         filename = f'energia_solar_export_{timestamp}.xlsx'
         filepath = os.path.join(exports_dir, filename)
         
