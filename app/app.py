@@ -121,16 +121,17 @@ def create_app(config_name=None):
             except Exception as e:
                 print(f" ⚠ Modelo KitFotovoltaico não disponível: {e}")
             
+            # ===== MÓDULO ENERGIA SOLAR REMOVIDO (APP SEPARADO) =====
             # Importa modelos do Módulo Energia Solar v3.0
-            try:
-                from app.concessionaria.concessionaria_model import Concessionaria
-                from app.energia_solar.orcamento_model import OrcamentoItem
-                from app.energia_solar.catalogo_model import ProjetoSolar, KitSolar, PlacaSolar, InversorSolar
-                from app.energia_solar.energia_solar_model import CalculoEnergiaSolar
-                from app.energia_solar.custo_fixo_model import CustoPadraoSolar
-                print("[OK] Modelos Energia Solar v3.0 importados (7 tabelas)")
-            except Exception as e:
-                print(f" ⚠ Erro ao importar modelos Energia Solar v3.0: {e}")
+            # try:
+            #     from app.concessionaria.concessionaria_model import Concessionaria
+            #     from app.energia_solar.orcamento_model import OrcamentoItem
+            #     from app.energia_solar.catalogo_model import ProjetoSolar, KitSolar, PlacaSolar, InversorSolar
+            #     from app.energia_solar.energia_solar_model import CalculoEnergiaSolar
+            #     from app.energia_solar.custo_fixo_model import CustoPadraoSolar
+            #     print("[OK] Modelos Energia Solar v3.0 importados (7 tabelas)")
+            # except Exception as e:
+            #     print(f" ⚠ Erro ao importar modelos Energia Solar v3.0: {e}")
             
             # Importa modelo de Equipamentos
             try:
@@ -163,31 +164,32 @@ def create_app(config_name=None):
             # === MIGRAÇÕES AUTOMÁTICAS ===
             print("\n🔧 Executando migrações automáticas...")
             
+            # ===== MIGRAÇÃO ENERGIA SOLAR REMOVIDA (APP SEPARADO) =====
             # Migração: Adicionar coluna numero_projeto em calculo_energia_solar (PRIORIDADE MÁXIMA)
-            try:
-                from sqlalchemy import text, inspect
-                inspector = inspect(db.engine)
-                
-                print("📋 Verificando tabela calculo_energia_solar...")
-                if 'calculo_energia_solar' in inspector.get_table_names():
-                    colunas = [c['name'] for c in inspector.get_columns('calculo_energia_solar')]
-                    print(f"   Colunas existentes: {len(colunas)}")
-                    
-                    # Adiciona coluna 'numero_projeto' se não existir
-                    if 'numero_projeto' not in colunas:
-                        print("   🔧 Adicionando coluna 'numero_projeto'...")
-                        db.session.execute(text("ALTER TABLE calculo_energia_solar ADD COLUMN numero_projeto VARCHAR(50)"))
-                        db.session.commit()
-                        print("   ✅ Coluna 'numero_projeto' adicionada em calculo_energia_solar")
-                    else:
-                        print("   ✓ Coluna 'numero_projeto' já existe")
-                else:
-                    print("   ⚠️ Tabela calculo_energia_solar não encontrada")
-            except Exception as e:
-                db.session.rollback()
-                print(f"   ❌ ERRO na migração calculo_energia_solar: {e}")
-                import traceback
-                traceback.print_exc()
+            # try:
+            #     from sqlalchemy import text, inspect
+            #     inspector = inspect(db.engine)
+            #     
+            #     print("📋 Verificando tabela calculo_energia_solar...")
+            #     if 'calculo_energia_solar' in inspector.get_table_names():
+            #         colunas = [c['name'] for c in inspector.get_columns('calculo_energia_solar')]
+            #         print(f"   Colunas existentes: {len(colunas)}")
+            #         
+            #         # Adiciona coluna 'numero_projeto' se não existir
+            #         if 'numero_projeto' not in colunas:
+            #             print("   🔧 Adicionando coluna 'numero_projeto'...")
+            #             db.session.execute(text("ALTER TABLE calculo_energia_solar ADD COLUMN numero_projeto VARCHAR(50)"))
+            #             db.session.commit()
+            #             print("   ✅ Coluna 'numero_projeto' adicionada em calculo_energia_solar")
+            #         else:
+            #             print("   ✓ Coluna 'numero_projeto' já existe")
+            #     else:
+            #         print("   ⚠️ Tabela calculo_energia_solar não encontrada")
+            # except Exception as e:
+            #     db.session.rollback()
+            #     print(f"   ❌ ERRO na migração calculo_energia_solar: {e}")
+            #     import traceback
+            #     traceback.print_exc()
             
             # Migração: Adicionar colunas faltantes em orcamento_itens (v3.0)
             try:
@@ -900,27 +902,29 @@ def register_blueprints(app):
     from app.prospeccao.prospeccao_routes import prospeccao_bp
     app.register_blueprint(prospeccao_bp, url_prefix='/prospeccao')
 
+    # ===== BLUEPRINTS ENERGIA SOLAR REMOVIDOS (APP SEPARADO) =====
     # Blueprint de energia solar
-    from app.energia_solar.energia_solar_routes import energia_solar_bp
-    app.register_blueprint(energia_solar_bp)
-    
-    # Blueprint de exportação/importação de energia solar
-    from app.energia_solar.exportacao_routes import exportacao_bp
-    app.register_blueprint(exportacao_bp)
+    # from app.energia_solar.energia_solar_routes import energia_solar_bp
+    # app.register_blueprint(energia_solar_bp)
+    # 
+    # # Blueprint de exportação/importação de energia solar
+    # from app.energia_solar.exportacao_routes import exportacao_bp
+    # app.register_blueprint(exportacao_bp)
 
+    # ===== CONCESSIONÁRIA E KITS REMOVIDOS (APP SEPARADO) =====
     # Blueprint de concessionárias
-    from app.concessionaria.concessionaria_routes import concessionaria_bp
-    app.register_blueprint(concessionaria_bp, url_prefix='/concessionarias')
+    # from app.concessionaria.concessionaria_routes import concessionaria_bp
+    # app.register_blueprint(concessionaria_bp, url_prefix='/concessionarias')
 
     # Blueprint de kits do distribuidor (opcional - requer configuração de API)
-    try:
-        from app.kits_distribuidor.kits_routes import kits_bp
-        app.register_blueprint(kits_bp, url_prefix='/kits-distribuidor')
-        print("[OK] Blueprint kits_distribuidor registrado")
-    except Exception as e:
-        print(f" ⚠ Módulo kits_distribuidor não disponível: {e}")
-        import traceback
-        traceback.print_exc()
+    # try:
+    #     from app.kits_distribuidor.kits_routes import kits_bp
+    #     app.register_blueprint(kits_bp, url_prefix='/kits-distribuidor')
+    #     print("[OK] Blueprint kits_distribuidor registrado")
+    # except Exception as e:
+    #     print(f" ⚠ Módulo kits_distribuidor não disponível: {e}")
+    #     import traceback
+    #     traceback.print_exc()
 
     # Blueprint de propostas
     from app.proposta.proposta_routes import proposta_bp

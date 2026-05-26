@@ -688,7 +688,7 @@
                 </div>
             </div>
             
-            <!-- Energia Solar - Com Submenu Organizado -->
+            <!-- ===== MENU ENERGIA SOLAR REMOVIDO (APP SEPARADO) =====
             <div class="nav-item">
                 <a href="javascript:void(0)" class="nav-link" onclick="toggleEnergiaSolarMenu(event)">
                     <i class="nav-icon fas fa-solar-panel"></i>
@@ -696,7 +696,6 @@
                     <i class="fas fa-chevron-down ms-auto" style="font-size: 0.75rem; transform: rotate(0deg);" id="chevronEnergiaSolar"></i>
                 </a>
                 <div class="nav-submenu" id="energiaSolarMenu" style="display: none;">
-                    <!-- Dashboard e Ferramentas -->
                     <a href="{{ url_for('energia_solar.dashboard') }}" class="nav-link ps-5">
                         <i class="fas fa-chart-line me-2"></i>
                         <span>Dashboard</span>
@@ -712,7 +711,6 @@
                     
                     <div class="dropdown-divider mx-3"></div>
                     
-                    <!-- COMPONENTES -->
                     <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
                         <i class="fas fa-microchip me-2"></i>
                         <span>COMPONENTES</span>
@@ -728,7 +726,6 @@
                     
                     <div class="dropdown-divider mx-3"></div>
                     
-                    <!-- KITS E PRODUTOS -->
                     <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
                         <i class="fas fa-boxes-stacked me-2"></i>
                         <span>KITS</span>
@@ -744,7 +741,6 @@
                     
                     <div class="dropdown-divider mx-3"></div>
                     
-                    <!-- CONFIGURAÇÕES -->
                     <div class="nav-link ps-5 fw-bold text-muted" style="font-size: 0.85rem; cursor: default;">
                         <i class="fas fa-cog me-2"></i>
                         <span>CONFIGURAÇÕES</span>
@@ -767,6 +763,7 @@
                     </a>
                 </div>
             </div>
+            ===== FIM MENU ENERGIA SOLAR ===== -->
             
             <!-- Precificação -->
             <div class="nav-item">
@@ -885,30 +882,31 @@
     
     <!-- Scripts Customizados -->
     <script>
+        // ===== TOGGLE ENERGIA SOLAR REMOVIDO (APP SEPARADO) =====
         // Toggle Submenu Energia Solar
-        window.toggleEnergiaSolarMenu = function(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            
-            console.log('🔧 Toggle Energia Solar menu chamado!');
-            
-            const menu = document.getElementById('energiaSolarMenu');
-            const chevron = document.getElementById('chevronEnergiaSolar');
-            
-            console.log('Menu encontrado:', menu);
-            console.log('Chevron encontrado:', chevron);
-            console.log('Display atual:', menu.style.display);
-            
-            if (menu.style.display === 'none' || menu.style.display === '') {
-                menu.style.display = 'block';
-                chevron.style.transform = 'rotate(180deg)';
-                console.log('✅ Menu ABERTO');
-            } else {
-                menu.style.display = 'none';
-                chevron.style.transform = 'rotate(0deg)';
-                console.log('❌ Menu FECHADO');
-            }
-        }
+        // window.toggleEnergiaSolarMenu = function(event) {
+        //     event.preventDefault();
+        //     event.stopPropagation();
+        //     
+        //     console.log('🔧 Toggle Energia Solar menu chamado!');
+        //     
+        //     const menu = document.getElementById('energiaSolarMenu');
+        //     const chevron = document.getElementById('chevronEnergiaSolar');
+        //     
+        //     console.log('Menu encontrado:', menu);
+        //     console.log('Chevron encontrado:', chevron);
+        //     console.log('Display atual:', menu.style.display);
+        //     
+        //     if (menu.style.display === 'none' || menu.style.display === '') {
+        //         menu.style.display = 'block';
+        //         chevron.style.transform = 'rotate(180deg)';
+        //         console.log('✅ Menu ABERTO');
+        //     } else {
+        //         menu.style.display = 'none';
+        //         chevron.style.transform = 'rotate(0deg)';
+        //         console.log('❌ Menu FECHADO');
+        //     }
+        // }
         
         // Toggle Submenu Financeiro
         window.toggleFinanceiroMenu = function(event) {
