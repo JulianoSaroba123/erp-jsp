@@ -217,10 +217,21 @@ def executar_excel():
             for row_num, item in enumerate(dados, 2):
                 for col_num, chave in enumerate(colunas, 1):
                     valor = item.get(chave, '')
-                    if isinstance(valor, datetime):
+                    
+                    # Converter tipos complexos para formatos compatíveis com Excel
+                    if valor is None:
+                        valor = ''
+                    elif isinstance(valor, datetime):
                         valor = valor.strftime('%d/%m/%Y %H:%M')
                     elif isinstance(valor, Decimal):
                         valor = float(valor)
+                    elif isinstance(valor, (dict, list)):
+                        # Converter dicionários e listas para JSON string
+                        valor = json.dumps(valor, ensure_ascii=False, default=str)
+                    elif not isinstance(valor, (str, int, float, bool)):
+                        # Qualquer outro tipo: converter para string
+                        valor = str(valor)
+                    
                     ws.cell(row=row_num, column=col_num, value=valor)
             
             # Ajustar largura das colunas
