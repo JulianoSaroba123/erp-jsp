@@ -58,6 +58,7 @@ def index():
             'placas': PlacaSolar.query.count(),
             'inversores': InversorSolar.query.count(),
             'custos': CustoPadraoSolar.query.count(),
+            'orcamentos': OrcamentoItem.query.count(),
         }
         
         return render_template('energia_solar/exportacao.html', 
@@ -67,7 +68,7 @@ def index():
     except Exception as e:
         logger.error(f"Erro ao acessar página de exportação: {str(e)}")
         flash(f'Erro ao carregar página de exportação: {str(e)}', 'error')
-        return redirect(url_for('energia_solar.index'))
+        return redirect(url_for('exportacao.index'))
 
 
 @exportacao_bp.route('/executar', methods=['POST'])
