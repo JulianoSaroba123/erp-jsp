@@ -194,22 +194,29 @@ def executar_excel():
         header_fill = PatternFill(start_color="0066CC", end_color="0066CC", fill_type="solid")
         center_align = Alignment(horizontal="center", vertical="center")
         
-        def criar_aba(titulo, dados, colunas):
+        def criar_aba(titulo, dados):
             """Cria uma aba no Excel com os dados"""
+            if not dados:
+                return 0
+            
             ws = wb.create_sheet(title=titulo)
+            
+            # Pegar as chaves do primeiro item como colunas
+            colunas = list(dados[0].keys())
             
             # Cabeçalhos
             for col_num, coluna in enumerate(colunas, 1):
                 cell = ws.cell(row=1, column=col_num)
-                cell.value = coluna
+                # Formatar nome da coluna (snake_case -> Title Case)
+                cell.value = coluna.replace('_', ' ').title()
                 cell.font = header_font
                 cell.fill = header_fill
                 cell.alignment = center_align
             
             # Dados
             for row_num, item in enumerate(dados, 2):
-                for col_num, coluna in enumerate(colunas, 1):
-                    valor = item.get(coluna.lower().replace(' ', '_'), '')
+                for col_num, chave in enumerate(colunas, 1):
+                    valor = item.get(chave, '')
                     if isinstance(valor, datetime):
                         valor = valor.strftime('%d/%m/%Y %H:%M')
                     elif isinstance(valor, Decimal):
@@ -218,44 +225,44 @@ def executar_excel():
             
             # Ajustar largura das colunas
             for col_num, _ in enumerate(colunas, 1):
-                ws.column_dimensions[get_column_letter(col_num)].width = 15
+                ws.column_dimensions[get_column_letter(col_num)].width = 18
             
             return len(dados)
         
         # 1. Cálculos
         calculos = CalculoEnergiaSolar.query.all()
         calculos_data = [calc.to_dict() for calc in calculos]
-        criar_aba('Cálculos', calculos_data, ['ID', 'Consumo Mensal KWh', 'Potência Sistema KWp', 'Qtd Placas'])
+        criar_aba('Cálculos', calculos_data)
         
         # 2. Projetos
         projetos = ProjetoSolar.query.all()
         projetos_data = [p.to_dict() for p in projetos]
-        criar_aba('Projetos', projetos_data, ['ID', 'Cliente ID', 'Nome Cliente', 'Potência KWp', 'Status', 'Custo Total'])
+        criar_aba('Projetos', projetos_data)
         
         # 3. Kits
         kits = KitSolar.query.filter_by(ativo=True).all()
         kits_data = [kit.to_dict() for kit in kits]
-        criar_aba('Kits', kits_data, ['ID', 'Nome', 'Potência', 'Preço', 'Fabricante'])
+        criar_aba('Kits', kits_data)
         
         # 4. Placas
         placas = PlacaSolar.query.filter_by(ativo=True).all()
         placas_data = [placa.to_dict() for placa in placas]
-        criar_aba('Placas', placas_data, ['ID', 'Modelo', 'Potência', 'Eficiência', 'Preço', 'Fabricante'])
+        criar_aba('Placas', placas_data)
         
         # 5. Inversores
         inversores = InversorSolar.query.filter_by(ativo=True).all()
         inversores_data = [inv.to_dict() for inv in inversores]
-        criar_aba('Inversores', inversores_data, ['ID', 'Modelo', 'Potência', 'Tipo', 'Preço', 'Fabricante'])
+        criar_aba('Inversores', inversores_data)
         
         # 6. Custos Padrão
         custos = CustoPadraoSolar.query.filter_by(ativo=True).all()
         custos_data = [custo.to_dict() for custo in custos]
-        criar_aba('Custos Padrão', custos_data, ['ID', 'Descrição', 'Valor', 'Tipo'])
+        criar_aba('Custos Padrão', custos_data)
         
         # 7. Itens de Orçamento
         itens = OrcamentoItem.query.all()
         itens_data = [item.to_dict() for item in itens]
-        criar_aba('Orçamento', itens_data, ['ID', 'Descrição', 'Quantidade', 'Preço Unitário', 'Total'])
+        criar_aba('Orçamento', itens_data)
         
         # Criar pasta exports se não existir
         exports_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'exports')
