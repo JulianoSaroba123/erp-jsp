@@ -408,19 +408,10 @@
                     <td style="text-align:center;">{{ loop.index + (itens_produto|length if itens_produto else 0) }}</td>
                     <td>{{ item.descricao }}</td>
                     <td style="text-align:center;">
-                        {% set tipo = item.tipo_servico|lower if item.tipo_servico else 'fechado' %}
-                        {% set qtd = item.quantidade|float if item.quantidade else 1 %}
-                        {% set valor_unit = item.valor_unitario|float if item.valor_unitario else 0 %}
-                        {% set valor_total = item.valor_total|float if item.valor_total else 0 %}
-                        
-                        {% if tipo == 'hora' %}
-                            Por hora
-                        {% elif tipo == 'dia' %}
-                            Por dia
-                        {% elif tipo == 'fechado' or (qtd == 1 and valor_unit == valor_total) %}
-                            Serviço fechado
+                        {% if item.tipo_servico %}
+                            {{ item.tipo_servico|title }}
                         {% else %}
-                            {{ item.tipo_servico|title if item.tipo_servico else 'Empreitada' }}
+                            Fechado
                         {% endif %}
                     </td>
                     <td style="text-align:center;">{{ "{:g}".format(item.quantidade|float) if item.quantidade else '1' }}</td>
