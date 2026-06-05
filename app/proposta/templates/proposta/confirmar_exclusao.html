@@ -2,6 +2,12 @@
 
 {% block title %}Confirmar Exclusão - Propostas{% endblock %}
 
+{% block breadcrumb %}
+<a href="{{ url_for('proposta.listar_propostas') }}">Propostas</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Confirmar Exclusão</span>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid py-4">
     <div class="row justify-content-center">
