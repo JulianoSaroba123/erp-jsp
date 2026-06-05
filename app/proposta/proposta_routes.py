@@ -797,6 +797,9 @@ def gerar_pdf(id):
             from flask import current_app
             import os
             
+            # Definir project_root no início para garantir que esteja disponível
+            project_root = os.path.dirname(current_app.root_path)
+            
             # Importar configurações da empresa
             from app.configuracao.configuracao_utils import get_config
             config = get_config(force_reload=True)  # Forçar reload para garantir dados atualizados
@@ -809,7 +812,6 @@ def gerar_pdf(id):
                     logger.warning("⚠️ Logo base64 sem prefixo data URI - será exibida logo padrão")
                     logger.warning(f"   Primeiros 50 chars: {config.logo_base64[:50]}")
                     # Usar fallback
-                    project_root = os.path.dirname(current_app.root_path)
                     logo_path = os.path.join(project_root, "static", "img", "JSP.jpg")
                     logo_url = f"file:///{logo_path.replace(os.sep, '/')}"
                 else:
@@ -818,7 +820,6 @@ def gerar_pdf(id):
                     logger.info(f"   Prefixo: {config.logo_base64[:50]}...")
             else:
                 # Fallback para logo padrão se não houver base64
-                project_root = os.path.dirname(current_app.root_path)
                 logo_path = os.path.join(project_root, "static", "img", "JSP.jpg")
                 logo_url = f"file:///{logo_path.replace(os.sep, '/')}"
                 logger.warning("⚠️ Logo base64 não encontrada, usando logo padrão")
