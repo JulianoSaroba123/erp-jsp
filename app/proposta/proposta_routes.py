@@ -362,7 +362,16 @@ def visualizar_proposta(id):
     """Visualizar detalhes de uma proposta."""
     try:
         proposta = Proposta.query.filter_by(id=id, ativo=True).first_or_404()
-        return render_template('proposta/visualizar.html', proposta=proposta)
+        
+        # Renderizar template
+        response = make_response(render_template('proposta/visualizar.html', proposta=proposta))
+        
+        # Headers anti-cache para evitar páginas antigas
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        
+        return response
     except Exception as e:
         logger.error(f"Erro ao visualizar proposta {id}: {str(e)}")
         flash(f'Erro ao carregar proposta: {str(e)}', 'error')

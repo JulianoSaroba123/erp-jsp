@@ -9,6 +9,14 @@
 {% endblock %}
 
 {% block content %}
+<!-- DEBUG: Teste de renderização -->
+<div style="background: red; color: white; padding: 20px; position: fixed; top: 100px; left: 300px; z-index: 99999;">
+    <h1>TESTE DE RENDERIZAÇÃO</h1>
+    <p>Se você está vendo isso, o template está sendo renderizado!</p>
+    <p>Proposta ID: {{ proposta.id }}</p>
+    <p>Código: {{ proposta.codigo }}</p>
+</div>
+
 <!-- v3.2 - Cores JSP Padrão Ciano -->
 <style>
     /* === CORES JSP CIANO - PADRÃO === */
