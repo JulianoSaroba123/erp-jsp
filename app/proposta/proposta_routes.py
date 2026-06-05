@@ -722,8 +722,9 @@ def excluir_proposta(id):
 def gerar_pdf(id):
     """Gerar PDF de uma proposta."""
     try:
-        # Importar db no início
+        # Importar db e SimpleNamespace no início
         from app.extensoes import db
+        from types import SimpleNamespace
         
         # Carregar proposta com relacionamentos
         proposta = Proposta.query.options(
@@ -741,24 +742,26 @@ def gerar_pdf(id):
             {"id": id}
         ).fetchall()
         
-        # Converter para objetos simples
-        class ItemProduto:
-            def __init__(self, descricao, quantidade, valor_unitario, valor_total):
-                self.descricao = descricao
-                self.quantidade = quantidade
-                self.valor_unitario = valor_unitario
-                self.valor_total = valor_total
+        # Converter para objetos simples usando types.SimpleNamespace
         
-        class ItemServico:
-            def __init__(self, descricao, quantidade, valor_unitario, valor_total, tipo_servico):
-                self.descricao = descricao
-                self.quantidade = quantidade
-                self.valor_unitario = valor_unitario
-                self.valor_total = valor_total
-                self.tipo_servico = tipo_servico
+        proposta.itens_produto = [
+            SimpleNamespace(
+                descricao=p[0],
+                quantidade=p[1],
+                valor_unitario=p[2],
+                valor_total=p[3]
+            ) for p in produtos_result
+        ]
         
-        proposta.itens_produto = [ItemProduto(p[0], p[1], p[2], p[3]) for p in produtos_result]
-        proposta.itens_servico = [ItemServico(s[0], s[1], s[2], s[3], s[4]) for s in servicos_result]
+        proposta.itens_servico = [
+            SimpleNamespace(
+                descricao=s[0],
+                quantidade=s[1],
+                valor_unitario=s[2],
+                valor_total=s[3],
+                tipo_servico=s[4]
+            ) for s in servicos_result
+        ]
         
         # Carregar parcelas se existirem - SEMPRE tentar via SQL direto
         parcelas = []
@@ -770,14 +773,14 @@ def gerar_pdf(id):
                     {"id": id}
                 ).fetchall()
                 
-                class ParcelaProposta:
-                    def __init__(self, numero_parcela, valor_parcela, data_vencimento, status):
-                        self.numero_parcela = numero_parcela
-                        self.valor_parcela = valor_parcela
-                        self.data_vencimento = data_vencimento
-                        self.status = status
-                
-                parcelas = [ParcelaProposta(p[0], p[1], p[2], p[3]) for p in parcelas_result]
+                parcelas = [
+                    SimpleNamespace(
+                        numero_parcela=p[0],
+                        valor_parcela=p[1],
+                        data_vencimento=p[2],
+                        status=p[3]
+                    ) for p in parcelas_result
+                ]
                 logger.info(f"📊 Parcelas carregadas para PDF: {len(parcelas)} parcelas encontradas")
                 
                 # Se não encontrou parcelas mas tem configuração, gerar agora
@@ -791,7 +794,14 @@ def gerar_pdf(id):
                             text("SELECT numero_parcela, valor_parcela, data_vencimento, status FROM parcelas_proposta WHERE proposta_id = :id AND ativo = true ORDER BY numero_parcela"),
                             {"id": id}
                         ).fetchall()
-                        parcelas = [ParcelaProposta(p[0], p[1], p[2], p[3]) for p in parcelas_result]
+                        parcelas = [
+                            SimpleNamespace(
+                                numero_parcela=p[0],
+                                valor_parcela=p[1],
+                                data_vencimento=p[2],
+                                status=p[3]
+                            ) for p in parcelas_result
+                        ]
                         logger.info(f"✅ Parcelas geradas: {len(parcelas)}")
                     except Exception as e:
                         logger.error(f"❌ Erro ao gerar parcelas: {str(e)}")
