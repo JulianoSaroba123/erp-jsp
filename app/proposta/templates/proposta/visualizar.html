@@ -9,42 +9,28 @@
 {% endblock %}
 
 {% block content %}
+<!-- CORREÇÃO URGENTE: Forçar visibilidade com máxima prioridade -->
 <style>
-    /* FORÇAR VISIBILIDADE DO CONTEÚDO */
+    /* Reset completo de visibilidade - MÁXIMA PRIORIDADE */
+    * {
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    
+    body, html, .main-content, .content-wrapper, .container-fluid {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: relative !important;
+    }
+    
     .content-wrapper {
-        background: #0a0e27 !important;
         min-height: 100vh !important;
-        position: relative !important;
-        z-index: 1 !important;
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-    }
-    
-    .container-fluid {
-        position: relative !important;
-        z-index: 10 !important;
-        display: block !important;
-        visibility: visible !important;
-        opacity: 1 !important;
-        width: 100% !important;
-    }
-    
-    /* Garantir que todos os elementos sejam visíveis */
-    .proposta-header,
-    .card,
-    .info-card,
-    .value-highlight,
-    .stats-box,
-    div,
-    p,
-    h1, h2, h3, h4, h5, h6 {
-        visibility: visible !important;
-        opacity: 1 !important;
+        padding: 1.5rem !important;
+        background: #0a0e27 !important;
     }
 </style>
 
-<!-- v3.2 - Cores JSP Padrão Ciano -->
 <style>
     /* === CORES JSP CIANO - PADRÃO === */
     
