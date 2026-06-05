@@ -36,7 +36,9 @@
     <link href="{{ url_for('static', filename='css/neon-theme.css') }}" rel="stylesheet">
     
     <!-- Override específico para formulários -->
+    {% if request.endpoint != 'proposta.visualizar_proposta' %}
     <link href="{{ url_for('static', filename='css/form-override.css') }}" rel="stylesheet">
+    {% endif %}
     
     <!-- Navegação Premium Aprimorada -->
     <link href="{{ url_for('static', filename='css/navigation-enhanced-clean.css') }}" rel="stylesheet">
@@ -872,7 +874,9 @@
     <script src="{{ url_for('static', filename='js/sidebar-scroll.js') }}"></script>
     
     <!-- Script para estilo dos formulários -->
+    {% if request.endpoint != 'proposta.visualizar_proposta' %}
     <script src="{{ url_for('static', filename='js/form-styles.js') }}"></script>
+    {% endif %}
     
     <!-- Script para correção de fundo branco - DESABILITADO (causando logs excessivos e problemas de renderização) -->
     <!-- <script src="{{ url_for('static', filename='js/corrigir-fundo-branco.js') }}"></script> -->
