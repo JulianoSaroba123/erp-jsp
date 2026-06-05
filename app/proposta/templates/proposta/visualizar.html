@@ -438,10 +438,12 @@
                         <div class="d-flex align-items-center">
                             <i class="fas fa-money-bill me-3"></i>
                             <div>
-                                <small class="text-muted d-block">CondiÃ§Ã£o</small>
+                                <small class="text-muted d-block">Condicao</small>
                                 <strong>
                                     {% if proposta.condicao_pagamento == 'a_vista' %}
-                                        Ã€ Vista
+                                        A vista
+                                    {% elif proposta.condicao_pagamento %}
+                                        {{ proposta.condicao_pagamento|replace('_', ' ')|title }}
                                     {% else %}
                                         {{ proposta.numero_parcelas }}x Parcelado
                                     {% endif %}
@@ -455,7 +457,7 @@
                             <i class="fas fa-wallet me-3"></i>
                             <div>
                                 <small class="text-muted d-block">Forma</small>
-                                <strong>{{ proposta.forma_pagamento.title() }}</strong>
+                                <strong>{{ proposta.forma_pagamento|replace('_', ' ')|title }}</strong>
                             </div>
                         </div>
                     </div>
