@@ -169,6 +169,17 @@
         margin: 0;
         font-weight: 500;
     }
+
+    /* Contraste reforcado para blocos de texto longo */
+    .proposta-texto-detalhe {
+        color: #1f2937 !important;
+        line-height: 1.7;
+        font-weight: 500;
+    }
+
+    body.endpoint-proposta-visualizar_proposta .info-card .text-muted {
+        color: #4b5563 !important;
+    }
     
     /* Badges Customizadas */
     .badge-custom {
@@ -309,7 +320,7 @@
                         <h6 class="fw-bold mb-2">
                             <i class="fas fa-align-left me-2"></i>DescriÃ§Ã£o
                         </h6>
-                        <p class="mb-0 text-muted">{{ proposta.descricao }}</p>
+                        <p class="mb-0 proposta-texto-detalhe">{{ proposta.descricao }}</p>
                     </div>
                     {% endif %}
                     
@@ -319,7 +330,7 @@
                         <h6 class="fw-bold mb-2">
                             <i class="fas fa-shield-alt me-2"></i>Garantia
                         </h6>
-                        <p class="mb-0 text-muted">{{ proposta.garantia }}</p>
+                        <p class="mb-0 proposta-texto-detalhe">{{ proposta.garantia }}</p>
                     </div>
                     {% endif %}
                 </div>
@@ -380,7 +391,7 @@
                 </div>
                 <div class="card-body">
                     <div class="stats-box">
-                        <p class="mb-0">{{ proposta.observacoes }}</p>
+                        <p class="mb-0 proposta-texto-detalhe">{{ proposta.observacoes }}</p>
                     </div>
                 </div>
             </div>
