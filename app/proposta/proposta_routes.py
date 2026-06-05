@@ -737,20 +737,28 @@ def gerar_pdf(id):
         ).fetchall()
         
         servicos_result = db.session.execute(
-            text("SELECT descricao, quantidade, valor_unitario, valor_total FROM proposta_servico WHERE proposta_id = :id AND ativo = true"), 
+            text("SELECT descricao, quantidade, valor_unitario, valor_total, tipo_servico FROM proposta_servico WHERE proposta_id = :id AND ativo = true"), 
             {"id": id}
         ).fetchall()
         
         # Converter para objetos simples
-        class ItemProposta:
+        class ItemProduto:
             def __init__(self, descricao, quantidade, valor_unitario, valor_total):
                 self.descricao = descricao
                 self.quantidade = quantidade
                 self.valor_unitario = valor_unitario
                 self.valor_total = valor_total
         
-        proposta.produtos = [ItemProposta(p[0], p[1], p[2], p[3]) for p in produtos_result]
-        proposta.servicos = [ItemProposta(s[0], s[1], s[2], s[3]) for s in servicos_result]
+        class ItemServico:
+            def __init__(self, descricao, quantidade, valor_unitario, valor_total, tipo_servico):
+                self.descricao = descricao
+                self.quantidade = quantidade
+                self.valor_unitario = valor_unitario
+                self.valor_total = valor_total
+                self.tipo_servico = tipo_servico
+        
+        proposta.itens_produto = [ItemProduto(p[0], p[1], p[2], p[3]) for p in produtos_result]
+        proposta.itens_servico = [ItemServico(s[0], s[1], s[2], s[3], s[4]) for s in servicos_result]
         
         # Carregar parcelas se existirem - SEMPRE tentar via SQL direto
         parcelas = []
