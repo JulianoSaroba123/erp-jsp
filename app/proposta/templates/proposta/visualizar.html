@@ -10,6 +10,22 @@
 
 {% block content %}
 <style>
+    /* Forçar visibilidade APENAS do conteúdo principal (não afeta sidebar) */
+    .main-content,
+    .content-wrapper,
+    .container-fluid,
+    .proposta-header,
+    .info-cards,
+    .value-highlight,
+    .section,
+    .action-buttons {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+</style>
+
+<style>
     /* === CORES JSP CIANO - PADRÃO === */
     
     /* Cabeçalho da Proposta */
