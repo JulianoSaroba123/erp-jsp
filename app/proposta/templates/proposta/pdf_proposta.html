@@ -418,7 +418,7 @@
                         {% elif tipo == 'dia' %}
                             Por dia
                         {% elif tipo == 'fechado' or (qtd == 1 and valor_unit == valor_total) %}
-                            Serviço global
+                            Serviço fechado
                         {% else %}
                             {{ item.tipo_servico|title if item.tipo_servico else 'Empreitada' }}
                         {% endif %}
