@@ -1,7 +1,7 @@
 // Service Worker para ERP JSP - PWA
-// Versão: 1.0.0
+// Versão: 1.0.1
 
-const CACHE_NAME = 'erp-jsp-v1.0.0';
+const CACHE_NAME = 'erp-jsp-v1.0.1';
 const OFFLINE_URL = '/offline.html';
 
 // Recursos essenciais para funcionar offline
@@ -71,9 +71,16 @@ self.addEventListener('fetch', (event) => {
           const responseToCache = response.clone();
           
           caches.open(CACHE_NAME).then((cache) => {
-            // Não fazer cache de páginas de API ou admin
-            if (!event.request.url.includes('/api/') && 
-                !event.request.url.includes('/admin/')) {
+            // Não fazer cache de páginas dinâmicas (HTML)
+            const isHTML = event.request.headers.get('accept')?.includes('text/html');
+            const isDynamic = event.request.url.includes('/api/') || 
+                            event.request.url.includes('/admin/') ||
+                            event.request.url.includes('/propostas/') ||
+                            event.request.url.includes('/clientes/') ||
+                            event.request.url.includes('/fornecedores/');
+            
+            // Só cacheia recursos estáticos (CSS, JS, imagens)
+            if (!isHTML && !isDynamic) {
               cache.put(event.request, responseToCache);
             }
           });
