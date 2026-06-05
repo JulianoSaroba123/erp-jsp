@@ -659,33 +659,9 @@
         </div>
     </div>
 
-    <!-- 06 Itens Não Inclusos -->
+    <!-- 06 Responsabilidades do Cliente -->
     <div class="section keep-together">
-        <div class="section-header"><span class="number">06</span>Itens Não Inclusos</div>
-        <div class="section-body" style="background: white;">
-            <p style="margin-top: 0; margin-bottom: 12px; line-height: 1.6;">
-                Os seguintes itens não estão inclusos no escopo desta proposta, salvo quando expressamente mencionados na descrição dos serviços:
-            </p>
-            <ul class="lista-itens" style="margin: 0; padding-left: 20px;">
-                <li>Combustível para testes de grupo gerador, salvo quando expressamente previsto no escopo técnico</li>
-                <li>Banco de carga ou carga resistiva para ensaios, salvo disponibilidade e autorização prévia do cliente</li>
-                <li>Adequações civis, bases, alvenaria, pintura, estruturas metálicas ou qualquer infraestrutura predial</li>
-                <li>Substituição de peças, sensores, controladores, cabos, disjuntores, contatores, componentes mecânicos ou elétricos não previstos expressamente na proposta</li>
-                <li>Correções mecânicas no motor diesel, alternador, bomba injetora, turbina ou componentes internos do grupo gerador</li>
-                <li>Cabos de potência externos, eletrocalhas, eletrodutos, conectores, terminações ou infraestrutura adicional não descrita no escopo</li>
-                <li>Serviços em média tensão, subestações, transformadores ou instalações elétricas externas, quando não especificados no escopo</li>
-                <li>Licenças, alvarás, aprovações de concessionárias, laudos técnicos ou documentação regulatória, salvo quando contratado separadamente</li>
-                <li>Alterações, complementações ou serviços adicionais solicitados após aprovação da proposta, que estarão sujeitos a novo orçamento</li>
-            </ul>
-            <div class="clausula-legal" style="margin-top: 15px;">
-                <strong>Importante:</strong> Caso seja identificada a necessidade de serviços ou materiais não inclusos durante a execução, a JSP Elétrica Industrial & Solar informará formalmente o cliente para aprovação prévia e emissão de orçamento complementar. Nenhum serviço adicional será executado sem autorização expressa.
-            </div>
-        </div>
-    </div>
-
-    <!-- 07 Responsabilidades do Cliente -->
-    <div class="section keep-together">
-        <div class="section-header"><span class="number">07</span>Responsabilidades do Cliente</div>
+        <div class="section-header"><span class="number">06</span>Responsabilidades do Cliente</div>
         <div class="section-body" style="background: white;">
             <p style="margin-top: 0; margin-bottom: 12px; line-height: 1.6;">
                 Para a correta execução dos serviços contratados, o cliente compromete-se a:
@@ -707,10 +683,10 @@
         </div>
     </div>
 
-    <!-- 08 Observações Adicionais -->
+    <!-- 07 Observações Adicionais -->
     {% if proposta.observacoes %}
     <div class="section keep-together">
-        <div class="section-header"><span class="number">08</span>Observações Adicionais</div>
+        <div class="section-header"><span class="number">07</span>Observações Adicionais</div>
         <div class="section-body" style="background: white;">
             <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; line-height: 1.6; word-wrap: break-word;">
                 {{ proposta.observacoes|replace('\n', '<br>')|safe }}
@@ -719,10 +695,10 @@
     </div>
     {% endif %}
     
-    <!-- 09 Missão, Visão e Valores -->
+    <!-- 08 Missão, Visão e Valores -->
     {% if config and (config.missao or config.visao or config.valores) %}
     <div class="section">
-        <div class="section-header"><span class="number">{% if proposta.observacoes %}09{% else %}08{% endif %}</span>Nossos Valores Institucionais</div>
+        <div class="section-header"><span class="number">{% if proposta.observacoes %}08{% else %}07{% endif %}</span>Nossos Valores Institucionais</div>
         <div class="section-body" style="background: white;">
             
             {% if config.missao %}
@@ -777,7 +753,7 @@
     
     <!-- Assinaturas -->
     <div class="section keep-together">
-        <div class="section-header"><span class="number">{% if proposta.observacoes %}{% if config and (config.missao or config.visao or config.valores) %}10{% else %}09{% endif %}{% else %}{% if config and (config.missao or config.visao or config.valores) %}09{% else %}08{% endif %}{% endif %}</span>Assinaturas</div>
+        <div class="section-header"><span class="number">{% if proposta.observacoes %}{% if config and (config.missao or config.visao or config.valores) %}09{% else %}08{% endif %}{% else %}{% if config and (config.missao or config.visao or config.valores) %}08{% else %}07{% endif %}{% endif %}</span>Assinaturas</div>
         <div class="section-body">
             <p style="text-align: center; margin-bottom: 30px; color: #666; line-height: 1.6;">
                 As partes abaixo identificadas, de comum acordo, assinam a presente proposta comercial<br>
