@@ -2,7 +2,11 @@
 
 {% block title %}Proposta {{ proposta.codigo }} - {{ proposta.titulo }} - ERP JSP{% endblock %}
 
-{% block breadcrumb %}Propostas / Visualizar{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('proposta.listar_propostas') }}">Propostas</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Visualizar</span>
+{% endblock %}
 
 {% block content %}
 <!-- v3.2 - Cores JSP Padrão Ciano -->
