@@ -362,7 +362,7 @@
         <div class="section-body">
             
             <!-- PRODUTOS -->
-            {% if proposta.itens_produto %}
+            {% if itens_produto %}
             <div class="produto-section">
             <h4 style="color: var(--primary-color); margin: 10px 0; padding: 8px; background: #e6f2ff; border-left: 4px solid var(--primary-color);">
                 📦 MATERIAIS E EQUIPAMENTOS
@@ -375,7 +375,7 @@
                     <th style="width:15%; text-align:right;">Valor Unit.</th>
                     <th style="width:15%; text-align:right;">Total</th>
                 </tr>
-                {% for item in proposta.itens_produto %}
+                {% for item in itens_produto %}
                 <tr>
                     <td style="text-align:center;">{{ loop.index }}</td>
                     <td>{{ item.descricao }}</td>
@@ -389,7 +389,7 @@
             {% endif %}
             
             <!-- SERVIÇOS -->
-            {% if proposta.itens_servico %}
+            {% if itens_servico %}
             <div class="servico-section">
             <h4 style="color: var(--primary-color); margin: 20px 0 10px 0; padding: 8px; background: #e6ffe6; border-left: 4px solid #28a745;">
                 🔧 SERVIÇOS TÉCNICOS
@@ -403,9 +403,9 @@
                     <th style="width:15%; text-align:right;">Valor Unit.</th>
                     <th style="width:15%; text-align:right;">Total</th>
                 </tr>
-                {% for item in proposta.itens_servico %}
+                {% for item in itens_servico %}
                 <tr>
-                    <td style="text-align:center;">{{ loop.index + (proposta.itens_produto|length if proposta.itens_produto else 0) }}</td>
+                    <td style="text-align:center;">{{ loop.index + (itens_produto|length if itens_produto else 0) }}</td>
                     <td>{{ item.descricao }}</td>
                     <td style="text-align:center;">
                         {% set tipo = item.tipo_servico|lower if item.tipo_servico else 'fechado' %}
@@ -432,7 +432,7 @@
             </div>
             {% endif %}
             
-            {% if not proposta.itens_produto and not proposta.itens_servico %}
+            {% if not itens_produto and not itens_servico %}
             <div style="text-align:center; padding:30px; color:#666666; background: #f9f9f9; border: 2px dashed #ddd; border-radius: 8px;">
                 <p style="font-size: 14px; margin: 0;">⚠️ Nenhum produto ou serviço adicionado à proposta</p>
             </div>

@@ -743,8 +743,8 @@ def gerar_pdf(id):
         ).fetchall()
         
         # Converter para objetos simples usando types.SimpleNamespace
-        
-        proposta.itens_produto = [
+        # NÃO atribuir ao objeto proposta para evitar conflito com SQLAlchemy
+        itens_produto = [
             SimpleNamespace(
                 descricao=p[0],
                 quantidade=p[1],
@@ -753,7 +753,7 @@ def gerar_pdf(id):
             ) for p in produtos_result
         ]
         
-        proposta.itens_servico = [
+        itens_servico = [
             SimpleNamespace(
                 descricao=s[0],
                 quantidade=s[1],
@@ -844,7 +844,9 @@ def gerar_pdf(id):
             
             # Renderizar template HTML com o caminho da logo e configurações
             html_content = render_template('proposta/pdf_proposta.html', 
-                                         proposta=proposta, 
+                                         proposta=proposta,
+                                         itens_produto=itens_produto,
+                                         itens_servico=itens_servico,
                                          logo_url=logo_url,
                                          config=config,
                                          parcelas=parcelas)
@@ -887,6 +889,8 @@ def gerar_pdf(id):
             # Criar resposta HTML com headers de não-cache
             html_response = make_response(render_template('proposta/pdf_proposta.html', 
                                                         proposta=proposta,
+                                                        itens_produto=itens_produto,
+                                                        itens_servico=itens_servico,
                                                         config=config,
                                                         logo_url=logo_url,
                                                         parcelas=parcelas))
