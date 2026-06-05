@@ -659,34 +659,10 @@
         </div>
     </div>
 
-    <!-- 06 Responsabilidades do Cliente -->
-    <div class="section keep-together">
-        <div class="section-header"><span class="number">06</span>Responsabilidades do Cliente</div>
-        <div class="section-body" style="background: white;">
-            <p style="margin-top: 0; margin-bottom: 12px; line-height: 1.6;">
-                Para a correta execução dos serviços contratados, o cliente compromete-se a:
-            </p>
-            <ul class="lista-itens" style="margin: 0; padding-left: 20px;">
-                <li>Disponibilizar acesso livre e seguro ao local de execução dos serviços, durante o horário comercial ou conforme acordado previamente</li>
-                <li>Garantir condições mínimas de segurança, liberação operacional, acompanhamento técnico e cumprimento das normas internas da unidade</li>
-                <li>Disponibilizar ponto de energia elétrica, água, iluminação adequada e instalações sanitárias para a equipe técnica</li>
-                <li>Fornecer combustível quando necessário para testes operacionais de equipamentos, salvo quando expressamente previsto na proposta</li>
-                <li>Disponibilizar documentação técnica existente dos equipamentos, incluindo manuais, diagramas elétricos, histórico de manutenção e relatórios anteriores</li>
-                <li>Informar previamente qualquer restrição operacional, norma de segurança específica, procedimento interno obrigatório ou exigência da unidade</li>
-                <li>Disponibilizar pessoal técnico qualificado para acompanhamento e validação dos serviços, quando aplicável</li>
-                <li>Emitir termo de aceite técnico formalizando a conclusão e entrega dos serviços executados, quando solicitado</li>
-                <li>Comunicar imediatamente qualquer anormalidade observada nos equipamentos ou serviços executados</li>
-            </ul>
-            <div class="clausula-legal" style="margin-top: 15px;">
-                <strong>Observação:</strong> O não cumprimento das responsabilidades acima poderá impactar o prazo de execução, a qualidade técnica dos serviços ou resultar em custos adicionais, que serão formalizados mediante acordo entre as partes.
-            </div>
-        </div>
-    </div>
-
-    <!-- 07 Observações Adicionais -->
+    <!-- 06 Observações Adicionais -->
     {% if proposta.observacoes %}
     <div class="section keep-together">
-        <div class="section-header"><span class="number">07</span>Observações Adicionais</div>
+        <div class="section-header"><span class="number">06</span>Observações Adicionais</div>
         <div class="section-body" style="background: white;">
             <div style="padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; line-height: 1.6; word-wrap: break-word;">
                 {{ proposta.observacoes|replace('\n', '<br>')|safe }}
@@ -695,10 +671,10 @@
     </div>
     {% endif %}
     
-    <!-- 08 Missão, Visão e Valores -->
+    <!-- 07 Missão, Visão e Valores -->
     {% if config and (config.missao or config.visao or config.valores) %}
     <div class="section">
-        <div class="section-header"><span class="number">{% if proposta.observacoes %}08{% else %}07{% endif %}</span>Nossos Valores Institucionais</div>
+        <div class="section-header"><span class="number">{% if proposta.observacoes %}07{% else %}06{% endif %}</span>Nossos Valores Institucionais</div>
         <div class="section-body" style="background: white;">
             
             {% if config.missao %}
@@ -753,7 +729,7 @@
     
     <!-- Assinaturas -->
     <div class="section keep-together">
-        <div class="section-header"><span class="number">{% if proposta.observacoes %}{% if config and (config.missao or config.visao or config.valores) %}09{% else %}08{% endif %}{% else %}{% if config and (config.missao or config.visao or config.valores) %}08{% else %}07{% endif %}{% endif %}</span>Assinaturas</div>
+        <div class="section-header"><span class="number">{% if proposta.observacoes %}{% if config and (config.missao or config.visao or config.valores) %}08{% else %}07{% endif %}{% else %}{% if config and (config.missao or config.visao or config.valores) %}07{% else %}06{% endif %}{% endif %}</span>Assinaturas</div>
         <div class="section-body">
             <p style="text-align: center; margin-bottom: 30px; color: #666; line-height: 1.6;">
                 As partes abaixo identificadas, de comum acordo, assinam a presente proposta comercial<br>
