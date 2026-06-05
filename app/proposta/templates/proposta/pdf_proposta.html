@@ -45,6 +45,12 @@
             display: block;
         }
         
+        /* Seções que podem quebrar se necessário */
+        .section.allow-break {
+            page-break-inside: auto;
+            break-inside: auto;
+        }
+        
         .section-header {
             page-break-after: avoid !important;
             break-after: avoid !important;
@@ -53,15 +59,13 @@
         }
         
         .section-body {
-            orphans: 4;
-            widows: 4;
-            page-break-inside: avoid;
-            break-inside: avoid;
+            orphans: 2;
+            widows: 2;
+            /* Permitir quebra natural se necessário */
         }
         
         .items-section {
-            page-break-inside: avoid;
-            break-inside: avoid;
+            /* Permitir quebra natural entre produtos e serviços */
         }
 
         /* Cabeçalho */
@@ -154,8 +158,7 @@
             width: 100%;
             border-collapse: collapse;
             border: 2px solid var(--primary-color);
-            page-break-inside: avoid;
-            break-inside: avoid;
+            /* Permitir quebra de tabelas grandes */
         }
         table.items th,
         table.items td {
@@ -175,9 +178,13 @@
             break-after: avoid;
         }
         
-        .produto-section, .servico-section {
+        table.items tr {
             page-break-inside: avoid;
             break-inside: avoid;
+        }
+        
+        .produto-section, .servico-section {
+            /* Permitir quebra se necessário para tabelas grandes */
             margin-bottom: 15px;
         }
         
@@ -350,7 +357,7 @@
     </div>
 
     <!-- 02 Escopo Técnico -->
-    <div class="section items-section">
+    <div class="section items-section allow-break">
         <div class="section-header"><span class="number">02</span>Escopo Técnico</div>
         <div class="section-body">
             
@@ -525,7 +532,7 @@
     </div>
 
     <!-- 05 Condições Comerciais -->
-    <div class="section keep-together page-break-before">
+    <div class="section keep-together">
         <div class="section-header"><span class="number">05</span>Condições Comerciais</div>
         <div class="section-body" style="background: white;">
             <div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
@@ -723,7 +730,7 @@
     
     <!-- 09 Missão, Visão e Valores -->
     {% if config and (config.missao or config.visao or config.valores) %}
-    <div class="section page-break-before">
+    <div class="section">
         <div class="section-header"><span class="number">{% if proposta.observacoes %}09{% else %}08{% endif %}</span>Nossos Valores Institucionais</div>
         <div class="section-body" style="background: white;">
             
