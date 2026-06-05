@@ -567,11 +567,11 @@
                     </div>
                 </div>
             </div>
+            <div style="margin-bottom: 15px;">
+                <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">GARANTIA DOS SERVIÇOS</div>
+                <div style="padding: 12px 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; line-height: 1.7; font-size: 10px; word-wrap: break-word; hyphens: auto;">{{ proposta.garantia or '90 dias' }}</div>
+            </div>
             <div class="grid-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
-                <div class="grid-item">
-                    <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">GARANTIA DOS SERVIÇOS</div>
-                    <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; word-wrap: break-word;">{{ proposta.garantia or '90 dias' }}</div>
-                </div>
                 <div class="grid-item">
                     <div style="font-weight: bold; color: #666; font-size: 10px; margin-bottom: 3px;">VALIDADE DA PROPOSTA</div>
                     <div style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px;">
@@ -581,6 +581,9 @@
                             {{ proposta.validade or '30' }} dias
                         {% endif %}
                     </div>
+                </div>
+                <div class="grid-item">
+                    <!-- Espaço vazio para balanceamento visual -->
                 </div>
             </div>
             
