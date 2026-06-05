@@ -936,7 +936,7 @@
         }
         
         // Log de inicialização
-        console.log('🚀 Script de menu Energia Solar carregado!');
+        console.log('🚀 Script de navegação carregado!');
         
         // Toggle Sidebar Mobile
         function toggleSidebar() {
@@ -947,8 +947,15 @@
         function syncSidebarLayout() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.querySelector('.main-content');
+            const isPropostaVisualizacao = document.body.classList.contains('endpoint-proposta-visualizar_proposta');
 
             if (!sidebar || !mainContent) {
+                return;
+            }
+
+            // A rota de visualização da proposta possui layout próprio para evitar colapso de largura
+            if (isPropostaVisualizacao) {
+                mainContent.style.marginLeft = '';
                 return;
             }
 

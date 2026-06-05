@@ -14,6 +14,7 @@
     body.endpoint-proposta-visualizar_proposta .main-content {
         display: flex !important;
         flex-direction: column !important;
+        min-height: 100vh !important;
     }
 
     body.endpoint-proposta-visualizar_proposta .content-wrapper,
@@ -21,6 +22,41 @@
         display: block !important;
         visibility: visible !important;
         opacity: 1 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    @media (min-width: 992px) {
+        body.endpoint-proposta-visualizar_proposta .sidebar {
+            left: 0 !important;
+        }
+
+        body.endpoint-proposta-visualizar_proposta .main-content {
+            flex: 0 0 auto !important;
+            width: calc(100vw - 265px) !important;
+            margin-left: 265px !important;
+        }
+
+        body.endpoint-proposta-visualizar_proposta .topbar-modern,
+        body.endpoint-proposta-visualizar_proposta footer,
+        body.endpoint-proposta-visualizar_proposta .content-wrapper {
+            width: 100% !important;
+        }
+    }
+
+    @media (max-width: 991px) {
+        body.endpoint-proposta-visualizar_proposta .main-content {
+            width: 100% !important;
+            margin-left: 0 !important;
+        }
+
+        body.endpoint-proposta-visualizar_proposta .sidebar {
+            left: -265px !important;
+        }
+
+        body.endpoint-proposta-visualizar_proposta .sidebar.show {
+            left: 0 !important;
+        }
     }
 
     /* === CORES JSP CIANO - PADRÃO === */
