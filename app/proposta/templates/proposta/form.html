@@ -5,24 +5,9 @@
 {% endblock %}
 
 {% block breadcrumb %}
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb bg-transparent mb-0">
-        <li class="breadcrumb-item">
-            <a href="{{ url_for('painel.dashboard') }}" class="text-decoration-none">
-                <i class="fas fa-home"></i> Dashboard
-            </a>
-        </li>
-        <li class="breadcrumb-item">
-            <a href="{{ url_for('proposta.listar_propostas') }}" class="text-decoration-none">
-                <i class="fas fa-file-contract"></i> Propostas
-            </a>
-        </li>
-        <li class="breadcrumb-item active" aria-current="page">
-            <i class="fas fa-{% if proposta %}edit{% else %}plus{% endif %}"></i>
-            {% if proposta %}Editar{% else %}Nova{% endif %}
-        </li>
-    </ol>
-</nav>
+<a href="{{ url_for('proposta.listar_propostas') }}">Propostas</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">{% if proposta %}Editar{% else %}Nova{% endif %}</span>
 {% endblock %}
 
 {% block content %}
