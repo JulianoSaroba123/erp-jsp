@@ -10,6 +10,19 @@
 
 {% block content %}
 <style>
+    /* Fallback específico para garantir conteúdo visível nesta rota */
+    body.endpoint-proposta-visualizar_proposta .main-content {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    body.endpoint-proposta-visualizar_proposta .content-wrapper,
+    body.endpoint-proposta-visualizar_proposta .content-wrapper .container-fluid {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
     /* === CORES JSP CIANO - PADRÃO === */
     
     /* Cabeçalho da Proposta */
