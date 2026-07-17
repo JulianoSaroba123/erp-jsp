@@ -15,11 +15,77 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 import requests
 import re
 from datetime import datetime
+from sqlalchemy import inspect
 from app.extensoes import db
 from app.cliente.cliente_model import Cliente
 
 # Cria o blueprint
 cliente_bp = Blueprint('cliente', __name__, template_folder='templates')
+
+
+def _get_clientes_column_limits():
+    """Lê limites de colunas VARCHAR de clientes no banco atual."""
+    limits = {}
+    try:
+        db_inspector = inspect(db.engine)
+        for col in db_inspector.get_columns('clientes'):
+            col_type = col.get('type')
+            length = getattr(col_type, 'length', None)
+            if isinstance(length, int) and length > 0:
+                limits[col.get('name')] = length
+    except Exception:
+        pass
+
+    if not limits:
+        for col in Cliente.__table__.columns:
+            length = getattr(col.type, 'length', None)
+            if isinstance(length, int) and length > 0:
+                limits[col.name] = length
+
+    return limits
+
+
+def _sanitize_text(field_name, value, limits, truncated_fields):
+    if value is None:
+        return None
+    text_value = str(value).strip()
+    if text_value == '':
+        return None
+
+    max_len = limits.get(field_name)
+    if isinstance(max_len, int) and max_len > 0 and len(text_value) > max_len:
+        truncated_fields.append(field_name)
+        return text_value[:max_len]
+
+    return text_value
+
+
+def _safe_float(value, default_value=0.0):
+    try:
+        if value is None or str(value).strip() == '':
+            return float(default_value)
+        return float(value)
+    except Exception:
+        return float(default_value)
+
+
+def _safe_int(value, default_value=0):
+    try:
+        if value is None or str(value).strip() == '':
+            return int(default_value)
+        return int(value)
+    except Exception:
+        return int(default_value)
+
+
+def _flash_truncation_warning(truncated_fields):
+    if not truncated_fields:
+        return
+    fields = ', '.join(sorted(set(truncated_fields)))
+    flash(
+        f'Alguns campos excediam o tamanho permitido e foram ajustados automaticamente: {fields}.',
+        'warning'
+    )
 
 # Handler de erros para o blueprint
 @cliente_bp.errorhandler(404)
@@ -78,8 +144,10 @@ def novo():
         print(f"📄 CPF/CNPJ: {request.form.get('cpf_cnpj')}")
         print(f"{'='*60}\n")
         try:
+            limits = _get_clientes_column_limits()
+            truncated_fields = []
             # Validar se CPF/CNPJ já existe (incluindo clientes inativos)
-            cpf_cnpj = request.form.get('cpf_cnpj')
+            cpf_cnpj = _sanitize_text('cpf_cnpj', request.form.get('cpf_cnpj'), limits, truncated_fields)
             if cpf_cnpj:
                 cliente_existente = Cliente.query.filter(
                     Cliente.cpf_cnpj == cpf_cnpj
@@ -92,19 +160,20 @@ def novo():
                         
                         # Reativar e atualizar dados do cliente existente
                         cliente_existente.ativo = True
-                        cliente_existente.nome = request.form.get('nome') or cliente_existente.nome
-                        cliente_existente.nome_fantasia = request.form.get('nome_fantasia') or cliente_existente.nome_fantasia
-                        cliente_existente.razao_social = request.form.get('razao_social') or cliente_existente.razao_social
-                        cliente_existente.tipo = request.form.get('tipo') or cliente_existente.tipo
-                        cliente_existente.email = request.form.get('email') or cliente_existente.email
-                        cliente_existente.telefone = request.form.get('telefone') or cliente_existente.telefone
-                        cliente_existente.endereco = request.form.get('endereco') or cliente_existente.endereco
-                        cliente_existente.cidade = request.form.get('cidade') or cliente_existente.cidade
-                        cliente_existente.estado = request.form.get('estado') or cliente_existente.estado
-                        cliente_existente.cep = request.form.get('cep') or cliente_existente.cep
+                        cliente_existente.nome = _sanitize_text('nome', request.form.get('nome'), limits, truncated_fields) or cliente_existente.nome
+                        cliente_existente.nome_fantasia = _sanitize_text('nome_fantasia', request.form.get('nome_fantasia'), limits, truncated_fields) or cliente_existente.nome_fantasia
+                        cliente_existente.razao_social = _sanitize_text('razao_social', request.form.get('razao_social'), limits, truncated_fields) or cliente_existente.razao_social
+                        cliente_existente.tipo = _sanitize_text('tipo', request.form.get('tipo'), limits, truncated_fields) or cliente_existente.tipo
+                        cliente_existente.email = _sanitize_text('email', request.form.get('email'), limits, truncated_fields) or cliente_existente.email
+                        cliente_existente.telefone = _sanitize_text('telefone', request.form.get('telefone'), limits, truncated_fields) or cliente_existente.telefone
+                        cliente_existente.endereco = _sanitize_text('endereco', request.form.get('endereco'), limits, truncated_fields) or cliente_existente.endereco
+                        cliente_existente.cidade = _sanitize_text('cidade', request.form.get('cidade'), limits, truncated_fields) or cliente_existente.cidade
+                        cliente_existente.estado = _sanitize_text('estado', request.form.get('estado'), limits, truncated_fields) or cliente_existente.estado
+                        cliente_existente.cep = _sanitize_text('cep', request.form.get('cep'), limits, truncated_fields) or cliente_existente.cep
                         
                         try:
                             db.session.commit()
+                            _flash_truncation_warning(truncated_fields)
                             flash(f'Cliente {cliente_existente.nome} reativado e atualizado com sucesso!', 'success')
                             return redirect(url_for('cliente.listar'))
                         except Exception as e:
@@ -120,9 +189,9 @@ def novo():
                         return render_template('cliente/form.html', cliente=cliente)
             
             # Validar campos obrigatórios
-            tipo = request.form.get('tipo', '').strip()
-            nome = request.form.get('nome', '').strip()
-            nome_fantasia = request.form.get('nome_fantasia', '').strip()
+            tipo = (_sanitize_text('tipo', request.form.get('tipo', ''), limits, truncated_fields) or '').strip()
+            nome = (_sanitize_text('nome', request.form.get('nome', ''), limits, truncated_fields) or '').strip()
+            nome_fantasia = (_sanitize_text('nome_fantasia', request.form.get('nome_fantasia', ''), limits, truncated_fields) or '').strip()
             
             # Para PJ, se nome está vazio mas tem nome_fantasia, usa nome_fantasia como nome
             if tipo.upper() == 'PJ' and not nome and nome_fantasia:
@@ -149,65 +218,65 @@ def novo():
             cliente = Cliente(
                 # Dados principais
                 nome=nome,
-                nome_fantasia=request.form.get('nome_fantasia'),
-                razao_social=request.form.get('razao_social'),
-                tipo=request.form.get('tipo'),
+                nome_fantasia=_sanitize_text('nome_fantasia', request.form.get('nome_fantasia'), limits, truncated_fields),
+                razao_social=_sanitize_text('razao_social', request.form.get('razao_social'), limits, truncated_fields),
+                tipo=_sanitize_text('tipo', request.form.get('tipo'), limits, truncated_fields),
                 
                 # Documentos
                 cpf_cnpj=cpf_cnpj,
-                rg_ie=request.form.get('rg_ie'),
-                im=request.form.get('im'),
+                rg_ie=_sanitize_text('rg_ie', request.form.get('rg_ie'), limits, truncated_fields),
+                im=_sanitize_text('im', request.form.get('im'), limits, truncated_fields),
                 
                 # Contato principal
-                email=request.form.get('email'),
-                email_financeiro=request.form.get('email_financeiro'),
-                telefone=request.form.get('telefone'),
-                celular=request.form.get('celular'),
-                whatsapp=request.form.get('whatsapp'),
-                site=request.form.get('site'),
+                email=_sanitize_text('email', request.form.get('email'), limits, truncated_fields),
+                email_financeiro=_sanitize_text('email_financeiro', request.form.get('email_financeiro'), limits, truncated_fields),
+                telefone=_sanitize_text('telefone', request.form.get('telefone'), limits, truncated_fields),
+                celular=_sanitize_text('celular', request.form.get('celular'), limits, truncated_fields),
+                whatsapp=_sanitize_text('whatsapp', request.form.get('whatsapp'), limits, truncated_fields),
+                site=_sanitize_text('site', request.form.get('site'), limits, truncated_fields),
                 
                 # Contato comercial
-                contato_nome=request.form.get('contato_nome'),
-                contato_cargo=request.form.get('contato_cargo'),
-                contato_telefone=request.form.get('contato_telefone'),
-                contato_email=request.form.get('contato_email'),
+                contato_nome=_sanitize_text('contato_nome', request.form.get('contato_nome'), limits, truncated_fields),
+                contato_cargo=_sanitize_text('contato_cargo', request.form.get('contato_cargo'), limits, truncated_fields),
+                contato_telefone=_sanitize_text('contato_telefone', request.form.get('contato_telefone'), limits, truncated_fields),
+                contato_email=_sanitize_text('contato_email', request.form.get('contato_email'), limits, truncated_fields),
                 
                 # Endereço
-                cep=request.form.get('cep'),
-                endereco=request.form.get('endereco'),
-                numero=request.form.get('numero'),
-                complemento=request.form.get('complemento'),
-                bairro=request.form.get('bairro'),
-                cidade=request.form.get('cidade'),
-                estado=request.form.get('estado'),
-                pais=request.form.get('pais'),
+                cep=_sanitize_text('cep', request.form.get('cep'), limits, truncated_fields),
+                endereco=_sanitize_text('endereco', request.form.get('endereco'), limits, truncated_fields),
+                numero=_sanitize_text('numero', request.form.get('numero'), limits, truncated_fields),
+                complemento=_sanitize_text('complemento', request.form.get('complemento'), limits, truncated_fields),
+                bairro=_sanitize_text('bairro', request.form.get('bairro'), limits, truncated_fields),
+                cidade=_sanitize_text('cidade', request.form.get('cidade'), limits, truncated_fields),
+                estado=_sanitize_text('estado', request.form.get('estado'), limits, truncated_fields),
+                pais=_sanitize_text('pais', request.form.get('pais'), limits, truncated_fields),
                 
                 # Dados comerciais
-                segmento=request.form.get('segmento'),
-                porte_empresa=request.form.get('porte_empresa'),
-                origem=request.form.get('origem'),
-                classificacao=request.form.get('classificacao', 'A'),
+                segmento=_sanitize_text('segmento', request.form.get('segmento'), limits, truncated_fields),
+                porte_empresa=_sanitize_text('porte_empresa', request.form.get('porte_empresa'), limits, truncated_fields),
+                origem=_sanitize_text('origem', request.form.get('origem'), limits, truncated_fields),
+                classificacao=_sanitize_text('classificacao', request.form.get('classificacao', 'A'), limits, truncated_fields),
                 
                 # Configurações financeiras
-                limite_credito=float(request.form.get('limite_credito', 0) or 0),
-                forma_pagamento_padrao=request.form.get('forma_pagamento_padrao'),
-                prazo_pagamento_padrao=int(request.form.get('prazo_pagamento_padrao', 30) or 30),
-                desconto_padrao=float(request.form.get('desconto_padrao', 0) or 0),
+                limite_credito=_safe_float(request.form.get('limite_credito', 0), 0.0),
+                forma_pagamento_padrao=_sanitize_text('forma_pagamento_padrao', request.form.get('forma_pagamento_padrao'), limits, truncated_fields),
+                prazo_pagamento_padrao=_safe_int(request.form.get('prazo_pagamento_padrao', 30), 30),
+                desconto_padrao=_safe_float(request.form.get('desconto_padrao', 0), 0.0),
                 
                 # Informações extras
                 data_nascimento=datetime.strptime(request.form.get('data_nascimento'), '%Y-%m-%d').date() if request.form.get('data_nascimento') else None,
                 data_fundacao=datetime.strptime(request.form.get('data_fundacao'), '%Y-%m-%d').date() if request.form.get('data_fundacao') else None,
-                genero=request.form.get('genero'),
-                estado_civil=request.form.get('estado_civil'),
-                profissao=request.form.get('profissao'),
+                genero=_sanitize_text('genero', request.form.get('genero'), limits, truncated_fields),
+                estado_civil=_sanitize_text('estado_civil', request.form.get('estado_civil'), limits, truncated_fields),
+                profissao=_sanitize_text('profissao', request.form.get('profissao'), limits, truncated_fields),
                 
                 # Observações
                 observacoes=request.form.get('observacoes'),
                 observacoes_internas=request.form.get('observacoes_internas'),
                 
                 # Status
-                status=request.form.get('status', 'ativo'),
-                motivo_bloqueio=request.form.get('motivo_bloqueio') if request.form.get('status') == 'bloqueado' else None,
+                status=_sanitize_text('status', request.form.get('status', 'ativo'), limits, truncated_fields),
+                motivo_bloqueio=_sanitize_text('motivo_bloqueio', request.form.get('motivo_bloqueio'), limits, truncated_fields) if request.form.get('status') == 'bloqueado' else None,
                 
                 # Garantir que o cliente esteja ativo
                 ativo=True
@@ -221,6 +290,7 @@ def novo():
             
             db.session.commit()
             print(f"DEBUG: Commit executado com sucesso - Cliente ID {cliente.id} salvo!")
+            _flash_truncation_warning(truncated_fields)
             
             flash(f'Cliente {cliente.nome} criado com sucesso!', 'success')
             return redirect(url_for('cliente.listar'))
@@ -230,7 +300,11 @@ def novo():
             print(f"❌ ERRO ao criar cliente: {str(e)}")
             import traceback
             traceback.print_exc()
-            flash(f'Erro ao criar cliente: {str(e)}', 'error')
+            error_msg = str(e)
+            if "StringDataRightTruncation" in error_msg or "value too long for type character varying" in error_msg.lower():
+                flash('Um ou mais campos ultrapassam o limite permitido pelo banco de dados. Revise os textos e tente novamente.', 'error')
+            else:
+                flash('Não foi possível criar o cliente. Tente novamente em instantes.', 'error')
             # Criar objeto com dados do form para não perder
             cliente = Cliente(**{k: v for k, v in request.form.items() if hasattr(Cliente, k)})
             return render_template('cliente/form.html', cliente=cliente)
@@ -250,8 +324,10 @@ def editar(id):
     
     if request.method == 'POST':
         try:
+            limits = _get_clientes_column_limits()
+            truncated_fields = []
             # Validar se CPF/CNPJ já existe (exceto o próprio cliente, incluindo inativos)
-            novo_cpf_cnpj = request.form.get('cpf_cnpj')
+            novo_cpf_cnpj = _sanitize_text('cpf_cnpj', request.form.get('cpf_cnpj'), limits, truncated_fields)
             if novo_cpf_cnpj:
                 cliente_existente = Cliente.query.filter(
                     Cliente.cpf_cnpj == novo_cpf_cnpj,
@@ -264,8 +340,8 @@ def editar(id):
                     return render_template('cliente/form.html', cliente=cliente)
             
             # Validar campos obrigatórios
-            nome = request.form.get('nome', '').strip()
-            tipo = request.form.get('tipo', '')
+            nome = (_sanitize_text('nome', request.form.get('nome', ''), limits, truncated_fields) or '').strip()
+            tipo = (_sanitize_text('tipo', request.form.get('tipo', ''), limits, truncated_fields) or '')
             
             if not nome:
                 flash('Nome é obrigatório!', 'error')
@@ -278,50 +354,50 @@ def editar(id):
             # Atualiza todos os campos do cliente
             # Dados principais
             cliente.nome = nome
-            cliente.nome_fantasia = request.form.get('nome_fantasia')
-            cliente.razao_social = request.form.get('razao_social')
+            cliente.nome_fantasia = _sanitize_text('nome_fantasia', request.form.get('nome_fantasia'), limits, truncated_fields)
+            cliente.razao_social = _sanitize_text('razao_social', request.form.get('razao_social'), limits, truncated_fields)
             cliente.tipo = tipo
             
             # Documentos
             cliente.cpf_cnpj = novo_cpf_cnpj
-            cliente.rg_ie = request.form.get('rg_ie')
-            cliente.im = request.form.get('im')
+            cliente.rg_ie = _sanitize_text('rg_ie', request.form.get('rg_ie'), limits, truncated_fields)
+            cliente.im = _sanitize_text('im', request.form.get('im'), limits, truncated_fields)
             
             # Contato principal
-            cliente.email = request.form.get('email')
-            cliente.email_financeiro = request.form.get('email_financeiro')
-            cliente.telefone = request.form.get('telefone')
-            cliente.celular = request.form.get('celular')
-            cliente.whatsapp = request.form.get('whatsapp')
-            cliente.site = request.form.get('site')
+            cliente.email = _sanitize_text('email', request.form.get('email'), limits, truncated_fields)
+            cliente.email_financeiro = _sanitize_text('email_financeiro', request.form.get('email_financeiro'), limits, truncated_fields)
+            cliente.telefone = _sanitize_text('telefone', request.form.get('telefone'), limits, truncated_fields)
+            cliente.celular = _sanitize_text('celular', request.form.get('celular'), limits, truncated_fields)
+            cliente.whatsapp = _sanitize_text('whatsapp', request.form.get('whatsapp'), limits, truncated_fields)
+            cliente.site = _sanitize_text('site', request.form.get('site'), limits, truncated_fields)
             
             # Contato comercial
-            cliente.contato_nome = request.form.get('contato_nome')
-            cliente.contato_cargo = request.form.get('contato_cargo')
-            cliente.contato_telefone = request.form.get('contato_telefone')
-            cliente.contato_email = request.form.get('contato_email')
+            cliente.contato_nome = _sanitize_text('contato_nome', request.form.get('contato_nome'), limits, truncated_fields)
+            cliente.contato_cargo = _sanitize_text('contato_cargo', request.form.get('contato_cargo'), limits, truncated_fields)
+            cliente.contato_telefone = _sanitize_text('contato_telefone', request.form.get('contato_telefone'), limits, truncated_fields)
+            cliente.contato_email = _sanitize_text('contato_email', request.form.get('contato_email'), limits, truncated_fields)
             
             # Endereço
-            cliente.cep = request.form.get('cep')
-            cliente.endereco = request.form.get('endereco')
-            cliente.numero = request.form.get('numero')
-            cliente.complemento = request.form.get('complemento')
-            cliente.bairro = request.form.get('bairro')
-            cliente.cidade = request.form.get('cidade')
-            cliente.estado = request.form.get('estado')
-            cliente.pais = request.form.get('pais')
+            cliente.cep = _sanitize_text('cep', request.form.get('cep'), limits, truncated_fields)
+            cliente.endereco = _sanitize_text('endereco', request.form.get('endereco'), limits, truncated_fields)
+            cliente.numero = _sanitize_text('numero', request.form.get('numero'), limits, truncated_fields)
+            cliente.complemento = _sanitize_text('complemento', request.form.get('complemento'), limits, truncated_fields)
+            cliente.bairro = _sanitize_text('bairro', request.form.get('bairro'), limits, truncated_fields)
+            cliente.cidade = _sanitize_text('cidade', request.form.get('cidade'), limits, truncated_fields)
+            cliente.estado = _sanitize_text('estado', request.form.get('estado'), limits, truncated_fields)
+            cliente.pais = _sanitize_text('pais', request.form.get('pais'), limits, truncated_fields)
             
             # Dados comerciais
-            cliente.segmento = request.form.get('segmento')
-            cliente.porte_empresa = request.form.get('porte_empresa')
-            cliente.origem = request.form.get('origem')
-            cliente.classificacao = request.form.get('classificacao')
+            cliente.segmento = _sanitize_text('segmento', request.form.get('segmento'), limits, truncated_fields)
+            cliente.porte_empresa = _sanitize_text('porte_empresa', request.form.get('porte_empresa'), limits, truncated_fields)
+            cliente.origem = _sanitize_text('origem', request.form.get('origem'), limits, truncated_fields)
+            cliente.classificacao = _sanitize_text('classificacao', request.form.get('classificacao'), limits, truncated_fields)
             
             # Configurações financeiras
-            cliente.limite_credito = float(request.form.get('limite_credito', 0) or 0)
-            cliente.forma_pagamento_padrao = request.form.get('forma_pagamento_padrao')
-            cliente.prazo_pagamento_padrao = int(request.form.get('prazo_pagamento_padrao', 30) or 30)
-            cliente.desconto_padrao = float(request.form.get('desconto_padrao', 0) or 0)
+            cliente.limite_credito = _safe_float(request.form.get('limite_credito', 0), 0.0)
+            cliente.forma_pagamento_padrao = _sanitize_text('forma_pagamento_padrao', request.form.get('forma_pagamento_padrao'), limits, truncated_fields)
+            cliente.prazo_pagamento_padrao = _safe_int(request.form.get('prazo_pagamento_padrao', 30), 30)
+            cliente.desconto_padrao = _safe_float(request.form.get('desconto_padrao', 0), 0.0)
             
             # Informações extras
             if request.form.get('data_nascimento'):
@@ -329,18 +405,18 @@ def editar(id):
             if request.form.get('data_fundacao'):
                 cliente.data_fundacao = datetime.strptime(request.form.get('data_fundacao'), '%Y-%m-%d').date()
             
-            cliente.genero = request.form.get('genero')
-            cliente.estado_civil = request.form.get('estado_civil')
-            cliente.profissao = request.form.get('profissao')
+            cliente.genero = _sanitize_text('genero', request.form.get('genero'), limits, truncated_fields)
+            cliente.estado_civil = _sanitize_text('estado_civil', request.form.get('estado_civil'), limits, truncated_fields)
+            cliente.profissao = _sanitize_text('profissao', request.form.get('profissao'), limits, truncated_fields)
             
             # Observações
             cliente.observacoes = request.form.get('observacoes')
             cliente.observacoes_internas = request.form.get('observacoes_internas')
             
             # Status
-            cliente.status = request.form.get('status')
+            cliente.status = _sanitize_text('status', request.form.get('status'), limits, truncated_fields)
             if request.form.get('status') == 'bloqueado':
-                cliente.motivo_bloqueio = request.form.get('motivo_bloqueio')
+                cliente.motivo_bloqueio = _sanitize_text('motivo_bloqueio', request.form.get('motivo_bloqueio'), limits, truncated_fields)
                 cliente.ativo = False  # Bloquear = inativo
             else:
                 cliente.motivo_bloqueio = None
@@ -353,6 +429,7 @@ def editar(id):
             
             db.session.commit()
             print(f"DEBUG: Commit executado com sucesso - Cliente ID {cliente.id} atualizado!")
+            _flash_truncation_warning(truncated_fields)
             
             flash(f'Cliente {cliente.nome} atualizado com sucesso!', 'success')
             return redirect(url_for('cliente.listar'))
@@ -362,7 +439,11 @@ def editar(id):
             print(f"ERRO ao atualizar cliente: {str(e)}")
             import traceback
             traceback.print_exc()
-            flash(f'Erro ao atualizar cliente: {str(e)}', 'error')
+            error_msg = str(e)
+            if "StringDataRightTruncation" in error_msg or "value too long for type character varying" in error_msg.lower():
+                flash('Um ou mais campos ultrapassam o limite permitido pelo banco de dados. Revise os textos e tente novamente.', 'error')
+            else:
+                flash('Não foi possível atualizar o cliente. Tente novamente em instantes.', 'error')
     
     return render_template('cliente/form.html', cliente=cliente)
 
