@@ -4,7 +4,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash, abort, send_file, Response
 from .cliente_model import Cliente
 from aplicacao.extensoes import db
-from sqlalchemy import or_
+from sqlalchemy import or_, inspect
 import io
 try:
     import pandas as pd
@@ -43,6 +43,55 @@ def gerar_codigo_cliente():
     numero = int(ultimo.codigo[3:]) + 1
     return f"CLI{numero:04}"
 
+
+def _get_clientes_column_limits():
+    """Retorna os limites VARCHAR da tabela clientes, com fallback para o model."""
+    limits = {}
+    try:
+        db_inspector = inspect(db.engine)
+        for col in db_inspector.get_columns('clientes'):
+            col_type = col.get('type')
+            length = getattr(col_type, 'length', None)
+            if isinstance(length, int) and length > 0:
+                limits[col.get('name')] = length
+    except Exception:
+        # Fallback para metadados do model
+        pass
+
+    if not limits:
+        for col in Cliente.__table__.columns:
+            length = getattr(col.type, 'length', None)
+            if isinstance(length, int) and length > 0:
+                limits[col.name] = length
+
+    return limits
+
+
+def _sanitize_text(field_name, value, limits, truncated_fields):
+    if value is None:
+        return None
+
+    text_value = str(value).strip()
+    if text_value == '':
+        return None
+
+    max_len = limits.get(field_name)
+    if isinstance(max_len, int) and max_len > 0 and len(text_value) > max_len:
+        truncated_fields.append(field_name)
+        return text_value[:max_len]
+
+    return text_value
+
+
+def _flash_truncation_warning(truncated_fields):
+    if not truncated_fields:
+        return
+    fields = ', '.join(sorted(set(truncated_fields)))
+    flash(
+        f'Alguns campos excediam o tamanho permitido e foram ajustados automaticamente: {fields}.',
+        'warning'
+    )
+
 # Listagem com busca e paginação
 @cliente_bp.route('')
 @cliente_bp.route('/')
@@ -74,10 +123,19 @@ def listar_clientes():
 def novo_cliente():
     if request.method == 'POST':
         try:
+            limits = _get_clientes_column_limits()
+            truncated_fields = []
+
             # Verificar se já existe cliente com mesmo CPF/CNPJ
             cpf_cnpj = request.form.get('cpf_cnpj', '')
             # Remove qualquer formatação (pontos, traços, barras)
             cpf_cnpj = ''.join(filter(str.isdigit, cpf_cnpj))
+            cpf_cnpj = _sanitize_text('cpf_cnpj', cpf_cnpj, limits, truncated_fields)
+
+            nome = _sanitize_text('nome', request.form.get('nome'), limits, truncated_fields)
+            if not nome:
+                flash('O nome do cliente é obrigatório.', 'danger')
+                return render_template('cliente/cadastro.html')
             
             if cpf_cnpj:
                 cliente_existente = Cliente.query.filter_by(cpf_cnpj=cpf_cnpj).first()
@@ -86,7 +144,7 @@ def novo_cliente():
                     return render_template('cliente/cadastro.html')
             
             # Verificar se já existe cliente com mesmo email
-            email = request.form.get('email')
+            email = _sanitize_text('email', request.form.get('email'), limits, truncated_fields)
             if email:
                 cliente_existente = Cliente.query.filter_by(email=email).first()
                 if cliente_existente:
@@ -96,23 +154,23 @@ def novo_cliente():
             # Criar novo cliente
             cliente = Cliente()
             cliente.codigo = gerar_codigo_cliente()
-            cliente.nome = request.form['nome']
+            cliente.nome = nome
             cliente.cpf_cnpj = cpf_cnpj if cpf_cnpj else None  # Use None em vez de string vazia
             cliente.email = email if email else None  # Use None em vez de string vazia
-            cliente.telefone = request.form.get('telefone')
-            cliente.apelido = request.form.get('apelido')  # Nome fantasia/apelido
+            cliente.telefone = _sanitize_text('telefone', request.form.get('telefone'), limits, truncated_fields)
+            cliente.apelido = _sanitize_text('apelido', request.form.get('apelido'), limits, truncated_fields)  # Nome fantasia/apelido
             
             # Salvar campos de endereço separados (com try/except para compatibilidade)
             try:
-                cliente.cep = request.form.get('cep', '')
-                cliente.logradouro = request.form.get('logradouro', '')
-                cliente.numero = request.form.get('numero', '')
-                cliente.complemento = request.form.get('complemento', '')
-                cliente.bairro = request.form.get('bairro', '')
-                cliente.cidade = request.form.get('cidade', '')
-                cliente.uf = request.form.get('uf', '')
-                cliente.inscricao_estadual = request.form.get('inscricao_estadual', '')
-                cliente.inscricao_municipal = request.form.get('inscricao_municipal', '')
+                cliente.cep = _sanitize_text('cep', request.form.get('cep', ''), limits, truncated_fields)
+                cliente.logradouro = _sanitize_text('logradouro', request.form.get('logradouro', ''), limits, truncated_fields)
+                cliente.numero = _sanitize_text('numero', request.form.get('numero', ''), limits, truncated_fields)
+                cliente.complemento = _sanitize_text('complemento', request.form.get('complemento', ''), limits, truncated_fields)
+                cliente.bairro = _sanitize_text('bairro', request.form.get('bairro', ''), limits, truncated_fields)
+                cliente.cidade = _sanitize_text('cidade', request.form.get('cidade', ''), limits, truncated_fields)
+                cliente.uf = _sanitize_text('uf', request.form.get('uf', ''), limits, truncated_fields)
+                cliente.inscricao_estadual = _sanitize_text('inscricao_estadual', request.form.get('inscricao_estadual', ''), limits, truncated_fields)
+                cliente.inscricao_municipal = _sanitize_text('inscricao_municipal', request.form.get('inscricao_municipal', ''), limits, truncated_fields)
                 cliente.observacoes = request.form.get('observacoes', '')
             except AttributeError:
                 # Se as colunas não existem, ignore
@@ -120,13 +178,13 @@ def novo_cliente():
             
             # Construir endereço completo para compatibilidade
             endereco_partes = []
-            logradouro = request.form.get('logradouro', '')
-            numero = request.form.get('numero', '')
-            complemento = request.form.get('complemento', '')
-            bairro = request.form.get('bairro', '')
-            cidade = request.form.get('cidade', '')
-            uf = request.form.get('uf', '')
-            cep = request.form.get('cep', '')
+            logradouro = _sanitize_text('logradouro', request.form.get('logradouro', ''), limits, truncated_fields)
+            numero = _sanitize_text('numero', request.form.get('numero', ''), limits, truncated_fields)
+            complemento = _sanitize_text('complemento', request.form.get('complemento', ''), limits, truncated_fields)
+            bairro = _sanitize_text('bairro', request.form.get('bairro', ''), limits, truncated_fields)
+            cidade = _sanitize_text('cidade', request.form.get('cidade', ''), limits, truncated_fields)
+            uf = _sanitize_text('uf', request.form.get('uf', ''), limits, truncated_fields)
+            cep = _sanitize_text('cep', request.form.get('cep', ''), limits, truncated_fields)
             
             if logradouro:
                 endereco_partes.append(logradouro)
@@ -143,9 +201,12 @@ def novo_cliente():
             if cep:
                 endereco_partes.append(f"CEP: {cep}")
             
-            cliente.endereco = ', '.join(endereco_partes) if endereco_partes else ''
-            cliente.pais = request.form.get('pais', 'Brasil')  # Corrigido: país padrão Brasil
+            endereco_montado = ', '.join(endereco_partes) if endereco_partes else ''
+            cliente.endereco = _sanitize_text('endereco', endereco_montado, limits, truncated_fields)
+            cliente.pais = _sanitize_text('pais', request.form.get('pais', 'Brasil'), limits, truncated_fields)  # Corrigido: país padrão Brasil
             cliente.ativo = True  # Corrigido: sempre ativo por padrão
+
+            _flash_truncation_warning(truncated_fields)
 
             # Log dos dados recebidos para debug
             print(f"Salvando novo cliente: {cliente.nome}, CPF/CNPJ: {cliente.cpf_cnpj}, Email: {cliente.email}")
@@ -164,8 +225,10 @@ def novo_cliente():
                 flash('Este CPF/CNPJ já está cadastrado para outro cliente.', 'danger')
             elif "email" in error_msg and "unique" in error_msg.lower():
                 flash('Este e-mail já está cadastrado para outro cliente.', 'danger')
+            elif "StringDataRightTruncation" in error_msg or "value too long for type character varying" in error_msg.lower():
+                flash('Um ou mais campos ultrapassam o limite permitido pelo banco de dados. Revise os textos e tente novamente.', 'danger')
             else:
-                flash(f'Erro ao cadastrar cliente: {error_msg}', 'danger')
+                flash('Não foi possível cadastrar o cliente. Tente novamente em instantes.', 'danger')
     
     return render_template('cliente/cadastro.html')
 
@@ -176,9 +239,18 @@ def editar_cliente(id):
     
     if request.method == 'POST':
         try:
+            limits = _get_clientes_column_limits()
+            truncated_fields = []
+
             # Verificar CPF/CNPJ
             cpf_cnpj = request.form.get('cpf_cnpj', '')
             cpf_cnpj = ''.join(filter(str.isdigit, cpf_cnpj))
+            cpf_cnpj = _sanitize_text('cpf_cnpj', cpf_cnpj, limits, truncated_fields)
+
+            nome = _sanitize_text('nome', request.form.get('nome'), limits, truncated_fields)
+            if not nome:
+                flash('O nome do cliente é obrigatório.', 'danger')
+                return render_template('cliente/cadastro.html', cliente=cliente)
             
             if cpf_cnpj:
                 cliente_existente = Cliente.query.filter(Cliente.cpf_cnpj == cpf_cnpj, Cliente.id != id).first()
@@ -187,7 +259,7 @@ def editar_cliente(id):
                     return render_template('cliente/cadastro.html', cliente=cliente)
             
             # Verificar e-mail
-            email = request.form.get('email')
+            email = _sanitize_text('email', request.form.get('email'), limits, truncated_fields)
             if email:
                 cliente_existente = Cliente.query.filter(Cliente.email == email, Cliente.id != id).first()
                 if cliente_existente:
@@ -195,23 +267,23 @@ def editar_cliente(id):
                     return render_template('cliente/cadastro.html', cliente=cliente)
             
             # Atualizar dados
-            cliente.nome = request.form['nome']
+            cliente.nome = nome
             cliente.cpf_cnpj = cpf_cnpj if cpf_cnpj else None
             cliente.email = email if email else None
-            cliente.telefone = request.form.get('telefone')
-            cliente.apelido = request.form.get('apelido')
+            cliente.telefone = _sanitize_text('telefone', request.form.get('telefone'), limits, truncated_fields)
+            cliente.apelido = _sanitize_text('apelido', request.form.get('apelido'), limits, truncated_fields)
             
             # Salvar campos de endereço separados
             try:
-                cliente.cep = request.form.get('cep', '')
-                cliente.logradouro = request.form.get('logradouro', '')
-                cliente.numero = request.form.get('numero', '')
-                cliente.complemento = request.form.get('complemento', '')
-                cliente.bairro = request.form.get('bairro', '')
-                cliente.cidade = request.form.get('cidade', '')
-                cliente.uf = request.form.get('uf', '')
-                cliente.inscricao_estadual = request.form.get('inscricao_estadual', '')
-                cliente.inscricao_municipal = request.form.get('inscricao_municipal', '')
+                cliente.cep = _sanitize_text('cep', request.form.get('cep', ''), limits, truncated_fields)
+                cliente.logradouro = _sanitize_text('logradouro', request.form.get('logradouro', ''), limits, truncated_fields)
+                cliente.numero = _sanitize_text('numero', request.form.get('numero', ''), limits, truncated_fields)
+                cliente.complemento = _sanitize_text('complemento', request.form.get('complemento', ''), limits, truncated_fields)
+                cliente.bairro = _sanitize_text('bairro', request.form.get('bairro', ''), limits, truncated_fields)
+                cliente.cidade = _sanitize_text('cidade', request.form.get('cidade', ''), limits, truncated_fields)
+                cliente.uf = _sanitize_text('uf', request.form.get('uf', ''), limits, truncated_fields)
+                cliente.inscricao_estadual = _sanitize_text('inscricao_estadual', request.form.get('inscricao_estadual', ''), limits, truncated_fields)
+                cliente.inscricao_municipal = _sanitize_text('inscricao_municipal', request.form.get('inscricao_municipal', ''), limits, truncated_fields)
                 cliente.observacoes = request.form.get('observacoes', '')
             except AttributeError:
                 # Se as colunas não existem, ignore
@@ -219,13 +291,13 @@ def editar_cliente(id):
             
             # Construir endereço completo para compatibilidade
             endereco_partes = []
-            logradouro = request.form.get('logradouro', '')
-            numero = request.form.get('numero', '')
-            complemento = request.form.get('complemento', '')
-            bairro = request.form.get('bairro', '')
-            cidade = request.form.get('cidade', '')
-            uf = request.form.get('uf', '')
-            cep = request.form.get('cep', '')
+            logradouro = _sanitize_text('logradouro', request.form.get('logradouro', ''), limits, truncated_fields)
+            numero = _sanitize_text('numero', request.form.get('numero', ''), limits, truncated_fields)
+            complemento = _sanitize_text('complemento', request.form.get('complemento', ''), limits, truncated_fields)
+            bairro = _sanitize_text('bairro', request.form.get('bairro', ''), limits, truncated_fields)
+            cidade = _sanitize_text('cidade', request.form.get('cidade', ''), limits, truncated_fields)
+            uf = _sanitize_text('uf', request.form.get('uf', ''), limits, truncated_fields)
+            cep = _sanitize_text('cep', request.form.get('cep', ''), limits, truncated_fields)
             
             if logradouro:
                 endereco_partes.append(logradouro)
@@ -242,8 +314,11 @@ def editar_cliente(id):
             if cep:
                 endereco_partes.append(f"CEP: {cep}")
             
-            cliente.endereco = ', '.join(endereco_partes) if endereco_partes else ''
-            cliente.pais = request.form.get('pais', cliente.pais or 'Brasil')
+            endereco_montado = ', '.join(endereco_partes) if endereco_partes else ''
+            cliente.endereco = _sanitize_text('endereco', endereco_montado, limits, truncated_fields)
+            cliente.pais = _sanitize_text('pais', request.form.get('pais', cliente.pais or 'Brasil'), limits, truncated_fields)
+
+            _flash_truncation_warning(truncated_fields)
             
             # Garante que o campo codigo exista
             if not hasattr(cliente, 'codigo') or not cliente.codigo:
@@ -265,8 +340,10 @@ def editar_cliente(id):
                 flash('Este CPF/CNPJ já está cadastrado para outro cliente.', 'danger')
             elif "email" in error_msg and "unique" in error_msg.lower():
                 flash('Este e-mail já está cadastrado para outro cliente.', 'danger')
+            elif "StringDataRightTruncation" in error_msg or "value too long for type character varying" in error_msg.lower():
+                flash('Um ou mais campos ultrapassam o limite permitido pelo banco de dados. Revise os textos e tente novamente.', 'danger')
             else:
-                flash(f'Erro ao atualizar cliente: {error_msg}', 'danger')
+                flash('Não foi possível atualizar o cliente. Tente novamente em instantes.', 'danger')
     
     # Garante que o campo codigo exista ao renderizar o template
     if not hasattr(cliente, 'codigo') or not cliente.codigo:
