@@ -1,51 +1,30 @@
-﻿# Endpoint de debug: listar todos os clientes em JSON (ativos e inativos)
+# -*- coding: utf-8 -*-
+"""
+ERP JSP v3.0 - Routes de Cliente com APIs Completas
+===================================================
 
+Rotas para gerenciamento de clientes incluindo consultas automáticas.
+CRUD completo com validações e APIs de CNPJ/CEP.
 
-from flask import Blueprint, render_template, request, redirect, url_for, jsonify, flash, abort, send_file, Response
-from .cliente_model import Cliente
-from aplicacao.extensoes import db
-from sqlalchemy import or_, inspect
-import io
-try:
-    import pandas as pd
-except Exception:
-    pd = None
+Versão: 3.0.1 - Corrigido tratamento de erros 404/500
+Autor: JSP Soluções
+Data: 2025
+"""
 
-# PDF helpers
-try:
-    from weasyprint import HTML
-    _HAS_WEASY = True
-except Exception:
-    _HAS_WEASY = False
-    try:
-        from reportlab.platypus import SimpleDocTemplate, Paragraph
-        from reportlab.lib.styles import getSampleStyleSheet
-        _HAS_REPORTLAB = True
-    except Exception:
-        _HAS_REPORTLAB = False
-try:
-    from aplicacao import csrf
-except Exception:
-    csrf = None
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort
+import requests
+import re
+from datetime import datetime
+from sqlalchemy import inspect
+from app.extensoes import db
+from app.cliente.cliente_model import Cliente
 
-cliente_bp = Blueprint('cliente', __name__, url_prefix='/clientes', template_folder='templates')
-
-# Helper function for CSRF exemption
-def csrf_exempt(f):
-    if csrf:
-        return csrf.exempt(f)
-    return f
-
-def gerar_codigo_cliente():
-    ultimo = Cliente.query.order_by(Cliente.id.desc()).first()
-    if not ultimo or not ultimo.codigo.startswith("CLI"):
-        return "CLI0001"
-    numero = int(ultimo.codigo[3:]) + 1
-    return f"CLI{numero:04}"
+# Cria o blueprint
+cliente_bp = Blueprint('cliente', __name__, template_folder='templates')
 
 
 def _get_clientes_column_limits():
-    """Retorna os limites VARCHAR da tabela clientes, com fallback para o model."""
+    """Lê limites de colunas VARCHAR de clientes no banco atual."""
     limits = {}
     try:
         db_inspector = inspect(db.engine)
@@ -55,7 +34,6 @@ def _get_clientes_column_limits():
             if isinstance(length, int) and length > 0:
                 limits[col.get('name')] = length
     except Exception:
-        # Fallback para metadados do model
         pass
 
     if not limits:
@@ -70,7 +48,6 @@ def _get_clientes_column_limits():
 def _sanitize_text(field_name, value, limits, truncated_fields):
     if value is None:
         return None
-
     text_value = str(value).strip()
     if text_value == '':
         return None
@@ -83,6 +60,24 @@ def _sanitize_text(field_name, value, limits, truncated_fields):
     return text_value
 
 
+def _safe_float(value, default_value=0.0):
+    try:
+        if value is None or str(value).strip() == '':
+            return float(default_value)
+        return float(value)
+    except Exception:
+        return float(default_value)
+
+
+def _safe_int(value, default_value=0):
+    try:
+        if value is None or str(value).strip() == '':
+            return int(default_value)
+        return int(value)
+    except Exception:
+        return int(default_value)
+
+
 def _flash_truncation_warning(truncated_fields):
     if not truncated_fields:
         return
@@ -92,716 +87,565 @@ def _flash_truncation_warning(truncated_fields):
         'warning'
     )
 
-# Listagem com busca e paginação
-@cliente_bp.route('')
-@cliente_bp.route('/')
-def listar_clientes():
-    q = request.args.get('q', '').strip()
-    page = request.args.get('pagina', type=int, default=1)
-    per_page = 20
-    
-    query = Cliente.query
-    if q:
-        like = f"%{q}%"
-        query = query.filter(
-            or_(Cliente.nome.ilike(like),
-                Cliente.email.ilike(like),
-                Cliente.cpf_cnpj.ilike(like))
-        )
-    
-    pag = query.order_by(Cliente.nome.asc()).paginate(page=page, per_page=per_page, error_out=False)
-    
-    return render_template(
-        'cliente/lista.html',
-        clientes=pag,         # pass the Pagination object so template can use .items and pagination metadata
-        paginacao=pag,        # the pagination object (kept for compatibility)
-        q=q
-    )
+# Handler de erros para o blueprint
+@cliente_bp.errorhandler(404)
+def cliente_nao_encontrado(e):
+    """Handler para erro 404 no módulo de clientes."""
+    flash('Cliente não encontrado.', 'error')
+    return redirect(url_for('cliente.listar'))
 
-# Cadastro
-@cliente_bp.route('/cadastrar', methods=['GET', 'POST'])
-def novo_cliente():
+@cliente_bp.errorhandler(500)
+def erro_interno_cliente(e):
+    """Handler para erro 500 no módulo de clientes."""
+    import traceback
+    print(f"❌ Erro 500 no módulo cliente:")
+    print(traceback.format_exc())
+    flash(f'Erro interno ao processar cliente: {str(e)}', 'error')
+    return redirect(url_for('cliente.listar'))
+
+@cliente_bp.route('/')
+@cliente_bp.route('/listar')
+def listar():
+    """Lista todos os clientes ativos."""
+    busca = request.args.get('busca', '').strip()
+    
+    if busca:
+        clientes = Cliente.query.filter(
+            db.or_(
+                Cliente.nome.ilike(f'%{busca}%'),
+                Cliente.cpf_cnpj.ilike(f'%{busca}%')
+            ),
+            Cliente.ativo == True
+        ).order_by(Cliente.nome).all()
+    else:
+        clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
+    
+    # Debug: verificar se Cliente 11 está na lista
+    cliente11_na_lista = any(c.id == 11 for c in clientes)
+    print(f"DEBUG LISTAGEM: {len(clientes)} clientes encontrados")
+    print(f"DEBUG: Cliente 11 na lista: {cliente11_na_lista}")
+    if not cliente11_na_lista:
+        cliente11_direto = Cliente.query.filter_by(id=11).first()
+        if cliente11_direto:
+            print(f"DEBUG: Cliente 11 existe no banco - Nome: {cliente11_direto.nome}, Ativo: {cliente11_direto.ativo}")
+    
+    return render_template('cliente/listar.html', clientes=clientes, busca=busca)
+
+@cliente_bp.route('/novo', methods=['GET', 'POST'])
+def novo():
+    """Cria um novo cliente."""
     if request.method == 'POST':
+        print(f"\n{'='*60}")
+        print(f"🆕 NOVO CLIENTE - POST RECEBIDO")
+        print(f"{'='*60}")
+        print(f"📋 Form data keys: {list(request.form.keys())}")
+        print(f"📝 Nome: {request.form.get('nome')}")
+        print(f"🏢 Tipo: {request.form.get('tipo')}")
+        print(f"📄 CPF/CNPJ: {request.form.get('cpf_cnpj')}")
+        print(f"{'='*60}\n")
         try:
             limits = _get_clientes_column_limits()
             truncated_fields = []
-
-            # Verificar se já existe cliente com mesmo CPF/CNPJ
-            cpf_cnpj = request.form.get('cpf_cnpj', '')
-            # Remove qualquer formatação (pontos, traços, barras)
-            cpf_cnpj = ''.join(filter(str.isdigit, cpf_cnpj))
-            cpf_cnpj = _sanitize_text('cpf_cnpj', cpf_cnpj, limits, truncated_fields)
-
-            nome = _sanitize_text('nome', request.form.get('nome'), limits, truncated_fields)
-            if not nome:
-                flash('O nome do cliente é obrigatório.', 'danger')
-                return render_template('cliente/cadastro.html')
-            
+            # Validar se CPF/CNPJ já existe (incluindo clientes inativos)
+            cpf_cnpj = _sanitize_text('cpf_cnpj', request.form.get('cpf_cnpj'), limits, truncated_fields)
             if cpf_cnpj:
-                cliente_existente = Cliente.query.filter_by(cpf_cnpj=cpf_cnpj).first()
+                cliente_existente = Cliente.query.filter(
+                    Cliente.cpf_cnpj == cpf_cnpj
+                ).first()
+                
                 if cliente_existente:
-                    flash(f'Já existe um cliente cadastrado com este CPF/CNPJ: {cliente_existente.nome}', 'danger')
-                    return render_template('cliente/cadastro.html')
+                    if not cliente_existente.ativo:
+                        # Cliente inativo encontrado - oferecer reativação
+                        flash(f'Cliente {cliente_existente.nome} com CPF/CNPJ {cpf_cnpj} existe mas está inativo. Reativando...', 'info')
+                        
+                        # Reativar e atualizar dados do cliente existente
+                        cliente_existente.ativo = True
+                        cliente_existente.nome = _sanitize_text('nome', request.form.get('nome'), limits, truncated_fields) or cliente_existente.nome
+                        cliente_existente.nome_fantasia = _sanitize_text('nome_fantasia', request.form.get('nome_fantasia'), limits, truncated_fields) or cliente_existente.nome_fantasia
+                        cliente_existente.razao_social = _sanitize_text('razao_social', request.form.get('razao_social'), limits, truncated_fields) or cliente_existente.razao_social
+                        cliente_existente.tipo = _sanitize_text('tipo', request.form.get('tipo'), limits, truncated_fields) or cliente_existente.tipo
+                        cliente_existente.email = _sanitize_text('email', request.form.get('email'), limits, truncated_fields) or cliente_existente.email
+                        cliente_existente.telefone = _sanitize_text('telefone', request.form.get('telefone'), limits, truncated_fields) or cliente_existente.telefone
+                        cliente_existente.endereco = _sanitize_text('endereco', request.form.get('endereco'), limits, truncated_fields) or cliente_existente.endereco
+                        cliente_existente.cidade = _sanitize_text('cidade', request.form.get('cidade'), limits, truncated_fields) or cliente_existente.cidade
+                        cliente_existente.estado = _sanitize_text('estado', request.form.get('estado'), limits, truncated_fields) or cliente_existente.estado
+                        cliente_existente.cep = _sanitize_text('cep', request.form.get('cep'), limits, truncated_fields) or cliente_existente.cep
+                        
+                        try:
+                            db.session.commit()
+                            _flash_truncation_warning(truncated_fields)
+                            flash(f'Cliente {cliente_existente.nome} reativado e atualizado com sucesso!', 'success')
+                            return redirect(url_for('cliente.listar'))
+                        except Exception as e:
+                            db.session.rollback()
+                            flash(f'Erro ao reativar cliente: {str(e)}', 'error')
+                            return render_template('cliente/form.html')
+                    else:
+                        # Cliente ativo - erro
+                        print(f"⚠️ VALIDAÇÃO: CPF/CNPJ {cpf_cnpj} já existe (cliente ativo)")
+                        flash(f'CPF/CNPJ {cpf_cnpj} já está sendo usado pelo cliente ativo: {cliente_existente.nome}', 'error')
+                        # Criar objeto com dados do form para não perder
+                        cliente = Cliente(**{k: v for k, v in request.form.items() if hasattr(Cliente, k)})
+                        return render_template('cliente/form.html', cliente=cliente)
             
-            # Verificar se já existe cliente com mesmo email
-            email = _sanitize_text('email', request.form.get('email'), limits, truncated_fields)
-            if email:
-                cliente_existente = Cliente.query.filter_by(email=email).first()
-                if cliente_existente:
-                    flash(f'Já existe um cliente cadastrado com este e-mail: {cliente_existente.nome}', 'danger')
-                    return render_template('cliente/cadastro.html')
+            # Validar campos obrigatórios
+            tipo = (_sanitize_text('tipo', request.form.get('tipo', ''), limits, truncated_fields) or '').strip()
+            nome = (_sanitize_text('nome', request.form.get('nome', ''), limits, truncated_fields) or '').strip()
+            nome_fantasia = (_sanitize_text('nome_fantasia', request.form.get('nome_fantasia', ''), limits, truncated_fields) or '').strip()
             
-            # Criar novo cliente
-            cliente = Cliente()
-            cliente.codigo = gerar_codigo_cliente()
-            cliente.nome = nome
-            cliente.cpf_cnpj = cpf_cnpj if cpf_cnpj else None  # Use None em vez de string vazia
-            cliente.email = email if email else None  # Use None em vez de string vazia
-            cliente.telefone = _sanitize_text('telefone', request.form.get('telefone'), limits, truncated_fields)
-            cliente.apelido = _sanitize_text('apelido', request.form.get('apelido'), limits, truncated_fields)  # Nome fantasia/apelido
+            # Para PJ, se nome está vazio mas tem nome_fantasia, usa nome_fantasia como nome
+            if tipo.upper() == 'PJ' and not nome and nome_fantasia:
+                nome = nome_fantasia
+                print(f"✅ PJ: Usando nome_fantasia como nome: {nome}")
             
-            # Salvar campos de endereço separados (com try/except para compatibilidade)
-            try:
-                cliente.cep = _sanitize_text('cep', request.form.get('cep', ''), limits, truncated_fields)
-                cliente.logradouro = _sanitize_text('logradouro', request.form.get('logradouro', ''), limits, truncated_fields)
-                cliente.numero = _sanitize_text('numero', request.form.get('numero', ''), limits, truncated_fields)
-                cliente.complemento = _sanitize_text('complemento', request.form.get('complemento', ''), limits, truncated_fields)
-                cliente.bairro = _sanitize_text('bairro', request.form.get('bairro', ''), limits, truncated_fields)
-                cliente.cidade = _sanitize_text('cidade', request.form.get('cidade', ''), limits, truncated_fields)
-                cliente.uf = _sanitize_text('uf', request.form.get('uf', ''), limits, truncated_fields)
-                cliente.inscricao_estadual = _sanitize_text('inscricao_estadual', request.form.get('inscricao_estadual', ''), limits, truncated_fields)
-                cliente.inscricao_municipal = _sanitize_text('inscricao_municipal', request.form.get('inscricao_municipal', ''), limits, truncated_fields)
-                cliente.observacoes = request.form.get('observacoes', '')
-            except AttributeError:
-                # Se as colunas não existem, ignore
-                pass
+            if not nome:
+                print("⚠️ VALIDAÇÃO: Nome é obrigatório!")
+                if tipo.upper() == 'PJ':
+                    flash('Nome Fantasia é obrigatório para Pessoa Jurídica!', 'error')
+                else:
+                    flash('Nome é obrigatório!', 'error')
+                # Criar objeto com dados do form para não perder
+                cliente = Cliente(**{k: v for k, v in request.form.items() if hasattr(Cliente, k)})
+                return render_template('cliente/form.html', cliente=cliente)
+                
+            if not tipo:
+                print("⚠️ VALIDAÇÃO: Tipo é obrigatório!")
+                flash('Tipo de cliente (PF/PJ) é obrigatório!', 'error')
+                # Criar objeto com dados do form para não perder
+                cliente = Cliente(**{k: v for k, v in request.form.items() if hasattr(Cliente, k)})
+                return render_template('cliente/form.html', cliente=cliente)
             
-            # Construir endereço completo para compatibilidade
-            endereco_partes = []
-            logradouro = _sanitize_text('logradouro', request.form.get('logradouro', ''), limits, truncated_fields)
-            numero = _sanitize_text('numero', request.form.get('numero', ''), limits, truncated_fields)
-            complemento = _sanitize_text('complemento', request.form.get('complemento', ''), limits, truncated_fields)
-            bairro = _sanitize_text('bairro', request.form.get('bairro', ''), limits, truncated_fields)
-            cidade = _sanitize_text('cidade', request.form.get('cidade', ''), limits, truncated_fields)
-            uf = _sanitize_text('uf', request.form.get('uf', ''), limits, truncated_fields)
-            cep = _sanitize_text('cep', request.form.get('cep', ''), limits, truncated_fields)
-            
-            if logradouro:
-                endereco_partes.append(logradouro)
-            if numero:
-                endereco_partes.append(f"nº {numero}")
-            if complemento:
-                endereco_partes.append(complemento)
-            if bairro:
-                endereco_partes.append(f"Bairro: {bairro}")
-            if cidade:
-                endereco_partes.append(cidade)
-            if uf:
-                endereco_partes.append(uf)
-            if cep:
-                endereco_partes.append(f"CEP: {cep}")
-            
-            endereco_montado = ', '.join(endereco_partes) if endereco_partes else ''
-            cliente.endereco = _sanitize_text('endereco', endereco_montado, limits, truncated_fields)
-            cliente.pais = _sanitize_text('pais', request.form.get('pais', 'Brasil'), limits, truncated_fields)  # Corrigido: país padrão Brasil
-            cliente.ativo = True  # Corrigido: sempre ativo por padrão
-
-            _flash_truncation_warning(truncated_fields)
-
-            # Log dos dados recebidos para debug
-            print(f"Salvando novo cliente: {cliente.nome}, CPF/CNPJ: {cliente.cpf_cnpj}, Email: {cliente.email}")
+            cliente = Cliente(
+                # Dados principais
+                nome=nome,
+                nome_fantasia=_sanitize_text('nome_fantasia', request.form.get('nome_fantasia'), limits, truncated_fields),
+                razao_social=_sanitize_text('razao_social', request.form.get('razao_social'), limits, truncated_fields),
+                tipo=_sanitize_text('tipo', request.form.get('tipo'), limits, truncated_fields),
+                
+                # Documentos
+                cpf_cnpj=cpf_cnpj,
+                rg_ie=_sanitize_text('rg_ie', request.form.get('rg_ie'), limits, truncated_fields),
+                im=_sanitize_text('im', request.form.get('im'), limits, truncated_fields),
+                
+                # Contato principal
+                email=_sanitize_text('email', request.form.get('email'), limits, truncated_fields),
+                email_financeiro=_sanitize_text('email_financeiro', request.form.get('email_financeiro'), limits, truncated_fields),
+                telefone=_sanitize_text('telefone', request.form.get('telefone'), limits, truncated_fields),
+                celular=_sanitize_text('celular', request.form.get('celular'), limits, truncated_fields),
+                whatsapp=_sanitize_text('whatsapp', request.form.get('whatsapp'), limits, truncated_fields),
+                site=_sanitize_text('site', request.form.get('site'), limits, truncated_fields),
+                
+                # Contato comercial
+                contato_nome=_sanitize_text('contato_nome', request.form.get('contato_nome'), limits, truncated_fields),
+                contato_cargo=_sanitize_text('contato_cargo', request.form.get('contato_cargo'), limits, truncated_fields),
+                contato_telefone=_sanitize_text('contato_telefone', request.form.get('contato_telefone'), limits, truncated_fields),
+                contato_email=_sanitize_text('contato_email', request.form.get('contato_email'), limits, truncated_fields),
+                
+                # Endereço
+                cep=_sanitize_text('cep', request.form.get('cep'), limits, truncated_fields),
+                endereco=_sanitize_text('endereco', request.form.get('endereco'), limits, truncated_fields),
+                numero=_sanitize_text('numero', request.form.get('numero'), limits, truncated_fields),
+                complemento=_sanitize_text('complemento', request.form.get('complemento'), limits, truncated_fields),
+                bairro=_sanitize_text('bairro', request.form.get('bairro'), limits, truncated_fields),
+                cidade=_sanitize_text('cidade', request.form.get('cidade'), limits, truncated_fields),
+                estado=_sanitize_text('estado', request.form.get('estado'), limits, truncated_fields),
+                pais=_sanitize_text('pais', request.form.get('pais'), limits, truncated_fields),
+                
+                # Dados comerciais
+                segmento=_sanitize_text('segmento', request.form.get('segmento'), limits, truncated_fields),
+                porte_empresa=_sanitize_text('porte_empresa', request.form.get('porte_empresa'), limits, truncated_fields),
+                origem=_sanitize_text('origem', request.form.get('origem'), limits, truncated_fields),
+                classificacao=_sanitize_text('classificacao', request.form.get('classificacao', 'A'), limits, truncated_fields),
+                
+                # Configurações financeiras
+                limite_credito=_safe_float(request.form.get('limite_credito', 0), 0.0),
+                forma_pagamento_padrao=_sanitize_text('forma_pagamento_padrao', request.form.get('forma_pagamento_padrao'), limits, truncated_fields),
+                prazo_pagamento_padrao=_safe_int(request.form.get('prazo_pagamento_padrao', 30), 30),
+                desconto_padrao=_safe_float(request.form.get('desconto_padrao', 0), 0.0),
+                
+                # Informações extras
+                data_nascimento=datetime.strptime(request.form.get('data_nascimento'), '%Y-%m-%d').date() if request.form.get('data_nascimento') else None,
+                data_fundacao=datetime.strptime(request.form.get('data_fundacao'), '%Y-%m-%d').date() if request.form.get('data_fundacao') else None,
+                genero=_sanitize_text('genero', request.form.get('genero'), limits, truncated_fields),
+                estado_civil=_sanitize_text('estado_civil', request.form.get('estado_civil'), limits, truncated_fields),
+                profissao=_sanitize_text('profissao', request.form.get('profissao'), limits, truncated_fields),
+                
+                # Observações
+                observacoes=request.form.get('observacoes'),
+                observacoes_internas=request.form.get('observacoes_internas'),
+                
+                # Status
+                status=_sanitize_text('status', request.form.get('status', 'ativo'), limits, truncated_fields),
+                motivo_bloqueio=_sanitize_text('motivo_bloqueio', request.form.get('motivo_bloqueio'), limits, truncated_fields) if request.form.get('status') == 'bloqueado' else None,
+                
+                # Garantir que o cliente esteja ativo
+                ativo=True
+            )
             
             db.session.add(cliente)
+            print(f"DEBUG: Cliente adicionado à sessão - Nome: {cliente.nome}, CPF/CNPJ: {cliente.cpf_cnpj}")
+            
+            db.session.flush()  # Força persistência antes do commit
+            print(f"DEBUG: Flush executado - ID gerado: {cliente.id}")
+            
             db.session.commit()
-            flash('Cliente cadastrado com sucesso!', 'success')
-            return redirect(url_for('cliente.listar_clientes'))
+            print(f"DEBUG: Commit executado com sucesso - Cliente ID {cliente.id} salvo!")
+            _flash_truncation_warning(truncated_fields)
+            
+            flash(f'Cliente {cliente.nome} criado com sucesso!', 'success')
+            return redirect(url_for('cliente.listar'))
+            
         except Exception as e:
             db.session.rollback()
+            print(f"❌ ERRO ao criar cliente: {str(e)}")
+            import traceback
+            traceback.print_exc()
             error_msg = str(e)
-            print(f"Erro ao cadastrar cliente: {error_msg}")
-            
-            # Mensagens de erro mais específicas
-            if "cpf_cnpj" in error_msg and "unique" in error_msg.lower():
-                flash('Este CPF/CNPJ já está cadastrado para outro cliente.', 'danger')
-            elif "email" in error_msg and "unique" in error_msg.lower():
-                flash('Este e-mail já está cadastrado para outro cliente.', 'danger')
-            elif "StringDataRightTruncation" in error_msg or "value too long for type character varying" in error_msg.lower():
-                flash('Um ou mais campos ultrapassam o limite permitido pelo banco de dados. Revise os textos e tente novamente.', 'danger')
+            if "StringDataRightTruncation" in error_msg or "value too long for type character varying" in error_msg.lower():
+                flash('Um ou mais campos ultrapassam o limite permitido pelo banco de dados. Revise os textos e tente novamente.', 'error')
             else:
-                flash('Não foi possível cadastrar o cliente. Tente novamente em instantes.', 'danger')
+                flash('Não foi possível criar o cliente. Tente novamente em instantes.', 'error')
+            # Criar objeto com dados do form para não perder
+            cliente = Cliente(**{k: v for k, v in request.form.items() if hasattr(Cliente, k)})
+            return render_template('cliente/form.html', cliente=cliente)
     
-    return render_template('cliente/cadastro.html')
+    # GET - formulário vazio
+    cliente = Cliente()
+    return render_template('cliente/form.html', cliente=cliente)
 
-# Edição
-@cliente_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
-def editar_cliente(id):
-    cliente = Cliente.query.get_or_404(id)
+@cliente_bp.route('/<int:id>/editar', methods=['GET', 'POST'])
+def editar(id):
+    """Edita um cliente existente."""
+    cliente = Cliente.query.filter_by(id=id).first()
+    
+    if cliente is None:
+        flash(f'Cliente #{id} não encontrado.', 'error')
+        return redirect(url_for('cliente.listar'))
     
     if request.method == 'POST':
         try:
             limits = _get_clientes_column_limits()
             truncated_fields = []
-
-            # Verificar CPF/CNPJ
-            cpf_cnpj = request.form.get('cpf_cnpj', '')
-            cpf_cnpj = ''.join(filter(str.isdigit, cpf_cnpj))
-            cpf_cnpj = _sanitize_text('cpf_cnpj', cpf_cnpj, limits, truncated_fields)
-
-            nome = _sanitize_text('nome', request.form.get('nome'), limits, truncated_fields)
+            # Validar se CPF/CNPJ já existe (exceto o próprio cliente, incluindo inativos)
+            novo_cpf_cnpj = _sanitize_text('cpf_cnpj', request.form.get('cpf_cnpj'), limits, truncated_fields)
+            if novo_cpf_cnpj:
+                cliente_existente = Cliente.query.filter(
+                    Cliente.cpf_cnpj == novo_cpf_cnpj,
+                    Cliente.id != id
+                ).first()
+                
+                if cliente_existente:
+                    status_texto = "ativo" if cliente_existente.ativo else "inativo"
+                    flash(f'CPF/CNPJ {novo_cpf_cnpj} já está sendo usado pelo cliente: {cliente_existente.nome} ({status_texto})', 'error')
+                    return render_template('cliente/form.html', cliente=cliente)
+            
+            # Validar campos obrigatórios
+            nome = (_sanitize_text('nome', request.form.get('nome', ''), limits, truncated_fields) or '').strip()
+            tipo = (_sanitize_text('tipo', request.form.get('tipo', ''), limits, truncated_fields) or '')
+            
             if not nome:
-                flash('O nome do cliente é obrigatório.', 'danger')
-                return render_template('cliente/cadastro.html', cliente=cliente)
+                flash('Nome é obrigatório!', 'error')
+                return render_template('cliente/form.html', cliente=cliente)
+                
+            if not tipo:
+                flash('Tipo de cliente (PF/PJ) é obrigatório!', 'error')
+                return render_template('cliente/form.html', cliente=cliente)
             
-            if cpf_cnpj:
-                cliente_existente = Cliente.query.filter(Cliente.cpf_cnpj == cpf_cnpj, Cliente.id != id).first()
-                if cliente_existente:
-                    flash(f'Este CPF/CNPJ já está cadastrado para outro cliente: {cliente_existente.nome}', 'danger')
-                    return render_template('cliente/cadastro.html', cliente=cliente)
-            
-            # Verificar e-mail
-            email = _sanitize_text('email', request.form.get('email'), limits, truncated_fields)
-            if email:
-                cliente_existente = Cliente.query.filter(Cliente.email == email, Cliente.id != id).first()
-                if cliente_existente:
-                    flash(f'Este e-mail já está cadastrado para outro cliente: {cliente_existente.nome}', 'danger')
-                    return render_template('cliente/cadastro.html', cliente=cliente)
-            
-            # Atualizar dados
+            # Atualiza todos os campos do cliente
+            # Dados principais
             cliente.nome = nome
-            cliente.cpf_cnpj = cpf_cnpj if cpf_cnpj else None
-            cliente.email = email if email else None
+            cliente.nome_fantasia = _sanitize_text('nome_fantasia', request.form.get('nome_fantasia'), limits, truncated_fields)
+            cliente.razao_social = _sanitize_text('razao_social', request.form.get('razao_social'), limits, truncated_fields)
+            cliente.tipo = tipo
+            
+            # Documentos
+            cliente.cpf_cnpj = novo_cpf_cnpj
+            cliente.rg_ie = _sanitize_text('rg_ie', request.form.get('rg_ie'), limits, truncated_fields)
+            cliente.im = _sanitize_text('im', request.form.get('im'), limits, truncated_fields)
+            
+            # Contato principal
+            cliente.email = _sanitize_text('email', request.form.get('email'), limits, truncated_fields)
+            cliente.email_financeiro = _sanitize_text('email_financeiro', request.form.get('email_financeiro'), limits, truncated_fields)
             cliente.telefone = _sanitize_text('telefone', request.form.get('telefone'), limits, truncated_fields)
-            cliente.apelido = _sanitize_text('apelido', request.form.get('apelido'), limits, truncated_fields)
+            cliente.celular = _sanitize_text('celular', request.form.get('celular'), limits, truncated_fields)
+            cliente.whatsapp = _sanitize_text('whatsapp', request.form.get('whatsapp'), limits, truncated_fields)
+            cliente.site = _sanitize_text('site', request.form.get('site'), limits, truncated_fields)
             
-            # Salvar campos de endereço separados
-            try:
-                cliente.cep = _sanitize_text('cep', request.form.get('cep', ''), limits, truncated_fields)
-                cliente.logradouro = _sanitize_text('logradouro', request.form.get('logradouro', ''), limits, truncated_fields)
-                cliente.numero = _sanitize_text('numero', request.form.get('numero', ''), limits, truncated_fields)
-                cliente.complemento = _sanitize_text('complemento', request.form.get('complemento', ''), limits, truncated_fields)
-                cliente.bairro = _sanitize_text('bairro', request.form.get('bairro', ''), limits, truncated_fields)
-                cliente.cidade = _sanitize_text('cidade', request.form.get('cidade', ''), limits, truncated_fields)
-                cliente.uf = _sanitize_text('uf', request.form.get('uf', ''), limits, truncated_fields)
-                cliente.inscricao_estadual = _sanitize_text('inscricao_estadual', request.form.get('inscricao_estadual', ''), limits, truncated_fields)
-                cliente.inscricao_municipal = _sanitize_text('inscricao_municipal', request.form.get('inscricao_municipal', ''), limits, truncated_fields)
-                cliente.observacoes = request.form.get('observacoes', '')
-            except AttributeError:
-                # Se as colunas não existem, ignore
-                pass
+            # Contato comercial
+            cliente.contato_nome = _sanitize_text('contato_nome', request.form.get('contato_nome'), limits, truncated_fields)
+            cliente.contato_cargo = _sanitize_text('contato_cargo', request.form.get('contato_cargo'), limits, truncated_fields)
+            cliente.contato_telefone = _sanitize_text('contato_telefone', request.form.get('contato_telefone'), limits, truncated_fields)
+            cliente.contato_email = _sanitize_text('contato_email', request.form.get('contato_email'), limits, truncated_fields)
             
-            # Construir endereço completo para compatibilidade
-            endereco_partes = []
-            logradouro = _sanitize_text('logradouro', request.form.get('logradouro', ''), limits, truncated_fields)
-            numero = _sanitize_text('numero', request.form.get('numero', ''), limits, truncated_fields)
-            complemento = _sanitize_text('complemento', request.form.get('complemento', ''), limits, truncated_fields)
-            bairro = _sanitize_text('bairro', request.form.get('bairro', ''), limits, truncated_fields)
-            cidade = _sanitize_text('cidade', request.form.get('cidade', ''), limits, truncated_fields)
-            uf = _sanitize_text('uf', request.form.get('uf', ''), limits, truncated_fields)
-            cep = _sanitize_text('cep', request.form.get('cep', ''), limits, truncated_fields)
+            # Endereço
+            cliente.cep = _sanitize_text('cep', request.form.get('cep'), limits, truncated_fields)
+            cliente.endereco = _sanitize_text('endereco', request.form.get('endereco'), limits, truncated_fields)
+            cliente.numero = _sanitize_text('numero', request.form.get('numero'), limits, truncated_fields)
+            cliente.complemento = _sanitize_text('complemento', request.form.get('complemento'), limits, truncated_fields)
+            cliente.bairro = _sanitize_text('bairro', request.form.get('bairro'), limits, truncated_fields)
+            cliente.cidade = _sanitize_text('cidade', request.form.get('cidade'), limits, truncated_fields)
+            cliente.estado = _sanitize_text('estado', request.form.get('estado'), limits, truncated_fields)
+            cliente.pais = _sanitize_text('pais', request.form.get('pais'), limits, truncated_fields)
             
-            if logradouro:
-                endereco_partes.append(logradouro)
-            if numero:
-                endereco_partes.append(f"nº {numero}")
-            if complemento:
-                endereco_partes.append(complemento)
-            if bairro:
-                endereco_partes.append(f"Bairro: {bairro}")
-            if cidade:
-                endereco_partes.append(cidade)
-            if uf:
-                endereco_partes.append(uf)
-            if cep:
-                endereco_partes.append(f"CEP: {cep}")
+            # Dados comerciais
+            cliente.segmento = _sanitize_text('segmento', request.form.get('segmento'), limits, truncated_fields)
+            cliente.porte_empresa = _sanitize_text('porte_empresa', request.form.get('porte_empresa'), limits, truncated_fields)
+            cliente.origem = _sanitize_text('origem', request.form.get('origem'), limits, truncated_fields)
+            cliente.classificacao = _sanitize_text('classificacao', request.form.get('classificacao'), limits, truncated_fields)
             
-            endereco_montado = ', '.join(endereco_partes) if endereco_partes else ''
-            cliente.endereco = _sanitize_text('endereco', endereco_montado, limits, truncated_fields)
-            cliente.pais = _sanitize_text('pais', request.form.get('pais', cliente.pais or 'Brasil'), limits, truncated_fields)
-
+            # Configurações financeiras
+            cliente.limite_credito = _safe_float(request.form.get('limite_credito', 0), 0.0)
+            cliente.forma_pagamento_padrao = _sanitize_text('forma_pagamento_padrao', request.form.get('forma_pagamento_padrao'), limits, truncated_fields)
+            cliente.prazo_pagamento_padrao = _safe_int(request.form.get('prazo_pagamento_padrao', 30), 30)
+            cliente.desconto_padrao = _safe_float(request.form.get('desconto_padrao', 0), 0.0)
+            
+            # Informações extras
+            if request.form.get('data_nascimento'):
+                cliente.data_nascimento = datetime.strptime(request.form.get('data_nascimento'), '%Y-%m-%d').date()
+            if request.form.get('data_fundacao'):
+                cliente.data_fundacao = datetime.strptime(request.form.get('data_fundacao'), '%Y-%m-%d').date()
+            
+            cliente.genero = _sanitize_text('genero', request.form.get('genero'), limits, truncated_fields)
+            cliente.estado_civil = _sanitize_text('estado_civil', request.form.get('estado_civil'), limits, truncated_fields)
+            cliente.profissao = _sanitize_text('profissao', request.form.get('profissao'), limits, truncated_fields)
+            
+            # Observações
+            cliente.observacoes = request.form.get('observacoes')
+            cliente.observacoes_internas = request.form.get('observacoes_internas')
+            
+            # Status
+            cliente.status = _sanitize_text('status', request.form.get('status'), limits, truncated_fields)
+            if request.form.get('status') == 'bloqueado':
+                cliente.motivo_bloqueio = _sanitize_text('motivo_bloqueio', request.form.get('motivo_bloqueio'), limits, truncated_fields)
+                cliente.ativo = False  # Bloquear = inativo
+            else:
+                cliente.motivo_bloqueio = None
+                cliente.ativo = True  # Garantir que fique ativo
+            
+            print(f"DEBUG: Preparando commit - Cliente ID {cliente.id}, Nome: {cliente.nome}")
+            
+            db.session.flush()  # Força persistência antes do commit
+            print(f"DEBUG: Flush executado - Alterações aplicadas")
+            
+            db.session.commit()
+            print(f"DEBUG: Commit executado com sucesso - Cliente ID {cliente.id} atualizado!")
             _flash_truncation_warning(truncated_fields)
             
-            # Garante que o campo codigo exista
-            if not hasattr(cliente, 'codigo') or not cliente.codigo:
-                cliente.codigo = gerar_codigo_cliente()
+            flash(f'Cliente {cliente.nome} atualizado com sucesso!', 'success')
+            return redirect(url_for('cliente.listar'))
             
-            # Log das alterações para debug
-            print(f"Atualizando cliente ID {id}: {cliente.nome}, CPF/CNPJ: {cliente.cpf_cnpj}, Email: {cliente.email}")
-            
-            db.session.commit()
-            flash('Cliente atualizado com sucesso!', 'success')
-            return redirect(url_for('cliente.listar_clientes'))
         except Exception as e:
             db.session.rollback()
+            print(f"ERRO ao atualizar cliente: {str(e)}")
+            import traceback
+            traceback.print_exc()
             error_msg = str(e)
-            print(f"Erro ao atualizar cliente: {error_msg}")
-            
-            # Mensagens de erro mais específicas
-            if "cpf_cnpj" in error_msg and "unique" in error_msg.lower():
-                flash('Este CPF/CNPJ já está cadastrado para outro cliente.', 'danger')
-            elif "email" in error_msg and "unique" in error_msg.lower():
-                flash('Este e-mail já está cadastrado para outro cliente.', 'danger')
-            elif "StringDataRightTruncation" in error_msg or "value too long for type character varying" in error_msg.lower():
-                flash('Um ou mais campos ultrapassam o limite permitido pelo banco de dados. Revise os textos e tente novamente.', 'danger')
+            if "StringDataRightTruncation" in error_msg or "value too long for type character varying" in error_msg.lower():
+                flash('Um ou mais campos ultrapassam o limite permitido pelo banco de dados. Revise os textos e tente novamente.', 'error')
             else:
-                flash('Não foi possível atualizar o cliente. Tente novamente em instantes.', 'danger')
+                flash('Não foi possível atualizar o cliente. Tente novamente em instantes.', 'error')
     
-    # Garante que o campo codigo exista ao renderizar o template
-    if not hasattr(cliente, 'codigo') or not cliente.codigo:
-        cliente.codigo = gerar_codigo_cliente()
-    return render_template('cliente/cadastro.html', cliente=cliente, codigo_gerado=cliente.codigo)
+    return render_template('cliente/form.html', cliente=cliente)
 
-# Simple direct deletion function that works with AJAX and direct requests
-@cliente_bp.route('/excluir/<int:id>', methods=['POST', 'GET', 'DELETE'])
-@csrf_exempt  # Exempt from CSRF protection
-def excluir_cliente(id):
-    # For GET requests, redirect to list
+@cliente_bp.route('/<int:id>')
+def visualizar(id):
+    """Visualiza um cliente específico."""
+    cliente = Cliente.query.filter_by(id=id, ativo=True).first()
+    
+    if cliente is None:
+        flash(f'Cliente #{id} não encontrado ou foi excluído.', 'error')
+        return redirect(url_for('cliente.listar'))
+    
+    return render_template('cliente/visualizar.html', cliente=cliente)
+
+@cliente_bp.route('/<int:id>/excluir', methods=['GET', 'POST'])
+def excluir(id):
+    """Exclui (desativa) um cliente."""
+    cliente = Cliente.query.filter_by(id=id, ativo=True).first()
+    
+    if cliente is None:
+        flash(f'Cliente #{id} não encontrado ou já foi excluído.', 'error')
+        return redirect(url_for('cliente.listar'))
+    
     if request.method == 'GET':
-        return redirect(url_for('cliente.listar_clientes'))
+        # Mostrar página de confirmação
+        return render_template('cliente/confirmar_exclusao.html', cliente=cliente)
     
-    print(f"Recebida requisição para excluir cliente ID: {id}")
-    
-    # Get client or 404
-    cliente = Cliente.query.get_or_404(id)
-    print(f"Cliente encontrado: {cliente.nome}")
-    
-    # Create connection to handle deletion directly
-    from sqlalchemy import text
-    from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-    
-    # Primeiro verificamos todos os possíveis vínculos
-    vinculos = []
-    
+    # POST - realizar exclusão
     try:
-        # Verificar orçamentos
-        try:
-            result = db.session.execute(text("SELECT COUNT(*) FROM orcamentos WHERE cliente_id = :id"), {"id": id})
-            count = result.scalar()
-            if count and count > 0:
-                vinculos.append(f"{count} orçamento(s)")
-        except Exception as e:
-            # Se a tabela não existir ou ocorrer erro, ignoramos — útil em ambientes de desenvolvimento
-            print(f"Erro ao verificar orçamentos (ignorado): {str(e)}")
+        cliente.ativo = False
+        db.session.commit()
         
-        # Verificar ordens de serviço
-        try:
-            result = db.session.execute(text("SELECT COUNT(*) FROM ordens_servico WHERE cliente_id = :id"), {"id": id})
-            count = result.scalar()
-            if count > 0:
-                vinculos.append(f"{count} ordem(ns) de serviço")
-        except Exception as e:
-            print(f"Erro ao verificar ordens de serviço (ignorado): {str(e)}")
-            
-        # Verificar contas a receber
-        try:
-            result = db.session.execute(text("SELECT COUNT(*) FROM contas_receber WHERE cliente_id = :id"), {"id": id})
-            count = result.scalar()
-            if count > 0:
-                vinculos.append(f"{count} conta(s) a receber")
-        except Exception as e:
-            print(f"Erro ao verificar contas a receber (ignorado): {str(e)}")
-            
-        # Se houver vínculos, informamos e não prosseguimos com a exclusão
-        if vinculos:
-            vinculos_str = ", ".join(vinculos)
-            error_msg = f"Este cliente possui registros vinculados: {vinculos_str}. Não é possível excluir."
-            print(f"Clente {id} possui vínculos: {vinculos_str}")
-            flash(error_msg, 'danger')
-            
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return jsonify({'success': False, 'message': error_msg, 'vinculos': vinculos}), 400
-            else:
-                return redirect(url_for('cliente.listar_clientes'))
-    
-        # Se não houver vínculos, prosseguimos com a exclusão
-        print(f"Tentando excluir cliente ID: {id}, Nome: {cliente.nome}")
+        flash(f'Cliente {cliente.nome} excluído com sucesso!', 'success')
         
-        # Vamos tentar usar o SQLAlchemy primeiro
-        try:
-            db.session.delete(cliente)
-            db.session.commit()
-            print(f"Cliente {id} excluído com sucesso via SQLAlchemy")
-        except Exception as e:
-            print(f"Erro ao excluir via SQLAlchemy, tentando SQL direto: {str(e)}")
-            db.session.rollback()
-            # Fallback para SQL direto
-            result = db.session.execute(text("DELETE FROM clientes WHERE id = :id"), {"id": id})
-            db.session.commit()
-            print(f"Cliente {id} excluído com SQL direto. Linhas afetadas: {result.rowcount}")
-        
-        # Success message
-        flash('Cliente excluído com sucesso!', 'success')
-        
-        # AJAX response if needed
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': True, 'message': 'Cliente excluído com sucesso!'})
-            
-    except IntegrityError as e:
-        db.session.rollback()
-        error_msg = 'Não é possível excluir este cliente porque ele está vinculado a outros registros no sistema.'
-        print(f"Erro de integridade ao excluir cliente ID {id}: {str(e)}")
-        flash(error_msg, 'danger')
-        
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'message': error_msg}), 400
-            
-    except SQLAlchemyError as e:
-        db.session.rollback()
-        error_msg = f'Erro do banco de dados ao excluir cliente: {str(e)}'
-        print(f"Erro SQLAlchemy ao excluir cliente ID {id}: {str(e)}")
-        flash(error_msg, 'danger')
-        
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'message': error_msg}), 500
-            
     except Exception as e:
         db.session.rollback()
-        error_msg = f'Erro ao excluir cliente: {str(e)}'
-        print(f"Erro genérico ao excluir cliente ID {id}: {str(e)}")
-        flash(error_msg, 'danger')
-        
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({'success': False, 'message': error_msg}), 500
+        flash(f'Erro ao excluir cliente: {str(e)}', 'error')
     
-    # Default response for non-AJAX
-    return redirect(url_for('cliente.listar_clientes'))
+    return redirect(url_for('cliente.listar'))
 
-# Detalhamento
-@cliente_bp.route('/detalhar/<int:id>')
-def detalhar_cliente(id):
-    try:
-        cliente = Cliente.query.get_or_404(id)
-        return render_template('cliente/detalhar.html', cliente=cliente)
-    except Exception as e:
-        flash(f'Erro ao carregar detalhes do cliente: {str(e)}', 'danger')
-        return redirect(url_for('cliente.listar_clientes'))
-
-# API para busca/autocomplete
-@cliente_bp.route('/api/busca', methods=['GET'])
-def api_busca_clientes():
+@cliente_bp.route('/api/buscar')
+def api_buscar():
+    """API para busca de clientes via AJAX."""
     termo = request.args.get('q', '').strip()
-    query = Cliente.query
-    if termo:
-        query = query.filter(or_(Cliente.nome.ilike(f'%{termo}%'), Cliente.cpf_cnpj.ilike(f'%{termo}%')))
-    clientes = query.filter(Cliente.ativo == True).order_by(Cliente.nome).limit(20).all()
-    resultados = [
-        {
-            'id': c.id,
-            'codigo': c.codigo,
-            'nome': c.nome,
-            'cpf_cnpj': c.cpf_cnpj or '',
-            'telefone': c.telefone or '',
-            'email': c.email or '',
-            'endereco': c.endereco or ''
-        }
-        for c in clientes
-    ]
-    return jsonify(resultados)
-
-# API RESTful básica (GET, POST, PUT, DELETE)
-@cliente_bp.route('/api/', methods=['GET'])
-@csrf_exempt  # API endpoint - no CSRF needed
-def api_listar_clientes():
-    clientes = Cliente.query.all()
-    return jsonify([
-        {
-            'id': c.id,
-            'codigo': c.codigo,
-            'nome': c.nome,
-            'cpf_cnpj': c.cpf_cnpj,
-            'email': c.email,
-            'telefone': c.telefone
-        } for c in clientes
-    ])
-
-
-# Exportar lista completa de clientes para Excel
-@cliente_bp.route('/exportar/excel')
-def exportar_clientes_excel():
-    clientes = Cliente.query.order_by(Cliente.nome).all()
-    rows = [c.to_dict() for c in clientes]
-    if pd is None:
-        return jsonify({'error': 'pandas não instalado'}), 500
-
-    df = pd.DataFrame(rows)
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Clientes')
-    output.seek(0)
-    return send_file(output, as_attachment=True, download_name='clientes.xlsx', mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-
-# Exportar lista completa de clientes para PDF
-@cliente_bp.route('/exportar/pdf')
-def exportar_clientes_pdf():
-    clientes = Cliente.query.order_by(Cliente.nome).all()
-    rows = [c.to_dict() for c in clientes]
-
-    # Try weasyprint first
-    if _HAS_WEASY:
-        # Render a simple HTML table
-        html = '<h1>Clientes</h1><table border="1" style="border-collapse:collapse;width:100%">'
-        # header
-        if rows:
-            html += '<tr>' + ''.join(f'<th>{k}</th>' for k in rows[0].keys()) + '</tr>'
-        for r in rows:
-            html += '<tr>' + ''.join(f'<td>{str(v) if v is not None else ""}</td>' for v in r.values()) + '</tr>'
-        html += '</table>'
-        pdf = HTML(string=html).write_pdf()
-        return Response(pdf, mimetype='application/pdf', headers={"Content-Disposition": "attachment;filename=clientes.pdf"})
-
-    # Fallback to reportlab if available
-    if _HAS_REPORTLAB:
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer)
-        styles = getSampleStyleSheet()
-        story = []
-        story.append(Paragraph('Clientes', styles['Title']))
-        for r in rows:
-            story.append(Paragraph(', '.join(f"{k}: {v}" for k, v in r.items()), styles['Normal']))
-        doc.build(story)
-        buffer.seek(0)
-        return send_file(buffer, as_attachment=True, download_name='clientes.pdf', mimetype='application/pdf')
-
-    return jsonify({'error': 'Nenhuma biblioteca de PDF disponível (instale weasyprint ou reportlab)'}), 500
-
-@cliente_bp.route('/api/<int:id>', methods=['GET'])
-def api_detalhar_cliente(id):
-    c = Cliente.query.get_or_404(id)
-    return jsonify({
-        'id': c.id,
-        'codigo': c.codigo,
-        'nome': c.nome,
-        'cpf_cnpj': c.cpf_cnpj,
-        'email': c.email,
-        'telefone': c.telefone
-    })
-
-@cliente_bp.route('/api/', methods=['POST'])
-@csrf_exempt  # API endpoint - no CSRF needed
-def api_criar_cliente():
-    data = request.json
-    cliente = Cliente(
-        codigo=gerar_codigo_cliente(),
-        nome=data.get('nome'),
-        cpf_cnpj=data.get('cpf_cnpj'),
-        email=data.get('email'),
-        telefone=data.get('telefone'),
-        ativo=True
-    )
-    db.session.add(cliente)
-    db.session.commit()
-    return jsonify({'id': cliente.id}), 201
-
-@cliente_bp.route('/api/<int:id>', methods=['PUT'])
-@csrf_exempt  # API endpoint - no CSRF needed
-def api_editar_cliente(id):
-    cliente = Cliente.query.get_or_404(id)
-    data = request.json
-    cliente.nome = data.get('nome', cliente.nome)
-    cliente.cpf_cnpj = data.get('cpf_cnpj', cliente.cpf_cnpj)
-    cliente.email = data.get('email', cliente.email)
-    cliente.telefone = data.get('telefone', cliente.telefone)
-    db.session.commit()
-    return jsonify({'msg': 'Cliente atualizado'})
-
-@cliente_bp.route('/api/<int:id>', methods=['DELETE'])
-def api_excluir_cliente(id):
-    try:
-        cliente = Cliente.query.get_or_404(id)
-        db.session.delete(cliente)
-        db.session.commit()
-        return jsonify({'msg': 'Cliente excluído'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 500
-
-# Método alternativo para exclusão com verificação de dependências
-@cliente_bp.route('/excluir_alternativo/<int:id>', methods=['POST'])
-@csrf_exempt
-def excluir_cliente_alternativo(id):
-    # Verificar se o cliente existe
-    cliente = Cliente.query.get_or_404(id)
     
-    # Coletar todas as tabelas com possíveis relações para o cliente
-    from sqlalchemy import text, inspect
+    if not termo or len(termo) < 2:
+        return jsonify([])
     
-    try:
-        # Verificar se há dependências em orçamentos
-        result = db.session.execute(text("SELECT COUNT(*) FROM orcamentos WHERE cliente_id = :id"), {"id": id})
-        count = result.scalar()
-        if count > 0:
-            return jsonify({
-                'success': False, 
-                'message': f'Este cliente possui {count} orçamentos vinculados e não pode ser excluído.'
-            }), 400
-            
-        # Verificar dependências em ordens de serviço
-        result = db.session.execute(text("SELECT COUNT(*) FROM ordens_servico WHERE cliente_id = :id"), {"id": id})
-        count = result.scalar()
-        if count > 0:
-            return jsonify({
-                'success': False, 
-                'message': f'Este cliente possui {count} ordens de serviço vinculadas e não pode ser excluído.'
-            }), 400
+    clientes = Cliente.query.filter(
+        db.or_(
+            Cliente.nome.ilike(f'%{termo}%'),
+            Cliente.cpf_cnpj.ilike(f'%{termo}%')
+        ),
+        Cliente.ativo == True
+    ).limit(10).all()
 
-        # Verificar dependências em contas a receber
-        result = db.session.execute(text("SELECT COUNT(*) FROM contas_receber WHERE cliente_id = :id"), {"id": id})
-        count = result.scalar()
-        if count > 0:
-            return jsonify({
-                'success': False, 
-                'message': f'Este cliente possui {count} contas a receber vinculadas e não pode ser excluído.'
-            }), 400
-        
-        # Se não há dependências, tenta excluir
-        db.session.execute(text("DELETE FROM clientes WHERE id = :id"), {"id": id})
-        db.session.commit()
-        
-        return jsonify({
-            'success': True, 
-            'message': 'Cliente excluído com sucesso!'
+    resultado = []
+    for cliente in clientes:
+        resultado.append({
+            'id': cliente.id,
+            'nome': cliente.nome,
+            'documento': cliente.documento_formatado,
+            'email': cliente.email or '',
+            'texto': f'{cliente.nome} - {cliente.documento_formatado}'     
         })
+
+    return jsonify(resultado)
+
+
+# === NOVAS ROTAS PARA CONSULTA AUTOMÁTICA ===
+
+@cliente_bp.route('/api/consultar-cnpj/<cnpj>')
+def consultar_cnpj(cnpj):
+    """Consulta dados da empresa via CNPJ usando múltiplas APIs."""
+    try:
+        # Remove formatação do CNPJ
+        cnpj_limpo = re.sub(r'[^0-9]', '', cnpj)
         
-    except Exception as e:
-        db.session.rollback()
+        if len(cnpj_limpo) != 14:
+            return jsonify({'success': False, 'error': 'CNPJ deve ter 14 dígitos'}), 400
+        
+        # Tenta primeira API - ReceitaWS
+        try:
+            print(f"Consultando CNPJ {cnpj_limpo} na ReceitaWS...")
+            url = f'https://www.receitaws.com.br/v1/cnpj/{cnpj_limpo}'
+            response = requests.get(url, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                if data.get('status') != 'ERROR':
+                    # Formata os dados para retornar
+                    resultado = {
+                        'success': True,
+                        'data': {
+                            'nome': data.get('nome', ''),  # Razão Social
+                            'fantasia': data.get('fantasia', ''),  # Nome Fantasia
+                            'cnpj': data.get('cnpj', ''),
+                            'situacao': data.get('situacao', ''),
+                            'email': data.get('email', ''),
+                            'telefone': data.get('telefone', ''),
+                            'atividade_principal': data.get('atividade_principal', [{}])[0].get('text', '') if data.get('atividade_principal') else '',
+                            'endereco': {
+                                'logradouro': data.get('logradouro', ''),
+                                'numero': data.get('numero', ''),
+                                'complemento': data.get('complemento', ''),
+                                'bairro': data.get('bairro', ''),
+                                'cidade': data.get('municipio', ''),
+                                'uf': data.get('uf', ''),
+                                'cep': data.get('cep', '')
+                            }
+                        }
+                    }
+                    print(f" Dados encontrados na ReceitaWS!")
+                    return jsonify(resultado)
+        
+        except Exception as e:
+            print(f"⚠️  ReceitaWS falhou: {e}")
+        
+        # Se chegou aqui, tenta segunda API - BrasilAPI  
+        try:
+            print(f"Tentando BrasilAPI...")
+            url = f'https://brasilapi.com.br/api/cnpj/v1/{cnpj_limpo}'
+            response = requests.get(url, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                
+                resultado = {
+                    'success': True,
+                    'data': {
+                        'nome': data.get('legal_name', ''),  # Razão Social  
+                        'fantasia': data.get('trade_name', ''),  # Nome Fantasia
+                        'cnpj': data.get('cnpj', ''),
+                        'situacao': data.get('registration_status', ''),
+                        'email': data.get('email', ''),
+                        'telefone': '',  # BrasilAPI não tem telefone
+                        'atividade_principal': data.get('main_activity', {}).get('text', ''),
+                        'endereco': {
+                            'logradouro': data.get('address', {}).get('street', ''),
+                            'numero': data.get('address', {}).get('number', ''),
+                            'complemento': data.get('address', {}).get('details', ''),
+                            'bairro': data.get('address', {}).get('district', ''),
+                            'cidade': data.get('address', {}).get('city', ''),
+                            'uf': data.get('address', {}).get('state', ''),
+                            'cep': data.get('address', {}).get('zip_code', '')
+                        }
+                    }
+                }
+                print(f" Dados encontrados na BrasilAPI!")
+                return jsonify(resultado)
+                
+        except Exception as e:
+            print(f"⚠️  BrasilAPI falhou: {e}")
+        
+        # Se ambas falharam
         return jsonify({
             'success': False, 
-            'message': f'Erro ao excluir cliente: {str(e)}'
-        }), 500
-
-# Rota especial para forçar exclusão (APENAS PARA TESTE/DESENVOLVIMENTO)
-@cliente_bp.route('/excluir_teste/<int:id>', methods=['POST'])
-@csrf_exempt
-def excluir_cliente_teste(id):
-    """
-    ATENÇÃO: Esta rota é apenas para fins de teste e desenvolvimento.
-    Ela força a exclusão de um cliente, removendo todos os seus vínculos primeiro.
-    NÃO USE EM PRODUÇÃO pois pode causar perda de dados.
-    """
-    from flask import current_app
-
-    # Bloqueia em produção
-    if not current_app.debug:
-        abort(403)
-
-    try:
-        # Verificar se o cliente existe
-        cliente = Cliente.query.get_or_404(id)
-        nome_cliente = cliente.nome
+            'error': 'CNPJ não encontrado ou serviços temporariamente indisponíveis. Tente novamente em alguns instantes.'
+        }), 404
         
-        # Coletar informações sobre vínculos para log
-        vinculos = []
-
-        # Usar transação para garantir consistência e lidar com tabelas ausentes
-        from sqlalchemy import text, exc
-
-        def table_exists(table_name):
-            """Verifica se uma tabela existe no schema public (Postgres)."""
-            try:
-                r = db.session.execute(text("SELECT to_regclass(:t)"), {"t": f"public.{table_name}"}).scalar()
-                return r is not None
-            except Exception:
-                return False
-
-        # Verificar e excluir orçamentos (se existir a tabela)
-        try:
-            if table_exists('orcamentos'):
-                result = db.session.execute(text("SELECT COUNT(*) FROM orcamentos WHERE cliente_id = :id"), {"id": id})
-                count = result.scalar()
-                if count > 0:
-                    vinculos.append(f"{count} orçamento(s)")
-                    db.session.execute(text("DELETE FROM orcamentos WHERE cliente_id = :id"), {"id": id})
-        except exc.DatabaseError as e:
-            print(f"[TESTE] Erro ao operar sobre 'orcamentos' (ignorado): {e}")
-
-        # Verificar e excluir ordens de serviço (se existir a tabela)
-        try:
-            if table_exists('ordens_servico'):
-                result = db.session.execute(text("SELECT COUNT(*) FROM ordens_servico WHERE cliente_id = :id"), {"id": id})
-                count = result.scalar()
-                if count > 0:
-                    vinculos.append(f"{count} ordem(ns) de serviço")
-
-                    # Excluir lançamentos financeiros relacionados às OS (se existir)
-                    if table_exists('financeiro_lancamentos_os'):
-                        try:
-                            db.session.execute(text("""
-                                DELETE FROM financeiro_lancamentos_os
-                                WHERE os_id IN (SELECT id FROM ordens_servico WHERE cliente_id = :id)
-                            """), {"id": id})
-                            print(f"[TESTE] Removidos lançamentos financeiros das OS do cliente {id}")
-                        except Exception as e:
-                            print(f"[TESTE] Erro ao remover lançamentos financeiros (ignorado): {e}")
-
-                    # Excluir parcelas relacionadas às ordens (se existir tabela 'parcelas')
-                    if table_exists('parcelas'):
-                        try:
-                            db.session.execute(text("""
-                                DELETE FROM parcelas
-                                WHERE ordem_servico_id IN (SELECT id FROM ordens_servico WHERE cliente_id = :id)
-                            """), {"id": id})
-                            print(f"[TESTE] Removidas parcelas das OS do cliente {id}")
-                        except Exception as e:
-                            print(f"[TESTE] Erro ao remover parcelas (ignorado): {e}")
-
-                    # Agora excluir as ordens de serviço
-                    db.session.execute(text("DELETE FROM ordens_servico WHERE cliente_id = :id"), {"id": id})
-        except exc.DatabaseError as e:
-            print(f"[TESTE] Erro ao operar sobre 'ordens_servico' (ignorado): {e}")
-
-        # Verificar e excluir contas a receber (se a tabela existir)
-        try:
-            if table_exists('contas_receber'):
-                result = db.session.execute(text("SELECT COUNT(*) FROM contas_receber WHERE cliente_id = :id"), {"id": id})
-                count = result.scalar()
-                if count > 0:
-                    vinculos.append(f"{count} conta(s) a receber")
-                    db.session.execute(text("DELETE FROM contas_receber WHERE cliente_id = :id"), {"id": id})
-        except exc.DatabaseError as e:
-            print(f"[TESTE] Erro ao operar sobre 'contas_receber' (ignorado): {e}")
-
-        # Itens de orçamentos (se existirem)
-        try:
-            if table_exists('orcamento_itens') and table_exists('orcamentos'):
-                db.session.execute(text("""
-                    DELETE FROM orcamento_itens
-                    WHERE orcamento_id IN (SELECT id FROM orcamentos WHERE cliente_id = :id)
-                """), {"id": id})
-                print(f"[TESTE] Removidos itens de orçamentos do cliente {id}")
-        except Exception as e:
-            print(f"[TESTE] Erro ao remover itens de orçamentos (ignorado): {e}")
-
-        # Finalmente, excluir o cliente
-        db.session.execute(text("DELETE FROM clientes WHERE id = :id"), {"id": id})
-        db.session.commit()
-        
-        # Registrar no log o que foi excluído
-        if vinculos:
-            print(f"[TESTE] Cliente {id} ({nome_cliente}) excluído forçadamente. Registros removidos: {', '.join(vinculos)}")
-        else:
-            print(f"[TESTE] Cliente {id} ({nome_cliente}) excluído (sem vínculos).")
-            
-        # Retornar resposta de sucesso
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({
-                'success': True, 
-                'message': 'Cliente excluído com sucesso (modo teste)!',
-                'vinculos_removidos': vinculos
-            })
-        else:
-            flash('Cliente excluído com sucesso (modo teste)!', 'warning')
-            return redirect(url_for('cliente.listar_clientes'))
-            
     except Exception as e:
-        db.session.rollback()
-        error_msg = f'Erro ao forçar exclusão do cliente: {str(e)}'
-        print(f"[ERRO-TESTE] {error_msg}")
+        print(f" Erro geral na consulta CNPJ: {e}")
+        return jsonify({'success': False, 'error': 'Erro interno do servidor'}), 500
+
+
+@cliente_bp.route('/api/consultar-cep/<cep>')
+def consultar_cep(cep):
+    """Consulta endereço via CEP usando a API ViaCEP."""
+    try:
+        # Remove formatação do CEP
+        cep_limpo = re.sub(r'[^0-9]', '', cep)
         
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return jsonify({
-                'success': False, 
-                'message': error_msg
-            }), 500
-        else:
-            flash(error_msg, 'danger')
-            return redirect(url_for('cliente.listar_clientes'))
+        if len(cep_limpo) != 8:
+            return jsonify({'success': False, 'error': 'CEP deve ter 8 dígitos'}), 400
+        
+        # Consulta API ViaCEP
+        url = f'https://viacep.com.br/ws/{cep_limpo}/json/'
+        response = requests.get(url, timeout=10)
+        
+        if response.status_code != 200:
+            return jsonify({'success': False, 'error': 'Erro ao consultar CEP'}), 500
+        
+        data = response.json()
+        
+        if data.get('erro'):
+            return jsonify({'success': False, 'error': 'CEP não encontrado'}), 404
+        
+        # Formata os dados para retornar
+        resultado = {
+            'success': True,
+            'data': {
+                'cep': data.get('cep', ''),
+                'logradouro': data.get('logradouro', ''),
+                'complemento': data.get('complemento', ''),
+                'bairro': data.get('bairro', ''),
+                'cidade': data.get('localidade', ''),
+                'uf': data.get('uf', '')
+            }
+        }
+        
+        return jsonify(resultado)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': 'Erro interno do servidor'}), 500
