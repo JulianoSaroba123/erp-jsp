@@ -13,7 +13,11 @@ def create_app():
     from pathlib import Path
     base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     db_path = os.path.join(base_dir, 'database', 'database.db')
-    app.config.setdefault('SQLALCHEMY_DATABASE_URI', f"sqlite:///{Path(db_path).as_posix()}")
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+    else:
+        app.config.setdefault('SQLALCHEMY_DATABASE_URI', f"sqlite:///{Path(db_path).as_posix()}")
     app.config.setdefault('SQLALCHEMY_TRACK_MODIFICATIONS', False)
 
     # Inicializa extensões
@@ -41,6 +45,12 @@ def create_app():
     from aplicacao.painel import init_app as painel_init
     painel_init(app)
 
+    from aplicacao.financeiro import financeiro_bp
+    app.register_blueprint(financeiro_bp)
+
+    from aplicacao.ordem_servico.ordem_servico_routes import bp as ordens_bp
+    app.register_blueprint(ordens_bp)
+
     # Registrar o módulo cliente através do init_app
     from aplicacao.cliente import init_app as cliente_init
     cliente_init(app)
@@ -49,6 +59,7 @@ def create_app():
     try:
         from aplicacao.cliente.cliente_model import Cliente
         from aplicacao.extensoes import db as _db
+        from aplicacao.financeiro.indicadores_service import periodo_mes_atual, resumir_financeiro_periodo
 
         @app.context_processor
         def inject_kpis():
@@ -58,7 +69,12 @@ def create_app():
             except Exception:
                 total_clientes = 0
 
-            # placeholders para outros KPIs (pode ser substituído por lógica real)
+            try:
+                inicio_mes, fim_mes = periodo_mes_atual()
+                resumo_financeiro = resumir_financeiro_periodo(inicio_mes, fim_mes)
+            except Exception:
+                resumo_financeiro = None
+
             total_produtos = 0
             total_os_emitidas = 0
             faturamento_total = 'R$ 0,00'
@@ -67,7 +83,15 @@ def create_app():
                 'total_clientes': total_clientes,
                 'total_produtos': total_produtos,
                 'total_os_emitidas': total_os_emitidas,
-                'faturamento_total': faturamento_total
+                'faturamento_total': faturamento_total,
+                'resumo_financeiro_painel': resumo_financeiro,
+                'receitas_realizadas_painel': resumo_financeiro.receitas_realizadas if resumo_financeiro else 0,
+                'despesas_pagas_painel': resumo_financeiro.despesas_realizadas if resumo_financeiro else 0,
+                'saldo_realizado_painel': resumo_financeiro.resultado_realizado if resumo_financeiro else 0,
+                'saldo_projetado_painel': resumo_financeiro.saldo_projetado if resumo_financeiro else 0,
+                'contas_a_receber_pendentes_painel': resumo_financeiro.contas_a_receber_pendentes if resumo_financeiro else 0,
+                'contas_a_pagar_pendentes_painel': resumo_financeiro.contas_a_pagar_pendentes if resumo_financeiro else 0,
+                'inconsistencias_financeiras_painel_qtd': resumo_financeiro.lancamentos_pagos_sem_data_qtd if resumo_financeiro else 0,
             }
     except Exception:
         # Se importar modelos falhar (por ex durante setup), não interrompe a criação do app

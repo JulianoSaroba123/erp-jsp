@@ -1,6 +1,7 @@
 
 from flask import render_template, request, redirect, url_for, flash
-from datetime import datetime, date, timedelta
+from datetime import datetime, date
+from decimal import Decimal
 from aplicacao.extensoes import db
 try:
     from aplicacao.app import csrf
@@ -8,6 +9,15 @@ except ImportError:
     csrf = None
 from aplicacao.financeiro.financeiro_model import LancamentoFinanceiro
 from .lancamento_os_model import LancamentoFinanceiroOS
+from .indicadores_service import (
+    carregar_registros_financeiros,
+    decimal_valor,
+    normalizar_status,
+    normalizar_tipo,
+    periodo_mes_atual,
+    resumir_registros_financeiros,
+    resumir_financeiro_periodo,
+)
 from . import financeiro_bp
 
 @financeiro_bp.app_template_filter('moeda')
@@ -19,47 +29,22 @@ def moeda_br(v):
 
 @financeiro_bp.route('/dashboard')
 def dashboard():
-    # Período padrão: mês atual
-    hoje = date.today()
-    inicio_mes = hoje.replace(day=1)
-    fim_mes = (inicio_mes + timedelta(days=32)).replace(day=1) - timedelta(days=1)
-    
-    # Buscar lançamentos do período - Modelo tradicional
-    lancamentos = LancamentoFinanceiro.query.filter(
-        LancamentoFinanceiro.data >= inicio_mes,
-        LancamentoFinanceiro.data <= fim_mes
-    ).all()
-    
-    # Buscar lançamentos de OS do período
-    lancamentos_os = LancamentoFinanceiroOS.query.filter(
-        LancamentoFinanceiroOS.data_vencimento >= inicio_mes,
-        LancamentoFinanceiroOS.data_vencimento <= fim_mes
-    ).all()
-    
-    # Calcular totais - Lançamentos tradicionais
-    receitas = sum(x.valor for x in lancamentos if x.is_receita())
-    despesas = sum(x.valor for x in lancamentos if x.is_despesa())
-    
-    # Calcular totais - Lançamentos de OS (sempre receitas)
-    receitas_os = sum(float(x.valor) for x in lancamentos_os)
-    
-    # Total geral
-    receitas_total = receitas + receitas_os
-    saldo = receitas_total - despesas
-    
-    # Valores para DRE (simplificado)
-    rec_dre = receitas_total
-    des_dre = despesas
-    lucro = rec_dre - des_dre
-    
-    # Valores fictícios para demonstração
-    pe_reais = saldo * 0.1  # 10% do saldo como exemplo
-    base_hora = 50.0  # valor base por hora
-    valor_hora = base_hora + (lucro / 160) if lucro > 0 else base_hora  # 160h/mês
+    inicio_mes, fim_mes = periodo_mes_atual()
+    resumo = resumir_financeiro_periodo(inicio_mes, fim_mes)
+
+    receitas = resumo.receitas_realizadas
+    despesas = resumo.despesas_realizadas
+    saldo = resumo.resultado_realizado
+    rec_dre = resumo.receitas_realizadas
+    des_dre = resumo.despesas_realizadas
+    lucro = resumo.resultado_realizado
+    pe_reais = resumo.saldo_projetado
+    base_hora = Decimal('50.00')
+    valor_hora = base_hora + (lucro / Decimal('160')) if lucro > 0 else base_hora
     
     return render_template('financeiro/dashboard.html',
                          periodo=[inicio_mes, fim_mes],
-                         receitas=receitas_total,
+                         receitas=receitas,
                          despesas=despesas,
                          saldo=saldo,
                          pe_reais=pe_reais,
@@ -67,7 +52,12 @@ def dashboard():
                          des_dre=des_dre,
                          lucro=lucro,
                          valor_hora=valor_hora,
-                         base_hora=base_hora)
+                         base_hora=base_hora,
+                         contas_a_receber_pendentes=resumo.contas_a_receber_pendentes,
+                         contas_a_pagar_pendentes=resumo.contas_a_pagar_pendentes,
+                         saldo_projetado=resumo.saldo_projetado,
+                         lancamentos_pagos_sem_data_qtd=resumo.lancamentos_pagos_sem_data_qtd,
+                         lancamentos_pagos_sem_data_valor=resumo.lancamentos_pagos_sem_data_valor)
 
 class RegistroUnificado:
     """Classe para unificar lançamentos de diferentes modelos"""
@@ -120,58 +110,33 @@ def criar_registro_unificado(lancamento, tipo_origem='tradicional'):
 
 @financeiro_bp.route('/')
 def listar():
-    tipo = request.args.get('tipo')      # Receita/Despesa/None
-    status = request.args.get('status')  # Pago/Pendente/Atrasado/None
-    de = request.args.get('de')          # YYYY-MM-DD
-    ate = request.args.get('ate')        # YYYY-MM-DD
+    tipo = request.args.get('tipo')
+    status = request.args.get('status')
+    de = request.args.get('de')
+    ate = request.args.get('ate')
 
-    # Query lançamentos tradicionais
-    q = LancamentoFinanceiro.query
-    if tipo: q = q.filter(LancamentoFinanceiro.tipo == tipo)
-    if status: q = q.filter(LancamentoFinanceiro.status == status)
-    if de: q = q.filter(LancamentoFinanceiro.data >= de)
-    if ate: q = q.filter(LancamentoFinanceiro.data <= ate)
-    lancamentos_tradicionais = q.all()
+    inicio_filtro = datetime.strptime(de, '%Y-%m-%d').date() if de else None
+    fim_filtro = datetime.strptime(ate, '%Y-%m-%d').date() if ate else None
 
-    # Para agora, vamos mostrar AMBOS: tradicionais + OS
-    registros = list(lancamentos_tradicionais)
-    
-    # Buscar lançamentos de OS e adicionar à lista
-    q_os = LancamentoFinanceiroOS.query
-    if status: q_os = q_os.filter(LancamentoFinanceiroOS.status == status)
-    if de: q_os = q_os.filter(LancamentoFinanceiroOS.data_vencimento >= de)
-    if ate: q_os = q_os.filter(LancamentoFinanceiroOS.data_vencimento <= ate)
-    
-    lancamentos_os = q_os.all() if tipo != 'Despesa' else []
-    
-    # ADICIONAR lançamentos de OS à lista principal
-    registros.extend(lancamentos_os)
-    
-    # Calcular totais incluindo OS
-    total_receitas_trad = sum(float(x.valor) for x in lancamentos_tradicionais if x.is_receita())
-    total_despesas_trad = sum(float(x.valor) for x in lancamentos_tradicionais if x.is_despesa())
-    total_receitas_os = sum(float(x.valor) for x in lancamentos_os)
-    
-    total_receitas = total_receitas_trad + total_receitas_os
-    total_despesas = total_despesas_trad
-    saldo = total_receitas - total_despesas
-
-    # Ordenar registros (tradicionais + OS) por data
-    def get_sort_date(record):
-        if hasattr(record, 'data_vencimento'):  # LancamentoFinanceiroOS
-            return record.data_vencimento
-        else:  # LancamentoFinanceiro tradicional
-            return record.data
-    
-    registros.sort(key=get_sort_date, reverse=True)
+    registros = carregar_registros_financeiros(
+        inicio_filtro,
+        fim_filtro,
+        tipo=tipo,
+        status=status,
+    )
+    resumo_lista = resumir_registros_financeiros(registros)
 
     return render_template('financeiro/lista_financeiro.html',
                            registros=registros,
-                           total_receitas=total_receitas,
-                           total_despesas=total_despesas,
-                           saldo=saldo,
-                           total_os=len(lancamentos_os),
-                           valor_os=total_receitas_os,
+                           total_receitas=resumo_lista['total_receitas'],
+                           total_despesas=resumo_lista['total_despesas'],
+                           saldo=resumo_lista['saldo'],
+                           total_os=resumo_lista['total_os'],
+                           valor_os=resumo_lista['valor_os'],
+                           contas_a_receber_pendentes=resumo_lista['contas_a_receber_pendentes'],
+                           contas_a_pagar_pendentes=resumo_lista['contas_a_pagar_pendentes'],
+                           inconsistencias_qtd=resumo_lista['inconsistencias_qtd'],
+                           inconsistencias_valor=resumo_lista['inconsistencias_valor'],
                            filtros={'tipo': tipo, 'status': status, 'de': de, 'ate': ate})
 
 
@@ -181,13 +146,14 @@ def novo():
         dados = request.form
         try:
             lanc = LancamentoFinanceiro(
-                tipo=dados.get('tipo'),
+                tipo=normalizar_tipo(dados.get('tipo')),
                 categoria=dados.get('categoria'),
                 descricao=dados.get('descricao'),
-                valor=float(dados.get('valor') or 0),
+                valor=float(decimal_valor(dados.get('valor') or 0)),
                 data=datetime.strptime(dados.get('data'), '%Y-%m-%d').date() if dados.get('data') else datetime.utcnow().date(),
+                data_pagamento=datetime.strptime(dados.get('data_pagamento'), '%Y-%m-%d').date() if dados.get('data_pagamento') else None,
                 forma_pagamento=dados.get('forma_pagamento'),
-                status=dados.get('status') or 'Pendente',
+                status=normalizar_status(dados.get('status') or 'Pendente'),
                 observacoes=dados.get('observacoes')
             )
             db.session.add(lanc)
@@ -206,13 +172,14 @@ def editar(id):
     if request.method == 'POST':
         dados = request.form
         try:
-            lanc.tipo = dados.get('tipo')
+            lanc.tipo = normalizar_tipo(dados.get('tipo'))
             lanc.categoria = dados.get('categoria')
             lanc.descricao = dados.get('descricao')
-            lanc.valor = float(dados.get('valor') or 0)
+            lanc.valor = float(decimal_valor(dados.get('valor') or 0))
             lanc.data = datetime.strptime(dados.get('data'), '%Y-%m-%d').date() if dados.get('data') else datetime.utcnow().date()
+            lanc.data_pagamento = datetime.strptime(dados.get('data_pagamento'), '%Y-%m-%d').date() if dados.get('data_pagamento') else None
             lanc.forma_pagamento = dados.get('forma_pagamento')
-            lanc.status = dados.get('status') or 'Pendente'
+            lanc.status = normalizar_status(dados.get('status') or 'Pendente')
             lanc.observacoes = dados.get('observacoes')
             db.session.commit()
             flash('Lançamento atualizado!', 'success')
@@ -255,9 +222,8 @@ def atualizar_status_os():
         from aplicacao.ordem_servico.os_model import OrdemServico
         
         # Buscar todas as OS pagas mas com lançamentos pendentes
-        ordens_pagas = OrdemServico.query.filter_by(
-            status='Concluída', 
-            status_pagamento='Pago'
+        ordens_pagas = OrdemServico.query.filter(
+            OrdemServico.status == 'Concluída'
         ).all()
         
         total_atualizados = 0
@@ -266,13 +232,15 @@ def atualizar_status_os():
             # Buscar lançamentos pendentes desta OS
             lancamentos_pendentes = LancamentoFinanceiroOS.query.filter(
                 LancamentoFinanceiroOS.os_id == ordem.id,
-                LancamentoFinanceiroOS.status == 'Pendente'
+                LancamentoFinanceiroOS.status.ilike('pend%')
             ).all()
             
             if lancamentos_pendentes:
                 for lanc in lancamentos_pendentes:
+                    if not lanc.data_pagamento:
+                        flash(f'⚠️ Lançamento da OS {ordem.codigo} está sem data de pagamento e não pode ser baixado automaticamente.', 'warning')
+                        continue
                     lanc.status = 'Pago'
-                    lanc.data_pagamento = ordem.data_conclusao or db.func.current_date()
                     total_atualizados += 1
         
         if total_atualizados > 0:
@@ -294,19 +262,24 @@ def editar_status_os(id):
         lanc_os = LancamentoFinanceiroOS.query.get_or_404(id)
         novo_status = request.form.get('status')
         
-        if novo_status in ['Pago', 'Pendente']:
-            lanc_os.status = novo_status
-            
-            if novo_status == 'Pago':
-                from datetime import date
-                lanc_os.data_pagamento = date.today()
-            else:
-                lanc_os.data_pagamento = None
-                
-            db.session.commit()
-            flash(f'✅ Status do lançamento atualizado para {novo_status}!', 'success')
+        status_normalizado = normalizar_status(novo_status)
+        data_pagamento_form = request.form.get('data_pagamento')
+
+        if status_normalizado == 'Pago':
+            if not data_pagamento_form:
+                flash('⚠️ Para marcar como pago é obrigatório informar a data de pagamento.', 'warning')
+                return redirect(url_for('financeiro.listar'))
+            lanc_os.status = 'Pago'
+            lanc_os.data_pagamento = datetime.strptime(data_pagamento_form, '%Y-%m-%d').date()
+        elif status_normalizado == 'Pendente':
+            lanc_os.status = 'Pendente'
+            lanc_os.data_pagamento = None
         else:
             flash('⚠️ Status inválido.', 'warning')
+            return redirect(url_for('financeiro.listar'))
+
+        db.session.commit()
+        flash(f'✅ Status do lançamento atualizado para {status_normalizado}!', 'success')
             
     except Exception as e:
         db.session.rollback()

@@ -9,6 +9,7 @@ import json
 import os
 import uuid
 from werkzeug.utils import secure_filename
+from aplicacao.financeiro.financeiro_compat import normalizar_status, status_eh_pago
 
 # Importar serviço financeiro para integração automática
 try:
@@ -26,13 +27,16 @@ def integrar_financeiro_automatico(ordem, status_anterior=None):
     Integração automática com módulo financeiro.
     
     Regras:
-    - Quando status = 'Concluída' E status_pagamento = 'Pago' → Criar lançamentos pagos
-    - Quando status = 'Concluída' E status_pagamento = 'Pendente' → Criar lançamentos pendentes
+    - OS concluída gera/atualiza conta a receber pendente.
+    - Receita realizada só ocorre após baixa financeira explícita com data_pagamento.
     """
     if not FINANCEIRO_DISPONIVEL:
         return
     
     try:
+        from aplicacao.financeiro.financeiro_model import LancamentoFinanceiro
+        from aplicacao.financeiro.lancamento_os_model import LancamentoFinanceiroOS
+
         # Verificar se deve gerar lançamentos
         deve_gerar = (
             ordem.status == 'Concluída' and 
@@ -49,6 +53,15 @@ def integrar_financeiro_automatico(ordem, status_anterior=None):
         print(f"  - Status Pagamento: {ordem.status_pagamento}")
         print(f"  - Valor Total: R$ {ordem.valor_total}")
         print(f"  - Forma Pagamento: {ordem.forma_pagamento}")
+
+        categoria_legada = f"Ordem de Serviço {ordem.codigo}"
+        lanc_legado = LancamentoFinanceiro.query.filter_by(categoria=categoria_legada).first()
+        if lanc_legado:
+            print(
+                f"DEBUG FINANCEIRO: Lançamento legado encontrado para OS {ordem.codigo}. "
+                "Sem gerar segunda fonte."
+            )
+            return
         
         # Preparar dados para lançamento
         valor_total = Decimal(str(ordem.valor_total))
@@ -71,6 +84,12 @@ def integrar_financeiro_automatico(ordem, status_anterior=None):
             except Exception as e:
                 print(f"  - ERRO ao processar parcelas JSON: {e}")
         
+        # Preserva histórico de baixa: edição de OS concluída não pode reabrir lançamento liquidado.
+        lancamentos_existentes = LancamentoFinanceiroOS.query.filter_by(os_id=ordem.id).all()
+        if lancamentos_existentes and any(status_eh_pago(l.status) for l in lancamentos_existentes):
+            print(f"DEBUG FINANCEIRO: Lançamento já liquidado para OS {ordem.codigo}. Sincronização ignorada para preservar baixa.")
+            return
+
         # Gerar lançamentos financeiros
         if schedule_custom:
             lancamentos = gerar_lancamentos_financeiro(
@@ -88,33 +107,18 @@ def integrar_financeiro_automatico(ordem, status_anterior=None):
                 entrada=valor_entrada
             )
         
-        # Se a OS está marcada como "Paga", marcar todos os lançamentos como pagos
-        if ordem.status_pagamento == 'Pago':
-            print(f"  - Marcando {len(lancamentos)} lançamentos como pagos")
-            for lanc in lancamentos:
-                lanc.status = 'Pago'
-                lanc.data_pagamento = ordem.data_conclusao or date.today()
-            db.session.commit()
-            
-        # TAMBÉM atualizar lançamentos existentes se mudou para "Pago"
-        elif ordem.status_pagamento == 'Pago':
-            # Buscar lançamentos existentes desta OS
-            from aplicacao.financeiro.lancamento_os_model import LancamentoFinanceiroOS
-            lancamentos_existentes = LancamentoFinanceiroOS.query.filter_by(os_id=ordem.id).all()
-            if lancamentos_existentes:
-                print(f"  - Atualizando {len(lancamentos_existentes)} lançamentos existentes para PAGO")
-                for lanc in lancamentos_existentes:
-                    lanc.status = 'Pago'
-                    lanc.data_pagamento = ordem.data_conclusao or date.today()
-                db.session.commit()
+        # Nunca transformar em recebido automaticamente.
+        for lanc in lancamentos:
+            lanc.status = 'Pendente'
+            lanc.data_pagamento = None
+        db.session.commit()
         
         print(f"✅ FINANCEIRO: {len(lancamentos)} lançamentos criados para OS {ordem.codigo}")
         
         # Adicionar mensagem de feedback para o usuário
-        if ordem.status_pagamento == 'Pago':
-            flash(f'💰 OS marcada como PAGA - {len(lancamentos)} lançamento(s) financeiro(s) criado(s) automaticamente!', 'info')
-        else:
-            flash(f'📋 OS concluída - {len(lancamentos)} lançamento(s) financeiro(s) pendente(s) criado(s)!', 'info')
+        if normalizar_status(ordem.status_pagamento) == 'Pago':
+            flash('⚠️ OS marcada como paga, mas a receita só entra no caixa após baixa financeira explícita com data de pagamento.', 'warning')
+        flash(f'📋 OS concluída - {len(lancamentos)} lançamento(s) financeiro(s) pendente(s) criado(s)!', 'info')
         
     except Exception as e:
         print(f"❌ ERRO na integração financeira para OS {ordem.codigo}: {e}")
@@ -429,8 +433,9 @@ def criar_ordem():
                     nova_ordem.anexos_dados = json.dumps(anexos_processados)
                     db.session.commit()
             
-            # Criar lançamento financeiro automático se necessário
-            nova_ordem.criar_lancamento_financeiro()
+            # Compatibilidade: fallback antigo só quando integração financeira não estiver disponível.
+            if not FINANCEIRO_DISPONIVEL:
+                nova_ordem.criar_lancamento_financeiro()
             
             # INTEGRAÇÃO AUTOMÁTICA COM FINANCEIRO
             print(f"DEBUG: Verificando integração financeira para nova OS {nova_ordem.codigo}")
@@ -553,8 +558,9 @@ def editar_ordem(ordem_id):
                 else:
                     print(f"DEBUG: Nenhum novo anexo para processar")
                 
-                # STEP 6: Criar lançamento financeiro se necessário
-                ordem.criar_lancamento_financeiro()
+                # STEP 6: Compatibilidade - usa fluxo legado apenas sem integração financeira.
+                if not FINANCEIRO_DISPONIVEL:
+                    ordem.criar_lancamento_financeiro()
                 
                 # STEP 7: INTEGRAÇÃO AUTOMÁTICA COM FINANCEIRO
                 print(f"DEBUG: Verificando integração financeira para OS {ordem.codigo}")

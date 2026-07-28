@@ -16,8 +16,8 @@ import requests
 import re
 from datetime import datetime
 from sqlalchemy import inspect
-from app.extensoes import db
-from app.cliente.cliente_model import Cliente
+from aplicacao.extensoes import db
+from aplicacao.cliente.cliente_model import Cliente
 
 # Cria o blueprint
 cliente_bp = Blueprint('cliente', __name__, template_folder='templates')
