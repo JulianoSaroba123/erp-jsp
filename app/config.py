@@ -5,6 +5,25 @@ from datetime import timedelta
 # Carrega variáveis do arquivo .env (para ambiente local)
 load_dotenv()
 
+
+def _engine_options_with_optional_prepare_threshold(base_options, database_uri):
+    """Keep generic engine options, only injecting prepare_threshold for PostgreSQL drivers."""
+    options = dict(base_options)
+    connect_args = dict(options.get("connect_args", {}))
+    db_uri = (database_uri or "").lower()
+    is_postgres = db_uri.startswith("postgresql+psycopg://") or db_uri.startswith("postgresql+psycopg2://")
+
+    if is_postgres:
+        connect_args["prepare_threshold"] = None
+    else:
+        connect_args.pop("prepare_threshold", None)
+
+    if connect_args:
+        options["connect_args"] = connect_args
+    else:
+        options.pop("connect_args", None)
+    return options
+
 class Config:
     """Configuração base do aplicativo"""
     
@@ -37,15 +56,16 @@ class Config:
     # Configurações gerais
     DEBUG = False
     TESTING = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
+    _BASE_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
         'pool_recycle': 300,
         'pool_timeout': 20,
         'max_overflow': 0,
-        # Desativa prepared statements do psycopg3 (modo binário)
-        # que não reconhece OID 1043 (VARCHAR) - corrige "Unknown PG numeric type: 1043"
-        'connect_args': {'prepare_threshold': None}
     }
+    SQLALCHEMY_ENGINE_OPTIONS = _engine_options_with_optional_prepare_threshold(
+        _BASE_ENGINE_OPTIONS,
+        SQLALCHEMY_DATABASE_URI,
+    )
     
     # Configurações de sessão
     PERMANENT_SESSION_LIFETIME = timedelta(hours=2)
@@ -77,14 +97,17 @@ class ProductionConfig(Config):
     WTF_CSRF_ENABLED = True
     
     # Configurações específicas de produção
-    SQLALCHEMY_ENGINE_OPTIONS = {
+    _BASE_ENGINE_OPTIONS = {
         'pool_pre_ping': True,
         'pool_recycle': 3600,
         'pool_timeout': 30,
         'max_overflow': 20,
         'pool_size': 10,
-        'connect_args': {'prepare_threshold': None}
     }
+    SQLALCHEMY_ENGINE_OPTIONS = _engine_options_with_optional_prepare_threshold(
+        _BASE_ENGINE_OPTIONS,
+        Config.SQLALCHEMY_DATABASE_URI,
+    )
 
 class TestingConfig(Config):
     """Configuração para testes"""
