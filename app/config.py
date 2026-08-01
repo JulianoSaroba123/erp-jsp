@@ -92,6 +92,12 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
     WTF_CSRF_ENABLED = False
 
+    # Sobrescrever engine options para SQLite (sem parâmetros PostgreSQL)
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        # SQLite em memória não precisa de pool_recycle, prepare_threshold, etc.
+    }
+
 # Mapeamento de configurações
 config = {
     'development': DevelopmentConfig,

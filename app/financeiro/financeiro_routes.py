@@ -23,6 +23,12 @@ from app.financeiro.financeiro_model import (
     LancamentoFinanceiro, CategoriaFinanceira, ContaBancaria, CentroCusto, CustoFixo,
     Notificacao, RateioDespesa, ImportacaoLote, RelatorioCustomizado
 )
+from app.financeiro.indicadores_service import (
+    resumir_financeiro_periodo,
+    carregar_registros_financeiros,
+    periodo_mes_atual,
+    resumir_registros_financeiros,
+)
 from app.cliente.cliente_model import Cliente
 from app.fornecedor.fornecedor_model import Fornecedor
 
@@ -68,23 +74,18 @@ def dashboard():
                                  ultimos_lancamentos=[],
                                  data_atual=date.today())
         
-        # Resumo do mês atual
-        resumo = LancamentoFinanceiro.get_resumo_mes()
-        
-        # Lançamentos vencidos
+        hoje = date.today()
+        inicio_mes, fim_mes = periodo_mes_atual()
+        resumo = resumir_financeiro_periodo(inicio_mes, fim_mes)
+
+        # Mantém contrato esperado pelo template do dashboard
         vencidos = LancamentoFinanceiro.get_vencidos().count()
-        
-        # Pendentes
         pendentes = LancamentoFinanceiro.get_pendentes().count()
-        
-        # Contas a receber este mês
-        contas_receber = LancamentoFinanceiro.get_contas_receber().filter(
-            db.extract('month', LancamentoFinanceiro.data_vencimento) == date.today().month
+        contas_receber = LancamentoFinanceiro.query.filter_by(
+            tipo='conta_receber', status='pendente', ativo=True
         ).count()
-        
-        # Contas a pagar este mês
-        contas_pagar = LancamentoFinanceiro.get_contas_pagar().filter(
-            db.extract('month', LancamentoFinanceiro.data_vencimento) == date.today().month
+        contas_pagar = LancamentoFinanceiro.query.filter_by(
+            tipo='conta_pagar', status='pendente', ativo=True
         ).count()
         
         # Últimos lançamentos (usando data_criacao_auditoria ou data_lancamento)
@@ -175,6 +176,25 @@ def listar_lancamentos():
         # Ordenação
         lancamentos = query.order_by(LancamentoFinanceiro.data_lancamento.desc()).all()
         print(f"DEBUG: Encontrados {len(lancamentos)} lançamentos")
+
+        if lancamentos:
+            datas_vencimento = [l.data_vencimento for l in lancamentos if l.data_vencimento]
+            datas_pagamento = [l.data_pagamento for l in lancamentos if l.data_pagamento]
+            candidatos = datas_vencimento + datas_pagamento
+            if candidatos:
+                periodo_inicio = min(candidatos)
+                periodo_fim = max(candidatos)
+            else:
+                hoje = date.today()
+                periodo_inicio = date(hoje.year, hoje.month, 1)
+                periodo_fim = hoje
+        else:
+            hoje = date.today()
+            periodo_inicio = date(hoje.year, hoje.month, 1)
+            periodo_fim = hoje
+
+        # Calcular indicadores usando o serviço central (Regra 5)
+        resumo_lista = resumir_financeiro_periodo(periodo_inicio, periodo_fim)
         
         # Listas para os dropdowns de filtros
         clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
@@ -193,6 +213,7 @@ def listar_lancamentos():
                              clientes=clientes,
                              fornecedores=fornecedores,
                              categorias=categorias,
+                             resumo_financeiro=resumo_lista,
                              filtros={
                                  'tipo': tipo,
                                  'status': status,
