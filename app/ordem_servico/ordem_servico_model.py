@@ -562,45 +562,13 @@ class OrdemServico(BaseModel):
         """
         if self.status != 'finalizada':
             return None
-        
-        # Verificar se já existe lançamento para esta OS
-        from app.financeiro.financeiro_model import LancamentoFinanceiro
-        lancamento_existente = LancamentoFinanceiro.query.filter_by(
-            ordem_servico_id=self.id,
-            ativo=True
-        ).first()
-        
-        if lancamento_existente:
-            return lancamento_existente
-        
-        from datetime import timedelta
-        
-        # Calcular valor final (total - desconto)
-        valor_final = float(self.valor_total or 0)
-        if valor_final <= 0:
-            return None
-        
-        # Determinar data de vencimento (hoje + 7 dias padrão)
-        data_vencimento = date.today() + timedelta(days=7)
-        
-        # Criar lançamento
-        novo_lancamento = LancamentoFinanceiro(
-            descricao=f"Serviço Ref. OS #{self.numero}",
-            valor=valor_final,
-            tipo='conta_receber',
-            status='pendente',
-            categoria='Serviços',
-            subcategoria='Prestação de Serviços',
-            data_lancamento=date.today(),
-            data_vencimento=data_vencimento,
-            cliente_id=self.cliente_id,
-            ordem_servico_id=self.id,
-            forma_pagamento=getattr(self, 'condicao_pagamento', 'a_vista') or 'a_vista',
-            observacoes=f"Lançamento automático gerado pela finalização da OS {self.numero}"
-        )
-        
-        novo_lancamento.save()
-        return novo_lancamento
+
+        from app.financeiro.financeiro_utils import gerar_lancamento_ordem_servico
+
+        resultado = gerar_lancamento_ordem_servico(self)
+        if isinstance(resultado, list):
+            return resultado[0] if resultado else None
+        return resultado
     
     def cancelar_servico(self):
         """Cancela o serviço."""
