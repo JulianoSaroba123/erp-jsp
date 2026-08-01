@@ -17,6 +17,58 @@ from app.financeiro.financeiro_model import LancamentoFinanceiro
 from sqlalchemy import func
 
 
+def _status_financeiro_por_os(ordem_servico):
+    """Mapeia status da OS para status financeiro."""
+    return 'pendente' if ordem_servico.status != 'concluida' else 'recebido'
+
+
+def _numero_parcela_exibicao(parcela, total_parcelas):
+    """Monta string de exibição da parcela (não usada como identidade)."""
+    if not parcela:
+        return None
+    total = total_parcelas if total_parcelas > 0 else 1
+    return f'{parcela.numero_parcela}/{total}'
+
+
+def _atualizar_lancamento_os(lancamento, ordem_servico, parcela=None, total_parcelas=0):
+    """Aplica atualização segura em lançamento de OS preservando quitados."""
+    if lancamento.status in {'pago', 'recebido'} and lancamento.data_pagamento is not None:
+        # Preserva lançamentos quitados mesmo com edição de OS.
+        return
+
+    status_financeiro = _status_financeiro_por_os(ordem_servico)
+    numero_parcela = _numero_parcela_exibicao(parcela, total_parcelas)
+
+    if parcela is not None:
+        descricao = f"OS {ordem_servico.numero} - {ordem_servico.titulo} - Parcela {parcela.numero_parcela}"
+        valor = Decimal(str(parcela.valor or 0)).quantize(Decimal('0.01'))
+        data_vencimento = parcela.data_vencimento
+        ordem_servico_parcela_id = parcela.id
+    else:
+        descricao = f"OS {ordem_servico.numero} - {ordem_servico.titulo}"
+        valor = Decimal(str(ordem_servico.valor_total or 0)).quantize(Decimal('0.01'))
+        data_vencimento = ordem_servico.data_prevista
+        ordem_servico_parcela_id = None
+
+    lancamento.descricao = descricao
+    lancamento.valor = valor
+    lancamento.tipo = 'conta_receber'
+    lancamento.status = status_financeiro
+    lancamento.categoria = 'Serviços'
+    lancamento.subcategoria = 'Ordem de Serviço'
+    lancamento.data_lancamento = ordem_servico.data_abertura
+    lancamento.data_vencimento = data_vencimento
+    lancamento.cliente_id = ordem_servico.cliente_id
+    lancamento.ordem_servico_id = ordem_servico.id
+    lancamento.ordem_servico_parcela_id = ordem_servico_parcela_id
+    lancamento.numero_parcela = numero_parcela
+    lancamento.observacoes = f"Lançamento automático da {ordem_servico.numero}"
+    lancamento.origem = 'ORDEM_SERVICO'
+
+    if status_financeiro == 'recebido' and lancamento.data_pagamento is None:
+        lancamento.data_pagamento = ordem_servico.data_conclusao or date.today()
+
+
 def gerar_lancamento_ordem_servico(ordem_servico):
     """
     Gera lançamento financeiro automático para ordem de serviço.
@@ -25,51 +77,62 @@ def gerar_lancamento_ordem_servico(ordem_servico):
         ordem_servico: Instância da OrdemServico
         
     Returns:
-        LancamentoFinanceiro: Lançamento criado ou None se já existe
+        list[LancamentoFinanceiro]: Lançamentos criados/atualizados
     """
     try:
-        # Verificar se já existe lançamento para esta OS
-        lancamento_existente = LancamentoFinanceiro.query.filter_by(
-            ordem_servico_id=ordem_servico.id,
-            ativo=True
-        ).first()
-        
-        if lancamento_existente:
-            # Atualizar valor se mudou
-            if float(lancamento_existente.valor) != float(ordem_servico.valor_total):
-                lancamento_existente.valor = ordem_servico.valor_total
-                lancamento_existente.descricao = f"OS {ordem_servico.numero} - {ordem_servico.titulo}"
-                db.session.commit()
-                print(f" Lançamento atualizado para OS {ordem_servico.numero}")
-            return lancamento_existente
-        
-        # Criar novo lançamento apenas se valor > 0
-        if ordem_servico.valor_total and float(ordem_servico.valor_total) > 0:
-            lancamento = LancamentoFinanceiro(
-                descricao=f"OS {ordem_servico.numero} - {ordem_servico.titulo}",
-                valor=ordem_servico.valor_total,
-                tipo='conta_receber',  # Ordem de serviço é receita a receber
-                status='pendente' if ordem_servico.status != 'concluida' else 'recebido',
-                categoria='Serviços',
-                subcategoria='Ordem de Serviço',
-                data_lancamento=ordem_servico.data_abertura,
-                data_vencimento=ordem_servico.data_prevista,
-                cliente_id=ordem_servico.cliente_id,
+        total_os = Decimal(str(ordem_servico.valor_total or 0))
+        if total_os <= 0:
+            return []
+
+        parcelas = sorted(list(getattr(ordem_servico, 'parcelas', []) or []), key=lambda p: p.numero_parcela)
+        lancamentos_processados = []
+
+        if parcelas:
+            total_parcelas = len(parcelas)
+            for parcela in parcelas:
+                lancamento = LancamentoFinanceiro.query.filter_by(
+                    ordem_servico_parcela_id=parcela.id,
+                    ativo=True,
+                ).first()
+
+                if not lancamento:
+                    lancamento = LancamentoFinanceiro(
+                        origem='ORDEM_SERVICO',
+                        ordem_servico_id=ordem_servico.id,
+                        ordem_servico_parcela_id=parcela.id,
+                    )
+                    db.session.add(lancamento)
+
+                _atualizar_lancamento_os(lancamento, ordem_servico, parcela=parcela, total_parcelas=total_parcelas)
+                lancamentos_processados.append(lancamento)
+        else:
+            # OS sem parcelas: mantém comportamento de lançamento único por OS.
+            lancamento = LancamentoFinanceiro.query.filter_by(
                 ordem_servico_id=ordem_servico.id,
-                observacoes=f"Lançamento automático da {ordem_servico.numero}"
-            )
-            
-            db.session.add(lancamento)
-            db.session.commit()
-            
-            print(f" Lançamento criado para OS {ordem_servico.numero}: R$ {ordem_servico.valor_total}")
-            return lancamento
+                ordem_servico_parcela_id=None,
+                ativo=True,
+            ).first()
+
+            if not lancamento:
+                lancamento = LancamentoFinanceiro(
+                    origem='ORDEM_SERVICO',
+                    ordem_servico_id=ordem_servico.id,
+                )
+                db.session.add(lancamento)
+
+            _atualizar_lancamento_os(lancamento, ordem_servico)
+            lancamentos_processados.append(lancamento)
+
+        db.session.commit()
+
+        print(f" Lançamentos processados para OS {ordem_servico.numero}: {len(lancamentos_processados)}")
+        return lancamentos_processados
             
     except Exception as e:
         print(f" Erro ao gerar lançamento para OS {ordem_servico.numero}: {e}")
         db.session.rollback()
         
-    return None
+    return []
 
 
 def atualizar_status_financeiro_ordem(ordem_servico):
@@ -80,13 +143,12 @@ def atualizar_status_financeiro_ordem(ordem_servico):
         ordem_servico: Instância da OrdemServico
     """
     try:
-        lancamento = LancamentoFinanceiro.query.filter_by(
+        lancamentos = LancamentoFinanceiro.query.filter_by(
             ordem_servico_id=ordem_servico.id,
             ativo=True
-        ).first()
-        
-        if lancamento:
-            # Mapear status da OS para status financeiro
+        ).all()
+
+        if lancamentos:
             status_map = {
                 'concluida': 'recebido',
                 'cancelada': 'cancelado',
@@ -94,14 +156,20 @@ def atualizar_status_financeiro_ordem(ordem_servico):
                 'em_execucao': 'pendente',
                 'em_andamento': 'pendente'
             }
-            
             novo_status = status_map.get(ordem_servico.status, 'pendente')
-            
-            if lancamento.status != novo_status:
-                lancamento.status = novo_status
-                if novo_status == 'recebido':
-                    lancamento.data_pagamento = ordem_servico.data_conclusao or date.today()
-                
+
+            alterou = False
+            for lancamento in lancamentos:
+                if lancamento.status in {'pago', 'recebido'} and lancamento.data_pagamento is not None:
+                    continue
+
+                if lancamento.status != novo_status:
+                    lancamento.status = novo_status
+                    if novo_status == 'recebido' and lancamento.data_pagamento is None:
+                        lancamento.data_pagamento = ordem_servico.data_conclusao or date.today()
+                    alterou = True
+
+            if alterou:
                 db.session.commit()
                 print(f" Status financeiro atualizado para OS {ordem_servico.numero}: {novo_status}")
                 
@@ -228,16 +296,15 @@ def cancelar_lancamento_ordem_servico(ordem_servico):
         ordem_servico: Instância da OrdemServico
     """
     try:
-        # Busca lançamento existente
-        lancamento_existente = LancamentoFinanceiro.query.filter_by(
+        lancamentos = LancamentoFinanceiro.query.filter_by(
             ordem_servico_id=ordem_servico.id
-        ).first()
-        
-        if lancamento_existente:
-            # Remove o lançamento
-            db.session.delete(lancamento_existente)
+        ).all()
+
+        if lancamentos:
+            for lancamento in lancamentos:
+                db.session.delete(lancamento)
             db.session.commit()
-            print(f"💰 Lançamento financeiro removido para OS {ordem_servico.numero}")
+            print(f"💰 Lançamentos financeiros removidos para OS {ordem_servico.numero}: {len(lancamentos)}")
         else:
             print(f"💰 Nenhum lançamento financeiro encontrado para OS {ordem_servico.numero}")
             
@@ -269,11 +336,10 @@ def sincronizar_ordens_financeiro():
             try:
                 resultado = gerar_lancamento_ordem_servico(ordem)
                 if resultado:
-                    # Verificar se foi criado ou atualizado
-                    if resultado.criado_em.date() == date.today():
-                        criados += 1
+                    if isinstance(resultado, list):
+                        criados += len(resultado)
                     else:
-                        atualizados += 1
+                        criados += 1
                         
                 # Atualizar status
                 atualizar_status_financeiro_ordem(ordem)

@@ -62,6 +62,12 @@ class LancamentoFinanceiro(BaseModel):
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=True)
     fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedores.id'), nullable=True)
     ordem_servico_id = db.Column(db.Integer, db.ForeignKey('ordem_servico.id'), nullable=True)
+    ordem_servico_parcela_id = db.Column(
+        db.Integer,
+        db.ForeignKey('ordem_servico_parcelas.id'),
+        nullable=True,
+        index=True,
+    )
     
     # Controle de recorrência
     recorrente = db.Column(db.Boolean, default=False)
@@ -87,6 +93,11 @@ class LancamentoFinanceiro(BaseModel):
     cliente = db.relationship('Cliente', backref='lancamentos_financeiros', foreign_keys=[cliente_id])
     fornecedor = db.relationship('Fornecedor', backref='lancamentos_financeiros', foreign_keys=[fornecedor_id])
     ordem_servico = db.relationship('OrdemServico', backref='lancamentos_financeiros', foreign_keys=[ordem_servico_id])
+    ordem_servico_parcela = db.relationship(
+        'OrdemServicoParcela',
+        backref='lancamentos_financeiros',
+        foreign_keys=[ordem_servico_parcela_id],
+    )
     conta_bancaria = db.relationship('ContaBancaria', backref='lancamentos', foreign_keys=[conta_bancaria_id])
     centro_custo = db.relationship('CentroCusto', backref='lancamentos', foreign_keys=[centro_custo_id])
     plano_conta = db.relationship('PlanoContas', backref='lancamentos', foreign_keys=[plano_conta_id])
@@ -301,8 +312,17 @@ class LancamentoFinanceiro(BaseModel):
     
     def marcar_como_pago(self, data_pagamento=None, usuario=None):
         """Marca lançamento como pago e registra no histórico."""
-        if not data_pagamento:
-            data_pagamento = date.today()
+        status_destino = 'pago' if self.tipo in ['despesa', 'conta_pagar'] else 'recebido'
+        status_anterior = self.status
+        data_anterior = self.data_pagamento
+
+        if status_anterior == status_destino:
+            # Repetição idempotente: não remexe saldo nem data se já está quitado.
+            if data_anterior is not None:
+                return
+
+            if data_pagamento is None:
+                return
         
         # Registrar histórico
         if usuario:
@@ -310,19 +330,23 @@ class LancamentoFinanceiro(BaseModel):
                 lancamento_id=self.id,
                 campo_alterado='status',
                 valor_anterior=self.status,
-                valor_novo='pago' if self.tipo in ['despesa', 'conta_pagar'] else 'recebido',
+                valor_novo=status_destino,
                 usuario=usuario,
                 acao='pagamento',
                 motivo=f'Marcado como pago em {data_pagamento}'
             )
             db.session.add(historico)
         
-        self.status = 'pago' if self.tipo in ['despesa', 'conta_pagar'] else 'recebido'
+        self.status = status_destino
         self.data_pagamento = data_pagamento
         self.usuario_editor = usuario
         
-        # Atualizar saldo da conta bancária
-        if self.conta_bancaria_id:
+        # Atualizar saldo apenas quando há pagamento efetivo novo.
+        deve_movimentar_saldo = data_pagamento is not None and (
+            status_anterior != status_destino or data_anterior is None
+        )
+
+        if self.conta_bancaria_id and deve_movimentar_saldo:
             conta = ContaBancaria.query.get(self.conta_bancaria_id)
             if conta:
                 if self.tipo in ['receita', 'conta_receber']:
