@@ -1,6 +1,7 @@
+import os
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config
+from sqlalchemy import create_engine
 from sqlalchemy import pool
 
 from alembic import context
@@ -26,6 +27,26 @@ target_metadata = None
 # ... etc.
 
 
+def _normalize_database_url(url: str | None) -> str | None:
+    if not url:
+        return url
+    if url.startswith("postgres://"):
+        return url.replace("postgres://", "postgresql+psycopg://", 1)
+    if url.startswith("postgresql://"):
+        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+    if url.startswith("postgresql+psycopg2://"):
+        return url.replace("postgresql+psycopg2://", "postgresql+psycopg://", 1)
+    return url
+
+
+def _resolve_database_url(env_url: str | None, fallback_url: str | None) -> str | None:
+    return _normalize_database_url(env_url) or _normalize_database_url(fallback_url)
+
+
+def _get_database_url() -> str | None:
+    return _resolve_database_url(os.getenv("DATABASE_URL"), config.get_main_option("sqlalchemy.url"))
+
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -38,7 +59,7 @@ def run_migrations_offline() -> None:
     script output.
 
     """
-    url = config.get_main_option("sqlalchemy.url")
+    url = _get_database_url()
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -57,11 +78,7 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = engine_from_config(
-        config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
+    connectable = create_engine(_get_database_url(), poolclass=pool.NullPool)
 
     with connectable.connect() as connection:
         context.configure(
