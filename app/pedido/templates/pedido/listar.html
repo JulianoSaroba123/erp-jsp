@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Pedidos - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Pedidos</span>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="mb-1"><i class="fas fa-shopping-cart me-2 text-info"></i>Pedidos</h3>
+                <p class="text-muted mb-0">Gestao comercial de pedidos sem alterar fluxo de OS e Financeiro.</p>
+            </div>
+            <a href="{{ url_for('pedido.novo') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Novo Pedido
+            </a>
+        </div>
+
+        <form method="GET" class="row g-2 mb-4">
+            <div class="col-lg-3 col-md-6">
+                <input type="text" name="busca" class="form-control" placeholder="Numero, responsavel ou solicitante" value="{{ filtros.busca }}">
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <select name="status" class="form-select">
+                    <option value="">Todos os status</option>
+                    {% for status, label in status_choices %}
+                    <option value="{{ status }}" {% if filtros.status == status %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <select name="cliente_id" class="form-select">
+                    <option value="">Todos os clientes</option>
+                    {% for cliente in clientes %}
+                    <option value="{{ cliente.id }}" {% if filtros.cliente_id == cliente.id %}selected{% endif %}>{{ cliente.nome_exibicao }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-lg-3 col-md-6 d-grid">
+                <button type="submit" class="btn btn-outline-info">
+                    <i class="fas fa-filter me-2"></i>Filtrar
+                </button>
+            </div>
+        </form>
+
+        {% if pedidos %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Numero</th>
+                        <th>Cliente</th>
+                        <th>Status</th>
+                        <th>Data</th>
+                        <th>Total</th>
+                        <th width="190">Acoes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pedido in pedidos %}
+                    <tr>
+                        <td><strong class="text-info">{{ pedido.numero }}</strong></td>
+                        <td>{{ pedido.cliente.nome_exibicao if pedido.cliente else '-' }}</td>
+                        <td><span class="badge bg-secondary">{{ pedido.status_label }}</span></td>
+                        <td>{{ pedido.data_pedido.strftime('%d/%m/%Y') if pedido.data_pedido else '-' }}</td>
+                        <td>R$ {{ "{:,.2f}".format(pedido.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('pedido.visualizar', id=pedido.id) }}" class="btn btn-outline-info" title="Visualizar"><i class="fas fa-eye"></i></a>
+                                <a href="{{ url_for('pedido.editar', id=pedido.id) }}" class="btn btn-outline-warning" title="Editar"><i class="fas fa-edit"></i></a>
+                                <a href="{{ url_for('pedido.excluir', id=pedido.id) }}" class="btn btn-outline-danger" title="Excluir"><i class="fas fa-trash"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Nenhum pedido encontrado</h5>
+            <p class="text-muted">Crie o primeiro pedido para iniciar o modulo.</p>
+            <a href="{{ url_for('pedido.novo') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Criar Pedido
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
