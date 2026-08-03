@@ -16,8 +16,10 @@ def app_ctx():
     app = create_app("testing")
 
     with app.app_context():
+        from app.auth.usuario_model import Usuario  # noqa: F401
         from app.cliente.cliente_model import Cliente  # noqa: F401
         from app.pedido.pedido_model import Pedido, PedidoItem  # noqa: F401
+        from app.pedido_compra.pedido_compra_model import PedidoCompra, PedidoCompraItem  # noqa: F401
         from app.produto.produto_model import Produto  # noqa: F401
         from app.servico.servico_model import Servico  # noqa: F401
         from app.proposta.proposta_model import Proposta, PropostaProduto, PropostaServico  # noqa: F401
@@ -41,12 +43,53 @@ def _seed_cliente_produto(db):
     return cliente, produto
 
 
+def _seed_admin(db):
+    from app.auth.usuario_model import Usuario
+
+    usuario = Usuario(
+        nome="Administrador Teste",
+        email="admin.pedidos@teste.local",
+        usuario="admin_pedidos",
+        tipo_usuario="admin",
+        ativo=True,
+        email_confirmado=True,
+        primeiro_login=False,
+    )
+    usuario.set_senha("123456")
+    db.session.add(usuario)
+    db.session.commit()
+    return usuario
+
+
+def _autenticar(client, usuario):
+    response = client.post(
+        "/auth/login",
+        data={"identificador": usuario.usuario, "senha": "123456"},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+
+
 def test_sidebar_exibe_menu_pedidos():
     template_path = Path(__file__).resolve().parents[2] / "app" / "templates" / "base.html"
     source = template_path.read_text(encoding="utf-8")
 
     assert "url_for('pedido.listar')" in source
-    assert "<span class=\"nav-text\">Pedidos</span>" in source
+    assert "<span class=\"nav-text\">Pedidos de Venda</span>" in source
+    assert "url_for('pedido_compra.listar')" in source
+    assert "<span class=\"nav-text\">Pedidos de Compra</span>" in source
+
+
+def test_rotas_pedido_exigem_autenticacao(app_ctx):
+    client = app_ctx.test_client()
+
+    response = client.get("/pedido/", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/auth/login" in response.headers["Location"]
+
+    response = client.get("/pedido/novo", follow_redirects=False)
+    assert response.status_code == 302
+    assert "/auth/login" in response.headers["Location"]
 
 
 def test_criar_pedido_via_form_web(app_ctx):
@@ -54,8 +97,10 @@ def test_criar_pedido_via_form_web(app_ctx):
     from app.pedido.pedido_model import Pedido
 
     cliente, produto = _seed_cliente_produto(db)
+    usuario = _seed_admin(db)
 
     client = app_ctx.test_client()
+    _autenticar(client, usuario)
     response = client.post(
         "/pedido/novo",
         data={
@@ -89,12 +134,24 @@ def test_listar_pedidos_renderiza_numero(app_ctx):
     from app.pedido.pedido_model import Pedido
 
     cliente, _produto = _seed_cliente_produto(db)
+    usuario = _seed_admin(db)
     pedido = Pedido(cliente_id=cliente.id, responsavel="Comercial")
     db.session.add(pedido)
     db.session.commit()
 
     client = app_ctx.test_client()
+    _autenticar(client, usuario)
     response = client.get("/pedido/")
 
     assert response.status_code == 200
     assert pedido.numero.encode() in response.data
+    assert b"Dashboard" in response.data
+    assert b"Clientes" in response.data
+    assert b"Fornecedores" in response.data
+    assert b"Propostas" in response.data
+    assert b"Pedidos de Venda" in response.data
+    assert b"Ordens de Servi" in response.data
+    assert b"Pedidos de Compra" in response.data
+    assert b"Prospec" not in response.data
+    assert b"Precifica" not in response.data
+

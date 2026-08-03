@@ -933,6 +933,10 @@ def register_blueprints(app):
     # Blueprint de pedidos
     from app.pedido.pedido_routes import pedido_bp
     app.register_blueprint(pedido_bp, url_prefix='/pedido')
+
+    # Blueprint de pedidos de compra
+    from app.pedido_compra.pedido_compra_routes import pedido_compra_bp
+    app.register_blueprint(pedido_compra_bp, url_prefix='/pedido-compra')
     
     # Blueprint admin (migrações e manutenção)
     from app.admin.admin_routes import admin_bp

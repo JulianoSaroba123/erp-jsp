@@ -7,6 +7,7 @@ from datetime import date, datetime
 from decimal import Decimal
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import login_required
 from sqlalchemy.orm import joinedload
 
 from app.cliente.cliente_model import Cliente
@@ -173,6 +174,7 @@ def _popular_itens_da_proposta(proposta):
 
 
 @pedido_bp.route("/")
+@login_required
 def listar():
     status_filtro = (request.args.get("status") or "").strip().upper()
     cliente_filtro = parse_int(request.args.get("cliente_id"), default=None)
@@ -211,6 +213,7 @@ def listar():
 
 
 @pedido_bp.route("/novo", methods=["GET", "POST"])
+@login_required
 def novo():
     context = _carregar_form_context(proposta_id=parse_int(request.args.get("proposta_id"), default=None))
 
@@ -273,6 +276,7 @@ def novo():
 
 
 @pedido_bp.route("/<int:id>")
+@login_required
 def visualizar(id):
     pedido = (
         _query_base_pedidos()
@@ -289,6 +293,7 @@ def visualizar(id):
 
 
 @pedido_bp.route("/<int:id>/editar", methods=["GET", "POST"])
+@login_required
 def editar(id):
     pedido = _query_base_pedidos().filter(Pedido.id == id).first()
 
@@ -370,6 +375,7 @@ def editar(id):
 
 
 @pedido_bp.route("/<int:id>/excluir", methods=["GET", "POST"])
+@login_required
 def excluir(id):
     pedido = _query_base_pedidos().filter(Pedido.id == id).first()
 

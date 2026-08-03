@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Cancelar Pedido de Compra{% endblock %}
+{% block breadcrumb %}<span>Pedidos de Compra</span>{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <h3>Cancelar {{ pedido_compra.numero }}?</h3>
+        <p>O cancelamento e logico e nao gera movimentacoes financeiras nem de estoque.</p>
+        <form method="post" class="d-flex gap-2">
+            <button class="btn btn-danger" type="submit">Confirmar cancelamento</button>
+            <a class="btn btn-outline-secondary" href="{{ url_for('pedido_compra.visualizar', id=pedido_compra.id) }}">Voltar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
