@@ -88,16 +88,17 @@
                         <th>Descricao</th>
                         <th>Unidade</th>
                         <th>Qtd comprada</th>
-                        <th>Qtd recebida</th>
                         <th>Valor unitario</th>
                         <th>Desconto</th>
+                        <th>Acoes</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="itens-body">
                     {% set linhas = itens_preview if itens_preview else [None] %}
                     {% for item in linhas %}
-                    <tr>
+                    <tr class="item-row">
                         <td>
+                            <input type="hidden" name="item_id[]" value="{{ item.item_id if item and item.item_id else '' }}">
                             <select class="form-select" name="item_tipo[]">
                                 <option value="PRODUTO" {% if not item or item.tipo_item == 'PRODUTO' %}selected{% endif %}>Produto</option>
                                 <option value="SERVICO" {% if item and item.tipo_item == 'SERVICO' %}selected{% endif %}>Servico</option>
@@ -117,13 +118,19 @@
                         <td><input class="form-control" type="text" name="item_descricao[]" value="{{ item.descricao if item else '' }}"></td>
                         <td><input class="form-control" type="text" name="item_unidade[]" value="{{ item.unidade if item else '' }}"></td>
                         <td><input class="form-control" type="text" name="item_quantidade[]" value="{{ item.quantidade_comprada if item else '1' }}"></td>
-                        <td><input class="form-control" type="text" name="item_quantidade_recebida[]" value="{{ item.quantidade_recebida if item else '0' }}"></td>
                         <td><input class="form-control" type="text" name="item_valor_unitario[]" value="{{ item.valor_unitario if item else '0,00' }}"></td>
                         <td><input class="form-control" type="text" name="item_desconto[]" value="{{ item.desconto if item else '0,00' }}"></td>
+                        <td>
+                            <button class="btn btn-outline-danger btn-sm btn-remover-item" type="button">Remover</button>
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted">A quantidade recebida e controlada somente pela tela de recebimento.</small>
+            <button class="btn btn-outline-primary btn-sm" id="btn-adicionar-item" type="button">Adicionar item</button>
         </div>
     </div>
 
@@ -132,4 +139,66 @@
         <a class="btn btn-outline-secondary" href="{{ url_for('pedido_compra.listar') }}">Cancelar</a>
     </div>
 </form>
+
+<template id="item-row-template">
+    <tr class="item-row">
+        <td>
+            <input type="hidden" name="item_id[]" value="">
+            <select class="form-select" name="item_tipo[]">
+                <option value="PRODUTO" selected>Produto</option>
+                <option value="SERVICO">Servico</option>
+            </select>
+        </td>
+        <td>
+            <select class="form-select" name="item_referencia_id[]">
+                <option value="">Selecione</option>
+                {% for produto in produtos %}
+                <option value="P:{{ produto.id }}">Produto: {{ produto.nome }}</option>
+                {% endfor %}
+                {% for servico in servicos %}
+                <option value="S:{{ servico.id }}">Servico: {{ servico.nome }}</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td><input class="form-control" type="text" name="item_descricao[]" value=""></td>
+        <td><input class="form-control" type="text" name="item_unidade[]" value=""></td>
+        <td><input class="form-control" type="text" name="item_quantidade[]" value="1"></td>
+        <td><input class="form-control" type="text" name="item_valor_unitario[]" value="0,00"></td>
+        <td><input class="form-control" type="text" name="item_desconto[]" value="0,00"></td>
+        <td>
+            <button class="btn btn-outline-danger btn-sm btn-remover-item" type="button">Remover</button>
+        </td>
+    </tr>
+</template>
+
+<script>
+    (function() {
+        const body = document.getElementById('itens-body');
+        const template = document.getElementById('item-row-template');
+        const addButton = document.getElementById('btn-adicionar-item');
+
+        function bindRemoveButtons() {
+            body.querySelectorAll('.btn-remover-item').forEach((btn) => {
+                btn.onclick = function() {
+                    const rows = body.querySelectorAll('.item-row');
+                    if (rows.length <= 1) {
+                        return;
+                    }
+                    const row = btn.closest('.item-row');
+                    if (row) {
+                        row.remove();
+                    }
+                };
+            });
+        }
+
+        addButton.addEventListener('click', function() {
+            const fragment = template.content.cloneNode(true);
+            body.appendChild(fragment);
+            bindRemoveButtons();
+        });
+
+        bindRemoveButtons();
+    })();
+</script>
 {% endblock %}

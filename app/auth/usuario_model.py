@@ -184,17 +184,22 @@ class Usuario(BaseModel, UserMixin):
                 'visualizar_ordem_servico', 'criar_ordem_servico', 'editar_ordem_servico',
                 'visualizar_produtos', 'criar_produtos', 'editar_produtos',
                 'visualizar_fornecedores', 'criar_fornecedores', 'editar_fornecedores',
-                'visualizar_financeiro', 'criar_financeiro', 'editar_financeiro'
+                'visualizar_financeiro', 'criar_financeiro', 'editar_financeiro',
+                'visualizar_pedidos_compra', 'criar_pedidos_compra', 'editar_pedidos_compra',
+                'cancelar_pedidos_compra', 'receber_pedidos_compra'
             ],
             'operador': [
                 'visualizar_clientes', 'criar_clientes', 'editar_clientes',
                 'visualizar_propostas', 'criar_propostas', 'editar_propostas',
                 'visualizar_ordem_servico', 'criar_ordem_servico', 'editar_ordem_servico',
-                'visualizar_produtos', 'visualizar_fornecedores'
+                'visualizar_produtos', 'visualizar_fornecedores',
+                'visualizar_pedidos_compra', 'criar_pedidos_compra', 'editar_pedidos_compra',
+                'receber_pedidos_compra'
             ],
             'readonly': [
                 'visualizar_clientes', 'visualizar_propostas', 'visualizar_ordem_servico',
-                'visualizar_produtos', 'visualizar_fornecedores', 'visualizar_financeiro'
+                'visualizar_produtos', 'visualizar_fornecedores', 'visualizar_financeiro',
+                'visualizar_pedidos_compra'
             ],
             'colaborador': [
                 'visualizar_ordem_servico_proprias',  # Apenas suas OS

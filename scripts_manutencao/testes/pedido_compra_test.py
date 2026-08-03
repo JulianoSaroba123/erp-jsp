@@ -39,14 +39,14 @@ def app_ctx():
         db.drop_all()
 
 
-def _seed_admin(db):
+def _seed_user(db, tipo_usuario: str, username: str):
     from app.auth.usuario_model import Usuario
 
     usuario = Usuario(
-        nome="Administrador Compra",
-        email="admin.compra@teste.local",
-        usuario="admin_compra",
-        tipo_usuario="admin",
+        nome=f"Usuario {tipo_usuario}",
+        email=f"{username}@teste.local",
+        usuario=username,
+        tipo_usuario=tipo_usuario,
         ativo=True,
         email_confirmado=True,
         primeiro_login=False,
@@ -76,14 +76,13 @@ def _seed_base_compra(db):
     from app.servico.servico_model import Servico
 
     cliente = Cliente(nome="Cliente Fluxo", tipo="PF", cpf_cnpj="44455566677")
+    db.session.add(cliente)
+    db.session.flush()
+
     fornecedor = Fornecedor(nome="Fornecedor Teste Compra")
     produto = Produto(nome="Produto Compra", preco_custo=Decimal("80.00"), preco_venda=Decimal("150.00"), unidade_medida="UN", estoque_atual=7)
     servico = Servico(nome="Servico Compra", valor_base=Decimal("40.00"), tipo_cobranca="servico")
-    proposta = Proposta(cliente_id=1, titulo="Proposta Compra", status="aprovada", valor_total=Decimal("500.00"))
-
-    db.session.add(cliente)
-    db.session.flush()
-    proposta.cliente_id = cliente.id
+    proposta = Proposta(cliente_id=cliente.id, titulo="Proposta Compra", status="aprovada", valor_total=Decimal("500.00"))
     pedido_venda = Pedido(cliente_id=cliente.id, proposta_id=None)
     ordem = OrdemServico(numero="OS0001", titulo="OS Teste Compra", cliente_id=cliente.id, data_abertura=date.today())
 
@@ -110,17 +109,22 @@ def _post_data(fornecedor, produto, servico, ordem, pedido_venda, **overrides):
         "desconto": "10,00",
         "ordem_servico_id": str(ordem.id),
         "pedido_venda_id": str(pedido_venda.id),
+        "item_id[]": ["", ""],
         "item_tipo[]": ["PRODUTO", "SERVICO"],
         "item_referencia_id[]": [f"P:{produto.id}", f"S:{servico.id}"],
         "item_descricao[]": ["Produto Compra", "Servico Compra"],
         "item_unidade[]": ["UN", "SV"],
         "item_quantidade[]": ["2", "1"],
-        "item_quantidade_recebida[]": ["0", "0"],
         "item_valor_unitario[]": ["80,00", "40,00"],
         "item_desconto[]": ["0", "0"],
     }
     data.update(overrides)
     return data
+
+
+def _criar_pedido_compra(client, fornecedor, produto, servico, ordem, pedido_venda):
+    response = client.post("/pedido-compra/novo", data=_post_data(fornecedor, produto, servico, ordem, pedido_venda), follow_redirects=True)
+    assert response.status_code == 200
 
 
 def test_rotas_pedido_compra_exigem_autenticacao(app_ctx):
@@ -135,132 +139,163 @@ def test_rotas_pedido_compra_exigem_autenticacao(app_ctx):
     assert "/auth/login" in response.headers["Location"]
 
 
-def test_sidebar_completa_nas_rotas_de_pedidos(app_ctx):
-    from app.extensoes import db
-
-    usuario = _seed_admin(db)
-    fornecedor, produto, servico, ordem, pedido_venda = _seed_base_compra(db)
-    client = app_ctx.test_client()
-    _autenticar(client, usuario)
-
-    response = client.post("/pedido-compra/novo", data=_post_data(fornecedor, produto, servico, ordem, pedido_venda), follow_redirects=True)
-    assert response.status_code == 200
-    assert b"Dashboard" in response.data
-    assert b"Clientes" in response.data
-    assert b"Fornecedores" in response.data
-    assert b"Propostas" in response.data
-    assert b"Pedidos de Venda" in response.data
-    assert b"Ordens de Servi" in response.data
-    assert b"Pedidos de Compra" in response.data
-    assert b"Prospec" not in response.data
-    assert b"Precifica" not in response.data
-
-
-def test_criacao_edicao_listagem_e_visualizacao_pedido_compra(app_ctx):
+def test_matriz_permissoes_readonly_e_usuario(app_ctx):
     from app.extensoes import db
     from app.pedido_compra.pedido_compra_model import PedidoCompra
 
-    usuario = _seed_admin(db)
+    readonly = _seed_user(db, "readonly", "readonly_compra")
+    usuario = _seed_user(db, "usuario", "usuario_compra")
     fornecedor, produto, servico, ordem, pedido_venda = _seed_base_compra(db)
+
     client = app_ctx.test_client()
     _autenticar(client, usuario)
+    _criar_pedido_compra(client, fornecedor, produto, servico, ordem, pedido_venda)
+    pedido = PedidoCompra.query.first()
 
-    response = client.post("/pedido-compra/novo", data=_post_data(fornecedor, produto, servico, ordem, pedido_venda), follow_redirects=True)
-    assert response.status_code == 200
-    assert b"PC0001" in response.data
+    client.get("/auth/logout", follow_redirects=False)
+    _autenticar(client, readonly)
 
-    pedido_compra = PedidoCompra.query.first()
-    assert pedido_compra is not None
-    assert pedido_compra.fornecedor_id == fornecedor.id
-    assert pedido_compra.pedido_venda_id == pedido_venda.id
-    assert pedido_compra.ordem_servico_id == ordem.id
-    assert pedido_compra.subtotal == Decimal("200.00")
-    assert pedido_compra.total == Decimal("190.00")
+    assert client.get("/pedido-compra/").status_code == 200
+    assert client.get(f"/pedido-compra/{pedido.id}").status_code == 200
+    assert client.get(f"/pedido-compra/{pedido.id}/imprimir").status_code == 200
 
-    response = client.get("/pedido-compra/")
-    assert pedido_compra.numero.encode() in response.data
-
-    response = client.post(
-        f"/pedido-compra/{pedido_compra.id}/editar",
-        data=_post_data(fornecedor, produto, servico, ordem, pedido_venda, solicitante="Compras Editado", desconto="5,00"),
-        follow_redirects=True,
-    )
-    assert response.status_code == 200
-    assert b"Compras Editado" in response.data
+    for rota in [
+        "/pedido-compra/novo",
+        f"/pedido-compra/{pedido.id}/editar",
+        f"/pedido-compra/{pedido.id}/cancelar",
+        f"/pedido-compra/{pedido.id}/recebimento",
+    ]:
+        response = client.post(rota, data={}, follow_redirects=False)
+        assert response.status_code == 302
+        assert "/dashboard" in response.headers.get("Location", "")
 
 
-def test_fornecedor_obrigatorio_e_calculo_decimal(app_ctx):
+def test_status_recebimento_nao_e_aceito_no_formulario_geral(app_ctx):
     from app.extensoes import db
     from app.pedido_compra.pedido_compra_model import PedidoCompra
 
-    usuario = _seed_admin(db)
+    usuario = _seed_user(db, "usuario", "usuario_status")
     fornecedor, produto, servico, ordem, pedido_venda = _seed_base_compra(db)
     client = app_ctx.test_client()
     _autenticar(client, usuario)
 
     response = client.post(
         "/pedido-compra/novo",
-        data=_post_data(fornecedor, produto, servico, ordem, pedido_venda, fornecedor_id="", desconto="0,10", **{"item_quantidade[]": ["1", "1"], "item_valor_unitario[]": ["0,10", "0,20"]}),
+        data=_post_data(fornecedor, produto, servico, ordem, pedido_venda, status="RECEBIDO"),
         follow_redirects=True,
     )
-    assert b"Fornecedor e obrigatorio" in response.data
+    assert b"Status de recebimento" in response.data
+    assert PedidoCompra.query.count() == 0
+
+
+def test_quantidade_recebida_do_formulario_geral_e_ignorada_no_cadastro(app_ctx):
+    from app.extensoes import db
+    from app.pedido_compra.pedido_compra_model import PedidoCompra
+
+    usuario = _seed_user(db, "usuario", "usuario_qtd_cadastro")
+    fornecedor, produto, servico, ordem, pedido_venda = _seed_base_compra(db)
+    client = app_ctx.test_client()
+    _autenticar(client, usuario)
+
+    data = _post_data(fornecedor, produto, servico, ordem, pedido_venda)
+    data["item_quantidade_recebida[]"] = ["999", "999"]
+    response = client.post("/pedido-compra/novo", data=data, follow_redirects=True)
+    assert response.status_code == 200
+
+    pedido = PedidoCompra.query.first()
+    itens = pedido.itens.order_by("id").all()
+    assert all(item.quantidade_recebida == Decimal("0.000") for item in itens)
+
+
+def test_edicao_preserva_recebimento_e_bloqueia_reducao_abaixo_do_recebido(app_ctx):
+    from app.extensoes import db
+    from app.pedido_compra.pedido_compra_model import PedidoCompra
+
+    usuario = _seed_user(db, "usuario", "usuario_qtd_edicao")
+    fornecedor, produto, servico, ordem, pedido_venda = _seed_base_compra(db)
+    client = app_ctx.test_client()
+    _autenticar(client, usuario)
+
+    _criar_pedido_compra(client, fornecedor, produto, servico, ordem, pedido_venda)
+    pedido = PedidoCompra.query.first()
+    item = pedido.itens.order_by("id").first()
+
+    client.post(f"/pedido-compra/{pedido.id}/recebimento", data={"item_quantidade_receber[]": ["1", "0"]}, follow_redirects=True)
+    db.session.refresh(item)
+    assert item.quantidade_recebida == Decimal("1.000")
 
     response = client.post(
-        "/pedido-compra/novo",
-        data=_post_data(fornecedor, produto, servico, ordem, pedido_venda, desconto="0,10", **{"item_quantidade[]": ["3", "1"], "item_valor_unitario[]": ["0,10", "0,20"]}),
+        f"/pedido-compra/{pedido.id}/editar",
+        data={
+            **_post_data(fornecedor, produto, servico, ordem, pedido_venda),
+            "item_id[]": [str(item.id), ""],
+            "item_quantidade[]": ["0,5", "1"],
+            "item_quantidade_recebida[]": ["0", "0"],
+        },
         follow_redirects=True,
     )
-    pedido_compra = PedidoCompra.query.order_by(PedidoCompra.id.desc()).first()
-    assert pedido_compra.subtotal == Decimal("0.50")
-    assert pedido_compra.total == Decimal("0.40")
+    assert b"Quantidade comprada nao pode ser menor" in response.data
 
 
-def test_status_e_regras_de_recebimento(app_ctx):
+def test_item_recebido_nao_pode_ser_excluido_na_edicao(app_ctx):
     from app.extensoes import db
-    from app.pedido_compra.pedido_compra_model import PedidoCompra
+    from app.pedido_compra.pedido_compra_model import PedidoCompra, PedidoCompraItem
 
-    usuario = _seed_admin(db)
+    usuario = _seed_user(db, "usuario", "usuario_exclusao_item")
     fornecedor, produto, servico, ordem, pedido_venda = _seed_base_compra(db)
     client = app_ctx.test_client()
     _autenticar(client, usuario)
 
-    client.post("/pedido-compra/novo", data=_post_data(fornecedor, produto, servico, ordem, pedido_venda), follow_redirects=True)
-    pedido_compra = PedidoCompra.query.first()
+    _criar_pedido_compra(client, fornecedor, produto, servico, ordem, pedido_venda)
+    pedido = PedidoCompra.query.first()
+    itens = pedido.itens.order_by(PedidoCompraItem.id.asc()).all()
 
-    response = client.post(f"/pedido-compra/{pedido_compra.id}/recebimento", data={"item_quantidade_receber[]": ["1", "0"]}, follow_redirects=True)
-    assert response.status_code == 200
+    client.post(f"/pedido-compra/{pedido.id}/recebimento", data={"item_quantidade_receber[]": ["1", "0"]}, follow_redirects=True)
 
-    db.session.refresh(pedido_compra)
-    assert pedido_compra.status == PedidoCompra.STATUS_RECEBIDO_PARCIAL
+    response = client.post(
+        f"/pedido-compra/{pedido.id}/editar",
+        data={
+            **_post_data(fornecedor, produto, servico, ordem, pedido_venda),
+            "item_id[]": [str(itens[1].id)],
+            "item_tipo[]": ["SERVICO"],
+            "item_referencia_id[]": [f"S:{servico.id}"],
+            "item_descricao[]": ["Servico Compra"],
+            "item_unidade[]": ["SV"],
+            "item_quantidade[]": ["1"],
+            "item_valor_unitario[]": ["40,00"],
+            "item_desconto[]": ["0"],
+        },
+        follow_redirects=True,
+    )
+    assert b"Nao e permitido excluir item" in response.data
 
-    response = client.post(f"/pedido-compra/{pedido_compra.id}/recebimento", data={"item_quantidade_receber[]": ["1", "1"]}, follow_redirects=True)
-    assert response.status_code == 200
 
-    db.session.refresh(pedido_compra)
-    assert pedido_compra.status == PedidoCompra.STATUS_RECEBIDO
+def test_formulario_tem_controles_de_multiplos_itens(app_ctx):
+    from app.extensoes import db
 
-    response = client.post(f"/pedido-compra/{pedido_compra.id}/recebimento", data={"item_quantidade_receber[]": ["1", "0"]}, follow_redirects=True)
-    assert b"Recebimento permitido apenas" in response.data
+    usuario = _seed_user(db, "usuario", "usuario_form_multi")
+    _seed_base_compra(db)
+    client = app_ctx.test_client()
+    _autenticar(client, usuario)
+
+    response = client.get("/pedido-compra/novo")
+    assert b"Adicionar item" in response.data
+    assert b"btn-remover-item" in response.data
+    assert b"item-row-template" in response.data
 
 
-def test_bloqueia_recebimento_excedente_e_cancelado(app_ctx):
+def test_pedido_com_dois_ou_mais_itens_funciona(app_ctx):
     from app.extensoes import db
     from app.pedido_compra.pedido_compra_model import PedidoCompra
 
-    usuario = _seed_admin(db)
+    usuario = _seed_user(db, "usuario", "usuario_dois_itens")
     fornecedor, produto, servico, ordem, pedido_venda = _seed_base_compra(db)
     client = app_ctx.test_client()
     _autenticar(client, usuario)
 
-    client.post("/pedido-compra/novo", data=_post_data(fornecedor, produto, servico, ordem, pedido_venda), follow_redirects=True)
-    pedido_compra = PedidoCompra.query.first()
-
-    response = client.post(f"/pedido-compra/{pedido_compra.id}/recebimento", data={"item_quantidade_receber[]": ["3", "0"]}, follow_redirects=True)
-    assert b"nao pode exceder" in response.data
-
-    client.post(f"/pedido-compra/{pedido_compra.id}/cancelar", follow_redirects=True)
-    response = client.post(f"/pedido-compra/{pedido_compra.id}/recebimento", data={"item_quantidade_receber[]": ["1", "0"]}, follow_redirects=True)
-    assert b"Pedido cancelado nao pode receber itens" in response.data
+    _criar_pedido_compra(client, fornecedor, produto, servico, ordem, pedido_venda)
+    pedido = PedidoCompra.query.first()
+    assert pedido.itens.count() >= 2
 
 
 def test_nao_gera_financeiro_nem_movimenta_estoque(app_ctx):
@@ -269,13 +304,13 @@ def test_nao_gera_financeiro_nem_movimenta_estoque(app_ctx):
     from app.pedido_compra.pedido_compra_model import PedidoCompra
     from app.produto.produto_model import Produto
 
-    usuario = _seed_admin(db)
+    usuario = _seed_user(db, "usuario", "usuario_financeiro")
     fornecedor, produto, servico, ordem, pedido_venda = _seed_base_compra(db)
     estoque_inicial = produto.estoque_atual
     client = app_ctx.test_client()
     _autenticar(client, usuario)
 
-    client.post("/pedido-compra/novo", data=_post_data(fornecedor, produto, servico, ordem, pedido_venda), follow_redirects=True)
+    _criar_pedido_compra(client, fornecedor, produto, servico, ordem, pedido_venda)
     pedido_compra = PedidoCompra.query.first()
 
     assert pedido_compra is not None

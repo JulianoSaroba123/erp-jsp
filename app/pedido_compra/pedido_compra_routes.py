@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from functools import wraps
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
-from flask_login import login_required
+from flask_login import current_user, login_required
 from sqlalchemy.orm import joinedload
 
 from app.extensoes import db
@@ -26,6 +27,31 @@ from app.produto.produto_model import Produto
 from app.servico.servico_model import Servico
 
 pedido_compra_bp = Blueprint("pedido_compra", __name__, template_folder="templates")
+
+
+def _status_recebimento(status):
+    return status in {PedidoCompra.STATUS_RECEBIDO_PARCIAL, PedidoCompra.STATUS_RECEBIDO}
+
+
+def _status_form_valido(status_form, status_atual=None):
+    if _status_recebimento(status_form):
+        return status_atual if status_atual and _status_recebimento(status_atual) else PedidoCompra.STATUS_RASCUNHO
+    return status_form
+
+
+def pedido_compra_permission_required(permissao):
+    def decorator(f):
+        @wraps(f)
+        @login_required
+        def decorated_function(*args, **kwargs):
+            if not current_user.tem_permissao(permissao):
+                flash("Acesso negado. Voce nao tem permissao para esta operacao.", "error")
+                return redirect(url_for("painel.dashboard"))
+            return f(*args, **kwargs)
+
+        return decorated_function
+
+    return decorator
 
 
 def _parse_data(valor):
@@ -50,33 +76,41 @@ def _query_base_pedidos_compra():
 
 
 def _carregar_form_context(pedido_compra=None):
+    status_editaveis = [
+        item
+        for item in PedidoCompra.STATUS_CHOICES
+        if item[0] not in {PedidoCompra.STATUS_RECEBIDO_PARCIAL, PedidoCompra.STATUS_RECEBIDO}
+    ]
     return {
         "fornecedores": Fornecedor.query.filter(Fornecedor.ativo.is_(True)).order_by(Fornecedor.nome.asc()).all(),
         "produtos": Produto.query.filter(Produto.ativo.is_(True)).order_by(Produto.nome.asc()).all(),
         "servicos": Servico.query.filter(Servico.ativo.is_(True)).order_by(Servico.nome.asc()).all(),
         "ordens_servico": OrdemServico.query.filter(OrdemServico.ativo.is_(True)).order_by(OrdemServico.id.desc()).all(),
         "pedidos_venda": Pedido.query.filter(Pedido.ativo.is_(True)).order_by(Pedido.id.desc()).all(),
-        "status_choices": PedidoCompra.STATUS_CHOICES,
+        "status_choices": status_editaveis,
         "finalidade_choices": PedidoCompra.FINALIDADE_CHOICES,
         "today": date.today(),
         "pedido_compra": pedido_compra,
     }
 
 
-def _aplicar_itens_no_pedido_compra(pedido_compra, itens_form):
-    for item_existente in list(pedido_compra.itens.all()):
-        db.session.delete(item_existente)
-
+def _aplicar_itens_no_pedido_compra(pedido_compra, itens_form, modo_edicao=False):
+    existentes = {item.id: item for item in pedido_compra.itens.order_by(PedidoCompraItem.ordem.asc(), PedidoCompraItem.id.asc()).all()}
+    utilizados = set()
     ordem = 1
     for item_form in itens_form:
         tipo_item = item_form["tipo_item"]
         if tipo_item not in {PedidoCompraItem.TIPO_PRODUTO, PedidoCompraItem.TIPO_SERVICO}:
             continue
 
+        item_id = item_form.get("item_id")
+        item_existente = existentes.get(item_id) if modo_edicao and item_id else None
+
         produto_id = item_form["referencia_id"] if tipo_item == PedidoCompraItem.TIPO_PRODUTO else None
         servico_id = item_form["referencia_id"] if tipo_item == PedidoCompraItem.TIPO_SERVICO else None
         descricao = item_form["descricao"]
         unidade = item_form["unidade"]
+        quantidade_comprada = item_form["quantidade_comprada"]
 
         if tipo_item == PedidoCompraItem.TIPO_PRODUTO and produto_id and not descricao:
             produto = Produto.query.filter_by(id=produto_id, ativo=True).first()
@@ -89,6 +123,24 @@ def _aplicar_itens_no_pedido_compra(pedido_compra, itens_form):
                 descricao = servico.nome
                 unidade = unidade or "SV"
 
+        if item_existente:
+            quantidade_recebida_atual = Decimal(str(item_existente.quantidade_recebida or 0))
+            if Decimal(str(quantidade_comprada or 0)) < quantidade_recebida_atual:
+                raise ValueError("Quantidade comprada nao pode ser menor que a quantidade ja recebida.")
+
+            item_existente.tipo_item = tipo_item
+            item_existente.produto_id = produto_id
+            item_existente.servico_id = servico_id
+            item_existente.descricao = descricao or "Item sem descricao"
+            item_existente.unidade = unidade or ("UN" if tipo_item == PedidoCompraItem.TIPO_PRODUTO else "SV")
+            item_existente.quantidade_comprada = quantidade_comprada
+            item_existente.valor_unitario = item_form["valor_unitario"]
+            item_existente.desconto = item_form["desconto"]
+            item_existente.ordem = ordem
+            utilizados.add(item_existente.id)
+            ordem += 1
+            continue
+
         db.session.add(
             PedidoCompraItem(
                 pedido_compra_id=pedido_compra.id,
@@ -97,8 +149,8 @@ def _aplicar_itens_no_pedido_compra(pedido_compra, itens_form):
                 servico_id=servico_id,
                 descricao=descricao or "Item sem descricao",
                 unidade=unidade or ("UN" if tipo_item == PedidoCompraItem.TIPO_PRODUTO else "SV"),
-                quantidade_comprada=item_form["quantidade_comprada"],
-                quantidade_recebida=item_form["quantidade_recebida"],
+                quantidade_comprada=quantidade_comprada,
+                quantidade_recebida=Decimal("0"),
                 valor_unitario=item_form["valor_unitario"],
                 desconto=item_form["desconto"],
                 ordem=ordem,
@@ -106,9 +158,17 @@ def _aplicar_itens_no_pedido_compra(pedido_compra, itens_form):
         )
         ordem += 1
 
+    if modo_edicao:
+        for item_existente in existentes.values():
+            if item_existente.id in utilizados:
+                continue
+            if Decimal(str(item_existente.quantidade_recebida or 0)) > Decimal("0"):
+                raise ValueError("Nao e permitido excluir item que ja possui recebimento.")
+            db.session.delete(item_existente)
+
 
 @pedido_compra_bp.route("/")
-@login_required
+@pedido_compra_permission_required("visualizar_pedidos_compra")
 def listar():
     status_filtro = (request.args.get("status") or "").strip().upper()
     fornecedor_filtro = parse_int(request.args.get("fornecedor_id"), default=None)
@@ -148,7 +208,7 @@ def listar():
 
 
 @pedido_compra_bp.route("/novo", methods=["GET", "POST"])
-@login_required
+@pedido_compra_permission_required("criar_pedidos_compra")
 def novo():
     context = _carregar_form_context()
     if request.method == "POST":
@@ -170,14 +230,20 @@ def novo():
             condicao_pagamento=(request.form.get("condicao_pagamento") or "").strip(),
             observacoes=(request.form.get("observacoes") or "").strip(),
             finalidade=normalizar_finalidade(request.form.get("finalidade")),
-            status=normalizar_status(request.form.get("status")),
+            status=_status_form_valido(normalizar_status(request.form.get("status"))),
             desconto=parse_decimal_br(request.form.get("desconto") or 0),
         )
         db.session.add(pedido_compra)
         db.session.flush()
 
-        _aplicar_itens_no_pedido_compra(pedido_compra, itens_form)
-        pedido_compra.recalcular_totais()
+        try:
+            _aplicar_itens_no_pedido_compra(pedido_compra, itens_form, modo_edicao=False)
+            pedido_compra.recalcular_totais()
+            pedido_compra.atualizar_status_recebimento()
+        except ValueError as exc:
+            db.session.rollback()
+            flash(str(exc), "error")
+            return render_template("pedido_compra/form.html", itens_preview=itens_form, **context)
 
         try:
             db.session.commit()
@@ -192,7 +258,7 @@ def novo():
 
 
 @pedido_compra_bp.route("/<int:id>")
-@login_required
+@pedido_compra_permission_required("visualizar_pedidos_compra")
 def visualizar(id):
     pedido_compra = _query_base_pedidos_compra().filter(PedidoCompra.id == id).first()
     if not pedido_compra:
@@ -204,7 +270,7 @@ def visualizar(id):
 
 
 @pedido_compra_bp.route("/<int:id>/editar", methods=["GET", "POST"])
-@login_required
+@pedido_compra_permission_required("editar_pedidos_compra")
 def editar(id):
     pedido_compra = _query_base_pedidos_compra().filter(PedidoCompra.id == id).first()
     if not pedido_compra:
@@ -230,11 +296,20 @@ def editar(id):
         pedido_compra.condicao_pagamento = (request.form.get("condicao_pagamento") or "").strip()
         pedido_compra.observacoes = (request.form.get("observacoes") or "").strip()
         pedido_compra.finalidade = normalizar_finalidade(request.form.get("finalidade"))
-        pedido_compra.status = normalizar_status(request.form.get("status"))
+        pedido_compra.status = _status_form_valido(
+            normalizar_status(request.form.get("status")),
+            status_atual=pedido_compra.status,
+        )
         pedido_compra.desconto = parse_decimal_br(request.form.get("desconto") or 0)
 
-        _aplicar_itens_no_pedido_compra(pedido_compra, itens_form)
-        pedido_compra.recalcular_totais()
+        try:
+            _aplicar_itens_no_pedido_compra(pedido_compra, itens_form, modo_edicao=True)
+            pedido_compra.recalcular_totais()
+            pedido_compra.atualizar_status_recebimento()
+        except ValueError as exc:
+            db.session.rollback()
+            flash(str(exc), "error")
+            return render_template("pedido_compra/form.html", itens_preview=itens_form, **context)
 
         try:
             db.session.commit()
@@ -248,6 +323,7 @@ def editar(id):
     itens_preview = [
         {
             "tipo_item": item.tipo_item,
+            "item_id": item.id,
             "referencia_tipo": "P" if item.tipo_item == PedidoCompraItem.TIPO_PRODUTO else "S",
             "referencia_id": item.produto_id if item.tipo_item == PedidoCompraItem.TIPO_PRODUTO else item.servico_id,
             "descricao": item.descricao,
@@ -263,7 +339,7 @@ def editar(id):
 
 
 @pedido_compra_bp.route("/<int:id>/cancelar", methods=["GET", "POST"])
-@login_required
+@pedido_compra_permission_required("cancelar_pedidos_compra")
 def cancelar(id):
     pedido_compra = _query_base_pedidos_compra().filter(PedidoCompra.id == id).first()
     if not pedido_compra:
@@ -284,7 +360,7 @@ def cancelar(id):
 
 
 @pedido_compra_bp.route("/<int:id>/recebimento", methods=["GET", "POST"])
-@login_required
+@pedido_compra_permission_required("receber_pedidos_compra")
 def recebimento(id):
     pedido_compra = _query_base_pedidos_compra().filter(PedidoCompra.id == id).first()
     if not pedido_compra:
@@ -316,7 +392,7 @@ def recebimento(id):
 
 
 @pedido_compra_bp.route("/<int:id>/imprimir")
-@login_required
+@pedido_compra_permission_required("visualizar_pedidos_compra")
 def imprimir(id):
     pedido_compra = _query_base_pedidos_compra().filter(PedidoCompra.id == id).first()
     if not pedido_compra:

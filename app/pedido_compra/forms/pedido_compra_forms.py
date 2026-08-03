@@ -68,22 +68,22 @@ def normalizar_finalidade(valor):
 
 
 def extrair_itens_form(form_data):
+    item_ids = form_data.getlist("item_id[]")
     tipos = form_data.getlist("item_tipo[]")
     referencias = form_data.getlist("item_referencia_id[]")
     descricoes = form_data.getlist("item_descricao[]")
     unidades = form_data.getlist("item_unidade[]")
     quantidades = form_data.getlist("item_quantidade[]")
-    recebidas = form_data.getlist("item_quantidade_recebida[]")
     valores = form_data.getlist("item_valor_unitario[]")
     descontos = form_data.getlist("item_desconto[]")
 
     tamanho = max(
+        len(item_ids),
         len(tipos),
         len(referencias),
         len(descricoes),
         len(unidades),
         len(quantidades),
-        len(recebidas),
         len(valores),
         len(descontos),
     )
@@ -110,13 +110,13 @@ def extrair_itens_form(form_data):
 
         itens.append(
             {
+                "item_id": parse_int(item_ids[idx], default=None) if idx < len(item_ids) else None,
                 "tipo_item": tipo_item,
                 "referencia_tipo": referencia_tipo,
                 "referencia_id": referencia_id,
                 "descricao": (descricoes[idx] if idx < len(descricoes) else "").strip(),
                 "unidade": (unidades[idx] if idx < len(unidades) else "").strip(),
                 "quantidade_comprada": parse_decimal_br(quantidades[idx], default="1") if idx < len(quantidades) else Decimal("1"),
-                "quantidade_recebida": parse_decimal_br(recebidas[idx], default="0") if idx < len(recebidas) else Decimal("0"),
                 "valor_unitario": parse_decimal_br(valores[idx], default="0") if idx < len(valores) else Decimal("0"),
                 "desconto": parse_decimal_br(descontos[idx], default="0") if idx < len(descontos) else Decimal("0"),
             }
@@ -127,6 +127,10 @@ def extrair_itens_form(form_data):
 
 def validar_payload_pedido_compra(form_data):
     erros = []
+
+    status = normalizar_status(form_data.get("status"))
+    if status in {"RECEBIDO_PARCIAL", "RECEBIDO"}:
+        erros.append("Status de recebimento e definido apenas pela tela de recebimento.")
 
     if not form_data.get("fornecedor_id"):
         erros.append("Fornecedor e obrigatorio.")
@@ -149,10 +153,6 @@ def validar_payload_pedido_compra(form_data):
             erros.append(f"Item {idx}: selecione produto/servico vinculado.")
         if item["quantidade_comprada"] <= Decimal("0"):
             erros.append(f"Item {idx}: quantidade comprada deve ser maior que zero.")
-        if item["quantidade_recebida"] < Decimal("0"):
-            erros.append(f"Item {idx}: quantidade recebida nao pode ser negativa.")
-        if item["quantidade_recebida"] > item["quantidade_comprada"]:
-            erros.append(f"Item {idx}: quantidade recebida nao pode exceder a comprada.")
         if item["valor_unitario"] < Decimal("0"):
             erros.append(f"Item {idx}: valor unitario nao pode ser negativo.")
         if item["desconto"] < Decimal("0"):
