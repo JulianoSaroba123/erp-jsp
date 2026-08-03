@@ -169,6 +169,16 @@ def test_matriz_permissoes_readonly_e_usuario(app_ctx):
         assert response.status_code == 302
         assert "/dashboard" in response.headers.get("Location", "")
 
+    for rota in [
+        "/pedido-compra/novo",
+        f"/pedido-compra/{pedido.id}/editar",
+        f"/pedido-compra/{pedido.id}/cancelar",
+        f"/pedido-compra/{pedido.id}/recebimento",
+    ]:
+        response = client.get(rota, follow_redirects=False)
+        assert response.status_code == 302
+        assert "/dashboard" in response.headers.get("Location", "")
+
 
 def test_status_recebimento_nao_e_aceito_no_formulario_geral(app_ctx):
     from app.extensoes import db
@@ -185,6 +195,24 @@ def test_status_recebimento_nao_e_aceito_no_formulario_geral(app_ctx):
         follow_redirects=True,
     )
     assert b"Status de recebimento" in response.data
+    assert PedidoCompra.query.count() == 0
+
+
+def test_status_cancelado_nao_e_aceito_no_formulario_geral(app_ctx):
+    from app.extensoes import db
+    from app.pedido_compra.pedido_compra_model import PedidoCompra
+
+    usuario = _seed_user(db, "usuario", "usuario_status_cancelado")
+    fornecedor, produto, servico, ordem, pedido_venda = _seed_base_compra(db)
+    client = app_ctx.test_client()
+    _autenticar(client, usuario)
+
+    response = client.post(
+        "/pedido-compra/novo",
+        data=_post_data(fornecedor, produto, servico, ordem, pedido_venda, status="CANCELADO"),
+        follow_redirects=True,
+    )
+    assert b"Status cancelado" in response.data
     assert PedidoCompra.query.count() == 0
 
 
@@ -237,6 +265,56 @@ def test_edicao_preserva_recebimento_e_bloqueia_reducao_abaixo_do_recebido(app_c
     assert b"Quantidade comprada nao pode ser menor" in response.data
 
 
+def test_item_recebido_nao_pode_mudar_identidade(app_ctx):
+    from app.extensoes import db
+    from app.pedido_compra.pedido_compra_model import PedidoCompra
+    from app.produto.produto_model import Produto
+    from app.servico.servico_model import Servico
+
+    usuario = _seed_user(db, "usuario", "usuario_identidade")
+    fornecedor, produto, servico, ordem, pedido_venda = _seed_base_compra(db)
+    produto2 = Produto(nome="Produto Compra 2", preco_custo=Decimal("10.00"), preco_venda=Decimal("20.00"), unidade_medida="UN", estoque_atual=2)
+    servico2 = Servico(nome="Servico Compra 2", valor_base=Decimal("15.00"), tipo_cobranca="servico")
+    db.session.add(produto2)
+    db.session.add(servico2)
+    db.session.commit()
+
+    client = app_ctx.test_client()
+    _autenticar(client, usuario)
+
+    _criar_pedido_compra(client, fornecedor, produto, servico, ordem, pedido_venda)
+    pedido = PedidoCompra.query.first()
+    item_produto = pedido.itens.order_by("id").first()
+
+    client.post(f"/pedido-compra/{pedido.id}/recebimento", data={"item_quantidade_receber[]": ["1", "0"]}, follow_redirects=True)
+
+    base = _post_data(fornecedor, produto, servico, ordem, pedido_venda)
+    tentativas = [
+        {
+            **base,
+            "item_id[]": [str(item_produto.id), ""],
+            "item_tipo[]": ["SERVICO", "SERVICO"],
+            "item_referencia_id[]": [f"S:{servico.id}", f"S:{servico.id}"],
+        },
+        {
+            **base,
+            "item_id[]": [str(item_produto.id), ""],
+            "item_tipo[]": ["PRODUTO", "SERVICO"],
+            "item_referencia_id[]": [f"P:{produto2.id}", f"S:{servico.id}"],
+        },
+    ]
+
+    for payload in tentativas:
+        response = client.post(f"/pedido-compra/{pedido.id}/editar", data=payload, follow_redirects=True)
+        assert b"ja possui recebimento" in response.data
+
+    db.session.refresh(item_produto)
+    assert item_produto.tipo_item == "PRODUTO"
+    assert item_produto.produto_id == produto.id
+    assert item_produto.servico_id is None
+    assert item_produto.quantidade_recebida == Decimal("1.000")
+
+
 def test_item_recebido_nao_pode_ser_excluido_na_edicao(app_ctx):
     from app.extensoes import db
     from app.pedido_compra.pedido_compra_model import PedidoCompra, PedidoCompraItem
@@ -282,6 +360,9 @@ def test_formulario_tem_controles_de_multiplos_itens(app_ctx):
     assert b"Adicionar item" in response.data
     assert b"btn-remover-item" in response.data
     assert b"item-row-template" in response.data
+    assert b'option value="CANCELADO"' not in response.data
+    assert b'option value="RECEBIDO_PARCIAL"' not in response.data
+    assert b'option value="RECEBIDO"' not in response.data
 
 
 def test_pedido_com_dois_ou_mais_itens_funciona(app_ctx):
@@ -317,6 +398,101 @@ def test_nao_gera_financeiro_nem_movimenta_estoque(app_ctx):
     assert LancamentoFinanceiro.query.count() == 0
     produto_atualizado = Produto.query.get(produto.id)
     assert produto_atualizado.estoque_atual == estoque_inicial
+
+
+def test_cancelamento_somente_rota_dedicada_e_cancelado_bloqueado(app_ctx):
+    from app.extensoes import db
+    from app.pedido_compra.pedido_compra_model import PedidoCompra
+
+    usuario = _seed_user(db, "usuario", "usuario_cancelamento")
+    operador = _seed_user(db, "operador", "operador_cancelamento")
+    fornecedor, produto, servico, ordem, pedido_venda = _seed_base_compra(db)
+
+    client = app_ctx.test_client()
+    _autenticar(client, usuario)
+    _criar_pedido_compra(client, fornecedor, produto, servico, ordem, pedido_venda)
+    pedido = PedidoCompra.query.first()
+
+    response = client.post(
+        f"/pedido-compra/{pedido.id}/editar",
+        data={**_post_data(fornecedor, produto, servico, ordem, pedido_venda), "status": "CANCELADO"},
+        follow_redirects=True,
+    )
+    assert b"Status cancelado" in response.data
+    db.session.refresh(pedido)
+    assert pedido.status != PedidoCompra.STATUS_CANCELADO
+
+    client.get("/auth/logout", follow_redirects=False)
+    _autenticar(client, operador)
+    response = client.post(
+        f"/pedido-compra/{pedido.id}/editar",
+        data={**_post_data(fornecedor, produto, servico, ordem, pedido_venda), "status": "CANCELADO"},
+        follow_redirects=True,
+    )
+    assert b"Status cancelado" in response.data
+
+    client.get("/auth/logout", follow_redirects=False)
+    _autenticar(client, usuario)
+    response = client.post(f"/pedido-compra/{pedido.id}/cancelar", data={}, follow_redirects=True)
+    assert b"cancelado com sucesso" in response.data
+    db.session.refresh(pedido)
+    assert pedido.status == PedidoCompra.STATUS_CANCELADO
+
+    response = client.post(
+        f"/pedido-compra/{pedido.id}/editar",
+        data={**_post_data(fornecedor, produto, servico, ordem, pedido_venda), "status": "APROVADO"},
+        follow_redirects=True,
+    )
+    assert b"nao pode ser editado ou reativado" in response.data
+    db.session.refresh(pedido)
+    assert pedido.status == PedidoCompra.STATUS_CANCELADO
+
+    response = client.post(
+        f"/pedido-compra/{pedido.id}/recebimento",
+        data={"item_quantidade_receber[]": ["1", "0"]},
+        follow_redirects=True,
+    )
+    assert b"Pedido cancelado nao pode receber itens" in response.data
+
+
+def test_visibilidade_botoes_por_permissao_e_status(app_ctx):
+    from app.extensoes import db
+    from app.pedido_compra.pedido_compra_model import PedidoCompra
+
+    usuario = _seed_user(db, "usuario", "usuario_visibilidade")
+    readonly = _seed_user(db, "readonly", "readonly_visibilidade")
+    operador = _seed_user(db, "operador", "operador_visibilidade")
+    fornecedor, produto, servico, ordem, pedido_venda = _seed_base_compra(db)
+
+    client = app_ctx.test_client()
+    _autenticar(client, usuario)
+    _criar_pedido_compra(client, fornecedor, produto, servico, ordem, pedido_venda)
+    pedido = PedidoCompra.query.first()
+
+    page = client.get("/pedido-compra/")
+    assert b"Novo pedido de compra" in page.data
+
+    details = client.get(f"/pedido-compra/{pedido.id}")
+    assert b"Editar" in details.data
+    assert b"Recebimento" in details.data
+    assert b"Cancelar pedido" in details.data
+
+    client.get("/auth/logout", follow_redirects=False)
+    _autenticar(client, readonly)
+    page = client.get("/pedido-compra/")
+    assert b"Novo pedido de compra" not in page.data
+
+    details = client.get(f"/pedido-compra/{pedido.id}")
+    assert b"Editar" not in details.data
+    assert b"Recebimento" not in details.data
+    assert b"Cancelar pedido" not in details.data
+
+    client.get("/auth/logout", follow_redirects=False)
+    _autenticar(client, operador)
+    details = client.get(f"/pedido-compra/{pedido.id}")
+    assert b"Editar" in details.data
+    assert b"Recebimento" in details.data
+    assert b"Cancelar pedido" not in details.data
 
 
 def test_migration_pedido_compra_em_banco_temporario(tmp_path):

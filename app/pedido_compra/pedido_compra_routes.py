@@ -39,6 +39,10 @@ def _status_form_valido(status_form, status_atual=None):
     return status_form
 
 
+def _pode_cancelar(pedido_compra):
+    return pedido_compra.status not in {PedidoCompra.STATUS_CANCELADO, PedidoCompra.STATUS_RECEBIDO}
+
+
 def pedido_compra_permission_required(permissao):
     def decorator(f):
         @wraps(f)
@@ -79,7 +83,7 @@ def _carregar_form_context(pedido_compra=None):
     status_editaveis = [
         item
         for item in PedidoCompra.STATUS_CHOICES
-        if item[0] not in {PedidoCompra.STATUS_RECEBIDO_PARCIAL, PedidoCompra.STATUS_RECEBIDO}
+        if item[0] not in {PedidoCompra.STATUS_CANCELADO, PedidoCompra.STATUS_RECEBIDO_PARCIAL, PedidoCompra.STATUS_RECEBIDO}
     ]
     return {
         "fornecedores": Fornecedor.query.filter(Fornecedor.ativo.is_(True)).order_by(Fornecedor.nome.asc()).all(),
@@ -127,6 +131,24 @@ def _aplicar_itens_no_pedido_compra(pedido_compra, itens_form, modo_edicao=False
             quantidade_recebida_atual = Decimal(str(item_existente.quantidade_recebida or 0))
             if Decimal(str(quantidade_comprada or 0)) < quantidade_recebida_atual:
                 raise ValueError("Quantidade comprada nao pode ser menor que a quantidade ja recebida.")
+
+            if quantidade_recebida_atual > Decimal("0"):
+                if tipo_item != item_existente.tipo_item:
+                    raise ValueError("Nao e permitido alterar o tipo de item que ja possui recebimento.")
+                if item_existente.tipo_item == PedidoCompraItem.TIPO_PRODUTO and produto_id != item_existente.produto_id:
+                    raise ValueError("Nao e permitido alterar o produto de item que ja possui recebimento.")
+                if item_existente.tipo_item == PedidoCompraItem.TIPO_SERVICO and servico_id != item_existente.servico_id:
+                    raise ValueError("Nao e permitido alterar o servico de item que ja possui recebimento.")
+
+                item_existente.descricao = descricao or "Item sem descricao"
+                item_existente.unidade = unidade or ("UN" if item_existente.tipo_item == PedidoCompraItem.TIPO_PRODUTO else "SV")
+                item_existente.quantidade_comprada = quantidade_comprada
+                item_existente.valor_unitario = item_form["valor_unitario"]
+                item_existente.desconto = item_form["desconto"]
+                item_existente.ordem = ordem
+                utilizados.add(item_existente.id)
+                ordem += 1
+                continue
 
             item_existente.tipo_item = tipo_item
             item_existente.produto_id = produto_id
@@ -277,6 +299,10 @@ def editar(id):
         flash("Pedido de compra nao encontrado.", "error")
         return redirect(url_for("pedido_compra.listar"))
 
+    if pedido_compra.status == PedidoCompra.STATUS_CANCELADO:
+        flash("Pedido cancelado nao pode ser editado ou reativado.", "error")
+        return redirect(url_for("pedido_compra.visualizar", id=pedido_compra.id))
+
     context = _carregar_form_context(pedido_compra=pedido_compra)
     if request.method == "POST":
         erros = validar_payload_pedido_compra(request.form)
@@ -345,6 +371,10 @@ def cancelar(id):
     if not pedido_compra:
         flash("Pedido de compra nao encontrado.", "error")
         return redirect(url_for("pedido_compra.listar"))
+
+    if not _pode_cancelar(pedido_compra):
+        flash("Pedido de compra nao pode ser cancelado neste status.", "error")
+        return redirect(url_for("pedido_compra.visualizar", id=pedido_compra.id))
 
     if request.method == "GET":
         return render_template("pedido_compra/confirmar_cancelamento.html", pedido_compra=pedido_compra)

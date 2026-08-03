@@ -8,9 +8,15 @@
         <p class="text-muted mb-0">{{ pedido_compra.status_label }} | {{ pedido_compra.finalidade_label }}</p>
     </div>
     <div class="d-flex gap-2">
+        {% if current_user.tem_permissao('editar_pedidos_compra') and pedido_compra.status != 'CANCELADO' %}
         <a class="btn btn-outline-secondary" href="{{ url_for('pedido_compra.editar', id=pedido_compra.id) }}">Editar</a>
+        {% endif %}
+        {% if current_user.tem_permissao('receber_pedidos_compra') and pedido_compra.status != 'CANCELADO' and pedido_compra.status != 'RECEBIDO' and pedido_compra.pode_receber() %}
         <a class="btn btn-outline-primary" href="{{ url_for('pedido_compra.recebimento', id=pedido_compra.id) }}">Recebimento</a>
+        {% endif %}
+        {% if current_user.tem_permissao('visualizar_pedidos_compra') %}
         <a class="btn btn-outline-dark" href="{{ url_for('pedido_compra.imprimir', id=pedido_compra.id) }}">Imprimir</a>
+        {% endif %}
     </div>
 </div>
 
@@ -52,6 +58,8 @@
 </table>
 
 <div class="d-flex gap-2">
+    {% if current_user.tem_permissao('cancelar_pedidos_compra') and pedido_compra.status not in ['CANCELADO', 'RECEBIDO'] %}
     <a class="btn btn-outline-danger" href="{{ url_for('pedido_compra.cancelar', id=pedido_compra.id) }}">Cancelar pedido</a>
+    {% endif %}
 </div>
 {% endblock %}

@@ -129,6 +129,8 @@ def validar_payload_pedido_compra(form_data):
     erros = []
 
     status = normalizar_status(form_data.get("status"))
+    if status == "CANCELADO":
+        erros.append("Status cancelado e definido apenas pela rota de cancelamento.")
     if status in {"RECEBIDO_PARCIAL", "RECEBIDO"}:
         erros.append("Status de recebimento e definido apenas pela tela de recebimento.")
 
