@@ -929,6 +929,10 @@ def register_blueprints(app):
     # Blueprint de propostas
     from app.proposta.proposta_routes import proposta_bp
     app.register_blueprint(proposta_bp, url_prefix='/propostas')
+
+    # Blueprint de pedidos
+    from app.pedido.pedido_routes import pedido_bp
+    app.register_blueprint(pedido_bp, url_prefix='/pedido')
     
     # Blueprint admin (migrações e manutenção)
     from app.admin.admin_routes import admin_bp

@@ -1,0 +1,355 @@
+{% extends "base.html" %}
+
+{% block title %}{% if pedido %}Editar Pedido {{ pedido.numero }}{% else %}Novo Pedido{% endif %} - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('pedido.listar') }}">Pedidos</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">{% if pedido %}Editar{% else %}Novo{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <h4 class="mb-3">
+            <i class="fas fa-shopping-cart me-2 text-info"></i>
+            {% if pedido %}Editar Pedido {{ pedido.numero }}{% else %}Novo Pedido{% endif %}
+        </h4>
+
+        <form method="POST" id="pedidoForm">
+            <div class="row g-3 mb-4">
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label">Cliente *</label>
+                    <select class="form-select" name="cliente_id" required>
+                        <option value="">Selecione...</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}"
+                                {% if pedido and pedido.cliente_id == cliente.id %}selected{% endif %}
+                                {% if not pedido and proposta_preselecionada and proposta_preselecionada.cliente_id == cliente.id %}selected{% endif %}>
+                            {{ cliente.nome_exibicao }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label">Proposta (opcional)</label>
+                    <select class="form-select" name="proposta_id">
+                        <option value="">Sem vinculacao</option>
+                        {% for proposta in propostas %}
+                        <option value="{{ proposta.id }}"
+                                {% if pedido and pedido.proposta_id == proposta.id %}selected{% endif %}
+                                {% if not pedido and proposta_preselecionada and proposta_preselecionada.id == proposta.id %}selected{% endif %}>
+                            {{ proposta.codigo }} - {{ proposta.titulo }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="status">
+                        {% for status, label in status_choices %}
+                        <option value="{{ status }}" {% if pedido and pedido.status == status %}selected{% elif not pedido and status == 'RASCUNHO' %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label">Data do Pedido</label>
+                    <input type="date" name="data_pedido" class="form-control"
+                           value="{% if pedido and pedido.data_pedido %}{{ pedido.data_pedido }}{% else %}{{ today }}{% endif %}">
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label">Prazo Previsto</label>
+                    <input type="date" name="prazo_previsto" class="form-control"
+                           value="{{ pedido.prazo_previsto if pedido and pedido.prazo_previsto else '' }}">
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label">Responsavel</label>
+                    <input type="text" name="responsavel" class="form-control" value="{{ pedido.responsavel if pedido else '' }}">
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label">Solicitante</label>
+                    <input type="text" name="solicitante" class="form-control" value="{{ pedido.solicitante if pedido else '' }}">
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label">Telefone</label>
+                    <input type="text" name="telefone_contato" class="form-control" value="{{ pedido.telefone_contato if pedido else '' }}">
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label">Email</label>
+                    <input type="email" name="email_contato" class="form-control" value="{{ pedido.email_contato if pedido else '' }}">
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-list me-2"></i>Itens do Pedido</h6>
+                    <button type="button" id="btnAdicionarItem" class="btn btn-sm btn-outline-info">
+                        <i class="fas fa-plus me-1"></i>Adicionar Item
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0" id="tabelaItens">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="min-width: 130px;">Tipo</th>
+                                    <th style="min-width: 230px;">Produto/Servico *</th>
+                                    <th style="min-width: 220px;">Descricao</th>
+                                    <th style="width: 120px;">Qtd</th>
+                                    <th style="width: 140px;">Vlr Unit.</th>
+                                    <th style="width: 120px;">Desconto</th>
+                                    <th style="width: 140px;">Total</th>
+                                    <th style="width: 70px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="itensBody">
+                                {% if itens_preview %}
+                                    {% for item in itens_preview %}
+                                    <tr class="item-row">
+                                        <td>
+                                            <select class="form-select form-select-sm item-tipo" name="item_tipo[]">
+                                                <option value="PRODUTO" {% if item.tipo_item == 'PRODUTO' %}selected{% endif %}>Produto</option>
+                                                <option value="SERVICO" {% if item.tipo_item == 'SERVICO' %}selected{% endif %}>Servico</option>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select class="form-select form-select-sm item-referencia" name="item_referencia_id[]" required>
+                                                <option value="">Selecione...</option>
+                                                <optgroup label="Produtos">
+                                                    {% for produto in produtos %}
+                                                    <option value="P:{{ produto.id }}" data-tipo="PRODUTO" data-descricao="{{ produto.nome }}"
+                                                        {% if (item.referencia_tipo|default('') == 'P' or item.tipo_item == 'PRODUTO') and item.referencia_id == produto.id %}selected{% endif %}>
+                                                        Produto: {{ produto.nome }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </optgroup>
+                                                <optgroup label="Servicos">
+                                                    {% for servico in servicos %}
+                                                    <option value="S:{{ servico.id }}" data-tipo="SERVICO" data-descricao="{{ servico.nome }}"
+                                                        {% if (item.referencia_tipo|default('') == 'S' or item.tipo_item == 'SERVICO') and item.referencia_id == servico.id %}selected{% endif %}>
+                                                        Servico: {{ servico.nome }}
+                                                    </option>
+                                                    {% endfor %}
+                                                </optgroup>
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm item-descricao" name="item_descricao[]" value="{{ item.descricao }}">
+                                        </td>
+                                        <td>
+                                            <input type="number" step="0.001" min="0.001" class="form-control form-control-sm item-quantidade" name="item_quantidade[]" value="{{ item.quantidade }}" required>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm item-valor" name="item_valor_unitario[]" value="{{ item.valor_unitario }}" required>
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm item-desconto" name="item_desconto[]" value="{{ item.desconto }}">
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm item-total" readonly>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item"><i class="fas fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                <tr class="item-row">
+                                    <td>
+                                        <select class="form-select form-select-sm item-tipo" name="item_tipo[]">
+                                            <option value="PRODUTO" selected>Produto</option>
+                                            <option value="SERVICO">Servico</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm item-referencia" name="item_referencia_id[]" required>
+                                            <option value="">Selecione...</option>
+                                            <optgroup label="Produtos">
+                                                {% for produto in produtos %}
+                                                <option value="P:{{ produto.id }}" data-tipo="PRODUTO" data-descricao="{{ produto.nome }}">Produto: {{ produto.nome }}</option>
+                                                {% endfor %}
+                                            </optgroup>
+                                            <optgroup label="Servicos">
+                                                {% for servico in servicos %}
+                                                <option value="S:{{ servico.id }}" data-tipo="SERVICO" data-descricao="{{ servico.nome }}">Servico: {{ servico.nome }}</option>
+                                                {% endfor %}
+                                            </optgroup>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" class="form-control form-control-sm item-descricao" name="item_descricao[]"></td>
+                                    <td><input type="number" step="0.001" min="0.001" class="form-control form-control-sm item-quantidade" name="item_quantidade[]" value="1" required></td>
+                                    <td><input type="text" class="form-control form-control-sm item-valor" name="item_valor_unitario[]" value="0" required></td>
+                                    <td><input type="text" class="form-control form-control-sm item-desconto" name="item_desconto[]" value="0"></td>
+                                    <td><input type="text" class="form-control form-control-sm item-total" readonly></td>
+                                    <td><button type="button" class="btn btn-sm btn-outline-danger btn-remover-item"><i class="fas fa-trash"></i></button></td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label">Desconto Geral</label>
+                    <input type="text" name="desconto" id="descontoGeral" class="form-control" value="{{ pedido.desconto if pedido else '0' }}">
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label">Subtotal (preview)</label>
+                    <input type="text" id="subtotalPreview" class="form-control" readonly>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label">Total (preview)</label>
+                    <input type="text" id="totalPreview" class="form-control" readonly>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Condicoes de Pagamento</label>
+                    <textarea class="form-control" name="condicoes_pagamento" rows="3">{{ pedido.condicoes_pagamento if pedido else '' }}</textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Observacoes</label>
+                    <textarea class="form-control" name="observacoes" rows="3">{{ pedido.observacoes if pedido else '' }}</textarea>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-2"></i>Salvar Pedido
+                </button>
+                <a href="{{ url_for('pedido.listar') }}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<template id="itemTemplate">
+<tr class="item-row">
+    <td>
+        <select class="form-select form-select-sm item-tipo" name="item_tipo[]">
+            <option value="PRODUTO" selected>Produto</option>
+            <option value="SERVICO">Servico</option>
+        </select>
+    </td>
+    <td>
+        <select class="form-select form-select-sm item-referencia" name="item_referencia_id[]" required>
+            <option value="">Selecione...</option>
+            <optgroup label="Produtos">
+                {% for produto in produtos %}
+                <option value="P:{{ produto.id }}" data-tipo="PRODUTO" data-descricao="{{ produto.nome }}">Produto: {{ produto.nome }}</option>
+                {% endfor %}
+            </optgroup>
+            <optgroup label="Servicos">
+                {% for servico in servicos %}
+                <option value="S:{{ servico.id }}" data-tipo="SERVICO" data-descricao="{{ servico.nome }}">Servico: {{ servico.nome }}</option>
+                {% endfor %}
+            </optgroup>
+        </select>
+    </td>
+    <td><input type="text" class="form-control form-control-sm item-descricao" name="item_descricao[]"></td>
+    <td><input type="number" step="0.001" min="0.001" class="form-control form-control-sm item-quantidade" name="item_quantidade[]" value="1" required></td>
+    <td><input type="text" class="form-control form-control-sm item-valor" name="item_valor_unitario[]" value="0" required></td>
+    <td><input type="text" class="form-control form-control-sm item-desconto" name="item_desconto[]" value="0"></td>
+    <td><input type="text" class="form-control form-control-sm item-total" readonly></td>
+    <td><button type="button" class="btn btn-sm btn-outline-danger btn-remover-item"><i class="fas fa-trash"></i></button></td>
+</tr>
+</template>
+
+<script>
+(function() {
+    const itensBody = document.getElementById('itensBody');
+    const itemTemplate = document.getElementById('itemTemplate');
+    const descontoGeral = document.getElementById('descontoGeral');
+    const subtotalPreview = document.getElementById('subtotalPreview');
+    const totalPreview = document.getElementById('totalPreview');
+
+    function parseDecimalBr(value) {
+        if (!value) return 0;
+        const cleaned = String(value).replace('R$', '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+        const num = Number(cleaned);
+        return Number.isFinite(num) ? num : 0;
+    }
+
+    function formatMoney(value) {
+        return 'R$ ' + value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function updateReferenciaTipo(row) {
+        const tipoSelect = row.querySelector('.item-tipo');
+        const refSelect = row.querySelector('.item-referencia');
+        const option = refSelect.options[refSelect.selectedIndex];
+        if (!option || !option.value) {
+            return;
+        }
+
+        const tipoDoOption = option.dataset.tipo;
+        if (tipoDoOption === 'PRODUTO' || tipoDoOption === 'SERVICO') {
+            tipoSelect.value = tipoDoOption;
+        }
+
+        const descricaoInput = row.querySelector('.item-descricao');
+        if (descricaoInput && !descricaoInput.value.trim()) {
+            descricaoInput.value = option.dataset.descricao || '';
+        }
+    }
+
+    function calculateRow(row) {
+        const qtd = parseDecimalBr(row.querySelector('.item-quantidade')?.value);
+        const unit = parseDecimalBr(row.querySelector('.item-valor')?.value);
+        const desconto = parseDecimalBr(row.querySelector('.item-desconto')?.value);
+        const total = Math.max(0, (qtd * unit) - desconto);
+        row.querySelector('.item-total').value = formatMoney(total);
+        return total;
+    }
+
+    function calculatePreview() {
+        let subtotal = 0;
+        document.querySelectorAll('#itensBody .item-row').forEach((row) => {
+            subtotal += calculateRow(row);
+        });
+
+        const desconto = parseDecimalBr(descontoGeral?.value || '0');
+        const total = Math.max(0, subtotal - desconto);
+
+        subtotalPreview.value = formatMoney(subtotal);
+        totalPreview.value = formatMoney(total);
+    }
+
+    function bindRowEvents(row) {
+        row.querySelector('.btn-remover-item')?.addEventListener('click', () => {
+            if (itensBody.querySelectorAll('.item-row').length > 1) {
+                row.remove();
+                calculatePreview();
+            }
+        });
+
+        row.querySelectorAll('input, select').forEach((el) => {
+            el.addEventListener('input', calculatePreview);
+            el.addEventListener('change', () => {
+                if (el.classList.contains('item-referencia')) {
+                    updateReferenciaTipo(row);
+                }
+                calculatePreview();
+            });
+        });
+
+        updateReferenciaTipo(row);
+        calculateRow(row);
+    }
+
+    document.getElementById('btnAdicionarItem')?.addEventListener('click', () => {
+        const clone = itemTemplate.content.firstElementChild.cloneNode(true);
+        itensBody.appendChild(clone);
+        bindRowEvents(clone);
+        calculatePreview();
+    });
+
+    document.querySelectorAll('#itensBody .item-row').forEach(bindRowEvents);
+    descontoGeral?.addEventListener('input', calculatePreview);
+    calculatePreview();
+})();
+</script>
+{% endblock %}

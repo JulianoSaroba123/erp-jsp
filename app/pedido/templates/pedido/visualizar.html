@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Pedido {{ pedido.numero }} - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('pedido.listar') }}">Pedidos</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Visualizar</span>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div>
+                <h3 class="mb-1"><i class="fas fa-shopping-cart me-2 text-info"></i>Pedido {{ pedido.numero }}</h3>
+                <p class="text-muted mb-0">Status: <span class="badge bg-secondary">{{ pedido.status_label }}</span></p>
+            </div>
+            <div class="btn-group">
+                <a href="{{ url_for('pedido.listar') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Voltar</a>
+                <a href="{{ url_for('pedido.editar', id=pedido.id) }}" class="btn btn-outline-warning"><i class="fas fa-edit me-1"></i>Editar</a>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-3 col-md-6"><strong>Cliente:</strong><br>{{ pedido.cliente.nome_exibicao if pedido.cliente else '-' }}</div>
+            <div class="col-lg-3 col-md-6"><strong>Proposta:</strong><br>{% if pedido.proposta %}{{ pedido.proposta.codigo }}{% else %}-{% endif %}</div>
+            <div class="col-lg-3 col-md-6"><strong>Data Pedido:</strong><br>{{ pedido.data_pedido.strftime('%d/%m/%Y') if pedido.data_pedido else '-' }}</div>
+            <div class="col-lg-3 col-md-6"><strong>Prazo Previsto:</strong><br>{{ pedido.prazo_previsto.strftime('%d/%m/%Y') if pedido.prazo_previsto else '-' }}</div>
+            <div class="col-lg-3 col-md-6"><strong>Responsavel:</strong><br>{{ pedido.responsavel or '-' }}</div>
+            <div class="col-lg-3 col-md-6"><strong>Solicitante:</strong><br>{{ pedido.solicitante or '-' }}</div>
+            <div class="col-lg-3 col-md-6"><strong>Telefone:</strong><br>{{ pedido.telefone_contato or '-' }}</div>
+            <div class="col-lg-3 col-md-6"><strong>Email:</strong><br>{{ pedido.email_contato or '-' }}</div>
+        </div>
+
+        <div class="table-responsive mb-4">
+            <table class="table table-sm table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Tipo</th>
+                        <th>Descricao</th>
+                        <th>Quantidade</th>
+                        <th>Valor Unit.</th>
+                        <th>Desconto</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in itens %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ item.tipo_item }}</td>
+                        <td>{{ item.descricao }}</td>
+                        <td>{{ item.quantidade }}</td>
+                        <td>R$ {{ "{:,.2f}".format(item.valor_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td>R$ {{ "{:,.2f}".format(item.desconto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                        <td>R$ {{ "{:,.2f}".format(item.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-4"><div class="p-3 border rounded"><strong>Subtotal</strong><br>R$ {{ "{:,.2f}".format(pedido.subtotal or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div>
+            <div class="col-md-4"><div class="p-3 border rounded"><strong>Desconto</strong><br>R$ {{ "{:,.2f}".format(pedido.desconto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div>
+            <div class="col-md-4"><div class="p-3 border rounded bg-dark"><strong>Total</strong><br>R$ {{ "{:,.2f}".format(pedido.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div>
+        </div>
+
+        {% if pedido.condicoes_pagamento %}
+        <div class="mb-3">
+            <strong>Condicoes de Pagamento</strong>
+            <p class="mb-0">{{ pedido.condicoes_pagamento }}</p>
+        </div>
+        {% endif %}
+
+        {% if pedido.observacoes %}
+        <div class="mb-0">
+            <strong>Observacoes</strong>
+            <p class="mb-0">{{ pedido.observacoes }}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
