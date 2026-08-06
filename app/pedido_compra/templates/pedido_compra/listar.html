@@ -68,7 +68,7 @@
                 <td>{{ pedido_compra.fornecedor.nome if pedido_compra.fornecedor else '-' }}</td>
                 <td>{{ pedido_compra.finalidade_label }}</td>
                 <td>{{ pedido_compra.status_label }}</td>
-                <td>R$ {{ '%.2f'|format(pedido_compra.total or 0) }}</td>
+                <td>{{ pedido_compra.total|moeda_brl }}</td>
                 <td>
                     {% if current_user.tem_permissao('visualizar_pedidos_compra') %}
                     <a class="btn btn-sm btn-outline-primary" href="{{ url_for('pedido_compra.visualizar', id=pedido_compra.id) }}">Detalhes</a>

@@ -33,8 +33,8 @@
                 <td>{{ item.unidade or '-' }}</td>
                 <td>{{ item.quantidade_comprada }}</td>
                 <td>{{ item.quantidade_recebida }}</td>
-                <td>R$ {{ '%.2f'|format(item.valor_unitario or 0) }}</td>
-                <td>R$ {{ '%.2f'|format(item.valor_total or 0) }}</td>
+                <td>{{ item.valor_unitario|moeda_brl }}</td>
+                <td>{{ item.valor_total|moeda_brl }}</td>
             </tr>
             {% endfor %}
         </tbody>

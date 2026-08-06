@@ -27,9 +27,9 @@
     <div class="col-md-4"><strong>OS:</strong> {{ pedido_compra.ordem_servico.numero if pedido_compra.ordem_servico else '-' }}</div>
     <div class="col-md-4"><strong>Pedido de Venda:</strong> {{ pedido_compra.pedido_venda.numero if pedido_compra.pedido_venda else '-' }}</div>
     <div class="col-md-4"><strong>Previsao:</strong> {{ format_date(pedido_compra.previsao_entrega, '%d/%m/%Y') }}</div>
-    <div class="col-md-4"><strong>Subtotal:</strong> R$ {{ '%.2f'|format(pedido_compra.subtotal or 0) }}</div>
-    <div class="col-md-4"><strong>Desconto:</strong> R$ {{ '%.2f'|format(pedido_compra.desconto or 0) }}</div>
-    <div class="col-md-4"><strong>Total:</strong> R$ {{ '%.2f'|format(pedido_compra.total or 0) }}</div>
+    <div class="col-md-4"><strong>Subtotal:</strong> {{ pedido_compra.subtotal|moeda_brl }}</div>
+    <div class="col-md-4"><strong>Desconto:</strong> {{ pedido_compra.desconto|moeda_brl }}</div>
+    <div class="col-md-4"><strong>Total:</strong> {{ pedido_compra.total|moeda_brl }}</div>
 </div>
 
 <table class="table table-striped">
@@ -50,8 +50,8 @@
             <td>{{ item.unidade or '-' }}</td>
             <td>{{ item.quantidade_comprada }}</td>
             <td>{{ item.quantidade_recebida }}</td>
-            <td>R$ {{ '%.2f'|format(item.valor_unitario or 0) }}</td>
-            <td>R$ {{ '%.2f'|format(item.valor_total or 0) }}</td>
+            <td>{{ item.valor_unitario|moeda_brl }}</td>
+            <td>{{ item.valor_total|moeda_brl }}</td>
         </tr>
         {% endfor %}
     </tbody>

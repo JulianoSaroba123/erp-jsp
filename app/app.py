@@ -12,6 +12,7 @@ Data: 2025
 
 import os
 import sys
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 
 # Configurar encoding UTF-8 para Windows
 if sys.platform == 'win32':
@@ -53,12 +54,35 @@ def create_app(config_name=None):
     except Exception:
         pass
 
-    # Determina o ambiente de configuração
+    # Determina o ambiente de configuração com prioridade explícita para testes.
     if config_name is None:
-        config_name = os.environ.get('FLASK_ENV', 'development')
+        config_name = os.environ.get('FLASK_CONFIG')
+    if config_name is None:
+        config_name = os.environ.get('FLASK_ENV')
+    if config_name is None:
+        config_name = 'development'
 
     # Aplica a configuração correta baseada no ambiente
     app.config.from_object(config[config_name])
+
+    def moeda_brl(value):
+        """Formata valores numéricos no padrão monetário brasileiro sem locale global."""
+        if value is None:
+            decimal_value = Decimal("0.00")
+        elif isinstance(value, Decimal):
+            decimal_value = value
+        else:
+            try:
+                decimal_value = Decimal(str(value))
+            except (InvalidOperation, TypeError, ValueError):
+                decimal_value = Decimal("0.00")
+
+        decimal_value = decimal_value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        formatted = f"{decimal_value:,.2f}"
+        brl = formatted.replace(",", "_").replace(".", ",").replace("_", ".")
+        return f"R$ {brl}"
+
+    app.jinja_env.filters['moeda_brl'] = moeda_brl
     
     # Configurações específicas do Jinja2 para desenvolvimento
     if app.config.get('DEBUG'):

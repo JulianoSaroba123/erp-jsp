@@ -10,11 +10,8 @@ Autor: JSP Soluções
 Data: 2025
 """
 
-# Importa a factory function
-from app.app import create_app
-
-# Cria a instância Flask global para o Gunicorn
-app = create_app()
+# Reexporta a instância global única criada em app.app.
+from app.app import create_app, app
 
 # Log de inicialização para o Render (sem emojis para compatibilidade)
 print("ERP JSP iniciado com sucesso!")

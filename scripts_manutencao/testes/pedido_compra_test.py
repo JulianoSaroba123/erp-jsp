@@ -495,6 +495,57 @@ def test_visibilidade_botoes_por_permissao_e_status(app_ctx):
     assert b"Cancelar pedido" not in details.data
 
 
+def test_render_templates_pedido_compra_exibem_moeda_brl(app_ctx):
+    from app.extensoes import db
+    from app.pedido_compra.pedido_compra_model import PedidoCompra
+
+    usuario = _seed_user(db, "usuario", "usuario_moeda_brl")
+    fornecedor, produto, _servico, ordem, pedido_venda = _seed_base_compra(db)
+
+    client = app_ctx.test_client()
+    _autenticar(client, usuario)
+
+    payload = _post_data(
+        fornecedor,
+        produto,
+        _servico,
+        ordem,
+        pedido_venda,
+        desconto="0,00",
+        **{
+            "item_tipo[]": ["PRODUTO"],
+            "item_referencia_id[]": [f"P:{produto.id}"],
+            "item_descricao[]": ["Produto Compra"],
+            "item_unidade[]": ["UN"],
+            "item_quantidade[]": ["1"],
+            "item_valor_unitario[]": ["2600,00"],
+            "item_desconto[]": ["0"],
+            "item_id[]": [""],
+        },
+    )
+    response = client.post("/pedido-compra/novo", data=payload, follow_redirects=True)
+    assert response.status_code == 200
+
+    pedido = PedidoCompra.query.first()
+    assert pedido is not None
+
+    esperado = "R$ 2.600,00".encode("utf-8")
+
+    page_listar = client.get("/pedido-compra/")
+    assert esperado in page_listar.data
+    assert b"R$ 2600.00" not in page_listar.data
+
+    page_visualizar = client.get(f"/pedido-compra/{pedido.id}")
+    assert esperado in page_visualizar.data
+    assert b"R$ 2600.00" not in page_visualizar.data
+    assert b"R$ 2,600.00" not in page_visualizar.data
+
+    page_imprimir = client.get(f"/pedido-compra/{pedido.id}/imprimir")
+    assert esperado in page_imprimir.data
+    assert b"R$ 2600.00" not in page_imprimir.data
+    assert b"R$ 2,600.00" not in page_imprimir.data
+
+
 def test_migration_pedido_compra_em_banco_temporario(tmp_path):
     migration_path = Path(__file__).resolve().parents[2] / "migrations" / "versions" / "20260803_01_create_pedidos_compra.py"
     spec = importlib.util.spec_from_file_location("migration_pedido_compra", migration_path)

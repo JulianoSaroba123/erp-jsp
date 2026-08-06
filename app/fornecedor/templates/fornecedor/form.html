@@ -643,6 +643,30 @@
         background-color: #f8f9fc;
         border-color: #d1d3e2;
     }
+
+    .form-section .row > [class*='col-'] {
+        min-width: 0;
+    }
+
+    .form-section .input-group,
+    .form-section .form-control,
+    .form-section .form-select {
+        max-width: 100%;
+    }
+
+    @media (max-width: 768px) {
+        .form-section {
+            padding: 1rem;
+        }
+
+        .form-section .input-group {
+            flex-wrap: nowrap;
+        }
+
+        .form-section .input-group .btn {
+            flex: 0 0 auto;
+        }
+    }
     
     .small, small {
         color: #6c757d;
@@ -652,401 +676,264 @@
 
 {% block extra_js %}
 <script>
-    document.addEventListener('DOMContentLoaded',function() {
-        console.log('🚀 INICIANDO SCRIPT DE FORNECEDOR');
-        
+    document.addEventListener('DOMContentLoaded', function () {
         const tipoSelect = document.getElementById('tipo');
         const labelDocumento = document.getElementById('label-documento');
         const labelRgIe = document.getElementById('label-rg-ie');
         const cpfCnpjInput = document.getElementById('cpf_cnpj');
-        const btnCnpj = document.getElementById('btn-consultar-cnpj');
+        const btnConsultarCnpj = document.getElementById('btn-consultar-cnpj');
+        const btnConsultarCep = document.getElementById('btn-consultar-cep');
+        const cepInput = document.getElementById('cep');
+        const estadoInput = document.getElementById('estado');
         const camposPj = document.getElementById('campos-pj');
         const campoNomeSimples = document.getElementById('campo-nome-simples');
         const extrasPf = document.getElementById('extras-pf');
         const extrasPj = document.getElementById('extras-pj');
         const nomeFantasia = document.getElementById('nome_fantasia');
         const razaoSocialPj = document.getElementById('razao_social_pj');
-        
-        console.log('📋 Elementos encontrados:');
-        console.log('  - tipoSelect:', tipoSelect ? '✅' : '❌');
-        console.log('  - btnCnpj:', btnCnpj ? '✅' : '❌');
-        console.log('  - cpfCnpjInput:', cpfCnpjInput ? '✅' : '❌');
-        console.log('  - razaoSocialPj:', razaoSocialPj ? '✅' : '❌');
-        console.log('  - nomeFantasia:', nomeFantasia ? '✅' : '❌');
-        
-        // Atualiza interface conforme o tipo
+        const nomeInput = document.getElementById('nome');
+
+        if (!tipoSelect || !cpfCnpjInput) {
+            return;
+        }
+
+        function apenasDigitos(valor) {
+            return String(valor || '').replace(/\D/g, '');
+        }
+
+        function definirValorSeInformado(elemento, valor) {
+            if (!elemento) {
+                return;
+            }
+            const texto = String(valor || '').trim();
+            if (texto) {
+                elemento.value = texto;
+            }
+        }
+
+        function mascaraDocumento(valor, tipo) {
+            let digitos = apenasDigitos(valor);
+            if (tipo === 'PJ') {
+                digitos = digitos.slice(0, 14);
+                digitos = digitos.replace(/(\d{2})(\d)/, '$1.$2');
+                digitos = digitos.replace(/(\d{3})(\d)/, '$1.$2');
+                digitos = digitos.replace(/(\d{3})(\d)/, '$1/$2');
+                digitos = digitos.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+                return digitos;
+            }
+
+            digitos = digitos.slice(0, 11);
+            digitos = digitos.replace(/(\d{3})(\d)/, '$1.$2');
+            digitos = digitos.replace(/(\d{3})(\d)/, '$1.$2');
+            digitos = digitos.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+            return digitos;
+        }
+
+        function mascaraCep(valor) {
+            const digitos = apenasDigitos(valor).slice(0, 8);
+            return digitos.replace(/(\d{5})(\d)/, '$1-$2');
+        }
+
+        function mascaraTelefone(valor) {
+            let digitos = apenasDigitos(valor).slice(0, 11);
+            if (digitos.length <= 10) {
+                digitos = digitos.replace(/(\d{2})(\d)/, '($1) $2');
+                digitos = digitos.replace(/(\d{4})(\d)/, '$1-$2');
+            } else {
+                digitos = digitos.replace(/(\d{2})(\d)/, '($1) $2');
+                digitos = digitos.replace(/(\d{5})(\d)/, '$1-$2');
+            }
+            return digitos;
+        }
+
         function atualizarInterface() {
-            console.log('🔄 atualizarInterface() chamada');
             const tipoPJ = tipoSelect.value === 'PJ';
-            console.log('  - Tipo selecionado:', tipoSelect.value);
-            console.log('  - É PJ?:', tipoPJ);
-            
-            if (tipoPJ) {
-                // Pessoa Jurídica
-                labelDocumento.textContent = 'CNPJ';
-                labelRgIe.textContent = 'Inscrição Estadual';
-                cpfCnpjInput.placeholder = '00.000.000/0000-00';
-                
-                // Esconde campo nome simples
-                if (campoNomeSimples) {
-                    campoNomeSimples.style.display = 'none';
-                    document.getElementById('nome').removeAttribute('required');
-                }
-                
-                // Mostra campos PJ
-                camposPj.style.display = 'block';
-                extrasPj.style.display = 'flex';
-                extrasPf.style.display = 'none';
-                
-                // Mostra o botão de consulta CNPJ
-                if (btnCnpj) {
-                    btnCnpj.style.display = 'inline-block';
-                    console.log('  ✅ Botão CNPJ exibido');
+
+            if (labelDocumento) {
+                labelDocumento.textContent = tipoPJ ? 'CNPJ' : 'CPF';
+            }
+            if (labelRgIe) {
+                labelRgIe.textContent = tipoPJ ? 'Inscrição Estadual' : 'RG';
+            }
+
+            cpfCnpjInput.placeholder = tipoPJ ? '00.000.000/0000-00' : '000.000.000-00';
+
+            if (campoNomeSimples) {
+                campoNomeSimples.style.display = tipoPJ ? 'none' : 'block';
+            }
+
+            if (nomeInput) {
+                if (tipoPJ) {
+                    nomeInput.removeAttribute('required');
                 } else {
-                    console.log('  ❌ Botão CNPJ não encontrado!');
-                }
-                
-                // Torna razão social e nome fantasia obrigatórios
-                if (razaoSocialPj) {
-                    razaoSocialPj.required = true;
-                }
-                if (nomeFantasia) {
-                    nomeFantasia.required = true;
-                }
-            } else {
-                // Pessoa Física
-                labelDocumento.textContent = 'CPF';
-                labelRgIe.textContent = 'RG';
-                cpfCnpjInput.placeholder = '000.000.000-00';
-                
-                // Mostra campo nome simples
-                if (campoNomeSimples) {
-                    campoNomeSimples.style.display = 'block';
-                    document.getElementById('nome').setAttribute('required', 'required');
-                }
-                
-                // Esconde campos PJ
-                camposPj.style.display = 'none';
-                extrasPj.style.display = 'none';
-                extrasPf.style.display = 'flex';
-                
-                // Esconde o botão de consulta CNPJ
-                if (btnCnpj) {
-                    btnCnpj.style.display = 'none';
-                }
-                
-                // Remove obrigatoriedade dos campos PJ
-                if (razaoSocialPj) {
-                    razaoSocialPj.required = false;
-                }
-                if (nomeFantasia) {
-                    nomeFantasia.required = false;
+                    nomeInput.setAttribute('required', 'required');
                 }
             }
-        }
-        
-        // Máscara para documento
-        function mascaraDocumento(value, tipo) {
-            value = value.replace(/\D/g, '');
-            
-            if (tipo === 'PF') {
-                // CPF: 000.000.000-00
-                value = value.replace(/(\d{3})(\d)/, '$1.$2');
-                value = value.replace(/(\d{3})(\d)/, '$1.$2');
-                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-            } else {
-                // CNPJ: 00.000.000/0000-00
-                value = value.replace(/(\d{2})(\d)/, '$1.$2');
-                value = value.replace(/(\d{3})(\d)/, '$1.$2');
-                value = value.replace(/(\d{3})(\d)/, '$1/$2');
-                value = value.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+
+            if (camposPj) {
+                camposPj.style.display = tipoPJ ? 'block' : 'none';
             }
-            
-            return value;
-        }
-        
-        // Máscara para CEP
-        function mascaraCep(value) {
-            value = value.replace(/\D/g, '');
-            value = value.replace(/(\d{5})(\d)/, '$1-$2');
-            return value;
-        }
-        
-        // Máscara para telefone
-        function mascaraTelefone(value) {
-            value = value.replace(/\D/g, '');
-            if (value.length <= 10) {
-                value = value.replace(/(\d{2})(\d)/, '($1) $2');
-                value = value.replace(/(\d{4})(\d)/, '$1-$2');
-            } else {
-                value = value.replace(/(\d{2})(\d)/, '($1) $2');
-                value = value.replace(/(\d{5})(\d)/, '$1-$2');
+            if (extrasPj) {
+                extrasPj.style.display = tipoPJ ? 'flex' : 'none';
             }
-            return value;
+            if (extrasPf) {
+                extrasPf.style.display = tipoPJ ? 'none' : 'flex';
+            }
+            if (btnConsultarCnpj) {
+                btnConsultarCnpj.style.display = tipoPJ ? 'inline-block' : 'none';
+            }
+
+            if (razaoSocialPj) {
+                razaoSocialPj.required = tipoPJ;
+            }
+            if (nomeFantasia) {
+                nomeFantasia.required = tipoPJ;
+            }
         }
-        
-        // Event listeners
-        console.log('🎯 Registrando event listeners');
+
+        function restaurarBotao(botao, htmlOriginal) {
+            botao.innerHTML = htmlOriginal;
+            botao.disabled = false;
+        }
+
+        async function consultarCnpj() {
+            if (tipoSelect.value !== 'PJ') {
+                alert('A consulta automática está disponível apenas para CNPJ.');
+                return;
+            }
+
+            const cnpjLimpo = apenasDigitos(cpfCnpjInput.value);
+            if (cnpjLimpo.length !== 14) {
+                alert('CNPJ deve ter 14 dígitos.');
+                return;
+            }
+
+            const htmlOriginal = btnConsultarCnpj.innerHTML;
+            btnConsultarCnpj.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btnConsultarCnpj.disabled = true;
+
+            try {
+                const response = await fetch(`/fornecedor/api/consultar-cnpj/${cnpjLimpo}`);
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok || !data.success) {
+                    const mensagem = data.error || `Erro ${response.status} ao consultar CNPJ.`;
+                    throw new Error(mensagem);
+                }
+
+                const payload = data.data || {};
+                const endereco = payload.endereco || payload;
+
+                definirValorSeInformado(razaoSocialPj, payload.nome);
+                definirValorSeInformado(nomeFantasia, payload.nome_fantasia || payload.fantasia || payload.nome);
+                definirValorSeInformado(document.getElementById('email'), payload.email);
+
+                if (payload.telefone) {
+                    definirValorSeInformado(document.getElementById('telefone'), mascaraTelefone(payload.telefone));
+                }
+
+                if (endereco.cep && cepInput) {
+                    cepInput.value = mascaraCep(endereco.cep);
+                }
+                definirValorSeInformado(document.getElementById('endereco'), endereco.logradouro);
+                definirValorSeInformado(document.getElementById('numero'), endereco.numero);
+                definirValorSeInformado(document.getElementById('complemento'), endereco.complemento);
+                definirValorSeInformado(document.getElementById('bairro'), endereco.bairro);
+                definirValorSeInformado(document.getElementById('cidade'), endereco.cidade || endereco.municipio);
+
+                const estado = document.getElementById('estado');
+                if (estado && (endereco.uf || '').trim()) {
+                    estado.value = String(endereco.uf).toUpperCase();
+                }
+
+                definirValorSeInformado(document.getElementById('pais'), 'Brasil');
+            } catch (error) {
+                alert(error.message || 'Erro ao consultar CNPJ.');
+            } finally {
+                restaurarBotao(btnConsultarCnpj, htmlOriginal);
+            }
+        }
+
+        async function consultarCep() {
+            if (!cepInput) {
+                return;
+            }
+
+            const cepLimpo = apenasDigitos(cepInput.value);
+            if (cepLimpo.length !== 8) {
+                alert('CEP deve ter 8 dígitos.');
+                return;
+            }
+
+            const htmlOriginal = btnConsultarCep.innerHTML;
+            btnConsultarCep.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btnConsultarCep.disabled = true;
+
+            try {
+                const response = await fetch(`/fornecedor/api/consultar-cep/${cepLimpo}`);
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok || !data.success) {
+                    const mensagem = data.error || `Erro ${response.status} ao consultar CEP.`;
+                    throw new Error(mensagem);
+                }
+
+                const payload = data.data || {};
+                cepInput.value = mascaraCep(payload.cep || cepLimpo);
+                definirValorSeInformado(document.getElementById('endereco'), payload.logradouro);
+                definirValorSeInformado(document.getElementById('bairro'), payload.bairro);
+                definirValorSeInformado(document.getElementById('cidade'), payload.cidade || payload.localidade);
+
+                const estado = document.getElementById('estado');
+                if (estado && (payload.uf || '').trim()) {
+                    estado.value = String(payload.uf).toUpperCase();
+                }
+
+                const numero = document.getElementById('numero');
+                if (numero) {
+                    numero.focus();
+                }
+            } catch (error) {
+                alert(error.message || 'Erro ao consultar CEP.');
+            } finally {
+                restaurarBotao(btnConsultarCep, htmlOriginal);
+            }
+        }
+
         tipoSelect.addEventListener('change', atualizarInterface);
-        
-        cpfCnpjInput.addEventListener('input', function() {
+        cpfCnpjInput.addEventListener('input', function () {
             this.value = mascaraDocumento(this.value, tipoSelect.value);
         });
-        
-        document.getElementById('cep').addEventListener('input', function() {
-            this.value = mascaraCep(this.value);
-        });
-        
-        ['telefone', 'celular', 'whatsapp', 'contato_telefone'].forEach(id => {
+
+        if (cepInput) {
+            cepInput.addEventListener('input', function () {
+                this.value = mascaraCep(this.value);
+            });
+        }
+
+        ['telefone', 'celular', 'whatsapp', 'contato_telefone'].forEach(function (id) {
             const element = document.getElementById(id);
             if (element) {
-                element.addEventListener('input', function() {
+                element.addEventListener('input', function () {
                     this.value = mascaraTelefone(this.value);
                 });
             }
         });
-        
-        // Estado em maiúsculo
-        document.getElementById('estado').addEventListener('input', function() {
-            this.value = this.value.toUpperCase();
-        });
 
-        // Consulta CNPJ automatica
-        console.log('🔍 Configurando botão de consulta CNPJ:', btnConsultarCnpj ? '✅' : '❌');
-        
-        if (btnConsultarCnpj) {
-            btnConsultarCnpj.addEventListener('click', function() {
-                console.log('🖱️ BOTÃO CLICADO!');
-            btnConsultarCnpj.addEventListener('click', function() {
-                console.log('🔍 Iniciando consulta CNPJ...');
-                
-                if (tipoSelect.value !== 'PJ') {
-                    alert('⚠️ A consulta automática está disponível apenas para Pessoa Jurídica (CNPJ)');
-                    return;
-                }
-                
-                const cnpj = cpfCnpjInput.value;
-                const cnpjLimpo = cnpj.replace(/\D/g, '');
-                
-                console.log('📋 CNPJ digitado:', cnpj);
-                console.log('📋 CNPJ limpo:', cnpjLimpo);
-                
-                if (cnpjLimpo.length !== 14) {
-                    alert('⚠️ CNPJ deve ter 14 dígitos');
-                    return;
-                }
-                
-                // Mostra loading
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...';
-                this.disabled = true;
-                
-                console.log('🌐 Fazendo requisição para:', `/fornecedor/api/consultar-cnpj/${cnpjLimpo}`);
-                
-                // Usa endpoint específico de fornecedor
-                fetch(`/fornecedor/api/consultar-cnpj/${cnpjLimpo}`)
-                    .then(response => {
-                        console.log('📡 Resposta recebida:', response.status);
-                        if (!response.ok) {
-                            if (response.status === 404) {
-                                throw new Error('CNPJ não encontrado na base de dados da Receita Federal. Verifique se o número está correto ou preencha os dados manualmente.');
-                            }
-                            throw new Error(`Erro ${response.status} ao consultar CNPJ. Preencha os dados manualmente.`);
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('📦 Dados recebidos:', data);
-                        
-                        if (data.success) {
-                            let camposPreenchidos = [];
-                            
-                            // Preenche razão social e fantasia
-                            if (data.data.nome) {
-                                const razaoSocial = document.getElementById('razao_social_pj');
-                                if (razaoSocial) {
-                                    razaoSocial.value = data.data.nome;
-                                    camposPreenchidos.push('Razão Social');
-                                }
-                            }
-                            
-                            // API de fornecedor retorna 'nome_fantasia'
-                            if (data.data.nome_fantasia || data.data.fantasia) {
-                                const fantasia = document.getElementById('nome_fantasia');
-                                if (fantasia) {
-                                    fantasia.value = data.data.nome_fantasia || data.data.fantasia;
-                                    camposPreenchidos.push('Nome Fantasia');
-                                }
-                            } else if (data.data.nome) {
-                                // Se não tem fantasia, usa o nome como fantasia
-                                const fantasia = document.getElementById('nome_fantasia');
-                                if (fantasia) {
-                                    fantasia.value = data.data.nome;
-                                }
-                            }
-                            
-                            // Preenche contatos
-                            if (data.data.email) {
-                                const email = document.getElementById('email');
-                                if (email) {
-                                    email.value = data.data.email;
-                                    camposPreenchidos.push('Email');
-                                }
-                            }
-                            if (data.data.telefone) {
-                                const telefone = document.getElementById('telefone');
-                                if (telefone) {
-                                    telefone.value = mascaraTelefone(data.data.telefone);
-                                    camposPreenchidos.push('Telefone');
-                                }
-                            }
-                            
-                            // Preenche endereco completo
-                            const endereco = data.data.endereco || data.data;
-                            if (endereco) {
-                                if (endereco.cep) {
-                                    document.getElementById('cep').value = mascaraCep(endereco.cep);
-                                    camposPreenchidos.push('CEP');
-                                }
-                                if (endereco.logradouro) {
-                                    document.getElementById('endereco').value = endereco.logradouro;
-                                    camposPreenchidos.push('Endereço');
-                                }
-                                if (endereco.numero) {
-                                    document.getElementById('numero').value = endereco.numero;
-                                }
-                                if (endereco.complemento) {
-                                    document.getElementById('complemento').value = endereco.complemento;
-                                }
-                                if (endereco.bairro) {
-                                    document.getElementById('bairro').value = endereco.bairro;
-                                    camposPreenchidos.push('Bairro');
-                                }
-                                if (endereco.cidade || endereco.municipio) {
-                                    document.getElementById('cidade').value = endereco.cidade || endereco.municipio;
-                                    camposPreenchidos.push('Cidade');
-                                }
-                                if (endereco.uf) {
-                                    document.getElementById('estado').value = endereco.uf.toUpperCase();
-                                    camposPreenchidos.push('UF');
-                                }
-                            }
-                            
-                            // Define o país como Brasil
-                            const paisElement = document.getElementById('pais');
-                            if (paisElement) {
-                                paisElement.value = 'Brasil';
-                            }
-                            
-                            console.log('✅ Campos preenchidos:', camposPreenchidos);
-                            
-                            alert('✅ Dados da empresa carregados com sucesso!\n\n' +
-                                  '📋 Campos preenchidos:\n• ' + camposPreenchidos.join('\n• '));
-                        } else {
-                            console.error('❌ Erro na resposta:', data.error);
-                            alert('❌ Erro: ' + (data.error || 'Não foi possível consultar o CNPJ'));
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ Erro na requisição:', error);
-                        alert('⚠️ ' + error.message);
-                    })
-                    .finally(() => {
-                        // Remove loading
-                        this.innerHTML = '<i class="fas fa-search"></i>';
-                        this.disabled = false;
-                        console.log('🏁 Consulta finalizada');
-                    });
+        if (estadoInput) {
+            estadoInput.addEventListener('input', function () {
+                this.value = this.value.toUpperCase();
             });
         }
-        
-        // Consulta CEP automatica
-        const btnConsultarCep = document.getElementById('btn-consultar-cep');
+
+        if (btnConsultarCnpj) {
+            btnConsultarCnpj.addEventListener('click', consultarCnpj);
+        }
         if (btnConsultarCep) {
-            btnConsultarCep.addEventListener('click', function() {
-                console.log('🔍 Iniciando consulta CEP...');
-                
-                const cep = document.getElementById('cep').value;
-                const cepLimpo = cep.replace(/\D/g, '');
-                
-                console.log('📋 CEP digitado:', cep);
-                console.log('📋 CEP limpo:', cepLimpo);
-                
-                if (cepLimpo.length !== 8) {
-                    alert('⚠️ CEP deve ter 8 dígitos');
-                    return;
-                }
-                
-                // Mostra loading
-                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Consultando...';
-                this.disabled = true;
-                
-                console.log('🌐 Fazendo requisição para:', `/fornecedor/api/consultar-cep/${cepLimpo}`);
-                
-                // Usa endpoint específico de fornecedor
-                fetch(`/fornecedor/api/consultar-cep/${cepLimpo}`)
-                    .then(response => {
-                        console.log('📡 Resposta recebida:', response.status);
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('📦 Dados recebidos:', data);
-                        
-                        if (data.success) {
-                            let camposPreenchidos = [];
-                            
-                            // Preenche os campos de endereco
-                            if (data.data.logradouro) {
-                                document.getElementById('endereco').value = data.data.logradouro;
-                                camposPreenchidos.push('Endereço');
-                            }
-                            if (data.data.bairro) {
-                                document.getElementById('bairro').value = data.data.bairro;
-                                camposPreenchidos.push('Bairro');
-                            }
-                            if (data.data.cidade || data.data.localidade) {
-                                document.getElementById('cidade').value = data.data.cidade || data.data.localidade;
-                                camposPreenchidos.push('Cidade');
-                            }
-                            if (data.data.uf) {
-                                document.getElementById('estado').value = data.data.uf.toUpperCase();
-                                camposPreenchidos.push('UF');
-                            }
-                            
-                            // Aplica mascara do CEP
-                            document.getElementById('cep').value = mascaraCep(data.data.cep || cep);
-                            
-                            // Foca no campo número
-                            document.getElementById('numero').focus();
-                            
-                            console.log('✅ Campos preenchidos:', camposPreenchidos);
-                            
-                            alert('✅ Endereço carregado com sucesso!\n\n' +
-                                  '📋 Campos preenchidos:\n• ' + camposPreenchidos.join('\n• ') +
-                                  '\n\n💡 Agora preencha o número do imóvel.');
-                        } else {
-                            console.error('❌ Erro na resposta:', data.error);
-                            alert('❌ Erro: ' + (data.error || 'CEP não encontrado'));
-                        }
-                    })
-                    .catch(error => {
-                        console.error('❌ Erro na requisição:', error);
-                        alert('❌ Erro ao consultar CEP. Verifique sua conexão e tente novamente.');
-                    })
-                    .finally(() => {
-                        // Remove loading
-                        this.innerHTML = '<i class="fas fa-search"></i>';
-                        this.disabled = false;
-                        console.log('🏁 Consulta finalizada');
-                    });
-            });
-        console.log('⚙️ Inicializando interface...');
+            btnConsultarCep.addEventListener('click', consultarCep);
+        }
+
         atualizarInterface();
-
-        // Foco no tipo primeiro
-        tipoSelect.focus();
-        console.log('✅ Script de fornecedor carregado com sucesso!'e();
-
-        // Foco no tipo primeiro
         tipoSelect.focus();
     });
 </script>
