@@ -14,12 +14,18 @@ from datetime import datetime, date
 from decimal import Decimal
 from app.extensoes import db
 from app.financeiro.financeiro_model import LancamentoFinanceiro
-from sqlalchemy import func
+from app.financeiro.indicadores_service import (
+    carregar_registros_financeiros,
+    periodo_mes_atual,
+    resumir_financeiro_periodo,
+)
 
 
 def _status_financeiro_por_os(ordem_servico):
     """Mapeia status da OS para status financeiro."""
-    return 'pendente' if ordem_servico.status != 'concluida' else 'recebido'
+    if ordem_servico.status == 'cancelada':
+        return 'cancelado'
+    return 'pendente'
 
 
 def _numero_parcela_exibicao(parcela, total_parcelas):
@@ -64,9 +70,6 @@ def _atualizar_lancamento_os(lancamento, ordem_servico, parcela=None, total_parc
     lancamento.numero_parcela = numero_parcela
     lancamento.observacoes = f"Lançamento automático da {ordem_servico.numero}"
     lancamento.origem = 'ORDEM_SERVICO'
-
-    if status_financeiro == 'recebido' and lancamento.data_pagamento is None:
-        lancamento.data_pagamento = ordem_servico.data_conclusao or date.today()
 
 
 def gerar_lancamento_ordem_servico(ordem_servico):
@@ -150,11 +153,11 @@ def atualizar_status_financeiro_ordem(ordem_servico):
 
         if lancamentos:
             status_map = {
-                'concluida': 'recebido',
                 'cancelada': 'cancelado',
                 'pendente': 'pendente',
                 'em_execucao': 'pendente',
-                'em_andamento': 'pendente'
+                'em_andamento': 'pendente',
+                'finalizada': 'pendente',
             }
             novo_status = status_map.get(ordem_servico.status, 'pendente')
 
@@ -165,8 +168,6 @@ def atualizar_status_financeiro_ordem(ordem_servico):
 
                 if lancamento.status != novo_status:
                     lancamento.status = novo_status
-                    if novo_status == 'recebido' and lancamento.data_pagamento is None:
-                        lancamento.data_pagamento = ordem_servico.data_conclusao or date.today()
                     alterou = True
 
             if alterou:
@@ -184,61 +185,54 @@ def calcular_metricas_dashboard():
     USA SQL PURO para evitar incompatibilidade psycopg3 + SQLAlchemy com VARCHAR.
     """
     try:
-        from sqlalchemy import text
+        from app.ordem_servico.ordem_servico_model import OrdemServico
 
-        hoje = date.today()
-        primeiro_dia_mes = date(hoje.year, hoje.month, 1)
-        if hoje.month == 12:
-            ultimo_dia_mes = date(hoje.year + 1, 1, 1)
-        else:
-            ultimo_dia_mes = date(hoje.year, hoje.month + 1, 1)
+        inicio_mes, fim_mes = periodo_mes_atual()
+        resumo = resumir_financeiro_periodo(inicio_mes, fim_mes)
 
-        # === ORDENS DE SERVIÇO (SQL puro) ===
-        r = db.session.execute(text("""
-            SELECT
-                COUNT(*) FILTER (WHERE ativo = true) AS total_ordens,
-                COUNT(*) FILTER (WHERE ativo = true AND status IN ('aberta','pendente','iniciada','em_andamento')) AS ordens_abertas,
-                COUNT(*) FILTER (WHERE ativo = true AND status = 'concluida') AS ordens_concluidas,
-                COALESCE(SUM(valor_total) FILTER (WHERE ativo = true), 0) AS valor_total_ordens,
-                COALESCE(SUM(valor_total) FILTER (WHERE ativo = true AND status = 'concluida'), 0) AS valor_ordens_concluidas,
-                COALESCE(SUM(valor_total) FILTER (WHERE ativo = true AND status IN ('aberta','pendente','iniciada','em_andamento')), 0) AS valor_ordens_abertas,
-                COALESCE(SUM(valor_total) FILTER (WHERE ativo = true AND status = 'concluida' AND data_conclusao >= :p1 AND data_conclusao < :p2), 0) AS receita_mes,
-                COUNT(*) FILTER (WHERE ativo = true AND status = 'concluida' AND data_conclusao >= :p1 AND data_conclusao < :p2) AS qtd_ordens_mes
-            FROM ordem_servico
-        """), {"p1": primeiro_dia_mes, "p2": ultimo_dia_mes}).first()
+        ordens = OrdemServico.query.filter_by(ativo=True).all()
+        ordens_abertas = [
+            os for os in ordens
+            if os.status in {'aberta', 'pendente', 'iniciada', 'em_andamento', 'em_execucao'}
+        ]
+        ordens_finalizadas = [os for os in ordens if os.status in {'finalizada', 'concluida'}]
 
-        total_ordens = int(r[0] or 0)
-        ordens_abertas = int(r[1] or 0)
-        ordens_concluidas = int(r[2] or 0)
-        valor_total_ordens = float(r[3] or 0)
-        valor_ordens_concluidas = float(r[4] or 0)
-        valor_ordens_abertas = float(r[5] or 0)
-        receita_mes = float(r[6] or 0)
-        qtd_ordens_mes = int(r[7] or 0)
+        def _normalizar_data_conclusao(valor):
+            if valor is None:
+                return None
+            if isinstance(valor, datetime):
+                return valor.date()
+            return valor
 
-        # === LANÇAMENTOS FINANCEIROS (SQL puro) ===
-        rf = db.session.execute(text("""
-            SELECT
-                COALESCE(SUM(valor) FILTER (WHERE ativo = true AND tipo IN ('receita','conta_receber') AND status = 'recebido' AND data_pagamento >= :p1 AND data_pagamento < :p2), 0) AS receitas_mes,
-                COALESCE(SUM(valor) FILTER (WHERE ativo = true AND tipo IN ('despesa','conta_pagar') AND status = 'pago' AND data_pagamento >= :p1 AND data_pagamento < :p2), 0) AS despesas_mes,
-                COALESCE(SUM(valor) FILTER (WHERE ativo = true AND tipo = 'conta_receber' AND status = 'pendente'), 0) AS contas_receber,
-                COUNT(*) FILTER (WHERE ativo = true AND tipo = 'conta_receber' AND status = 'pendente') AS qtd_receber,
-                COALESCE(SUM(valor) FILTER (WHERE ativo = true AND tipo = 'conta_pagar' AND status = 'pendente'), 0) AS contas_pagar,
-                COUNT(*) FILTER (WHERE ativo = true AND tipo = 'conta_pagar' AND status = 'pendente') AS qtd_pagar
-            FROM lancamentos_financeiros
-        """), {"p1": primeiro_dia_mes, "p2": ultimo_dia_mes}).first()
+        ordens_finalizadas_mes = [
+            os for os in ordens_finalizadas
+            if (
+                _normalizar_data_conclusao(os.data_conclusao)
+                and inicio_mes <= _normalizar_data_conclusao(os.data_conclusao) <= fim_mes
+            )
+        ]
 
-        total_receitas_mes = float(rf[0] or 0)
-        total_despesas_mes = float(rf[1] or 0)
-        total_contas_receber = float(rf[2] or 0)
-        qtd_contas_receber = int(rf[3] or 0)
-        total_contas_pagar = float(rf[4] or 0)
-        qtd_contas_pagar = int(rf[5] or 0)
-        saldo_mes = total_receitas_mes - total_despesas_mes
+        pendencias = carregar_registros_financeiros(status='Pendente')
+        qtd_contas_receber = len([item for item in pendencias if item.tipo == 'Receita'])
+        qtd_contas_pagar = len([item for item in pendencias if item.tipo == 'Despesa'])
+
+        total_ordens = len(ordens)
+        ordens_concluidas = len(ordens_finalizadas)
+        valor_total_ordens = sum(float(os.valor_total or 0) for os in ordens)
+        valor_ordens_concluidas = sum(float(os.valor_total or 0) for os in ordens_finalizadas)
+        valor_ordens_abertas = sum(float(os.valor_total or 0) for os in ordens_abertas)
+        receita_mes = sum(float(os.valor_total or 0) for os in ordens_finalizadas_mes)
+        qtd_ordens_mes = len(ordens_finalizadas_mes)
+
+        total_receitas_mes = float(resumo.receitas_realizadas)
+        total_despesas_mes = float(resumo.despesas_realizadas)
+        total_contas_receber = float(resumo.contas_a_receber_pendentes)
+        total_contas_pagar = float(resumo.contas_a_pagar_pendentes)
+        saldo_mes = float(resumo.resultado_realizado)
 
         return {
             'total_ordens': total_ordens,
-            'ordens_abertas': ordens_abertas,
+            'ordens_abertas': len(ordens_abertas),
             'ordens_concluidas': ordens_concluidas,
             'valor_total_ordens': valor_total_ordens,
             'valor_ordens_concluidas': valor_ordens_concluidas,
@@ -252,7 +246,9 @@ def calcular_metricas_dashboard():
             'total_contas_pagar': total_contas_pagar,
             'qtd_contas_receber': qtd_contas_receber,
             'qtd_contas_pagar': qtd_contas_pagar,
-            'fluxo_caixa': valor_ordens_concluidas + total_contas_receber - total_contas_pagar
+            'fluxo_caixa': float(resumo.saldo_projetado),
+            'inconsistencias_qtd': resumo.lancamentos_pagos_sem_data_qtd,
+            'inconsistencias_valor': float(resumo.lancamentos_pagos_sem_data_valor),
         }
 
     except Exception as e:

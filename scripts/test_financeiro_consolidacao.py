@@ -19,11 +19,13 @@ from decimal import Decimal
 
 from app import create_app
 from app.extensoes import db
-from app.financeiro.financeiro_model import LancamentoFinanceiro
+from app.financeiro.financeiro_model import ContaBancaria, HistoricoFinanceiro, LancamentoFinanceiro
+from app.financeiro.financeiro_utils import atualizar_status_financeiro_ordem, calcular_metricas_dashboard
 from app.financeiro.indicadores_service import (
     montar_registro_exibicao,
     _deduplicar_ocorrencias_confiaveis,
     carregar_registros_financeiros,
+    resumir_financeiro_periodo,
 )
 from app.ordem_servico.ordem_servico_model import OrdemServico, OrdemServicoParcela
 from app.cliente.cliente_model import Cliente
@@ -581,6 +583,247 @@ def test_09_identidade_independe_de_texto_codigo_cliente_valor():
 
         chave_depois = montar_registro_exibicao(lanc).chave_ocorrencia_confiavel
         assert chave_antes == chave_depois == f'os_parcela:{parcela.id}'
+
+
+def test_10_os_finalizada_fica_pendente_no_financeiro():
+    """OS finalizada permanece pendente no financeiro."""
+    app = _setup_app()
+    with app.app_context():
+        cliente = Cliente(
+            nome='Cliente OS',
+            cpf_cnpj='10101010101',
+            telefone='11999999999',
+            email='cliente.os@teste.com',
+            ativo=True,
+        )
+        db.session.add(cliente)
+        db.session.flush()
+
+        ordem = OrdemServico(
+            numero='OS-FIN-001',
+            titulo='Teste OS Finalizada',
+            cliente_id=cliente.id,
+            status='finalizada',
+            valor_total=Decimal('250.00'),
+            data_abertura=date(2025, 1, 10),
+            data_prevista=date(2025, 1, 20),
+            ativo=True,
+        )
+        db.session.add(ordem)
+        db.session.flush()
+
+        lanc = LancamentoFinanceiro(
+            descricao='Lancamento OS Finalizada',
+            valor=Decimal('250.00'),
+            tipo='conta_receber',
+            status='pendente',
+            data_lancamento=date(2025, 1, 10),
+            data_vencimento=date(2025, 1, 20),
+            ordem_servico_id=ordem.id,
+            origem='ORDEM_SERVICO',
+            ativo=True,
+        )
+        db.session.add(lanc)
+        db.session.commit()
+
+        atualizar_status_financeiro_ordem(ordem)
+        recarregado = db.session.get(LancamentoFinanceiro, lanc.id)
+
+        assert recarregado.status == 'pendente'
+        assert recarregado.data_pagamento is None
+
+
+def test_11_tipo_case_insensitive_na_baixa():
+    """Reconhecimento de tipo com variacao de caixa."""
+    app = _setup_app()
+    with app.app_context():
+        receita = LancamentoFinanceiro(
+            descricao='Receita caixa alta',
+            valor=Decimal('100.00'),
+            tipo='RECEITA',
+            status='pendente',
+            data_lancamento=date(2025, 1, 10),
+            ativo=True,
+        )
+        despesa = LancamentoFinanceiro(
+            descricao='Despesa caixa mista',
+            valor=Decimal('40.00'),
+            tipo='Conta_Pagar',
+            status='pendente',
+            data_lancamento=date(2025, 1, 10),
+            ativo=True,
+        )
+        db.session.add_all([receita, despesa])
+        db.session.commit()
+
+        receita.marcar_como_pago(date(2025, 1, 11), usuario='tester')
+        despesa.marcar_como_pago(date(2025, 1, 11), usuario='tester')
+
+        assert receita.status == 'recebido'
+        assert despesa.status == 'pago'
+
+
+def test_12_pago_sem_data_permanece_inconsistente():
+    """Pago sem data_pagamento segue como inconsistencia."""
+    app = _setup_app()
+    with app.app_context():
+        lanc = LancamentoFinanceiro(
+            descricao='Inconsistente sem data',
+            valor=Decimal('80.00'),
+            tipo='receita',
+            status='recebido',
+            data_lancamento=date(2025, 1, 10),
+            data_vencimento=date(2025, 1, 10),
+            data_pagamento=None,
+            ativo=True,
+        )
+        db.session.add(lanc)
+        db.session.commit()
+
+        resumo = resumir_financeiro_periodo(date(2025, 1, 1), date(2025, 1, 31))
+        assert resumo.lancamentos_pagos_sem_data_qtd == 1
+        assert resumo.lancamentos_pagos_sem_data_valor == Decimal('80.00')
+        assert resumo.receitas_realizadas == Decimal('0')
+
+
+def test_13_segunda_baixa_idempotente_nao_duplica_movimento_conta():
+    """Segunda baixa nao altera saldo nem data da primeira baixa."""
+    app = _setup_app()
+    with app.app_context():
+        conta = ContaBancaria(
+            nome='Conta Teste',
+            tipo='conta_corrente',
+            saldo_inicial=Decimal('100.00'),
+            saldo_atual=Decimal('100.00'),
+            ativa=True,
+            ativo=True,
+        )
+        db.session.add(conta)
+        db.session.flush()
+
+        lanc = LancamentoFinanceiro(
+            descricao='Receita com conta',
+            valor=Decimal('50.00'),
+            tipo='receita',
+            status='pendente',
+            data_lancamento=date(2025, 1, 10),
+            conta_bancaria_id=conta.id,
+            ativo=True,
+        )
+        db.session.add(lanc)
+        db.session.commit()
+
+        primeira_data = date(2025, 1, 12)
+        lanc.marcar_como_pago(primeira_data, usuario='auditor')
+        saldo_apos_primeira = db.session.get(ContaBancaria, conta.id).saldo_atual
+
+        lanc.marcar_como_pago(date(2025, 1, 20), usuario='auditor')
+        conta_final = db.session.get(ContaBancaria, conta.id)
+        lanc_final = db.session.get(LancamentoFinanceiro, lanc.id)
+
+        assert saldo_apos_primeira == Decimal('150.00')
+        assert conta_final.saldo_atual == Decimal('150.00')
+        assert lanc_final.data_pagamento == primeira_data
+
+
+def test_14_baixa_registra_historico_com_usuario():
+    """Historico de baixa deve persistir usuario executor."""
+    app = _setup_app()
+    with app.app_context():
+        lanc = LancamentoFinanceiro(
+            descricao='Baixa com historico',
+            valor=Decimal('90.00'),
+            tipo='despesa',
+            status='pendente',
+            data_lancamento=date(2025, 1, 10),
+            ativo=True,
+        )
+        db.session.add(lanc)
+        db.session.commit()
+
+        lanc.marcar_como_pago(date(2025, 1, 13), usuario='usuario.teste')
+
+        hist = HistoricoFinanceiro.query.filter_by(lancamento_id=lanc.id).all()
+        assert len(hist) == 1
+        assert hist[0].acao == 'pagamento'
+        assert hist[0].usuario == 'usuario.teste'
+
+
+def test_15_dashboard_usa_totais_do_servico_central():
+    """Totais do dashboard devem bater com resumo central."""
+    app = _setup_app()
+    with app.app_context():
+        hoje = date.today()
+        db.session.add(
+            LancamentoFinanceiro(
+                descricao='Receita realizada',
+                valor=Decimal('120.00'),
+                tipo='receita',
+                status='recebido',
+                data_lancamento=hoje,
+                data_vencimento=hoje,
+                data_pagamento=hoje,
+                ativo=True,
+            )
+        )
+        db.session.add(
+            LancamentoFinanceiro(
+                descricao='Despesa realizada',
+                valor=Decimal('30.00'),
+                tipo='despesa',
+                status='pago',
+                data_lancamento=hoje,
+                data_vencimento=hoje,
+                data_pagamento=hoje,
+                ativo=True,
+            )
+        )
+        db.session.commit()
+
+        inicio = hoje.replace(day=1)
+        resumo = resumir_financeiro_periodo(inicio, hoje)
+        metricas = calcular_metricas_dashboard()
+
+        assert metricas['total_receitas_mes'] == float(resumo.receitas_realizadas)
+        assert metricas['total_despesas_mes'] == float(resumo.despesas_realizadas)
+        assert metricas['saldo_mes'] == float(resumo.resultado_realizado)
+
+
+def test_16_pendencias_respeitam_data_vencimento_no_periodo():
+    """AR/AP devem considerar data_vencimento no periodo."""
+    app = _setup_app()
+    with app.app_context():
+        db.session.add(
+            LancamentoFinanceiro(
+                descricao='Receber fevereiro',
+                valor=Decimal('200.00'),
+                tipo='conta_receber',
+                status='pendente',
+                data_lancamento=date(2025, 1, 5),
+                data_vencimento=date(2025, 2, 10),
+                ativo=True,
+            )
+        )
+        db.session.add(
+            LancamentoFinanceiro(
+                descricao='Pagar janeiro',
+                valor=Decimal('70.00'),
+                tipo='conta_pagar',
+                status='pendente',
+                data_lancamento=date(2025, 1, 5),
+                data_vencimento=date(2025, 1, 20),
+                ativo=True,
+            )
+        )
+        db.session.commit()
+
+        jan = resumir_financeiro_periodo(date(2025, 1, 1), date(2025, 1, 31))
+        fev = resumir_financeiro_periodo(date(2025, 2, 1), date(2025, 2, 28))
+
+        assert jan.contas_a_receber_pendentes == Decimal('0')
+        assert jan.contas_a_pagar_pendentes == Decimal('70.00')
+        assert fev.contas_a_receber_pendentes == Decimal('200.00')
+        assert fev.contas_a_pagar_pendentes == Decimal('0')
 
 
 def main():

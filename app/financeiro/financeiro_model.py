@@ -14,6 +14,13 @@ from datetime import datetime, date
 from decimal import Decimal
 from app.extensoes import db
 from app.models import BaseModel
+from app.financeiro.financeiro_compat import (
+    decimal_valor,
+    status_eh_pago,
+    status_eh_pendente,
+    tipo_eh_despesa,
+    tipo_eh_receita,
+)
 
 
 class LancamentoFinanceiro(BaseModel):
@@ -263,56 +270,34 @@ class LancamentoFinanceiro(BaseModel):
     @classmethod
     def get_resumo_mes(cls, mes=None, ano=None):
         """Retorna resumo financeiro do mês."""
+        from calendar import monthrange
+        from app.financeiro.indicadores_service import resumir_financeiro_periodo
+
         if not mes:
             mes = date.today().month
         if not ano:
             ano = date.today().year
-        
-        # Filtro por mês/ano - usar data_vencimento ou data_lancamento
-        filtro_data = db.and_(
-            db.or_(
-                db.and_(
-                    db.extract('month', cls.data_vencimento) == mes,
-                    db.extract('year', cls.data_vencimento) == ano
-                ),
-                db.and_(
-                    cls.data_vencimento.is_(None),
-                    db.extract('month', cls.data_lancamento) == mes,
-                    db.extract('year', cls.data_lancamento) == ano
-                )
-            ),
-            cls.ativo == True
-        )
-        
-        # Receitas (incluindo pendentes)
-        receitas = cls.query.filter(
-            filtro_data,
-            cls.tipo.in_(['receita', 'conta_receber']),
-            cls.status.in_(['recebido', 'pendente'])
-        ).all()
-        
-        # Despesas (incluindo pendentes)
-        despesas = cls.query.filter(
-            filtro_data,
-            cls.tipo.in_(['despesa', 'conta_pagar']),
-            cls.status.in_(['pago', 'pendente'])
-        ).all()
-        
-        total_receitas = sum(float(r.valor) for r in receitas)
-        total_despesas = sum(float(d.valor) for d in despesas)
-        saldo = total_receitas - total_despesas
-        
+
+        inicio = date(ano, mes, 1)
+        fim = date(ano, mes, monthrange(ano, mes)[1])
+        resumo = resumir_financeiro_periodo(inicio, fim)
+
         return {
-            'total_receitas': total_receitas,
-            'total_despesas': total_despesas,
-            'saldo': saldo,
-            'qtd_receitas': len(receitas),
-            'qtd_despesas': len(despesas)
+            'total_receitas': float(resumo.receitas_realizadas),
+            'total_despesas': float(resumo.despesas_realizadas),
+            'saldo': float(resumo.resultado_realizado),
+            'saldo_projetado': float(resumo.saldo_projetado),
+            'contas_receber_pendentes': float(resumo.contas_a_receber_pendentes),
+            'contas_pagar_pendentes': float(resumo.contas_a_pagar_pendentes),
+            'inconsistencias_qtd': resumo.lancamentos_pagos_sem_data_qtd,
+            'inconsistencias_valor': float(resumo.lancamentos_pagos_sem_data_valor),
+            'qtd_receitas': resumo.qtd_receitas,
+            'qtd_despesas': resumo.qtd_despesas,
         }
     
     def marcar_como_pago(self, data_pagamento=None, usuario=None):
         """Marca lançamento como pago e registra no histórico."""
-        status_destino = 'pago' if self.tipo in ['despesa', 'conta_pagar'] else 'recebido'
+        status_destino = 'pago' if tipo_eh_despesa(self.tipo) else 'recebido'
         status_anterior = self.status
         data_anterior = self.data_pagamento
 
@@ -324,12 +309,16 @@ class LancamentoFinanceiro(BaseModel):
             if data_pagamento is None:
                 return
         
-        # Registrar histórico
-        if usuario:
+        deve_movimentar_saldo = data_pagamento is not None and (
+            status_anterior != status_destino or data_anterior is None
+        )
+
+        # Registrar histórico quando há transição efetiva ou complemento de data.
+        if usuario and (status_anterior != status_destino or data_anterior != data_pagamento):
             historico = HistoricoFinanceiro(
                 lancamento_id=self.id,
                 campo_alterado='status',
-                valor_anterior=self.status,
+                valor_anterior=f'{status_anterior}|{data_anterior.isoformat() if data_anterior else ""}',
                 valor_novo=status_destino,
                 usuario=usuario,
                 acao='pagamento',
@@ -341,17 +330,12 @@ class LancamentoFinanceiro(BaseModel):
         self.data_pagamento = data_pagamento
         self.usuario_editor = usuario
         
-        # Atualizar saldo apenas quando há pagamento efetivo novo.
-        deve_movimentar_saldo = data_pagamento is not None and (
-            status_anterior != status_destino or data_anterior is None
-        )
-
         if self.conta_bancaria_id and deve_movimentar_saldo:
             conta = ContaBancaria.query.get(self.conta_bancaria_id)
             if conta:
-                if self.tipo in ['receita', 'conta_receber']:
+                if tipo_eh_receita(self.tipo):
                     conta.atualizar_saldo(self.valor, 'adicionar')
-                elif self.tipo in ['despesa', 'conta_pagar']:
+                elif tipo_eh_despesa(self.tipo):
                     conta.atualizar_saldo(self.valor, 'subtrair')
         
         db.session.commit()

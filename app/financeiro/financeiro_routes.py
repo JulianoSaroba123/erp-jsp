@@ -11,6 +11,8 @@ Data: 2025
 """
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file
+from flask_login import current_user
+from calendar import monthrange
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 import io
@@ -29,6 +31,7 @@ from app.financeiro.indicadores_service import (
     periodo_mes_atual,
     resumir_registros_financeiros,
 )
+from app.financeiro.financeiro_compat import decimal_valor
 from app.cliente.cliente_model import Cliente
 from app.fornecedor.fornecedor_model import Fornecedor
 
@@ -51,6 +54,76 @@ def converter_valor_monetario(valor_str):
         return Decimal(valor_limpo)
     except:
         return Decimal('0.00')
+
+
+def _periodo_mes(mes: int, ano: int) -> tuple[date, date]:
+    return date(ano, mes, 1), date(ano, mes, monthrange(ano, mes)[1])
+
+
+def _serializar_resumo(resumo):
+    return {
+        'total_receitas': float(resumo.receitas_realizadas),
+        'total_despesas': float(resumo.despesas_realizadas),
+        'saldo': float(resumo.resultado_realizado),
+        'saldo_projetado': float(resumo.saldo_projetado),
+        'contas_receber_pendentes': float(resumo.contas_a_receber_pendentes),
+        'contas_pagar_pendentes': float(resumo.contas_a_pagar_pendentes),
+        'inconsistencias_qtd': resumo.lancamentos_pagos_sem_data_qtd,
+        'inconsistencias_valor': float(resumo.lancamentos_pagos_sem_data_valor),
+        'qtd_receitas': resumo.qtd_receitas,
+        'qtd_despesas': resumo.qtd_despesas,
+    }
+
+
+def _pendencias_periodo():
+    return carregar_registros_financeiros(status='Pendente')
+
+
+def _contar_pendencias_por_tipo(tipo_operacao: str) -> int:
+    return len([item for item in _pendencias_periodo() if item.tipo == tipo_operacao])
+
+
+def _contar_vencidos() -> int:
+    hoje = date.today()
+    return len([
+        item for item in _pendencias_periodo()
+        if item.data_vencimento and item.data_vencimento < hoje
+    ])
+
+
+def _evolucao_financeira_mensal(referencia: date, meses: int = 6):
+    meses_labels = []
+    receitas = []
+    despesas = []
+    saldos = []
+    saldo_acumulado = Decimal('0')
+    meses_nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+
+    for deslocamento in range(meses - 1, -1, -1):
+        ancora = referencia.replace(day=15) - timedelta(days=deslocamento * 31)
+        inicio, fim = _periodo_mes(ancora.month, ancora.year)
+        resumo = resumir_financeiro_periodo(inicio, fim)
+        meses_labels.append(meses_nomes[ancora.month - 1])
+        receitas.append(float(resumo.receitas_realizadas))
+        despesas.append(float(resumo.despesas_realizadas))
+        saldo_acumulado += resumo.resultado_realizado
+        saldos.append(float(saldo_acumulado))
+
+    return meses_labels, receitas, despesas, saldos
+
+
+def _top_categorias_despesa(inicio: date, fim: date):
+    totais = {}
+    for registro in carregar_registros_financeiros(inicio, fim):
+        if registro.inconsistente_sem_data:
+            continue
+        if registro.status != 'Pago' or registro.tipo != 'Despesa':
+            continue
+        chave = registro.categoria or 'Sem categoria'
+        totais[chave] = totais.get(chave, Decimal('0')) + decimal_valor(registro.valor)
+
+    ordenados = sorted(totais.items(), key=lambda item: item[1], reverse=True)[:5]
+    return [item[0] for item in ordenados], [float(item[1]) for item in ordenados]
 
 
 @bp_financeiro.route('/')
@@ -79,14 +152,13 @@ def dashboard():
         resumo = resumir_financeiro_periodo(inicio_mes, fim_mes)
 
         # Mantém contrato esperado pelo template do dashboard
-        vencidos = LancamentoFinanceiro.get_vencidos().count()
-        pendentes = LancamentoFinanceiro.get_pendentes().count()
-        contas_receber = LancamentoFinanceiro.query.filter_by(
-            tipo='conta_receber', status='pendente', ativo=True
-        ).count()
-        contas_pagar = LancamentoFinanceiro.query.filter_by(
-            tipo='conta_pagar', status='pendente', ativo=True
-        ).count()
+        pendentes_views = _pendencias_periodo()
+        vencidos = len([
+            item for item in pendentes_views if item.data_vencimento and item.data_vencimento < hoje
+        ])
+        pendentes = len(pendentes_views)
+        contas_receber = len([item for item in pendentes_views if item.tipo == 'Receita'])
+        contas_pagar = len([item for item in pendentes_views if item.tipo == 'Despesa'])
         
         # Últimos lançamentos (usando data_criacao_auditoria ou data_lancamento)
         ultimos_lancamentos = LancamentoFinanceiro.query.filter_by(ativo=True).order_by(
@@ -99,6 +171,7 @@ def dashboard():
                              pendentes=pendentes,
                              contas_receber=contas_receber,
                              contas_pagar=contas_pagar,
+                             inconsistencias_qtd=resumo.lancamentos_pagos_sem_data_qtd,
                              ultimos_lancamentos=ultimos_lancamentos,
                              data_atual=date.today())
     
@@ -461,7 +534,11 @@ def marcar_como_pago(id):
         else:
             data_pagamento = date.today()
         
-        lancamento.marcar_como_pago(data_pagamento)
+        usuario = None
+        if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+            usuario = getattr(current_user, 'usuario', None) or getattr(current_user, 'email', None)
+
+        lancamento.marcar_como_pago(data_pagamento, usuario=usuario)
         
         action = 'pago' if lancamento.tipo in ['despesa', 'conta_pagar'] else 'recebido'
         flash(f'Lançamento marcado como {action}!', 'success')
@@ -527,8 +604,14 @@ def api_resumo_mes():
     try:
         mes = request.args.get('mes', type=int)
         ano = request.args.get('ano', type=int)
-        
-        resumo = LancamentoFinanceiro.get_resumo_mes(mes, ano)
+
+        if not mes:
+            mes = date.today().month
+        if not ano:
+            ano = date.today().year
+
+        inicio, fim = _periodo_mes(mes, ano)
+        resumo = _serializar_resumo(resumir_financeiro_periodo(inicio, fim))
         
         return jsonify({
             'status': 'success',
@@ -552,14 +635,13 @@ def chaves_documentos():
 def api_indicadores():
     """API para indicadores financeiros."""
     try:
-        # Lançamentos vencidos
-        vencidos = LancamentoFinanceiro.get_vencidos().count()
-        
-        # Pendentes
-        pendentes = LancamentoFinanceiro.get_pendentes().count()
-        
-        # Resumo do mês
-        resumo = LancamentoFinanceiro.get_resumo_mes()
+        inicio_mes, fim_mes = periodo_mes_atual()
+        resumo = _serializar_resumo(resumir_financeiro_periodo(inicio_mes, fim_mes))
+        pendencias = _pendencias_periodo()
+        pendentes = len(pendencias)
+        vencidos = len([
+            item for item in pendencias if item.data_vencimento and item.data_vencimento < date.today()
+        ])
         
         return jsonify({
             'status': 'success',
@@ -581,76 +663,11 @@ def api_indicadores():
 def api_dashboard_dados():
     """API completa para dados do dashboard com gráficos."""
     try:
-        from datetime import timedelta
-        from sqlalchemy import func, extract
-        
         hoje = date.today()
-        mes_atual = hoje.month
-        ano_atual = hoje.year
-        
-        # Resumo do mês atual
-        resumo_mes = LancamentoFinanceiro.get_resumo_mes()
-        
-        # Evolução dos últimos 6 meses
-        meses_labels = []
-        receitas_mes = []
-        despesas_mes = []
-        saldos_acumulados = []
-        saldo_acumulado = 0
-        
-        for i in range(5, -1, -1):
-            mes_ref = hoje - timedelta(days=i*30)
-            mes = mes_ref.month
-            ano = mes_ref.year
-            
-            # Nome do mês
-            meses_nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
-                          'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-            meses_labels.append(meses_nomes[mes - 1])
-            
-            # Receitas do mês
-            receitas = db.session.query(func.sum(LancamentoFinanceiro.valor)).filter(
-                extract('month', LancamentoFinanceiro.data_lancamento) == mes,
-                extract('year', LancamentoFinanceiro.data_lancamento) == ano,
-                LancamentoFinanceiro.tipo.in_(['receita', 'conta_receber']),
-                LancamentoFinanceiro.status == 'recebido',
-                LancamentoFinanceiro.ativo == True
-            ).scalar() or 0
-            
-            # Despesas do mês
-            despesas = db.session.query(func.sum(LancamentoFinanceiro.valor)).filter(
-                extract('month', LancamentoFinanceiro.data_lancamento) == mes,
-                extract('year', LancamentoFinanceiro.data_lancamento) == ano,
-                LancamentoFinanceiro.tipo.in_(['despesa', 'conta_pagar']),
-                LancamentoFinanceiro.status == 'pago',
-                LancamentoFinanceiro.ativo == True
-            ).scalar() or 0
-            
-            receitas_mes.append(float(receitas))
-            despesas_mes.append(float(despesas))
-            
-            # Saldo acumulado
-            saldo_acumulado += float(receitas) - float(despesas)
-            saldos_acumulados.append(saldo_acumulado)
-        
-        # Top 5 categorias de despesas
-        categorias_despesas = db.session.query(
-            LancamentoFinanceiro.categoria,
-            func.sum(LancamentoFinanceiro.valor).label('total')
-        ).filter(
-            extract('month', LancamentoFinanceiro.data_lancamento) == mes_atual,
-            extract('year', LancamentoFinanceiro.data_lancamento) == ano_atual,
-            LancamentoFinanceiro.tipo.in_(['despesa', 'conta_pagar']),
-            LancamentoFinanceiro.categoria.isnot(None),
-            LancamentoFinanceiro.ativo == True
-        ).group_by(
-            LancamentoFinanceiro.categoria
-        ).order_by(
-            func.sum(LancamentoFinanceiro.valor).desc()
-        ).limit(5).all()
-        
-        categorias_nomes = [cat[0] or 'Sem categoria' for cat in categorias_despesas]
-        categorias_valores = [float(cat[1]) for cat in categorias_despesas]
+        inicio_mes, fim_mes = periodo_mes_atual(hoje)
+        resumo_mes = _serializar_resumo(resumir_financeiro_periodo(inicio_mes, fim_mes))
+        meses_labels, receitas_mes, despesas_mes, saldos_acumulados = _evolucao_financeira_mensal(hoje)
+        categorias_nomes, categorias_valores = _top_categorias_despesa(inicio_mes, fim_mes)
         
         # Cores para categorias
         cores_categorias = [
