@@ -68,6 +68,7 @@ class LancamentoFinanceiro(BaseModel):
     # Relacionamentos opcionais
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=True)
     fornecedor_id = db.Column(db.Integer, db.ForeignKey('fornecedores.id'), nullable=True)
+    pedido_compra_id = db.Column(db.Integer, db.ForeignKey('pedidos_compra.id'), nullable=True, index=True, unique=True)
     ordem_servico_id = db.Column(db.Integer, db.ForeignKey('ordem_servico.id'), nullable=True)
     ordem_servico_parcela_id = db.Column(
         db.Integer,
@@ -99,6 +100,7 @@ class LancamentoFinanceiro(BaseModel):
     # Relacionamentos
     cliente = db.relationship('Cliente', backref='lancamentos_financeiros', foreign_keys=[cliente_id])
     fornecedor = db.relationship('Fornecedor', backref='lancamentos_financeiros', foreign_keys=[fornecedor_id])
+    pedido_compra = db.relationship('PedidoCompra', backref=db.backref('lancamentos_financeiros', lazy='dynamic'), foreign_keys=[pedido_compra_id])
     ordem_servico = db.relationship('OrdemServico', backref='lancamentos_financeiros', foreign_keys=[ordem_servico_id])
     ordem_servico_parcela = db.relationship(
         'OrdemServicoParcela',
@@ -174,6 +176,7 @@ class LancamentoFinanceiro(BaseModel):
         origens = {
             'MANUAL': 'Lançamento Manual',
             'CUSTO_FIXO': 'Custo Fixo Recorrente',
+            'PEDIDO_COMPRA': 'Pedido de Compra',
             'ORDEM_SERVICO': 'Ordem de Serviço',
             'IMPORTACAO': 'Importação',
             'INTEGRACAO': 'Integração'
@@ -186,6 +189,7 @@ class LancamentoFinanceiro(BaseModel):
         cores = {
             'MANUAL': 'primary',
             'CUSTO_FIXO': 'warning',
+            'PEDIDO_COMPRA': 'secondary',
             'ORDEM_SERVICO': 'info',
             'IMPORTACAO': 'secondary',
             'INTEGRACAO': 'dark'
@@ -198,6 +202,7 @@ class LancamentoFinanceiro(BaseModel):
         icones = {
             'MANUAL': 'fa-hand-pointer',
             'CUSTO_FIXO': 'fa-repeat',
+            'PEDIDO_COMPRA': 'fa-file-invoice-dollar',
             'ORDEM_SERVICO': 'fa-wrench',
             'IMPORTACAO': 'fa-file-import',
             'INTEGRACAO': 'fa-plug'

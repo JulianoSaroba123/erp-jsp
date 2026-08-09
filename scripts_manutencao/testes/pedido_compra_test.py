@@ -379,7 +379,7 @@ def test_pedido_com_dois_ou_mais_itens_funciona(app_ctx):
     assert pedido.itens.count() >= 2
 
 
-def test_nao_gera_financeiro_nem_movimenta_estoque(app_ctx):
+def test_gera_conta_pagar_pendente_sem_movimentar_estoque(app_ctx):
     from app.extensoes import db
     from app.financeiro.financeiro_model import LancamentoFinanceiro
     from app.pedido_compra.pedido_compra_model import PedidoCompra
@@ -395,7 +395,13 @@ def test_nao_gera_financeiro_nem_movimenta_estoque(app_ctx):
     pedido_compra = PedidoCompra.query.first()
 
     assert pedido_compra is not None
-    assert LancamentoFinanceiro.query.count() == 0
+    assert LancamentoFinanceiro.query.count() == 1
+    lancamento = LancamentoFinanceiro.query.first()
+    assert lancamento.tipo == "conta_pagar"
+    assert lancamento.status == "pendente"
+    assert lancamento.data_pagamento is None
+    assert lancamento.origem == "PEDIDO_COMPRA"
+    assert lancamento.pedido_compra_id == pedido_compra.id
     produto_atualizado = Produto.query.get(produto.id)
     assert produto_atualizado.estoque_atual == estoque_inicial
 

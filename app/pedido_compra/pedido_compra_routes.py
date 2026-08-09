@@ -22,6 +22,7 @@ from app.pedido_compra.forms import (
     parse_int,
     validar_payload_pedido_compra,
 )
+from app.pedido_compra.pedido_compra_financeiro_service import sincronizar_obrigacao_financeira_pedido_compra
 from app.pedido_compra.pedido_compra_model import PedidoCompra, PedidoCompraItem
 from app.produto.produto_model import Produto
 from app.servico.servico_model import Servico
@@ -66,6 +67,12 @@ def _parse_data(valor):
         return datetime.strptime(texto, "%Y-%m-%d").date()
     except ValueError:
         return None
+
+
+def _usuario_auditoria() -> str | None:
+    if hasattr(current_user, "is_authenticated") and current_user.is_authenticated:
+        return getattr(current_user, "usuario", None) or getattr(current_user, "email", None)
+    return None
 
 
 def _query_base_pedidos_compra():
@@ -262,6 +269,7 @@ def novo():
             _aplicar_itens_no_pedido_compra(pedido_compra, itens_form, modo_edicao=False)
             pedido_compra.recalcular_totais()
             pedido_compra.atualizar_status_recebimento()
+            sincronizar_obrigacao_financeira_pedido_compra(pedido_compra, usuario=_usuario_auditoria())
         except ValueError as exc:
             db.session.rollback()
             flash(str(exc), "error")
@@ -332,6 +340,7 @@ def editar(id):
             _aplicar_itens_no_pedido_compra(pedido_compra, itens_form, modo_edicao=True)
             pedido_compra.recalcular_totais()
             pedido_compra.atualizar_status_recebimento()
+            sincronizar_obrigacao_financeira_pedido_compra(pedido_compra, usuario=_usuario_auditoria())
         except ValueError as exc:
             db.session.rollback()
             flash(str(exc), "error")
@@ -381,6 +390,7 @@ def cancelar(id):
 
     try:
         pedido_compra.status = PedidoCompra.STATUS_CANCELADO
+        sincronizar_obrigacao_financeira_pedido_compra(pedido_compra, usuario=_usuario_auditoria())
         db.session.commit()
         flash(f"Pedido de compra {pedido_compra.numero} cancelado com sucesso.", "success")
     except Exception as exc:
@@ -411,6 +421,7 @@ def recebimento(id):
             for item, incremento in zip(itens, incrementos):
                 item.registrar_recebimento(parse_decimal_br(incremento, default="0"))
             pedido_compra.atualizar_status_recebimento()
+            sincronizar_obrigacao_financeira_pedido_compra(pedido_compra, usuario=_usuario_auditoria())
             db.session.commit()
             flash(f"Recebimento do pedido de compra {pedido_compra.numero} registrado.", "success")
             return redirect(url_for("pedido_compra.visualizar", id=pedido_compra.id))
