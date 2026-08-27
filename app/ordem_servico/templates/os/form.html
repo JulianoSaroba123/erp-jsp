@@ -756,6 +756,7 @@
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label text-white">Condição de Pagamento</label>
+                        <label class="form-label text-white">Forma de Pagamento</label><input class="form-control bg-dark text-white border-secondary" name="forma_pagamento" value="{{ ordem.forma_pagamento if ordem else '' }}" placeholder="PIX, dinheiro, cartao...">
                         <select class="form-select bg-dark text-white border-secondary" name="condicao_pagamento">
                             <option value="a_vista" {% if not ordem or ordem.condicao_pagamento == 'a_vista' %}selected{% endif %}>💰 À Vista</option>
                             <option value="parcelado" {% if ordem and ordem.condicao_pagamento == 'parcelado' %}selected{% endif %}>💳 Parcelado</option>
