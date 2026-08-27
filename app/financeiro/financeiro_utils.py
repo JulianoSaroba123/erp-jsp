@@ -12,9 +12,13 @@ Data: 2025
 
 from datetime import datetime, date
 from decimal import Decimal
+import logging
 from app.extensoes import db
 from app.financeiro.financeiro_model import LancamentoFinanceiro
 from sqlalchemy import func
+
+
+logger = logging.getLogger(__name__)
 
 
 def _status_financeiro_por_os(ordem_servico):
@@ -32,7 +36,13 @@ def _numero_parcela_exibicao(parcela, total_parcelas):
 
 def _atualizar_lancamento_os(lancamento, ordem_servico, parcela=None, total_parcelas=0):
     """Aplica atualização segura em lançamento de OS preservando quitados."""
-    if lancamento.status in {'pago', 'recebido'} and lancamento.data_pagamento is not None:
+    forma_pagamento = getattr(ordem_servico, 'forma_pagamento', None)
+    if forma_pagamento is None:
+        forma_pagamento = getattr(ordem_servico, 'condicao_pagamento', None)
+    if forma_pagamento is not None:
+        lancamento.forma_pagamento = forma_pagamento
+
+    if lancamento.status in {'pago', 'recebido'}:
         # Preserva lançamentos quitados mesmo com edição de OS.
         return
 
@@ -53,7 +63,8 @@ def _atualizar_lancamento_os(lancamento, ordem_servico, parcela=None, total_parc
     lancamento.descricao = descricao
     lancamento.valor = valor
     lancamento.tipo = 'conta_receber'
-    lancamento.status = status_financeiro
+    if lancamento.status not in {'pago', 'recebido'}:
+        lancamento.status = status_financeiro
     lancamento.categoria = 'Serviços'
     lancamento.subcategoria = 'Ordem de Serviço'
     lancamento.data_lancamento = ordem_servico.data_abertura
@@ -89,11 +100,16 @@ def gerar_lancamento_ordem_servico(ordem_servico):
 
         if parcelas:
             total_parcelas = len(parcelas)
+            parcela_ids = [parcela.id for parcela in parcelas]
+            existentes = LancamentoFinanceiro.query.filter(
+                LancamentoFinanceiro.ordem_servico_parcela_id.in_(parcela_ids)
+            ).all()
+            existentes_por_parcela = {
+                lancamento.ordem_servico_parcela_id: lancamento
+                for lancamento in existentes
+            }
             for parcela in parcelas:
-                lancamento = LancamentoFinanceiro.query.filter_by(
-                    ordem_servico_parcela_id=parcela.id,
-                    ativo=True,
-                ).first()
+                lancamento = existentes_por_parcela.get(parcela.id)
 
                 if not lancamento:
                     lancamento = LancamentoFinanceiro(
@@ -110,7 +126,6 @@ def gerar_lancamento_ordem_servico(ordem_servico):
             lancamento = LancamentoFinanceiro.query.filter_by(
                 ordem_servico_id=ordem_servico.id,
                 ordem_servico_parcela_id=None,
-                ativo=True,
             ).first()
 
             if not lancamento:
@@ -129,8 +144,8 @@ def gerar_lancamento_ordem_servico(ordem_servico):
         return lancamentos_processados
             
     except Exception as e:
-        print(f" Erro ao gerar lançamento para OS {ordem_servico.numero}: {e}")
         db.session.rollback()
+        logger.exception("Erro ao gerar lancamento para OS %s", ordem_servico.numero)
         
     return []
 
@@ -209,8 +224,6 @@ def calcular_metricas_dashboard():
 
         total_ordens = int(r[0] or 0)
         ordens_abertas = int(r[1] or 0)
-        ordens_concluidas = int(r[2] or 0)
-        valor_total_ordens = float(r[3] or 0)
         valor_ordens_concluidas = float(r[4] or 0)
         valor_ordens_abertas = float(r[5] or 0)
         receita_mes = float(r[6] or 0)
