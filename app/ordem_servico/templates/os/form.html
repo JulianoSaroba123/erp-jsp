@@ -765,7 +765,7 @@
                             <option value="pix" {% if forma_pagamento_atual == 'pix' %}selected{% endif %}>PIX</option>
                             <option value="boleto" {% if forma_pagamento_atual == 'boleto' %}selected{% endif %}>Boleto</option>
                             <option value="cheque" {% if forma_pagamento_atual == 'cheque' %}selected{% endif %}>Cheque</option>
-                            <option value="__multiplas__" {% if forma_pagamento_atual == '__multiplas__' %}selected{% endif %}>Múltiplas formas — selecione para alterar todas</option>
+                            <option value="" {% if forma_pagamento_atual == '__multiplas__' %}selected{% endif %}>Múltiplas formas — mantenha para não alterar</option>
                         </select>
                     </div>
                     <div class="col-md-3">

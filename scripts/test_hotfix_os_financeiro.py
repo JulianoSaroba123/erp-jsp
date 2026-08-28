@@ -129,7 +129,9 @@ def test_template_uses_explicit_prefill_and_multiple_parcels_are_idempotent():
     source = template.read_text(encoding='utf-8')
     assert 'ordem.forma_pagamento' not in source
     assert 'forma_pagamento_atual' in source
-    assert 'value="__multiplas__"' in source
+    assert 'value="__multiplas__"' not in source
+    assert 'value=""' in source
+    assert 'Múltiplas formas — mantenha para não alterar' in source
 
     app = create_app('testing')
     with app.app_context():
@@ -153,8 +155,52 @@ def test_template_uses_explicit_prefill_and_multiple_parcels_are_idempotent():
         assert LancamentoFinanceiro.query.filter_by(ordem_servico_id=ordem.id).count() == 2
 
 
+def test_route_get_prefills_multiple_forms_and_rejects_invalid_post():
+    app = create_app('testing')
+    with app.app_context():
+        db.create_all()
+    ordem_id, parcela_id = _create_os(app)
+    with app.app_context():
+        ordem = db.session.get(OrdemServico, ordem_id)
+        primeira = db.session.get(OrdemServicoParcela, parcela_id)
+        segunda = OrdemServicoParcela(
+            ordem_servico_id=ordem.id,
+            numero_parcela=2,
+            data_vencimento=date(2026, 9, 15),
+            valor=Decimal('100.00'),
+        )
+        db.session.add(segunda)
+        db.session.flush()
+        for parcela, forma in ((primeira, 'pix'), (segunda, 'boleto')):
+            db.session.add(LancamentoFinanceiro(
+                descricao='Parcela', valor=parcela.valor, tipo='conta_receber',
+                data_lancamento=date(2026, 8, 1), data_vencimento=parcela.data_vencimento,
+                ordem_servico_id=ordem.id, ordem_servico_parcela_id=parcela.id,
+                forma_pagamento=forma, ativo=True,
+            ))
+        db.session.commit()
+
+    client = app.test_client()
+    response = client.get(f'/ordem_servico/{ordem_id}/editar')
+    body = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert '__multiplas__' not in body
+    assert 'value="__multiplas__"' not in body
+    invalid = client.post(
+        f'/ordem_servico/{ordem_id}/editar',
+        data={'forma_pagamento': '__multiplas__', 'tipo_os': 'comercial'},
+    )
+    assert invalid.status_code == 200
+    with app.app_context():
+        formas = [l.forma_pagamento for l in LancamentoFinanceiro.query.filter_by(
+            ordem_servico_id=ordem_id,
+        ).order_by(LancamentoFinanceiro.ordem_servico_parcela_id).all()]
+        assert formas == ['pix', 'boleto']
+
+
 if __name__ == '__main__':
     test_existing_and_inactive_lancamento_are_reconciled()
     test_new_parcela_creates_one_lancamento_and_maps_payment()
     test_template_uses_explicit_prefill_and_multiple_parcels_are_idempotent()
-    print('HOTFIX OS FINANCEIRO: 3/3 testes passaram')
+    test_route_get_prefills_multiple_forms_and_rejects_invalid_post()
+    print('HOTFIX OS FINANCEIRO: 4/4 testes passaram')

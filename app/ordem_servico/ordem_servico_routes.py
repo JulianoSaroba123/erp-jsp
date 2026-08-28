@@ -1451,6 +1451,15 @@ def editar(id):
             forma_pagamento = None
             if pode_gerir_financeiro:
                 forma_pagamento = request.form.get('forma_pagamento', '').strip() or None
+                formas_pagamento_validas = {
+                    'dinheiro', 'cartao_credito', 'cartao_debito',
+                    'transferencia', 'pix', 'boleto', 'cheque',
+                }
+                if forma_pagamento not in formas_pagamento_validas and forma_pagamento is not None:
+                    flash('Forma de pagamento inválida. Selecione uma opção válida.', 'error')
+                    db.session.rollback()
+                    clientes = buscar_clientes_ativos()
+                    return render_template('os/form.html', ordem=ordem, clientes=clientes, today=date.today())
                 ordem.condicao_pagamento = request.form.get('condicao_pagamento', 'a_vista')
                 ordem.status_pagamento = request.form.get('status_pagamento', 'pendente')
                 ordem.numero_parcelas = int(request.form.get('numero_parcelas', 1)) if request.form.get('numero_parcelas') else 1
