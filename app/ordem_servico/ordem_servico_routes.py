@@ -1166,7 +1166,8 @@ def novo():
                 try:
                     from app.financeiro.financeiro_utils import gerar_lancamento_ordem_servico
                     print("🔄 DEBUG: Gerando lançamento financeiro...")
-                    gerar_lancamento_ordem_servico(ordem)
+                    forma_pagamento = request.form.get('forma_pagamento', '').strip() or None
+                    gerar_lancamento_ordem_servico(ordem, forma_pagamento=forma_pagamento)
                     print("✅ DEBUG: Integração financeira concluída!")
                 except Exception as financeiro_error:
                     print(f"⚠️ DEBUG: Erro na integração financeira: {financeiro_error}")
@@ -1447,7 +1448,9 @@ def editar(id):
             ordem.total_horas = request.form.get('total_horas', '').strip()
             
             # Condições de Pagamento
+            forma_pagamento = None
             if pode_gerir_financeiro:
+                forma_pagamento = request.form.get('forma_pagamento', '').strip() or None
                 ordem.condicao_pagamento = request.form.get('condicao_pagamento', 'a_vista')
                 ordem.status_pagamento = request.form.get('status_pagamento', 'pendente')
                 ordem.numero_parcelas = int(request.form.get('numero_parcelas', 1)) if request.form.get('numero_parcelas') else 1
@@ -1908,7 +1911,7 @@ def editar(id):
                 # Integração financeira - gerar/atualizar lançamento
                 from app.financeiro.financeiro_utils import gerar_lancamento_ordem_servico
                 try:
-                    gerar_lancamento_ordem_servico(ordem)
+                    gerar_lancamento_ordem_servico(ordem, forma_pagamento=forma_pagamento)
                     print(f"💰 DEBUG: Lançamento financeiro atualizado para OS {ordem.numero}")
                 except Exception as fin_err:
                     print(f"⚠️ DEBUG: Erro na integração financeira: {fin_err}")
@@ -1935,12 +1938,24 @@ def editar(id):
     print("DEBUG: Buscando clientes...")
     clientes = buscar_clientes_ativos()
     
+    from app.financeiro.financeiro_model import LancamentoFinanceiro
+    formas_pagamento = [l.forma_pagamento for l in LancamentoFinanceiro.query.filter_by(
+        ordem_servico_id=ordem.id,
+    ).all() if l.forma_pagamento]
+    formas_pagamento_unicas = set(formas_pagamento)
+    forma_pagamento_atual = (
+        next(iter(formas_pagamento_unicas))
+        if len(formas_pagamento_unicas) == 1
+        else '__multiplas__' if formas_pagamento_unicas else ''
+    )
+
     print("DEBUG: Renderizando template...")
     try:
         return render_template('os/form.html', 
                              ordem=ordem, 
                              clientes=clientes or [], 
-                             today=date.today())
+                              today=date.today(),
+                              forma_pagamento_atual=forma_pagamento_atual)
     except Exception as e:
         print(f" DEBUG: Erro ao renderizar template: {e}")
         import traceback

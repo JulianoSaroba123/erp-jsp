@@ -34,11 +34,8 @@ def _numero_parcela_exibicao(parcela, total_parcelas):
     return f'{parcela.numero_parcela}/{total}'
 
 
-def _atualizar_lancamento_os(lancamento, ordem_servico, parcela=None, total_parcelas=0):
+def _atualizar_lancamento_os(lancamento, ordem_servico, forma_pagamento=None, parcela=None, total_parcelas=0):
     """Aplica atualização segura em lançamento de OS preservando quitados."""
-    forma_pagamento = getattr(ordem_servico, 'forma_pagamento', None)
-    if forma_pagamento is None:
-        forma_pagamento = getattr(ordem_servico, 'condicao_pagamento', None)
     if forma_pagamento is not None:
         lancamento.forma_pagamento = forma_pagamento
 
@@ -80,7 +77,7 @@ def _atualizar_lancamento_os(lancamento, ordem_servico, parcela=None, total_parc
         lancamento.data_pagamento = ordem_servico.data_conclusao or date.today()
 
 
-def gerar_lancamento_ordem_servico(ordem_servico):
+def gerar_lancamento_ordem_servico(ordem_servico, forma_pagamento=None):
     """
     Gera lançamento financeiro automático para ordem de serviço.
     
@@ -119,7 +116,7 @@ def gerar_lancamento_ordem_servico(ordem_servico):
                     )
                     db.session.add(lancamento)
 
-                _atualizar_lancamento_os(lancamento, ordem_servico, parcela=parcela, total_parcelas=total_parcelas)
+                _atualizar_lancamento_os(lancamento, ordem_servico, forma_pagamento=forma_pagamento, parcela=parcela, total_parcelas=total_parcelas)
                 lancamentos_processados.append(lancamento)
         else:
             # OS sem parcelas: mantém comportamento de lançamento único por OS.
@@ -135,7 +132,7 @@ def gerar_lancamento_ordem_servico(ordem_servico):
                 )
                 db.session.add(lancamento)
 
-            _atualizar_lancamento_os(lancamento, ordem_servico)
+            _atualizar_lancamento_os(lancamento, ordem_servico, forma_pagamento=forma_pagamento)
             lancamentos_processados.append(lancamento)
 
         db.session.commit()

@@ -755,8 +755,21 @@
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-3">
+                        <label class="form-label text-white">Forma de Pagamento</label>
+                        <select class="form-select bg-dark text-white border-secondary" name="forma_pagamento">
+                            <option value="">Selecione</option>
+                            <option value="dinheiro" {% if forma_pagamento_atual == 'dinheiro' %}selected{% endif %}>Dinheiro</option>
+                            <option value="cartao_credito" {% if forma_pagamento_atual == 'cartao_credito' %}selected{% endif %}>Cartão de Crédito</option>
+                            <option value="cartao_debito" {% if forma_pagamento_atual == 'cartao_debito' %}selected{% endif %}>Cartão de Débito</option>
+                            <option value="transferencia" {% if forma_pagamento_atual == 'transferencia' %}selected{% endif %}>Transferência</option>
+                            <option value="pix" {% if forma_pagamento_atual == 'pix' %}selected{% endif %}>PIX</option>
+                            <option value="boleto" {% if forma_pagamento_atual == 'boleto' %}selected{% endif %}>Boleto</option>
+                            <option value="cheque" {% if forma_pagamento_atual == 'cheque' %}selected{% endif %}>Cheque</option>
+                            <option value="__multiplas__" {% if forma_pagamento_atual == '__multiplas__' %}selected{% endif %}>Múltiplas formas — selecione para alterar todas</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label class="form-label text-white">Condição de Pagamento</label>
-                        <label class="form-label text-white">Forma de Pagamento</label><input class="form-control bg-dark text-white border-secondary" name="forma_pagamento" value="{{ ordem.forma_pagamento if ordem else '' }}" placeholder="PIX, dinheiro, cartao...">
                         <select class="form-select bg-dark text-white border-secondary" name="condicao_pagamento">
                             <option value="a_vista" {% if not ordem or ordem.condicao_pagamento == 'a_vista' %}selected{% endif %}>💰 À Vista</option>
                             <option value="parcelado" {% if ordem and ordem.condicao_pagamento == 'parcelado' %}selected{% endif %}>💳 Parcelado</option>
