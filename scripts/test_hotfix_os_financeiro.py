@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 os.environ['FLASK_CONFIG'] = 'testing'
 os.environ['FLASK_ENV'] = 'testing'
@@ -10,6 +11,7 @@ from datetime import date
 from decimal import Decimal
 
 from app import create_app
+from flask import g
 from app.extensoes import db
 from app.cliente.cliente_model import Cliente
 from app.financeiro.financeiro_model import LancamentoFinanceiro
@@ -55,6 +57,15 @@ def _create_os(app, status='pendente'):
         return ordem.id, parcela.id
 
 
+def _login_admin(app):
+    client = app.test_client()
+    admin = SimpleNamespace(id=1, tipo_usuario='admin', is_authenticated=True)
+    @app.before_request
+    def load_test_admin():
+        g._login_user = admin
+    return client
+
+
 def test_existing_and_inactive_lancamento_are_reconciled():
     app = create_app('testing')
     assert app.config['SQLALCHEMY_DATABASE_URI'] == 'sqlite:///:memory:'
@@ -88,7 +99,8 @@ def test_existing_and_inactive_lancamento_are_reconciled():
         db.session.commit()
         original_id = lancamento.id
 
-        assert len(gerar_lancamento_ordem_servico(ordem, forma_pagamento='pix')) == 1
+        resultado = gerar_lancamento_ordem_servico(ordem, forma_pagamento='pix')
+        assert len(resultado) == 1
         assert len(gerar_lancamento_ordem_servico(ordem, forma_pagamento=None)) == 1
         db.session.expire_all()
         registros = LancamentoFinanceiro.query.filter_by(
@@ -180,22 +192,91 @@ def test_route_get_prefills_multiple_forms_and_rejects_invalid_post():
             ))
         db.session.commit()
 
-    client = app.test_client()
+    client = _login_admin(app)
     response = client.get(f'/ordem_servico/{ordem_id}/editar')
     body = response.get_data(as_text=True)
     assert response.status_code == 200
+    assert 'name="forma_pagamento"' in body
+    assert 'name="condicao_pagamento"' in body
+    assert 'Múltiplas formas' in body or 'MÃºltiplas formas' in body
     assert '__multiplas__' not in body
+    assert 'value="" selected' in body
     assert 'value="__multiplas__"' not in body
-    invalid = client.post(
+    unchanged = client.post(
         f'/ordem_servico/{ordem_id}/editar',
-        data={'forma_pagamento': '__multiplas__', 'tipo_os': 'comercial'},
+        data={
+            'forma_pagamento': '', 'condicao_pagamento': 'parcelado',
+            'status_pagamento': 'pendente', 'tipo_os': 'comercial',
+            'tipo_servico': 'atendimento', 'cliente_id': '1',
+            'titulo': 'OS Hotfix', 'descricao': '', 'status': 'aberta',
+            'valor_desconto': '0', 'valor_entrada': '0', 'numero_parcelas': '2',
+            'prazo_garantia': '90', 'data_abertura': '2026-08-01',
+            'data_prevista': '2026-08-15', 'data_primeira_parcela': '',
+            'data_vencimento_pagamento': '', 'observacoes_anexos': '',
+        },
     )
-    assert invalid.status_code == 200
+    assert unchanged.status_code in (302, 303)
     with app.app_context():
         formas = [l.forma_pagamento for l in LancamentoFinanceiro.query.filter_by(
             ordem_servico_id=ordem_id,
         ).order_by(LancamentoFinanceiro.ordem_servico_parcela_id).all()]
         assert formas == ['pix', 'boleto']
+
+        valid = client.post(
+            f'/ordem_servico/{ordem_id}/editar',
+            data={
+                'forma_pagamento': 'transferencia', 'condicao_pagamento': 'parcelado',
+                'status_pagamento': 'pendente', 'tipo_os': 'comercial',
+                'tipo_servico': 'atendimento', 'cliente_id': '1',
+                'titulo': 'OS Hotfix', 'descricao': '', 'status': 'aberta',
+                'valor_desconto': '0', 'valor_entrada': '0', 'numero_parcelas': '2',
+                'prazo_garantia': '90', 'data_abertura': '2026-08-01',
+                'data_prevista': '2026-08-15', 'data_primeira_parcela': '',
+                'data_vencimento_pagamento': '', 'observacoes_anexos': '',
+            },
+        )
+        assert valid.status_code in (302, 303)
+        db.session.remove()
+        ordem_atual = db.session.get(OrdemServico, ordem_id)
+        formas = [l.forma_pagamento for l in LancamentoFinanceiro.query.filter_by(
+            ordem_servico_id=ordem_id,
+        ).order_by(LancamentoFinanceiro.ordem_servico_parcela_id).all()]
+        assert ordem_atual.condicao_pagamento == 'parcelado'
+        assert formas == ['transferencia', 'transferencia']
+
+
+def test_route_new_validates_forma_and_creates_financeiro():
+    app = create_app('testing')
+    with app.app_context():
+        db.create_all()
+        cliente = Cliente(nome='Cliente Novo', ativo=True)
+        db.session.add(cliente)
+        db.session.commit()
+        cliente_id = cliente.id
+    client = _login_admin(app)
+    base = {
+        'tipo_os': 'comercial', 'tipo_servico': 'atendimento',
+        'cliente_id': str(cliente_id), 'titulo': 'OS Nova', 'descricao': '',
+        'status': 'aberta', 'condicao_pagamento': 'a_vista',
+        'status_pagamento': 'pendente', 'numero_parcelas': '1',
+        'valor_entrada': '0', 'valor_desconto': '0', 'prazo_garantia': '90',
+        'servico_descricao[]': 'Servico novo', 'servico_tipo[]': 'fechado',
+        'servico_quantidade[]': '1', 'servico_valor[]': '100',
+    }
+    invalid = client.post(
+        '/ordem_servico/novo', data={**base, 'forma_pagamento': '__multiplas__'},
+    )
+    assert invalid.status_code == 200
+    with app.app_context():
+        assert LancamentoFinanceiro.query.count() == 0
+    valid = client.post(
+        '/ordem_servico/novo', data={**base, 'forma_pagamento': 'pix'},
+    )
+    assert valid.status_code in (302, 303)
+    with app.app_context():
+        lancamentos = LancamentoFinanceiro.query.all()
+        assert len(lancamentos) == 1
+        assert lancamentos[0].forma_pagamento == 'pix'
 
 
 if __name__ == '__main__':
@@ -203,4 +284,5 @@ if __name__ == '__main__':
     test_new_parcela_creates_one_lancamento_and_maps_payment()
     test_template_uses_explicit_prefill_and_multiple_parcels_are_idempotent()
     test_route_get_prefills_multiple_forms_and_rejects_invalid_post()
-    print('HOTFIX OS FINANCEIRO: 4/4 testes passaram')
+    test_route_new_validates_forma_and_creates_financeiro()
+    print('HOTFIX OS FINANCEIRO: 5/5 testes passaram')

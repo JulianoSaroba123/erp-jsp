@@ -27,6 +27,20 @@ from datetime import datetime as dt, datetime, time, date, timedelta
 from werkzeug.utils import secure_filename
 import uuid
 
+
+FORMAS_PAGAMENTO_VALIDAS = frozenset({
+    'dinheiro', 'cartao_credito', 'cartao_debito',
+    'transferencia', 'pix', 'boleto', 'cheque',
+})
+
+
+def validar_forma_pagamento(valor):
+    """Normaliza uma forma enviada pelo formulário ou retorna None."""
+    valor_normalizado = (valor or '').strip() or None
+    if valor_normalizado is not None and valor_normalizado not in FORMAS_PAGAMENTO_VALIDAS:
+        return None, False
+    return valor_normalizado, True
+
 # === FUNÇÃO UTILITÁRIA PARA BUSCAR CLIENTES ===
 def buscar_clientes_ativos():
     """
@@ -707,6 +721,17 @@ def novo():
 
             modo_operacional = normalizar_modo_operacional(tipo_os_final, request.form.get('tipo_servico'))
             pode_gerir_financeiro = usuario_eh_admin() and modo_operacional == 'atendimento'
+            forma_pagamento, forma_pagamento_valida = validar_forma_pagamento(
+                request.form.get('forma_pagamento')
+            )
+            if not forma_pagamento_valida:
+                flash('Forma de pagamento inválida. Selecione uma opção válida.', 'error')
+                clientes = buscar_clientes_ativos()
+                return render_template(
+                    'os/form.html', ordem=None, clientes=clientes,
+                    numero_os=OrdemServico.gerar_proximo_numero(),
+                    today=date.today(), forma_pagamento_atual='',
+                )
             
             # Cria ordem de serviço
             ordem = OrdemServico(
@@ -1161,12 +1186,12 @@ def novo():
                 print("🔄 DEBUG: Tentando fazer commit da ordem...")
                 db.session.commit()
                 print("✅ DEBUG: Commit realizado com sucesso!")
+                ordem.valor_total = total_final
                 
                 # === INTEGRAÇÃO FINANCEIRA ===
                 try:
                     from app.financeiro.financeiro_utils import gerar_lancamento_ordem_servico
                     print("🔄 DEBUG: Gerando lançamento financeiro...")
-                    forma_pagamento = request.form.get('forma_pagamento', '').strip() or None
                     gerar_lancamento_ordem_servico(ordem, forma_pagamento=forma_pagamento)
                     print("✅ DEBUG: Integração financeira concluída!")
                 except Exception as financeiro_error:
@@ -1450,16 +1475,17 @@ def editar(id):
             # Condições de Pagamento
             forma_pagamento = None
             if pode_gerir_financeiro:
-                forma_pagamento = request.form.get('forma_pagamento', '').strip() or None
-                formas_pagamento_validas = {
-                    'dinheiro', 'cartao_credito', 'cartao_debito',
-                    'transferencia', 'pix', 'boleto', 'cheque',
-                }
-                if forma_pagamento not in formas_pagamento_validas and forma_pagamento is not None:
+                forma_pagamento, forma_pagamento_valida = validar_forma_pagamento(
+                    request.form.get('forma_pagamento')
+                )
+                if not forma_pagamento_valida:
                     flash('Forma de pagamento inválida. Selecione uma opção válida.', 'error')
                     db.session.rollback()
                     clientes = buscar_clientes_ativos()
-                    return render_template('os/form.html', ordem=ordem, clientes=clientes, today=date.today())
+                    return render_template(
+                        'os/form.html', ordem=ordem, clientes=clientes,
+                        today=date.today(), forma_pagamento_atual='',
+                    )
                 ordem.condicao_pagamento = request.form.get('condicao_pagamento', 'a_vista')
                 ordem.status_pagamento = request.form.get('status_pagamento', 'pendente')
                 ordem.numero_parcelas = int(request.form.get('numero_parcelas', 1)) if request.form.get('numero_parcelas') else 1
@@ -1911,11 +1937,16 @@ def editar(id):
             
             # Recalcula valor total novamente antes do commit final
             ordem.valor_total = ordem.valor_total_calculado
+            valor_total_sincronizacao = ordem.valor_total or sum(
+                (Decimal(str(parcela.valor or 0)) for parcela in ordem.parcelas),
+                Decimal('0'),
+            )
 
             # Commit final: salva novas linhas de serviços/produtos/parcelas/anexos
             try:
                 db.session.commit()
                 print(f"🏁 DEBUG: Ordem de Serviço salva com sucesso! Total final: R$ {ordem.valor_total}")
+                ordem.valor_total = valor_total_sincronizacao
                 
                 # Integração financeira - gerar/atualizar lançamento
                 from app.financeiro.financeiro_utils import gerar_lancamento_ordem_servico
