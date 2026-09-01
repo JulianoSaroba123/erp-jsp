@@ -141,30 +141,32 @@
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ proposta.titulo|truncate(50) }}</td>
+                                <td>{{ proposta.titulo|truncate(50) if proposta.titulo else '-' }}</td>
                                 <td>
-                                    {% if proposta.status|lower == 'pendente' %}
-                                        <span class="badge bg-warning">{{ proposta.status|title }}</span>
-                                    {% elif proposta.status|lower == 'enviada' %}
-                                        <span class="badge bg-info">{{ proposta.status|title }}</span>
-                                    {% elif proposta.status|lower == 'aprovada' %}
-                                        <span class="badge bg-success">{{ proposta.status|title }}</span>
-                                    {% elif proposta.status|lower == 'rejeitada' %}
-                                        <span class="badge bg-danger">{{ proposta.status|title }}</span>
+                                    {% if (proposta.status or '')|lower == 'pendente' %}
+                                        <span class="badge bg-warning">{{ (proposta.status or 'Pendente')|title }}</span>
+                                    {% elif (proposta.status or '')|lower == 'enviada' %}
+                                        <span class="badge bg-info">{{ (proposta.status or 'Enviada')|title }}</span>
+                                    {% elif (proposta.status or '')|lower == 'aprovada' %}
+                                        <span class="badge bg-success">{{ (proposta.status or 'Aprovada')|title }}</span>
+                                    {% elif (proposta.status or '')|lower == 'rejeitada' %}
+                                        <span class="badge bg-danger">{{ (proposta.status or 'Rejeitada')|title }}</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">{{ proposta.status|title }}</span>
+                                        <span class="badge bg-secondary">{{ (proposta.status or '-')|title }}</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if proposta.valor_total %}
-                                        R$ {{ "{:,.2f}".format(proposta.valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                                    {% if proposta.valor_total is not none and proposta.valor_total != '' %}
+                                        {% set valor_num = proposta.valor_total|float(default=0) %}
+                                        R$ {{ "{:,.2f}".format(valor_num).replace(',', 'X').replace('.', ',').replace('X', '.') }}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if proposta.data_emissao %}
-                                        {{ proposta.data_emissao.strftime('%d/%m/%Y') }}
+                                    {% set data_formatada = format_date(proposta.data_emissao, '%d/%m/%Y') if format_date is defined else (proposta.data_emissao.strftime('%d/%m/%Y') if proposta.data_emissao and proposta.data_emissao.strftime is defined else proposta.data_emissao) %}
+                                    {% if data_formatada %}
+                                        {{ data_formatada }}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}

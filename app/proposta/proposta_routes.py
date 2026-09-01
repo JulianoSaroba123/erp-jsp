@@ -90,8 +90,8 @@ def listar_propostas():
         
         # Calcular estatísticas
         total_propostas = len(propostas)
-        propostas_pendentes = len([p for p in propostas if p.status.lower() in ['pendente', 'enviada']])
-        propostas_aprovadas = len([p for p in propostas if p.status.lower() == 'aprovada'])
+        propostas_pendentes = len([p for p in propostas if (p.status or '').lower() in ['pendente', 'enviada']])
+        propostas_aprovadas = len([p for p in propostas if (p.status or '').lower() == 'aprovada'])
         valor_total = sum([p.valor_total or 0 for p in propostas])
         
         logger.debug(f"Estatísticas: total={total_propostas}, pendentes={propostas_pendentes}, aprovadas={propostas_aprovadas}, valor={valor_total}")
@@ -106,6 +106,7 @@ def listar_propostas():
                              valor_total=valor_total)
         
     except Exception as e:
+        db.session.rollback()
         logger.error(f"Erro ao listar propostas: {str(e)}")
         flash(f'Erro ao carregar propostas: {str(e)}', 'error')
         return render_template('proposta/listar.html', propostas=[])
