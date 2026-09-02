@@ -54,9 +54,10 @@ def executar_testes_dashboard():
     client = app.test_client()
 
     with app.app_context():
-        # Validação de isolamento: SQLite em memória garantido
+        # Validação de isolamento: SQLite em memória garantido (estrito)
         db_uri = str(app.config.get('SQLALCHEMY_DATABASE_URI', ''))
-        assert ':memory:' in db_uri or 'sqlite' in db_uri, f"Banco inseguro para testes: {db_uri}"
+        assert db.engine.url.drivername == 'sqlite', f"Driver inseguro para testes: {db.engine.url.drivername}"
+        assert db.engine.url.database == ':memory:', f"Banco físico detectado nos testes: {db.engine.url.database}"
         assert 'erp.db' not in db_uri, "Teste tentando acessar erp.db físico!"
         assert 'postgres' not in db_uri.lower(), "Teste tentando acessar banco de produção!"
 
@@ -308,18 +309,25 @@ def executar_testes_dashboard():
         # TESTE 13: Erro de consulta executa rollback e exibe Indisponível (não zeros enganosos)
         # ========================================================
         print("\n[TESTE 13] Testando simulação de erro no carregamento do dashboard...")
-        with patch('app.financeiro.financeiro_routes.obter_dados_dashboard_completos', side_effect=RuntimeError("Falha de banco simulada")):
-            resp_erro = client.get('/financeiro/?mes=9&ano=2026')
-            assert resp_erro.status_code == 200, f"Esperado 200 (fallback gracioso), obtido {resp_erro.status_code}"
-            html_erro = resp_erro.data.decode('utf-8')
+        with patch.object(db.session, 'rollback') as mock_rollback:
+            with patch(
+                'app.financeiro.financeiro_routes.obter_dados_dashboard_completos',
+                side_effect=RuntimeError('Falha de banco simulada')
+            ):
+                resp_erro = client.get('/financeiro/?mes=9&ano=2026')
 
-            # Confirma que o alerta de erro foi renderizado
-            assert 'Falha ao carregar os indicadores do dashboard' in html_erro or 'Não foi possível carregar os indicadores' in html_erro
+            mock_rollback.assert_called_once()
 
-            # Confirma que os cards NÃO exibem 'R$ 0,00' enganoso, mas sim 'Indisponível'
-            assert 'Indisponível' in html_erro, "Texto 'Indisponível' não encontrado nos cards durante falha"
-            assert 'R$ 0,00' not in html_erro, "HTML exibiu 'R$ 0,00' mascarando falha de consulta!"
-            print("  -> OK: Falha de consulta executa rollback, renderiza alerta e exibe 'Indisponível' sem mascarar com R$ 0,00.")
+        assert resp_erro.status_code == 200, f"Esperado 200 (fallback gracioso), obtido {resp_erro.status_code}"
+        html_erro = resp_erro.data.decode('utf-8')
+
+        # Confirma que o alerta de erro foi renderizado
+        assert 'Falha ao carregar os indicadores do dashboard' in html_erro or 'Não foi possível carregar os indicadores' in html_erro
+
+        # Confirma que os cards NÃO exibem 'R$ 0,00' enganoso, mas sim 'Indisponível'
+        assert 'Indisponível' in html_erro, "Texto 'Indisponível' não encontrado nos cards durante falha"
+        assert 'R$ 0,00' not in html_erro, "HTML exibiu 'R$ 0,00' mascarando falha de consulta!"
+        print("  -> OK: Falha de consulta executa rollback (verificado via mock), renderiza alerta e exibe 'Indisponível' sem mascarar com R$ 0,00.")
 
         # ========================================================
         # TESTE 16: Nenhuma alteração em saldo bancário
