@@ -182,7 +182,7 @@ function criarGraficoBarras(canvasId, dados) {
 }
 
 /**
- * Cria gráfico de linha: Fluxo de Caixa
+ * Cria gráfico de linha: Resultado Acumulado dos Últimos 6 Meses
  */
 function criarGraficoFluxoCaixa(canvasId, dados) {
     const ctx = document.getElementById(canvasId);
@@ -201,7 +201,7 @@ function criarGraficoFluxoCaixa(canvasId, dados) {
         data: {
             labels: meses,
             datasets: [{
-                label: 'Saldo Acumulado',
+                label: 'Resultado Acumulado',
                 data: saldos,
                 borderColor: JSP_COLORS.neon,
                 backgroundColor: gradient,
@@ -226,7 +226,7 @@ function criarGraficoFluxoCaixa(canvasId, dados) {
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            return `Saldo: ${formatarMoeda(context.raw)}`;
+                            return `Resultado Acumulado: ${formatarMoeda(context.raw)}`;
                         }
                     }
                 }
@@ -339,7 +339,11 @@ function animarValor(elementId, valorFinal, duracao = 1000) {
  */
 async function carregarDadosDashboard() {
     try {
-        const response = await fetch('/financeiro/api/dashboard-dados');
+        const mes = window.FINANCEIRO_DASHBOARD_MES || new Date().getMonth() + 1;
+        const ano = window.FINANCEIRO_DASHBOARD_ANO || new Date().getFullYear();
+        const url = `/financeiro/api/dashboard-dados?mes=${encodeURIComponent(mes)}&ano=${encodeURIComponent(ano)}`;
+
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Erro ao carregar dados');
         
         const dados = await response.json();
@@ -348,7 +352,7 @@ async function carregarDadosDashboard() {
         if (dados.status === 'success') {
             const data = dados.data;
             
-            // Gráfico de Pizza
+            // Gráfico de Pizza (usando exatamente os mesmos dados consolidados)
             criarGraficoPizza('graficoPizza', {
                 total_receitas: data.resumo_mes?.total_receitas || 0,
                 total_despesas: data.resumo_mes?.total_despesas || 0
@@ -359,12 +363,12 @@ async function carregarDadosDashboard() {
                 criarGraficoBarras('graficoBarras', data.evolucao_mensal);
             }
             
-            // Gráfico de Fluxo de Caixa
+            // Gráfico de Resultado Acumulado
             if (data.fluxo_caixa) {
                 criarGraficoFluxoCaixa('graficoFluxoCaixa', data.fluxo_caixa);
             }
             
-            // Gráfico de Categorias
+            // Gráfico de Categorias (Despesas pagas do mês selecionado)
             if (data.top_categorias) {
                 criarGraficoCategorias('graficoCategorias', data.top_categorias);
             }
