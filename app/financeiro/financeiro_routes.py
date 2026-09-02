@@ -27,7 +27,10 @@ from app.financeiro.indicadores_service import (
     resumir_financeiro_periodo,
     carregar_registros_financeiros,
     periodo_mes_atual,
+    periodo_mes_ano,
     resumir_registros_financeiros,
+    carregar_ultimos_lancamentos,
+    obter_dados_dashboard_completos,
 )
 from app.cliente.cliente_model import Cliente
 from app.fornecedor.fornecedor_model import Fornecedor
@@ -55,14 +58,50 @@ def converter_valor_monetario(valor_str):
 
 @bp_financeiro.route('/')
 def dashboard():
-    """Dashboard financeiro com resumo e indicadores."""
+    """Dashboard financeiro com resumo e indicadores por competência."""
     try:
+        hoje = date.today()
+
+        # Leitura e sanitização dos parâmetros de competência
+        try:
+            mes_selecionado = int(request.args.get('mes', hoje.month))
+            ano_selecionado = int(request.args.get('ano', hoje.year))
+            if mes_selecionado < 1 or mes_selecionado > 12:
+                mes_selecionado = hoje.month
+            if ano_selecionado < 2000 or ano_selecionado > 2100:
+                ano_selecionado = hoje.year
+        except (ValueError, TypeError):
+            mes_selecionado = hoje.month
+            ano_selecionado = hoje.year
+
+        # Cálculo de períodos anterior e próximo para navegação
+        mes_ant = mes_selecionado - 1
+        ano_ant = ano_selecionado
+        if mes_ant == 0:
+            mes_ant = 12
+            ano_ant -= 1
+
+        mes_prox = mes_selecionado + 1
+        ano_prox = ano_selecionado
+        if mes_prox == 13:
+            mes_prox = 1
+            ano_prox += 1
+
+        periodo_anterior = {'mes': mes_ant, 'ano': ano_ant}
+        periodo_proximo = {'mes': mes_prox, 'ano': ano_prox}
+
+        meses_extenso = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ]
+        mes_nome = meses_extenso[mes_selecionado - 1]
+
         # Verificar se as tabelas existem antes de consultar
         from sqlalchemy import inspect
         inspector = inspect(db.engine)
         tabelas = inspector.get_table_names()
-        
-        # Se tabelas não existem, mostrar mensagem amigável
+
+        # Se tabelas não existem, mostrar mensagem amigável com a competência correta
         if 'lancamentos_financeiros' not in tabelas:
             flash('⚠️ Tabelas financeiras não encontradas. Execute o script de criação.', 'warning')
             return render_template('financeiro/dashboard.html',
@@ -72,13 +111,19 @@ def dashboard():
                                  contas_receber=0,
                                  contas_pagar=0,
                                  ultimos_lancamentos=[],
-                                 data_atual=date.today())
-        
-        hoje = date.today()
-        inicio_mes, fim_mes = periodo_mes_atual()
-        resumo = resumir_financeiro_periodo(inicio_mes, fim_mes)
+                                 data_atual=hoje,
+                                 mes_selecionado=mes_selecionado,
+                                 ano_selecionado=ano_selecionado,
+                                 mes_nome=mes_nome,
+                                 periodo_anterior=periodo_anterior,
+                                 periodo_proximo=periodo_proximo,
+                                 erro_carregamento=True)
 
-        # Mantém contrato esperado pelo template do dashboard
+        # Obter dados consolidados usando a regra única e centralizada
+        dados = obter_dados_dashboard_completos(mes_selecionado, ano_selecionado)
+        resumo = dados['resumo']
+
+        # Contadores de pendências globais
         vencidos = LancamentoFinanceiro.get_vencidos().count()
         pendentes = LancamentoFinanceiro.get_pendentes().count()
         contas_receber = LancamentoFinanceiro.query.filter_by(
@@ -87,12 +132,10 @@ def dashboard():
         contas_pagar = LancamentoFinanceiro.query.filter_by(
             tipo='conta_pagar', status='pendente', ativo=True
         ).count()
-        
-        # Últimos lançamentos (usando data_criacao_auditoria ou data_lancamento)
-        ultimos_lancamentos = LancamentoFinanceiro.query.filter_by(ativo=True).order_by(
-            LancamentoFinanceiro.data_lancamento.desc()
-        ).limit(10).all()
-        
+
+        # Últimos lançamentos cadastrados recentemente (sem limitar ao mês, ordenados por criado_em desc, id desc)
+        ultimos_lancamentos = dados['ultimos_lancamentos']
+
         return render_template('financeiro/dashboard.html',
                              resumo=resumo,
                              vencidos=vencidos,
@@ -100,13 +143,41 @@ def dashboard():
                              contas_receber=contas_receber,
                              contas_pagar=contas_pagar,
                              ultimos_lancamentos=ultimos_lancamentos,
-                             data_atual=date.today())
-    
+                             data_atual=hoje,
+                             mes_selecionado=mes_selecionado,
+                             ano_selecionado=ano_selecionado,
+                             mes_nome=mes_nome,
+                             periodo_anterior=periodo_anterior,
+                             periodo_proximo=periodo_proximo,
+                             erro_carregamento=False)
+
     except Exception as e:
-        print(f"❌ Erro no dashboard financeiro: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        flash(f'Erro ao carregar dashboard: {str(e)}', 'danger')
+        db.session.rollback()
+        logger.error(f"Erro no dashboard financeiro: {str(e)}", exc_info=True)
+        flash('Falha ao carregar os indicadores do dashboard. Por favor, tente novamente.', 'danger')
+        hoje = date.today()
+        # Tenta preservar competência solicitada no fallback
+        try:
+            mes_fallback = int(request.args.get('mes', hoje.month))
+            ano_fallback = int(request.args.get('ano', hoje.year))
+            if mes_fallback < 1 or mes_fallback > 12:
+                mes_fallback = hoje.month
+            if ano_fallback < 2000 or ano_fallback > 2100:
+                ano_fallback = hoje.year
+        except (ValueError, TypeError):
+            mes_fallback = hoje.month
+            ano_fallback = hoje.year
+
+        mes_ant = 12 if mes_fallback == 1 else mes_fallback - 1
+        ano_ant = ano_fallback - 1 if mes_fallback == 1 else ano_fallback
+        mes_prox = 1 if mes_fallback == 12 else mes_fallback + 1
+        ano_prox = ano_fallback + 1 if mes_fallback == 12 else ano_fallback
+        meses_extenso = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ]
+        mes_nome_fb = meses_extenso[mes_fallback - 1]
+
         return render_template('financeiro/dashboard.html',
                              resumo=None,
                              vencidos=0,
@@ -114,7 +185,13 @@ def dashboard():
                              contas_receber=0,
                              contas_pagar=0,
                              ultimos_lancamentos=[],
-                             data_atual=date.today())
+                             data_atual=hoje,
+                             mes_selecionado=mes_fallback,
+                             ano_selecionado=ano_fallback,
+                             mes_nome=mes_nome_fb,
+                             periodo_anterior={'mes': mes_ant, 'ano': ano_ant},
+                             periodo_proximo={'mes': mes_prox, 'ano': ano_prox},
+                             erro_carregamento=True)
 
 
 @bp_financeiro.route('/lancamentos')
@@ -579,120 +656,58 @@ def api_indicadores():
 
 @bp_financeiro.route('/api/dashboard-dados')
 def api_dashboard_dados():
-    """API completa para dados do dashboard com gráficos."""
+    """API para dados dos gráficos do dashboard alinhada com as regras de reconciliação."""
     try:
-        from datetime import timedelta
-        from sqlalchemy import func, extract
-        
         hoje = date.today()
-        mes_atual = hoje.month
-        ano_atual = hoje.year
         
-        # Resumo do mês atual
-        resumo_mes = LancamentoFinanceiro.get_resumo_mes()
-        
-        # Evolução dos últimos 6 meses
-        meses_labels = []
-        receitas_mes = []
-        despesas_mes = []
-        saldos_acumulados = []
-        saldo_acumulado = 0
-        
-        for i in range(5, -1, -1):
-            mes_ref = hoje - timedelta(days=i*30)
-            mes = mes_ref.month
-            ano = mes_ref.year
-            
-            # Nome do mês
-            meses_nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
-                          'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-            meses_labels.append(meses_nomes[mes - 1])
-            
-            # Receitas do mês
-            receitas = db.session.query(func.sum(LancamentoFinanceiro.valor)).filter(
-                extract('month', LancamentoFinanceiro.data_lancamento) == mes,
-                extract('year', LancamentoFinanceiro.data_lancamento) == ano,
-                LancamentoFinanceiro.tipo.in_(['receita', 'conta_receber']),
-                LancamentoFinanceiro.status == 'recebido',
-                LancamentoFinanceiro.ativo == True
-            ).scalar() or 0
-            
-            # Despesas do mês
-            despesas = db.session.query(func.sum(LancamentoFinanceiro.valor)).filter(
-                extract('month', LancamentoFinanceiro.data_lancamento) == mes,
-                extract('year', LancamentoFinanceiro.data_lancamento) == ano,
-                LancamentoFinanceiro.tipo.in_(['despesa', 'conta_pagar']),
-                LancamentoFinanceiro.status == 'pago',
-                LancamentoFinanceiro.ativo == True
-            ).scalar() or 0
-            
-            receitas_mes.append(float(receitas))
-            despesas_mes.append(float(despesas))
-            
-            # Saldo acumulado
-            saldo_acumulado += float(receitas) - float(despesas)
-            saldos_acumulados.append(saldo_acumulado)
-        
-        # Top 5 categorias de despesas
-        categorias_despesas = db.session.query(
-            LancamentoFinanceiro.categoria,
-            func.sum(LancamentoFinanceiro.valor).label('total')
-        ).filter(
-            extract('month', LancamentoFinanceiro.data_lancamento) == mes_atual,
-            extract('year', LancamentoFinanceiro.data_lancamento) == ano_atual,
-            LancamentoFinanceiro.tipo.in_(['despesa', 'conta_pagar']),
-            LancamentoFinanceiro.categoria.isnot(None),
-            LancamentoFinanceiro.ativo == True
-        ).group_by(
-            LancamentoFinanceiro.categoria
-        ).order_by(
-            func.sum(LancamentoFinanceiro.valor).desc()
-        ).limit(5).all()
-        
-        categorias_nomes = [cat[0] or 'Sem categoria' for cat in categorias_despesas]
-        categorias_valores = [float(cat[1]) for cat in categorias_despesas]
-        
-        # Cores para categorias
-        cores_categorias = [
-            'rgba(220, 53, 69, 0.7)',
-            'rgba(255, 193, 7, 0.7)',
-            'rgba(23, 162, 184, 0.7)',
-            'rgba(108, 117, 125, 0.7)',
-            'rgba(0, 123, 255, 0.7)'
-        ]
-        
+        # Leitura e sanitização dos parâmetros mes e ano
+        try:
+            mes = int(request.args.get('mes', hoje.month))
+            ano = int(request.args.get('ano', hoje.year))
+            if mes < 1 or mes > 12:
+                mes = hoje.month
+            if ano < 2000 or ano > 2100:
+                ano = hoje.year
+        except (ValueError, TypeError):
+            mes = hoje.month
+            ano = hoje.year
+
+        # Obter dados consolidados centralizados
+        dados = obter_dados_dashboard_completos(mes, ano)
+        resumo = dados['resumo']
+
+        # Montar resumo_mes com valores exatos em float para gráficos
+        resumo_mes_dict = {
+            'total_receitas': float(resumo.receitas_realizadas),
+            'total_despesas': float(resumo.despesas_realizadas),
+            'saldo': float(resumo.resultado_realizado),
+            'contas_a_receber_pendentes': float(resumo.contas_a_receber_pendentes),
+            'contas_a_pagar_pendentes': float(resumo.contas_a_pagar_pendentes),
+            'saldo_projetado': float(resumo.saldo_projetado),
+            'qtd_receitas': resumo.qtd_receitas,
+            'qtd_despesas': resumo.qtd_despesas
+        }
+
         # Fluxo de caixa projetado (30 dias)
         fluxo_projetado = LancamentoFinanceiro.calcular_fluxo_caixa(30)
         
         return jsonify({
             'status': 'success',
             'data': {
-                'resumo_mes': resumo_mes,
-                'evolucao_mensal': {
-                    'meses': meses_labels,
-                    'receitas': receitas_mes,
-                    'despesas': despesas_mes
-                },
-                'fluxo_caixa': {
-                    'meses': meses_labels,
-                    'saldos': saldos_acumulados
-                },
-                'top_categorias': {
-                    'categorias': categorias_nomes,
-                    'valores': categorias_valores,
-                    'cores': cores_categorias[:len(categorias_nomes)]
-                },
+                'resumo_mes': resumo_mes_dict,
+                'evolucao_mensal': dados['evolucao_mensal'],
+                'fluxo_caixa': dados['fluxo_caixa'],  # Representa o Resultado Acumulado dos 6 meses
+                'top_categorias': dados['top_categorias'],
                 'fluxo_projetado': fluxo_projetado
             }
         })
     
     except Exception as e:
-        print(f"Erro na API dashboard: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        db.session.rollback()
+        logger.error(f"Erro na API dashboard: {str(e)}", exc_info=True)
         return jsonify({
             'status': 'error',
-            'message': str(e)
+            'message': 'Erro interno ao carregar dados do dashboard'
         }), 500
 
 

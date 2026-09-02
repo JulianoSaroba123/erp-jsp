@@ -166,7 +166,7 @@ class ResumoFinanceiro:
 
 def periodo_mes_atual(referencia: Optional[date] = None) -> tuple[date, date]:
     """
-    Retorna início e fim do mês atual.
+    Retorna início e fim do mês atual ou da data de referência.
 
     Args:
         referencia: Data de referência (default: hoje)
@@ -175,9 +175,53 @@ def periodo_mes_atual(referencia: Optional[date] = None) -> tuple[date, date]:
         Tupla (inicio, fim) do mês
     """
     hoje = referencia or date.today()
-    inicio = hoje.replace(day=1)
-    fim = (inicio + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+    return periodo_mes_ano(hoje.month, hoje.year)
+
+
+def periodo_mes_ano(mes: int, ano: int) -> tuple[date, date]:
+    """
+    Retorna início e fim exatos de um mês e ano específicos.
+
+    Args:
+        mes: Mês (1-12)
+        ano: Ano (ex: 2026)
+
+    Returns:
+        Tupla (inicio, fim) do mês
+    """
+    from calendar import monthrange
+    # Validação segura de limites
+    try:
+        mes = max(1, min(12, int(mes)))
+        ano = int(ano)
+    except (ValueError, TypeError):
+        hoje = date.today()
+        mes, ano = hoje.month, hoje.year
+
+    inicio = date(ano, mes, 1)
+    _, ultimo_dia = monthrange(ano, mes)
+    fim = date(ano, mes, ultimo_dia)
     return inicio, fim
+
+
+def calcular_ultimos_n_meses(ano_fim: int, mes_fim: int, quantidade: int = 6) -> list[tuple[int, int, date, date]]:
+    """
+    Calcula as N competências mensais terminando em (ano_fim, mes_fim).
+    Trata corretamente viradas de ano (dezembro/janeiro) sem aproximação por timedelta(days=30).
+
+    Returns:
+        Lista de tuplas (ano, mes, data_inicio, data_fim) em ordem cronológica.
+    """
+    meses: list[tuple[int, int, date, date]] = []
+    ano, mes = int(ano_fim), int(mes_fim)
+    for _ in range(quantidade):
+        inicio, fim = periodo_mes_ano(mes, ano)
+        meses.append((ano, mes, inicio, fim))
+        mes -= 1
+        if mes == 0:
+            mes = 12
+            ano -= 1
+    return list(reversed(meses))
 
 
 def data_vencimento_ou_base(registro) -> Optional[date]:
@@ -547,7 +591,7 @@ def resumir_financeiro_periodo(inicio: date, fim: date) -> ResumoFinanceiro:
                     resumo.qtd_despesas += 1
             continue
 
-        # Regra 2: Pendente por data_vencimento dentro do período
+        # Regra 2: Pendente por data_vencimento dentro do período (fallback: data_lancamento)
         if view.status == 'Pendente':
             data_ref = view.data_vencimento or view.data
             if data_ref and inicio <= data_ref <= fim:
@@ -557,3 +601,130 @@ def resumir_financeiro_periodo(inicio: date, fim: date) -> ResumoFinanceiro:
                     resumo.contas_a_pagar_pendentes += view.valor
 
     return resumo.finalizar()
+
+
+def carregar_ultimos_lancamentos(limite: int = 10) -> list[LancamentoFinanceiro]:
+    """
+    Retorna os últimos lançamentos ativos cadastrados no sistema.
+    Ordenados prioritariamente por data de criação / id decrescente,
+    sem filtrar por mês específico.
+    """
+    return (
+        LancamentoFinanceiro.query.filter_by(ativo=True)
+        .order_by(
+            LancamentoFinanceiro.criado_em.desc(),
+            LancamentoFinanceiro.id.desc()
+        )
+        .limit(limite)
+        .all()
+    )
+
+
+def obter_dados_dashboard_completos(mes: int, ano: int) -> dict:
+    """
+    Obtém todos os dados consolidados para o dashboard financeiro (HTML e API)
+    utilizando rigorosamente as mesmas regras financeiras.
+
+    Retorna:
+        dict contendo:
+        - resumo (ResumoFinanceiro)
+        - evolucao_mensal (meses_labels, receitas, despesas)
+        - resultado_acumulado (meses_labels, saldos)
+        - top_categorias (categorias, valores, cores)
+        - ultimos_lancamentos (list de LancamentoFinanceiro)
+    """
+    inicio_mes, fim_mes = periodo_mes_ano(mes, ano)
+    resumo = resumir_financeiro_periodo(inicio_mes, fim_mes)
+
+    # Carregar todos os lançamentos ativos e deduplicar pelas regras centrais
+    registros = list(LancamentoFinanceiro.query.filter_by(ativo=True).all())
+    views: list[RegistroFinanceiroView] = []
+    for reg in registros:
+        v = montar_registro_exibicao(reg)
+        if v is not None:
+            views.append(v)
+    views_unicas = _deduplicar_ocorrencias_confiaveis(views)
+
+    # 1. Evolução dos últimos 6 meses e Resultado Acumulado
+    meses_6 = calcular_ultimos_n_meses(ano, mes, quantidade=6)
+    meses_nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+                   'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+
+    meses_labels: list[str] = []
+    receitas_mes: list[float] = []
+    despesas_mes: list[float] = []
+    saldos_acumulados: list[float] = []
+    acumulado = Decimal('0')
+
+    for a_comp, m_comp, dt_ini, dt_fim in meses_6:
+        label = f"{meses_nomes[m_comp - 1]}/{str(a_comp)[2:]}" if len(set(a for a, _, _, _ in meses_6)) > 1 else meses_nomes[m_comp - 1]
+        meses_labels.append(label)
+
+        rec_comp = Decimal('0')
+        desp_comp = Decimal('0')
+
+        for v in views_unicas:
+            if v.inconsistente_sem_data:
+                continue
+            if v.status in {'Pago', 'Recebido'}:
+                data_ref = v.data_pagamento
+                if data_ref and dt_ini <= data_ref <= dt_fim:
+                    if v.tipo == 'Receita':
+                        rec_comp += v.valor
+                    elif v.tipo == 'Despesa':
+                        desp_comp += v.valor
+
+        rec_float = float(rec_comp)
+        desp_float = float(desp_comp)
+        receitas_mes.append(rec_float)
+        despesas_mes.append(desp_float)
+
+        # Resultado acumulado = resultado realizado acumulado dos 6 meses
+        acumulado += (rec_comp - desp_comp)
+        saldos_acumulados.append(float(acumulado))
+
+    # 2. Top Categorias de Despesas do mês selecionado
+    # Regra: Somente despesas ativas, status 'pago', cuja data_pagamento esteja dentro do período
+    categorias_map: dict[str, Decimal] = {}
+    for v in views_unicas:
+        if v.inconsistente_sem_data:
+            continue
+        if v.tipo == 'Despesa' and v.status == 'Pago':
+            data_ref = v.data_pagamento
+            if data_ref and inicio_mes <= data_ref <= fim_mes:
+                cat = v.categoria or 'Sem categoria'
+                categorias_map[cat] = categorias_map.get(cat, Decimal('0')) + v.valor
+
+    # Ordenar maiores despesas e pegar top 5
+    categorias_ordenadas = sorted(categorias_map.items(), key=lambda x: x[1], reverse=True)[:5]
+    categorias_nomes = [cat for cat, _ in categorias_ordenadas]
+    categorias_valores = [float(val) for _, val in categorias_ordenadas]
+
+    cores_padrao = [
+        'rgba(220, 53, 69, 0.7)',
+        'rgba(255, 193, 7, 0.7)',
+        'rgba(23, 162, 184, 0.7)',
+        'rgba(108, 117, 125, 0.7)',
+        'rgba(0, 123, 255, 0.7)'
+    ]
+
+    ultimos_lancamentos = carregar_ultimos_lancamentos(limite=10)
+
+    return {
+        'resumo': resumo,
+        'evolucao_mensal': {
+            'meses': meses_labels,
+            'receitas': receitas_mes,
+            'despesas': despesas_mes
+        },
+        'fluxo_caixa': {  # chave mantida para compatibilidade com o front
+            'meses': meses_labels,
+            'saldos': saldos_acumulados
+        },
+        'top_categorias': {
+            'categorias': categorias_nomes,
+            'valores': categorias_valores,
+            'cores': cores_padrao[:len(categorias_nomes)]
+        },
+        'ultimos_lancamentos': ultimos_lancamentos
+    }

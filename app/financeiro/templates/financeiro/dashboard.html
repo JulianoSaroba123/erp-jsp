@@ -134,44 +134,83 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h2 mb-1 text-neon">
-                        <i class="fas fa-chart-line me-2"></i>
-                        Dashboard Financeiro
-                    </h1>
-                    <p class="text-muted mb-0">
-                        <i class="far fa-calendar-alt me-1"></i>
-                        Visão geral • {{ data_atual.strftime('%d/%m/%Y') }}
-                    </p>
-                </div>
-                <div>
-                    <a href="{{ url_for('financeiro.novo_lancamento') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>
-                        Novo Lançamento
-                    </a>
-                </div>
-            </div>
+    <!-- Alerta de Erro de Carregamento (se houver) -->
+    {% if erro_carregamento %}
+    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Atenção:</strong> Não foi possível carregar os indicadores consolidados no momento. Os dados exibidos podem estar incompletos.
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
+
+    <!-- Header com Seletor de Competência -->
+    <div class="row mb-4 align-items-center">
+        <div class="col-lg-6 col-12 mb-3 mb-lg-0">
+            <h1 class="h2 mb-1 text-neon">
+                <i class="fas fa-chart-line me-2"></i>
+                Dashboard Financeiro
+            </h1>
+            <p class="text-muted mb-0">
+                <i class="far fa-calendar-alt me-1"></i>
+                Competência: <strong>{{ mes_nome }}/{{ ano_selecionado }}</strong> • Hoje: {{ data_atual.strftime('%d/%m/%Y') }}
+            </p>
+        </div>
+        <div class="col-lg-6 col-12 d-flex flex-wrap justify-content-lg-end align-items-center gap-2">
+            <!-- Navegador de Período -->
+            <form method="GET" action="{{ url_for('financeiro.dashboard') }}" class="d-flex align-items-center gap-1 bg-white p-1 rounded border shadow-sm">
+                <a href="{{ url_for('financeiro.dashboard', mes=periodo_anterior.mes, ano=periodo_anterior.ano) }}" class="btn btn-sm btn-outline-secondary" title="Período Anterior">
+                    <i class="fas fa-chevron-left"></i>
+                </a>
+                <select name="mes" class="form-select form-select-sm border-0 fw-semibold" style="width: auto;" onchange="this.form.submit()">
+                    <option value="1" {% if mes_selecionado == 1 %}selected{% endif %}>Jan</option>
+                    <option value="2" {% if mes_selecionado == 2 %}selected{% endif %}>Fev</option>
+                    <option value="3" {% if mes_selecionado == 3 %}selected{% endif %}>Mar</option>
+                    <option value="4" {% if mes_selecionado == 4 %}selected{% endif %}>Abr</option>
+                    <option value="5" {% if mes_selecionado == 5 %}selected{% endif %}>Mai</option>
+                    <option value="6" {% if mes_selecionado == 6 %}selected{% endif %}>Jun</option>
+                    <option value="7" {% if mes_selecionado == 7 %}selected{% endif %}>Jul</option>
+                    <option value="8" {% if mes_selecionado == 8 %}selected{% endif %}>Ago</option>
+                    <option value="9" {% if mes_selecionado == 9 %}selected{% endif %}>Set</option>
+                    <option value="10" {% if mes_selecionado == 10 %}selected{% endif %}>Out</option>
+                    <option value="11" {% if mes_selecionado == 11 %}selected{% endif %}>Nov</option>
+                    <option value="12" {% if mes_selecionado == 12 %}selected{% endif %}>Dez</option>
+                </select>
+                <select name="ano" class="form-select form-select-sm border-0 fw-semibold" style="width: auto;" onchange="this.form.submit()">
+                    {% for a in range(ano_selecionado - 3, ano_selecionado + 4) %}
+                    <option value="{{ a }}" {% if ano_selecionado == a %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+                <a href="{{ url_for('financeiro.dashboard', mes=periodo_proximo.mes, ano=periodo_proximo.ano) }}" class="btn btn-sm btn-outline-secondary" title="Próximo Período">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+            </form>
+
+            <a href="{{ url_for('financeiro.dashboard') }}" class="btn btn-sm btn-outline-info" title="Voltar ao Mês Atual">
+                <i class="fas fa-calendar-day me-1"></i> Mês Atual
+            </a>
+
+            <a href="{{ url_for('financeiro.novo_lancamento') }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus me-1"></i> Novo Lançamento
+            </a>
         </div>
     </div>
 
     <!-- KPIs Principais -->
     <div class="row g-4 mb-4">
-        <!-- Receitas do Mês -->
+        <!-- Receitas Realizadas -->
         <div class="col-xl-3 col-md-6">
-            <div class="card card-kpi receita">
+            <div class="card card-kpi receita h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="kpi-icon receita me-3">
                             <i class="fas fa-arrow-trend-up"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <p class="stat-label">Receitas do Mês</p>
+                            <p class="stat-label">Receitas realizadas — {{ mes_nome }}/{{ ano_selecionado }}</p>
                             <h3 class="stat-value text-success mb-1" id="valor-receitas">
-                                {% if resumo and resumo.total_receitas %}
+                                {% if erro_carregamento or resumo is none %}
+                                    <span class="text-muted fs-5">Indisponível</span>
+                                {% elif resumo.total_receitas is not none %}
                                     R$ {{ "{:,.2f}".format(resumo.total_receitas).replace(',', 'X').replace('.', ',').replace('X', '.') }}
                                 {% else %}
                                     R$ 0,00
@@ -179,7 +218,11 @@
                             </h3>
                             <small class="text-muted">
                                 <i class="fas fa-file-invoice me-1"></i>
-                                {{ resumo.qtd_receitas if resumo and resumo.qtd_receitas else 0 }} lançamento(s)
+                                {% if erro_carregamento or resumo is none %}
+                                    -
+                                {% else %}
+                                    {{ resumo.qtd_receitas if resumo.qtd_receitas else 0 }} lançamento(s) recebido(s)
+                                {% endif %}
                             </small>
                         </div>
                     </div>
@@ -187,18 +230,20 @@
             </div>
         </div>
 
-        <!-- Despesas do Mês -->
+        <!-- Despesas Realizadas -->
         <div class="col-xl-3 col-md-6">
-            <div class="card card-kpi despesa">
+            <div class="card card-kpi despesa h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="kpi-icon despesa me-3">
                             <i class="fas fa-arrow-trend-down"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <p class="stat-label">Despesas do Mês</p>
+                            <p class="stat-label">Despesas realizadas — {{ mes_nome }}/{{ ano_selecionado }}</p>
                             <h3 class="stat-value text-danger mb-1" id="valor-despesas">
-                                {% if resumo and resumo.total_despesas %}
+                                {% if erro_carregamento or resumo is none %}
+                                    <span class="text-muted fs-5">Indisponível</span>
+                                {% elif resumo.total_despesas is not none %}
                                     R$ {{ "{:,.2f}".format(resumo.total_despesas).replace(',', 'X').replace('.', ',').replace('X', '.') }}
                                 {% else %}
                                     R$ 0,00
@@ -206,7 +251,11 @@
                             </h3>
                             <small class="text-muted">
                                 <i class="fas fa-file-invoice me-1"></i>
-                                {{ resumo.qtd_despesas if resumo and resumo.qtd_despesas else 0 }} lançamento(s)
+                                {% if erro_carregamento or resumo is none %}
+                                    -
+                                {% else %}
+                                    {{ resumo.qtd_despesas if resumo.qtd_despesas else 0 }} lançamento(s) pago(s)
+                                {% endif %}
                             </small>
                         </div>
                     </div>
@@ -214,27 +263,33 @@
             </div>
         </div>
 
-        <!-- Saldo do Mês -->
+        <!-- Resultado Realizado -->
         <div class="col-xl-3 col-md-6">
-            <div class="card card-kpi saldo">
+            <div class="card card-kpi saldo h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="kpi-icon saldo me-3">
-                            <i class="fas fa-wallet"></i>
+                            <i class="fas fa-scale-balanced"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <p class="stat-label">Saldo do Mês</p>
+                            <p class="stat-label">Resultado realizado — {{ mes_nome }}/{{ ano_selecionado }}</p>
                             <h3 class="stat-value mb-1" id="valor-saldo"
-                                style="color: {% if resumo and resumo.saldo >= 0 %}#28a745{% else %}#dc3545{% endif %}">
-                                {% if resumo and resumo.saldo is not none %}
+                                style="color: {% if erro_carregamento or resumo is none %}#6c757d{% elif resumo.saldo >= 0 %}#28a745{% else %}#dc3545{% endif %}">
+                                {% if erro_carregamento or resumo is none %}
+                                    <span class="text-muted fs-5">Indisponível</span>
+                                {% elif resumo.saldo is not none %}
                                     R$ {{ "{:,.2f}".format(resumo.saldo).replace(',', 'X').replace('.', ',').replace('X', '.') }}
                                 {% else %}
                                     R$ 0,00
                                 {% endif %}
                             </h3>
-                            <small class="stat-change {% if resumo and resumo.saldo >= 0 %}positive{% else %}negative{% endif %}">
-                                <i class="fas fa-{% if resumo and resumo.saldo >= 0 %}arrow-up{% else %}arrow-down{% endif %} me-1"></i>
-                                {% if resumo and resumo.saldo >= 0 %}Positivo{% else %}Negativo{% endif %}
+                            <small class="stat-change {% if erro_carregamento or resumo is none %}text-muted{% elif resumo.saldo >= 0 %}positive{% else %}negative{% endif %}">
+                                {% if erro_carregamento or resumo is none %}
+                                    <i class="fas fa-minus me-1"></i>Indisponível
+                                {% else %}
+                                    <i class="fas fa-{% if resumo.saldo >= 0 %}arrow-up{% else %}arrow-down{% endif %} me-1"></i>
+                                    {% if resumo.saldo >= 0 %}Superávit{% else %}Déficit{% endif %}
+                                {% endif %}
                             </small>
                         </div>
                     </div>
@@ -242,28 +297,117 @@
             </div>
         </div>
 
-        <!-- Pendências -->
+        <!-- Pendências do Período -->
         <div class="col-xl-3 col-md-6">
-            <div class="card card-kpi pendente">
+            <div class="card card-kpi pendente h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="kpi-icon pendente me-3">
                             <i class="fas fa-clock"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <p class="stat-label">Pendências</p>
-                            <h3 class="stat-value text-warning mb-1">{{ pendentes or 0 }}</h3>
-                            <small class="text-muted">
-                                {% if vencidos and vencidos > 0 %}
-                                    <i class="fas fa-exclamation-triangle me-1"></i>
-                                    {{ vencidos }} vencido(s)
+                            <p class="stat-label">Pendências — {{ mes_nome }}/{{ ano_selecionado }}</p>
+                            <h3 class="stat-value text-warning mb-1">
+                                {% if erro_carregamento or resumo is none %}
+                                    <span class="text-muted fs-5">Indisponível</span>
                                 {% else %}
-                                    <i class="fas fa-check-circle me-1"></i>
-                                    Nenhum vencido
+                                    R$ {{ "{:,.2f}".format(resumo.contas_a_receber_pendentes + resumo.contas_a_pagar_pendentes).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                                {% endif %}
+                            </h3>
+                            <small class="text-muted">
+                                {% if erro_carregamento or resumo is none %}
+                                    <span>Indisponível</span>
+                                {% else %}
+                                    <span class="text-success">A receber: R$ {{ "{:,.2f}".format(resumo.contas_a_receber_pendentes).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span> |
+                                    <span class="text-danger">A pagar: R$ {{ "{:,.2f}".format(resumo.contas_a_pagar_pendentes).replace(',', 'X').replace('.', ',').replace('X', '.') }}</span>
                                 {% endif %}
                             </small>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Últimos Lançamentos (Posicionado logo abaixo dos cards principais) -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">
+                            <i class="fas fa-history me-2 text-primary"></i>
+                            Últimos Lançamentos Cadastrados
+                        </h5>
+                        <small class="text-muted">10 registros mais recentes no sistema (independente da competência)</small>
+                    </div>
+                    <a href="{{ url_for('financeiro.listar_lancamentos') }}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-list-ul me-1"></i>
+                        Todos os Lançamentos
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    {% if ultimos_lancamentos %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Data Fin.</th>
+                                    <th>Descrição</th>
+                                    <th>Categoria</th>
+                                    <th>Tipo</th>
+                                    <th class="text-end">Valor</th>
+                                    <th class="text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for lancamento in ultimos_lancamentos %}
+                                <tr>
+                                    <td>
+                                        <small class="text-muted">
+                                            <i class="far fa-calendar me-1"></i>
+                                            {{ lancamento.data_lancamento.strftime('%d/%m/%Y') if lancamento.data_lancamento else '-' }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ lancamento.descricao[:50] }}</strong>
+                                        {% if lancamento.observacoes %}
+                                        <br><small class="text-muted">{{ lancamento.observacoes[:40] }}...</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if lancamento.categoria %}
+                                        <span class="badge bg-secondary">{{ lancamento.categoria }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ lancamento.tipo_cor }}">
+                                            {{ lancamento.tipo_formatado }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong class="{% if lancamento.tipo in ['receita', 'conta_receber'] %}text-success{% else %}text-danger{% endif %}">
+                                            {{ lancamento.valor_formatado }}
+                                        </strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-{{ lancamento.status_cor }}">
+                                            {{ lancamento.status_formatado }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Nenhum lançamento cadastrado no sistema.</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -279,7 +423,7 @@
                         <i class="fas fa-chart-pie me-2 text-primary"></i>
                         Receitas vs Despesas
                     </h5>
-                    <small class="text-muted">Distribuição do mês atual</small>
+                    <small class="text-muted">Realizadas em {{ mes_nome }}/{{ ano_selecionado }}</small>
                 </div>
                 <div class="card-body">
                     <div class="chart-container">
@@ -295,9 +439,9 @@
                 <div class="card-header bg-white">
                     <h5 class="mb-0">
                         <i class="fas fa-chart-bar me-2 text-success"></i>
-                        Evolução Mensal
+                        Evolução Mensal (Realizado)
                     </h5>
-                    <small class="text-muted">Últimos 6 meses</small>
+                    <small class="text-muted">6 meses até {{ mes_nome }}/{{ ano_selecionado }}</small>
                 </div>
                 <div class="card-body">
                     <div class="chart-container">
@@ -310,15 +454,15 @@
 
     <!-- Mais Gráficos -->
     <div class="row g-4 mb-4">
-        <!-- Gráfico de Fluxo de Caixa -->
+        <!-- Gráfico de Resultado Acumulado -->
         <div class="col-lg-8">
             <div class="card h-100">
                 <div class="card-header bg-white">
                     <h5 class="mb-0">
                         <i class="fas fa-chart-line me-2 text-info"></i>
-                        Fluxo de Caixa Acumulado
+                        Resultado Acumulado dos Últimos 6 Meses
                     </h5>
-                    <small class="text-muted">Evolução do saldo</small>
+                    <small class="text-muted">Acumulado do resultado realizado (receitas - despesas)</small>
                 </div>
                 <div class="card-body">
                     <div class="chart-container">
@@ -334,9 +478,9 @@
                 <div class="card-header bg-white">
                     <h5 class="mb-0">
                         <i class="fas fa-layer-group me-2 text-danger"></i>
-                        Top Categorias
+                        Top Categorias de Despesas
                     </h5>
-                    <small class="text-muted">Maiores despesas</small>
+                    <small class="text-muted">Despesas pagas em {{ mes_nome }}/{{ ano_selecionado }}</small>
                 </div>
                 <div class="card-body">
                     <div class="chart-container">
@@ -377,7 +521,7 @@
                     <h5 class="card-title">Contas a Pagar</h5>
                     <p class="card-text text-muted">
                         <span class="badge badge-neon">{{ contas_pagar or 0 }}</span>
-                        neste mês
+                        pendente(s)
                     </p>
                 </div>
             </a>
@@ -392,7 +536,7 @@
                     <h5 class="card-title">Contas a Receber</h5>
                     <p class="card-text text-muted">
                         <span class="badge badge-neon">{{ contas_receber or 0 }}</span>
-                        neste mês
+                        pendente(s)
                     </p>
                 </div>
             </a>
@@ -410,101 +554,6 @@
             </a>
         </div>
     </div>
-
-    <!-- Últimos Lançamentos -->
-    {% if ultimos_lancamentos %}
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="mb-0">
-                            <i class="fas fa-history me-2"></i>
-                            Últimos Lançamentos
-                        </h5>
-                        <small class="text-muted">Atividades recentes</small>
-                    </div>
-                    <a href="{{ url_for('financeiro.listar_lancamentos') }}" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-external-link-alt me-1"></i>
-                        Ver Todos
-                    </a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Data</th>
-                                    <th>Descrição</th>
-                                    <th>Categoria</th>
-                                    <th>Tipo</th>
-                                    <th class="text-end">Valor</th>
-                                    <th class="text-center">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for lancamento in ultimos_lancamentos %}
-                                <tr>
-                                    <td>
-                                        <small class="text-muted">
-                                            <i class="far fa-calendar me-1"></i>
-                                            {{ lancamento.data_lancamento.strftime('%d/%m/%Y') }}
-                                        </small>
-                                    </td>
-                                    <td>
-                                        <strong>{{ lancamento.descricao[:50] }}</strong>
-                                        {% if lancamento.observacoes %}
-                                        <br><small class="text-muted">{{ lancamento.observacoes[:40] }}...</small>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if lancamento.categoria %}
-                                        <span class="badge bg-secondary">{{ lancamento.categoria }}</span>
-                                        {% else %}
-                                        <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{{ lancamento.tipo_cor }}">
-                                            {{ lancamento.tipo_formatado }}
-                                        </span>
-                                    </td>
-                                    <td class="text-end">
-                                        <strong class="{% if lancamento.tipo in ['receita', 'conta_receber'] %}text-success{% else %}text-danger{% endif %}">
-                                            {{ lancamento.valor_formatado }}
-                                        </strong>
-                                    </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-{{ lancamento.status_cor }}">
-                                            {{ lancamento.status_formatado }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% else %}
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body text-center py-5">
-                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                    <h5 class="text-muted">Nenhum lançamento encontrado</h5>
-                    <p class="text-muted">Comece cadastrando seu primeiro lançamento financeiro</p>
-                    <a href="{{ url_for('financeiro.novo_lancamento') }}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>
-                        Criar Lançamento
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
 
@@ -513,11 +562,15 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <!-- Script de Gráficos Financeiros -->
+<script>
+    // Parâmetros da competência atual selecionada
+    window.FINANCEIRO_DASHBOARD_MES = {{ mes_selecionado }};
+    window.FINANCEIRO_DASHBOARD_ANO = {{ ano_selecionado }};
+</script>
 <script src="{{ url_for('static', filename='js/financeiro_charts.js') }}"></script>
 
 <script>
-// Mensagens de boas-vindas
 console.log('%c💰 Dashboard Financeiro JSP v3.0 ', 'background: #00d4ff; color: #fff; padding: 5px 10px; border-radius: 3px;');
-console.log('Gráficos carregados com Chart.js 4.4.0');
+console.log('Competência carregada: {{ mes_nome }}/{{ ano_selecionado }}');
 </script>
 {% endblock %}
