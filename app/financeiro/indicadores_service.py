@@ -647,9 +647,9 @@ def obter_dados_dashboard_completos(mes: int, ano: int) -> dict:
 
     # 1. Evolução dos últimos 6 meses e Resultado Acumulado
     meses_6 = calcular_ultimos_n_meses(ano, mes, quantidade=6)
-    meses_nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 
+    meses_nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
                    'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-    
+
     meses_labels: list[str] = []
     receitas_mes: list[float] = []
     despesas_mes: list[float] = []

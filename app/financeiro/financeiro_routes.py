@@ -60,31 +60,8 @@ def converter_valor_monetario(valor_str):
 def dashboard():
     """Dashboard financeiro com resumo e indicadores por competência."""
     try:
-        # Verificar se as tabelas existem antes de consultar
-        from sqlalchemy import inspect
-        inspector = inspect(db.engine)
-        tabelas = inspector.get_table_names()
-        
-        # Se tabelas não existem, mostrar mensagem amigável
-        if 'lancamentos_financeiros' not in tabelas:
-            flash('⚠️ Tabelas financeiras não encontradas. Execute o script de criação.', 'warning')
-            return render_template('financeiro/dashboard.html',
-                                 resumo=None,
-                                 vencidos=0,
-                                 pendentes=0,
-                                 contas_receber=0,
-                                 contas_pagar=0,
-                                 ultimos_lancamentos=[],
-                                 data_atual=date.today(),
-                                 mes_selecionado=date.today().month,
-                                 ano_selecionado=date.today().year,
-                                 mes_nome='Janeiro',
-                                 periodo_anterior={'mes': 12, 'ano': date.today().year - 1},
-                                 periodo_proximo={'mes': 2, 'ano': date.today().year},
-                                 erro_carregamento=False)
-        
         hoje = date.today()
-        
+
         # Leitura e sanitização dos parâmetros de competência
         try:
             mes_selecionado = int(request.args.get('mes', hoje.month))
@@ -119,6 +96,29 @@ def dashboard():
         ]
         mes_nome = meses_extenso[mes_selecionado - 1]
 
+        # Verificar se as tabelas existem antes de consultar
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        tabelas = inspector.get_table_names()
+
+        # Se tabelas não existem, mostrar mensagem amigável com a competência correta
+        if 'lancamentos_financeiros' not in tabelas:
+            flash('⚠️ Tabelas financeiras não encontradas. Execute o script de criação.', 'warning')
+            return render_template('financeiro/dashboard.html',
+                                 resumo=None,
+                                 vencidos=0,
+                                 pendentes=0,
+                                 contas_receber=0,
+                                 contas_pagar=0,
+                                 ultimos_lancamentos=[],
+                                 data_atual=hoje,
+                                 mes_selecionado=mes_selecionado,
+                                 ano_selecionado=ano_selecionado,
+                                 mes_nome=mes_nome,
+                                 periodo_anterior=periodo_anterior,
+                                 periodo_proximo=periodo_proximo,
+                                 erro_carregamento=True)
+
         # Obter dados consolidados usando a regra única e centralizada
         dados = obter_dados_dashboard_completos(mes_selecionado, ano_selecionado)
         resumo = dados['resumo']
@@ -132,10 +132,10 @@ def dashboard():
         contas_pagar = LancamentoFinanceiro.query.filter_by(
             tipo='conta_pagar', status='pendente', ativo=True
         ).count()
-        
+
         # Últimos lançamentos cadastrados recentemente (sem limitar ao mês, ordenados por criado_em desc, id desc)
         ultimos_lancamentos = dados['ultimos_lancamentos']
-        
+
         return render_template('financeiro/dashboard.html',
                              resumo=resumo,
                              vencidos=vencidos,
@@ -143,19 +143,41 @@ def dashboard():
                              contas_receber=contas_receber,
                              contas_pagar=contas_pagar,
                              ultimos_lancamentos=ultimos_lancamentos,
-                             data_atual=date.today(),
+                             data_atual=hoje,
                              mes_selecionado=mes_selecionado,
                              ano_selecionado=ano_selecionado,
                              mes_nome=mes_nome,
                              periodo_anterior=periodo_anterior,
                              periodo_proximo=periodo_proximo,
                              erro_carregamento=False)
-    
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro no dashboard financeiro: {str(e)}", exc_info=True)
         flash('Falha ao carregar os indicadores do dashboard. Por favor, tente novamente.', 'danger')
         hoje = date.today()
+        # Tenta preservar competência solicitada no fallback
+        try:
+            mes_fallback = int(request.args.get('mes', hoje.month))
+            ano_fallback = int(request.args.get('ano', hoje.year))
+            if mes_fallback < 1 or mes_fallback > 12:
+                mes_fallback = hoje.month
+            if ano_fallback < 2000 or ano_fallback > 2100:
+                ano_fallback = hoje.year
+        except (ValueError, TypeError):
+            mes_fallback = hoje.month
+            ano_fallback = hoje.year
+
+        mes_ant = 12 if mes_fallback == 1 else mes_fallback - 1
+        ano_ant = ano_fallback - 1 if mes_fallback == 1 else ano_fallback
+        mes_prox = 1 if mes_fallback == 12 else mes_fallback + 1
+        ano_prox = ano_fallback + 1 if mes_fallback == 12 else ano_fallback
+        meses_extenso = [
+            'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+        ]
+        mes_nome_fb = meses_extenso[mes_fallback - 1]
+
         return render_template('financeiro/dashboard.html',
                              resumo=None,
                              vencidos=0,
@@ -163,12 +185,12 @@ def dashboard():
                              contas_receber=0,
                              contas_pagar=0,
                              ultimos_lancamentos=[],
-                             data_atual=date.today(),
-                             mes_selecionado=hoje.month,
-                             ano_selecionado=hoje.year,
-                             mes_nome='Atual',
-                             periodo_anterior={'mes': hoje.month, 'ano': hoje.year},
-                             periodo_proximo={'mes': hoje.month, 'ano': hoje.year},
+                             data_atual=hoje,
+                             mes_selecionado=mes_fallback,
+                             ano_selecionado=ano_fallback,
+                             mes_nome=mes_nome_fb,
+                             periodo_anterior={'mes': mes_ant, 'ano': ano_ant},
+                             periodo_proximo={'mes': mes_prox, 'ano': ano_prox},
                              erro_carregamento=True)
 
 

@@ -9,23 +9,24 @@ Cobre os 16 requisitos obrigatórios do Dashboard Financeiro:
 3. Pendente com vencimento em setembro aparece como pendência, mas não como realizado
 4. Receita recebida usa data_pagamento
 5. Despesa paga usa data_pagamento
-6. Cards e gráfico de pizza retornam exatamente os mesmos totais
+6. Cards e gráfico de pizza retornam exatamente os mesmos totais (HTML renderizado vs API)
 7. Evolução mensal usa seis meses exatos
 8. Transição dezembro/janeiro sem duplicação ou pulo de meses
 9. Top categorias considera somente despesas realizadas
 10. Lançamento cadastrado recentemente com data_lancamento antiga aparece em Últimos Lançamentos
 11. Seleção de agosto/2026 mostra os lançamentos de 31/08
 12. Parâmetros de mês/ano inválidos são tratados com segurança
-13. Erro de consulta executa rollback e não mostra zeros enganosos
-14. Compatibilidade com SQLite
+13. Erro de consulta executa rollback e exibe Indisponível (não zeros enganosos)
+14. Compatibilidade com SQLite e isolamento de banco em memória
 15. Consultas estruturalmente compatíveis com PostgreSQL
 16. Nenhuma alteração em saldo bancário
 """
 
 import os
 import sys
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
+from unittest.mock import patch
 
 os.environ['FLASK_CONFIG'] = 'testing'
 os.environ['FLASK_ENV'] = 'testing'
@@ -48,10 +49,19 @@ def executar_testes_dashboard():
     print("INICIANDO SUÍTE DE TESTES: DASHBOARD FINANCEIRO E INDICADORES")
     print("=" * 70)
 
-    app = create_app()
+    # 1. Criação do app com configuração explícita de testing
+    app = create_app('testing')
     client = app.test_client()
 
     with app.app_context():
+        # Validação de isolamento: SQLite em memória garantido
+        db_uri = str(app.config.get('SQLALCHEMY_DATABASE_URI', ''))
+        assert ':memory:' in db_uri or 'sqlite' in db_uri, f"Banco inseguro para testes: {db_uri}"
+        assert 'erp.db' not in db_uri, "Teste tentando acessar erp.db físico!"
+        assert 'postgres' not in db_uri.lower(), "Teste tentando acessar banco de produção!"
+
+        db.create_all()
+
         # Limpar lançamentos de teste anteriores
         LancamentoFinanceiro.query.filter(
             LancamentoFinanceiro.descricao.like('TEST_DASH_%')
@@ -195,7 +205,7 @@ def executar_testes_dashboard():
         print("\n[TESTE 1 & 11] Verificando isolamento de Agosto/2026 e 31/08...")
         ini_ago, fim_ago = periodo_mes_ano(8, 2026)
         resumo_ago = resumir_financeiro_periodo(ini_ago, fim_ago)
-        
+
         # Despesas de agosto: 100 + 100 + 91.34 = 291.34
         assert resumo_ago.despesas_realizadas == Decimal('291.34'), f"Esperado 291.34 em agosto, obtido {resumo_ago.despesas_realizadas}"
         assert resumo_ago.qtd_despesas == 3, f"Esperado 3 despesas em agosto, obtido {resumo_ago.qtd_despesas}"
@@ -228,13 +238,13 @@ def executar_testes_dashboard():
         print("  -> OK: Pendências identificadas por data_vencimento e isoladas do realizado.")
 
         # ========================================================
-        # TESTE 6: Cards e API / Gráficos retornam exatamente os mesmos totais
+        # TESTE 6: Paridade total entre HTML renderizado, API e Serviço
         # ========================================================
-        print("\n[TESTE 6] Verificando paridade total entre Cards (HTML) e API de Gráficos...")
+        print("\n[TESTE 6] Verificando paridade total entre HTML Renderizado, API e Serviço...")
         dados_completos = obter_dados_dashboard_completos(9, 2026)
         resumo_servico = dados_completos['resumo']
-        
-        # Testar chamada à API
+
+        # 1. API
         resp_api = client.get('/financeiro/api/dashboard-dados?mes=9&ano=2026')
         assert resp_api.status_code == 200, f"API retornou status {resp_api.status_code}"
         json_data = resp_api.get_json()['data']
@@ -242,7 +252,17 @@ def executar_testes_dashboard():
         assert json_data['resumo_mes']['total_receitas'] == float(resumo_servico.receitas_realizadas)
         assert json_data['resumo_mes']['total_despesas'] == float(resumo_servico.despesas_realizadas)
         assert json_data['resumo_mes']['saldo'] == float(resumo_servico.resultado_realizado)
-        print("  -> OK: API e Serviço central devolvem exatamente os mesmos valores consolidados.")
+
+        # 2. HTML renderizado
+        resp_html_set = client.get('/financeiro/?mes=9&ano=2026')
+        assert resp_html_set.status_code == 200
+        html_set = resp_html_set.data.decode('utf-8')
+
+        # Valida que o valor renderizado no HTML bate exatamente com a API e o Serviço
+        assert 'R$ 1.500,00' in html_set, "Valor de receitas R$ 1.500,00 não encontrado no HTML"
+        assert 'R$ 350,00' in html_set, "Valor de despesas R$ 350,00 não encontrado no HTML"
+        assert 'R$ 1.150,00' in html_set, "Valor de saldo R$ 1.150,00 não encontrado no HTML"
+        print("  -> OK: HTML renderizado, API e Serviço central devolvem exatamente os mesmos valores consolidados.")
 
         # ========================================================
         # TESTE 7 & 8: Evolução mensal dos 6 meses e transição Dez/Jan
@@ -250,7 +270,6 @@ def executar_testes_dashboard():
         print("\n[TESTE 7 & 8] Testando cálculo de 6 meses e virada de ano...")
         meses_mar26 = calcular_ultimos_n_meses(2026, 3, 6)
         assert len(meses_mar26) == 6, f"Esperado 6 meses, obtido {len(meses_mar26)}"
-        # Sequência esperada: Out/2025, Nov/2025, Dez/2025, Jan/2026, Fev/2026, Mar/2026
         seq_meses = [(a, m) for a, m, _, _ in meses_mar26]
         esperado_seq = [(2025, 10), (2025, 11), (2025, 12), (2026, 1), (2026, 2), (2026, 3)]
         assert seq_meses == esperado_seq, f"Sequência incorreta: {seq_meses} != {esperado_seq}"
@@ -262,8 +281,6 @@ def executar_testes_dashboard():
         print("\n[TESTE 9] Verificando Top Categorias...")
         top_cats_set = dados_completos['top_categorias']
         assert 'Operacional' in top_cats_set['categorias'], "Categoria Operacional (paga em set) não encontrada"
-        # Categoria de despesa pendente (Materiais de d_pend) não deve estar nas despesas pagas de setembro
-        # (se só houver d_pend de Materiais em setembro, Materiais não entra em setembro)
         cat_operacional_val = top_cats_set['valores'][top_cats_set['categorias'].index('Operacional')]
         assert cat_operacional_val == 350.0, f"Esperado 350.0 para Operacional, obtido {cat_operacional_val}"
         print("  -> OK: Top categorias considera exclusivamente despesas com status 'pago' e data_pagamento no período.")
@@ -274,7 +291,6 @@ def executar_testes_dashboard():
         print("\n[TESTE 10] Verificando Últimos Lançamentos...")
         ultimos = carregar_ultimos_lancamentos(limite=10)
         ids_ultimos = [l.id for l in ultimos]
-        # l_recente foi o último inserido, deve estar entre os primeiros
         assert l_recente.id in ids_ultimos[:3], f"Lançamento recente (ID {l_recente.id}) não apareceu no topo dos últimos: {ids_ultimos}"
         print("  -> OK: Últimos lançamentos traz os registros mais recentes pelo cadastro, independente de data_lancamento antiga.")
 
@@ -289,10 +305,27 @@ def executar_testes_dashboard():
         print("  -> OK: Parâmetros inválidos sanitizados com fallback seguro.")
 
         # ========================================================
+        # TESTE 13: Erro de consulta executa rollback e exibe Indisponível (não zeros enganosos)
+        # ========================================================
+        print("\n[TESTE 13] Testando simulação de erro no carregamento do dashboard...")
+        with patch('app.financeiro.financeiro_routes.obter_dados_dashboard_completos', side_effect=RuntimeError("Falha de banco simulada")):
+            resp_erro = client.get('/financeiro/?mes=9&ano=2026')
+            assert resp_erro.status_code == 200, f"Esperado 200 (fallback gracioso), obtido {resp_erro.status_code}"
+            html_erro = resp_erro.data.decode('utf-8')
+
+            # Confirma que o alerta de erro foi renderizado
+            assert 'Falha ao carregar os indicadores do dashboard' in html_erro or 'Não foi possível carregar os indicadores' in html_erro
+
+            # Confirma que os cards NÃO exibem 'R$ 0,00' enganoso, mas sim 'Indisponível'
+            assert 'Indisponível' in html_erro, "Texto 'Indisponível' não encontrado nos cards durante falha"
+            assert 'R$ 0,00' not in html_erro, "HTML exibiu 'R$ 0,00' mascarando falha de consulta!"
+            print("  -> OK: Falha de consulta executa rollback, renderiza alerta e exibe 'Indisponível' sem mascarar com R$ 0,00.")
+
+        # ========================================================
         # TESTE 16: Nenhuma alteração em saldo bancário
         # ========================================================
         print("\n[TESTE 16] Verificando se saldo bancário permaneceu intocado...")
-        conta_apos = ContaBancaria.query.get(conta.id)
+        conta_apos = db.session.get(ContaBancaria, conta.id)
         assert conta_apos.saldo_atual == saldo_bancario_inicial, f"Saldo bancário foi modificado! {conta_apos.saldo_atual} != {saldo_bancario_inicial}"
         print("  -> OK: Saldo bancário e contas bancárias 100% preservados e inalterados.")
 
@@ -320,7 +353,7 @@ def executar_testes_dashboard():
         db.session.commit()
 
     print("\n" + "=" * 70)
-    print("TODOS OS 16 TESTES DO DASHBOARD FINANCEIRO FORAM APROVADOS!")
+    print("TODOS OS 16 REQUISITOS DO DASHBOARD FINANCEIRO FORAM VALIDADOS COM SUCESSO!")
     print("=" * 70)
 
 
