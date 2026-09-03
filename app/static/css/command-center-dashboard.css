@@ -245,6 +245,10 @@
     color: var(--cc-danger);
 }
 
+.cc-finance-row--flush {
+    border-bottom: none;
+}
+
 /* ---------- Ações rápidas ---------- */
 .cc-quick-actions {
     display: flex;

@@ -10,9 +10,9 @@
  * Estrutura: Body (Flex Row) → [Sidebar | Main Content (Flex Column) → [Topbar, Content, Footer]]
  */
 
-html, body {
-    background: var(--cc-bg);
-    color: var(--cc-text);
+html body {
+    background: var(--cc-bg) !important;
+    color: var(--cc-text) !important;
 }
 
 /* Container principal - Layout horizontal (sidebar + conteúdo) */
@@ -32,8 +32,8 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
     flex-shrink: 0;
-    background: var(--cc-surface);
-    border-right: 1px solid var(--cc-border);
+    background: var(--cc-surface) !important;
+    border-right: 1px solid var(--cc-border) !important;
     padding: 1.1rem 0.5rem;
     transition: width 0.25s ease, min-width 0.25s ease;
     position: relative;
@@ -308,7 +308,7 @@ body {
     display: flex;
     flex-direction: column;
     position: relative;
-    background: var(--cc-bg);
+    background: var(--cc-bg) !important;
 }
 
 /* Wrapper de conteúdo - Cresce para empurrar footer para baixo */
@@ -323,10 +323,10 @@ body {
 footer {
     flex-shrink: 0;
     width: 100%;
-    background: var(--cc-bg-deep);
-    border-top: 1px solid var(--cc-border);
+    background: var(--cc-bg-deep) !important;
+    border-top: 1px solid var(--cc-border) !important;
     padding: 1rem 0;
-    color: var(--cc-text-muted);
+    color: var(--cc-text-muted) !important;
 }
 
 footer p {
@@ -336,8 +336,8 @@ footer p {
 
 /* Topbar e Breadcrumb */
 .topbar-modern {
-    background: var(--cc-surface);
-    border-bottom: 1px solid var(--cc-border);
+    background: var(--cc-surface) !important;
+    border-bottom: 1px solid var(--cc-border) !important;
     padding: 1rem 1.5rem;
     flex-shrink: 0;
     position: relative;
