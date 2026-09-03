@@ -1,6 +1,6 @@
 /* ============================================================
-   ERP JSP — Design System "Command Center"
-   Etapa 2: esqueleto global (base.html) — sidebar, topbar,
+   ERP JSP — Design System "JSP Executive Suite"
+   Esqueleto global (base.html) — sidebar, topbar,
    área principal e componentes de navegação.
    Reaproveita os tokens definidos em command-center.css.
    ============================================================ */
@@ -21,7 +21,7 @@ body {
     flex-direction: row;
     min-height: 100vh;
     margin: 0;
-    font-family: 'Exo 2', 'Segoe UI', sans-serif;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
 }
 
 /* Sidebar - Scroll independente, altura da viewport */
@@ -135,7 +135,7 @@ body {
 }
 
 .sidebar-brand h1 {
-    color: var(--cc-text) !important;
+    color: var(--cc-navy) !important;
     font-weight: 700 !important;
 }
 
@@ -164,7 +164,7 @@ body {
 
 .nav-section-header i {
     font-size: 0.85rem;
-    color: var(--cc-cyan);
+    color: var(--cc-navy-secondary);
 }
 
 /* Links de navegação */
@@ -207,13 +207,13 @@ body {
 
 .sidebar .nav-link.active {
     background: var(--cc-cyan-soft) !important;
-    color: var(--cc-cyan) !important;
-    border-left: 4px solid var(--cc-cyan) !important;
-    box-shadow: inset 3px 0 0 var(--cc-cyan);
+    color: var(--cc-navy) !important;
+    border-left: 4px solid var(--cc-orange) !important;
+    box-shadow: inset 3px 0 0 var(--cc-orange);
 }
 
 .sidebar .nav-link.active .nav-icon {
-    color: var(--cc-cyan) !important;
+    color: var(--cc-navy) !important;
 }
 
 /* Submenu (ex.: Financeiro) */
@@ -289,13 +289,13 @@ body {
 }
 
 .logout-link {
-    background: rgba(239, 68, 68, 0.1) !important;
+    background: rgba(196, 72, 72, 0.08) !important;
     color: var(--cc-danger) !important;
 }
 
 .logout-link:hover {
-    background: rgba(239, 68, 68, 0.18) !important;
-    color: #F87171 !important;
+    background: rgba(196, 72, 72, 0.16) !important;
+    color: var(--cc-danger) !important;
 }
 
 /* Área de conteúdo principal - Layout vertical (topbar, conteúdo, footer) */
@@ -396,18 +396,21 @@ footer p {
 }
 
 .alert-neon-warning {
-    border-color: rgba(239, 68, 68, 0.35);
-    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(183, 134, 29, 0.35);
+    background: rgba(183, 134, 29, 0.1);
+    color: var(--cc-warning);
 }
 
 .alert-neon-success {
-    border-color: rgba(34, 197, 94, 0.35);
-    background: rgba(34, 197, 94, 0.12);
+    border-color: rgba(35, 132, 95, 0.35);
+    background: rgba(35, 132, 95, 0.1);
+    color: var(--cc-success);
 }
 
 .alert-neon-info {
-    border-color: rgba(0, 174, 209, 0.3);
-    background: rgba(0, 174, 209, 0.1);
+    border-color: rgba(45, 120, 168, 0.3);
+    background: var(--cc-cyan-soft);
+    color: var(--cc-navy-secondary);
 }
 
 @media (max-width: 991px) {
