@@ -1,0 +1,427 @@
+/* ============================================================
+   ERP JSP — Design System "Command Center"
+   Etapa 2: esqueleto global (base.html) — sidebar, topbar,
+   área principal e componentes de navegação.
+   Reaproveita os tokens definidos em command-center.css.
+   ============================================================ */
+
+/*
+ * ARQUITETURA DE LAYOUT - ERP JSP v3.0
+ * Estrutura: Body (Flex Row) → [Sidebar | Main Content (Flex Column) → [Topbar, Content, Footer]]
+ */
+
+html, body {
+    background: var(--cc-bg);
+    color: var(--cc-text);
+}
+
+/* Container principal - Layout horizontal (sidebar + conteúdo) */
+body {
+    display: flex;
+    flex-direction: row;
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Exo 2', 'Segoe UI', sans-serif;
+}
+
+/* Sidebar - Scroll independente, altura da viewport */
+.sidebar {
+    width: 265px;
+    min-width: 265px;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    flex-shrink: 0;
+    background: var(--cc-surface);
+    border-right: 1px solid var(--cc-border);
+    padding: 1.1rem 0.5rem;
+    transition: width 0.25s ease, min-width 0.25s ease;
+    position: relative;
+}
+
+/* Indicador de scroll na sidebar */
+.sidebar::after {
+    content: '⬇ Role para ver mais';
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    width: 245px;
+    text-align: center;
+    padding: 0.5rem;
+    background: linear-gradient(to top, var(--cc-cyan), transparent);
+    color: #04141C;
+    font-size: 0.75rem;
+    font-weight: 600;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    border-radius: var(--cc-radius-md);
+    z-index: 10;
+}
+
+.sidebar:not(.scrolled-to-bottom)::after {
+    opacity: 1;
+}
+
+/* Esconder indicador no mobile quando sidebar está fechada */
+@media (max-width: 991px) {
+    .sidebar:not(.show)::after {
+        opacity: 0 !important;
+    }
+}
+
+/* Custom scrollbar para sidebar */
+.sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: var(--cc-bg-deep);
+    border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: var(--cc-border);
+    border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: var(--cc-cyan);
+}
+
+/* Garantir que modais fiquem sempre acessíveis */
+.modal {
+    z-index: 1055 !important;
+}
+
+.modal-backdrop {
+    z-index: 1050 !important;
+}
+
+/* Garantir que campos de formulário em modais sejam clicáveis */
+.modal .form-control,
+.modal .form-select,
+.modal input,
+.modal select,
+.modal textarea,
+.modal button {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 1;
+}
+
+/* Garantir que o conteúdo do modal fique por cima do backdrop */
+.modal-content {
+    position: relative;
+    z-index: 1;
+}
+
+/* Sidebar brand */
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid var(--cc-border);
+}
+
+.brand-logo img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: var(--cc-radius-md);
+    border: 1px solid var(--cc-border);
+}
+
+.sidebar-brand h1 {
+    color: var(--cc-text) !important;
+    font-weight: 700 !important;
+}
+
+.sidebar-brand div:last-child {
+    color: var(--cc-text-muted);
+}
+
+/* Cabeçalhos de seção */
+.nav-section-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem 0.75rem 0.5rem 0.75rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--cc-text-muted);
+    border-bottom: 1px solid var(--cc-border);
+}
+
+.nav-section-header:first-child {
+    margin-top: 0.5rem;
+}
+
+.nav-section-header i {
+    font-size: 0.85rem;
+    color: var(--cc-cyan);
+}
+
+/* Links de navegação */
+.sidebar .nav-text {
+    color: var(--cc-text-muted);
+    font-weight: 600;
+    margin-left: 0.6rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.9rem;
+}
+
+.sidebar .nav-icon {
+    font-size: 1.05rem;
+    color: var(--cc-text-muted);
+}
+
+.sidebar .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.75rem 0.6rem;
+    border-radius: var(--cc-radius-md);
+    margin: 0.3rem 0.25rem;
+    color: var(--cc-text-muted);
+    transition: background-color 0.18s ease, color 0.18s ease;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.sidebar .nav-link:hover {
+    background: var(--cc-cyan-soft);
+    color: var(--cc-cyan);
+}
+
+.sidebar .nav-link:hover .nav-icon {
+    color: var(--cc-cyan);
+}
+
+.sidebar .nav-link.active {
+    background: var(--cc-cyan-soft);
+    color: var(--cc-cyan);
+    box-shadow: inset 3px 0 0 var(--cc-cyan);
+}
+
+.sidebar .nav-link.active .nav-icon {
+    color: var(--cc-cyan);
+}
+
+/* Submenu (ex.: Financeiro) */
+.nav-submenu {
+    background: var(--cc-bg-deep);
+    border-left: 2px solid var(--cc-border);
+    margin-left: 0.5rem;
+    padding: 0.5rem 0;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.nav-submenu .nav-link {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+    color: var(--cc-text-muted);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    border-left: 3px solid transparent;
+    display: flex;
+    align-items: center;
+}
+
+.nav-submenu .nav-link:hover {
+    background: var(--cc-cyan-soft);
+    color: var(--cc-cyan);
+    border-left-color: var(--cc-cyan);
+}
+
+.nav-submenu .nav-link i {
+    width: 20px;
+    text-align: center;
+}
+
+.nav-item > .nav-link .fa-chevron-down {
+    transition: transform 0.3s ease;
+    margin-left: auto;
+}
+
+.nav-submenu .dropdown-divider {
+    border-color: var(--cc-border);
+    margin: 0.5rem 0;
+}
+
+#chevronEnergiaSolar {
+    display: inline-block;
+}
+
+/* Padding personalizado para subitens */
+.ps-6 {
+    padding-left: 3rem !important;
+}
+
+/* Cabeçalhos de seção no submenu */
+.nav-submenu .nav-link.fw-bold {
+    color: var(--cc-text-muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    padding-top: 0.8rem;
+    padding-bottom: 0.4rem;
+    pointer-events: none;
+}
+
+.nav-submenu .nav-link.fw-bold:hover {
+    background: transparent;
+    border-left-color: transparent;
+}
+
+/* Botão de logout destacado */
+.logout-item {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--cc-border);
+}
+
+.logout-link {
+    background: rgba(239, 68, 68, 0.1) !important;
+    color: var(--cc-danger) !important;
+}
+
+.logout-link:hover {
+    background: rgba(239, 68, 68, 0.18) !important;
+    color: #F87171 !important;
+}
+
+/* Área de conteúdo principal - Layout vertical (topbar, conteúdo, footer) */
+.main-content {
+    flex: 1;
+    min-width: 0;
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background: var(--cc-bg);
+}
+
+/* Wrapper de conteúdo - Cresce para empurrar footer para baixo */
+.content-wrapper {
+    flex: 1 0 auto;
+    padding: 1.5rem;
+    position: relative;
+    min-height: 300px;
+}
+
+/* Footer - Sempre no final, horizontal */
+footer {
+    flex-shrink: 0;
+    width: 100%;
+    background: var(--cc-bg-deep);
+    border-top: 1px solid var(--cc-border);
+    padding: 1rem 0;
+    color: var(--cc-text-muted);
+}
+
+footer p {
+    margin: 0;
+    text-align: center;
+}
+
+/* Topbar e Breadcrumb */
+.topbar-modern {
+    background: var(--cc-surface);
+    border-bottom: 1px solid var(--cc-border);
+    padding: 1rem 1.5rem;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.breadcrumb-modern {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    font-size: 0.95rem;
+}
+
+.breadcrumb-home {
+    color: var(--cc-cyan);
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+}
+
+.breadcrumb-home:hover {
+    opacity: 0.8;
+}
+
+.breadcrumb-separator {
+    color: var(--cc-border);
+    font-size: 0.7rem;
+}
+
+.current-page {
+    color: var(--cc-text);
+    font-weight: 500;
+}
+
+/* Mobile Toggle */
+.mobile-toggle {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1100;
+    background: var(--cc-surface);
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius-md);
+    padding: 0.5rem 0.75rem;
+    color: var(--cc-cyan);
+}
+
+/* Alertas globais (flash messages) */
+.alert-neon-warning,
+.alert-neon-success,
+.alert-neon-info {
+    border-radius: var(--cc-radius-md);
+    border: 1px solid transparent;
+    background: var(--cc-surface);
+    color: var(--cc-text);
+}
+
+.alert-neon-warning {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: rgba(239, 68, 68, 0.12);
+}
+
+.alert-neon-success {
+    border-color: rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.12);
+}
+
+.alert-neon-info {
+    border-color: rgba(0, 200, 240, 0.3);
+    background: rgba(0, 200, 240, 0.1);
+}
+
+@media (max-width: 991px) {
+    .sidebar {
+        position: fixed;
+        left: -265px;
+        z-index: 1050;
+        transition: left 0.3s ease;
+    }
+
+    .sidebar.show {
+        left: 0;
+    }
+
+    .main-content {
+        width: 100%;
+    }
+}
