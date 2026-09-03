@@ -1,0 +1,333 @@
+/* ============================================================
+   ERP JSP — Design System "JSP Executive Suite"
+   Fase C: componentes globais reutilizáveis (page-header,
+   toolbar, filter-bar, tabelas, formulários, paginação).
+   Reaproveita os tokens definidos em command-center.css.
+   Também neutraliza estilos legados de cards/tabelas/formulários
+   (form-override.css / neon-theme.css) para claro.
+   ============================================================ */
+
+/* ---------- Cabeçalho de página ---------- */
+.cc-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    background: var(--cc-surface);
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.cc-page-header-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--cc-navy);
+    margin: 0 0 0.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.cc-page-header-title i {
+    color: var(--cc-cyan);
+}
+
+.cc-page-header-subtitle {
+    color: var(--cc-text-muted);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* ---------- Mini indicadores (stat chips) ---------- */
+.cc-mini-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.cc-mini-stat {
+    flex: 1 1 180px;
+    background: var(--cc-surface);
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius-md);
+    padding: 0.85rem 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.cc-mini-stat-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--cc-navy);
+    margin: 0;
+    line-height: 1.1;
+}
+
+.cc-mini-stat-label {
+    color: var(--cc-text-muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.cc-mini-stat i {
+    color: var(--cc-cyan);
+    font-size: 1.3rem;
+    opacity: 0.7;
+}
+
+/* ---------- Barra de filtros/busca ---------- */
+.cc-filter-bar {
+    background: var(--cc-surface);
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius-md);
+    padding: 1rem 1.1rem;
+    margin-bottom: 1.25rem;
+}
+
+/* ---------- Toolbar (ações da listagem) ---------- */
+.cc-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+/* ---------- Container e tabela padronizados ---------- */
+.cc-table-container {
+    background: var(--cc-surface);
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius-lg);
+    overflow: hidden;
+}
+
+table.cc-table {
+    width: 100%;
+    margin: 0;
+    color: var(--cc-text);
+    background: var(--cc-surface);
+}
+
+table.cc-table thead th {
+    background: var(--cc-bg-deep);
+    color: var(--cc-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 1px solid var(--cc-border);
+    padding: 0.75rem 1rem;
+}
+
+table.cc-table tbody td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--cc-border);
+    vertical-align: middle;
+    color: var(--cc-text);
+}
+
+table.cc-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+table.cc-table tbody tr:hover {
+    background: var(--cc-cyan-soft);
+}
+
+table.cc-table code {
+    color: var(--cc-navy-secondary);
+    background: var(--cc-bg-deep);
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+}
+
+/* Ações compactas na tabela */
+.cc-table-actions {
+    display: flex;
+    gap: 0.35rem;
+    justify-content: flex-end;
+}
+
+.cc-table-actions .btn {
+    border-color: var(--cc-border);
+    color: var(--cc-text-muted);
+}
+
+.cc-table-actions .btn:hover {
+    color: var(--cc-cyan);
+    border-color: var(--cc-cyan);
+}
+
+.cc-table-actions .btn-outline-danger:hover {
+    color: var(--cc-danger);
+    border-color: var(--cc-danger);
+}
+
+/* ---------- Paginação padronizada ---------- */
+.cc-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 1rem;
+}
+
+.cc-pagination a,
+.cc-pagination span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    padding: 0 0.5rem;
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius-md);
+    color: var(--cc-text-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+}
+
+.cc-pagination a:hover {
+    border-color: var(--cc-cyan);
+    color: var(--cc-cyan);
+}
+
+.cc-pagination .active {
+    background: var(--cc-navy);
+    border-color: var(--cc-navy);
+    color: #FFFFFF;
+}
+
+/* ============================================================
+   Neutralização global de componentes legados (cards, forms,
+   tabelas) para o padrão claro — evita CSS duplicado por módulo.
+   ============================================================ */
+
+html body .card,
+html body .card-body,
+html body .container .card,
+html body .container .card-body {
+    background: var(--cc-surface) !important;
+    color: var(--cc-text) !important;
+    border: 1px solid var(--cc-border) !important;
+    box-shadow: var(--cc-shadow-card) !important;
+}
+
+html body .card-header,
+html body .card-title {
+    background: var(--cc-bg-deep) !important;
+    color: var(--cc-navy) !important;
+    border-bottom: 1px solid var(--cc-border) !important;
+}
+
+html body .form-section,
+html body .section {
+    background: transparent !important;
+    border-bottom: 1px solid var(--cc-border);
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+html body .section-title,
+html body h6.section-title {
+    color: var(--cc-navy) !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem;
+    text-transform: none !important;
+}
+
+html body label,
+html body .form-label {
+    color: var(--cc-text-muted) !important;
+    font-weight: 500;
+    font-size: 0.85rem;
+}
+
+html body .form-control,
+html body .form-select,
+html body input[class*="form-control"],
+html body textarea[class*="form-control"],
+html body select[class*="form-control"],
+html body select[class*="form-select"] {
+    background: var(--cc-surface) !important;
+    border: 1px solid var(--cc-border) !important;
+    color: var(--cc-text) !important;
+}
+
+html body .form-control:focus,
+html body .form-select:focus,
+html body input[class*="form-control"]:focus,
+html body textarea[class*="form-control"]:focus,
+html body select[class*="form-control"]:focus,
+html body select[class*="form-select"]:focus {
+    background: var(--cc-surface) !important;
+    border-color: var(--cc-cyan) !important;
+    color: var(--cc-text) !important;
+    box-shadow: var(--cc-shadow-focus) !important;
+}
+
+html body .input-group-text {
+    background: var(--cc-bg-deep) !important;
+    border: 1px solid var(--cc-border) !important;
+    color: var(--cc-text-muted) !important;
+}
+
+html body .breadcrumb,
+html body .breadcrumb-neon {
+    background: transparent !important;
+}
+
+html body .breadcrumb-item a {
+    color: var(--cc-cyan) !important;
+}
+
+html body .breadcrumb-item.active {
+    color: var(--cc-text-muted) !important;
+}
+
+html body .btn-primary {
+    background: var(--cc-navy) !important;
+    border-color: var(--cc-navy) !important;
+    color: #FFFFFF !important;
+}
+
+html body .btn-primary:hover {
+    background: var(--cc-navy-secondary) !important;
+    border-color: var(--cc-navy-secondary) !important;
+}
+
+html body table.table {
+    color: var(--cc-text) !important;
+    background: var(--cc-surface) !important;
+}
+
+html body table.table thead th {
+    color: var(--cc-text-muted) !important;
+    border-color: var(--cc-border) !important;
+    background: var(--cc-bg-deep) !important;
+}
+
+html body table.table tbody td,
+html body table.table tbody tr {
+    color: var(--cc-text) !important;
+    border-color: var(--cc-border) !important;
+    background: var(--cc-surface) !important;
+}
+
+html body table.table-hover tbody tr:hover td {
+    background: var(--cc-cyan-soft) !important;
+}
+
+html body .alert-info {
+    background: var(--cc-cyan-soft) !important;
+    border-color: rgba(45, 120, 168, 0.3) !important;
+    color: var(--cc-navy-secondary) !important;
+}
