@@ -1,0 +1,312 @@
+/* ============================================================
+   ERP JSP — Design System "Command Center"
+   Etapa 3: Dashboard Geral (central executiva).
+   Reaproveita os tokens definidos em command-center.css.
+   ============================================================ */
+
+/* ---------- Cabeçalho ---------- */
+.cc-dash-header {
+    background: var(--cc-surface);
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius-lg);
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.cc-dash-header .cc-dash-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--cc-radius-md);
+    object-fit: cover;
+    border: 1px solid var(--cc-border);
+    background: var(--cc-bg-deep);
+    padding: 3px;
+}
+
+.cc-dash-greeting {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--cc-text);
+    margin: 0 0 0.15rem;
+}
+
+.cc-dash-subtitle {
+    color: var(--cc-text-muted);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.cc-dash-context {
+    text-align: right;
+    color: var(--cc-text-muted);
+    font-size: 0.85rem;
+}
+
+.cc-dash-context i {
+    color: var(--cc-cyan);
+}
+
+/* ---------- Indicadores principais (KPIs) ---------- */
+.cc-kpi-card {
+    background: var(--cc-surface);
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius-lg);
+    padding: 1.25rem 1.4rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0.75rem;
+    transition: border-color 0.2s ease, transform 0.2s ease;
+}
+
+.cc-kpi-card:hover {
+    border-color: var(--cc-cyan);
+    transform: translateY(-2px);
+}
+
+.cc-kpi-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.cc-kpi-value {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--cc-text);
+    margin: 0;
+    line-height: 1.2;
+}
+
+.cc-kpi-label {
+    color: var(--cc-text-muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cc-kpi-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: var(--cc-radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--cc-cyan-soft);
+    color: var(--cc-cyan);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.cc-kpi-icon.is-warning {
+    background: rgba(245, 185, 66, 0.14);
+    color: var(--cc-warning);
+}
+
+.cc-kpi-icon.is-success {
+    background: rgba(34, 197, 94, 0.14);
+    color: var(--cc-success);
+}
+
+.cc-kpi-icon.is-danger {
+    background: rgba(239, 68, 68, 0.14);
+    color: var(--cc-danger);
+}
+
+.cc-kpi-link {
+    color: var(--cc-cyan);
+    font-size: 0.8rem;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.cc-kpi-link:hover {
+    text-decoration: underline;
+    color: var(--cc-cyan);
+}
+
+/* ---------- Painéis (operacional / financeiro) ---------- */
+.cc-panel {
+    background: var(--cc-surface);
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius-lg);
+    height: 100%;
+}
+
+.cc-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--cc-border);
+}
+
+.cc-panel-header h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--cc-text);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cc-panel-header h3 i {
+    color: var(--cc-cyan);
+}
+
+.cc-panel-header .cc-panel-link {
+    font-size: 0.8rem;
+    color: var(--cc-cyan);
+    text-decoration: none;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.cc-panel-header .cc-panel-link:hover {
+    text-decoration: underline;
+    color: var(--cc-cyan);
+}
+
+.cc-panel-body {
+    padding: 1.1rem 1.25rem;
+}
+
+/* ---------- Lista de itens recentes ---------- */
+.cc-list-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--cc-border);
+}
+
+.cc-list-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.cc-list-item:first-child {
+    padding-top: 0;
+}
+
+.cc-list-divider {
+    border: none;
+    border-top: 1px solid var(--cc-border);
+    margin: 0.9rem 0;
+}
+
+.cc-list-title {
+    color: var(--cc-text);
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.cc-list-meta {
+    color: var(--cc-text-muted);
+    font-size: 0.78rem;
+}
+
+/* ---------- Resumo financeiro ---------- */
+.cc-finance-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0;
+    border-bottom: 1px dashed var(--cc-border);
+}
+
+.cc-finance-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.cc-finance-label {
+    color: var(--cc-text-muted);
+    font-size: 0.85rem;
+}
+
+.cc-finance-value {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--cc-text);
+}
+
+.cc-finance-value.is-success {
+    color: var(--cc-success);
+}
+
+.cc-finance-value.is-danger {
+    color: var(--cc-danger);
+}
+
+/* ---------- Ações rápidas ---------- */
+.cc-quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.cc-quick-action {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.1rem;
+    background: var(--cc-bg-deep);
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius-md);
+    color: var(--cc-text-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.cc-quick-action:hover {
+    border-color: var(--cc-cyan);
+    color: var(--cc-cyan);
+}
+
+.cc-quick-action i {
+    color: var(--cc-cyan);
+}
+
+/* ---------- Estado vazio ---------- */
+.cc-empty-state {
+    text-align: center;
+    padding: 1.75rem 1rem;
+    color: var(--cc-text-muted);
+}
+
+.cc-empty-state i {
+    font-size: 1.75rem;
+    color: var(--cc-border);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.cc-empty-state p {
+    margin: 0;
+    font-size: 0.85rem;
+}
+
+/* ---------- Responsividade ---------- */
+@media (max-width: 767px) {
+    .cc-dash-header {
+        text-align: center;
+    }
+
+    .cc-dash-context {
+        text-align: center;
+        margin-top: 0.75rem;
+    }
+
+    .cc-kpi-card {
+        margin-bottom: 0.75rem;
+    }
+}
