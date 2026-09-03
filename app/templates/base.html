@@ -45,404 +45,10 @@
     
     <!-- Correções críticas para sidebar -->
     <link href="{{ url_for('static', filename='css/fix-sidebar.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
-    
-    <!-- Layout Principal -->
-    <style>
-        /* 
-         * ARQUITETURA DE LAYOUT - ERP JSP v3.0
-         * Estrutura: Body (Flex Row) → [Sidebar | Main Content (Flex Column) → [Topbar, Content, Footer]]
-         */
-        
-        /* Container principal - Layout horizontal (sidebar + conteúdo) */
-        body {
-            display: flex;
-            flex-direction: row;
-            min-height: 100vh;
-            margin: 0;
-        }
-        
-        /* Sidebar - Scroll independente, altura da viewport */
-        .sidebar {
-            width: 265px;
-            min-width: 265px;
-            height: 100vh;
-            overflow-y: auto;
-            overflow-x: hidden;
-            flex-shrink: 0;
-        }
-        
-        /* Área de conteúdo principal - Layout vertical (topbar, conteúdo, footer) */
-        .main-content {
-            flex: 1;
-            min-width: 0;
-            height: 100vh;
-            overflow-y: auto;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-        
-        /* Wrapper de conteúdo - Cresce para empurrar footer para baixo */
-        .content-wrapper {
-            flex: 1 0 auto;
-            padding: 1.5rem;
-            position: relative;
-            min-height: 300px;
-        }
-        
-        /* Footer - Sempre no final, horizontal */
-        footer {
-            flex-shrink: 0;
-            width: 100%;
-            background: rgba(0, 0, 0, 0.2);
-            border-top: 1px solid rgba(6, 182, 212, 0.2);
-            padding: 1rem 0;
-        }
-        footer p {
-            margin: 0;
-            text-align: center;
-        }
-        
-        /* Topbar e Breadcrumb */
-        .topbar-modern {
-            background: linear-gradient(90deg, rgba(6, 182, 212, 0.1), rgba(0, 212, 255, 0.05));
-            border-bottom: 1px solid rgba(6, 182, 212, 0.2);
-            padding: 1rem 1.5rem;
-            flex-shrink: 0;
-            position: relative;
-        }
-        
-        .breadcrumb-modern {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin: 0;
-            padding: 0;
-            font-size: 0.95rem;
-        }
-        
-        .breadcrumb-home {
-            color: #06b6d4;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-        
-        .breadcrumb-home:hover {
-            color: #00d4ff;
-            transform: scale(1.1);
-        }
-        
-        .breadcrumb-separator {
-            color: rgba(6, 182, 212, 0.4);
-            font-size: 0.7rem;
-        }
-        
-        .current-page {
-            color: #cbd5e1;
-            font-weight: 500;
-        }
-        
-        /* Mobile Toggle */
-        .mobile-toggle {
-            position: fixed;
-            top: 1rem;
-            left: 1rem;
-            z-index: 1100;
-            background: rgba(6, 182, 212, 0.9);
-            border: none;
-            border-radius: 8px;
-            padding: 0.5rem 0.75rem;
-            color: white;
-            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
-        }
-        
-        @media (max-width: 991px) {
-            .sidebar {
-                position: fixed;
-                left: -265px;
-                z-index: 1050;
-                transition: left 0.3s ease;
-            }
-            
-            .sidebar.show {
-                left: 0;
-            }
-            
-            .main-content {
-                width: 100%;
-            }
-        }
-    </style>
-    
-    <!-- Estilos para submenu Energia Solar -->
-    <style>
-        .nav-submenu {
-            background: rgba(0, 0, 0, 0.3);
-            border-left: 2px solid rgba(6, 182, 212, 0.3);
-            margin-left: 0.5rem;
-            padding: 0.5rem 0;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .nav-submenu .nav-link {
-            padding: 0.6rem 1rem;
-            font-size: 0.85rem;
-            color: #e0e0e0;
-            transition: all 0.3s ease;
-            border-left: 3px solid transparent;
-            display: flex;
-            align-items: center;
-        }
-        
-        .nav-submenu .nav-link:hover {
-            background: rgba(6, 182, 212, 0.15);
-            color: #06b6d4;
-            border-left-color: #06b6d4;
-            transform: translateX(5px);
-        }
-        
-        .nav-submenu .nav-link i {
-            width: 20px;
-            text-align: center;
-        }
-        
-        .nav-item > .nav-link .fa-chevron-down {
-            transition: transform 0.3s ease;
-            margin-left: auto;
-        }
-        
-        .nav-submenu .dropdown-divider {
-            border-color: rgba(6, 182, 212, 0.2);
-            margin: 0.5rem 0;
-        }
-        
-        /* Garantir que o ícone esteja visível */
-        #chevronEnergiaSolar {
-            display: inline-block;
-        }
-        
-        /* Padding personalizado para subitens */
-        .ps-6 {
-            padding-left: 3rem !important;
-        }
-        
-        /* Cabeçalhos de seção no menu */
-        .nav-submenu .nav-link.fw-bold {
-            color: #94a3b8;
-            font-size: 0.75rem;
-            letter-spacing: 0.05em;
-            padding-top: 0.8rem;
-            padding-bottom: 0.4rem;
-            pointer-events: none;
-        }
-        
-        .nav-submenu .nav-link.fw-bold:hover {
-            background: transparent;
-            transform: none;
-            border-left-color: transparent;
-        }
-    </style>
-    <style>
-        /* Sidebar visual improvements */
-        .sidebar {
-            width: 265px;
-            min-width: 265px;
-            background: linear-gradient(180deg, rgba(2,6,23,0.95), rgba(3,10,30,0.95));
-            border-right: 1px solid rgba(6,182,212,0.06);
-            padding: 1.1rem 0.5rem;
-            transition: width 0.25s ease, min-width 0.25s ease;
-            position: relative;
-        }
-        
-        /* Indicador de scroll na sidebar */
-        .sidebar::after {
-            content: '⬇ Role para ver mais';
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            width: 245px;
-            text-align: center;
-            padding: 0.5rem;
-            background: linear-gradient(to top, rgba(6,182,212,0.9), transparent);
-            color: #fff;
-            font-size: 0.75rem;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            border-radius: 8px;
-            z-index: 10;
-        }
-        
-        /* Garantir que modais fiquem sempre acessíveis */
-        .modal {
-            z-index: 1055 !important;
-        }
-        
-        .modal-backdrop {
-            z-index: 1050 !important;
-        }
-        
-        /* Garantir que campos de formulário em modais sejam clicáveis */
-        .modal .form-control,
-        .modal .form-select,
-        .modal input,
-        .modal select,
-        .modal textarea,
-        .modal button {
-            pointer-events: auto !important;
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* Garantir que o conteúdo do modal fique por cima do backdrop */
-        .modal-content {
-            position: relative;
-            z-index: 1;
-        }
-        
-        .sidebar:not(.scrolled-to-bottom)::after {
-            opacity: 1;
-        }
-        
-        /* Esconder indicador no mobile quando sidebar está fechada */
-        @media (max-width: 991px) {
-            .sidebar:not(.show)::after {
-                opacity: 0 !important;
-            }
-        }
-        
-        /* Custom scrollbar para sidebar */
-        .sidebar::-webkit-scrollbar {
-            width: 8px;
-        }
-        
-        .sidebar::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.2);
-            border-radius: 4px;
-        }
-        
-        .sidebar::-webkit-scrollbar-thumb {
-            background: rgba(6,182,212,0.5);
-            border-radius: 4px;
-        }
-        
-        .sidebar::-webkit-scrollbar-thumb:hover {
-            background: rgba(6,182,212,0.8);
-        }
 
-        .sidebar .sidebar-brand {
-            display:flex;
-            align-items:center;
-            gap:0.6rem;
-            padding: 0.4rem 0.6rem;
-        }
-
-        .sidebar .nav-text {
-            color: #cbd5e1;
-            font-weight:600;
-            margin-left:0.6rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            font-size: 0.9rem;
-        }
-
-        .sidebar .nav-icon { font-size: 1.05rem; color: #7dd3fc; }
-
-        .sidebar .nav-link {
-            display:flex;
-            align-items:center;
-            gap:0.6rem;
-            padding:0.75rem 0.6rem;
-            border-radius:10px;
-            margin:0.3rem 0.25rem;
-            color:#94a3b8;
-            transition: all 0.18s ease;
-            white-space: nowrap;
-            min-width: 0;
-        }
-
-        .sidebar .nav-link:hover {
-            background: rgba(6,182,212,0.05);
-            transform: translateX(6px);
-            color: #06b6d4;
-            box-shadow: 0 6px 18px rgba(6,182,212,0.06);
-        }
-
-        .sidebar .nav-link.active {
-            background: linear-gradient(90deg, rgba(6,182,212,0.06), rgba(0,212,255,0.03));
-            color: #06b6d4;
-            box-shadow: inset 0 0 20px rgba(6,182,212,0.03);
-        }
-        
-        /* Cabeçalhos de seção */
-        .nav-section-header {
-            display: flex;
-            align-items: center;
-            padding: 1rem 0.75rem 0.5rem 0.75rem;
-            margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            color: #475569;
-            border-bottom: 1px solid rgba(6, 182, 212, 0.1);
-        }
-        
-        .nav-section-header:first-child {
-            margin-top: 0.5rem;
-        }
-        
-        .nav-section-header i {
-            font-size: 0.85rem;
-            color: #06b6d4;
-        }
-        
-        /* Botão de logout destacado */
-        .logout-item {
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid rgba(6, 182, 212, 0.1);
-        }
-        
-        .logout-link {
-            background: rgba(239, 68, 68, 0.1) !important;
-            color: #ef4444 !important;
-        }
-        
-        .logout-link:hover {
-            background: rgba(239, 68, 68, 0.2) !important;
-            color: #dc2626 !important;
-            transform: translateX(6px);
-        }
-
-        /* compact brand logo tweaks */
-        .sidebar-brand {
-            margin-bottom: 1.5rem;
-            padding: 1rem 0.75rem;
-            border-bottom: 1px solid rgba(6, 182, 212, 0.1);
-        }
-        
-        .brand-logo img { 
-            width: 48px;
-            height: 48px;
-            object-fit: cover;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
-        }
-        
-        .sidebar-brand h1 {
-            color: #e0e7ff !important;
-            font-weight: 700 !important;
-        }
-        
-        .sidebar-brand div:last-child {
-            color: #94a3b8;
-        }
-    </style>
+    <!-- Design System JSP Command Center (esqueleto global) -->
+    <link href="{{ url_for('static', filename='css/command-center.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/command-center-shell.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
     
     {% block head %}{% endblock %}
 </head>
@@ -490,11 +96,11 @@
             </div>
 
             <!-- ═══════════════════════════════════════ -->
-            <!-- CADASTROS -->
+            <!-- COMERCIAL -->
             <!-- ═══════════════════════════════════════ -->
             <div class="nav-section-header">
-                <i class="fas fa-database me-2"></i>
-                <span>CADASTROS</span>
+                <i class="fas fa-handshake me-2"></i>
+                <span>COMERCIAL</span>
             </div>
             
             <div class="nav-item">
@@ -503,48 +109,6 @@
                     <span class="nav-text">Clientes</span>
                 </a>
             </div>
-            <div class="nav-item">
-                <a href="{{ url_for('fornecedor.listar') }}" class="nav-link">
-                    <i class="nav-icon fas fa-truck"></i>
-                    <span class="nav-text">Fornecedores</span>
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="{{ url_for('produto.listar') }}" class="nav-link">
-                    <i class="nav-icon fas fa-box"></i>
-                    <span class="nav-text">Produtos</span>
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="{{ url_for('equipamento.listar') }}" class="nav-link">
-                    <i class="nav-icon fas fa-tools"></i>
-                    <span class="nav-text">Equipamentos</span>
-                </a>
-            </div>
-            
-            {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
-            <div class="nav-item">
-                <a href="{{ url_for('colaborador.listar') }}" class="nav-link">
-                    <i class="nav-icon fas fa-user-hard-hat"></i>
-                    <span class="nav-text">Colaboradores</span>
-                </a>
-            </div>
-            <div class="nav-item">
-                <a href="{{ url_for('usuario.listar') }}" class="nav-link">
-                    <i class="nav-icon fas fa-users-cog"></i>
-                    <span class="nav-text">Usuários</span>
-                </a>
-            </div>
-            {% endif %}
-
-            <!-- ═══════════════════════════════════════ -->
-            <!-- OPERAÇÕES -->
-            <!-- ═══════════════════════════════════════ -->
-            <div class="nav-section-header">
-                <i class="fas fa-clipboard-list me-2"></i>
-                <span>OPERAÇÕES</span>
-            </div>
-            
             <div class="nav-item">
                 <a href="{{ url_for('proposta.listar_propostas') }}" class="nav-link">
                     <i class="nav-icon fas fa-file-invoice-dollar"></i>
@@ -557,6 +121,15 @@
                     <span class="nav-text">Pedidos de Venda</span>
                 </a>
             </div>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!-- OPERACIONAL -->
+            <!-- ═══════════════════════════════════════ -->
+            <div class="nav-section-header">
+                <i class="fas fa-clipboard-list me-2"></i>
+                <span>OPERACIONAL</span>
+            </div>
+
             <div class="nav-item">
                 <a href="{{ url_for('ordem_servico.listar') }}" class="nav-link">
                     <i class="nav-icon fas fa-wrench"></i>
@@ -564,9 +137,9 @@
                 </a>
             </div>
             <div class="nav-item">
-                <a href="{{ url_for('pedido_compra.listar') }}" class="nav-link">
-                    <i class="nav-icon fas fa-truck-loading"></i>
-                    <span class="nav-text">Pedidos de Compra</span>
+                <a href="{{ url_for('equipamento.listar') }}" class="nav-link">
+                    <i class="nav-icon fas fa-tools"></i>
+                    <span class="nav-text">Equipamentos</span>
                 </a>
             </div>
             <div class="nav-item">
@@ -575,13 +148,49 @@
                     <span class="nav-text">Serviços</span>
                 </a>
             </div>
+            
+            {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
+            <div class="nav-item">
+                <a href="{{ url_for('colaborador.listar') }}" class="nav-link">
+                    <i class="nav-icon fas fa-user-hard-hat"></i>
+                    <span class="nav-text">Colaboradores</span>
+                </a>
+            </div>
+            {% endif %}
 
             <!-- ═══════════════════════════════════════ -->
-            <!-- MÓDULOS ESPECIALIZADOS -->
+            <!-- ESTOQUE/COMPRAS -->
+            <!-- ═══════════════════════════════════════ -->
+            <div class="nav-section-header">
+                <i class="fas fa-boxes-stacked me-2"></i>
+                <span>ESTOQUE/COMPRAS</span>
+            </div>
+            
+            <div class="nav-item">
+                <a href="{{ url_for('produto.listar') }}" class="nav-link">
+                    <i class="nav-icon fas fa-box"></i>
+                    <span class="nav-text">Produtos</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('fornecedor.listar') }}" class="nav-link">
+                    <i class="nav-icon fas fa-truck"></i>
+                    <span class="nav-text">Fornecedores</span>
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('pedido_compra.listar') }}" class="nav-link">
+                    <i class="nav-icon fas fa-truck-loading"></i>
+                    <span class="nav-text">Pedidos de Compra</span>
+                </a>
+            </div>
+
+            <!-- ═══════════════════════════════════════ -->
+            <!-- FINANCEIRO -->
             <!-- ═══════════════════════════════════════ -->
             <div class="nav-section-header">
                 <i class="fas fa-th-large me-2"></i>
-                <span>MÓDULOS</span>
+                <span>FINANCEIRO</span>
             </div>
             
             <!-- Financeiro - Com Submenu Organizado -->
@@ -772,18 +381,22 @@
                 </div>
             </div>
             ===== FIM MENU ENERGIA SOLAR ===== #}
-            
-            {% endif %}
 
             <!-- ═══════════════════════════════════════ -->
-            <!-- SISTEMA -->
+            <!-- ADMINISTRAÇÃO -->
             <!-- ═══════════════════════════════════════ -->
+            {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
             <div class="nav-section-header">
-                <i class="fas fa-cog me-2"></i>
-                <span>SISTEMA</span>
+                <i class="fas fa-user-shield me-2"></i>
+                <span>ADMINISTRAÇÃO</span>
             </div>
             
-            {% if current_user.tipo_usuario|default('usuario') == 'admin' %}
+            <div class="nav-item">
+                <a href="{{ url_for('usuario.listar') }}" class="nav-link">
+                    <i class="nav-icon fas fa-users-cog"></i>
+                    <span class="nav-text">Usuários</span>
+                </a>
+            </div>
             <div class="nav-item">
                 <a href="{{ url_for('configuracao.visualizar') }}" class="nav-link">
                     <i class="nav-icon fas fa-sliders-h"></i>
@@ -791,7 +404,9 @@
                 </a>
             </div>
             {% endif %}
-            
+
+            {% endif %}
+
             <!-- Usuário -->
             {% if current_user.is_authenticated %}
             
