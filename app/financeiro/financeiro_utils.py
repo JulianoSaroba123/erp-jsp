@@ -221,30 +221,35 @@ def calcular_metricas_dashboard():
 
         total_ordens = int(r[0] or 0)
         ordens_abertas = int(r[1] or 0)
+        ordens_concluidas = int(r[2] or 0)
+        valor_total_ordens = float(r[3] or 0)
         valor_ordens_concluidas = float(r[4] or 0)
         valor_ordens_abertas = float(r[5] or 0)
         receita_mes = float(r[6] or 0)
         qtd_ordens_mes = int(r[7] or 0)
 
-        # === LANÇAMENTOS FINANCEIROS (SQL puro) ===
-        rf = db.session.execute(text("""
-            SELECT
-                COALESCE(SUM(valor) FILTER (WHERE ativo = true AND tipo IN ('receita','conta_receber') AND status = 'recebido' AND data_pagamento >= :p1 AND data_pagamento < :p2), 0) AS receitas_mes,
-                COALESCE(SUM(valor) FILTER (WHERE ativo = true AND tipo IN ('despesa','conta_pagar') AND status = 'pago' AND data_pagamento >= :p1 AND data_pagamento < :p2), 0) AS despesas_mes,
-                COALESCE(SUM(valor) FILTER (WHERE ativo = true AND tipo = 'conta_receber' AND status = 'pendente'), 0) AS contas_receber,
-                COUNT(*) FILTER (WHERE ativo = true AND tipo = 'conta_receber' AND status = 'pendente') AS qtd_receber,
-                COALESCE(SUM(valor) FILTER (WHERE ativo = true AND tipo = 'conta_pagar' AND status = 'pendente'), 0) AS contas_pagar,
-                COUNT(*) FILTER (WHERE ativo = true AND tipo = 'conta_pagar' AND status = 'pendente') AS qtd_pagar
-            FROM lancamentos_financeiros
-        """), {"p1": primeiro_dia_mes, "p2": ultimo_dia_mes}).first()
+        # === LANÇAMENTOS FINANCEIROS ===
+        # Reutiliza o serviço central de indicadores (mesma regra de competência
+        # e reconciliação usada pelo Dashboard Financeiro), evitando um cálculo
+        # financeiro duplicado/divergente aqui.
+        from app.financeiro.indicadores_service import (
+            periodo_mes_atual,
+            resumir_financeiro_periodo,
+            carregar_registros_financeiros,
+        )
 
-        total_receitas_mes = float(rf[0] or 0)
-        total_despesas_mes = float(rf[1] or 0)
-        total_contas_receber = float(rf[2] or 0)
-        qtd_contas_receber = int(rf[3] or 0)
-        total_contas_pagar = float(rf[4] or 0)
-        qtd_contas_pagar = int(rf[5] or 0)
-        saldo_mes = total_receitas_mes - total_despesas_mes
+        inicio_mes, fim_mes = periodo_mes_atual(hoje)
+        resumo_financeiro = resumir_financeiro_periodo(inicio_mes, fim_mes)
+
+        total_receitas_mes = float(resumo_financeiro.receitas_realizadas)
+        total_despesas_mes = float(resumo_financeiro.despesas_realizadas)
+        saldo_mes = float(resumo_financeiro.resultado_realizado)
+        total_contas_receber = float(resumo_financeiro.contas_a_receber_pendentes)
+        total_contas_pagar = float(resumo_financeiro.contas_a_pagar_pendentes)
+
+        pendentes_periodo = carregar_registros_financeiros(inicio_mes, fim_mes, status='pendente')
+        qtd_contas_receber = sum(1 for registro in pendentes_periodo if registro.tipo == 'Receita')
+        qtd_contas_pagar = sum(1 for registro in pendentes_periodo if registro.tipo == 'Despesa')
 
         return {
             'total_ordens': total_ordens,
