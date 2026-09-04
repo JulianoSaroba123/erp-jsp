@@ -11,24 +11,16 @@
 
 // Configuração global do Chart.js
 Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
-Chart.defaults.color = '#6c757d';
+Chart.defaults.color = '#758491';
 
 // Paleta de cores JSP
 const JSP_COLORS = {
-    primary: '#0d6efd',
-    success: '#28a745',
-    danger: '#dc3545',
-    warning: '#ffc107',
-    info: '#17a2b8',
-    neon: '#00d4ff',
-    dark: '#0f172a',
-    light: '#f8f9fa',
-    receita: 'rgba(40, 167, 69, 0.8)',
-    receitaBorder: 'rgba(40, 167, 69, 1)',
-    despesa: 'rgba(220, 53, 69, 0.8)',
-    despesaBorder: 'rgba(220, 53, 69, 1)',
-    gradientReceita: ['rgba(40, 167, 69, 0.8)', 'rgba(32, 201, 151, 0.6)'],
-    gradientDespesa: ['rgba(220, 53, 69, 0.8)', 'rgba(231, 76, 60, 0.6)']
+    primary: '#163A5C', success: '#23845F', danger: '#C44848', warning: '#B7861D',
+    info: '#2D78A8', neon: '#2CA9C5', dark: '#1F2A33', light: '#F8FAFC',
+    receita: 'rgba(35, 132, 95, 0.78)', receitaBorder: '#23845F',
+    despesa: 'rgba(196, 72, 72, 0.78)', despesaBorder: '#C44848',
+    gradientReceita: ['rgba(35, 132, 95, 0.78)', 'rgba(44, 169, 197, 0.30)'],
+    gradientDespesa: ['rgba(196, 72, 72, 0.78)', 'rgba(232, 135, 47, 0.30)']
 };
 
 /**
@@ -193,8 +185,8 @@ function criarGraficoFluxoCaixa(canvasId, dados) {
 
     // Criar gradiente
     const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(0, 212, 255, 0.4)');
-    gradient.addColorStop(1, 'rgba(0, 212, 255, 0.0)');
+    gradient.addColorStop(0, 'rgba(44, 169, 197, 0.30)');
+    gradient.addColorStop(1, 'rgba(44, 169, 197, 0)');
 
     new Chart(ctx, {
         type: 'line',

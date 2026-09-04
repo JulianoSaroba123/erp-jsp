@@ -50,6 +50,9 @@
     <link href="{{ url_for('static', filename='css/command-center.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/command-center-shell.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/jsp-executive-suite-components.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+    {% if request.blueprint in ['financeiro', 'nfse'] %}
+    <link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-g.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+    {% endif %}
     
     {% block head %}{% endblock %}
 </head>
