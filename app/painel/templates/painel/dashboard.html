@@ -37,61 +37,75 @@
     </div>
 </div>
 
-<!-- Indicadores principais -->
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="cc-kpi-card">
-            <div class="cc-kpi-top">
-                <div>
-                    <p class="cc-kpi-value">{{ stats.total_clientes }}</p>
-                    <span class="cc-kpi-label">Clientes</span>
-                </div>
-                <div class="cc-kpi-icon"><i class="fas fa-users"></i></div>
-            </div>
-            <a href="{{ url_for('cliente.listar') }}" class="cc-kpi-link">Ver todos <i class="fas fa-arrow-right ms-1"></i></a>
-        </div>
+<!-- Faixa executiva de indicadores -->
+<div class="cc-kpi-strip">
+    <div class="cc-kpi-strip-item">
+        <span class="cc-kpi-strip-label">Receitas do mês</span>
+        <p class="cc-kpi-strip-value is-success">{{ stats.total_receitas_mes_fmt }}</p>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="cc-kpi-card">
-            <div class="cc-kpi-top">
-                <div>
-                    <p class="cc-kpi-value">{{ stats.total_fornecedores }}</p>
-                    <span class="cc-kpi-label">Fornecedores</span>
-                </div>
-                <div class="cc-kpi-icon"><i class="fas fa-truck"></i></div>
-            </div>
-            <a href="{{ url_for('fornecedor.listar') }}" class="cc-kpi-link">Ver todos <i class="fas fa-arrow-right ms-1"></i></a>
-        </div>
+    <div class="cc-kpi-strip-item">
+        <span class="cc-kpi-strip-label">Despesas do mês</span>
+        <p class="cc-kpi-strip-value is-danger">{{ stats.total_despesas_mes_fmt }}</p>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="cc-kpi-card">
-            <div class="cc-kpi-top">
-                <div>
-                    <p class="cc-kpi-value">{{ stats.total_produtos }}</p>
-                    <span class="cc-kpi-label">Produtos</span>
-                </div>
-                <div class="cc-kpi-icon"><i class="fas fa-box"></i></div>
-            </div>
-            <a href="{{ url_for('produto.listar') }}" class="cc-kpi-link">Ver todos <i class="fas fa-arrow-right ms-1"></i></a>
-        </div>
+    <div class="cc-kpi-strip-item">
+        <span class="cc-kpi-strip-label">Resultado</span>
+        <p class="cc-kpi-strip-value {% if stats.saldo_mes_cor == 'success' %}is-success{% else %}is-danger{% endif %}">
+            {{ stats.saldo_mes_fmt }}
+        </p>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="cc-kpi-card">
-            <div class="cc-kpi-top">
-                <div>
-                    <p class="cc-kpi-value">{{ stats.produtos_estoque_baixo }}</p>
-                    <span class="cc-kpi-label">Estoque Baixo</span>
-                </div>
-                <div class="cc-kpi-icon is-warning"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="cc-kpi-strip-item">
+        <span class="cc-kpi-strip-label">OS Abertas</span>
+        <p class="cc-kpi-strip-value">{{ stats.ordens_abertas }}</p>
+    </div>
+    <div class="cc-kpi-strip-item">
+        <span class="cc-kpi-strip-label">Estoque Baixo</span>
+        <p class="cc-kpi-strip-value {% if stats.produtos_estoque_baixo > 0 %}is-warning{% endif %}">{{ stats.produtos_estoque_baixo }}</p>
+    </div>
+</div>
+
+<!-- Resumo Operacional (cadastros) -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="cc-panel">
+            <div class="cc-panel-header">
+                <h3><i class="fas fa-layer-group"></i>Resumo Operacional</h3>
             </div>
-            {% if stats.produtos_estoque_baixo > 0 %}
-            <a href="{{ url_for('produto.estoque_baixo') }}" class="cc-kpi-link">Ver itens <i class="fas fa-arrow-right ms-1"></i></a>
-            {% else %}
-            <span class="cc-kpi-label">Tudo OK!</span>
-            {% endif %}
+            <div class="cc-panel-body">
+                <div class="row g-3">
+                    <div class="col-6 col-md-3">
+                        <div class="cc-finance-row cc-finance-row--flush">
+                            <span class="cc-finance-label"><i class="fas fa-users me-2"></i>Clientes</span>
+                            <a href="{{ url_for('cliente.listar') }}" class="cc-finance-value">{{ stats.total_clientes }}</a>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="cc-finance-row cc-finance-row--flush">
+                            <span class="cc-finance-label"><i class="fas fa-truck me-2"></i>Fornecedores</span>
+                            <a href="{{ url_for('fornecedor.listar') }}" class="cc-finance-value">{{ stats.total_fornecedores }}</a>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="cc-finance-row cc-finance-row--flush">
+                            <span class="cc-finance-label"><i class="fas fa-box me-2"></i>Produtos</span>
+                            <a href="{{ url_for('produto.listar') }}" class="cc-finance-value">{{ stats.total_produtos }}</a>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="cc-finance-row cc-finance-row--flush">
+                            <span class="cc-finance-label"><i class="fas fa-exclamation-triangle me-2"></i>Estoque Baixo</span>
+                            {% if stats.produtos_estoque_baixo > 0 %}
+                            <a href="{{ url_for('produto.estoque_baixo') }}" class="cc-finance-value is-danger">{{ stats.produtos_estoque_baixo }}</a>
+                            {% else %}
+                            <span class="cc-finance-value is-success">OK</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
 
 {% if stats.valor_estoque > 0 %}
 <div class="row mb-4">

@@ -2,6 +2,10 @@
 
 {% block title %}Confirmar Exclusão - Propostas{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
 {% block breadcrumb %}
 <a href="{{ url_for('proposta.listar_propostas') }}">Propostas</a>
 <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>

@@ -2,6 +2,10 @@
 
 {% block title %}{% if pedido %}Editar Pedido {{ pedido.numero }}{% else %}Novo Pedido{% endif %} - {{ super() }}{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
 {% block breadcrumb %}
 <a href="{{ url_for('pedido.listar') }}">Pedidos</a>
 <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
@@ -80,7 +84,7 @@
                 </div>
             </div>
 
-            <div class="card mb-4">
+            <div class="cc-table-container card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="fas fa-list me-2"></i>Itens do Pedido</h6>
                     <button type="button" id="btnAdicionarItem" class="btn btn-sm btn-outline-info">
@@ -89,7 +93,7 @@
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-sm align-middle mb-0" id="tabelaItens">
+                        <table class="table cc-table table-sm align-middle mb-0" id="tabelaItens">
                             <thead class="table-light">
                                 <tr>
                                     <th style="min-width: 130px;">Tipo</th>

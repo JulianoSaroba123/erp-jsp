@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-f.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
 {% block title %}Erro - Banco Desatualizado{% endblock %}
 
 {% block content %}

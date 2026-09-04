@@ -75,7 +75,7 @@ def executar_testes():
         print("  -> OK: /dashboard responde 200.")
 
         print("\n[TESTE 2] Indicadores principais preservados (sem números inventados)...")
-        for marcador in ['cc-kpi-value', 'Clientes', 'Fornecedores', 'Produtos', 'Estoque Baixo']:
+        for marcador in ['cc-kpi-strip-value', 'Clientes', 'Fornecedores', 'Produtos', 'Estoque Baixo']:
             assert marcador in html, f"Indicador ausente: {marcador}"
         print("  -> OK: cards de indicadores reorganizados, mesmos dados de stats.")
 

@@ -11,49 +11,6 @@
 {% endblock %}
 
 {% block content %}
-<style>
-    .profile-header {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-        color: white;
-    }
-    .info-card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    .stat-box {
-        padding: 1.5rem;
-        border-radius: 8px;
-        text-align: center;
-        color: white;
-    }
-    .stat-box-primary {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    }
-    .stat-box-info {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    }
-    .stat-box-warning {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    }
-    .info-row {
-        padding: 0.75rem 0;
-        border-bottom: 1px solid #e5e7eb;
-    }
-    .info-row:last-child {
-        border-bottom: none;
-    }
-    .info-label {
-        font-weight: 600;
-        color: #6b7280;
-        font-size: 0.9rem;
-    }
-    .info-value {
-        color: #1f2937;
-        font-size: 1rem;
-    }
-</style>
 
 <div class="row">
     <div class="col-12">
@@ -107,7 +64,7 @@
         <div class="row">
             <!-- Informações Pessoais -->
             <div class="col-md-6 mb-4">
-                <div class="card info-card">
+                <div class="cc-form-card card info-card">
                     <div class="card-header bg-transparent">
                         <h5 class="mb-0">
                             <i class="fas fa-user me-2 text-success"></i>Informações Pessoais
@@ -138,7 +95,7 @@
 
             <!-- Contato -->
             <div class="col-md-6 mb-4">
-                <div class="card info-card">
+                <div class="cc-form-card card info-card">
                     <div class="card-header bg-transparent">
                         <h5 class="mb-0">
                             <i class="fas fa-phone me-2 text-success"></i>Contato
@@ -163,7 +120,7 @@
 
             <!-- Dados Profissionais -->
             <div class="col-md-12 mb-4">
-                <div class="card info-card">
+                <div class="cc-form-card card info-card">
                     <div class="card-header bg-transparent">
                         <h5 class="mb-0">
                             <i class="fas fa-briefcase me-2 text-success"></i>Dados Profissionais
@@ -208,7 +165,7 @@
 
             <!-- Histórico de Trabalhos -->
             <div class="col-md-12">
-                <div class="card info-card">
+                <div class="cc-table-container card info-card">
                     <div class="card-header bg-transparent">
                         <h5 class="mb-0">
                             <i class="fas fa-history me-2 text-success"></i>Histórico de Trabalhos
@@ -217,7 +174,7 @@
                     <div class="card-body">
                         {% if trabalhos %}
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle">
+                            <table class="cc-table table table-hover align-middle">
                                 <thead class="table-light">
                                     <tr>
                                         <th>Data</th>

@@ -2,6 +2,10 @@
 
 {% block title %}Confirmar Exclusão{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-f.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{{ url_for('ordem_servico.listar') }}">Ordens de Serviço</a></li>
 <li class="breadcrumb-item"><a href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}">{{ ordem.numero }}</a></li>

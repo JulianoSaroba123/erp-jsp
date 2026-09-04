@@ -29,26 +29,22 @@
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- Google Fonts - Tipografia Futurista -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts - Tipografia Corporativa (JSP Executive Suite) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tema Neon Futurista -->
-    <link href="{{ url_for('static', filename='css/neon-theme.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
-    
-    <!-- Override específico para formulários -->
-    {% if request.endpoint != 'proposta.visualizar_proposta' %}
-    <link href="{{ url_for('static', filename='css/form-override.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
-    {% endif %}
-    
-    <!-- Navegação Premium Aprimorada -->
-    <link href="{{ url_for('static', filename='css/navigation-enhanced-clean.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
-    
-    <!-- Correções críticas para sidebar -->
+    <!-- Fallback de interação da sidebar; os estilos visuais usam Executive Suite. -->
     <link href="{{ url_for('static', filename='css/fix-sidebar.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
 
     <!-- Design System JSP Command Center (esqueleto global) -->
     <link href="{{ url_for('static', filename='css/command-center.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/command-center-shell.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/jsp-executive-suite-components.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+    {% if request.blueprint in ['financeiro', 'nfse'] %}
+    <link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-g.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+    {% endif %}
+    {% if request.blueprint in ['usuario', 'colaborador', 'configuracao', 'auth'] %}
+    <link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-h1.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+    {% endif %}
     
     {% block head %}{% endblock %}
 </head>

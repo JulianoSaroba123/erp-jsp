@@ -1,0 +1,78 @@
+/* JSP Executive Suite -- Fase F: Ordens de Servico (somente interface web). */
+html body .os-header,
+html body .os-section-header {
+  background: var(--cc-surface) !important;
+  color: var(--cc-navy) !important;
+  border: 1px solid var(--cc-border) !important;
+  border-left: 3px solid var(--cc-orange) !important;
+  border-radius: var(--cc-radius-lg) !important;
+  box-shadow: var(--cc-shadow-card) !important;
+}
+
+html body .os-header h2,
+html body .os-header h3,
+html body .os-header h5,
+html body .os-header p,
+html body .os-header i,
+html body .os-section-header h5,
+html body .os-section-header i {
+  color: var(--cc-navy) !important;
+  opacity: 1 !important;
+}
+
+html body .btn-nova-os {
+  background: var(--cc-navy) !important;
+  border-color: var(--cc-navy) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+html body .btn-nova-os:hover { background: var(--cc-navy-secondary) !important; color: #fff !important; }
+
+html body .os-header .btn-light,
+html body .os-section-header .btn-light { background: var(--cc-bg-deep) !important; border-color: var(--cc-border) !important; color: var(--cc-navy) !important; }
+
+/* Preserva todos os IDs/JS do formulario e converte apenas as superficies. */
+html body .endpoint-ordem_servico-novo .card.bg-dark,
+html body .endpoint-ordem_servico-editar .card.bg-dark,
+html body .endpoint-ordem_servico-novo .card.bg-secondary,
+html body .endpoint-ordem_servico-editar .card.bg-secondary {
+  background: var(--cc-surface) !important;
+  border-color: var(--cc-border) !important;
+  color: var(--cc-text) !important;
+}
+
+html body .endpoint-ordem_servico-novo .form-control.bg-dark,
+html body .endpoint-ordem_servico-editar .form-control.bg-dark,
+html body .endpoint-ordem_servico-novo .form-select.bg-dark,
+html body .endpoint-ordem_servico-editar .form-select.bg-dark,
+html body .endpoint-ordem_servico-novo .form-control.bg-secondary,
+html body .endpoint-ordem_servico-editar .form-control.bg-secondary {
+  background: var(--cc-surface) !important;
+  color: var(--cc-text) !important;
+  border-color: var(--cc-border) !important;
+}
+
+html body .endpoint-ordem_servico-novo label.text-white,
+html body .endpoint-ordem_servico-editar label.text-white,
+html body .endpoint-ordem_servico-novo .text-white,
+html body .endpoint-ordem_servico-editar .text-white { color: var(--cc-text-muted) !important; }
+
+/* Visualizacao executiva. */
+html body .info-card { background: var(--cc-surface) !important; border: 1px solid var(--cc-border) !important; border-left: 3px solid var(--cc-orange) !important; border-radius: var(--cc-radius-lg) !important; box-shadow: var(--cc-shadow-card) !important; }
+html body .info-card .card-header { background: var(--cc-bg-deep) !important; border-bottom-color: var(--cc-border) !important; }
+html body .info-card .card-header h5,
+html body .info-card .card-header h5 i { color: var(--cc-navy) !important; }
+html body .stats-box { background: var(--cc-surface) !important; border: 1px solid var(--cc-border) !important; border-left: 3px solid var(--cc-orange) !important; border-radius: var(--cc-radius-md) !important; box-shadow: none !important; }
+html body .value-highlight { background: var(--cc-navy) !important; border: 1px solid var(--cc-navy) !important; box-shadow: none !important; }
+html body .action-btn { border-radius: var(--cc-radius-md) !important; box-shadow: none !important; }
+
+html body .cc-os-table table,
+html body .cc-os-table .table { color: var(--cc-text) !important; }
+html body .cc-os-table .table th { background: var(--cc-bg-deep) !important; color: var(--cc-text-muted) !important; border-color: var(--cc-border) !important; }
+html body .cc-os-table .table td { background: var(--cc-surface) !important; color: var(--cc-text) !important; border-color: var(--cc-border) !important; }
+
+@media (max-width: 767px) {
+  html body .os-header,
+  html body .os-section-header { padding: 1rem !important; }
+}

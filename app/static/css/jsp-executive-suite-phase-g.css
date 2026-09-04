@@ -1,0 +1,105 @@
+/* JSP Executive Suite -- Fase G: Financeiro (somente endpoints financeiros). */
+html body[class*="endpoint-financeiro-"],
+html body[class*="endpoint-nfse-"] { color: var(--cc-text); font-family: 'Inter', sans-serif; }
+
+html body[class*="endpoint-financeiro-"] h1,
+html body[class*="endpoint-financeiro-"] h2,
+html body[class*="endpoint-financeiro-"] h3,
+html body[class*="endpoint-financeiro-"] h4,
+html body[class*="endpoint-financeiro-"] h5,
+html body[class*="endpoint-financeiro-"] h6,
+html body[class*="endpoint-financeiro-"] p,
+html body[class*="endpoint-financeiro-"] label,
+html body[class*="endpoint-financeiro-"] .btn,
+html body[class*="endpoint-financeiro-"] .table,
+html body[class*="endpoint-nfse-"] h1,
+html body[class*="endpoint-nfse-"] h2,
+html body[class*="endpoint-nfse-"] h3,
+html body[class*="endpoint-nfse-"] h4,
+html body[class*="endpoint-nfse-"] h5,
+html body[class*="endpoint-nfse-"] h6,
+html body[class*="endpoint-nfse-"] p,
+html body[class*="endpoint-nfse-"] label,
+html body[class*="endpoint-nfse-"] .btn,
+html body[class*="endpoint-nfse-"] .table { font-family: 'Inter', sans-serif !important; }
+
+html body[class*="endpoint-financeiro-"] .container-fluid,
+html body[class*="endpoint-nfse-"] .container-fluid { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+
+html body[class*="endpoint-financeiro-"] h1,
+html body[class*="endpoint-financeiro-"] h2,
+html body[class*="endpoint-nfse-"] h1,
+html body[class*="endpoint-nfse-"] h2 { color: var(--cc-navy) !important; }
+
+html body[class*="endpoint-financeiro-"] .text-neon { color: var(--cc-navy) !important; text-shadow: none !important; }
+html body[class*="endpoint-financeiro-"] .text-muted,
+html body[class*="endpoint-nfse-"] .text-muted { color: var(--cc-text-muted) !important; opacity: 1 !important; }
+html body[class*="endpoint-financeiro-"] .card,
+html body[class*="endpoint-nfse-"] .card { background: var(--cc-surface) !important; border: 1px solid var(--cc-border) !important; border-radius: var(--cc-radius-lg) !important; box-shadow: var(--cc-shadow-card) !important; color: var(--cc-text) !important; }
+html body[class*="endpoint-financeiro-"] .card-header,
+html body[class*="endpoint-nfse-"] .card-header { background: var(--cc-bg-deep) !important; border-bottom: 1px solid var(--cc-border) !important; color: var(--cc-navy) !important; }
+html body[class*="endpoint-financeiro-"] .card-header.text-white,
+html body[class*="endpoint-nfse-"] .card-header.text-white { color: var(--cc-navy) !important; }
+
+html body[class*="endpoint-financeiro-"] .bg-primary,
+html body[class*="endpoint-nfse-"] .bg-primary { background: var(--cc-navy) !important; }
+html body[class*="endpoint-financeiro-"] .bg-info,
+html body[class*="endpoint-nfse-"] .bg-info { background: #e6f5fa !important; color: var(--cc-text) !important; }
+html body[class*="endpoint-financeiro-"] .bg-success,
+html body[class*="endpoint-nfse-"] .bg-success { background: #e6f4ee !important; color: var(--cc-text) !important; }
+html body[class*="endpoint-financeiro-"] .bg-warning,
+html body[class*="endpoint-nfse-"] .bg-warning { background: #fff5df !important; color: var(--cc-text) !important; }
+html body[class*="endpoint-financeiro-"] .bg-danger,
+html body[class*="endpoint-nfse-"] .bg-danger { background: #fbeaea !important; color: var(--cc-text) !important; }
+
+html body[class*="endpoint-financeiro-"] .card-kpi,
+html body[class*="endpoint-financeiro-"] .conta-mini-card { border-left: 3px solid var(--cc-orange) !important; }
+html body[class*="endpoint-financeiro-"] .card-kpi .card-body { background: transparent !important; border: 0 !important; box-shadow: none !important; }
+html body[class*="endpoint-financeiro-"] .kpi-icon { width: 2.75rem; height: 2.75rem; border-radius: var(--cc-radius-md); font-size: 1.1rem; }
+html body[class*="endpoint-financeiro-"] .kpi-icon.receita { background: #e6f4ee; color: var(--cc-success); }
+html body[class*="endpoint-financeiro-"] .kpi-icon.despesa { background: #fbeaea; color: var(--cc-danger); }
+html body[class*="endpoint-financeiro-"] .kpi-icon.saldo { background: #e6f5fa; color: var(--cc-blue); }
+html body[class*="endpoint-financeiro-"] .kpi-icon.pendente { background: #fff5df; color: var(--cc-warning); }
+html body[class*="endpoint-financeiro-"] .section-title { border-left-color: var(--cc-orange); color: var(--cc-navy); }
+html body[class*="endpoint-financeiro-"] .quick-action-card:hover { background: var(--cc-bg-deep) !important; border-color: var(--cc-blue) !important; transform: none; }
+
+html body[class*="endpoint-financeiro-"] form.row,
+html body[class*="endpoint-nfse-"] form.row { color: var(--cc-text); }
+html body[class*="endpoint-financeiro-"] .form-control,
+html body[class*="endpoint-financeiro-"] .form-select,
+html body[class*="endpoint-nfse-"] .form-control,
+html body[class*="endpoint-nfse-"] .form-select { background: var(--cc-surface) !important; border-color: var(--cc-border) !important; color: var(--cc-text) !important; }
+html body[class*="endpoint-financeiro-"] .form-control:focus,
+html body[class*="endpoint-financeiro-"] .form-select:focus,
+html body[class*="endpoint-nfse-"] .form-control:focus,
+html body[class*="endpoint-nfse-"] .form-select:focus { border-color: var(--cc-blue) !important; box-shadow: 0 0 0 .2rem rgba(45,120,168,.15) !important; }
+
+html body[class*="endpoint-financeiro-"] .table,
+html body[class*="endpoint-nfse-"] .table { --bs-table-bg: var(--cc-surface); --bs-table-color: var(--cc-text); --bs-table-border-color: var(--cc-border); }
+html body[class*="endpoint-financeiro-"] .table-dark,
+html body[class*="endpoint-financeiro-"] .table-light,
+html body[class*="endpoint-nfse-"] .table-light { --bs-table-bg: var(--cc-bg-deep); --bs-table-color: var(--cc-text-muted); }
+html body[class*="endpoint-financeiro-"] .table th,
+html body[class*="endpoint-nfse-"] .table th { color: var(--cc-text-muted); font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; }
+html body[class*="endpoint-financeiro-"] .table-active { --bs-table-bg: #edf4f8; }
+
+html body[class*="endpoint-financeiro-"] .modal-content,
+html body[class*="endpoint-nfse-"] .modal-content { background: var(--cc-surface); border-color: var(--cc-border); }
+html body[class*="endpoint-financeiro-"] .modal-header,
+html body[class*="endpoint-nfse-"] .modal-header { background: var(--cc-bg-deep); color: var(--cc-navy); border-color: var(--cc-border); }
+html body[class*="endpoint-financeiro-"] .modal-footer,
+html body[class*="endpoint-nfse-"] .modal-footer { border-color: var(--cc-border); }
+html body[class*="endpoint-financeiro-"] .nav-tabs { border-color: var(--cc-border); }
+html body[class*="endpoint-financeiro-"] .nav-tabs .nav-link { color: var(--cc-text-muted); border-radius: var(--cc-radius-md) var(--cc-radius-md) 0 0; }
+html body[class*="endpoint-financeiro-"] .nav-tabs .nav-link.active { color: var(--cc-navy); border-color: var(--cc-border) var(--cc-border) var(--cc-surface); border-top: 2px solid var(--cc-orange); }
+
+html body[class*="endpoint-financeiro-"] .badge { font-weight: 600; border-radius: 999px; }
+html body[class*="endpoint-financeiro-"] .badge-neon { background: var(--cc-blue) !important; box-shadow: none !important; }
+html body[class*="endpoint-financeiro-"] .btn-primary { background: var(--cc-navy); border-color: var(--cc-navy); }
+html body[class*="endpoint-financeiro-"] .btn-primary:hover { background: var(--cc-navy-secondary); border-color: var(--cc-navy-secondary); }
+
+@media (max-width: 767px) {
+  html body[class*="endpoint-financeiro-"] .d-flex.justify-content-between.align-items-center,
+  html body[class*="endpoint-nfse-"] .d-flex.justify-content-between.align-items-center { gap: .75rem; align-items: flex-start !important; }
+  html body[class*="endpoint-financeiro-"] .chart-container { height: 240px; }
+}
