@@ -1,0 +1,70 @@
+/* JSP Executive Suite -- Fase H1: administração e cadastros auxiliares. */
+html body[class*="endpoint-usuario-"],
+html body[class*="endpoint-colaborador-"],
+html body[class*="endpoint-configuracao-"],
+html body[class*="endpoint-auth-"] { color: var(--cc-text); }
+
+html body[class*="endpoint-usuario-"] .usuarios-header,
+html body[class*="endpoint-colaborador-"] .colaboradores-header,
+html body[class*="endpoint-usuario-"] .form-header,
+html body[class*="endpoint-colaborador-"] .form-header,
+html body[class*="endpoint-colaborador-"] .profile-header {
+    background: var(--cc-surface) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-left: 3px solid var(--cc-orange) !important;
+    box-shadow: var(--cc-shadow-card) !important;
+    color: var(--cc-navy) !important;
+}
+
+html body[class*="endpoint-usuario-"] .usuarios-header h3,
+html body[class*="endpoint-colaborador-"] .colaboradores-header h3,
+html body[class*="endpoint-usuario-"] .form-header h3,
+html body[class*="endpoint-colaborador-"] .form-header h3,
+html body[class*="endpoint-colaborador-"] .profile-header h3,
+html body[class*="endpoint-colaborador-"] .profile-header p { color: var(--cc-navy) !important; opacity: 1 !important; }
+
+html body[class*="endpoint-usuario-"] .btn-novo-usuario,
+html body[class*="endpoint-colaborador-"] .btn-novo-colaborador { background: var(--cc-navy) !important; border-color: var(--cc-navy) !important; color: #fff !important; box-shadow: none !important; }
+
+html body[class*="endpoint-usuario-"] .stat-card,
+html body[class*="endpoint-colaborador-"] .stat-card,
+html body[class*="endpoint-colaborador-"] .stat-box {
+    background: var(--cc-surface) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-left: 3px solid var(--cc-orange) !important;
+    color: var(--cc-text) !important;
+    box-shadow: none !important;
+}
+
+html body[class*="endpoint-usuario-"] .stat-card i,
+html body[class*="endpoint-colaborador-"] .stat-card i,
+html body[class*="endpoint-colaborador-"] .stat-box i { color: var(--cc-blue) !important; opacity: .8 !important; }
+
+html body[class*="endpoint-usuario-"] .section-title,
+html body[class*="endpoint-colaborador-"] .section-title,
+html body[class*="endpoint-configuracao-"] .section-title { color: var(--cc-navy) !important; border-bottom-color: var(--cc-border) !important; }
+html body[class*="endpoint-colaborador-"] .info-card { border-left: 3px solid var(--cc-orange) !important; }
+html body[class*="endpoint-colaborador-"] .info-label { color: var(--cc-text-muted) !important; }
+html body[class*="endpoint-colaborador-"] .info-value { color: var(--cc-text) !important; }
+
+html body[class*="endpoint-usuario-"] .form-control,
+html body[class*="endpoint-usuario-"] .form-select,
+html body[class*="endpoint-colaborador-"] .form-control,
+html body[class*="endpoint-colaborador-"] .form-select,
+html body[class*="endpoint-configuracao-"] .form-control,
+html body[class*="endpoint-configuracao-"] .form-select,
+html body[class*="endpoint-auth-"] .form-control,
+html body[class*="endpoint-auth-"] .form-select { background: var(--cc-surface) !important; color: var(--cc-text) !important; border-color: var(--cc-border) !important; }
+
+html body[class*="endpoint-usuario-"] .form-control:focus,
+html body[class*="endpoint-usuario-"] .form-select:focus,
+html body[class*="endpoint-colaborador-"] .form-control:focus,
+html body[class*="endpoint-colaborador-"] .form-select:focus,
+html body[class*="endpoint-configuracao-"] .form-control:focus,
+html body[class*="endpoint-configuracao-"] .form-select:focus { border-color: var(--cc-blue) !important; box-shadow: 0 0 0 .2rem rgba(45, 120, 168, .15) !important; }
+
+@media (max-width: 767px) {
+    html body[class*="endpoint-usuario-"] .usuarios-header .d-flex,
+    html body[class*="endpoint-colaborador-"] .colaboradores-header .d-flex,
+    html body[class*="endpoint-colaborador-"] .profile-header .d-flex { align-items: flex-start !important; gap: .75rem; }
+}

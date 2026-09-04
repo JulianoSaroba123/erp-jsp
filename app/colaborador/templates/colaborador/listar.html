@@ -9,56 +9,6 @@
 {% endblock %}
 
 {% block content %}
-<style>
-    /* Header Gradient Verde JSP */
-    .colaboradores-header {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-    }
-    .colaboradores-header h3,
-    .colaboradores-header .text-white {
-        color: white !important;
-    }
-    .btn-novo-colaborador {
-        background: white !important;
-        color: #059669 !important;
-        font-weight: 600;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    }
-    .btn-novo-colaborador:hover {
-        transform: translateY(-2px);
-        color: #10b981 !important;
-    }
-    /* Stats Cards */
-    .stat-card {
-        padding: 1rem;
-        border-radius: 8px;
-        color: white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    }
-    .stat-card-primary {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-    }
-    .stat-card-info {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-    }
-    .stat-card-warning {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-    }
-    .main-card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    .badge-cargo {
-        padding: 0.35rem 0.65rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-</style>
 
 <div class="row">
     <div class="col-12">
@@ -114,12 +64,12 @@
         </div>
 
         <!-- Card Principal -->
-        <div class="card main-card">
+        <div class="cc-table-container card main-card">
             <div class="card-body">
                 <!-- Busca -->
                 <div class="row mb-4">
                     <div class="col-md-8">
-                        <form method="GET" action="{{ url_for('colaborador.listar') }}" class="d-flex gap-2">
+                        <form method="GET" action="{{ url_for('colaborador.listar') }}" class="cc-filter-bar d-flex gap-2">
                             <input type="text" 
                                    name="busca" 
                                    class="form-control" 
@@ -140,7 +90,7 @@
                 <!-- Tabela -->
                 {% if colaboradores %}
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="cc-table table table-hover align-middle">
                         <thead class="table-light">
                             <tr>
                                 <th><i class="fas fa-user me-2"></i>Nome</th>
@@ -187,7 +137,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
-                                    <div class="btn-group btn-group-sm">
+                                    <div class="cc-table-actions btn-group btn-group-sm">
                                         <a href="{{ url_for('colaborador.visualizar', id=colab.id) }}" 
                                            class="btn btn-sm btn-info"
                                            title="Visualizar">

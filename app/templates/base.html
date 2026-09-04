@@ -53,6 +53,9 @@
     {% if request.blueprint in ['financeiro', 'nfse'] %}
     <link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-g.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
     {% endif %}
+    {% if request.blueprint in ['usuario', 'colaborador', 'configuracao', 'auth'] %}
+    <link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-h1.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+    {% endif %}
     
     {% block head %}{% endblock %}
 </head>
