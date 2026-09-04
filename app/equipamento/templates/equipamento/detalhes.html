@@ -2,6 +2,10 @@
 
 {% block title %}Detalhes do Equipamento - {{ super() }}{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-d.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
 {% block breadcrumb %}
 <a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
 <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>

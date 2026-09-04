@@ -331,3 +331,92 @@ html body .alert-info {
     border-color: rgba(45, 120, 168, 0.3) !important;
     color: var(--cc-navy-secondary) !important;
 }
+
+/* ---------- Fase D: produtos, serviços e equipamentos ---------- */
+html body .produto-header,
+html body .servico-header,
+html body .equipamento-header {
+    background: var(--cc-surface) !important;
+    color: var(--cc-text) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: var(--cc-radius-lg) !important;
+    box-shadow: var(--cc-shadow-card) !important;
+    padding: 1.25rem 1.5rem !important;
+    margin-bottom: 1.25rem !important;
+}
+
+html body .produto-header h2,
+html body .produto-header h3,
+html body .servico-header h2,
+html body .servico-header h3,
+html body .equipamento-header h2,
+html body .equipamento-header h3,
+html body .produto-header p,
+html body .servico-header p,
+html body .equipamento-header p {
+    color: var(--cc-navy) !important;
+}
+
+html body .btn-novo-produto,
+html body .btn-novo-servico,
+html body .btn-novo-equipamento,
+html body .btn-salvar {
+    background: var(--cc-navy) !important;
+    color: #FFFFFF !important;
+    border: 1px solid var(--cc-navy) !important;
+    border-radius: var(--cc-radius-md) !important;
+    box-shadow: none !important;
+}
+
+html body .btn-novo-produto:hover,
+html body .btn-novo-servico:hover,
+html body .btn-novo-equipamento:hover,
+html body .btn-salvar:hover {
+    background: var(--cc-navy-secondary) !important;
+    color: #FFFFFF !important;
+}
+
+html body .stats-card,
+html body .info-card {
+    background: var(--cc-surface) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-left: 3px solid var(--cc-orange) !important;
+    border-radius: var(--cc-radius-md) !important;
+    box-shadow: var(--cc-shadow-card) !important;
+}
+
+html body .stats-card-left .value {
+    color: var(--cc-navy) !important;
+}
+
+html body .stats-card-icon {
+    background: var(--cc-cyan-soft) !important;
+    color: var(--cc-cyan) !important;
+}
+
+html body .info-row {
+    border-bottom-color: var(--cc-border) !important;
+}
+
+html body .info-label {
+    color: var(--cc-text-muted) !important;
+}
+
+html body .info-value {
+    color: var(--cc-text) !important;
+}
+
+html body .section-header {
+    background: var(--cc-bg-deep) !important;
+    color: var(--cc-navy) !important;
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius-md) !important;
+}
+
+html body .modal-content,
+html body .modal-header,
+html body .modal-footer {
+    background: var(--cc-surface) !important;
+    color: var(--cc-text) !important;
+    border-color: var(--cc-border) !important;
+}
