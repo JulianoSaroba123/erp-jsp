@@ -1,12 +1,16 @@
 {% extends "base.html" %}
 {% block title %}Recebimento {{ pedido_compra.numero }}{% endblock %}
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
 {% block breadcrumb %}<span>Pedidos de Compra</span>{% endblock %}
 {% block content %}
-<h2 class="mb-4">Recebimento de {{ pedido_compra.numero }}</h2>
+<div class="cc-page-header"><h2 class="cc-page-header-title">Recebimento de {{ pedido_compra.numero }}</h2></div>
 <p class="text-muted">Status atual: {{ pedido_compra.status_label }}</p>
 
 <form method="post">
-    <table class="table table-bordered">
+    <div class="cc-table-container table-responsive">
+    <table class="table cc-table table-bordered">
         <thead>
             <tr>
                 <th>Descricao</th>
@@ -26,6 +30,7 @@
             {% endfor %}
         </tbody>
     </table>
+    </div>
     <div class="d-flex gap-2">
         <button class="btn btn-primary" type="submit">Registrar recebimento</button>
         <a class="btn btn-outline-secondary" href="{{ url_for('pedido_compra.visualizar', id=pedido_compra.id) }}">Voltar</a>

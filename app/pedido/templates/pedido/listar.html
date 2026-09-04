@@ -2,6 +2,10 @@
 
 {% block title %}Pedidos - {{ super() }}{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
 {% block breadcrumb %}
 <a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
 <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
@@ -9,7 +13,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="card border-0 shadow-sm">
+<div class="cc-table-container card border-0 shadow-sm">
     <div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
@@ -21,7 +25,7 @@
             </a>
         </div>
 
-        <form method="GET" class="row g-2 mb-4">
+        <form method="GET" class="cc-filter-bar row g-2 mb-4">
             <div class="col-lg-3 col-md-6">
                 <input type="text" name="busca" class="form-control" placeholder="Numero, responsavel ou solicitante" value="{{ filtros.busca }}">
             </div>
@@ -50,7 +54,7 @@
 
         {% if pedidos %}
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table cc-table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
                         <th>Numero</th>
@@ -70,7 +74,7 @@
                         <td>{{ pedido.data_pedido.strftime('%d/%m/%Y') if pedido.data_pedido else '-' }}</td>
                         <td>R$ {{ "{:,.2f}".format(pedido.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
                         <td>
-                            <div class="btn-group btn-group-sm">
+                            <div class="cc-table-actions">
                                 <a href="{{ url_for('pedido.visualizar', id=pedido.id) }}" class="btn btn-outline-info" title="Visualizar"><i class="fas fa-eye"></i></a>
                                 <a href="{{ url_for('pedido.editar', id=pedido.id) }}" class="btn btn-outline-warning" title="Editar"><i class="fas fa-edit"></i></a>
                                 <a href="{{ url_for('pedido.excluir', id=pedido.id) }}" class="btn btn-outline-danger" title="Excluir"><i class="fas fa-trash"></i></a>

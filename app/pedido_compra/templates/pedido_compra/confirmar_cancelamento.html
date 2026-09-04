@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Cancelar Pedido de Compra{% endblock %}
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
 {% block breadcrumb %}<span>Pedidos de Compra</span>{% endblock %}
 {% block content %}
 <div class="card">

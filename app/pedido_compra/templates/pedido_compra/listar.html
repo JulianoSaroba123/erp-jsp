@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Pedidos de Compra{% endblock %}
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
 {% block breadcrumb %}<span>Pedidos de Compra</span>{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="cc-page-header">
     <div>
         <h2>Pedidos de Compra</h2>
         <p class="text-muted mb-0">Modulo independente de compras sem gerar financeiro ou estoque automaticamente.</p>
@@ -12,7 +15,7 @@
     {% endif %}
 </div>
 
-<form class="row g-3 mb-4" method="get">
+<form class="cc-filter-bar row g-3 mb-4" method="get">
     <div class="col-md-3">
         <label class="form-label">Status</label>
         <select class="form-select" name="status">
@@ -49,8 +52,8 @@
     </div>
 </form>
 
-<div class="table-responsive">
-    <table class="table table-striped align-middle">
+<div class="cc-table-container table-responsive">
+    <table class="table cc-table table-striped align-middle">
         <thead>
             <tr>
                 <th>Numero</th>
@@ -70,17 +73,19 @@
                 <td>{{ pedido_compra.status_label }}</td>
                 <td>R$ {{ '%.2f'|format(pedido_compra.total or 0) }}</td>
                 <td>
+                    <div class="cc-table-actions">
                     {% if current_user.tem_permissao('visualizar_pedidos_compra') %}
                     <a class="btn btn-sm btn-outline-primary" href="{{ url_for('pedido_compra.visualizar', id=pedido_compra.id) }}">Detalhes</a>
                     {% endif %}
                     {% if current_user.tem_permissao('editar_pedidos_compra') and pedido_compra.status != 'CANCELADO' %}
                     <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('pedido_compra.editar', id=pedido_compra.id) }}">Editar</a>
                     {% endif %}
+                    </div>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="6" class="text-center text-muted">Nenhum pedido de compra encontrado.</td>
+                <td colspan="6" class="cc-empty-table-row">Nenhum pedido de compra encontrado.</td>
             </tr>
             {% endfor %}
         </tbody>

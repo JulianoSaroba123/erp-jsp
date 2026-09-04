@@ -1,0 +1,163 @@
+/* ============================================================
+   ERP JSP -- JSP Executive Suite
+   Fase E: Propostas, Pedidos de Venda e Pedidos de Compra.
+   Camada visual compartilhada; nao altera calculos ou documentos.
+   ============================================================ */
+
+/* Cabecalhos comerciais */
+html body .proposta-header {
+    background: var(--cc-surface) !important;
+    color: var(--cc-text) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-radius: var(--cc-radius-lg) !important;
+    box-shadow: var(--cc-shadow-card) !important;
+    padding: 1.25rem 1.5rem !important;
+    margin-bottom: 1.25rem !important;
+}
+
+html body .proposta-header h2,
+html body .proposta-header p,
+html body .proposta-header i {
+    color: var(--cc-navy) !important;
+    opacity: 1 !important;
+}
+
+html body .btn-nova-proposta {
+    background: var(--cc-navy) !important;
+    border: 1px solid var(--cc-navy) !important;
+    border-radius: var(--cc-radius-md) !important;
+    color: #FFFFFF !important;
+    box-shadow: none !important;
+}
+
+html body .btn-nova-proposta:hover {
+    background: var(--cc-navy-secondary) !important;
+    color: #FFFFFF !important;
+}
+
+/* Formularios de proposta mantem suas classes/IDs e passam ao padrao claro. */
+html body .card.bg-dark,
+html body .card.bg-secondary {
+    background: var(--cc-surface) !important;
+    border-color: var(--cc-border) !important;
+    color: var(--cc-text) !important;
+}
+
+html body .card-header.bg-secondary,
+html body .card-header.bg-primary,
+html body .card-header.bg-success,
+html body .card-header.bg-warning,
+html body .card-header.bg-info {
+    background: var(--cc-bg-deep) !important;
+    border-color: var(--cc-border) !important;
+    color: var(--cc-navy) !important;
+}
+
+html body .card-header.bg-secondary h5,
+html body .card-header.bg-primary h5,
+html body .card-header.bg-success h5,
+html body .card-header.bg-warning h5,
+html body .card-header.bg-info h5 {
+    color: var(--cc-navy) !important;
+}
+
+html body label.text-white,
+html body .bg-dark.text-white,
+html body .bg-secondary.text-white {
+    color: var(--cc-text-muted) !important;
+}
+
+html body .form-control.bg-dark,
+html body .form-control.bg-secondary,
+html body .form-select.bg-dark,
+html body .form-select.bg-secondary {
+    background: var(--cc-surface) !important;
+    border-color: var(--cc-border) !important;
+    color: var(--cc-text) !important;
+}
+
+/* Destaques comerciais e leitura de detalhes */
+html body .value-highlight {
+    background: var(--cc-navy) !important;
+    border: 1px solid var(--cc-navy) !important;
+    border-radius: var(--cc-radius-lg) !important;
+    box-shadow: none !important;
+}
+
+html body .info-card,
+html body .stats-box {
+    background: var(--cc-surface) !important;
+    border: 1px solid var(--cc-border) !important;
+    border-left: 3px solid var(--cc-orange) !important;
+    border-radius: var(--cc-radius-md) !important;
+    box-shadow: none !important;
+}
+
+html body .info-card .card-header {
+    background: var(--cc-bg-deep) !important;
+    border-bottom: 1px solid var(--cc-border) !important;
+}
+
+html body .info-card .card-header h5,
+html body .stats-box i {
+    color: var(--cc-navy) !important;
+}
+
+html body .action-btn {
+    border-radius: var(--cc-radius-md) !important;
+    box-shadow: none !important;
+}
+
+/* Itens dinamicos e tabelas de pedido */
+html body #tabelaItens,
+html body #itens-body {
+    color: var(--cc-text);
+}
+
+html body .cc-order-summary {
+    background: var(--cc-bg-deep);
+    border: 1px solid var(--cc-border);
+    border-radius: var(--cc-radius-md);
+    color: var(--cc-text);
+}
+
+html body .cc-order-summary.is-total {
+    background: var(--cc-navy);
+    border-color: var(--cc-navy);
+    color: #FFFFFF;
+}
+
+html body .cc-order-summary.is-total strong,
+html body .cc-order-summary.is-total {
+    color: #FFFFFF;
+}
+
+html body .cc-inline-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+html body .cc-empty-table-row td {
+    padding: 2.5rem 1rem;
+    color: var(--cc-text-muted) !important;
+    text-align: center;
+}
+
+/* Modais de exclusao/cancelamento sem superficies escuras. */
+html body .modal-content {
+    background: var(--cc-surface) !important;
+    color: var(--cc-text) !important;
+    border: 1px solid var(--cc-border) !important;
+}
+
+@media (max-width: 767px) {
+    html body .proposta-header {
+        padding: 1.25rem !important;
+    }
+
+    html body .proposta-header .btn-group-vertical {
+        max-width: none;
+    }
+}

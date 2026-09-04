@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ pedido_compra.numero }}{% endblock %}
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
 {% block breadcrumb %}<span>Pedidos de Compra</span>{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="cc-page-header">
     <div>
         <h2>{{ pedido_compra.numero }}</h2>
         <p class="text-muted mb-0">{{ pedido_compra.status_label }} | {{ pedido_compra.finalidade_label }}</p>
@@ -32,7 +35,8 @@
     <div class="col-md-4"><strong>Total:</strong> R$ {{ '%.2f'|format(pedido_compra.total or 0) }}</div>
 </div>
 
-<table class="table table-striped">
+<div class="cc-table-container table-responsive mb-4">
+<table class="table cc-table table-striped">
     <thead>
         <tr>
             <th>Descricao</th>
@@ -56,6 +60,7 @@
         {% endfor %}
     </tbody>
 </table>
+</div>
 
 <div class="d-flex gap-2">
     {% if current_user.tem_permissao('cancelar_pedidos_compra') and pedido_compra.status not in ['CANCELADO', 'RECEBIDO'] %}

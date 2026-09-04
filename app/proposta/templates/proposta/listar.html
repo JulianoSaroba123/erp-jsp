@@ -2,6 +2,10 @@
 
 {% block title %}Propostas - {{ super() }}{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
 {% block breadcrumb %}
 <a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
 <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
@@ -9,48 +13,6 @@
 {% endblock %}
 
 {% block content %}
-<style>
-    /* Header Gradient Ciano JSP */
-    .proposta-header {
-        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-        color: white;
-        border-radius: 12px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 15px rgba(6,182,212,0.3);
-    }
-    .proposta-header h2,
-    .proposta-header p {
-        color: white !important;
-    }
-    .btn-nova-proposta {
-        background: white !important;
-        color: #0891b2 !important;
-        border: none;
-        padding: 0.75rem 1.5rem;
-        border-radius: 8px;
-        font-weight: 600;
-        transition: all 0.3s;
-    }
-    .btn-nova-proposta:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(255,255,255,0.3);
-        color: #0e7490 !important;
-    }
-    .main-card {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    /* Truncar nomes longos em uma linha */
-    table tbody td:first-child {
-        max-width: 250px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-</style>
-
 <!-- Header Moderno -->
 <div class="proposta-header mb-4">
     <div class="row align-items-center">
@@ -72,10 +34,10 @@
 
 <div class="row">
     <div class="col-12">
-        <div class="card main-card">
+        <div class="cc-table-container card main-card">
             <div class="card-body">
                 <!-- Barra de Busca e Filtros -->
-                <div class="row mb-4">
+                <div class="cc-filter-bar row mb-4">
                     <div class="col-md-4">
                         <form method="GET" class="d-flex">
                             <input type="text" 
@@ -116,7 +78,7 @@
                 <!-- Tabela de Propostas -->
                 {% if propostas %}
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table cc-table table-hover">
                         <thead class="table-light">
                             <tr>
                                 <th>Código</th>
@@ -172,7 +134,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <div class="btn-group btn-group-sm" role="group">
+                                    <div class="cc-table-actions" role="group">
                                         <a href="{{ url_for('proposta.visualizar_proposta', id=proposta.id) }}" 
                                            class="btn btn-outline-info" 
                                            title="Visualizar">

@@ -1,8 +1,13 @@
 {% extends "base.html" %}
 {% block title %}Pedido de Compra{% endblock %}
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
 {% block breadcrumb %}<span>Pedidos de Compra</span>{% endblock %}
 {% block content %}
-<h2 class="mb-4">{{ 'Editar' if pedido_compra else 'Novo' }} Pedido de Compra</h2>
+<div class="cc-page-header">
+    <h2 class="cc-page-header-title">{{ 'Editar' if pedido_compra else 'Novo' }} Pedido de Compra</h2>
+</div>
 
 <form method="post" class="row g-3">
     <div class="col-md-4">
@@ -79,8 +84,8 @@
 
     <div class="col-12">
         <h4>Itens</h4>
-        <div class="table-responsive">
-            <table class="table table-bordered align-middle">
+        <div class="cc-table-container table-responsive">
+            <table class="table cc-table table-bordered align-middle">
                 <thead>
                     <tr>
                         <th>Tipo</th>

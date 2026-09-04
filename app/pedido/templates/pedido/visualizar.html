@@ -2,6 +2,10 @@
 
 {% block title %}Pedido {{ pedido.numero }} - {{ super() }}{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
 {% block breadcrumb %}
 <a href="{{ url_for('pedido.listar') }}">Pedidos</a>
 <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
@@ -33,8 +37,8 @@
             <div class="col-lg-3 col-md-6"><strong>Email:</strong><br>{{ pedido.email_contato or '-' }}</div>
         </div>
 
-        <div class="table-responsive mb-4">
-            <table class="table table-sm table-hover align-middle">
+        <div class="cc-table-container table-responsive mb-4">
+            <table class="table cc-table table-sm table-hover align-middle">
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
@@ -63,9 +67,9 @@
         </div>
 
         <div class="row g-3 mb-3">
-            <div class="col-md-4"><div class="p-3 border rounded"><strong>Subtotal</strong><br>R$ {{ "{:,.2f}".format(pedido.subtotal or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div>
-            <div class="col-md-4"><div class="p-3 border rounded"><strong>Desconto</strong><br>R$ {{ "{:,.2f}".format(pedido.desconto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div>
-            <div class="col-md-4"><div class="p-3 border rounded bg-dark"><strong>Total</strong><br>R$ {{ "{:,.2f}".format(pedido.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div>
+            <div class="col-md-4"><div class="cc-order-summary p-3"><strong>Subtotal</strong><br>R$ {{ "{:,.2f}".format(pedido.subtotal or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div>
+            <div class="col-md-4"><div class="cc-order-summary p-3"><strong>Desconto</strong><br>R$ {{ "{:,.2f}".format(pedido.desconto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div>
+            <div class="col-md-4"><div class="cc-order-summary is-total p-3"><strong>Total</strong><br>R$ {{ "{:,.2f}".format(pedido.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div>
         </div>
 
         {% if pedido.condicoes_pagamento %}
