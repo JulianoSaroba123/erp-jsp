@@ -191,6 +191,19 @@
                                        value="{% if lancamento and lancamento.data_vencimento %}{{ lancamento.data_vencimento.strftime('%Y-%m-%d') }}{% endif %}">
                             </div>
 
+                            <!-- Data de Pagamento -->
+                            <div class="col-md-3" id="campo_data_pagamento">
+                                <label for="data_pagamento" class="form-label">
+                                    <i class="fas fa-calendar-check me-1"></i>
+                                    Data de Pagamento
+                                </label>
+                                <input type="date"
+                                       class="form-control"
+                                       id="data_pagamento"
+                                       name="data_pagamento"
+                                       value="{% if lancamento and lancamento.data_pagamento %}{{ lancamento.data_pagamento.strftime('%Y-%m-%d') }}{% endif %}">
+                            </div>
+
                             <!-- Número do Documento -->
                             <div class="col-md-3">
                                 <label for="numero_documento" class="form-label">
@@ -399,6 +412,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Filtrar status baseado no tipo de lançamento
     const tipoSelect = document.getElementById('tipo');
     const statusSelect = document.getElementById('status');
+    const campoDataPagamento = document.getElementById('campo_data_pagamento');
+    const dataPagamentoInput = document.getElementById('data_pagamento');
     
     if (tipoSelect && statusSelect) {
         function filtrarStatus() {
@@ -426,10 +441,20 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 statusSelect.value = 'pendente';
             }
+
+            atualizarCampoDataPagamento();
+        }
+
+        function atualizarCampoDataPagamento() {
+            const quitado = ['pago', 'recebido'].includes(statusSelect.value);
+            campoDataPagamento.classList.toggle('d-none', !quitado);
+            dataPagamentoInput.disabled = !quitado;
+            dataPagamentoInput.required = quitado;
         }
         
         // Aplicar filtro quando mudar o tipo
         tipoSelect.addEventListener('change', filtrarStatus);
+        statusSelect.addEventListener('change', atualizarCampoDataPagamento);
         
         // Aplicar filtro inicial
         filtrarStatus();

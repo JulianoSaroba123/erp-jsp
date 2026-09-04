@@ -16,6 +16,7 @@ from decimal import Decimal
 import io
 import logging
 from app.extensoes import db
+from app.financeiro.financeiro_compat import status_eh_pago
 
 # Configurar logger
 logger = logging.getLogger(__name__)
@@ -54,6 +55,17 @@ def converter_valor_monetario(valor_str):
         return Decimal(valor_limpo)
     except:
         return Decimal('0.00')
+
+
+def resolver_data_pagamento(status, data_pagamento_str, data_lancamento, data_existente=None):
+    """Mantém a data real de quitação e aplica fallback explícito quando necessário."""
+    if not status_eh_pago(status):
+        return data_existente
+
+    if data_pagamento_str:
+        return datetime.strptime(data_pagamento_str, '%Y-%m-%d').date()
+
+    return data_existente or data_lancamento
 
 
 @bp_financeiro.route('/')
@@ -340,6 +352,7 @@ def criar_lancamento():
         subcategoria = request.form.get('subcategoria')
         data_lancamento_str = request.form.get('data_lancamento')
         data_vencimento_str = request.form.get('data_vencimento')
+        data_pagamento_str = request.form.get('data_pagamento')
         status = request.form.get('status', 'pendente')
         observacoes = request.form.get('observacoes')
         numero_documento = request.form.get('numero_documento')
@@ -374,6 +387,7 @@ def criar_lancamento():
         # Datas
         data_lancamento = datetime.strptime(data_lancamento_str, '%Y-%m-%d').date() if data_lancamento_str else date.today()
         data_vencimento = datetime.strptime(data_vencimento_str, '%Y-%m-%d').date() if data_vencimento_str else None
+        data_pagamento = resolver_data_pagamento(status, data_pagamento_str, data_lancamento)
         
         # Criar lançamento
         lancamento = LancamentoFinanceiro(
@@ -384,6 +398,7 @@ def criar_lancamento():
             subcategoria=subcategoria,
             data_lancamento=data_lancamento,
             data_vencimento=data_vencimento,
+            data_pagamento=data_pagamento,
             status=status,
             observacoes=observacoes,
             numero_documento=numero_documento,
@@ -445,7 +460,8 @@ def atualizar_lancamento(id):
         lancamento.subcategoria = request.form.get('subcategoria')
         data_lancamento_str = request.form.get('data_lancamento')
         data_vencimento_str = request.form.get('data_vencimento')
-        lancamento.status = request.form.get('status', 'pendente')
+        data_pagamento_str = request.form.get('data_pagamento')
+        status = request.form.get('status', 'pendente')
         lancamento.observacoes = request.form.get('observacoes')
         lancamento.numero_documento = request.form.get('numero_documento')
         lancamento.forma_pagamento = request.form.get('forma_pagamento')
@@ -476,6 +492,14 @@ def atualizar_lancamento(id):
             lancamento.data_vencimento = datetime.strptime(data_vencimento_str, '%Y-%m-%d').date()
         else:
             lancamento.data_vencimento = None
+
+        lancamento.status = status
+        lancamento.data_pagamento = resolver_data_pagamento(
+            status,
+            data_pagamento_str,
+            lancamento.data_lancamento,
+            lancamento.data_pagamento,
+        )
         
         # Relacionamentos
         lancamento.cliente_id = int(cliente_id) if cliente_id else None
