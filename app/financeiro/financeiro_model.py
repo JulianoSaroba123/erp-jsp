@@ -312,6 +312,9 @@ class LancamentoFinanceiro(BaseModel):
     
     def marcar_como_pago(self, data_pagamento=None, usuario=None):
         """Marca lançamento como pago e registra no histórico."""
+        if not isinstance(data_pagamento, date):
+            raise ValueError('Data de pagamento válida é obrigatória para quitar um lançamento.')
+
         status_destino = 'pago' if self.tipo in ['despesa', 'conta_pagar'] else 'recebido'
         status_anterior = self.status
         data_anterior = self.data_pagamento
@@ -321,9 +324,6 @@ class LancamentoFinanceiro(BaseModel):
             if data_anterior is not None:
                 return
 
-            if data_pagamento is None:
-                return
-        
         # Registrar histórico
         if usuario:
             historico = HistoricoFinanceiro(
