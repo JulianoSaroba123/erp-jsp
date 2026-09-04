@@ -2,6 +2,10 @@
 
 {% block title %}Ordem de Serviço {{ ordem.numero }} - {{ ordem.titulo }} - ERP JSP{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-f.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
 <!-- v3.1 - Cores JSP Ciano com Contraste Melhorado -->
 <style>
