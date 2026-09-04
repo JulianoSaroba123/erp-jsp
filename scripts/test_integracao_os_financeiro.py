@@ -117,8 +117,8 @@ def test_01_segunda_baixa_mesma_os_idempotente():
         assert lanc.data_pagamento == data_primeira_baixa, "Segunda baixa não deveria alterar data_pagamento"
 
 
-def test_02_baixa_sem_data_registra_mas_nao_movimenta():
-    """Regra 7: Baixa sem data_pagamento é idempotente e não movimenta saldo."""
+def test_02_baixa_sem_data_e_rejeitada_sem_alterar_lancamento():
+    """Regra 7: Baixa sem data válida é rejeitada sem alterar o lançamento."""
     app = _setup_app()
     with app.app_context():
         # Criar lançamento
@@ -134,15 +134,15 @@ def test_02_baixa_sem_data_registra_mas_nao_movimenta():
         db.session.add(lanc)
         db.session.commit()
 
-        status_original = lanc.status
+        try:
+            lanc.marcar_como_pago(data_pagamento=None, usuario='admin')
+            raise AssertionError('Baixa sem data_pagamento deveria ser rejeitada')
+        except ValueError:
+            db.session.rollback()
 
-        # Tentar baixar sem data_pagamento
-        lanc.marcar_como_pago(data_pagamento=None, usuario='admin')
-        db.session.commit()
-
-        # Status deve permanecer inalterado se não há data
-        # (depende da implementação - pode mudar status mas não movimentar saldo)
-        # O importante é que não cause erro e seja idempotente
+        db.session.refresh(lanc)
+        assert lanc.status == 'pendente'
+        assert lanc.data_pagamento is None
 
 
 def test_03_lancamento_quitado_preservado():
@@ -408,7 +408,7 @@ def main():
 
     tests = [
         ("Regra 7: Segunda baixa mesma OS idempotente", test_01_segunda_baixa_mesma_os_idempotente),
-        ("Regra 7: Baixa sem data não movimenta", test_02_baixa_sem_data_registra_mas_nao_movimenta),
+        ("Regra 7: Baixa sem data é rejeitada", test_02_baixa_sem_data_e_rejeitada_sem_alterar_lancamento),
         ("Regra 6: Lançamento quitado preservado", test_03_lancamento_quitado_preservado),
         ("Regra 6: Edição OS preserva financeiro", test_04_edicao_os_concluida_preserva_financeiro),
         ("Identificação de vínculos OS", test_05_lancamento_vinculado_os_identificavel),
