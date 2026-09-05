@@ -306,6 +306,152 @@
             color: #6c757d !important;
             font-weight: bold;
         }
+
+        /* JSP Executive Suite: documento técnico A4, legível em visualizadores móveis. */
+        :root {
+            --os-navy: #163A5C;
+            --os-navy-secondary: #24587D;
+            --os-orange: #E8872F;
+            --os-text: #1F2A33;
+            --os-muted: #5F6F7A;
+            --os-border: #DDE4EA;
+            --os-surface-alt: #F6F8FA;
+        }
+
+        @page { size: A4; margin: 11mm; }
+
+        body { background: #FFFFFF; color: var(--os-text); font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; line-height: 1.48; margin: 0; }
+        .container { margin: 0; max-width: none; width: 100%; }
+        .header { margin-bottom: 5mm; break-inside: avoid; page-break-inside: avoid; }
+        .header-top { background: #FFFFFF; border: 0; border-bottom: 2px solid var(--os-navy); border-radius: 0; margin-bottom: 0; padding: 0 0 4mm; }
+        .logo-section { background: #FFFFFF; border: 0; border-right: 1px solid var(--os-border); border-radius: 0; height: 21mm; padding-right: 4mm; width: 30mm; }
+        .logo-section img { max-height: 19mm; max-width: 26mm; object-fit: contain; }
+        .logo-placeholder { color: var(--os-navy); font-size: 9pt; }
+        .company-info { margin-left: 4mm; }
+        .company-name { color: var(--os-navy); font-size: 14pt; line-height: 1.2; margin-bottom: 1mm; }
+        .company-details { color: var(--os-muted); font-size: 8.8pt; line-height: 1.35; }
+        .os-info { border-left: 1px solid var(--os-border); padding-left: 4mm; }
+        .os-number { color: var(--os-navy); font-size: 16pt; line-height: 1.1; }
+        .os-date { color: var(--os-muted); font-size: 9pt; }
+        .os-title { background: var(--os-navy); color: #FFFFFF; font-size: 13pt; letter-spacing: .05em; margin: 4mm 0 0; padding: 3mm 4mm; text-align: left; }
+
+        .section { border: 0; border-top: 1px solid var(--os-border); border-radius: 0; break-inside: auto; margin: 5mm 0 0; page-break-inside: auto; }
+        .section-title { background: transparent; color: var(--os-navy); font-size: 11pt; letter-spacing: .04em; padding: 3mm 0 2mm; }
+        .section-content { padding: 2mm 0 0; }
+        .data-row { gap: 4mm; margin-bottom: 3mm; }
+        .data-cell { min-width: 0; }
+        .data-label { color: var(--os-muted); font-size: 8.8pt; letter-spacing: .05em; margin-bottom: 1mm; }
+        .data-value { background: var(--os-surface-alt); border: 0; border-bottom: 1px solid var(--os-border); color: var(--os-text); font-size: 10.5pt; line-height: 1.45; min-height: 0; overflow-wrap: anywhere; padding: 2.5mm 3mm; }
+        .data-value-large { min-height: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+        .formatted-text { line-height: 1.55; white-space: pre-wrap; }
+        .section table { border-collapse: collapse !important; table-layout: fixed; width: 100% !important; break-inside: auto; page-break-inside: auto; }
+        .section thead { display: table-header-group; }
+        .section tbody { display: table-row-group; }
+        .section tr { break-inside: avoid; page-break-inside: avoid; }
+        .section th { background: var(--os-navy) !important; border-color: var(--os-border) !important; color: #FFFFFF !important; font-size: 8.8pt !important; padding: 2.5mm !important; }
+        .section td { border-color: var(--os-border) !important; color: var(--os-text) !important; font-size: 9.5pt !important; overflow-wrap: anywhere; padding: 2.5mm !important; vertical-align: top; }
+        .section tfoot { break-inside: avoid; page-break-inside: avoid; }
+        .financial-summary { margin: 0; max-width: 100%; }
+        .financial-row { border-bottom-color: var(--os-border); padding: 2.5mm 3mm; }
+        .financial-label, .financial-value { color: var(--os-text) !important; font-size: 10.5pt !important; }
+        .financial-row[style*="border-top"] {
+    background: #F6F8FA !important;
+    border-top: 2px solid var(--os-navy) !important;
+    border-bottom: 2px solid var(--os-navy) !important;
+    break-inside: avoid;
+    color: var(--os-navy) !important;
+}
+
+.financial-row[style*="border-top"] .financial-label,
+.financial-row[style*="border-top"] .financial-value {
+    color: var(--os-navy) !important;
+    font-size: 13pt !important;
+    font-weight: bold !important;
+}
+
+        .section-content div[style*="grid-template-columns"] { display: block !important; }
+        .section-content div[style*="grid-template-columns"] > div { break-inside: avoid; margin-bottom: 4mm !important; page-break-inside: avoid; width: 100% !important; }
+        .section-content img { background: #FFFFFF !important; border-color: var(--os-border) !important; border-radius: 0 !important; display: block; height: auto !important; margin: 0 auto; max-height: 120mm !important; max-width: 100% !important; object-fit: contain; width: auto !important; }
+        .section-content div[style*="break-inside: avoid"] { background: var(--os-surface-alt) !important; border-color: var(--os-border) !important; break-inside: avoid; page-break-inside: avoid; }
+        .signatures { break-inside: avoid; margin-top: 10mm; page-break-inside: avoid; }
+        .signature-box { width: 47%; }
+        .signature-line { border-color: var(--os-navy); margin-top: 12mm; }
+        .signature-title { color: var(--os-navy); font-size: 10pt; }
+        .signature-name { color: var(--os-muted); font-size: 9pt; }
+
+        @media print {
+            body { margin: 0 !important; }
+            .section { break-inside: auto !important; page-break-inside: auto !important; }
+            .section-title { break-after: avoid; page-break-after: avoid; }
+            .signatures, .signature-box { break-inside: avoid; page-break-inside: avoid; }
+        }
+        /* Ajustes finais JSP Executive Suite */
+
+/* Mantém pequenos conjuntos de dados na mesma página */
+.data-row {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+
+/* Melhora a paginação dos textos técnicos */
+.data-value-large {
+    orphans: 3;
+    widows: 3;
+}
+/* Melhora a paginação dos textos técnicos */
+.data-value-large {
+    orphans: 3;
+    widows: 3;
+}
+
+/* Regras finais que vencem o CSS antigo na impressão */
+@media print {
+    body {
+        margin: 0 !important;
+        color: #1F2A33 !important;
+        background: #FFFFFF !important;
+    }
+
+    .header-top {
+        background: #FFFFFF !important;
+        border: 0 !important;
+        border-bottom: 2px solid #163A5C !important;
+        border-radius: 0 !important;
+    }
+
+    .os-title {
+        background: #163A5C !important;
+        color: #FFFFFF !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .section {
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+    }
+
+    .section-title {
+        background: transparent !important;
+        color: #163A5C !important;
+        break-after: avoid;
+        page-break-after: avoid;
+    }
+
+    .section th {
+        background: #163A5C !important;
+        color: #FFFFFF !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .signatures,
+    .signature-box {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+}
+
     </style>
 </head>
 <body>
@@ -433,7 +579,7 @@
         <!-- DESCRIÇÃO DOS SERVIÇOS REALIZADOS -->
         <div class="section">
             {% if ordem.tipo_os == 'operacional' %}
-            <div class="section-title">📋 ATIVIDADES E SERVIÇOS REALIZADOS</div>
+            <div class="section-title">ATIVIDADES E SERVIÇOS REALIZADOS</div>
             <div class="section-content">
                 <div class="data-row">
                     <div class="data-cell">
@@ -641,123 +787,191 @@
             </div>
         </div>
         {% endif %}
-
         <!-- COLABORADORES (Apenas OS Operacional) -->
-        {% if ordem.tipo_os == 'operacional' and ordem.colaboradores_trabalho %}
-        <div class="section">
-            <div class="section-title">👷 APONTAMENTOS POR COLABORADOR 👷</div>
-            <div class="section-content">
-                <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9px;">
-                    <thead>
-                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #1a365d;">
-                            <th rowspan="2" style="padding: 8px; text-align: left; font-size: 10px; color: #1a365d; vertical-align: middle; border-right: 1px solid #dee2e6;">Colaborador</th>
-                            <th rowspan="2" style="padding: 8px; text-align: center; font-size: 10px; color: #1a365d; vertical-align: middle; border-right: 1px solid #dee2e6;">Data</th>
-                            <th colspan="2" style="padding: 4px; text-align: center; font-size: 9px; color: #1a365d; background-color: #e3f2fd; border-right: 1px solid #dee2e6;">🌅 Manhã</th>
-                            <th colspan="2" style="padding: 4px; text-align: center; font-size: 9px; color: #1a365d; background-color: #fff3e0; border-right: 1px solid #dee2e6;">☀️ Tarde</th>
-                            <th colspan="2" style="padding: 4px; text-align: center; font-size: 9px; color: #1a365d; background-color: #f3e5f5; border-right: 1px solid #dee2e6;">🌙 Extra</th>
-                            <th rowspan="2" style="padding: 8px; text-align: center; font-size: 9px; color: #27ae60; vertical-align: middle; border-right: 1px solid #dee2e6;">⏱️ H. Normais</th>
-                            <th rowspan="2" style="padding: 8px; text-align: center; font-size: 9px; color: #e67e22; vertical-align: middle; border-right: 1px solid #dee2e6;">⚡ H. Extras</th>
-                            <th rowspan="2" style="padding: 8px; text-align: center; font-size: 9px; color: #3498db; vertical-align: middle; border-right: 1px solid #dee2e6;">🚗 KM</th>
-                            <th rowspan="2" style="padding: 8px; text-align: center; font-size: 10px; color: #1a365d; vertical-align: middle; font-weight: bold;">Total</th>
-                        </tr>
-                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #1a365d;">
-                            <th style="padding: 4px; text-align: center; font-size: 8px; color: #666; background-color: #e3f2fd;">Entrada</th>
-                            <th style="padding: 4px; text-align: center; font-size: 8px; color: #666; background-color: #e3f2fd; border-right: 1px solid #dee2e6;">Saída</th>
-                            <th style="padding: 4px; text-align: center; font-size: 8px; color: #666; background-color: #fff3e0;">Entrada</th>
-                            <th style="padding: 4px; text-align: center; font-size: 8px; color: #666; background-color: #fff3e0; border-right: 1px solid #dee2e6;">Saída</th>
-                            <th style="padding: 4px; text-align: center; font-size: 8px; color: #666; background-color: #f3e5f5;">Entrada</th>
-                            <th style="padding: 4px; text-align: center; font-size: 8px; color: #666; background-color: #f3e5f5; border-right: 1px solid #dee2e6;">Saída</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for colab_trabalho in ordem.colaboradores_trabalho %}
-                        {% if colab_trabalho.ativo %}
-                        <tr style="border-bottom: 1px solid #e2e8f0;">
-                            <td style="padding: 6px; font-size: 9px; border-right: 1px solid #dee2e6;">
-                                <strong>{{ colab_trabalho.colaborador.nome if colab_trabalho.colaborador else 'N/A' }}</strong>
-                                {% if colab_trabalho.colaborador and colab_trabalho.colaborador.cargo %}
-                                <br><span style="color: #718096; font-size: 8px;">{{ colab_trabalho.colaborador.cargo_formatado }}</span>
-                                {% endif %}
-                                {% if colab_trabalho.descricao_atividade %}
-                                <br><span style="color: #4a5568; font-size: 8px; font-style: italic;">{{ colab_trabalho.descricao_atividade[:50] }}{{ '...' if colab_trabalho.descricao_atividade|length > 50 else '' }}</span>
-                                {% endif %}
-                            </td>
-                            <td style="padding: 6px; text-align: center; font-size: 9px; border-right: 1px solid #dee2e6;">
-                                {{ colab_trabalho.data_trabalho.strftime('%d/%m/%Y') if colab_trabalho.data_trabalho else '-' }}
-                            </td>
-                            <td style="padding: 4px; text-align: center; font-size: 9px; background-color: #f0f8ff;">{{ colab_trabalho.hora_entrada_manha.strftime('%H:%M') if colab_trabalho.hora_entrada_manha else '-' }}</td>
-                            <td style="padding: 4px; text-align: center; font-size: 9px; background-color: #f0f8ff; border-right: 1px solid #dee2e6;">{{ colab_trabalho.hora_saida_manha.strftime('%H:%M') if colab_trabalho.hora_saida_manha else '-' }}</td>
-                            <td style="padding: 4px; text-align: center; font-size: 9px; background-color: #fffaf0;">{{ colab_trabalho.hora_entrada_tarde.strftime('%H:%M') if colab_trabalho.hora_entrada_tarde else '-' }}</td>
-                            <td style="padding: 4px; text-align: center; font-size: 9px; background-color: #fffaf0; border-right: 1px solid #dee2e6;">{{ colab_trabalho.hora_saida_tarde.strftime('%H:%M') if colab_trabalho.hora_saida_tarde else '-' }}</td>
-                            <td style="padding: 4px; text-align: center; font-size: 9px; background-color: #faf5ff;">{{ colab_trabalho.hora_entrada_extra.strftime('%H:%M') if colab_trabalho.hora_entrada_extra else '-' }}</td>
-                            <td style="padding: 4px; text-align: center; font-size: 9px; background-color: #faf5ff; border-right: 1px solid #dee2e6;">{{ colab_trabalho.hora_saida_extra.strftime('%H:%M') if colab_trabalho.hora_saida_extra else '-' }}</td>
-                            <td style="padding: 6px; text-align: center; font-size: 9px; font-weight: bold; color: #27ae60; border-right: 1px solid #dee2e6;">
-                                {{ colab_trabalho.horas_normais_formatado if colab_trabalho.horas_normais else '-' }}
-                            </td>
-                            <td style="padding: 6px; text-align: center; font-size: 9px; font-weight: bold; color: #e67e22; border-right: 1px solid #dee2e6;">
-                                {{ colab_trabalho.horas_extras_formatado if colab_trabalho.horas_extras else '-' }}
-                            </td>
-                            <td style="padding: 6px; text-align: center; font-size: 9px; color: #3498db; border-right: 1px solid #dee2e6;">
-                                {% if colab_trabalho.km_total %}
-                                {{ '%.0f'|format(colab_trabalho.km_total) }} km
-                                {% else %}
-                                -
-                                {% endif %}
-                            </td>
-                            <td style="padding: 6px; text-align: center; font-size: 10px; font-weight: bold; color: #10b981;">
-                                {{ colab_trabalho.total_horas_formatado if colab_trabalho.total_horas else '0h' }}
-                            </td>
-                        </tr>
-                        {% endif %}
-                        {% endfor %}
-                        <tr style="background-color: #f0fdf4; border-top: 2px solid #10b981;">
-                            <td colspan="8" style="padding: 10px; text-align: right; font-weight: bold; font-size: 10px; color: #1a365d;">
-                                TOTAIS:
-                            </td>
-                            <td style="padding: 8px; text-align: center; font-weight: bold; font-size: 10px; color: #27ae60; border-right: 1px solid #dee2e6;">
-                                {% if ordem.horas_normais %}
-                                {{ ordem.horas_normais_formatado }}
-                                {% else %}
-                                -
-                                {% endif %}
-                            </td>
-                            <td style="padding: 8px; text-align: center; font-weight: bold; font-size: 10px; color: #e67e22; border-right: 1px solid #dee2e6;">
-                                {% if ordem.horas_extras %}
-                                {{ ordem.horas_extras_formatado }}
-                                {% else %}
-                                -
-                                {% endif %}
-                            </td>
-                            <td style="padding: 8px; text-align: center; font-weight: bold; font-size: 10px; color: #3498db; border-right: 1px solid #dee2e6;">
-                                {% if ordem.total_km %}
-                                {{ ordem.total_km }}
-                                {% else %}
-                                -
-                                {% endif %}
-                            </td>
-                            <td style="padding: 8px; text-align: center; font-weight: bold; font-size: 11px; color: #10b981;">
-                                {{ ordem.total_horas if ordem.total_horas else '0h' }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div style="margin-top: 8px; padding: 8px; background-color: #ecf0f1; border-left: 4px solid #3498db;">
-                    <small style="color: #7f8c8d; font-size: 8px;">
-                        <strong>Legenda:</strong> 
-                        <span style="color: #27ae60;">■</span> Horas Normais | 
-                        <span style="color: #e67e22;">■</span> Horas Extras | 
-                        <span style="color: #3498db;">■</span> KM Rodados
-                    </small>
+     {% if ordem.tipo_os == 'operacional' and ordem.colaboradores_trabalho %}
+<div class="section">
+    <div class="section-title">APONTAMENTOS POR COLABORADOR</div>
+    <div class="section-content">
+        {% set ns = namespace(
+            horas_normais=0.0,
+            horas_extras=0.0,
+            horas_total=0.0,
+            km_total=0
+        ) %}
+        {% for colab_trabalho in ordem.colaboradores_trabalho %}
+        {% if colab_trabalho.ativo %}
+
+        {% set ns.horas_normais = ns.horas_normais + (colab_trabalho.horas_normais|float if colab_trabalho.horas_normais else 0) %}
+        {% set ns.horas_extras = ns.horas_extras + (colab_trabalho.horas_extras|float if colab_trabalho.horas_extras else 0) %}
+        {% set ns.horas_total = ns.horas_total + (colab_trabalho.total_horas|float if colab_trabalho.total_horas else 0) %}
+        {% set ns.km_total = ns.km_total + (colab_trabalho.km_total|int if colab_trabalho.km_total else 0) %}
+
+        <div style="
+            border: 1px solid #d7e0e7;
+            border-left: 4px solid #163A5C;
+            margin-bottom: 10px;
+            padding: 10px 12px;
+            background: #ffffff;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        ">
+
+            <!-- Cabeçalho do colaborador -->
+            <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 15px;
+                border-bottom: 1px solid #e2e8ee;
+                padding-bottom: 7px;
+                margin-bottom: 8px;
+            ">
+                <div style="flex: 1;">
+                    <div style="
+                        font-size: 11px;
+                        font-weight: bold;
+                        color: #163A5C;
+                    ">
+                        {{ colab_trabalho.colaborador.nome if colab_trabalho.colaborador else 'Colaborador não informado' }}
+                    </div>
+
+                    {% if colab_trabalho.colaborador and colab_trabalho.colaborador.cargo %}
+                    <div style="font-size: 8px; color: #5F6F7A; margin-top: 2px;">
+                        {{ colab_trabalho.colaborador.cargo_formatado }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div style="text-align: right; font-size: 8px; color: #5F6F7A;">
+                    <strong>Data:</strong>
+                    {{ colab_trabalho.data_trabalho.strftime('%d/%m/%Y') if colab_trabalho.data_trabalho else '-' }}
+                    <br>
+                    <strong>KM:</strong>
+                    {{ colab_trabalho.km_total if colab_trabalho.km_total else 0 }} km
+                    &nbsp; | &nbsp;
+                    <strong>Total:</strong>
+                    {{ colab_trabalho.total_horas_formatado if colab_trabalho.total_horas else '0h' }}
                 </div>
             </div>
+
+            <!-- Horários -->
+            <table style="
+                width: 100%;
+                border-collapse: collapse;
+                table-layout: fixed;
+                font-size: 8px;
+                margin-bottom: 8px;
+            ">
+                <thead>
+                    <tr style="background: #F4F6F8; color: #163A5C;">
+                        <th style="padding: 5px; border: 1px solid #d7e0e7;">Manhã</th>
+                        <th style="padding: 5px; border: 1px solid #d7e0e7;">Tarde</th>
+                        <th style="padding: 5px; border: 1px solid #d7e0e7;">Extra</th>
+                        <th style="padding: 5px; border: 1px solid #d7e0e7;">H. Normais</th>
+                        <th style="padding: 5px; border: 1px solid #d7e0e7;">H. Extras</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    <tr>
+                        <td style="padding: 6px; text-align: center; border: 1px solid #d7e0e7;">
+                            {{ colab_trabalho.hora_entrada_manha.strftime('%H:%M') if colab_trabalho.hora_entrada_manha else '-' }}
+                            -
+                            {{ colab_trabalho.hora_saida_manha.strftime('%H:%M') if colab_trabalho.hora_saida_manha else '-' }}
+                        </td>
+
+                        <td style="padding: 6px; text-align: center; border: 1px solid #d7e0e7;">
+                            {{ colab_trabalho.hora_entrada_tarde.strftime('%H:%M') if colab_trabalho.hora_entrada_tarde else '-' }}
+                            -
+                            {{ colab_trabalho.hora_saida_tarde.strftime('%H:%M') if colab_trabalho.hora_saida_tarde else '-' }}
+                        </td>
+
+                        <td style="padding: 6px; text-align: center; border: 1px solid #d7e0e7;">
+                            {{ colab_trabalho.hora_entrada_extra.strftime('%H:%M') if colab_trabalho.hora_entrada_extra else '-' }}
+                            -
+                            {{ colab_trabalho.hora_saida_extra.strftime('%H:%M') if colab_trabalho.hora_saida_extra else '-' }}
+                        </td>
+
+                        <td style="padding: 6px; text-align: center; border: 1px solid #d7e0e7; font-weight: bold; color: #23845F;">
+                            {{ colab_trabalho.horas_normais_formatado if colab_trabalho.horas_normais else '-' }}
+                        </td>
+
+                        <td style="padding: 6px; text-align: center; border: 1px solid #d7e0e7; font-weight: bold; color: #E8872F;">
+                            {{ colab_trabalho.horas_extras_formatado if colab_trabalho.horas_extras else '-' }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Atividade -->
+            {% if colab_trabalho.descricao_atividade %}
+            <div style="
+                font-size: 8.5px;
+                line-height: 1.4;
+                color: #1F2A33;
+                background: #F8FAFC;
+                padding: 7px 9px;
+                border-left: 3px solid #2CA9C5;
+            ">
+                <strong style="color: #163A5C;">Atividade:</strong>
+                {{ colab_trabalho.descricao_atividade }}
+            </div>
+            {% endif %}
+
         </div>
 
         {% endif %}
+        {% endfor %}
+
+        <!-- Totais gerais -->
+        <div style="
+            display: flex;
+            justify-content: flex-end;
+            gap: 18px;
+            border-top: 2px solid #163A5C;
+            margin-top: 12px;
+            padding-top: 9px;
+            font-size: 9px;
+            break-inside: avoid;
+            page-break-inside: avoid;
+        ">
+            <div>
+                <span style="color: #5F6F7A;">Horas normais</span><br>
+                <strong style="color: #23845F;">
+                    {{ '%.2f'|format(ns.horas_normais)|replace('.', ',') }} h
+                </strong>
+            </div>
+
+            <div>
+                <span style="color: #5F6F7A;">Horas extras</span><br>
+                <strong style="color: #E8872F;">
+                    {{ '%.2f'|format(ns.horas_extras)|replace('.', ',') }} h
+                </strong>
+            </div>
+
+            <div>
+                <span style="color: #5F6F7A;">KM total</span><br>
+                <strong style="color: #2D78A8;">
+                    {{ ns.km_total }} km
+                </strong>
+            </div>
+
+            <div>
+                <span style="color: #5F6F7A;">Total geral</span><br>
+                <strong style="color: #163A5C; font-size: 11px;">
+                    {{ ordem.total_horas if ordem.total_horas else ('%.2f'|format(ns.horas_total)|replace('.', ',') ~ ' h') }}
+                </strong>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endif %}
        
         <!-- PDF DO CLIENTE: valor/hora cobrado × horas (parâmetro com_custos=1) -->
         {% if com_custos and ordem.colaboradores_trabalho %}
         <div class="section">
-            <div class="section-title">💼 MÃO DE OBRA</div>
+            <div class="section-title">MÃO DE OBRA</div>
             <div class="section-content">
                 <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
                     <thead>
@@ -1088,7 +1302,7 @@
         <!-- DADOS BANCÁRIOS (Apenas OS Comercial) -->
         {% if not ordem.tipo_os or ordem.tipo_os == 'comercial' %}
         <div class="section">
-            <div class="section-title">🏦 DADOS BANCÁRIOS 🏦</div>
+            <div class="section-title">DADOS BANCÁRIOS</div>
             <div class="section-content">
                 <div class="data-row">
                     <div class="data-cell">
@@ -1131,9 +1345,11 @@
             <div class="section-content">
                 <div class="data-row">
                     <div class="data-cell">
-                        <div class="data-label">Prazo de Garantia</div>
-                        <div class="data-value">{{ ordem.prazo_garantia if ordem.prazo_garantia else '90 dias (padrão)' }}</div>
-                    </div>
+    <div class="data-label">Prazo de Garantia</div>
+    <div class="data-value">
+        {{ (ordem.prazo_garantia|string ~ ' dias') if ordem.prazo_garantia else '90 dias (padrão)' }}
+    </div>
+</div>
                     <div class="data-cell">
                         <div class="data-label">Cobertura</div>
                         <div class="data-value">Serviços executados e peças utilizadas</div>
@@ -1233,47 +1449,125 @@
 
         <!-- ASSINATURAS -->
         <div class="signatures">
-            <div class="signature-box">
+            <!-- ASSINATURAS -->
+<table style="
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    margin-top: 40px;
+    page-break-inside: avoid;
+    break-inside: avoid;
+">
+    <tbody>
+        <tr>
+
+            <!-- ASSINATURA DO TÉCNICO -->
+            <td style="
+                width: 50%;
+                padding: 0 25px;
+                text-align: center;
+                vertical-align: bottom;
+            ">
                 {% if ordem.assinatura_tecnico %}
                 <div style="text-align: center; margin-bottom: 5px;">
-                    <img src="{{ ordem.assinatura_tecnico }}" 
-                         alt="Assinatura do Técnico" 
-                         style="max-width: 250px; max-height: 80px; border: 1px solid #ddd; padding: 5px; background: white;">
+                    <img src="{{ ordem.assinatura_tecnico }}"
+                         alt="Assinatura do Técnico"
+                         style="
+                             max-width: 220px;
+                             max-height: 80px;
+                             border: 1px solid #ddd;
+                             padding: 5px;
+                             background: white;
+                         ">
                 </div>
                 {% endif %}
-                <div class="signature-line">
-                    <div class="signature-title">Assinatura do Técnico</div>
-                    <div class="signature-name">
+
+                <div style="
+                    border-top: 1px solid #163A5C;
+                    padding-top: 5px;
+                    margin-top: 60px;
+                ">
+                    <div style="
+                        font-weight: bold;
+                        color: #163A5C;
+                        font-size: 10px;
+                        white-space: nowrap;
+                    ">
+                        Assinatura do Técnico
+                    </div>
+
+                    <div style="
+                        font-size: 9px;
+                        color: #1F2A33;
+                        margin-top: 3px;
+                        white-space: normal;
+                    ">
                         {{ ordem.assinatura_tecnico_nome if ordem.assinatura_tecnico_nome else (ordem.responsavel if ordem.responsavel else 'JSP ELÉTRICA INDUSTRIAL') }}
                     </div>
+
                     {% if ordem.assinatura_tecnico_data %}
-                    <div style="font-size: 8px; color: #666; margin-top: 2px;">
+                    <div style="font-size: 8px; color: #5F6F7A; margin-top: 2px;">
                         Assinado em: {{ ordem.assinatura_tecnico_data.strftime('%d/%m/%Y às %H:%M') }}
                     </div>
                     {% endif %}
                 </div>
-            </div>
-            <div class="signature-box">
+            </td>
+
+            <!-- ASSINATURA DO CLIENTE -->
+            <td style="
+                width: 50%;
+                padding: 0 25px;
+                text-align: center;
+                vertical-align: bottom;
+            ">
                 {% if ordem.assinatura_cliente %}
                 <div style="text-align: center; margin-bottom: 5px;">
-                    <img src="{{ ordem.assinatura_cliente }}" 
-                         alt="Assinatura do Cliente" 
-                         style="max-width: 250px; max-height: 80px; border: 1px solid #ddd; padding: 5px; background: white;">
+                    <img src="{{ ordem.assinatura_cliente }}"
+                         alt="Assinatura do Cliente"
+                         style="
+                             max-width: 220px;
+                             max-height: 80px;
+                             border: 1px solid #ddd;
+                             padding: 5px;
+                             background: white;
+                         ">
                 </div>
                 {% endif %}
-                <div class="signature-line">
-                    <div class="signature-title">Assinatura do Cliente</div>
-                    <div class="signature-name">
+
+                <div style="
+                    border-top: 1px solid #163A5C;
+                    padding-top: 5px;
+                    margin-top: 60px;
+                ">
+                    <div style="
+                        font-weight: bold;
+                        color: #163A5C;
+                        font-size: 10px;
+                        white-space: nowrap;
+                    ">
+                        Assinatura do Cliente
+                    </div>
+
+                    <div style="
+                        font-size: 9px;
+                        color: #1F2A33;
+                        margin-top: 3px;
+                        white-space: normal;
+                    ">
                         {{ ordem.assinatura_cliente_nome if ordem.assinatura_cliente_nome else (ordem.cliente.nome if ordem.cliente else '') }}
                     </div>
+
                     {% if ordem.assinatura_cliente_data %}
-                    <div style="font-size: 8px; color: #666; margin-top: 2px;">
+                    <div style="font-size: 8px; color: #5F6F7A; margin-top: 2px;">
                         Assinado em: {{ ordem.assinatura_cliente_data.strftime('%d/%m/%Y às %H:%M') }}
                     </div>
                     {% endif %}
                 </div>
-            </div>
-        </div>
+            </td>
+
+        </tr>
+    </tbody>
+</table>
     </div>
 
 </body>
