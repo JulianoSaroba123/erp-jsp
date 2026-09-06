@@ -24,6 +24,7 @@ import decimal
 import os
 import base64
 from datetime import datetime as dt, datetime, time, date, timedelta
+from calendar import monthrange
 from werkzeug.utils import secure_filename
 import uuid
 
@@ -194,6 +195,171 @@ def aplicar_descricao_por_modo(ordem, form_data, tipo_os):
     return modo_operacional
 
 
+def _somar_meses_data(data_base, meses):
+    """Soma meses preservando o dia quando possível."""
+    indice_mes = (data_base.month - 1) + meses
+    ano = data_base.year + (indice_mes // 12)
+    mes = (indice_mes % 12) + 1
+    dia = min(data_base.day, monthrange(ano, mes)[1])
+    return date(ano, mes, dia)
+
+
+def _montar_parcelas_automaticas(valor_total, numero_parcelas, valor_entrada, data_primeira):
+    """Monta o cronograma completo; a entrada, quando existe, é a parcela nº 1."""
+    total = Decimal(str(valor_total or 0)).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+    entrada = Decimal(str(valor_entrada or 0)).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+    quantidade = int(numero_parcelas or 0)
+
+    if quantidade < 1:
+        raise ValueError('O número de parcelas deve ser maior que zero.')
+    if entrada < 0 or entrada > total:
+        raise ValueError('O valor da entrada deve estar entre zero e o valor total da OS.')
+    if entrada > 0 and quantidade == 1 and entrada != total:
+        raise ValueError('Com 1 parcela, a entrada precisa ser igual ao valor total da OS.')
+
+    valores = []
+    restante = total
+    qtd_restante = quantidade
+
+    if entrada > 0:
+        valores.append(entrada)
+        restante -= entrada
+        qtd_restante -= 1
+
+    if qtd_restante > 0:
+        valor_base = (restante / qtd_restante).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+        diferenca = restante - (valor_base * qtd_restante)
+
+        for indice in range(qtd_restante):
+            valor = valor_base
+            if indice == qtd_restante - 1:
+                valor = (valor + diferenca).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+            valores.append(valor)
+
+    if len(valores) != quantidade:
+        raise ValueError('Não foi possível distribuir o valor total entre as parcelas.')
+
+    return [
+        (indice + 1, _somar_meses_data(data_primeira, indice), valor)
+        for indice, valor in enumerate(valores)
+    ]
+
+
+def _parse_parcelas_manuais(parcelas_datas, parcelas_valores, data_base):
+    """Converte as linhas do editor de parcelas para valores tipados."""
+    parsed = []
+    for indice, valor_raw in enumerate(parcelas_valores):
+        if not str(valor_raw or '').strip():
+            raise ValueError(f'Informe o valor da parcela #{indice + 1}.')
+
+        valor = safe_decimal_convert(valor_raw, None)
+        if valor is None or valor < 0:
+            raise ValueError(f'Valor inválido na parcela #{indice + 1}.')
+
+        data_vencimento = data_base
+        if indice < len(parcelas_datas) and parcelas_datas[indice]:
+            try:
+                data_vencimento = datetime.strptime(parcelas_datas[indice], '%Y-%m-%d').date()
+            except Exception as exc:
+                raise ValueError(f'Data inválida na parcela #{indice + 1}.') from exc
+
+        parsed.append((
+            indice + 1,
+            data_vencimento,
+            Decimal(str(valor)).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP),
+        ))
+    return parsed
+
+
+def _lancamentos_da_parcela(parcela):
+    """Busca lançamentos financeiros vinculados a uma parcela."""
+    from app.financeiro.financeiro_model import LancamentoFinanceiro
+
+    if not parcela.id:
+        return []
+
+    return LancamentoFinanceiro.query.filter_by(
+        ordem_servico_parcela_id=parcela.id
+    ).all()
+
+
+def _parcela_tem_baixa_confirmada(parcela):
+    """Protege parcelas e lançamentos já pagos/recebidos."""
+    if bool(getattr(parcela, 'pago', False)) or getattr(parcela, 'data_pagamento', None):
+        return True
+
+    for lancamento in _lancamentos_da_parcela(parcela):
+        if lancamento.status in {'pago', 'recebido'} or lancamento.data_pagamento is not None:
+            return True
+    return False
+
+
+def _remover_parcela_segura(parcela):
+    """Remove parcela e lançamentos não quitados sem commit intermediário."""
+    lancamentos = _lancamentos_da_parcela(parcela)
+
+    if _parcela_tem_baixa_confirmada(parcela):
+        raise ValueError(
+            f'A parcela #{parcela.numero_parcela} possui pagamento/recebimento confirmado e não pode ser removida.'
+        )
+
+    for lancamento in lancamentos:
+        db.session.delete(lancamento)
+    db.session.delete(parcela)
+
+
+def _reconciliar_parcelas_ordem(ordem, novas_parcelas):
+    """Atualiza parcelas in-place, cria excedentes e remove sobras com segurança."""
+    existentes = sorted(
+        list(getattr(ordem, 'parcelas', []) or []),
+        key=lambda parcela: (parcela.numero_parcela or 0, parcela.id or 0),
+    )
+    for indice, (numero, data_vencimento, valor) in enumerate(novas_parcelas):
+        valor = Decimal(str(valor)).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+
+        if indice < len(existentes):
+            parcela = existentes[indice]
+            mudanca_destrutiva = (
+                parcela.numero_parcela != numero
+                or parcela.data_vencimento != data_vencimento
+                or Decimal(str(parcela.valor or 0)).quantize(
+                    Decimal('0.01'), rounding=decimal.ROUND_HALF_UP
+                ) != valor
+            )
+            if mudanca_destrutiva and _parcela_tem_baixa_confirmada(parcela):
+                raise ValueError(
+                    f'A parcela #{parcela.numero_parcela} já possui pagamento/recebimento confirmado e não pode ser alterada.'
+                )
+
+            parcela.numero_parcela = numero
+            parcela.data_vencimento = data_vencimento
+            parcela.valor = valor
+            parcela.ativo = True
+
+            # Mantém o financeiro pendente sincronizado com a parcela preservada.
+            # Lançamentos quitados não chegam aqui quando há mudança, pois a
+            # validação acima bloqueia alterações destrutivas nesses casos.
+            if mudanca_destrutiva:
+                total_parcelas = len(novas_parcelas)
+                for lancamento in _lancamentos_da_parcela(parcela):
+                    if lancamento.status in {'pago', 'recebido'} or lancamento.data_pagamento is not None:
+                        continue
+                    lancamento.valor = valor
+                    lancamento.data_vencimento = data_vencimento
+                    lancamento.numero_parcela = f'{numero}/{total_parcelas}'
+        else:
+            db.session.add(OrdemServicoParcela(
+                ordem_servico=ordem,
+                numero_parcela=numero,
+                data_vencimento=data_vencimento,
+                valor=valor,
+                ativo=True,
+            ))
+
+    for parcela in existentes[len(novas_parcelas):]:
+        _remover_parcela_segura(parcela)
+
+
 def limpar_itens_e_parcelas(ordem):
     """Remove serviços, produtos e parcelas vinculados à OS."""
     for item in list(getattr(ordem, 'servicos', []) or []):
@@ -203,7 +369,7 @@ def limpar_itens_e_parcelas(ordem):
         db.session.delete(produto)
 
     for parcela in list(getattr(ordem, 'parcelas', []) or []):
-        db.session.delete(parcela)
+        _remover_parcela_segura(parcela)
 
 
 def limpar_dados_financeiros(ordem):
@@ -1063,124 +1229,41 @@ def novo():
                 parcelas_datas = request.form.getlist('parcela_data[]')
                 parcelas_valores = request.form.getlist('parcela_valor[]')
 
-                base_date = date.today()
-                # Usar data_primeira_parcela se fornecida
-                if request.form.get('data_primeira_parcela'):
-                    try:
-                        base_date = datetime.strptime(request.form.get('data_primeira_parcela'), '%Y-%m-%d').date()
-                    except Exception:
-                        base_date = date.today()
-                elif request.form.get('data_prevista'):
-                    try:
-                        base_date = datetime.strptime(request.form.get('data_prevista'), '%Y-%m-%d').date()
-                    except Exception:
-                        base_date = date.today()
-                elif request.form.get('data_abertura'):
-                    try:
-                        base_date = datetime.strptime(request.form.get('data_abertura'), '%Y-%m-%d').date()
-                    except Exception:
-                        base_date = date.today()
-
-                # Tolerância para diferenças pequenas (centavos)
+                base_date = (
+                    ordem.data_primeira_parcela
+                    or ordem.data_prevista
+                    or ordem.data_abertura
+                    or date.today()
+                )
                 tolerancia = Decimal('0.02')
 
-                # Se o usuário forneceu parcelas manualmente, validar soma
-                if parcelas_valores and any(v.strip() for v in parcelas_valores):
-                    soma_parcelas = Decimal('0')
-                    parsed_parcelas = []
-                    for idx, val in enumerate(parcelas_valores):
-                        try:
-                            valor_parcela = safe_decimal_convert(val, 0)
-                            soma_parcelas += valor_parcela
-                            data_venc = None
-                            if idx < len(parcelas_datas) and parcelas_datas[idx]:
-                                try:
-                                    data_venc = datetime.strptime(parcelas_datas[idx], '%Y-%m-%d').date()
-                                except Exception:
-                                    data_venc = base_date
-                            else:
-                                data_venc = base_date
-                            parsed_parcelas.append((idx + 1, data_venc, valor_parcela))
-                        except Exception:
-                            continue
+                if parcelas_valores and any(str(valor).strip() for valor in parcelas_valores):
+                    parsed_parcelas = _parse_parcelas_manuais(parcelas_datas, parcelas_valores, base_date)
 
-                    total_form = entrada + soma_parcelas
-                    if abs(total_form - Decimal(str(ordem.valor_total))) > tolerancia:
-                        # Não criar parcelas se soma não bater com o total
-                        flash('Soma das parcelas + entrada não corresponde ao valor total. Verifique os valores inseridos.', 'error')
-                        clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
-                        numero_os = OrdemServico.gerar_proximo_numero()
-                        # Não persistir alterações de parcelas neste fluxo; deixa o usuário corrigir
-                        return render_template('os/form.html', ordem=ordem, clientes=clientes, numero_os=numero_os, today=date.today())
-
-                    # Apaga possíveis parcelas pré-existentes (não deveria haver em novo, mas seguro)
-                    for p in list(ordem.parcelas):
-                        # remover via sessão (evita commits intermediários)
-                        db.session.delete(p)
-
-                    # Salva parcelas conforme fornecido
-                    for numero, data_venc, valor_parcela in parsed_parcelas:
-                        parcela = OrdemServicoParcela(
-                            ordem_servico_id=ordem.id,
-                            numero_parcela=numero,
-                            data_vencimento=data_venc,
-                            valor=Decimal(str(valor_parcela)).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
+                    if len(parsed_parcelas) != ordem.numero_parcelas:
+                        raise ValueError(
+                            f'Foram informadas {len(parsed_parcelas)} parcelas, mas o Nº Parcelas está como {ordem.numero_parcelas}.'
                         )
-                        db.session.add(parcela)
 
+                    soma_parcelas = sum((parcela[2] for parcela in parsed_parcelas), Decimal('0'))
+                    total_os_decimal = Decimal(str(total_final))
+                    if abs(soma_parcelas - total_os_decimal) > tolerancia:
+                        raise ValueError('A soma das parcelas deve corresponder exatamente ao valor total da OS.')
+
+                    if entrada > 0 and abs(parsed_parcelas[0][2] - entrada) > tolerancia:
+                        raise ValueError(
+                            'Quando existe entrada, o valor da parcela #1 deve ser igual ao Valor Entrada.'
+                        )
                 else:
-                    # Distribuição automática:.garante soma exata distribuindo resto na última parcela
-                    restante = Decimal(str(ordem.valor_total)) - entrada
-                    if restante < 0:
-                        restante = Decimal('0')
+                    parsed_parcelas = _montar_parcelas_automaticas(
+                        total_final,
+                        ordem.numero_parcelas,
+                        entrada,
+                        base_date,
+                    )
 
-                    created = 0
-                    if entrada and entrada > 0:
-                        # cria parcela de entrada
-                        parcela = OrdemServicoParcela(
-                            ordem_servico_id=ordem.id,
-                            numero_parcela=1,
-                            data_vencimento=base_date,
-                            valor=Decimal(str(entrada)).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
-                        )
-                        db.session.add(parcela)
-                        created = 1
-
-                    parcelas_a_distribuir = ordem.numero_parcelas - created
-                    if parcelas_a_distribuir <= 0:
-                        parcelas_a_distribuir = 1
-
-                    # Calcula valor por parcela com quantize e ajusta última parcela com o restante
-                    if parcelas_a_distribuir > 0:
-                        valor_por_parcela = (restante / parcelas_a_distribuir)
-                        valor_por_parcela_q = valor_por_parcela.quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
-                        soma_parcels = valor_por_parcela_q * parcelas_a_distribuir
-                        diferenca = restante - soma_parcels
-
-                        for i in range(parcelas_a_distribuir):
-                            numero = created + i + 1
-                            try:
-                                mes = base_date.month + i + 1
-                                ano = base_date.year + ((mes - 1) // 12)
-                                mes = ((mes - 1) % 12) + 1
-                                dia = min(base_date.day, 28)
-                                data_venc = date(ano, mes, dia)
-                            except Exception:
-                                data_venc = base_date
-
-                            # para a última parcela, adiciona a diferença (pode ser negativa/positiva devido ao arredondamento)
-                            if i == parcelas_a_distribuir - 1:
-                                valor_final = (valor_por_parcela_q + diferenca).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
-                            else:
-                                valor_final = valor_por_parcela_q
-
-                            parcela = OrdemServicoParcela(
-                                ordem_servico_id=ordem.id,
-                                numero_parcela=numero,
-                                data_vencimento=data_venc,
-                                valor=valor_final
-                            )
-                            db.session.add(parcela)
+                ordem.data_primeira_parcela = parsed_parcelas[0][1] if parsed_parcelas else None
+                _reconciliar_parcelas_ordem(ordem, parsed_parcelas)
 
             try:
                 print("🔄 DEBUG: Tentando fazer commit da ordem...")
@@ -1315,6 +1398,12 @@ def editar(id):
             print(f"DEBUG: Serviços encontrados: {len(servicos_desc)} - {servicos_desc}")
             print(f"DEBUG: Produtos encontrados: {len(produtos_desc)} - {produtos_desc}")
             usuario_admin = usuario_eh_admin()
+            parcelamento_original = {
+                'condicao': ordem.condicao_pagamento,
+                'numero': len(ordem.parcelas) if getattr(ordem, 'parcelas', None) else (ordem.numero_parcelas or 1),
+                'entrada': Decimal(str(ordem.valor_entrada or 0)),
+                'data_primeira': ordem.data_primeira_parcela,
+            }
             
             # ===== DEFINE pode_gerir_financeiro NO INÍCIO =====
             # Determina tipo_os primeiro para calcular modo operacional
@@ -1492,19 +1581,31 @@ def editar(id):
                 ordem.valor_entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
             
             # Data da primeira parcela
-            if pode_gerir_financeiro and request.form.get('data_primeira_parcela'):
-                try:
-                    ordem.data_primeira_parcela = datetime.strptime(request.form.get('data_primeira_parcela'), '%Y-%m-%d').date()
-                except Exception:
-                    pass
-            
+            if pode_gerir_financeiro:
+                if request.form.get('data_primeira_parcela'):
+                    try:
+                        ordem.data_primeira_parcela = datetime.strptime(
+                            request.form.get('data_primeira_parcela'),
+                            '%Y-%m-%d'
+                        ).date()
+                    except Exception:
+                        ordem.data_primeira_parcela = None
+                else:
+                    ordem.data_primeira_parcela = None
+
             # Data de vencimento do pagamento
-            if pode_gerir_financeiro and request.form.get('data_vencimento_pagamento'):
-                try:
-                    ordem.data_vencimento_pagamento = datetime.strptime(request.form.get('data_vencimento_pagamento'), '%Y-%m-%d').date()
-                except Exception:
-                    pass
-            
+            if pode_gerir_financeiro:
+                if request.form.get('data_vencimento_pagamento'):
+                    try:
+                        ordem.data_vencimento_pagamento = datetime.strptime(
+                            request.form.get('data_vencimento_pagamento'),
+                            '%Y-%m-%d'
+                        ).date()
+                    except Exception:
+                        ordem.data_vencimento_pagamento = None
+                else:
+                    ordem.data_vencimento_pagamento = None
+
             if pode_gerir_financeiro:
                 ordem.descricao_pagamento = request.form.get('descricao_pagamento', '').strip()
             ordem.observacoes_anexos = request.form.get('observacoes_anexos', '').strip()
@@ -1694,143 +1795,81 @@ def editar(id):
                 ordem.valor_total = ordem.valor_total_calculado_novo
                 print(f"🧮 DEBUG: Valor serviço: R$ {ordem.valor_servico} | Valor peças: R$ {ordem.valor_pecas} | Valor total: R$ {ordem.valor_total}")
 
-            # Processa parcelas da ordem: validação e recriação conforme formulário
-            # IMPORTANTE: Só recria parcelas se o usuário forneceu dados manuais de parcelas
-            try:
-                # Verificar se existem parcelas cadastradas
-                tem_parcelas_existentes = hasattr(ordem, 'parcelas') and ordem.parcelas and len(ordem.parcelas) > 0
-                
-                if pode_gerir_financeiro and ordem.condicao_pagamento == 'parcelado' and ordem.numero_parcelas > 0:
-                    entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
-                    parcelas_datas = request.form.getlist('parcela_data[]')
-                    parcelas_valores = request.form.getlist('parcela_valor[]')
+            # Processa parcelas da ordem com reconciliação segura
+            tem_parcelas_existentes = bool(
+                hasattr(ordem, 'parcelas') and ordem.parcelas and len(ordem.parcelas) > 0
+            )
 
-                    # Se já tem parcelas e não veio dados manuais, PRESERVAR as parcelas existentes
-                    if tem_parcelas_existentes and not (parcelas_valores and any(v.strip() for v in parcelas_valores)):
-                        print(f"✅ Preservando {len(ordem.parcelas)} parcelas existentes (não veio dados manuais do form)")
-                        # Não faz nada, mantém as parcelas como estão
-                    else:
-                        # Só processa se veio dados manuais do formulário
-                        base_date = date.today()
-                        if request.form.get('data_prevista'):
-                            try:
-                                base_date = datetime.strptime(request.form.get('data_prevista'), '%Y-%m-%d').date()
-                            except Exception:
-                                base_date = date.today()
-                        elif request.form.get('data_abertura'):
-                            try:
-                                base_date = datetime.strptime(request.form.get('data_abertura'), '%Y-%m-%d').date()
-                            except Exception:
-                                base_date = date.today()
+            if pode_gerir_financeiro and ordem.condicao_pagamento == 'parcelado' and ordem.numero_parcelas > 0:
+                entrada = safe_decimal_convert(request.form.get('valor_entrada', '0'), 0)
+                parcelas_datas = request.form.getlist('parcela_data[]')
+                parcelas_valores = request.form.getlist('parcela_valor[]')
+                recalcular_solicitado = request.form.get('recalcular_parcelas') == '1'
 
-                        tolerancia = Decimal('0.02')
+                base_date = (
+                    ordem.data_primeira_parcela
+                    or ordem.data_prevista
+                    or ordem.data_abertura
+                    or date.today()
+                )
+                tolerancia = Decimal('0.02')
 
-                        # Se parcelas manuais foram enviadas, valida soma antes de destruir existentes
-                        if parcelas_valores and any(v.strip() for v in parcelas_valores):
-                            soma_parcelas = Decimal('0')
-                            parsed_parcelas = []
-                            for idx, val in enumerate(parcelas_valores):
-                                try:
-                                    valor_parcela = safe_decimal_convert(val, 0)
-                                    soma_parcelas += valor_parcela
-                                    data_venc = None
-                                    if idx < len(parcelas_datas) and parcelas_datas[idx]:
-                                        try:
-                                            data_venc = datetime.strptime(parcelas_datas[idx], '%Y-%m-%d').date()
-                                        except Exception:
-                                            data_venc = base_date
-                                    else:
-                                        data_venc = base_date
-                                    parsed_parcelas.append((idx + 1, data_venc, valor_parcela))
-                                except Exception:
-                                    continue
+                if parcelas_valores and any(str(valor).strip() for valor in parcelas_valores):
+                    parsed_parcelas = _parse_parcelas_manuais(parcelas_datas, parcelas_valores, base_date)
 
-                            total_form = entrada + soma_parcelas
-                            if abs(total_form - Decimal(str(ordem.valor_total))) > tolerancia:
-                                flash('Soma das parcelas + entrada não corresponde ao valor total. Verifique os valores inseridos.', 'error')
-                                clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
-                                return render_template('os/form.html', ordem=ordem, clientes=clientes, today=date.today())
+                    if len(parsed_parcelas) != ordem.numero_parcelas:
+                        raise ValueError(
+                            f'Foram informadas {len(parsed_parcelas)} parcelas, mas o Nº Parcelas está como {ordem.numero_parcelas}.'
+                        )
 
-                            # Limpa existentes e salva as parcelas manuais
-                            for p in list(ordem.parcelas):
-                                p.delete()
+                    soma_parcelas = sum((parcela[2] for parcela in parsed_parcelas), Decimal('0'))
+                    if abs(soma_parcelas - Decimal(str(ordem.valor_total))) > tolerancia:
+                        raise ValueError('A soma das parcelas deve corresponder exatamente ao valor total da OS.')
 
-                            for numero, data_venc, valor_parcela in parsed_parcelas:
-                                parcela = OrdemServicoParcela(
-                                    ordem_servico_id=ordem.id,
-                                    numero_parcela=numero,
-                                    data_vencimento=data_venc,
-                                    valor=Decimal(str(valor_parcela)).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP),
-                                    ativo=True
-                                )
-                                db.session.add(parcela)
-                        else:
-                            # Distribuição automática: calcula parcelas garantindo soma exata
-                            restante = Decimal(str(ordem.valor_total)) - entrada
-                            if restante < 0:
-                                restante = Decimal('0')
+                    if entrada > 0 and abs(parsed_parcelas[0][2] - entrada) > tolerancia:
+                        raise ValueError(
+                            'Quando existe entrada, o valor da parcela #1 deve ser igual ao Valor Entrada.'
+                        )
 
-                            created = 0
-                            parcelas_a_distribuir = ordem.numero_parcelas
-                            if entrada and entrada > 0:
-                                created = 1
-                                parcelas_a_distribuir = ordem.numero_parcelas - 1
-                                if parcelas_a_distribuir <= 0:
-                                    parcelas_a_distribuir = 1
+                    ordem.data_primeira_parcela = parsed_parcelas[0][1] if parsed_parcelas else None
+                    _reconciliar_parcelas_ordem(ordem, parsed_parcelas)
 
-                            # Calcula valores e prepara lista
-                            valores = []
-                            if parcelas_a_distribuir > 0:
-                                valor_por_parcela = (restante / parcelas_a_distribuir)
-                                valor_por_parcela_q = valor_por_parcela.quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
-                                soma_parcels = valor_por_parcela_q * parcelas_a_distribuir
-                                diferenca = restante - soma_parcels
+                elif recalcular_solicitado or not tem_parcelas_existentes:
+                    parsed_parcelas = _montar_parcelas_automaticas(
+                        ordem.valor_total,
+                        ordem.numero_parcelas,
+                        entrada,
+                        base_date,
+                    )
+                    ordem.data_primeira_parcela = parsed_parcelas[0][1] if parsed_parcelas else None
+                    _reconciliar_parcelas_ordem(ordem, parsed_parcelas)
 
-                                for i in range(parcelas_a_distribuir):
-                                    if i == parcelas_a_distribuir - 1:
-                                        valor_final = (valor_por_parcela_q + diferenca).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP)
-                                    else:
-                                        valor_final = valor_por_parcela_q
-                                    valores.append(valor_final)
+                else:
+                    configuracao_alterada = (
+                        ordem.numero_parcelas != parcelamento_original['numero']
+                        or Decimal(str(ordem.valor_entrada or 0)) != parcelamento_original['entrada']
+                        or ordem.data_primeira_parcela != parcelamento_original['data_primeira']
+                    )
+                    if configuracao_alterada:
+                        raise ValueError(
+                            'Os campos do parcelamento foram alterados. Clique em "Refazer Parcelamento", '
+                            'revise a tabela gerada e salve novamente.'
+                        )
 
-                            # Limpa parcelas existentes e salva nova distribuição
-                            for p in list(ordem.parcelas):
-                                p.delete()
+                    print(
+                        f"✅ Preservando {len(ordem.parcelas)} parcelas existentes "
+                        "(nenhuma refação solicitada)"
+                    )
 
-                            idx_offset = 0
-                            if entrada and entrada > 0:
-                                parcela = OrdemServicoParcela(
-                                    ordem_servico_id=ordem.id,
-                                    numero_parcela=1,
-                                    data_vencimento=base_date,
-                                    valor=Decimal(str(entrada)).quantize(Decimal('0.01'), rounding=decimal.ROUND_HALF_UP),
-                                    ativo=True
-                                )
-                                db.session.add(parcela)
-                                idx_offset = 1
+            elif pode_gerir_financeiro and ordem.condicao_pagamento != 'parcelado':
+                if tem_parcelas_existentes:
+                    _reconciliar_parcelas_ordem(ordem, [])
 
-                            for i, val in enumerate(valores):
-                                numero = idx_offset + i + 1
-                                try:
-                                    mes = base_date.month + i + 1
-                                    ano = base_date.year + ((mes - 1) // 12)
-                                    mes = ((mes - 1) % 12) + 1
-                                    dia = min(base_date.day, 28)
-                                    data_venc = date(ano, mes, dia)
-                                except Exception:
-                                    data_venc = base_date
+                ordem.numero_parcelas = 1
+                if ordem.condicao_pagamento in {'a_vista', '30_dias'}:
+                    ordem.data_primeira_parcela = None
+                    ordem.valor_entrada = Decimal('0')
 
-                                parcela = OrdemServicoParcela(
-                                    ordem_servico_id=ordem.id,
-                                    numero_parcela=numero,
-                                    data_vencimento=data_venc,
-                                    valor=val,
-                                    ativo=True
-                                )
-                                db.session.add(parcela)
-            except Exception as e:
-                print('Erro ao processar parcelas:', e)
-            
             # Processa arquivos anexados
             print(f"🔍 DEBUG ANEXOS EDITAR: Verificando anexos em request.files...")
             print(f"🔍 DEBUG ANEXOS EDITAR: request.files keys: {list(request.files.keys())}")

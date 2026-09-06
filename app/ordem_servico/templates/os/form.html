@@ -774,7 +774,7 @@
                     </div>
                     <div class="col-md-3">
                         <label class="form-label text-white">Condição de Pagamento</label>
-                        <select class="form-select bg-dark text-white border-secondary" name="condicao_pagamento">
+                        <select class="form-select bg-dark text-white border-secondary" name="condicao_pagamento" id="condicao_pagamento">
                             <option value="a_vista" {% if not ordem or ordem.condicao_pagamento == 'a_vista' %}selected{% endif %}>💰 À Vista</option>
                             <option value="parcelado" {% if ordem and ordem.condicao_pagamento == 'parcelado' %}selected{% endif %}>💳 Parcelado</option>
                             <option value="30_dias" {% if ordem and ordem.condicao_pagamento == '30_dias' %}selected{% endif %}>📅 30 Dias</option>
@@ -794,12 +794,12 @@
                     <div class="col-md-2">
                         <label class="form-label text-white">Nº Parcelas</label>
                         <input type="number" class="form-control bg-dark text-white border-secondary" 
-                               name="numero_parcelas" value="{{ ordem.numero_parcelas if ordem else 1 }}" min="1" max="12">
+                               name="numero_parcelas" id="numero_parcelas" value="{{ ordem.numero_parcelas if ordem else 1 }}" min="1" max="12">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label text-white">Valor Entrada</label>
                         <input type="text" class="form-control bg-dark text-white border-secondary" 
-                               name="valor_entrada" value="{{ '{:,.2f}'.format(ordem.valor_entrada or 0).replace(',', 'X').replace('.', ',').replace('X', '.') if ordem else '0,00' }}" placeholder="0,00">
+                               name="valor_entrada" id="entrada" value="{{ '{:,.2f}'.format(ordem.valor_entrada or 0).replace(',', 'X').replace('.', ',').replace('X', '.') if ordem else '0,00' }}" placeholder="0,00">
                     </div>
                     <div class="col-md-2">
                         <label class="form-label text-white">Garantia (dias)</label>
@@ -808,17 +808,52 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label text-white">Data 1ª Parcela</label>
-                        <input type="date" class="form-control bg-dark text-white border-secondary" 
-                               name="data_primeira_parcela" value="{{ ordem.data_primeira_parcela.strftime('%Y-%m-%d') if ordem and ordem.data_primeira_parcela else '' }}">
+                        <input type="text"
+                               class="form-control bg-dark text-white border-secondary data-br-input"
+                               id="data_primeira_parcela_br"
+                               data-hidden-id="data_primeira_parcela"
+                               inputmode="numeric"
+                               maxlength="10"
+                               placeholder="DD/MM/AAAA"
+                               value="{{ ordem.data_primeira_parcela.strftime('%d/%m/%Y') if ordem and ordem.data_primeira_parcela else '' }}">
+                        <input type="hidden"
+                               name="data_primeira_parcela"
+                               id="data_primeira_parcela"
+                               value="{{ ordem.data_primeira_parcela.strftime('%Y-%m-%d') if ordem and ordem.data_primeira_parcela else '' }}">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label text-white">Vencimento Pagamento</label>
-                        <input type="date" class="form-control bg-dark text-white border-secondary" 
-                               name="data_vencimento_pagamento" value="{{ ordem.data_vencimento_pagamento.strftime('%Y-%m-%d') if ordem and ordem.data_vencimento_pagamento else '' }}">
+                        <input type="text"
+                               class="form-control bg-dark text-white border-secondary data-br-input"
+                               id="data_vencimento_pagamento_br"
+                               data-hidden-id="data_vencimento_pagamento"
+                               inputmode="numeric"
+                               maxlength="10"
+                               placeholder="DD/MM/AAAA"
+                               value="{{ ordem.data_vencimento_pagamento.strftime('%d/%m/%Y') if ordem and ordem.data_vencimento_pagamento else '' }}">
+                        <input type="hidden"
+                               name="data_vencimento_pagamento"
+                               id="data_vencimento_pagamento"
+                               value="{{ ordem.data_vencimento_pagamento.strftime('%Y-%m-%d') if ordem and ordem.data_vencimento_pagamento else '' }}">
                     </div>
                     <div class="col-12">
                         <label class="form-label text-white">Descrição das Condições de Pagamento</label>
                         <textarea class="form-control bg-dark text-white border-secondary" name="descricao_pagamento" rows="2" placeholder="Descreva as condições específicas de pagamento">{{ ordem.descricao_pagamento if ordem else '' }}</textarea>
+                    </div>
+                    <div class="col-12">
+                        <input type="hidden" name="recalcular_parcelas" id="recalcular_parcelas" value="0">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                            <button type="button" class="btn btn-outline-info" id="btnRefazerParcelamento">
+                                <i class="fas fa-calculator me-1"></i>Refazer Parcelamento
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary d-none" id="btnCancelarRefacaoParcelamento">
+                                <i class="fas fa-times me-1"></i>Cancelar Refação
+                            </button>
+                            <small class="text-muted">
+                                Ajuste Nº Parcelas, Valor Entrada e Data 1ª Parcela, depois clique em Refazer Parcelamento.
+                            </small>
+                        </div>
+                        <div id="parcelas-editor" class="mt-3" style="display: none;"></div>
                     </div>
                 </div>
             </div>
@@ -872,8 +907,10 @@
                     </table>
                 </div>
                 <div class="alert alert-warning mt-3 mb-0">
-                    <i class="fas fa-info-circle"></i> 
-                    <strong>Observação:</strong> Para alterar as parcelas, ajuste os campos de pagamento acima e salve. As parcelas serão recalculadas automaticamente.
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Observação:</strong> Para alterar quantidade, datas ou valores, ajuste os campos de pagamento acima,
+                    clique em <strong>Refazer Parcelamento</strong>, revise a nova tabela e só então salve a OS.
+                    Parcelas já pagas/recebidas são protegidas contra alteração destrutiva.
                 </div>
             </div>
         </div>
@@ -1419,6 +1456,315 @@ document.addEventListener('DOMContentLoaded', function() {
         
         return 'R$ ' + formatado + ',' + decimal;
     }
+
+
+    // ===== EDITOR DE PARCELAMENTO =====
+    function dataLocalIsoHoje() {
+        const hoje = new Date();
+        const ano = hoje.getFullYear();
+        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoje.getDate()).padStart(2, '0');
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    function isoParaBr(dataIso) {
+        const match = String(dataIso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return '';
+        return `${match[3]}/${match[2]}/${match[1]}`;
+    }
+
+    function brParaIso(dataBr) {
+        const match = String(dataBr || '').trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if (!match) return '';
+
+        const dia = Number(match[1]);
+        const mes = Number(match[2]);
+        const ano = Number(match[3]);
+        const data = new Date(ano, mes - 1, dia);
+
+        if (
+            data.getFullYear() !== ano ||
+            data.getMonth() !== mes - 1 ||
+            data.getDate() !== dia
+        ) {
+            return '';
+        }
+
+        return `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+    }
+
+    function aplicarMascaraDataBr(valor) {
+        const digitos = String(valor || '').replace(/\D/g, '').slice(0, 8);
+        if (digitos.length <= 2) return digitos;
+        if (digitos.length <= 4) return `${digitos.slice(0, 2)}/${digitos.slice(2)}`;
+        return `${digitos.slice(0, 2)}/${digitos.slice(2, 4)}/${digitos.slice(4)}`;
+    }
+
+    function sincronizarDataBr(input) {
+        if (!input) return true;
+
+        input.value = aplicarMascaraDataBr(input.value);
+        const hiddenId = input.dataset.hiddenId;
+        const hidden = hiddenId ? document.getElementById(hiddenId) : input.nextElementSibling;
+        if (!hidden) return false;
+
+        if (!input.value.trim()) {
+            hidden.value = '';
+            return true;
+        }
+
+        const iso = brParaIso(input.value);
+        if (!iso) {
+            hidden.value = '';
+            return false;
+        }
+
+        hidden.value = iso;
+        return true;
+    }
+
+    function somarMesesIso(dataIso, meses) {
+        const partes = String(dataIso || '').split('-').map(Number);
+        if (partes.length !== 3 || partes.some(Number.isNaN)) {
+            return dataLocalIsoHoje();
+        }
+
+        const [anoBase, mesBase, diaBase] = partes;
+        const indiceMes = (mesBase - 1) + meses;
+        const ano = anoBase + Math.floor(indiceMes / 12);
+        const mes = ((indiceMes % 12) + 12) % 12;
+        const ultimoDia = new Date(ano, mes + 1, 0).getDate();
+        const dia = Math.min(diaBase, ultimoDia);
+        return `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+    }
+
+    function formatarCentavosParaInput(centavos) {
+        return (Math.max(0, Number(centavos) || 0) / 100).toFixed(2).replace('.', ',');
+    }
+
+    function esconderEditorParcelas() {
+        const editor = document.getElementById('parcelas-editor');
+        const flag = document.getElementById('recalcular_parcelas');
+        const btnCancelar = document.getElementById('btnCancelarRefacaoParcelamento');
+
+        if (editor) {
+            editor.innerHTML = '';
+            editor.style.display = 'none';
+        }
+        if (flag) flag.value = '0';
+        if (btnCancelar) btnCancelar.classList.add('d-none');
+    }
+
+    function montarEditorParcelas() {
+        const condicao = document.getElementById('condicao_pagamento');
+        const numeroInput = document.getElementById('numero_parcelas');
+        const entradaInput = document.getElementById('entrada');
+        const primeiraDataInput = document.getElementById('data_primeira_parcela');
+        const totalInput = document.getElementById('valorTotal');
+        const editor = document.getElementById('parcelas-editor');
+        const flag = document.getElementById('recalcular_parcelas');
+        const btnCancelar = document.getElementById('btnCancelarRefacaoParcelamento');
+
+        if (!numeroInput || !entradaInput || !primeiraDataInput || !totalInput || !editor || !flag) {
+            alert('Não foi possível preparar o parcelamento. Recarregue a página e tente novamente.');
+            return;
+        }
+        if (!condicao || condicao.value !== 'parcelado') {
+            alert('Selecione a condição de pagamento "Parcelado" antes de refazer as parcelas.');
+            return;
+        }
+
+        const numeroParcelas = parseInt(numeroInput.value || '0', 10);
+        const totalCentavos = Math.round(converterParaNumero(totalInput.value) * 100);
+        const entradaCentavos = Math.round(converterParaNumero(entradaInput.value) * 100);
+
+        if (!Number.isInteger(numeroParcelas) || numeroParcelas < 1 || numeroParcelas > 12) {
+            alert('Informe uma quantidade de parcelas entre 1 e 12.');
+            return;
+        }
+        if (totalCentavos < 0) {
+            alert('O valor total da OS não pode ser negativo.');
+            return;
+        }
+        if (entradaCentavos < 0 || entradaCentavos > totalCentavos) {
+            alert('O valor da entrada deve estar entre R$ 0,00 e o valor total da OS.');
+            return;
+        }
+        if (entradaCentavos > 0 && numeroParcelas === 1 && entradaCentavos !== totalCentavos) {
+            alert('Com apenas 1 parcela, a entrada precisa ser igual ao valor total. Aumente o Nº Parcelas ou ajuste a entrada.');
+            return;
+        }
+
+        const dataBase =
+            primeiraDataInput.value ||
+            document.querySelector('[name="data_prevista"]')?.value ||
+            document.querySelector('[name="data_abertura"]')?.value ||
+            dataLocalIsoHoje();
+
+        const valoresCentavos = [];
+        let restanteCentavos = totalCentavos;
+        let quantidadeRestante = numeroParcelas;
+
+        if (entradaCentavos > 0) {
+            valoresCentavos.push(entradaCentavos);
+            restanteCentavos -= entradaCentavos;
+            quantidadeRestante -= 1;
+        }
+
+        if (quantidadeRestante > 0) {
+            const valorBase = Math.floor(restanteCentavos / quantidadeRestante);
+            const diferenca = restanteCentavos - (valorBase * quantidadeRestante);
+            for (let i = 0; i < quantidadeRestante; i++) {
+                valoresCentavos.push(valorBase + (i === quantidadeRestante - 1 ? diferenca : 0));
+            }
+        }
+
+        if (valoresCentavos.length !== numeroParcelas) {
+            alert('Não foi possível distribuir o valor nas parcelas. Revise os dados informados.');
+            return;
+        }
+
+        let linhas = '';
+        valoresCentavos.forEach((valorCentavos, index) => {
+            const numero = index + 1;
+            const dataVencimento = somarMesesIso(dataBase, index);
+            linhas += `
+                <tr>
+                    <td class="align-middle"><strong>#${numero}</strong></td>
+                    <td>
+                        <input type="text"
+                               class="form-control form-control-sm bg-dark text-white border-secondary parcela-data-br"
+                               data-parcela-numero="${numero}"
+                               inputmode="numeric"
+                               maxlength="10"
+                               placeholder="DD/MM/AAAA"
+                               value="${isoParaBr(dataVencimento)}"
+                               required>
+                        <input type="hidden"
+                               name="parcela_data[]"
+                               data-parcela-numero="${numero}"
+                               value="${dataVencimento}">
+                    </td>
+                    <td>
+                        <input type="text"
+                               class="form-control form-control-sm bg-dark text-white border-secondary text-end"
+                               name="parcela_valor[]"
+                               data-parcela-numero="${numero}"
+                               value="${formatarCentavosParaInput(valorCentavos)}"
+                               required>
+                    </td>
+                </tr>
+            `;
+        });
+
+        editor.innerHTML = `
+            <div class="alert alert-info py-2">
+                <i class="fas fa-info-circle me-1"></i>
+                Revise as datas e valores abaixo. A alteração só será gravada quando você salvar a Ordem de Serviço.
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm table-dark table-bordered align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th style="width: 15%;">Parcela</th>
+                            <th style="width: 40%;">Vencimento</th>
+                            <th style="width: 45%;">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody>${linhas}</tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2" class="text-end"><strong>Total</strong></td>
+                            <td class="text-end"><strong>${formatarMoeda(totalCentavos / 100)}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+
+        editor.style.display = 'block';
+        flag.value = '1';
+        primeiraDataInput.value = dataBase;
+
+        const primeiraDataBrInput = document.getElementById('data_primeira_parcela_br');
+        if (primeiraDataBrInput) primeiraDataBrInput.value = isoParaBr(dataBase);
+
+        if (btnCancelar) btnCancelar.classList.remove('d-none');
+    }
+
+    document.getElementById('btnRefazerParcelamento')?.addEventListener('click', montarEditorParcelas);
+    document.getElementById('btnCancelarRefacaoParcelamento')?.addEventListener('click', esconderEditorParcelas);
+
+    document.querySelectorAll('.data-br-input').forEach(function(input) {
+        input.addEventListener('input', function() {
+            input.value = aplicarMascaraDataBr(input.value);
+            sincronizarDataBr(input);
+        });
+
+        input.addEventListener('blur', function() {
+            if (input.value && !sincronizarDataBr(input)) {
+                input.classList.add('is-invalid');
+            } else {
+                input.classList.remove('is-invalid');
+            }
+        });
+    });
+
+    const parcelasEditor = document.getElementById('parcelas-editor');
+    if (parcelasEditor) {
+        parcelasEditor.addEventListener('input', function(event) {
+            if (!event.target.classList.contains('parcela-data-br')) return;
+
+            event.target.value = aplicarMascaraDataBr(event.target.value);
+            const hidden = event.target.nextElementSibling;
+            const iso = brParaIso(event.target.value);
+            if (hidden && hidden.name === 'parcela_data[]') {
+                hidden.value = iso;
+            }
+
+            if (event.target.dataset.parcelaNumero === '1') {
+                const primeiraDataInput = document.getElementById('data_primeira_parcela');
+                const primeiraDataBrInput = document.getElementById('data_primeira_parcela_br');
+                if (primeiraDataInput) primeiraDataInput.value = iso;
+                if (primeiraDataBrInput) primeiraDataBrInput.value = event.target.value;
+            }
+        });
+    }
+
+    document.querySelector('form')?.addEventListener('submit', function(event) {
+        const camposDataBr = [
+            ...document.querySelectorAll('.data-br-input'),
+            ...document.querySelectorAll('.parcela-data-br')
+        ];
+
+        for (const input of camposDataBr) {
+            if (!input.value.trim()) continue;
+
+            const iso = brParaIso(input.value);
+            if (!iso) {
+                event.preventDefault();
+                input.classList.add('is-invalid');
+                input.focus();
+                alert(`Data inválida: "${input.value}". Use o formato DD/MM/AAAA.`);
+                return;
+            }
+
+            input.classList.remove('is-invalid');
+
+            if (input.classList.contains('parcela-data-br')) {
+                const hidden = input.nextElementSibling;
+                if (hidden && hidden.name === 'parcela_data[]') hidden.value = iso;
+            } else {
+                sincronizarDataBr(input);
+            }
+        }
+    });
+
+    document.getElementById('condicao_pagamento')?.addEventListener('change', function() {
+        if (this.value !== 'parcelado') {
+            esconderEditorParcelas();
+        }
+    });
     
     // Função para calcular total de um item
     function calcularTotalItem(container) {
