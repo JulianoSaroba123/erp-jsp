@@ -173,20 +173,22 @@
                                     <td>
                                         {% if lancamento.data_vencimento %}
                                             {{ lancamento.data_vencimento.strftime('%d/%m/%Y') }}
-                                            {% if lancamento.situacao_vencimento == 'vencido' %}
-                                                <br><small class="text-danger">
-                                                    <i class="fas fa-exclamation-triangle"></i>
-                                                    {{ lancamento.dias_vencimento|abs }} dia(s) atrasado
-                                                </small>
-                                            {% elif lancamento.situacao_vencimento == 'vence_hoje' %}
-                                                <br><small class="text-warning">
-                                                    <i class="fas fa-clock"></i>
-                                                    Vence hoje
-                                                </small>
-                                            {% elif lancamento.situacao_vencimento == 'vence_semana' %}
-                                                <br><small class="text-info">
-                                                    Em {{ lancamento.dias_vencimento }} dia(s)
-                                                </small>
+                                            {% if lancamento.status not in ['pago', 'recebido', 'cancelado'] %}
+                                                {% if lancamento.situacao_vencimento == 'vencido' %}
+                                                    <br><small class="text-danger">
+                                                        <i class="fas fa-exclamation-triangle"></i>
+                                                        {{ lancamento.dias_vencimento|abs }} dia(s) atrasado
+                                                    </small>
+                                                {% elif lancamento.situacao_vencimento == 'vence_hoje' %}
+                                                    <br><small class="text-warning">
+                                                        <i class="fas fa-clock"></i>
+                                                        Vence hoje
+                                                    </small>
+                                                {% elif lancamento.situacao_vencimento == 'vence_semana' %}
+                                                    <br><small class="text-info">
+                                                        Em {{ lancamento.dias_vencimento }} dia(s)
+                                                    </small>
+                                                {% endif %}
                                             {% endif %}
                                         {% else %}
                                             <span class="text-muted">-</span>
