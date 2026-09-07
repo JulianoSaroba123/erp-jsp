@@ -20,7 +20,7 @@ from sqlalchemy import func, event
 STATUS_CHOICES = [
     ('pendente', 'Pendente'),
     ('em_execucao', 'Em Execução'),
-    ('finalizada', 'Finalizada'),
+    ('concluida', 'Concluída'),
     ('cancelada', 'Cancelada')
 ]
 
@@ -90,7 +90,7 @@ class OrdemServico(BaseModel):
     
     # Status do serviço (PADRONIZADO)
     status = db.Column(db.String(20), default='pendente', nullable=False, server_default='pendente')
-    # Possíveis status: pendente, em_execucao, finalizada, cancelada
+    # Possíveis status: pendente, em_execucao, concluida, cancelada
     
     prioridade = db.Column(db.String(20), default='normal', nullable=False, server_default='normal')
     # Possíveis prioridades: baixa, normal, alta, urgente
@@ -321,7 +321,8 @@ class OrdemServico(BaseModel):
         cores = {
             'pendente': 'warning',
             'em_execucao': 'primary',
-            'finalizada': 'success',
+            'concluida': 'success',
+            'finalizada': 'success',  # legado
             'cancelada': 'danger'
         }
         return cores.get(self.status, 'secondary')
@@ -355,7 +356,7 @@ class OrdemServico(BaseModel):
     @property
     def dias_em_aberto(self):
         """Calcula quantos dias a OS está em aberto."""
-        if self.status in ['finalizada', 'cancelada']:
+        if self.status in ['concluida', 'finalizada', 'cancelada']:
             return 0
         return (date.today() - self.data_abertura).days
     
@@ -546,7 +547,7 @@ class OrdemServico(BaseModel):
     def concluir_servico(self):
         """Marca a conclusão do serviço e gera lançamento financeiro."""
         if self.status in ['pendente', 'em_execucao']:
-            self.status = 'finalizada'
+            self.status = 'concluida'
             self.data_conclusao = datetime.now()
             self.save()
             
@@ -560,7 +561,7 @@ class OrdemServico(BaseModel):
         Returns:
             LancamentoFinanceiro: Novo lançamento criado ou None se não foi possível
         """
-        if self.status != 'finalizada':
+        if self.status not in ['concluida', 'finalizada']:
             return None
 
         from app.financeiro.financeiro_utils import gerar_lancamento_ordem_servico
@@ -572,7 +573,7 @@ class OrdemServico(BaseModel):
     
     def cancelar_servico(self):
         """Cancela o serviço."""
-        if self.status != 'finalizada':
+        if self.status not in ['concluida', 'finalizada']:
             self.status = 'cancelada'
             self.save()
     
@@ -601,7 +602,7 @@ class OrdemServico(BaseModel):
     
     def pode_editar(self):
         """Verifica se a OS pode ser editada."""
-        return self.status not in ['finalizada', 'cancelada']
+        return self.status not in ['concluida', 'finalizada', 'cancelada']
     
     def pode_iniciar(self):
         """Verifica se a OS pode ser iniciada."""
@@ -613,7 +614,7 @@ class OrdemServico(BaseModel):
     
     def pode_cancelar(self):
         """Verifica se a OS pode ser cancelada."""
-        return self.status not in ['finalizada', 'cancelada']
+        return self.status not in ['concluida', 'finalizada', 'cancelada']
     
     def atualizar_valores_automaticos(self):
         """Atualiza valores automáticos baseados nos itens."""
