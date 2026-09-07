@@ -22,8 +22,64 @@ logger = logging.getLogger(__name__)
 
 
 def _status_financeiro_por_os(ordem_servico):
-    """Mapeia status da OS para status financeiro."""
-    return 'pendente' if ordem_servico.status != 'concluida' else 'recebido'
+    """Mapeia o estado da OS sem confundir conclusao com recebimento."""
+    if ordem_servico.status == 'cancelada':
+        return 'cancelado'
+    return 'pendente'
+
+
+def _status_financeiro_por_parcela(ordem_servico, parcela=None):
+    """Define o status financeiro usando o pagamento real da parcela."""
+    if parcela is not None:
+        parcela_recebida = bool(getattr(parcela, 'pago', False)) or bool(
+            getattr(parcela, 'data_pagamento', None)
+        )
+        if parcela_recebida:
+            return 'recebido'
+
+    return _status_financeiro_por_os(ordem_servico)
+
+
+def _os_concluida_para_financeiro(ordem_servico):
+    """Aceita os dois nomes legados de conclusão enquanto o ERP é padronizado."""
+    return ordem_servico.status in {'concluida', 'finalizada'}
+
+
+def _parcela_recebida(parcela):
+    """Indica se a parcela possui evidência real de recebimento."""
+    return bool(getattr(parcela, 'pago', False)) or bool(
+        getattr(parcela, 'data_pagamento', None)
+    )
+
+
+def _lancamento_recebido(lancamento):
+    """Indica se já existe evidência financeira real de recebimento."""
+    if lancamento is None:
+        return False
+    return (
+        lancamento.status in {'pago', 'recebido'}
+        or bool(getattr(lancamento, 'data_pagamento', None))
+    )
+
+
+def _sincronizar_status_pagamento_os(ordem_servico, parcelas):
+    """Faz status_pagamento da OS refletir o estado real das parcelas."""
+    if not parcelas:
+        return
+
+    recebidas = sum(
+        1
+        for parcela in parcelas
+        if bool(getattr(parcela, 'pago', False))
+        or bool(getattr(parcela, 'data_pagamento', None))
+    )
+
+    if recebidas == 0:
+        ordem_servico.status_pagamento = 'pendente'
+    elif recebidas == len(parcelas):
+        ordem_servico.status_pagamento = 'pago'
+    else:
+        ordem_servico.status_pagamento = 'parcial'
 
 
 def _numero_parcela_exibicao(parcela, total_parcelas):
@@ -43,7 +99,7 @@ def _atualizar_lancamento_os(lancamento, ordem_servico, forma_pagamento=None, pa
         # Preserva lançamentos quitados mesmo com edição de OS.
         return
 
-    status_financeiro = _status_financeiro_por_os(ordem_servico)
+    status_financeiro = _status_financeiro_por_parcela(ordem_servico, parcela)
     numero_parcela = _numero_parcela_exibicao(parcela, total_parcelas)
 
     if parcela is not None:
@@ -73,8 +129,13 @@ def _atualizar_lancamento_os(lancamento, ordem_servico, forma_pagamento=None, pa
     lancamento.observacoes = f"Lançamento automático da {ordem_servico.numero}"
     lancamento.origem = 'ORDEM_SERVICO'
 
-    if status_financeiro == 'recebido' and lancamento.data_pagamento is None:
-        lancamento.data_pagamento = ordem_servico.data_conclusao or date.today()
+    if parcela is not None:
+        if status_financeiro == 'recebido':
+            lancamento.data_pagamento = parcela.data_pagamento
+        elif lancamento.status not in {'pago', 'recebido'}:
+            lancamento.data_pagamento = None
+    elif status_financeiro != 'recebido' and lancamento.status not in {'pago', 'recebido'}:
+        lancamento.data_pagamento = None
 
 
 def gerar_lancamento_ordem_servico(ordem_servico, forma_pagamento=None):
@@ -92,34 +153,69 @@ def gerar_lancamento_ordem_servico(ordem_servico, forma_pagamento=None):
         if total_os <= 0:
             return []
 
-        parcelas = sorted(list(getattr(ordem_servico, 'parcelas', []) or []), key=lambda p: p.numero_parcela)
+        parcelas = sorted(
+            list(getattr(ordem_servico, 'parcelas', []) or []),
+            key=lambda p: p.numero_parcela,
+        )
         lancamentos_processados = []
+        os_concluida = _os_concluida_para_financeiro(ordem_servico)
 
         if parcelas:
             total_parcelas = len(parcelas)
-            parcela_ids = [parcela.id for parcela in parcelas]
+
+            # Consulta vínculos existentes antes de decidir o que processar.
+            # Isso preserva histórico já recebido mesmo se a parcela legada
+            # ainda não estiver marcada como paga.
+            todos_parcela_ids = [parcela.id for parcela in parcelas]
             existentes = LancamentoFinanceiro.query.filter(
-                LancamentoFinanceiro.ordem_servico_parcela_id.in_(parcela_ids)
+                LancamentoFinanceiro.ordem_servico_parcela_id.in_(todos_parcela_ids)
             ).all()
             existentes_por_parcela = {
                 lancamento.ordem_servico_parcela_id: lancamento
                 for lancamento in existentes
             }
-            for parcela in parcelas:
-                lancamento = existentes_por_parcela.get(parcela.id)
 
-                if not lancamento:
-                    lancamento = LancamentoFinanceiro(
-                        origem='ORDEM_SERVICO',
-                        ordem_servico_id=ordem_servico.id,
-                        ordem_servico_parcela_id=parcela.id,
+            # Antes da conclusão:
+            # - não cria novo contas a receber para parcelas pendentes;
+            # - processa parcela já recebida;
+            # - preserva/reconcilia qualquer lançamento legado já existente.
+            # Na conclusão, nasce também o saldo ainda devido.
+            parcelas_processar = (
+                parcelas
+                if os_concluida
+                else [
+                    parcela
+                    for parcela in parcelas
+                    if _parcela_recebida(parcela)
+                    or existentes_por_parcela.get(parcela.id) is not None
+                ]
+            )
+
+            if parcelas_processar:
+                for parcela in parcelas_processar:
+                    lancamento = existentes_por_parcela.get(parcela.id)
+
+                    if not lancamento:
+                        lancamento = LancamentoFinanceiro(
+                            origem='ORDEM_SERVICO',
+                            ordem_servico_id=ordem_servico.id,
+                            ordem_servico_parcela_id=parcela.id,
+                        )
+                        db.session.add(lancamento)
+
+                    _atualizar_lancamento_os(
+                        lancamento,
+                        ordem_servico,
+                        forma_pagamento=forma_pagamento,
+                        parcela=parcela,
+                        total_parcelas=total_parcelas,
                     )
-                    db.session.add(lancamento)
+                    lancamentos_processados.append(lancamento)
 
-                _atualizar_lancamento_os(lancamento, ordem_servico, forma_pagamento=forma_pagamento, parcela=parcela, total_parcelas=total_parcelas)
-                lancamentos_processados.append(lancamento)
-        else:
-            # OS sem parcelas: mantém comportamento de lançamento único por OS.
+            _sincronizar_status_pagamento_os(ordem_servico, parcelas)
+        elif os_concluida:
+            # OS concluída sem tabela de parcelas: nasce um lançamento único
+            # pendente pelo valor total.
             lancamento = LancamentoFinanceiro.query.filter_by(
                 ordem_servico_id=ordem_servico.id,
                 ordem_servico_parcela_id=None,
@@ -132,7 +228,11 @@ def gerar_lancamento_ordem_servico(ordem_servico, forma_pagamento=None):
                 )
                 db.session.add(lancamento)
 
-            _atualizar_lancamento_os(lancamento, ordem_servico, forma_pagamento=forma_pagamento)
+            _atualizar_lancamento_os(
+                lancamento,
+                ordem_servico,
+                forma_pagamento=forma_pagamento,
+            )
             lancamentos_processados.append(lancamento)
 
         db.session.commit()
@@ -161,29 +261,48 @@ def atualizar_status_financeiro_ordem(ordem_servico):
         ).all()
 
         if lancamentos:
-            status_map = {
-                'concluida': 'recebido',
-                'cancelada': 'cancelado',
-                'pendente': 'pendente',
-                'em_execucao': 'pendente',
-                'em_andamento': 'pendente'
-            }
-            novo_status = status_map.get(ordem_servico.status, 'pendente')
-
             alterou = False
+
             for lancamento in lancamentos:
-                if lancamento.status in {'pago', 'recebido'} and lancamento.data_pagamento is not None:
+                if (
+                    lancamento.status in {'pago', 'recebido'}
+                    and lancamento.data_pagamento is not None
+                ):
                     continue
+
+                parcela = getattr(lancamento, 'ordem_servico_parcela', None)
+                novo_status = _status_financeiro_por_parcela(
+                    ordem_servico,
+                    parcela,
+                )
 
                 if lancamento.status != novo_status:
                     lancamento.status = novo_status
-                    if novo_status == 'recebido' and lancamento.data_pagamento is None:
-                        lancamento.data_pagamento = ordem_servico.data_conclusao or date.today()
                     alterou = True
+
+                if parcela is not None and novo_status == 'recebido':
+                    if lancamento.data_pagamento != parcela.data_pagamento:
+                        lancamento.data_pagamento = parcela.data_pagamento
+                        alterou = True
+                elif novo_status != 'recebido' and lancamento.data_pagamento is not None:
+                    lancamento.data_pagamento = None
+                    alterou = True
+
+            parcelas = sorted(
+                list(getattr(ordem_servico, 'parcelas', []) or []),
+                key=lambda p: p.numero_parcela,
+            )
+            status_pagamento_anterior = ordem_servico.status_pagamento
+            _sincronizar_status_pagamento_os(ordem_servico, parcelas)
+            if ordem_servico.status_pagamento != status_pagamento_anterior:
+                alterou = True
 
             if alterou:
                 db.session.commit()
-                print(f" Status financeiro atualizado para OS {ordem_servico.numero}: {novo_status}")
+                print(
+                    f" Status financeiro atualizado para OS "
+                    f"{ordem_servico.numero}"
+                )
                 
     except Exception as e:
         print(f" Erro ao atualizar status financeiro da OS {ordem_servico.numero}: {e}")

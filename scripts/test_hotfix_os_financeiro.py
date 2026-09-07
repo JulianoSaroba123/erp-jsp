@@ -162,6 +162,17 @@ def test_template_uses_explicit_prefill_and_multiple_parcels_are_idempotent():
         primeira.valor = Decimal('200.00')
         db.session.add(segunda)
         db.session.commit()
+
+        # Antes da conclusão, parcelas ainda não recebidas não devem
+        # antecipar contas a receber.
+        assert len(gerar_lancamento_ordem_servico(ordem, forma_pagamento='pix')) == 0
+        assert len(gerar_lancamento_ordem_servico(ordem, forma_pagamento='pix')) == 0
+        assert LancamentoFinanceiro.query.filter_by(ordem_servico_id=ordem.id).count() == 0
+
+        # Na conclusão, as duas parcelas passam a existir no Contas a Receber.
+        ordem.status = 'concluida'
+        db.session.commit()
+
         assert len(gerar_lancamento_ordem_servico(ordem, forma_pagamento='pix')) == 2
         assert len(gerar_lancamento_ordem_servico(ordem, forma_pagamento='pix')) == 2
         assert LancamentoFinanceiro.query.filter_by(ordem_servico_id=ordem.id).count() == 2
@@ -245,7 +256,7 @@ def test_route_get_prefills_multiple_forms_and_rejects_invalid_post():
         assert formas == ['transferencia', 'transferencia']
 
 
-def test_route_new_validates_forma_and_creates_financeiro():
+def test_route_new_validates_forma_e_nao_antecipa_financeiro():
     app = create_app('testing')
     with app.app_context():
         db.create_all()
@@ -269,14 +280,18 @@ def test_route_new_validates_forma_and_creates_financeiro():
     assert invalid.status_code == 200
     with app.app_context():
         assert LancamentoFinanceiro.query.count() == 0
+
     valid = client.post(
         '/ordem_servico/novo', data={**base, 'forma_pagamento': 'pix'},
     )
     assert valid.status_code in (302, 303)
+
     with app.app_context():
-        lancamentos = LancamentoFinanceiro.query.all()
-        assert len(lancamentos) == 1
-        assert lancamentos[0].forma_pagamento == 'pix'
+        ordem = OrdemServico.query.filter_by(titulo='OS Nova').one()
+        assert ordem.status == 'aberta'
+        assert LancamentoFinanceiro.query.filter_by(
+            ordem_servico_id=ordem.id,
+        ).count() == 0
 
 
 if __name__ == '__main__':
@@ -284,5 +299,5 @@ if __name__ == '__main__':
     test_new_parcela_creates_one_lancamento_and_maps_payment()
     test_template_uses_explicit_prefill_and_multiple_parcels_are_idempotent()
     test_route_get_prefills_multiple_forms_and_rejects_invalid_post()
-    test_route_new_validates_forma_and_creates_financeiro()
+    test_route_new_validates_forma_e_nao_antecipa_financeiro()
     print('HOTFIX OS FINANCEIRO: 5/5 testes passaram')
