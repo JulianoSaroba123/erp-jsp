@@ -47,7 +47,7 @@ def executar_testes():
         db.session.commit()
         assert saldo(conta) == dinheiro('1000.00')
 
-        # 1) Lançamento que ja nasce recebido movimenta a conta.
+        # 1) Lancamento que ja nasce recebido movimenta a conta.
         receita = LancamentoFinanceiro(
             descricao='TEST_SALDO_ReceitaRecebida',
             valor=dinheiro('100.00'),
@@ -78,6 +78,7 @@ def executar_testes():
         db.session.commit()
         assert saldo(conta) == dinheiro('1100.00')
 
+        # Mantem o objeto potencialmente expirado para validar snapshot direto do banco.
         despesa.status = 'pago'
         despesa.data_pagamento = date(2026, 9, 7)
         db.session.commit()
@@ -125,7 +126,7 @@ def executar_testes():
         db.session.commit()
         assert saldo(conta) == dinheiro('1060.00')
 
-        # 7) Recebimento novo de OS, sem seletor de conta, usa a unica conta ativa.
+        # 7) Recebimento NOVO de OS sem seletor de conta usa a unica conta ativa.
         recebimento_os = LancamentoFinanceiro(
             descricao='TEST_SALDO_OS_Nova',
             valor=dinheiro('25.00'),
@@ -142,7 +143,25 @@ def executar_testes():
         assert recebimento_os.conta_bancaria_id == conta.id
         assert saldo(conta) == dinheiro('1085.00')
 
-        # 8) Recebimento historico ja quitado nao e retrovinculado por mera edicao.
+        # 8) OS pendente sem conta, baixada pelo metodo legado, vincula conta e soma uma vez.
+        os_pendente = LancamentoFinanceiro(
+            descricao='TEST_SALDO_OS_Pendente',
+            valor=dinheiro('15.00'),
+            tipo='conta_receber',
+            status='pendente',
+            data_lancamento=date(2026, 9, 7),
+            origem='ORDEM_SERVICO',
+            categoria='Serviços',
+            ativo=True,
+        )
+        db.session.add(os_pendente)
+        db.session.commit()
+        assert os_pendente.conta_bancaria_id is None
+        os_pendente.marcar_como_pago(data_pagamento=date(2026, 9, 7))
+        assert os_pendente.conta_bancaria_id == conta.id
+        assert saldo(conta) == dinheiro('1100.00')
+
+        # 9) Recebimento historico ja quitado nao e retrovinculado por mera edicao.
         conta.ativa = False
         db.session.commit()
         legado = LancamentoFinanceiro(
@@ -159,14 +178,14 @@ def executar_testes():
         db.session.add(legado)
         db.session.commit()
         assert legado.conta_bancaria_id is None
-        assert saldo(conta) == dinheiro('1085.00')
+        assert saldo(conta) == dinheiro('1100.00')
 
         conta.ativa = True
         db.session.commit()
         legado.descricao = 'TEST_SALDO_OS_Legado_Editado'
         db.session.commit()
         assert legado.conta_bancaria_id is None
-        assert saldo(conta) == dinheiro('1085.00')
+        assert saldo(conta) == dinheiro('1100.00')
 
     print('SALDO BANCARIO TRANSACIONAL: OK')
 
