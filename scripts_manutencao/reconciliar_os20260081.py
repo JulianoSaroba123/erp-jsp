@@ -15,7 +15,9 @@ Regras de segurança:
 - atua exclusivamente na OS20260081;
 - exige exatamente duas parcelas, números 1 e 2;
 - exige R$ 2.800,00 em cada parcela e total da OS R$ 5.600,00;
-- aborta se houver lançamentos financeiros soltos ou duplicados;
+- aceita como histórico somente lançamento legado sem parcela que esteja
+  inativo, pendente, sem pagamento, origem ORDEM_SERVICO e valor R$ 5.600,00;
+- aborta diante de qualquer outro lançamento solto ou duplicado;
 - preserva juros, multa, desconto, comprovante e demais metadados;
 - não recria lançamentos já existentes;
 - pode ser executado novamente sem duplicar registros.
@@ -117,6 +119,21 @@ def carregar_estado():
     return ordem, parcelas, lancamentos
 
 
+def _legado_inativo_seguro(lancamento):
+    """Reconhece exclusivamente o padrão legado observado no diagnóstico."""
+    if lancamento.ordem_servico_parcela_id is not None:
+        return False
+
+    valor = Decimal(str(lancamento.valor or 0)).quantize(Decimal("0.01"))
+    return (
+        getattr(lancamento, "ativo", True) is False
+        and lancamento.status == "pendente"
+        and lancamento.data_pagamento is None
+        and getattr(lancamento, "origem", None) == "ORDEM_SERVICO"
+        and valor == VALOR_TOTAL
+    )
+
+
 def validar_para_aplicar(ordem, parcelas, lancamentos):
     erros = []
 
@@ -140,19 +157,35 @@ def validar_para_aplicar(ordem, parcelas, lancamentos):
 
     parcela_ids = {p.id for p in parcelas}
     por_parcela = {}
-    soltos = []
+    soltos_invalidos = []
+    legados_inativos = []
 
     for l in lancamentos:
         pid = l.ordem_servico_parcela_id
-        if pid is None or pid not in parcela_ids:
-            soltos.append(l)
+
+        if pid is None:
+            if _legado_inativo_seguro(l):
+                legados_inativos.append(l)
+                continue
+            soltos_invalidos.append(l)
             continue
+
+        if pid not in parcela_ids:
+            soltos_invalidos.append(l)
+            continue
+
         por_parcela.setdefault(pid, []).append(l)
 
-    if soltos:
+    if legados_inativos:
+        print(
+            "LEGADOS INATIVOS PRESERVADOS: "
+            + ", ".join(str(l.id) for l in legados_inativos)
+        )
+
+    if soltos_invalidos:
         erros.append(
-            "existem lançamentos sem vínculo válido com as duas parcelas: "
-            + ", ".join(str(l.id) for l in soltos)
+            "existem lançamentos sem vínculo válido que NÃO atendem ao padrão legado seguro: "
+            + ", ".join(str(l.id) for l in soltos_invalidos)
         )
 
     duplicados = {
@@ -221,6 +254,7 @@ def aplicar_reconciliacao(ordem, parcelas, lancamentos):
     por_parcela = {
         l.ordem_servico_parcela_id: l
         for l in lancamentos_finais
+        if l.ordem_servico_parcela_id in {p1.id, p2.id}
     }
 
     l1 = por_parcela[p1.id]
@@ -281,6 +315,9 @@ def main():
         # Verificação final objetiva.
         assert ordem.status == "concluida"
         assert ordem.status_pagamento == "pago"
+        assert ordem.condicao_pagamento == "parcelado"
+        assert ordem.numero_parcelas == 2
+        assert ordem.valor_entrada == VALOR_PARCELA
         assert ordem.data_primeira_parcela == P1_VENCIMENTO
         assert ordem.data_vencimento_pagamento == P2_VENCIMENTO
         assert len(parcelas) == 2
@@ -291,16 +328,19 @@ def main():
         assert parcelas[1].data_pagamento == P2_PAGAMENTO
         assert parcelas[1].pago is True
 
-        por_parcela = {
+        vinculados = {
             l.ordem_servico_parcela_id: l
             for l in lancamentos
+            if l.ordem_servico_parcela_id in {parcelas[0].id, parcelas[1].id}
         }
-        assert por_parcela[parcelas[0].id].data_vencimento == P1_VENCIMENTO
-        assert por_parcela[parcelas[0].id].data_pagamento == P1_PAGAMENTO
-        assert por_parcela[parcelas[0].id].status == "recebido"
-        assert por_parcela[parcelas[1].id].data_vencimento == P2_VENCIMENTO
-        assert por_parcela[parcelas[1].id].data_pagamento == P2_PAGAMENTO
-        assert por_parcela[parcelas[1].id].status == "recebido"
+        assert vinculados[parcelas[0].id].data_vencimento == P1_VENCIMENTO
+        assert vinculados[parcelas[0].id].data_pagamento == P1_PAGAMENTO
+        assert vinculados[parcelas[0].id].status == "recebido"
+        assert vinculados[parcelas[0].id].ativo is True
+        assert vinculados[parcelas[1].id].data_vencimento == P2_VENCIMENTO
+        assert vinculados[parcelas[1].id].data_pagamento == P2_PAGAMENTO
+        assert vinculados[parcelas[1].id].status == "recebido"
+        assert vinculados[parcelas[1].id].ativo is True
 
         print("RECONCILIACAO CONCLUIDA E VALIDADA COM SUCESSO.")
 
