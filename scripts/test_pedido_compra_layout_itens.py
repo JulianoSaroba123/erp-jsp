@@ -12,6 +12,7 @@ def main():
         "pedido-compra-itens-wrap",
         "overflow-x: auto",
         "table-layout: fixed",
+        "pc-col-tipo",
         "pc-col-referencia",
         "pc-col-descricao",
         "pc-col-total",
@@ -29,7 +30,8 @@ def main():
 
     assert texto.count('<col class="pc-col-') == 9, "Esperadas 9 colunas dimensionadas na Executive V1"
     assert "Remover</button>" not in texto, "Botao textual antigo ainda presente"
-    assert "min-width: 1260px" in texto, "Tabela principal deve manter largura confortavel na Executive V1"
+    assert "min-width: 1280px" in texto, "Tabela principal deve manter largura confortavel apos padronizacao visual"
+    assert ".pc-col-tipo { width: 9%; }" in texto, "Coluna Tipo deve exibir Produto/Servico sem truncamento"
 
     print("PEDIDO COMPRA LAYOUT ITENS: OK")
 
