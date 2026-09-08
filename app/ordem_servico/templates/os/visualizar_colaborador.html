@@ -16,19 +16,22 @@
                 <h3 class="mb-1"><i class="fas fa-wrench me-2 text-primary"></i>OS {{ ordem.numero }}</h3>
                 <p class="text-muted mb-0">{{ ordem.titulo or 'Ordem de Serviço' }}</p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 flex-wrap">
                 <a href="{{ url_for('ordem_servico.listar') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Voltar</a>
+                {% if ordem.tipo_os == 'operacional' %}
+                <a href="{{ url_for('ordem_servico.editar_operacional', id=ordem.id) }}" class="btn btn-outline-primary"><i class="fas fa-edit me-1"></i>Dados técnicos</a>
+                {% endif %}
                 <a href="{{ url_for('ordem_servico.apontamento_colaborador', id=ordem.id) }}" class="btn btn-primary"><i class="fas fa-clock me-1"></i>Preencher apontamento</a>
             </div>
         </div>
 
         <div class="row g-3 mb-4">
-            <div class="col-md-4"><strong>Cliente</strong><br>{{ ordem.cliente.nome if ordem.cliente else '-' }}</div>
+            <div class="col-md-4"><strong>Cliente</strong><br>{{ ordem.cliente.nome_display if ordem.cliente else '-' }}</div>
             <div class="col-md-4"><strong>Solicitante</strong><br>{{ ordem.solicitante or '-' }}</div>
             <div class="col-md-4"><strong>Status</strong><br><span class="badge bg-secondary">{{ ordem.status_formatado if ordem.status_formatado is defined else ordem.status }}</span></div>
             <div class="col-md-4"><strong>Data de abertura</strong><br>{{ ordem.data_abertura.strftime('%d/%m/%Y') if ordem.data_abertura else '-' }}</div>
             <div class="col-md-4"><strong>Previsão</strong><br>{{ ordem.data_prevista.strftime('%d/%m/%Y') if ordem.data_prevista else '-' }}</div>
-            <div class="col-md-4"><strong>Prioridade</strong><br>{{ ordem.prioridade or '-' }}</div>
+            <div class="col-md-4"><strong>Prioridade</strong><br>{{ ordem.prioridade_formatada if ordem.prioridade_formatada is defined else ordem.prioridade }}</div>
         </div>
 
         <div class="row g-3 mb-4">
@@ -37,11 +40,11 @@
             <div class="col-md-4"><strong>Nº de série</strong><br>{{ ordem.numero_serie or '-' }}</div>
         </div>
 
-        {% if ordem.descricao_problema %}
-        <div class="mb-4"><strong>Descrição do problema / serviço</strong><div class="p-3 bg-light rounded mt-2">{{ ordem.descricao_problema }}</div></div>
-        {% elif ordem.descricao %}
-        <div class="mb-4"><strong>Descrição</strong><div class="p-3 bg-light rounded mt-2">{{ ordem.descricao }}</div></div>
-        {% endif %}
+        {% if ordem.descricao_problema %}<div class="mb-4"><strong>Descrição do problema / solicitação</strong><div class="p-3 bg-light rounded mt-2" style="white-space:pre-wrap">{{ ordem.descricao_problema }}</div></div>{% endif %}
+        {% if ordem.defeito_relatado %}<div class="mb-4"><strong>Defeito relatado</strong><div class="p-3 bg-light rounded mt-2" style="white-space:pre-wrap">{{ ordem.defeito_relatado }}</div></div>{% endif %}
+        {% if ordem.diagnostico_tecnico %}<div class="mb-4"><strong>Diagnóstico técnico</strong><div class="p-3 bg-light rounded mt-2" style="white-space:pre-wrap">{{ ordem.diagnostico_tecnico }}</div></div>{% endif %}
+        {% if ordem.solucao %}<div class="mb-4"><strong>Solução / serviço executado</strong><div class="p-3 bg-light rounded mt-2" style="white-space:pre-wrap">{{ ordem.solucao }}</div></div>{% endif %}
+        {% if ordem.observacoes %}<div class="mb-4"><strong>Observações operacionais</strong><div class="p-3 bg-light rounded mt-2" style="white-space:pre-wrap">{{ ordem.observacoes }}</div></div>{% endif %}
 
         {% if trabalho %}
         <div class="card bg-light border-0">
