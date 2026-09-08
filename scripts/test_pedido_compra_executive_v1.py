@@ -29,9 +29,11 @@ assert "valor === 'PEDIDO_VENDA'" in form
 assert "osSelect.required = true" in form
 assert "pvSelect.required = true" in form
 
-# Impressao: identidade, fornecedor, itens e totais.
+# Impressao: identidade institucional, fornecedor, itens e totais.
 for marker in (
-    "JSP ELÉTRICA INDUSTRIAL &amp; SOLAR",
+    "config.logo_base64",
+    "config.nome_fantasia",
+    "config.cnpj",
     "Pedido de Compra",
     "01</span>Fornecedor",
     "02</span>Dados da Compra",
