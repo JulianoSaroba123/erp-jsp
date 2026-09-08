@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 APP = (ROOT / "app/app.py").read_text(encoding="utf-8")
@@ -16,6 +17,8 @@ for endpoint in (
     "'ordem_servico.listar'",
     "'ordem_servico.visualizar'",
     "'ordem_servico.apontamento_colaborador'",
+    "'cliente.listar'",
+    "'cliente.visualizar'",
     "'auth.perfil'",
     "'auth.alterar_senha'",
     "'auth.logout'",
@@ -23,12 +26,18 @@ for endpoint in (
 ):
     assert endpoint in APP, f"Endpoint permitido ausente: {endpoint}"
 
-# Nada sensível pode aparecer na whitelist.
+# Clientes: somente consulta. Qualquer outra rota cliente.* deve quebrar o contrato.
 bloco = APP.split("endpoints_permitidos = {", 1)[1].split("}", 1)[0]
+endpoints_cliente = set(re.findall(r"'(cliente\.[^']+)'", bloco))
+assert endpoints_cliente == {
+    'cliente.listar',
+    'cliente.visualizar',
+}, f"Whitelist de Clientes fora do modo somente leitura: {sorted(endpoints_cliente)}"
+
+# Demais domínios sensíveis continuam totalmente fora da whitelist.
 for proibido in (
     "painel.dashboard",
     "financeiro.",
-    "cliente.",
     "proposta.",
     "pedido.",
     "pedido_compra.",
