@@ -27,6 +27,11 @@ def replace_once(texto, antigo, novo, marcador):
     return texto.replace(antigo, novo, 1)
 
 
+def limpar_trailing_whitespace(texto):
+    """Remove espacos/tabs no fim das linhas e preserva newline final."""
+    return '\n'.join(linha.rstrip() for linha in texto.splitlines()) + '\n'
+
+
 def main():
     form = FORM.read_text(encoding='utf-8')
     routes = ROUTES.read_text(encoding='utf-8')
@@ -48,13 +53,13 @@ def main():
 
     bloco_ie = '''                                        <div class="col-md-6">\n                                            <label for="nome_fantasia" class="form-label">Nome Fantasia *</label>\n                                            <input type="text" \n                                                   class="form-control" \n                                                   id="nome_fantasia" \n                                                   name="nome_fantasia" \n                                                   value="{{ fornecedor.nome_fantasia or '' }}"\n                                                   maxlength="150"\n                                                   placeholder="Nome fantasia da empresa">\n                                        </div>\n                                        <div class="col-md-6">\n                                            <label for="inscricao_estadual" class="form-label">Inscrição Estadual</label>\n                                            <input type="text" \n                                                   class="form-control" \n                                                   id="inscricao_estadual" \n                                                   name="inscricao_estadual" \n                                                   value="{{ fornecedor.inscricao_estadual or '' }}"\n                                                   maxlength="20"\n                                                   placeholder="Inscrição Estadual">\n                                        </div>'''
 
-    bloco_ie_novo = '''                                        <div class="col-md-12">\n                                            <label for="nome_fantasia" class="form-label">Nome Fantasia *</label>\n                                            <input type="text" \n                                                   class="form-control" \n                                                   id="nome_fantasia" \n                                                   name="nome_fantasia" \n                                                   value="{{ fornecedor.nome_fantasia or '' }}"\n                                                   maxlength="150"\n                                                   placeholder="Nome fantasia da empresa">\n                                        </div>'''
+    bloco_ie_novo = '''                                        <div class="col-md-12">\n                                            <label for="nome_fantasia" class="form-label">Nome Fantasia *</label>\n                                            <input type="text"\n                                                   class="form-control"\n                                                   id="nome_fantasia"\n                                                   name="nome_fantasia"\n                                                   value="{{ fornecedor.nome_fantasia or '' }}"\n                                                   maxlength="150"\n                                                   placeholder="Nome fantasia da empresa">\n                                        </div>'''
 
     form = replace_once(form, bloco_ie, bloco_ie_novo, 'IE duplicada no bloco PJ')
 
     data_antiga = '''                                <input type="date" \n                                       class="form-control" \n                                       id="data_fundacao" \n                                       name="data_fundacao" \n                                       value="{{ fornecedor.data_fundacao or '' }}">'''
 
-    data_nova = '''                                <input type="text" \n                                       class="form-control" \n                                       id="data_fundacao" \n                                       name="data_fundacao" \n                                       value="{{ fornecedor.data_fundacao.strftime('%d/%m/%Y') if fornecedor.data_fundacao else '' }}"\n                                       inputmode="numeric"\n                                       maxlength="10"\n                                       autocomplete="off"\n                                       placeholder="DD/MM/AAAA">'''
+    data_nova = '''                                <input type="text"\n                                       class="form-control"\n                                       id="data_fundacao"\n                                       name="data_fundacao"\n                                       value="{{ fornecedor.data_fundacao.strftime('%d/%m/%Y') if fornecedor.data_fundacao else '' }}"\n                                       inputmode="numeric"\n                                       maxlength="10"\n                                       autocomplete="off"\n                                       placeholder="DD/MM/AAAA">'''
 
     form = replace_once(form, data_antiga, data_nova, 'campo data_fundacao')
 
@@ -126,6 +131,10 @@ def main():
         '''        # Formata os dados para retornar\n        razao_social = (\n            data.get('nome')\n            or data.get('razao_social')\n            or data.get('razaoSocial')\n            or ''\n        )\n        resultado = {\n            'success': True,\n            'data': {\n                'nome': razao_social,\n                'razao_social': razao_social,''',
         'razao_social na API CNPJ',
     )
+
+    form = limpar_trailing_whitespace(form)
+    routes = limpar_trailing_whitespace(routes)
+    api = limpar_trailing_whitespace(api)
 
     FORM.write_text(form, encoding='utf-8')
     ROUTES.write_text(routes, encoding='utf-8')
