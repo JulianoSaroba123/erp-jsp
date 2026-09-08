@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('ordem_servico.listar') }}">Minhas OS</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Clientes</span>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+            <div>
+                <h3 class="mb-1"><i class="fas fa-users me-2 text-primary"></i>Clientes</h3>
+                <p class="text-muted mb-0">Consulta operacional de contatos e endereços.</p>
+            </div>
+            <span class="badge bg-light text-dark border"><i class="fas fa-eye me-1"></i>Somente consulta</span>
+        </div>
+
+        <form method="get" class="row g-2 mb-4">
+            <div class="col-md-10">
+                <input type="text" class="form-control" name="busca" value="{{ busca or '' }}" placeholder="Buscar por nome ou CPF/CNPJ" autocomplete="off">
+            </div>
+            <div class="col-md-2 d-grid">
+                <button class="btn btn-primary" type="submit"><i class="fas fa-search me-1"></i>Buscar</button>
+            </div>
+        </form>
+
+        {% if clientes %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Documento</th>
+                        <th>Contato</th>
+                        <th>Cidade</th>
+                        <th class="text-end"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                    <tr>
+                        <td><strong>{{ cliente.nome_display }}</strong></td>
+                        <td>{{ cliente.documento_formatado or '-' }}</td>
+                        <td>
+                            {% if cliente.celular %}
+                                <a href="tel:{{ cliente.celular }}">{{ cliente.celular }}</a>
+                            {% elif cliente.telefone %}
+                                <a href="tel:{{ cliente.telefone }}">{{ cliente.telefone }}</a>
+                            {% elif cliente.email %}
+                                <a href="mailto:{{ cliente.email }}">{{ cliente.email }}</a>
+                            {% else %}-{% endif %}
+                        </td>
+                        <td>{{ cliente.cidade or '-' }}{% if cliente.estado %}/{{ cliente.estado }}{% endif %}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('cliente.visualizar', id=cliente.id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye me-1"></i>Abrir</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="fas fa-address-book fa-3x mb-3"></i>
+            <p class="mb-0">Nenhum cliente encontrado.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
