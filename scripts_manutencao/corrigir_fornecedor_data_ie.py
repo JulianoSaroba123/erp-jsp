@@ -111,7 +111,9 @@ def main():
 
     routes = replace_once(routes, editar_nome_antigo, editar_nome_novo, 'nome canonico na edicao')
 
-    editar_docs_antigo = '''            fornecedor.tipo = request.form.get('tipo', 'PJ')\n            novo_doc = ''.join(filter(str.isdigit, request.form.get('cnpj_cpf', '')))\n            fornecedor.inscricao_estadual = request.form.get('inscricao_estadual', '').strip()\n            fornecedor.inscricao_municipal = request.form.get('inscricao_municipal', '').strip()'''
+    # A substituicao acima ja moveu fornecedor.tipo para antes do nome. Por isso
+    # este marcador comeca em novo_doc, sem esperar novamente a linha do tipo.
+    editar_docs_antigo = '''            novo_doc = ''.join(filter(str.isdigit, request.form.get('cnpj_cpf', '')))\n            fornecedor.inscricao_estadual = request.form.get('inscricao_estadual', '').strip()\n            fornecedor.inscricao_municipal = request.form.get('inscricao_municipal', '').strip()'''
 
     editar_docs_novo = '''            novo_doc = ''.join(filter(str.isdigit, request.form.get('cnpj_cpf', '')))\n            fornecedor.rg_ie = request.form.get('rg_ie', '').strip()\n            fornecedor.inscricao_estadual = fornecedor.rg_ie if fornecedor.tipo == 'PJ' else ''\n            fornecedor.im = request.form.get('im', '').strip()\n            fornecedor.inscricao_municipal = fornecedor.im if fornecedor.tipo == 'PJ' else ''\n            fornecedor.data_fundacao = _parse_date(request.form.get('data_fundacao'))'''
 
