@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Apontamento {{ ordem.numero }} - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('ordem_servico.listar') }}">Minhas OS</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}">{{ ordem.numero }}</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Apontamento</span>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+            <div>
+                <h3 class="mb-1"><i class="fas fa-user-clock me-2 text-primary"></i>Meu apontamento</h3>
+                <p class="text-muted mb-0">OS {{ ordem.numero }} • {{ ordem.titulo or ordem.equipamento or 'Serviço' }}</p>
+            </div>
+            <a href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Voltar</a>
+        </div>
+
+        <form method="post" autocomplete="off">
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Data do trabalho</label>
+                    <input type="date" class="form-control" name="data_trabalho" value="{{ trabalho.data_trabalho.isoformat() if trabalho.data_trabalho else today.isoformat() }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">KM inicial</label>
+                    <input type="number" min="0" class="form-control" name="km_inicial" value="{{ trabalho.km_inicial if trabalho.km_inicial is not none else '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">KM final</label>
+                    <input type="number" min="0" class="form-control" name="km_final" value="{{ trabalho.km_final if trabalho.km_final is not none else '' }}">
+                </div>
+            </div>
+
+            <h5 class="mb-3">Horários</h5>
+            <div class="row g-3 mb-4">
+                {% for nome, label, valor in [
+                    ('hora_entrada_manha','Entrada manhã',trabalho.hora_entrada_manha),
+                    ('hora_saida_manha','Saída manhã',trabalho.hora_saida_manha),
+                    ('hora_entrada_tarde','Entrada tarde',trabalho.hora_entrada_tarde),
+                    ('hora_saida_tarde','Saída tarde',trabalho.hora_saida_tarde),
+                    ('hora_entrada_extra','Entrada extra',trabalho.hora_entrada_extra),
+                    ('hora_saida_extra','Saída extra',trabalho.hora_saida_extra)
+                ] %}
+                <div class="col-md-4 col-lg-2">
+                    <label class="form-label">{{ label }}</label>
+                    <input type="time" class="form-control" name="{{ nome }}" value="{{ valor.strftime('%H:%M') if valor else '' }}">
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-12">
+                    <label class="form-label">Atividades realizadas</label>
+                    <textarea class="form-control" name="descricao_atividade" rows="5" placeholder="Descreva o que foi executado na OS">{{ trabalho.descricao_atividade or '' }}</textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Observações técnicas</label>
+                    <textarea class="form-control" name="observacoes" rows="3" placeholder="Informações adicionais do atendimento">{{ trabalho.observacoes or '' }}</textarea>
+                </div>
+            </div>
+
+            <div class="alert alert-info mb-4">
+                <i class="fas fa-lock me-2"></i>Este acesso é operacional. Valores, pagamentos e dados financeiros da OS não ficam disponíveis neste perfil.
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}" class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Salvar apontamento</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

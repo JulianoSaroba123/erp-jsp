@@ -26,6 +26,16 @@ from reportlab.lib.units import cm
 bp_nfse = Blueprint('nfse', __name__, url_prefix='/financeiro/nfse')
 
 
+@bp_nfse.before_request
+def restringir_acesso_nfse_financeiro():
+    """NFS-e é informação financeira/fiscal e exige permissão financeira."""
+    if not getattr(current_user, 'is_authenticated', False):
+        return redirect(url_for('auth.login'))
+    if not current_user.tem_permissao('visualizar_financeiro'):
+        flash('Acesso fiscal/financeiro restrito ao perfil autorizado.', 'error')
+        return redirect(url_for('painel.dashboard'))
+
+
 @bp_nfse.route('/')
 @login_required
 def listar():

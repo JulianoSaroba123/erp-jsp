@@ -11,6 +11,7 @@ Data: 2025
 """
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file
+from flask_login import current_user
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 import io
@@ -38,6 +39,16 @@ from app.fornecedor.fornecedor_model import Fornecedor
 
 # Criar blueprint
 bp_financeiro = Blueprint('financeiro', __name__, template_folder='templates')
+
+
+@bp_financeiro.before_request
+def restringir_acesso_financeiro():
+    """Bloqueia todo o módulo financeiro para perfis sem permissão."""
+    if not getattr(current_user, 'is_authenticated', False):
+        return redirect(url_for('auth.login'))
+    if not current_user.tem_permissao('visualizar_financeiro'):
+        flash('Acesso ao Financeiro restrito ao perfil autorizado.', 'error')
+        return redirect(url_for('painel.dashboard'))
 
 
 def converter_valor_monetario(valor_str):

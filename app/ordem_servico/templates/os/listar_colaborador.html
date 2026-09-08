@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Minhas Ordens de Serviço - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<span class="current-page">Minhas Ordens de Serviço</span>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+            <div>
+                <h3 class="mb-1"><i class="fas fa-toolbox me-2 text-primary"></i>Minhas Ordens de Serviço</h3>
+                <p class="text-muted mb-0">Apenas serviços em que você está escalado.</p>
+            </div>
+        </div>
+
+        {% if not colaborador_vinculado %}
+        <div class="alert alert-warning">
+            <i class="fas fa-user-lock me-2"></i>
+            Seu login ainda não está vinculado a um colaborador ativo. O e-mail do usuário deve ser igual ao e-mail do cadastro em Colaboradores.
+        </div>
+        {% endif %}
+
+        <form method="get" class="row g-2 mb-4">
+            <div class="col-md-7">
+                <input type="text" class="form-control" name="busca" value="{{ busca or '' }}" placeholder="Buscar por número, título ou equipamento">
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="status">
+                    <option value="">Todos os status</option>
+                    {% for valor, texto in [('aberta','Aberta'),('em_andamento','Em andamento'),('concluida','Concluída'),('cancelada','Cancelada')] %}
+                    <option value="{{ valor }}" {% if status_filtro == valor %}selected{% endif %}>{{ texto }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-grid"><button class="btn btn-primary" type="submit">Filtrar</button></div>
+        </form>
+
+        {% if ordens %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light"><tr><th>OS</th><th>Cliente</th><th>Serviço</th><th>Equipamento</th><th>Status</th><th>Previsão</th><th></th></tr></thead>
+                <tbody>
+                {% for ordem in ordens %}
+                    <tr>
+                        <td><strong>{{ ordem.numero }}</strong></td>
+                        <td>{{ ordem.cliente.nome if ordem.cliente else '-' }}</td>
+                        <td>{{ ordem.titulo or '-' }}</td>
+                        <td>{{ ordem.equipamento or '-' }}</td>
+                        <td><span class="badge bg-secondary">{{ ordem.status_formatado if ordem.status_formatado is defined else ordem.status }}</span></td>
+                        <td>{{ ordem.data_prevista.strftime('%d/%m/%Y') if ordem.data_prevista else '-' }}</td>
+                        <td class="text-end"><a href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}" class="btn btn-sm btn-outline-primary">Abrir</a></td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted"><i class="fas fa-clipboard-check fa-3x mb-3"></i><p class="mb-0">Nenhuma OS atribuída a você neste filtro.</p></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
