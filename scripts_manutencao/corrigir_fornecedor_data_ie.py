@@ -27,11 +27,6 @@ def replace_once(texto, antigo, novo, marcador):
     return texto.replace(antigo, novo, 1)
 
 
-def limpar_trailing_whitespace(texto):
-    """Remove espacos/tabs no fim das linhas e preserva newline final."""
-    return '\n'.join(linha.rstrip() for linha in texto.splitlines()) + '\n'
-
-
 def main():
     form = FORM.read_text(encoding='utf-8')
     routes = ROUTES.read_text(encoding='utf-8')
@@ -41,13 +36,13 @@ def main():
     form = replace_once(
         form,
         '''                                           id="nome" \n                                           name="nome" ''',
-        '''                                           id="nome" \n                                           name="nome_pf" ''',
+        '''                                           id="nome" \n                                           name="nome_pf"''',
         'name do Nome PF',
     )
     form = replace_once(
         form,
         '''                                                   id="razao_social_pj" \n                                                   name="nome" ''',
-        '''                                                   id="razao_social_pj" \n                                                   name="razao_social" ''',
+        '''                                                   id="razao_social_pj" \n                                                   name="razao_social"''',
         'name da Razao Social PJ',
     )
 
@@ -131,10 +126,6 @@ def main():
         '''        # Formata os dados para retornar\n        razao_social = (\n            data.get('nome')\n            or data.get('razao_social')\n            or data.get('razaoSocial')\n            or ''\n        )\n        resultado = {\n            'success': True,\n            'data': {\n                'nome': razao_social,\n                'razao_social': razao_social,''',
         'razao_social na API CNPJ',
     )
-
-    form = limpar_trailing_whitespace(form)
-    routes = limpar_trailing_whitespace(routes)
-    api = limpar_trailing_whitespace(api)
 
     FORM.write_text(form, encoding='utf-8')
     ROUTES.write_text(routes, encoding='utf-8')
