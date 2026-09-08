@@ -3,57 +3,48 @@
 {% block head %}
 <link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
 <style>
-    .pedido-compra-itens-wrap {
-        overflow-x: auto;
-        padding-bottom: 2px;
-    }
-
-    .pedido-compra-itens-table {
-        width: 100%;
-        min-width: 1120px;
-        table-layout: fixed;
-        margin-bottom: 0;
-    }
-
-    .pedido-compra-itens-table th {
-        white-space: nowrap;
-        vertical-align: middle;
-    }
-
-    .pedido-compra-itens-table td {
-        vertical-align: middle;
-        padding: .65rem .5rem;
-    }
-
+    .pedido-compra-itens-wrap { overflow-x: auto; padding-bottom: 2px; }
+    .pedido-compra-itens-table { width: 100%; min-width: 1260px; table-layout: fixed; margin-bottom: 0; }
+    .pedido-compra-itens-table th { white-space: nowrap; vertical-align: middle; }
+    .pedido-compra-itens-table td { vertical-align: middle; padding: .65rem .5rem; }
     .pedido-compra-itens-table .form-control,
-    .pedido-compra-itens-table .form-select {
-        width: 100%;
-        min-width: 0;
-    }
-
-    .pedido-compra-itens-table .pc-col-tipo { width: 8%; }
-    .pedido-compra-itens-table .pc-col-referencia { width: 24%; }
-    .pedido-compra-itens-table .pc-col-descricao { width: 24%; }
-    .pedido-compra-itens-table .pc-col-unidade { width: 8%; }
-    .pedido-compra-itens-table .pc-col-qtd { width: 10%; }
-    .pedido-compra-itens-table .pc-col-valor { width: 11%; }
-    .pedido-compra-itens-table .pc-col-desconto { width: 9%; }
+    .pedido-compra-itens-table .form-select { width: 100%; min-width: 0; }
+    .pedido-compra-itens-table .pc-col-tipo { width: 7%; }
+    .pedido-compra-itens-table .pc-col-referencia { width: 21%; }
+    .pedido-compra-itens-table .pc-col-descricao { width: 21%; }
+    .pedido-compra-itens-table .pc-col-unidade { width: 7%; }
+    .pedido-compra-itens-table .pc-col-qtd { width: 9%; }
+    .pedido-compra-itens-table .pc-col-valor { width: 10%; }
+    .pedido-compra-itens-table .pc-col-desconto { width: 8%; }
+    .pedido-compra-itens-table .pc-col-total { width: 11%; }
     .pedido-compra-itens-table .pc-col-acoes { width: 6%; }
-
     .pedido-compra-itens-table .btn-remover-item {
-        width: 36px;
-        height: 36px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
+        width: 36px; height: 36px; display: inline-flex; align-items: center;
+        justify-content: center; padding: 0;
     }
-
-    @media (max-width: 1199.98px) {
-        .pedido-compra-itens-table {
-            min-width: 1040px;
-        }
+    .item-total-cell { font-weight: 700; white-space: nowrap; color: #163A5C; }
+    .pc-summary {
+        margin-left: auto; margin-top: 1rem; width: min(100%, 430px);
+        border: 1px solid #dde4ea; border-radius: .45rem; overflow: hidden; background: #fff;
     }
+    .pc-summary-row {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: 1rem; padding: .65rem .85rem; border-bottom: 1px solid #edf1f4;
+    }
+    .pc-summary-row:last-child { border-bottom: 0; }
+    .pc-summary-label { color: #5f6f7a; font-size: .82rem; font-weight: 700; text-transform: uppercase; }
+    .pc-summary-value { font-weight: 700; color: #163A5C; }
+    .pc-summary-total { background: #163A5C; color: #fff; }
+    .pc-summary-total .pc-summary-label,
+    .pc-summary-total .pc-summary-value { color: #fff; }
+    .pc-summary-total .pc-summary-value { font-size: 1.15rem; }
+    .pc-vinculo-card { transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; border-radius: .45rem; padding: .35rem; }
+    .pc-vinculo-card.is-required {
+        border: 1px solid #19a7ce; background: #f2fbfe; box-shadow: 0 0 0 2px rgba(25,167,206,.08);
+    }
+    .pc-vinculo-hint { display: none; color: #0b7285; font-size: .76rem; margin-top: .25rem; }
+    .pc-vinculo-card.is-required .pc-vinculo-hint { display: block; }
+    @media (max-width: 1199.98px) { .pedido-compra-itens-table { min-width: 1160px; } }
 </style>
 {% endblock %}
 {% block breadcrumb %}<span>Pedidos de Compra</span>{% endblock %}
@@ -62,7 +53,7 @@
     <h2 class="cc-page-header-title">{{ 'Editar' if pedido_compra else 'Novo' }} Pedido de Compra</h2>
 </div>
 
-<form method="post" class="row g-3">
+<form method="post" class="row g-3" id="pedido-compra-form">
     <div class="col-md-4">
         <label class="form-label">Fornecedor</label>
         <select class="form-select" name="fornecedor_id" required>
@@ -90,15 +81,15 @@
     </div>
     <div class="col-md-4">
         <label class="form-label">Finalidade</label>
-        <select class="form-select" name="finalidade">
+        <select class="form-select" name="finalidade" id="finalidade-pedido">
             {% for value, label in finalidade_choices %}
             <option value="{{ value }}" {% if (pedido_compra and pedido_compra.finalidade == value) or (not pedido_compra and value == 'ESTOQUE') %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
     </div>
     <div class="col-md-4">
-        <label class="form-label">Desconto</label>
-        <input class="form-control" type="text" name="desconto" value="{{ pedido_compra.desconto if pedido_compra else '0,00' }}">
+        <label class="form-label">Desconto do pedido</label>
+        <input class="form-control" type="text" name="desconto" id="desconto-pedido" value="{{ pedido_compra.desconto if pedido_compra else '0,00' }}">
     </div>
     <div class="col-md-4">
         <label class="form-label">Solicitante</label>
@@ -112,23 +103,25 @@
         <label class="form-label">Condicao de pagamento</label>
         <input class="form-control" type="text" name="condicao_pagamento" value="{{ pedido_compra.condicao_pagamento if pedido_compra else '' }}">
     </div>
-    <div class="col-md-6">
-        <label class="form-label">Vinculo opcional com OS</label>
-        <select class="form-select" name="ordem_servico_id">
+    <div class="col-md-6 pc-vinculo-card" id="vinculo-os-card">
+        <label class="form-label" id="vinculo-os-label">Vinculo opcional com OS</label>
+        <select class="form-select" name="ordem_servico_id" id="ordem-servico-id">
             <option value="">Sem vinculo</option>
             {% for ordem in ordens_servico %}
             <option value="{{ ordem.id }}" {% if pedido_compra and pedido_compra.ordem_servico_id == ordem.id %}selected{% endif %}>{{ ordem.numero }} - {{ ordem.titulo }}</option>
             {% endfor %}
         </select>
+        <div class="pc-vinculo-hint">Obrigatorio quando a finalidade for Ordem de Servico.</div>
     </div>
-    <div class="col-md-6">
-        <label class="form-label">Vinculo opcional com Pedido de Venda</label>
-        <select class="form-select" name="pedido_venda_id">
+    <div class="col-md-6 pc-vinculo-card" id="vinculo-pv-card">
+        <label class="form-label" id="vinculo-pv-label">Vinculo opcional com Pedido de Venda</label>
+        <select class="form-select" name="pedido_venda_id" id="pedido-venda-id">
             <option value="">Sem vinculo</option>
             {% for pedido_venda in pedidos_venda %}
             <option value="{{ pedido_venda.id }}" {% if pedido_compra and pedido_compra.pedido_venda_id == pedido_venda.id %}selected{% endif %}>{{ pedido_venda.numero }}</option>
             {% endfor %}
         </select>
+        <div class="pc-vinculo-hint">Obrigatorio quando a finalidade for Pedido de Venda.</div>
     </div>
     <div class="col-12">
         <label class="form-label">Observacoes</label>
@@ -140,24 +133,14 @@
         <div class="cc-table-container table-responsive pedido-compra-itens-wrap">
             <table class="table cc-table table-bordered align-middle pedido-compra-itens-table">
                 <colgroup>
-                    <col class="pc-col-tipo">
-                    <col class="pc-col-referencia">
-                    <col class="pc-col-descricao">
-                    <col class="pc-col-unidade">
-                    <col class="pc-col-qtd">
-                    <col class="pc-col-valor">
-                    <col class="pc-col-desconto">
-                    <col class="pc-col-acoes">
+                    <col class="pc-col-tipo"><col class="pc-col-referencia"><col class="pc-col-descricao">
+                    <col class="pc-col-unidade"><col class="pc-col-qtd"><col class="pc-col-valor">
+                    <col class="pc-col-desconto"><col class="pc-col-total"><col class="pc-col-acoes">
                 </colgroup>
                 <thead>
                     <tr>
-                        <th>Tipo</th>
-                        <th>Referencia</th>
-                        <th>Descricao</th>
-                        <th>Unidade</th>
-                        <th>Qtd comprada</th>
-                        <th>Valor unitario</th>
-                        <th>Desconto</th>
+                        <th>Tipo</th><th>Referencia</th><th>Descricao</th><th>Unidade</th>
+                        <th>Qtd comprada</th><th>Valor unitario</th><th>Desconto</th><th>Total</th>
                         <th class="text-center">Acoes</th>
                     </tr>
                 </thead>
@@ -173,25 +156,24 @@
                             </select>
                         </td>
                         <td>
-                            <select class="form-select" name="item_referencia_id[]">
+                            <select class="form-select item-referencia" name="item_referencia_id[]">
                                 <option value="">Selecione</option>
                                 {% for produto in produtos %}
-                                <option value="P:{{ produto.id }}" {% if item and item.referencia_tipo == 'P' and item.referencia_id == produto.id %}selected{% endif %}>Produto: {{ produto.nome }}</option>
+                                <option value="P:{{ produto.id }}" data-tipo="PRODUTO" data-descricao="{{ produto.nome|e }}" data-unidade="{{ (produto.unidade_medida or 'UN')|e }}" data-valor="{{ produto.preco_custo if produto.preco_custo is not none else (produto.preco_venda or 0) }}" {% if item and item.referencia_tipo == 'P' and item.referencia_id == produto.id %}selected{% endif %}>Produto: {{ produto.nome }}</option>
                                 {% endfor %}
                                 {% for servico in servicos %}
-                                <option value="S:{{ servico.id }}" {% if item and item.referencia_tipo == 'S' and item.referencia_id == servico.id %}selected{% endif %}>Servico: {{ servico.nome }}</option>
+                                <option value="S:{{ servico.id }}" data-tipo="SERVICO" data-descricao="{{ servico.nome|e }}" data-unidade="SV" data-valor="{{ servico.valor_base or 0 }}" {% if item and item.referencia_tipo == 'S' and item.referencia_id == servico.id %}selected{% endif %}>Servico: {{ servico.nome }}</option>
                                 {% endfor %}
                             </select>
                         </td>
-                        <td><input class="form-control" type="text" name="item_descricao[]" value="{{ item.descricao if item else '' }}"></td>
-                        <td><input class="form-control" type="text" name="item_unidade[]" value="{{ item.unidade if item else '' }}"></td>
-                        <td><input class="form-control" type="text" name="item_quantidade[]" value="{{ item.quantidade_comprada if item else '1' }}"></td>
-                        <td><input class="form-control" type="text" name="item_valor_unitario[]" value="{{ item.valor_unitario if item else '0,00' }}"></td>
-                        <td><input class="form-control" type="text" name="item_desconto[]" value="{{ item.desconto if item else '0,00' }}"></td>
+                        <td><input class="form-control item-descricao" type="text" name="item_descricao[]" value="{{ item.descricao if item else '' }}"></td>
+                        <td><input class="form-control item-unidade" type="text" name="item_unidade[]" value="{{ item.unidade if item else '' }}"></td>
+                        <td><input class="form-control item-quantidade" type="text" name="item_quantidade[]" value="{{ item.quantidade_comprada if item else '1' }}"></td>
+                        <td><input class="form-control item-valor-unitario" type="text" name="item_valor_unitario[]" value="{{ item.valor_unitario if item else '0,00' }}"></td>
+                        <td><input class="form-control item-desconto" type="text" name="item_desconto[]" value="{{ item.desconto if item else '0,00' }}"></td>
+                        <td class="item-total-cell"><span class="item-total-display">R$ 0,00</span></td>
                         <td class="text-center">
-                            <button class="btn btn-outline-danger btn-sm btn-remover-item" type="button" title="Remover item" aria-label="Remover item">
-                                <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                            </button>
+                            <button class="btn btn-outline-danger btn-sm btn-remover-item" type="button" title="Remover item" aria-label="Remover item"><i class="fas fa-trash-alt" aria-hidden="true"></i></button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -201,6 +183,11 @@
         <div class="d-flex justify-content-between align-items-center mt-2">
             <small class="text-muted">A quantidade recebida e controlada somente pela tela de recebimento.</small>
             <button class="btn btn-outline-primary btn-sm" id="btn-adicionar-item" type="button">Adicionar item</button>
+        </div>
+        <div class="pc-summary" aria-live="polite">
+            <div class="pc-summary-row"><span class="pc-summary-label">Subtotal dos itens</span><span class="pc-summary-value" id="resumo-subtotal">R$ 0,00</span></div>
+            <div class="pc-summary-row"><span class="pc-summary-label">Desconto do pedido</span><span class="pc-summary-value" id="resumo-desconto">R$ 0,00</span></div>
+            <div class="pc-summary-row pc-summary-total"><span class="pc-summary-label">Total do pedido</span><span class="pc-summary-value" id="resumo-total">R$ 0,00</span></div>
         </div>
     </div>
 
@@ -214,63 +201,143 @@
     <tr class="item-row">
         <td>
             <input type="hidden" name="item_id[]" value="">
-            <select class="form-select" name="item_tipo[]">
-                <option value="PRODUTO" selected>Produto</option>
-                <option value="SERVICO">Servico</option>
-            </select>
+            <select class="form-select" name="item_tipo[]"><option value="PRODUTO" selected>Produto</option><option value="SERVICO">Servico</option></select>
         </td>
         <td>
-            <select class="form-select" name="item_referencia_id[]">
+            <select class="form-select item-referencia" name="item_referencia_id[]">
                 <option value="">Selecione</option>
                 {% for produto in produtos %}
-                <option value="P:{{ produto.id }}">Produto: {{ produto.nome }}</option>
+                <option value="P:{{ produto.id }}" data-tipo="PRODUTO" data-descricao="{{ produto.nome|e }}" data-unidade="{{ (produto.unidade_medida or 'UN')|e }}" data-valor="{{ produto.preco_custo if produto.preco_custo is not none else (produto.preco_venda or 0) }}">Produto: {{ produto.nome }}</option>
                 {% endfor %}
                 {% for servico in servicos %}
-                <option value="S:{{ servico.id }}">Servico: {{ servico.nome }}</option>
+                <option value="S:{{ servico.id }}" data-tipo="SERVICO" data-descricao="{{ servico.nome|e }}" data-unidade="SV" data-valor="{{ servico.valor_base or 0 }}">Servico: {{ servico.nome }}</option>
                 {% endfor %}
             </select>
         </td>
-        <td><input class="form-control" type="text" name="item_descricao[]" value=""></td>
-        <td><input class="form-control" type="text" name="item_unidade[]" value=""></td>
-        <td><input class="form-control" type="text" name="item_quantidade[]" value="1"></td>
-        <td><input class="form-control" type="text" name="item_valor_unitario[]" value="0,00"></td>
-        <td><input class="form-control" type="text" name="item_desconto[]" value="0,00"></td>
-        <td class="text-center">
-            <button class="btn btn-outline-danger btn-sm btn-remover-item" type="button" title="Remover item" aria-label="Remover item">
-                <i class="fas fa-trash-alt" aria-hidden="true"></i>
-            </button>
-        </td>
+        <td><input class="form-control item-descricao" type="text" name="item_descricao[]" value=""></td>
+        <td><input class="form-control item-unidade" type="text" name="item_unidade[]" value=""></td>
+        <td><input class="form-control item-quantidade" type="text" name="item_quantidade[]" value="1"></td>
+        <td><input class="form-control item-valor-unitario" type="text" name="item_valor_unitario[]" value="0,00"></td>
+        <td><input class="form-control item-desconto" type="text" name="item_desconto[]" value="0,00"></td>
+        <td class="item-total-cell"><span class="item-total-display">R$ 0,00</span></td>
+        <td class="text-center"><button class="btn btn-outline-danger btn-sm btn-remover-item" type="button" title="Remover item" aria-label="Remover item"><i class="fas fa-trash-alt" aria-hidden="true"></i></button></td>
     </tr>
 </template>
 
 <script>
-    (function() {
-        const body = document.getElementById('itens-body');
-        const template = document.getElementById('item-row-template');
-        const addButton = document.getElementById('btn-adicionar-item');
+(function() {
+    const body = document.getElementById('itens-body');
+    const template = document.getElementById('item-row-template');
+    const addButton = document.getElementById('btn-adicionar-item');
+    const descontoPedido = document.getElementById('desconto-pedido');
+    const finalidade = document.getElementById('finalidade-pedido');
+    const osCard = document.getElementById('vinculo-os-card');
+    const pvCard = document.getElementById('vinculo-pv-card');
+    const osSelect = document.getElementById('ordem-servico-id');
+    const pvSelect = document.getElementById('pedido-venda-id');
+    const osLabel = document.getElementById('vinculo-os-label');
+    const pvLabel = document.getElementById('vinculo-pv-label');
 
-        function bindRemoveButtons() {
-            body.querySelectorAll('.btn-remover-item').forEach((btn) => {
-                btn.onclick = function() {
-                    const rows = body.querySelectorAll('.item-row');
-                    if (rows.length <= 1) {
-                        return;
-                    }
-                    const row = btn.closest('.item-row');
-                    if (row) {
-                        row.remove();
-                    }
-                };
-            });
-        }
+    const moeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 
-        addButton.addEventListener('click', function() {
-            const fragment = template.content.cloneNode(true);
-            body.appendChild(fragment);
-            bindRemoveButtons();
+    function numero(valor) {
+        let texto = String(valor ?? '').trim().replace(/R\$/gi, '').replace(/\s/g, '');
+        if (!texto) return 0;
+        if (texto.includes(',')) texto = texto.replace(/\./g, '').replace(',', '.');
+        const parsed = Number(texto);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    function formatarNumeroCampo(valor) {
+        return Number(valor || 0).toFixed(2).replace('.', ',');
+    }
+
+    function recalcularLinha(row) {
+        const quantidade = numero(row.querySelector('.item-quantidade')?.value);
+        const unitario = numero(row.querySelector('.item-valor-unitario')?.value);
+        const desconto = numero(row.querySelector('.item-desconto')?.value);
+        const total = Math.max(0, (quantidade * unitario) - desconto);
+        row.dataset.total = total.toFixed(2);
+        const display = row.querySelector('.item-total-display');
+        if (display) display.textContent = moeda.format(total);
+        return total;
+    }
+
+    function recalcularResumo() {
+        let subtotal = 0;
+        body.querySelectorAll('.item-row').forEach((row) => { subtotal += recalcularLinha(row); });
+        const desconto = Math.max(0, numero(descontoPedido?.value));
+        const total = Math.max(0, subtotal - desconto);
+        document.getElementById('resumo-subtotal').textContent = moeda.format(subtotal);
+        document.getElementById('resumo-desconto').textContent = moeda.format(desconto);
+        document.getElementById('resumo-total').textContent = moeda.format(total);
+    }
+
+    function aplicarReferencia(row) {
+        const select = row.querySelector('.item-referencia');
+        const option = select?.selectedOptions?.[0];
+        if (!option || !option.value) return recalcularResumo();
+        const tipo = option.dataset.tipo || '';
+        const tipoSelect = row.querySelector('select[name="item_tipo[]"]');
+        const descricao = row.querySelector('.item-descricao');
+        const unidade = row.querySelector('.item-unidade');
+        const valor = row.querySelector('.item-valor-unitario');
+        if (tipoSelect && tipo) tipoSelect.value = tipo;
+        if (descricao) descricao.value = option.dataset.descricao || '';
+        if (unidade) unidade.value = option.dataset.unidade || (tipo === 'SERVICO' ? 'SV' : 'UN');
+        if (valor) valor.value = formatarNumeroCampo(numero(option.dataset.valor));
+        recalcularResumo();
+    }
+
+    function bindRow(row) {
+        const referencia = row.querySelector('.item-referencia');
+        if (referencia) referencia.onchange = () => aplicarReferencia(row);
+        row.querySelectorAll('.item-quantidade, .item-valor-unitario, .item-desconto').forEach((input) => {
+            input.oninput = recalcularResumo;
+            input.onchange = recalcularResumo;
         });
+        const remover = row.querySelector('.btn-remover-item');
+        if (remover) remover.onclick = function() {
+            const rows = body.querySelectorAll('.item-row');
+            if (rows.length <= 1) return;
+            row.remove();
+            recalcularResumo();
+        };
+        recalcularLinha(row);
+    }
 
-        bindRemoveButtons();
-    })();
+    function atualizarVinculos() {
+        const valor = finalidade?.value || 'ESTOQUE';
+        osCard?.classList.remove('is-required');
+        pvCard?.classList.remove('is-required');
+        if (osSelect) osSelect.required = false;
+        if (pvSelect) pvSelect.required = false;
+        if (osLabel) osLabel.textContent = 'Vinculo opcional com OS';
+        if (pvLabel) pvLabel.textContent = 'Vinculo opcional com Pedido de Venda';
+        if (valor === 'ORDEM_SERVICO') {
+            osCard?.classList.add('is-required');
+            if (osSelect) osSelect.required = true;
+            if (osLabel) osLabel.textContent = 'Vinculo com OS *';
+        } else if (valor === 'PEDIDO_VENDA') {
+            pvCard?.classList.add('is-required');
+            if (pvSelect) pvSelect.required = true;
+            if (pvLabel) pvLabel.textContent = 'Vinculo com Pedido de Venda *';
+        }
+    }
+
+    body.querySelectorAll('.item-row').forEach(bindRow);
+    addButton.addEventListener('click', function() {
+        const fragment = template.content.cloneNode(true);
+        body.appendChild(fragment);
+        const row = body.querySelector('.item-row:last-child');
+        if (row) bindRow(row);
+        recalcularResumo();
+    });
+    descontoPedido?.addEventListener('input', recalcularResumo);
+    descontoPedido?.addEventListener('change', recalcularResumo);
+    finalidade?.addEventListener('change', atualizarVinculos);
+    atualizarVinculos();
+    recalcularResumo();
+})();
 </script>
 {% endblock %}
