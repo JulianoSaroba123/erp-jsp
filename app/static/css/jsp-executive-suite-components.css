@@ -420,3 +420,42 @@ html body .modal-footer {
     color: var(--cc-text) !important;
     border-color: var(--cc-border) !important;
 }
+
+/* ============================================================
+   Contraste global — ERP JSP Executive Suite
+   Mantém o tema claro consistente e evita textos "fantasma"
+   herdados do Bootstrap dark ou de estilos legados.
+   ============================================================ */
+html body .text-muted,
+html body .text-secondary,
+html body .form-text,
+html body small.text-muted,
+html body .small.text-muted {
+    color: var(--cc-text-muted) !important;
+    opacity: 1 !important;
+}
+
+html body label,
+html body .form-label,
+html body .cc-label,
+html body .info-label,
+html body table.table thead th,
+html body table.cc-table thead th {
+    color: var(--cc-text-muted) !important;
+    opacity: 1 !important;
+}
+
+html body .form-control::placeholder,
+html body textarea.form-control::placeholder,
+html body input[class*="form-control"]::placeholder,
+html body .cc-input::placeholder {
+    color: #687684 !important;
+    opacity: 1 !important;
+}
+
+html body .breadcrumb-item.active,
+html body .current-page,
+html body .cc-page-header-subtitle,
+html body .cc-mini-stat-label {
+    opacity: 1 !important;
+}
