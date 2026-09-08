@@ -401,6 +401,17 @@
             </div>
             {% endif %}
 
+            {% else %}
+            <div class="nav-section-header">
+                <i class="fas fa-toolbox me-2"></i>
+                <span>MINHA OPERAÇÃO</span>
+            </div>
+            <div class="nav-item">
+                <a href="{{ url_for('ordem_servico.listar') }}" class="nav-link">
+                    <i class="nav-icon fas fa-wrench"></i>
+                    <span class="nav-text">Minhas OS</span>
+                </a>
+            </div>
             {% endif %}
 
             <!-- Usuário -->
