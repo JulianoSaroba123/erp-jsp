@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Cliente - Campo - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('cliente.listar') }}">Clientes</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Novo Cliente</span>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+            <div>
+                <h3 class="mb-1"><i class="fas fa-user-plus me-2 text-primary"></i>Novo Cliente</h3>
+                <p class="text-muted mb-0">Cadastro operacional para atendimento em campo.</p>
+            </div>
+            <span class="badge bg-light text-dark border"><i class="fas fa-shield-alt me-1"></i>Sem dados financeiros</span>
+        </div>
+
+        <form method="post" autocomplete="off">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Tipo *</label>
+                    <select name="tipo" class="form-select" required>
+                        <option value="PF" {% if form_data.get('tipo','PF') == 'PF' %}selected{% endif %}>Pessoa Física</option>
+                        <option value="PJ" {% if form_data.get('tipo') == 'PJ' %}selected{% endif %}>Pessoa Jurídica</option>
+                    </select>
+                </div>
+                <div class="col-md-9">
+                    <label class="form-label">Nome / Nome principal *</label>
+                    <input name="nome" class="form-control" value="{{ form_data.get('nome','') }}" required maxlength="150">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Nome fantasia</label>
+                    <input name="nome_fantasia" class="form-control" value="{{ form_data.get('nome_fantasia','') }}" maxlength="150">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Razão social</label>
+                    <input name="razao_social" class="form-control" value="{{ form_data.get('razao_social','') }}" maxlength="200">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">CPF / CNPJ</label>
+                    <input name="cpf_cnpj" class="form-control" value="{{ form_data.get('cpf_cnpj','') }}" maxlength="20">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">RG / Inscrição Estadual</label>
+                    <input name="rg_ie" class="form-control" value="{{ form_data.get('rg_ie','') }}" maxlength="20">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Telefone</label>
+                    <input name="telefone" class="form-control" value="{{ form_data.get('telefone','') }}" maxlength="20">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Celular</label>
+                    <input name="celular" class="form-control" value="{{ form_data.get('celular','') }}" maxlength="20">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">WhatsApp</label>
+                    <input name="whatsapp" class="form-control" value="{{ form_data.get('whatsapp','') }}" maxlength="20">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">E-mail</label>
+                    <input type="email" name="email" class="form-control" value="{{ form_data.get('email','') }}" maxlength="150">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Contato responsável</label>
+                    <input name="contato_nome" class="form-control" value="{{ form_data.get('contato_nome','') }}" maxlength="100">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Telefone do contato</label>
+                    <input name="contato_telefone" class="form-control" value="{{ form_data.get('contato_telefone','') }}" maxlength="20">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">E-mail do contato</label>
+                    <input type="email" name="contato_email" class="form-control" value="{{ form_data.get('contato_email','') }}" maxlength="150">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cargo / função</label>
+                    <input name="contato_cargo" class="form-control" value="{{ form_data.get('contato_cargo','') }}" maxlength="100">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">CEP</label>
+                    <input name="cep" class="form-control" value="{{ form_data.get('cep','') }}" maxlength="10">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Endereço</label>
+                    <input name="endereco" class="form-control" value="{{ form_data.get('endereco','') }}" maxlength="200">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Número</label>
+                    <input name="numero" class="form-control" value="{{ form_data.get('numero','') }}" maxlength="20">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Complemento</label>
+                    <input name="complemento" class="form-control" value="{{ form_data.get('complemento','') }}" maxlength="100">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Bairro</label>
+                    <input name="bairro" class="form-control" value="{{ form_data.get('bairro','') }}" maxlength="100">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Cidade</label>
+                    <input name="cidade" class="form-control" value="{{ form_data.get('cidade','') }}" maxlength="100">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">UF</label>
+                    <input name="estado" class="form-control text-uppercase" value="{{ form_data.get('estado','') }}" maxlength="2">
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Observações operacionais</label>
+                    <textarea name="observacoes" class="form-control" rows="3">{{ form_data.get('observacoes','') }}</textarea>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between flex-wrap gap-2 mt-4">
+                <a href="{{ url_for('cliente.listar') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Cancelar</a>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Salvar e criar OS</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
