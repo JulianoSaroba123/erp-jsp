@@ -41,7 +41,6 @@ replace_once(
 )
 
 GLOBAL_BLOCK = r'''
-
 /* ============================================================
    Contraste global — ERP JSP Executive Suite
    Mantém o tema claro consistente e evita textos "fantasma"
@@ -84,7 +83,7 @@ html body .cc-mini-stat-label {
 
 comp_text = COMP.read_text(encoding='utf-8')
 if 'Contraste global — ERP JSP Executive Suite' not in comp_text:
-    COMP.write_text(comp_text.rstrip() + GLOBAL_BLOCK + '\n', encoding='utf-8')
+    COMP.write_text(comp_text.rstrip() + '\n\n' + GLOBAL_BLOCK.strip() + '\n', encoding='utf-8')
 
 app_text = APP.read_text(encoding='utf-8')
 old_asset = "'ASSET_VERSION': '20260605.3'"
