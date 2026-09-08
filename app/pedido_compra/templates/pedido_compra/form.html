@@ -83,7 +83,7 @@
         <label class="form-label">Finalidade</label>
         <select class="form-select" name="finalidade" id="finalidade-pedido">
             {% for value, label in finalidade_choices %}
-            <option value="{{ value }}" {% if (pedido_compra and pedido_compra.finalidade == value) or (not pedido_compra and value == 'ESTOQUE') %}selected{% endif %}>{{ label }}</option>
+            <option value="{{ value }}" {% if (pedido_compra and pedido_compra.finalidade == value) or (not pedido_compra and pedido_venda_preselecionado and value == 'PEDIDO_VENDA') or (not pedido_compra and not pedido_venda_preselecionado and value == 'ESTOQUE') %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
         </select>
     </div>
@@ -118,7 +118,7 @@
         <select class="form-select" name="pedido_venda_id" id="pedido-venda-id">
             <option value="">Sem vinculo</option>
             {% for pedido_venda in pedidos_venda %}
-            <option value="{{ pedido_venda.id }}" {% if pedido_compra and pedido_compra.pedido_venda_id == pedido_venda.id %}selected{% endif %}>{{ pedido_venda.numero }}</option>
+            <option value="{{ pedido_venda.id }}" {% if (pedido_compra and pedido_compra.pedido_venda_id == pedido_venda.id) or (not pedido_compra and pedido_venda_preselecionado and pedido_venda_preselecionado.id == pedido_venda.id) %}selected{% endif %}>{{ pedido_venda.numero }}</option>
             {% endfor %}
         </select>
         <div class="pc-vinculo-hint">Obrigatorio quando a finalidade for Pedido de Venda.</div>

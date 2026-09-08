@@ -20,6 +20,7 @@ from app.pedido.forms.pedido_forms import (
     validar_payload_pedido,
 )
 from app.pedido.pedido_model import Pedido, PedidoItem
+from app.pedido_compra.pedido_compra_model import PedidoCompra
 from app.produto.produto_model import Produto
 from app.proposta.proposta_model import Proposta
 from app.servico.servico_model import Servico
@@ -289,7 +290,29 @@ def visualizar(id):
         return redirect(url_for("pedido.listar"))
 
     itens = pedido.itens.order_by(PedidoItem.ordem.asc(), PedidoItem.id.asc()).all()
-    return render_template("pedido/visualizar.html", pedido=pedido, itens=itens)
+    pedidos_compra = (
+        PedidoCompra.query
+        .filter(PedidoCompra.pedido_venda_id == pedido.id, PedidoCompra.ativo.is_(True))
+        .order_by(PedidoCompra.id.desc())
+        .all()
+    )
+    return render_template(
+        "pedido/visualizar.html",
+        pedido=pedido,
+        itens=itens,
+        pedidos_compra=pedidos_compra,
+    )
+
+
+@pedido_bp.route("/<int:id>/imprimir")
+@login_required
+def imprimir(id):
+    pedido = _query_base_pedidos().filter(Pedido.id == id).first()
+    if not pedido:
+        flash("Pedido nao encontrado.", "error")
+        return redirect(url_for("pedido.listar"))
+    itens = pedido.itens.order_by(PedidoItem.ordem.asc(), PedidoItem.id.asc()).all()
+    return render_template("pedido/imprimir.html", pedido=pedido, itens=itens)
 
 
 @pedido_bp.route("/<int:id>/editar", methods=["GET", "POST"])
