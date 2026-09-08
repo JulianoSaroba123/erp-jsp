@@ -17,8 +17,11 @@ for endpoint in (
     "'ordem_servico.listar'",
     "'ordem_servico.visualizar'",
     "'ordem_servico.apontamento_colaborador'",
+    "'ordem_servico.novo_operacional'",
+    "'ordem_servico.editar_operacional'",
     "'cliente.listar'",
     "'cliente.visualizar'",
+    "'cliente.novo_operacional'",
     "'auth.perfil'",
     "'auth.alterar_senha'",
     "'auth.logout'",
@@ -26,13 +29,19 @@ for endpoint in (
 ):
     assert endpoint in APP, f"Endpoint permitido ausente: {endpoint}"
 
-# Clientes: somente consulta. Qualquer outra rota cliente.* deve quebrar o contrato.
 bloco = APP.split("endpoints_permitidos = {", 1)[1].split("}", 1)[0]
+
+# Clientes: consulta + cadastro operacional. CRUD administrativo segue proibido.
 endpoints_cliente = set(re.findall(r"'(cliente\.[^']+)'", bloco))
 assert endpoints_cliente == {
     'cliente.listar',
     'cliente.visualizar',
-}, f"Whitelist de Clientes fora do modo somente leitura: {sorted(endpoints_cliente)}"
+    'cliente.novo_operacional',
+}, f"Whitelist de Clientes fora do contrato operacional: {sorted(endpoints_cliente)}"
+
+# OS: criação/edição somente pelas rotas operacionais próprias.
+for proibido in ("'ordem_servico.novo'", "'ordem_servico.editar'", "'ordem_servico.excluir'"):
+    assert proibido not in bloco, f"Rota administrativa de OS liberada: {proibido}"
 
 # Demais domínios sensíveis continuam totalmente fora da whitelist.
 for proibido in (
@@ -49,7 +58,6 @@ for proibido in (
 ):
     assert proibido not in bloco, f"Endpoint sensível liberado na whitelist: {proibido}"
 
-# Assets estáticos continuam funcionando.
 assert "endpoint == 'static'" in APP
 assert "endpoint.endswith('.static')" in APP
 
