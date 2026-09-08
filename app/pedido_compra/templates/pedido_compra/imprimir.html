@@ -26,11 +26,14 @@
             width: 210mm; min-height: 297mm; margin: 0 auto; background: var(--white);
             padding: 11mm 12mm 15mm;
         }
-        .no-print { max-width: 210mm; margin: 12px auto; text-align: right; }
-        .print-btn {
-            border: 0; border-radius: 5px; background: var(--navy); color: #fff;
-            cursor: pointer; font-weight: 700; padding: 9px 16px;
+        .no-print { max-width: 210mm; margin: 12px auto; display: flex; justify-content: flex-end; gap: 8px; }
+        .toolbar-btn {
+            border: 1px solid var(--navy); border-radius: 5px; cursor: pointer;
+            font-weight: 700; padding: 9px 16px; text-decoration: none; display: inline-flex;
+            align-items: center; justify-content: center; font-family: Arial, Helvetica, sans-serif; font-size: 9pt;
         }
+        .back-btn { background: #fff; color: var(--navy); }
+        .print-btn { background: var(--navy); color: #fff; }
         .header { border-bottom: 2px solid var(--navy); padding-bottom: 5mm; margin-bottom: 6mm; }
         .header-table { width: 100%; border-collapse: collapse; }
         .logo-cell { width: 22%; vertical-align: middle; }
@@ -89,15 +92,15 @@
     </style>
 </head>
 <body>
-<div class="no-print"><button class="print-btn" type="button" onclick="window.print()">Imprimir / Salvar PDF</button></div>
+<div class="no-print"><a class="toolbar-btn back-btn" href="{{ url_for('pedido_compra.visualizar', id=pedido_compra.id) }}">← Voltar</a><button class="toolbar-btn print-btn" type="button" onclick="window.print()">Imprimir / Salvar PDF</button></div>
 <div class="sheet">
     <header class="header">
         <table class="header-table">
             <tr>
-                <td class="logo-cell"><img src="{{ url_for('static', filename='img/JSP.jpg') }}" alt="JSP"></td>
+                <td class="logo-cell">{% if config and config.logo_base64 %}<img src="{{ config.logo_base64 }}" alt="Logo JSP">{% else %}<img src="{{ url_for('static', filename='img/JSP.jpg') }}" alt="Logo JSP">{% endif %}</td>
                 <td class="company-cell">
-                    <div class="company-name">JSP ELÉTRICA INDUSTRIAL &amp; SOLAR</div>
-                    <div class="company-meta">CNPJ 41.280.764/0001-65 &nbsp;|&nbsp; Tietê/SP</div>
+                    <div class="company-name">{{ config.nome_fantasia if config and config.nome_fantasia else 'JSP ELÉTRICA INDUSTRIAL & SOLAR' }}</div>
+                    <div class="company-meta">CNPJ {{ config.cnpj if config and config.cnpj else '41.280.764/0001-65' }} &nbsp;|&nbsp; {{ config.cidade if config and config.cidade else 'Tietê' }}/{{ config.uf if config and config.uf else 'SP' }}</div>
                 </td>
                 <td class="reference-cell">
                     <div class="ref-label">Pedido de compra</div>

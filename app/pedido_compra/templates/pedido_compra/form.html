@@ -4,14 +4,14 @@
 <link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
 <style>
     .pedido-compra-itens-wrap { overflow-x: auto; padding-bottom: 2px; }
-    .pedido-compra-itens-table { width: 100%; min-width: 1260px; table-layout: fixed; margin-bottom: 0; }
+    .pedido-compra-itens-table { width: 100%; min-width: 1280px; table-layout: fixed; margin-bottom: 0; }
     .pedido-compra-itens-table th { white-space: nowrap; vertical-align: middle; }
     .pedido-compra-itens-table td { vertical-align: middle; padding: .65rem .5rem; }
     .pedido-compra-itens-table .form-control,
     .pedido-compra-itens-table .form-select { width: 100%; min-width: 0; }
-    .pedido-compra-itens-table .pc-col-tipo { width: 7%; }
-    .pedido-compra-itens-table .pc-col-referencia { width: 21%; }
-    .pedido-compra-itens-table .pc-col-descricao { width: 21%; }
+    .pedido-compra-itens-table .pc-col-tipo { width: 9%; }
+    .pedido-compra-itens-table .pc-col-referencia { width: 20%; }
+    .pedido-compra-itens-table .pc-col-descricao { width: 20%; }
     .pedido-compra-itens-table .pc-col-unidade { width: 7%; }
     .pedido-compra-itens-table .pc-col-qtd { width: 9%; }
     .pedido-compra-itens-table .pc-col-valor { width: 10%; }
@@ -193,7 +193,11 @@
 
     <div class="col-12 d-flex gap-2">
         <button class="btn btn-primary" type="submit">Salvar</button>
-        <a class="btn btn-outline-secondary" href="{{ url_for('pedido_compra.listar') }}">Cancelar</a>
+        {% if pedido_compra %}
+        <a class="btn btn-outline-secondary" href="{{ url_for('pedido_compra.visualizar', id=pedido_compra.id) }}"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Voltar</a>
+        {% else %}
+        <a class="btn btn-outline-secondary" href="{{ url_for('pedido_compra.listar') }}"><i class="fas fa-arrow-left me-1" aria-hidden="true"></i>Voltar</a>
+        {% endif %}
     </div>
 </form>
 
