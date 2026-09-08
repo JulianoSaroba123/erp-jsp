@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Regressao estrutural do cadastro de fornecedor: nome/razao social, Data de Fundacao e IE."""
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[1]
 FORM = ROOT / 'app' / 'fornecedor' / 'templates' / 'fornecedor' / 'form.html'
@@ -31,9 +32,12 @@ def executar_testes():
     assert 'name="inscricao_estadual"' not in form
 
     # Data de Fundacao deve usar DD/MM/AAAA e nao o seletor nativo segmentado.
-    trecho_data = form.split('id="data_fundacao"', 1)[0][-200:] + form.split('id="data_fundacao"', 1)[1][:400]
+    match_data = re.search(r'<input(?=[^>]*id="data_fundacao")[^>]*>', form, re.S)
+    assert match_data, 'input data_fundacao nao encontrado'
+    trecho_data = match_data.group(0)
     assert 'type="text"' in trecho_data
     assert 'placeholder="DD/MM/AAAA"' in trecho_data
+    assert 'inputmode="numeric"' in trecho_data
     assert 'mascaraData' in form
 
     # Parser compativel com formato antigo e novo.
@@ -50,6 +54,11 @@ def executar_testes():
     # Consulta CNPJ deve expor razao_social explicitamente e o frontend deve usa-la.
     assert "'razao_social': razao_social" in api
     assert "data.data.razao_social || data.data.nome" in form
+
+    # Nao aceitar trailing whitespace nos arquivos alterados pelo hotfix.
+    for nome, conteudo in [('form.html', form), ('fornecedor_routes.py', routes), ('consultas_api.py', api)]:
+        linhas_ruins = [i for i, linha in enumerate(conteudo.splitlines(), start=1) if linha != linha.rstrip()]
+        assert not linhas_ruins, f'{nome} com trailing whitespace nas linhas {linhas_ruins[:10]}'
 
     print('FORNECEDOR CADASTRO: OK')
 
