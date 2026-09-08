@@ -21,7 +21,11 @@ for endpoint in (
     assert endpoint in bloco_whitelist, f'Endpoint operacional ausente: {endpoint}'
 
 # O guard interno da própria OS precisa permitir as mesmas rotas de campo.
-bloco_guard_os = OS.split('def restringir_rotas_colaborador():', 1)[1].split('return None', 1)[0]
+# Recorta o before_request inteiro até a primeira rota do blueprint. Não usar
+# "return None" como delimitador porque a função possui um retorno antecipado
+# para usuários que não são colaboradores.
+bloco_guard_os = OS.split('@ordem_servico_bp.before_request', 1)[1].split('@ordem_servico_bp.route', 1)[0]
+assert 'def restringir_rotas_colaborador():' in bloco_guard_os
 for endpoint in (
     "'ordem_servico.novo_operacional'",
     "'ordem_servico.editar_operacional'",
