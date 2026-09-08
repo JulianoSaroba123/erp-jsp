@@ -79,7 +79,7 @@ def _query_base_pedidos_compra():
     )
 
 
-def _carregar_form_context(pedido_compra=None):
+def _carregar_form_context(pedido_compra=None, pedido_venda_preselecionado=None):
     status_editaveis = [
         item
         for item in PedidoCompra.STATUS_CHOICES
@@ -95,6 +95,7 @@ def _carregar_form_context(pedido_compra=None):
         "finalidade_choices": PedidoCompra.FINALIDADE_CHOICES,
         "today": date.today(),
         "pedido_compra": pedido_compra,
+        "pedido_venda_preselecionado": pedido_venda_preselecionado,
     }
 
 
@@ -232,7 +233,30 @@ def listar():
 @pedido_compra_bp.route("/novo", methods=["GET", "POST"])
 @pedido_compra_permission_required("criar_pedidos_compra")
 def novo():
-    context = _carregar_form_context()
+    pedido_venda_id = parse_int(request.args.get("pedido_venda_id"), default=None)
+    pedido_venda_preselecionado = None
+    itens_seed = []
+    if pedido_venda_id:
+        pedido_venda_preselecionado = Pedido.query.filter_by(id=pedido_venda_id, ativo=True).first()
+        if pedido_venda_preselecionado:
+            for item in pedido_venda_preselecionado.itens.filter_by(ativo=True).order_by('ordem').all():
+                if not item.produto_id or not item.produto:
+                    continue
+                itens_seed.append({
+                    "tipo_item": PedidoCompraItem.TIPO_PRODUTO,
+                    "item_id": None,
+                    "referencia_tipo": "P",
+                    "referencia_id": item.produto_id,
+                    "descricao": item.descricao or item.produto.nome,
+                    "unidade": item.produto.unidade_medida or "UN",
+                    "quantidade_comprada": Decimal(str(item.quantidade or 0)),
+                    "quantidade_recebida": Decimal("0"),
+                    "valor_unitario": Decimal(str(item.produto.preco_custo or 0)),
+                    "desconto": Decimal("0"),
+                })
+    context = _carregar_form_context(
+        pedido_venda_preselecionado=pedido_venda_preselecionado,
+    )
     if request.method == "POST":
         erros = validar_payload_pedido_compra(request.form)
         itens_form = extrair_itens_form(request.form)
@@ -276,7 +300,7 @@ def novo():
             flash(f"Erro ao criar pedido de compra: {exc}", "error")
             return render_template("pedido_compra/form.html", itens_preview=itens_form, **context)
 
-    return render_template("pedido_compra/form.html", itens_preview=[], **context)
+    return render_template("pedido_compra/form.html", itens_preview=itens_seed, **context)
 
 
 @pedido_compra_bp.route("/<int:id>")

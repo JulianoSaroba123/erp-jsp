@@ -121,7 +121,7 @@
                                                 <option value="">Selecione...</option>
                                                 <optgroup label="Produtos">
                                                     {% for produto in produtos %}
-                                                    <option value="P:{{ produto.id }}" data-tipo="PRODUTO" data-descricao="{{ produto.nome }}"
+                                                    <option value="P:{{ produto.id }}" data-tipo="PRODUTO" data-descricao="{{ produto.nome }}" data-valor="{{ produto.preco_venda or 0 }}"
                                                         {% if (item.referencia_tipo|default('') == 'P' or item.tipo_item == 'PRODUTO') and item.referencia_id == produto.id %}selected{% endif %}>
                                                         Produto: {{ produto.nome }}
                                                     </option>
@@ -129,7 +129,7 @@
                                                 </optgroup>
                                                 <optgroup label="Servicos">
                                                     {% for servico in servicos %}
-                                                    <option value="S:{{ servico.id }}" data-tipo="SERVICO" data-descricao="{{ servico.nome }}"
+                                                    <option value="S:{{ servico.id }}" data-tipo="SERVICO" data-descricao="{{ servico.nome }}" data-valor="{{ servico.valor_base or 0 }}"
                                                         {% if (item.referencia_tipo|default('') == 'S' or item.tipo_item == 'SERVICO') and item.referencia_id == servico.id %}selected{% endif %}>
                                                         Servico: {{ servico.nome }}
                                                     </option>
@@ -170,12 +170,12 @@
                                             <option value="">Selecione...</option>
                                             <optgroup label="Produtos">
                                                 {% for produto in produtos %}
-                                                <option value="P:{{ produto.id }}" data-tipo="PRODUTO" data-descricao="{{ produto.nome }}">Produto: {{ produto.nome }}</option>
+                                                <option value="P:{{ produto.id }}" data-tipo="PRODUTO" data-descricao="{{ produto.nome }}" data-valor="{{ produto.preco_venda or 0 }}">Produto: {{ produto.nome }}</option>
                                                 {% endfor %}
                                             </optgroup>
                                             <optgroup label="Servicos">
                                                 {% for servico in servicos %}
-                                                <option value="S:{{ servico.id }}" data-tipo="SERVICO" data-descricao="{{ servico.nome }}">Servico: {{ servico.nome }}</option>
+                                                <option value="S:{{ servico.id }}" data-tipo="SERVICO" data-descricao="{{ servico.nome }}" data-valor="{{ servico.valor_base or 0 }}">Servico: {{ servico.nome }}</option>
                                                 {% endfor %}
                                             </optgroup>
                                         </select>
@@ -224,7 +224,11 @@
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save me-2"></i>Salvar Pedido
                 </button>
-                <a href="{{ url_for('pedido.listar') }}" class="btn btn-outline-secondary">Cancelar</a>
+                {% if pedido %}
+                <a href="{{ url_for('pedido.visualizar', id=pedido.id) }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Voltar</a>
+                {% else %}
+                <a href="{{ url_for('pedido.listar') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Voltar</a>
+                {% endif %}
             </div>
         </form>
     </div>
@@ -243,12 +247,12 @@
             <option value="">Selecione...</option>
             <optgroup label="Produtos">
                 {% for produto in produtos %}
-                <option value="P:{{ produto.id }}" data-tipo="PRODUTO" data-descricao="{{ produto.nome }}">Produto: {{ produto.nome }}</option>
+                <option value="P:{{ produto.id }}" data-tipo="PRODUTO" data-descricao="{{ produto.nome }}" data-valor="{{ produto.preco_venda or 0 }}">Produto: {{ produto.nome }}</option>
                 {% endfor %}
             </optgroup>
             <optgroup label="Servicos">
                 {% for servico in servicos %}
-                <option value="S:{{ servico.id }}" data-tipo="SERVICO" data-descricao="{{ servico.nome }}">Servico: {{ servico.nome }}</option>
+                <option value="S:{{ servico.id }}" data-tipo="SERVICO" data-descricao="{{ servico.nome }}" data-valor="{{ servico.valor_base or 0 }}">Servico: {{ servico.nome }}</option>
                 {% endfor %}
             </optgroup>
         </select>
@@ -272,8 +276,21 @@
 
     function parseDecimalBr(value) {
         if (!value) return 0;
-        const cleaned = String(value).replace('R$', '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
-        const num = Number(cleaned);
+        let texto = String(value).replace('R$', '').replace(/\s/g, '').trim();
+        const temVirgula = texto.includes(',');
+        const temPonto = texto.includes('.');
+
+        if (temVirgula && temPonto) {
+            if (texto.lastIndexOf(',') > texto.lastIndexOf('.')) {
+                texto = texto.replace(/\./g, '').replace(',', '.');
+            } else {
+                texto = texto.replace(/,/g, '');
+            }
+        } else if (temVirgula) {
+            texto = texto.replace(',', '.');
+        }
+
+        const num = Number(texto);
         return Number.isFinite(num) ? num : 0;
     }
 
@@ -297,6 +314,11 @@
         const descricaoInput = row.querySelector('.item-descricao');
         if (descricaoInput && !descricaoInput.value.trim()) {
             descricaoInput.value = option.dataset.descricao || '';
+        }
+
+        const valorInput = row.querySelector('.item-valor');
+        if (valorInput && (!valorInput.value.trim() || parseDecimalBr(valorInput.value) === 0)) {
+            valorInput.value = option.dataset.valor || '0';
         }
     }
 

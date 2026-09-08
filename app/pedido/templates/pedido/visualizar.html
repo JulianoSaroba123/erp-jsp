@@ -1,90 +1,55 @@
 {% extends "base.html" %}
-
 {% block title %}Pedido {{ pedido.numero }} - {{ super() }}{% endblock %}
-
 {% block head %}
 <link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+<style>
+.pv-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.75rem;margin:1rem 0 1.25rem}.pv-step{border:1px solid #dfe6ec;border-radius:.5rem;padding:.75rem;background:#fff}.pv-step.is-done{border-color:#19a7ce;background:#f2fbfe}.pv-step-title{font-weight:700;color:#163A5C}.pv-step-meta{font-size:.78rem;color:#657581;margin-top:.25rem}.pv-origin{font-weight:700;color:#163A5C}@media(max-width:900px){.pv-flow{grid-template-columns:1fr 1fr}}
+</style>
 {% endblock %}
-
-{% block breadcrumb %}
-<a href="{{ url_for('pedido.listar') }}">Pedidos</a>
-<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
-<span class="current-page">Visualizar</span>
-{% endblock %}
-
+{% block breadcrumb %}<a href="{{ url_for('pedido.listar') }}">Pedidos</a><span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span><span class="current-page">Visualizar</span>{% endblock %}
 {% block content %}
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-start mb-4">
-            <div>
-                <h3 class="mb-1"><i class="fas fa-shopping-cart me-2 text-info"></i>Pedido {{ pedido.numero }}</h3>
-                <p class="text-muted mb-0">Status: <span class="badge bg-secondary">{{ pedido.status_label }}</span></p>
-            </div>
-            <div class="btn-group">
-                <a href="{{ url_for('pedido.listar') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Voltar</a>
-                <a href="{{ url_for('pedido.editar', id=pedido.id) }}" class="btn btn-outline-warning"><i class="fas fa-edit me-1"></i>Editar</a>
-            </div>
-        </div>
+<div class="card border-0 shadow-sm mb-4"><div class="card-body">
+<div class="d-flex justify-content-between align-items-start mb-4 gap-3 flex-wrap">
+<div><h3 class="mb-1"><i class="fas fa-shopping-cart me-2 text-info"></i>Pedido {{ pedido.numero }}</h3><p class="text-muted mb-0">Status: <span class="badge bg-secondary">{{ pedido.status_label }}</span></p></div>
+<div class="d-flex gap-2 flex-wrap">
+<a href="{{ url_for('pedido.listar') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Voltar</a>
+<a href="{{ url_for('pedido.editar', id=pedido.id) }}" class="btn btn-outline-warning"><i class="fas fa-edit me-1"></i>Editar</a>
+<a href="{{ url_for('pedido.imprimir', id=pedido.id) }}" class="btn btn-outline-primary"><i class="fas fa-print me-1"></i>Imprimir</a>
+<a href="{{ url_for('pedido_compra.novo', pedido_venda_id=pedido.id) }}" class="btn btn-primary"><i class="fas fa-shopping-basket me-1"></i>Gerar Pedido de Compra</a>
+</div></div>
 
-        <div class="row g-3 mb-4">
-            <div class="col-lg-3 col-md-6"><strong>Cliente:</strong><br>{{ pedido.cliente.nome_exibicao if pedido.cliente else '-' }}</div>
-            <div class="col-lg-3 col-md-6"><strong>Proposta:</strong><br>{% if pedido.proposta %}{{ pedido.proposta.codigo }}{% else %}-{% endif %}</div>
-            <div class="col-lg-3 col-md-6"><strong>Data Pedido:</strong><br>{{ pedido.data_pedido.strftime('%d/%m/%Y') if pedido.data_pedido else '-' }}</div>
-            <div class="col-lg-3 col-md-6"><strong>Prazo Previsto:</strong><br>{{ pedido.prazo_previsto.strftime('%d/%m/%Y') if pedido.prazo_previsto else '-' }}</div>
-            <div class="col-lg-3 col-md-6"><strong>Responsavel:</strong><br>{{ pedido.responsavel or '-' }}</div>
-            <div class="col-lg-3 col-md-6"><strong>Solicitante:</strong><br>{{ pedido.solicitante or '-' }}</div>
-            <div class="col-lg-3 col-md-6"><strong>Telefone:</strong><br>{{ pedido.telefone_contato or '-' }}</div>
-            <div class="col-lg-3 col-md-6"><strong>Email:</strong><br>{{ pedido.email_contato or '-' }}</div>
-        </div>
-
-        <div class="cc-table-container table-responsive mb-4">
-            <table class="table cc-table table-sm table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>#</th>
-                        <th>Tipo</th>
-                        <th>Descricao</th>
-                        <th>Quantidade</th>
-                        <th>Valor Unit.</th>
-                        <th>Desconto</th>
-                        <th>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in itens %}
-                    <tr>
-                        <td>{{ loop.index }}</td>
-                        <td>{{ item.tipo_item }}</td>
-                        <td>{{ item.descricao }}</td>
-                        <td>{{ item.quantidade }}</td>
-                        <td>R$ {{ "{:,.2f}".format(item.valor_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
-                        <td>R$ {{ "{:,.2f}".format(item.desconto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
-                        <td>R$ {{ "{:,.2f}".format(item.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div class="row g-3 mb-3">
-            <div class="col-md-4"><div class="cc-order-summary p-3"><strong>Subtotal</strong><br>R$ {{ "{:,.2f}".format(pedido.subtotal or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div>
-            <div class="col-md-4"><div class="cc-order-summary p-3"><strong>Desconto</strong><br>R$ {{ "{:,.2f}".format(pedido.desconto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div>
-            <div class="col-md-4"><div class="cc-order-summary is-total p-3"><strong>Total</strong><br>R$ {{ "{:,.2f}".format(pedido.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div>
-        </div>
-
-        {% if pedido.condicoes_pagamento %}
-        <div class="mb-3">
-            <strong>Condicoes de Pagamento</strong>
-            <p class="mb-0">{{ pedido.condicoes_pagamento }}</p>
-        </div>
-        {% endif %}
-
-        {% if pedido.observacoes %}
-        <div class="mb-0">
-            <strong>Observacoes</strong>
-            <p class="mb-0">{{ pedido.observacoes }}</p>
-        </div>
-        {% endif %}
-    </div>
+<div class="row g-3 mb-3">
+<div class="col-lg-3 col-md-6"><strong>Cliente:</strong><br>{{ pedido.cliente.nome_exibicao if pedido.cliente else '-' }}</div>
+<div class="col-lg-3 col-md-6"><strong>Origem:</strong><br><span class="pv-origin">{% if pedido.proposta %}{{ pedido.proposta.codigo }}{% else %}Venda direta{% endif %}</span></div>
+<div class="col-lg-3 col-md-6"><strong>Data do Pedido:</strong><br>{{ pedido.data_pedido.strftime('%d/%m/%Y') if pedido.data_pedido else '-' }}</div>
+<div class="col-lg-3 col-md-6"><strong>Prazo Previsto:</strong><br>{{ pedido.prazo_previsto.strftime('%d/%m/%Y') if pedido.prazo_previsto else '-' }}</div>
+<div class="col-lg-3 col-md-6"><strong>Responsavel:</strong><br>{{ pedido.responsavel or '-' }}</div>
+<div class="col-lg-3 col-md-6"><strong>Solicitante:</strong><br>{{ pedido.solicitante or '-' }}</div>
+<div class="col-lg-3 col-md-6"><strong>Telefone:</strong><br>{{ pedido.telefone_contato or '-' }}</div>
+<div class="col-lg-3 col-md-6"><strong>Email:</strong><br>{{ pedido.email_contato or '-' }}</div>
 </div>
+
+{% set tem_compra = pedidos_compra|length > 0 %}
+{% set compra_recebida = pedidos_compra|selectattr('status','equalto','RECEBIDO')|list|length > 0 %}
+<div><strong>Fluxo da Venda</strong></div>
+<div class="pv-flow">
+<div class="pv-step {% if pedido.status in ['CONFIRMADO','EM_EXECUCAO','CONCLUIDO'] %}is-done{% endif %}"><div class="pv-step-title">1. Venda confirmada</div><div class="pv-step-meta">Pedido comercial aceito</div></div>
+<div class="pv-step {% if tem_compra %}is-done{% endif %}"><div class="pv-step-title">2. Compra / Separacao</div><div class="pv-step-meta">{% if tem_compra %}{{ pedidos_compra|length }} compra(s) vinculada(s){% else %}Aguardando necessidade de compra{% endif %}</div></div>
+<div class="pv-step {% if compra_recebida %}is-done{% endif %}"><div class="pv-step-title">3. Material disponivel</div><div class="pv-step-meta">{% if compra_recebida %}Compra recebida{% else %}Aguardando recebimento/separacao{% endif %}</div></div>
+<div class="pv-step {% if pedido.status == 'CONCLUIDO' %}is-done{% endif %}"><div class="pv-step-title">4. Entrega / Conclusao</div><div class="pv-step-meta">{% if pedido.status == 'CONCLUIDO' %}Venda concluida{% else %}Pendente{% endif %}</div></div>
+</div>
+
+<div class="cc-table-container table-responsive mb-4"><table class="table cc-table table-sm table-hover align-middle"><thead class="table-light"><tr><th>#</th><th>Tipo</th><th>Descricao</th><th>Quantidade</th><th>Valor Unit.</th><th>Desconto</th><th>Total</th></tr></thead><tbody>
+{% for item in itens %}<tr><td>{{ loop.index }}</td><td>{{ item.tipo_item }}</td><td>{{ item.descricao }}</td><td>{{ '{:g}'.format(item.quantidade|float) }}</td><td>R$ {{ "{:,.2f}".format(item.valor_unitario or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td><td>R$ {{ "{:,.2f}".format(item.desconto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td><td>R$ {{ "{:,.2f}".format(item.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td></tr>{% endfor %}
+</tbody></table></div>
+
+<div class="row g-3 mb-4"><div class="col-md-4"><div class="cc-order-summary p-3"><strong>Subtotal</strong><br>R$ {{ "{:,.2f}".format(pedido.subtotal or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div><div class="col-md-4"><div class="cc-order-summary p-3"><strong>Desconto</strong><br>R$ {{ "{:,.2f}".format(pedido.desconto or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div><div class="col-md-4"><div class="cc-order-summary is-total p-3"><strong>Total</strong><br>R$ {{ "{:,.2f}".format(pedido.valor_total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</div></div></div>
+
+<div class="card border-0 bg-light mb-4"><div class="card-body"><div class="d-flex justify-content-between align-items-center mb-2"><strong>Pedidos de Compra vinculados</strong><a href="{{ url_for('pedido_compra.novo', pedido_venda_id=pedido.id) }}" class="btn btn-sm btn-outline-primary">+ Nova compra</a></div>
+{% if pedidos_compra %}<div class="table-responsive"><table class="table table-sm align-middle mb-0"><thead><tr><th>Numero</th><th>Fornecedor</th><th>Status</th><th>Total</th><th></th></tr></thead><tbody>{% for pc in pedidos_compra %}<tr><td>{{ pc.numero }}</td><td>{{ pc.fornecedor.nome if pc.fornecedor else '-' }}</td><td>{{ pc.status_label }}</td><td>R$ {{ "{:,.2f}".format(pc.total or 0).replace(',', 'X').replace('.', ',').replace('X', '.') }}</td><td class="text-end"><a href="{{ url_for('pedido_compra.visualizar', id=pc.id) }}" class="btn btn-sm btn-outline-secondary">Abrir</a></td></tr>{% endfor %}</tbody></table></div>{% else %}<span class="text-muted">Nenhum pedido de compra vinculado a esta venda.</span>{% endif %}
+</div></div>
+
+{% if pedido.condicoes_pagamento %}<div class="mb-3"><strong>Condicoes de Pagamento</strong><p class="mb-0">{{ pedido.condicoes_pagamento }}</p></div>{% endif %}
+{% if pedido.observacoes %}<div class="mb-0"><strong>Observacoes</strong><p class="mb-0">{{ pedido.observacoes }}</p></div>{% endif %}
+</div></div>
 {% endblock %}
