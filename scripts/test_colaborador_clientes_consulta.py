@@ -13,12 +13,13 @@ base = BASE.read_text(encoding="utf-8")
 rotas = ROTAS.read_text(encoding="utf-8")
 lista = LISTA.read_text(encoding="utf-8")
 view = VIEW.read_text(encoding="utf-8")
+bloco_whitelist = app.split("endpoints_permitidos = {", 1)[1].split("}", 1)[0]
 
-# Whitelist: somente leitura de clientes.
-assert "'cliente.listar'" in app
-assert "'cliente.visualizar'" in app
+# Whitelist: consulta + cadastro operacional, sem CRUD administrativo.
+for permitido in ("'cliente.listar'", "'cliente.visualizar'", "'cliente.novo_operacional'"):
+    assert permitido in bloco_whitelist
 for proibido in ("'cliente.novo'", "'cliente.editar'", "'cliente.excluir'"):
-    assert proibido not in app.split("endpoints_permitidos = {", 1)[1].split("}", 1)[0]
+    assert proibido not in bloco_whitelist
 
 # Menu operacional inclui Clientes.
 bloco_menu = base.split("MINHA OPERAÇÃO", 1)[1].split("{% endif %}", 1)[0]
@@ -31,12 +32,12 @@ assert "getattr(current_user, 'tipo_usuario', None) == 'colaborador'" in rotas
 assert "cliente/listar_colaborador.html" in rotas
 assert "cliente/visualizar_colaborador.html" in rotas
 
-# Templates não contêm ações mutáveis nem dados comerciais/financeiros.
+# Lista/view nunca oferecem CRUD administrativo ou dados comerciais/financeiros.
 for nome, html in (("lista", lista), ("visualizacao", view)):
     for proibido in (
-        "cliente.novo",
-        "cliente.editar",
-        "cliente.excluir",
+        "url_for('cliente.novo')",
+        "url_for('cliente.editar')",
+        "url_for('cliente.excluir')",
         "limite_credito",
         "desconto_padrao",
         "forma_pagamento_padrao",
@@ -46,7 +47,10 @@ for nome, html in (("lista", lista), ("visualizacao", view)):
     ):
         assert proibido not in html, f"{nome} expõe conteúdo proibido: {proibido}"
 
-# Dados operacionais essenciais continuam disponíveis.
+# O novo fluxo operacional pode iniciar cadastro e OS.
+assert "url_for('cliente.novo_operacional')" in lista
+assert "url_for('ordem_servico.novo_operacional', cliente_id=cliente.id)" in view
+
 for esperado in ("cliente.nome_display", "cliente.documento_formatado", "cliente.cidade"):
     assert esperado in lista
 for esperado in ("cliente.endereco_completo", "cliente.telefone", "cliente.email", "cliente.observacoes"):

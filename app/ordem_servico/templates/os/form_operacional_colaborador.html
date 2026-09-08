@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}{% if ordem %}Editar OS {{ ordem.numero }}{% else %}Nova OS Operacional{% endif %} - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('ordem_servico.listar') }}">Minhas OS</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">{% if ordem %}{{ ordem.numero }}{% else %}Nova OS{% endif %}</span>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+            <div>
+                <h3 class="mb-1"><i class="fas fa-tools me-2 text-primary"></i>{% if ordem %}Editar dados técnicos{% else %}Nova Ordem de Serviço{% endif %}</h3>
+                <p class="text-muted mb-0">Preenchimento operacional de campo, sem valores comerciais.</p>
+            </div>
+            <span class="badge bg-light text-dark border"><i class="fas fa-shield-alt me-1"></i>OS Operacional</span>
+        </div>
+
+        <form method="post" autocomplete="off">
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label class="form-label">Cliente *</label>
+                    {% if ordem %}
+                        <input type="hidden" name="cliente_id" value="{{ ordem.cliente_id }}">
+                        <input class="form-control" value="{{ ordem.cliente.nome_display if ordem.cliente else '-' }}" readonly>
+                    {% else %}
+                        <select name="cliente_id" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            {% for cliente in clientes %}
+                            <option value="{{ cliente.id }}" {% if cliente_selecionado == cliente.id %}selected{% endif %}>{{ cliente.nome_display }}</option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    {% if not ordem %}
+                    <a href="{{ url_for('cliente.novo_operacional') }}" class="btn btn-outline-primary w-100"><i class="fas fa-user-plus me-1"></i>Novo cliente</a>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-8">
+                    <label class="form-label">Título / serviço *</label>
+                    <input name="titulo" class="form-control" required maxlength="200" value="{{ form_data.get('titulo', ordem.titulo if ordem else '') }}" placeholder="Ex.: Manutenção em painel elétrico">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Prioridade</label>
+                    {% set prioridade_atual = form_data.get('prioridade', ordem.prioridade if ordem else 'normal') %}
+                    <select name="prioridade" class="form-select">
+                        {% for valor, texto in [('baixa','Baixa'),('normal','Normal'),('alta','Alta'),('urgente','Urgente')] %}
+                        <option value="{{ valor }}" {% if prioridade_atual == valor %}selected{% endif %}>{{ texto }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Solicitante</label>
+                    <input name="solicitante" class="form-control" maxlength="200" value="{{ form_data.get('solicitante', ordem.solicitante if ordem else '') }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Previsão</label>
+                    <input type="date" name="data_prevista" class="form-control" value="{{ form_data.get('data_prevista', ordem.data_prevista.isoformat() if ordem and ordem.data_prevista else '') }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Equipamento</label>
+                    <input name="equipamento" class="form-control" maxlength="200" value="{{ form_data.get('equipamento', ordem.equipamento if ordem else '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Marca / modelo</label>
+                    <input name="marca_modelo" class="form-control" maxlength="200" value="{{ form_data.get('marca_modelo', ordem.marca_modelo if ordem else '') }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Nº de série</label>
+                    <input name="numero_serie" class="form-control" maxlength="100" value="{{ form_data.get('numero_serie', ordem.numero_serie if ordem else '') }}">
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Descrição do problema / solicitação</label>
+                    <textarea name="descricao_problema" class="form-control" rows="3">{{ form_data.get('descricao_problema', ordem.descricao_problema if ordem else '') }}</textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Defeito relatado</label>
+                    <textarea name="defeito_relatado" class="form-control" rows="2">{{ form_data.get('defeito_relatado', ordem.defeito_relatado if ordem else '') }}</textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Diagnóstico técnico</label>
+                    <textarea name="diagnostico_tecnico" class="form-control" rows="3">{{ form_data.get('diagnostico_tecnico', ordem.diagnostico_tecnico if ordem else '') }}</textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Solução / serviço executado</label>
+                    <textarea name="solucao" class="form-control" rows="3">{{ form_data.get('solucao', ordem.solucao if ordem else '') }}</textarea>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Observações operacionais</label>
+                    <textarea name="observacoes" class="form-control" rows="3">{{ form_data.get('observacoes', ordem.observacoes if ordem else '') }}</textarea>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-4 mb-0">
+                <i class="fas fa-info-circle me-2"></i>
+                Valores, descontos, pagamento, parcelas e financeiro são definidos apenas pela administração.
+            </div>
+
+            <div class="d-flex justify-content-between flex-wrap gap-2 mt-4">
+                <a href="{% if ordem %}{{ url_for('ordem_servico.visualizar', id=ordem.id) }}{% else %}{{ url_for('ordem_servico.listar') }}{% endif %}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Cancelar</a>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>{% if ordem %}Salvar dados técnicos{% else %}Criar OS e iniciar atendimento{% endif %}</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
