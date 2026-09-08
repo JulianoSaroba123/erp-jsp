@@ -36,14 +36,17 @@ def _parse_int(value):
         return None
 
 def _parse_date(value):
-    """Converte string para date."""
+    """Converte datas em AAAA-MM-DD ou DD/MM/AAAA para date."""
     if not value or value.strip() == '':
         return None
-    try:
-        from datetime import datetime
-        return datetime.strptime(value, '%Y-%m-%d').date()
-    except (ValueError, AttributeError):
-        return None
+    from datetime import datetime
+    valor = value.strip()
+    for formato in ('%Y-%m-%d', '%d/%m/%Y'):
+        try:
+            return datetime.strptime(valor, formato).date()
+        except ValueError:
+            continue
+    return None
 
 @fornecedor_bp.route('/')
 @fornecedor_bp.route('/listar')
@@ -102,14 +105,20 @@ def novo():
     if request.method == 'POST':
         try:
             # Coleta TODOS os dados profissionais do formulário
+            tipo_fornecedor = request.form.get('tipo', 'PJ')
+            nome_fornecedor = (
+                request.form.get('razao_social', '').strip()
+                if tipo_fornecedor == 'PJ'
+                else request.form.get('nome_pf', '').strip()
+            )
             fornecedor = Fornecedor(
-                nome=request.form.get('nome', '').strip(),
+                nome=nome_fornecedor,
                 nome_fantasia=request.form.get('nome_fantasia', '').strip(),
-                tipo=request.form.get('tipo', 'PJ'),
+                tipo=tipo_fornecedor,
                 cnpj_cpf=''.join(filter(str.isdigit, request.form.get('cpf_cnpj', ''))),
                 rg_ie=request.form.get('rg_ie', '').strip(),
-                inscricao_estadual=request.form.get('rg_ie', '').strip(),
-                inscricao_municipal=request.form.get('inscricao_municipal', '').strip(),
+                inscricao_estadual=(request.form.get('rg_ie', '').strip() if tipo_fornecedor == 'PJ' else ''),
+                inscricao_municipal=(request.form.get('im', '').strip() if tipo_fornecedor == 'PJ' else ''),
                 im=request.form.get('im', '').strip(),
                 email=request.form.get('email', '').strip(),
                 email_financeiro=request.form.get('email_financeiro', '').strip(),
@@ -213,12 +222,19 @@ def editar(id):
     if request.method == 'POST':
         try:
             # Atualiza dados
-            fornecedor.nome = request.form.get('nome', '').strip()
-            fornecedor.nome_fantasia = request.form.get('nome_fantasia', '').strip()
             fornecedor.tipo = request.form.get('tipo', 'PJ')
+            fornecedor.nome = (
+                request.form.get('razao_social', '').strip()
+                if fornecedor.tipo == 'PJ'
+                else request.form.get('nome_pf', '').strip()
+            )
+            fornecedor.nome_fantasia = request.form.get('nome_fantasia', '').strip()
             novo_doc = ''.join(filter(str.isdigit, request.form.get('cnpj_cpf', '')))
-            fornecedor.inscricao_estadual = request.form.get('inscricao_estadual', '').strip()
-            fornecedor.inscricao_municipal = request.form.get('inscricao_municipal', '').strip()
+            fornecedor.rg_ie = request.form.get('rg_ie', '').strip()
+            fornecedor.inscricao_estadual = fornecedor.rg_ie if fornecedor.tipo == 'PJ' else ''
+            fornecedor.im = request.form.get('im', '').strip()
+            fornecedor.inscricao_municipal = fornecedor.im if fornecedor.tipo == 'PJ' else ''
+            fornecedor.data_fundacao = _parse_date(request.form.get('data_fundacao'))
             fornecedor.email = request.form.get('email', '').strip()
             fornecedor.telefone = request.form.get('telefone', '').strip()
             fornecedor.celular = request.form.get('celular', '').strip()

@@ -38,10 +38,17 @@ def consultar_cnpj(cnpj):
             return jsonify({'success': False, 'error': data.get('message', 'CNPJ não encontrado')}), 404
         
         # Formata os dados para retornar
+        razao_social = (
+            data.get('nome')
+            or data.get('razao_social')
+            or data.get('razaoSocial')
+            or ''
+        )
         resultado = {
             'success': True,
             'data': {
-                'nome': data.get('nome', ''),
+                'nome': razao_social,
+                'razao_social': razao_social,
                 'nome_fantasia': data.get('fantasia', ''),
                 'cnpj': data.get('cnpj', ''),
                 'situacao': data.get('situacao', ''),
