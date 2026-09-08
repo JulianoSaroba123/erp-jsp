@@ -17,6 +17,13 @@ from app.fornecedor.fornecedor_model import Fornecedor
 # Cria o blueprint
 fornecedor_bp = Blueprint('fornecedor', __name__, template_folder='templates')
 
+
+def _normalizar_documento(value):
+    """Normaliza CPF/CNPJ para somente dígitos; vazio vira None."""
+    doc = ''.join(filter(str.isdigit, value or ''))
+    return doc or None
+
+
 def _parse_decimal(value):
     """Converte string para decimal."""
     if not value or value.strip() == '':
@@ -26,6 +33,7 @@ def _parse_decimal(value):
     except (ValueError, AttributeError):
         return None
 
+
 def _parse_int(value):
     """Converte string para inteiro."""
     if not value or value.strip() == '':
@@ -34,6 +42,7 @@ def _parse_int(value):
         return int(value)
     except (ValueError, AttributeError):
         return None
+
 
 def _parse_date(value):
     """Converte datas em AAAA-MM-DD ou DD/MM/AAAA para date."""
@@ -48,21 +57,22 @@ def _parse_date(value):
             continue
     return None
 
+
 @fornecedor_bp.route('/')
 @fornecedor_bp.route('/listar')
 def listar():
     """
     Lista todos os fornecedores ativos.
-    
+
     Suporte para busca por nome, documento ou categoria.
     """
     # Parâmetros de busca
     busca = request.args.get('busca', '').strip()
     categoria = request.args.get('categoria', '').strip()
-    
+
     # Query base
     query = Fornecedor.query.filter_by(ativo=True)
-    
+
     # Aplica filtros se houver busca
     if busca:
         query = query.filter(
@@ -73,36 +83,40 @@ def listar():
                 Fornecedor.email.ilike(f'%{busca}%')
             )
         )
-    
+
     # Filtro por categoria
     if categoria:
         query = query.filter(Fornecedor.categoria.ilike(f'%{categoria}%'))
-    
+
     # Ordena por nome
     fornecedores = query.order_by(Fornecedor.nome).all()
-    
+
     # Lista de categorias para filtro
     categorias = db.session.query(Fornecedor.categoria).filter(
         Fornecedor.categoria.isnot(None),
         Fornecedor.ativo == True
     ).distinct().all()
     categorias = [cat[0] for cat in categorias if cat[0]]
-    
-    return render_template('fornecedor/listar.html', 
-                         fornecedores=fornecedores, 
-                         busca=busca,
-                         categoria=categoria,
-                         categorias=categorias)
+
+    return render_template(
+        'fornecedor/listar.html',
+        fornecedores=fornecedores,
+        busca=busca,
+        categoria=categoria,
+        categorias=categorias,
+    )
+
 
 @fornecedor_bp.route('/novo', methods=['GET', 'POST'])
 def novo():
     """
     Cria um novo fornecedor.
-    
+
     GET: Exibe formulário
     POST: Processa criação
     """
     if request.method == 'POST':
+        fornecedor = Fornecedor()
         try:
             # Coleta TODOS os dados profissionais do formulário
             tipo_fornecedor = request.form.get('tipo', 'PJ')
@@ -111,11 +125,13 @@ def novo():
                 if tipo_fornecedor == 'PJ'
                 else request.form.get('nome_pf', '').strip()
             )
+            documento = _normalizar_documento(request.form.get('cpf_cnpj', ''))
+
             fornecedor = Fornecedor(
                 nome=nome_fornecedor,
                 nome_fantasia=request.form.get('nome_fantasia', '').strip(),
                 tipo=tipo_fornecedor,
-                cnpj_cpf=''.join(filter(str.isdigit, request.form.get('cpf_cnpj', ''))),
+                cnpj_cpf=documento,
                 rg_ie=request.form.get('rg_ie', '').strip(),
                 inscricao_estadual=(request.form.get('rg_ie', '').strip() if tipo_fornecedor == 'PJ' else ''),
                 inscricao_municipal=(request.form.get('im', '').strip() if tipo_fornecedor == 'PJ' else ''),
@@ -155,70 +171,76 @@ def novo():
                 estado_civil=request.form.get('estado_civil', '').strip(),
                 profissao=request.form.get('profissao', '').strip(),
                 observacoes=request.form.get('observacoes', '').strip(),
-                observacoes_internas=request.form.get('observacoes_internas', '').strip()
+                observacoes_internas=request.form.get('observacoes_internas', '').strip(),
             )
-            
+
             # Validações
             if not fornecedor.nome:
                 flash('Nome é obrigatório!', 'error')
                 return render_template('fornecedor/form.html', fornecedor=fornecedor)
-            
-            documento = fornecedor.cnpj_cpf
+
             if documento:
-                # Verifica se documento já existe
-                existe = Fornecedor.buscar_por_documento(documento)
+                # O índice UNIQUE do banco vale também para registros inativos.
+                existe = Fornecedor.query.filter(Fornecedor.cnpj_cpf == documento).first()
                 if existe:
-                    flash('CNPJ/CPF já cadastrado!', 'error')
+                    status = 'ativo' if existe.ativo else 'inativo'
+                    flash(
+                        f'CNPJ/CPF já cadastrado no fornecedor "{existe.nome}" ({status}).',
+                        'error',
+                    )
                     return render_template('fornecedor/form.html', fornecedor=fornecedor)
-                
+
                 # Valida formato do documento
                 if not fornecedor.validar_documento():
                     flash('CNPJ/CPF inválido!', 'error')
                     return render_template('fornecedor/form.html', fornecedor=fornecedor)
-            
+
             # Salva fornecedor
             fornecedor.save()
-            
+
             flash(f'Fornecedor "{fornecedor.nome}" criado com sucesso!', 'success')
             return redirect(url_for('fornecedor.listar'))
-            
+
         except Exception as e:
+            db.session.rollback()
             flash(f'Erro ao criar fornecedor: {str(e)}', 'error')
             return render_template('fornecedor/form.html', fornecedor=fornecedor)
-    
+
     # GET - exibe formulário vazio
     return render_template('fornecedor/form.html', fornecedor=Fornecedor())
+
 
 @fornecedor_bp.route('/<int:id>')
 def visualizar(id):
     """
     Visualiza detalhes de um fornecedor.
-    
+
     Args:
         id (int): ID do fornecedor
     """
     fornecedor = Fornecedor.get_by_id(id)
-    
+
     if not fornecedor:
         flash('Fornecedor não encontrado!', 'error')
         return redirect(url_for('fornecedor.listar'))
-    
+
     return render_template('fornecedor/visualizar.html', fornecedor=fornecedor)
+
 
 @fornecedor_bp.route('/<int:id>/editar', methods=['GET', 'POST'])
 def editar(id):
     """
     Edita um fornecedor existente.
-    
+
     Args:
         id (int): ID do fornecedor
     """
     fornecedor = Fornecedor.get_by_id(id)
-    
+
     if not fornecedor:
         flash('Fornecedor não encontrado!', 'error')
         return redirect(url_for('fornecedor.listar'))
-    
+
     if request.method == 'POST':
         try:
             # Atualiza dados
@@ -229,7 +251,11 @@ def editar(id):
                 else request.form.get('nome_pf', '').strip()
             )
             fornecedor.nome_fantasia = request.form.get('nome_fantasia', '').strip()
-            novo_doc = ''.join(filter(str.isdigit, request.form.get('cnpj_cpf', '')))
+
+            # O formulário usa cpf_cnpj; normalize vazio para None para não disputar UNIQUE.
+            novo_doc = _normalizar_documento(request.form.get('cpf_cnpj', ''))
+            documento_atual = _normalizar_documento(fornecedor.cnpj_cpf)
+
             fornecedor.rg_ie = request.form.get('rg_ie', '').strip()
             fornecedor.inscricao_estadual = fornecedor.rg_ie if fornecedor.tipo == 'PJ' else ''
             fornecedor.im = request.form.get('im', '').strip()
@@ -254,75 +280,87 @@ def editar(id):
             fornecedor.condicoes_pagamento = request.form.get('condicoes_pagamento', '').strip()
             fornecedor.prazo_entrega = request.form.get('prazo_entrega', '').strip()
             fornecedor.observacoes = request.form.get('observacoes', '').strip()
-            
+
             # Validações
             if not fornecedor.nome:
                 flash('Nome é obrigatório!', 'error')
                 return render_template('fornecedor/form.html', fornecedor=fornecedor)
-            
-            # Verifica se documento mudou e se já existe
-            if novo_doc and novo_doc != fornecedor.cnpj_cpf:
-                existe = Fornecedor.buscar_por_documento(novo_doc)
+
+            # Verifica duplicidade em qualquer registro, inclusive inativo,
+            # excluindo o próprio fornecedor que está sendo editado.
+            if novo_doc and novo_doc != documento_atual:
+                existe = Fornecedor.query.filter(
+                    Fornecedor.cnpj_cpf == novo_doc,
+                    Fornecedor.id != fornecedor.id,
+                ).first()
                 if existe:
-                    flash('CNPJ/CPF já cadastrado!', 'error')
+                    status = 'ativo' if existe.ativo else 'inativo'
+                    flash(
+                        f'CNPJ/CPF já cadastrado no fornecedor "{existe.nome}" ({status}).',
+                        'error',
+                    )
                     return render_template('fornecedor/form.html', fornecedor=fornecedor)
-            
+
             fornecedor.cnpj_cpf = novo_doc
-            
+
             # Valida formato do documento
             if fornecedor.cnpj_cpf and not fornecedor.validar_documento():
                 flash('CNPJ/CPF inválido!', 'error')
                 return render_template('fornecedor/form.html', fornecedor=fornecedor)
-            
+
             # Salva alterações
             fornecedor.save()
-            
+
             flash(f'Fornecedor "{fornecedor.nome}" atualizado com sucesso!', 'success')
             return redirect(url_for('fornecedor.visualizar', id=id))
-            
+
         except Exception as e:
+            db.session.rollback()
             flash(f'Erro ao atualizar fornecedor: {str(e)}', 'error')
             return render_template('fornecedor/form.html', fornecedor=fornecedor)
-    
+
     # GET - exibe formulário preenchido
     return render_template('fornecedor/form.html', fornecedor=fornecedor)
+
 
 @fornecedor_bp.route('/<int:id>/excluir')
 def excluir(id):
     """
     Exclui (desativa) um fornecedor.
-    
+
     Args:
         id (int): ID do fornecedor
     """
     fornecedor = Fornecedor.get_by_id(id)
-    
+
     if not fornecedor:
         flash('Fornecedor não encontrado!', 'error')
         return redirect(url_for('fornecedor.listar'))
-    
+
     try:
         nome = fornecedor.nome
         fornecedor.soft_delete()
         flash(f'Fornecedor "{nome}" excluído com sucesso!', 'success')
     except Exception as e:
+        db.session.rollback()
         flash(f'Erro ao excluir fornecedor: {str(e)}', 'error')
-    
+
     return redirect(url_for('fornecedor.listar'))
+
 
 @fornecedor_bp.route('/api/buscar')
 def api_buscar():
     """
     API para busca de fornecedores (para autocomplete).
-    
+
     Returns:
         JSON: Lista de fornecedores encontrados
     """
     termo = request.args.get('q', '').strip()
-    
+
     if not termo or len(termo) < 2:
         return jsonify([])
-    
+
     fornecedores = Fornecedor.query.filter(
         db.or_(
             Fornecedor.nome.ilike(f'%{termo}%'),
@@ -331,7 +369,7 @@ def api_buscar():
         ),
         Fornecedor.ativo == True
     ).limit(10).all()
-    
+
     resultado = []
     for fornecedor in fornecedores:
         resultado.append({
@@ -342,8 +380,9 @@ def api_buscar():
             'categoria': fornecedor.categoria or '',
             'texto': f'{fornecedor.nome_display} - {fornecedor.documento_formatado}'
         })
-    
+
     return jsonify(resultado)
+
 
 # Importa as rotas de API para consultas automáticas
 from app.fornecedor import consultas_api
