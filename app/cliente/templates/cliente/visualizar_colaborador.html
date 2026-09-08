@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}{{ cliente.nome }} - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('cliente.listar') }}">Clientes</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">{{ cliente.nome_display }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+            <div>
+                <h3 class="mb-1"><i class="fas fa-address-card me-2 text-primary"></i>{{ cliente.nome_display }}</h3>
+                <p class="text-muted mb-0">Consulta operacional do cliente</p>
+            </div>
+            <div class="d-flex gap-2">
+                <span class="badge bg-light text-dark border align-self-center"><i class="fas fa-eye me-1"></i>Somente consulta</span>
+                <a href="{{ url_for('cliente.listar') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Voltar</a>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card h-100 bg-light border-0">
+                    <div class="card-body">
+                        <h5 class="mb-3"><i class="fas fa-id-card me-2"></i>Identificação</h5>
+                        <p class="mb-2"><strong>Tipo:</strong> {{ 'Pessoa Física' if cliente.tipo == 'PF' else 'Pessoa Jurídica' }}</p>
+                        {% if cliente.cpf_cnpj %}<p class="mb-2"><strong>{{ 'CPF' if cliente.tipo == 'PF' else 'CNPJ' }}:</strong> {{ cliente.documento_formatado }}</p>{% endif %}
+                        {% if cliente.rg_ie %}<p class="mb-0"><strong>{{ 'RG' if cliente.tipo == 'PF' else 'Inscrição Estadual' }}:</strong> {{ cliente.rg_ie }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card h-100 bg-light border-0">
+                    <div class="card-body">
+                        <h5 class="mb-3"><i class="fas fa-phone me-2"></i>Contato</h5>
+                        {% if cliente.telefone %}<p class="mb-2"><strong>Telefone:</strong> <a href="tel:{{ cliente.telefone }}">{{ cliente.telefone }}</a></p>{% endif %}
+                        {% if cliente.celular %}<p class="mb-2"><strong>Celular:</strong> <a href="tel:{{ cliente.celular }}">{{ cliente.celular }}</a></p>{% endif %}
+                        {% if cliente.whatsapp %}<p class="mb-2"><strong>WhatsApp:</strong> {{ cliente.whatsapp }}</p>{% endif %}
+                        {% if cliente.email %}<p class="mb-2"><strong>E-mail:</strong> <a href="mailto:{{ cliente.email }}">{{ cliente.email }}</a></p>{% endif %}
+                        {% if cliente.contato_nome %}<p class="mb-2"><strong>Contato:</strong> {{ cliente.contato_nome }}{% if cliente.contato_cargo %} - {{ cliente.contato_cargo }}{% endif %}</p>{% endif %}
+                        {% if cliente.contato_telefone %}<p class="mb-2"><strong>Telefone do contato:</strong> <a href="tel:{{ cliente.contato_telefone }}">{{ cliente.contato_telefone }}</a></p>{% endif %}
+                        {% if cliente.contato_email %}<p class="mb-0"><strong>E-mail do contato:</strong> <a href="mailto:{{ cliente.contato_email }}">{{ cliente.contato_email }}</a></p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="card bg-light border-0">
+                    <div class="card-body">
+                        <h5 class="mb-3"><i class="fas fa-map-marker-alt me-2"></i>Endereço</h5>
+                        <p class="mb-0">{{ cliente.endereco_completo or 'Endereço não informado.' }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {% if cliente.observacoes %}
+            <div class="col-12">
+                <div class="card bg-light border-0">
+                    <div class="card-body">
+                        <h5 class="mb-3"><i class="fas fa-sticky-note me-2"></i>Observações</h5>
+                        <div style="white-space: pre-wrap;">{{ cliente.observacoes }}</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
