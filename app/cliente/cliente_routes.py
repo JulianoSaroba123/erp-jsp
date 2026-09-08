@@ -135,6 +135,86 @@ def listar():
 
     return render_template('cliente/listar.html', clientes=clientes, busca=busca)
 
+@cliente_bp.route('/novo-operacional', methods=['GET', 'POST'])
+def novo_operacional():
+    """Cadastro de cliente em campo pelo perfil Colaborador, sem dados financeiros."""
+    if not getattr(current_user, 'is_authenticated', False) or getattr(current_user, 'tipo_usuario', None) != 'colaborador':
+        flash('Cadastro operacional disponível apenas para o perfil Colaborador.', 'error')
+        return redirect(url_for('cliente.listar'))
+
+    form_data = request.form.to_dict(flat=True) if request.method == 'POST' else {}
+    if request.method == 'POST':
+        limits = _get_clientes_column_limits()
+        truncated_fields = []
+        tipo = (_sanitize_text('tipo', request.form.get('tipo'), limits, truncated_fields) or 'PF').upper()
+        if tipo not in {'PF', 'PJ'}:
+            tipo = 'PF'
+
+        nome = _sanitize_text('nome', request.form.get('nome'), limits, truncated_fields)
+        nome_fantasia = _sanitize_text('nome_fantasia', request.form.get('nome_fantasia'), limits, truncated_fields)
+        razao_social = _sanitize_text('razao_social', request.form.get('razao_social'), limits, truncated_fields)
+        if tipo == 'PJ' and not nome:
+            nome = nome_fantasia or razao_social
+        if not nome:
+            flash('Informe o nome do cliente.', 'error')
+            return render_template('cliente/form_operacional_colaborador.html', form_data=form_data)
+
+        cpf_cnpj = _sanitize_text('cpf_cnpj', request.form.get('cpf_cnpj'), limits, truncated_fields)
+        if cpf_cnpj:
+            documento_numerico = re.sub(r'[^0-9]', '', cpf_cnpj)
+            for existente in Cliente.query.filter(Cliente.cpf_cnpj.isnot(None)).all():
+                if re.sub(r'[^0-9]', '', existente.cpf_cnpj or '') == documento_numerico:
+                    if existente.ativo:
+                        flash(f'Cliente {existente.nome_display} já cadastrado. Usei o cadastro existente para abrir a OS.', 'info')
+                        return redirect(url_for('ordem_servico.novo_operacional', cliente_id=existente.id))
+                    flash('Este documento pertence a um cliente inativo. Solicite a reativação à administração.', 'warning')
+                    return render_template('cliente/form_operacional_colaborador.html', form_data=form_data)
+
+        try:
+            novo_cliente = Cliente(
+                nome=nome,
+                nome_fantasia=nome_fantasia,
+                razao_social=razao_social,
+                tipo=tipo,
+                cpf_cnpj=cpf_cnpj,
+                rg_ie=_sanitize_text('rg_ie', request.form.get('rg_ie'), limits, truncated_fields),
+                email=_sanitize_text('email', request.form.get('email'), limits, truncated_fields),
+                telefone=_sanitize_text('telefone', request.form.get('telefone'), limits, truncated_fields),
+                celular=_sanitize_text('celular', request.form.get('celular'), limits, truncated_fields),
+                whatsapp=_sanitize_text('whatsapp', request.form.get('whatsapp'), limits, truncated_fields),
+                contato_nome=_sanitize_text('contato_nome', request.form.get('contato_nome'), limits, truncated_fields),
+                contato_cargo=_sanitize_text('contato_cargo', request.form.get('contato_cargo'), limits, truncated_fields),
+                contato_telefone=_sanitize_text('contato_telefone', request.form.get('contato_telefone'), limits, truncated_fields),
+                contato_email=_sanitize_text('contato_email', request.form.get('contato_email'), limits, truncated_fields),
+                cep=_sanitize_text('cep', request.form.get('cep'), limits, truncated_fields),
+                endereco=_sanitize_text('endereco', request.form.get('endereco'), limits, truncated_fields),
+                numero=_sanitize_text('numero', request.form.get('numero'), limits, truncated_fields),
+                complemento=_sanitize_text('complemento', request.form.get('complemento'), limits, truncated_fields),
+                bairro=_sanitize_text('bairro', request.form.get('bairro'), limits, truncated_fields),
+                cidade=_sanitize_text('cidade', request.form.get('cidade'), limits, truncated_fields),
+                estado=(_sanitize_text('estado', request.form.get('estado'), limits, truncated_fields) or '').upper() or None,
+                pais='Brasil',
+                observacoes=request.form.get('observacoes', '').strip() or None,
+                observacoes_internas=None,
+                limite_credito=0,
+                forma_pagamento_padrao=None,
+                prazo_pagamento_padrao=30,
+                desconto_padrao=0,
+                status='ativo',
+                ativo=True,
+            )
+            db.session.add(novo_cliente)
+            db.session.commit()
+            _flash_truncation_warning(truncated_fields)
+            flash(f'Cliente {novo_cliente.nome_display} cadastrado. Agora preencha a Ordem de Serviço.', 'success')
+            return redirect(url_for('ordem_servico.novo_operacional', cliente_id=novo_cliente.id))
+        except Exception:
+            db.session.rollback()
+            flash('Não foi possível cadastrar o cliente. Confira os dados e tente novamente.', 'error')
+
+    return render_template('cliente/form_operacional_colaborador.html', form_data=form_data)
+
+
 @cliente_bp.route('/novo', methods=['GET', 'POST'])
 def novo():
     """Cria um novo cliente."""

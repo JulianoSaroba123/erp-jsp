@@ -576,6 +576,8 @@ def restringir_rotas_colaborador():
         'ordem_servico.listar',
         'ordem_servico.visualizar',
         'ordem_servico.apontamento_colaborador',
+        'ordem_servico.novo_operacional',
+        'ordem_servico.editar_operacional',
     }
     if request.endpoint not in permitidas:
         flash('Seu perfil possui acesso somente à execução das suas Ordens de Serviço.', 'error')
@@ -908,6 +910,152 @@ def listar():
         
         flash(f'Erro ao carregar ordens: {error_msg}', 'error')
         return redirect(url_for('painel.index'))
+
+def _parse_data_operacional_campo(valor):
+    if not (valor or '').strip():
+        return None
+    try:
+        return datetime.strptime(valor, '%Y-%m-%d').date()
+    except Exception:
+        return None
+
+
+def _aplicar_campos_tecnicos_colaborador(ordem, form_data):
+    prioridade = (form_data.get('prioridade') or 'normal').strip().lower()
+    if prioridade not in {'baixa', 'normal', 'alta', 'urgente'}:
+        prioridade = 'normal'
+    ordem.titulo = (form_data.get('titulo') or '').strip()
+    ordem.solicitante = (form_data.get('solicitante') or '').strip() or None
+    ordem.prioridade = prioridade
+    ordem.data_prevista = _parse_data_operacional_campo(form_data.get('data_prevista'))
+    ordem.equipamento = (form_data.get('equipamento') or '').strip() or None
+    ordem.marca_modelo = (form_data.get('marca_modelo') or '').strip() or None
+    ordem.numero_serie = (form_data.get('numero_serie') or '').strip() or None
+    ordem.descricao_problema = (form_data.get('descricao_problema') or '').strip() or None
+    ordem.descricao = ordem.descricao_problema
+    ordem.defeito_relatado = (form_data.get('defeito_relatado') or '').strip() or None
+    ordem.diagnostico_tecnico = (form_data.get('diagnostico_tecnico') or '').strip() or None
+    ordem.solucao = (form_data.get('solucao') or '').strip() or None
+    ordem.observacoes = (form_data.get('observacoes') or '').strip() or None
+
+
+@ordem_servico_bp.route('/novo-operacional', methods=['GET', 'POST'])
+def novo_operacional():
+    """Cria OS operacional pelo colaborador, sem qualquer valor financeiro."""
+    if not usuario_eh_colaborador():
+        flash('Criação de OS de campo disponível apenas para Colaborador.', 'error')
+        return redirect(url_for('ordem_servico.listar'))
+
+    colaborador = colaborador_do_usuario_atual()
+    if not colaborador:
+        flash('Seu login precisa estar vinculado a um colaborador ativo antes de criar uma OS.', 'warning')
+        return redirect(url_for('ordem_servico.listar'))
+
+    clientes = buscar_clientes_ativos()
+    cliente_selecionado = safe_int_convert(request.args.get('cliente_id'))
+    form_data = request.form.to_dict(flat=True) if request.method == 'POST' else {}
+
+    if request.method == 'POST':
+        cliente_id = safe_int_convert(request.form.get('cliente_id'))
+        cliente = Cliente.query.filter_by(id=cliente_id, ativo=True).first() if cliente_id else None
+        if not cliente:
+            flash('Selecione um cliente ativo.', 'error')
+            return render_template('os/form_operacional_colaborador.html', ordem=None, clientes=clientes, cliente_selecionado=cliente_id, form_data=form_data)
+
+        titulo = (request.form.get('titulo') or '').strip()
+        if not titulo:
+            flash('Informe o título ou serviço da OS.', 'error')
+            return render_template('os/form_operacional_colaborador.html', ordem=None, clientes=clientes, cliente_selecionado=cliente_id, form_data=form_data)
+
+        try:
+            ordem = OrdemServico(
+                numero=OrdemServico.gerar_proximo_numero(),
+                cliente_id=cliente.id,
+                titulo=titulo,
+                tipo_os='operacional',
+                tipo_servico='atendimento',
+                status='em_execucao',
+                prioridade='normal',
+                data_abertura=date.today(),
+                tecnico_responsavel=colaborador.nome,
+                valor_servico=Decimal('0.00'),
+                valor_pecas=Decimal('0.00'),
+                valor_desconto=Decimal('0.00'),
+                valor_total=Decimal('0.00'),
+                valor_entrada=Decimal('0.00'),
+                condicao_pagamento='a_vista',
+                numero_parcelas=1,
+                status_pagamento='pendente',
+            )
+            _aplicar_campos_tecnicos_colaborador(ordem, request.form)
+            db.session.add(ordem)
+            db.session.flush()
+
+            trabalho = OrdemServicoColaborador(
+                ordem_servico_id=ordem.id,
+                colaborador_id=colaborador.id,
+                data_trabalho=date.today(),
+            )
+            db.session.add(trabalho)
+            db.session.commit()
+            flash(f'OS {ordem.numero} criada e atribuída a você.', 'success')
+            return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
+        except Exception as exc:
+            db.session.rollback()
+            print(f'ERRO ao criar OS operacional do colaborador: {exc}')
+            flash('Não foi possível criar a Ordem de Serviço.', 'error')
+
+    if cliente_selecionado and not Cliente.query.filter_by(id=cliente_selecionado, ativo=True).first():
+        cliente_selecionado = None
+    return render_template(
+        'os/form_operacional_colaborador.html',
+        ordem=None,
+        clientes=clientes,
+        cliente_selecionado=cliente_selecionado,
+        form_data=form_data,
+    )
+
+
+@ordem_servico_bp.route('/<int:id>/editar-operacional', methods=['GET', 'POST'])
+def editar_operacional(id):
+    """Permite ao colaborador editar apenas os dados técnicos de uma OS própria."""
+    if not usuario_eh_colaborador():
+        flash('Edição operacional disponível apenas para Colaborador.', 'error')
+        return redirect(url_for('ordem_servico.listar'))
+
+    colaborador = colaborador_do_usuario_atual()
+    ordem = OrdemServico.query.filter_by(id=id, ativo=True).first()
+    if not colaborador or not ordem or ordem.tipo_os != 'operacional' or not ordem_pertence_ao_colaborador(id, colaborador.id):
+        flash('Você não tem permissão para editar esta OS.', 'error')
+        return redirect(url_for('ordem_servico.listar'))
+
+    if ordem.status in {'concluida', 'finalizada', 'cancelada'}:
+        flash('OS concluída/cancelada não pode ser alterada pelo colaborador.', 'warning')
+        return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
+
+    form_data = request.form.to_dict(flat=True) if request.method == 'POST' else {}
+    if request.method == 'POST':
+        if not (request.form.get('titulo') or '').strip():
+            flash('Informe o título ou serviço da OS.', 'error')
+        else:
+            try:
+                _aplicar_campos_tecnicos_colaborador(ordem, request.form)
+                db.session.commit()
+                flash('Dados técnicos atualizados com sucesso.', 'success')
+                return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
+            except Exception as exc:
+                db.session.rollback()
+                print(f'ERRO ao editar OS operacional do colaborador: {exc}')
+                flash('Não foi possível atualizar os dados técnicos.', 'error')
+
+    return render_template(
+        'os/form_operacional_colaborador.html',
+        ordem=ordem,
+        clientes=[],
+        cliente_selecionado=ordem.cliente_id,
+        form_data=form_data,
+    )
+
 
 @ordem_servico_bp.route('/novo', methods=['GET', 'POST'])
 def novo():
