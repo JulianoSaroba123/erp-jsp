@@ -120,6 +120,8 @@ def create_app(config_name=None):
             'ordem_servico.listar',
             'ordem_servico.visualizar',
             'ordem_servico.apontamento_colaborador',
+            'cliente.listar',
+            'cliente.visualizar',
             'auth.perfil',
             'auth.alterar_senha',
             'auth.logout',

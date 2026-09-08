@@ -12,6 +12,7 @@ Data: 2025
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort
+from flask_login import current_user
 import requests
 import re
 from datetime import datetime
@@ -129,6 +130,9 @@ def listar():
         if cliente11_direto:
             print(f"DEBUG: Cliente 11 existe no banco - Nome: {cliente11_direto.nome}, Ativo: {cliente11_direto.ativo}")
     
+    if getattr(current_user, 'tipo_usuario', None) == 'colaborador':
+        return render_template('cliente/listar_colaborador.html', clientes=clientes, busca=busca)
+
     return render_template('cliente/listar.html', clientes=clientes, busca=busca)
 
 @cliente_bp.route('/novo', methods=['GET', 'POST'])
@@ -456,6 +460,9 @@ def visualizar(id):
         flash(f'Cliente #{id} não encontrado ou foi excluído.', 'error')
         return redirect(url_for('cliente.listar'))
     
+    if getattr(current_user, 'tipo_usuario', None) == 'colaborador':
+        return render_template('cliente/visualizar_colaborador.html', cliente=cliente)
+
     return render_template('cliente/visualizar.html', cliente=cliente)
 
 @cliente_bp.route('/<int:id>/excluir', methods=['GET', 'POST'])
