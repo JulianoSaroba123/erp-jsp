@@ -17,10 +17,14 @@ pc_routes = PC_ROUTES.read_text(encoding="utf-8")
 pc_form = PC_FORM.read_text(encoding="utf-8")
 
 # Parser deve aceitar tanto decimal do banco (420.00) quanto pt-BR (420,00).
-assert "const temVirgula = texto.includes(',')" in form
-assert "const temPonto = texto.includes('.')" in form
-assert "texto.lastIndexOf(',') > texto.lastIndexOf('.')" in form
-assert ".replace(/\\./g, '').replace(',', '.')" not in form.split("function parseDecimalBr", 1)[1].split("function formatMoney", 1)[0]
+parser = form.split("function parseDecimalBr", 1)[1].split("function formatMoney", 1)[0]
+assert "const temVirgula = texto.includes(',')" in parser
+assert "const temPonto = texto.includes('.')" in parser
+assert "texto.lastIndexOf(',') > texto.lastIndexOf('.')" in parser
+# O bug antigo removia todos os pontos incondicionalmente logo na leitura do valor.
+assert "const cleaned = String(value).replace('R$', '').replace(/\\s/g, '').replace(/\\./g, '').replace(',', '.')" not in parser
+assert "else if (temVirgula)" in parser
+assert "const num = Number(texto)" in parser
 
 # Produto/servico deve oferecer preco automatico para a tela.
 assert "data-valor=\"{{ produto.preco_venda or 0 }}\"" in form
