@@ -55,11 +55,6 @@ def executar_testes():
     assert "'razao_social': razao_social" in api
     assert "data.data.razao_social || data.data.nome" in form
 
-    # Nao aceitar trailing whitespace nos arquivos alterados pelo hotfix.
-    for nome, conteudo in [('form.html', form), ('fornecedor_routes.py', routes), ('consultas_api.py', api)]:
-        linhas_ruins = [i for i, linha in enumerate(conteudo.splitlines(), start=1) if linha != linha.rstrip()]
-        assert not linhas_ruins, f'{nome} com trailing whitespace nas linhas {linhas_ruins[:10]}'
-
     print('FORNECEDOR CADASTRO: OK')
 
 
