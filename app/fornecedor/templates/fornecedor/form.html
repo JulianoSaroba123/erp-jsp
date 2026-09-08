@@ -812,12 +812,10 @@
         });
 
         // Consulta CNPJ automatica
-        console.log('🔍 Configurando botão de consulta CNPJ:', btnConsultarCnpj ? '✅' : '❌');
+        console.log('🔍 Configurando botão de consulta CNPJ:', btnCnpj ? '✅' : '❌');
         
-        if (btnConsultarCnpj) {
-            btnConsultarCnpj.addEventListener('click', function() {
-                console.log('🖱️ BOTÃO CLICADO!');
-            btnConsultarCnpj.addEventListener('click', function() {
+        if (btnCnpj) {
+            btnCnpj.addEventListener('click', function() {
                 console.log('🔍 Iniciando consulta CNPJ...');
                 
                 if (tipoSelect.value !== 'PJ') {
@@ -1039,15 +1037,14 @@
                         console.log('🏁 Consulta finalizada');
                     });
             });
+        }
+
         console.log('⚙️ Inicializando interface...');
         atualizarInterface();
 
         // Foco no tipo primeiro
         tipoSelect.focus();
-        console.log('✅ Script de fornecedor carregado com sucesso!'e();
-
-        // Foco no tipo primeiro
-        tipoSelect.focus();
+        console.log('✅ Script de fornecedor carregado com sucesso!');
     });
 </script>
 {% endblock %}
