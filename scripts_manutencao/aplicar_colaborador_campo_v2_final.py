@@ -13,7 +13,8 @@ texto = OS.read_text(encoding='utf-8')
 antigo = """    permitidas = {\n        'ordem_servico.listar',\n        'ordem_servico.visualizar',\n        'ordem_servico.apontamento_colaborador',\n    }\n"""
 novo = """    permitidas = {\n        'ordem_servico.listar',\n        'ordem_servico.visualizar',\n        'ordem_servico.apontamento_colaborador',\n        'ordem_servico.novo_operacional',\n        'ordem_servico.editar_operacional',\n    }\n"""
 
-if "'ordem_servico.novo_operacional'" not in texto.split('def restringir_rotas_colaborador():', 1)[1].split('return None', 1)[0]:
+guard = texto.split('def restringir_rotas_colaborador():', 1)[1].split('if request.endpoint not in permitidas:', 1)[0]
+if "'ordem_servico.novo_operacional'" not in guard:
     qtd = texto.count(antigo)
     if qtd != 1:
         raise SystemExit(f'ABORTADO: guard interno da OS não localizado de forma única ({qtd}).')
