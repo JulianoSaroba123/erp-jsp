@@ -24,7 +24,7 @@
 
   /* Texto */
   --cc-text: #1F2A33;
-  --cc-text-muted: #758491;
+  --cc-text-muted: #667584;
 
   /* Estado */
   --cc-success: #23845F;
@@ -153,7 +153,8 @@
 }
 
 .cc-input::placeholder {
-  color: #A7B2BC;
+  color: #687684;
+  opacity: 1;
 }
 
 .cc-input:focus {

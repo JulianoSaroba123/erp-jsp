@@ -1154,7 +1154,7 @@ def register_context_processors(app):
         return {
             'COMPANY_NAME': 'ERP JSP',
             'SYSTEM_VERSION': '3.0',
-            'ASSET_VERSION': '20260605.3',
+            'ASSET_VERSION': '20260908.1',
             'format_date': format_date,
             'format_time': format_time,
             'format_datetime': format_datetime
