@@ -62,7 +62,7 @@
                                     <input type="text" 
                                            class="form-control" 
                                            id="nome" 
-                                           name="nome" 
+                                           name="nome_pf"
                                            value="{{ fornecedor.nome or '' }}" 
                                            required 
                                            maxlength="150"
@@ -77,30 +77,20 @@
                                             <input type="text" 
                                                    class="form-control" 
                                                    id="razao_social_pj" 
-                                                   name="nome" 
+                                                   name="razao_social"
                                                    value="{{ fornecedor.nome or '' }}"
                                                    maxlength="150"
                                                    placeholder="Razão social da empresa">
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-12">
                                             <label for="nome_fantasia" class="form-label">Nome Fantasia *</label>
-                                            <input type="text" 
-                                                   class="form-control" 
-                                                   id="nome_fantasia" 
-                                                   name="nome_fantasia" 
+                                            <input type="text"
+                                                   class="form-control"
+                                                   id="nome_fantasia"
+                                                   name="nome_fantasia"
                                                    value="{{ fornecedor.nome_fantasia or '' }}"
                                                    maxlength="150"
                                                    placeholder="Nome fantasia da empresa">
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label for="inscricao_estadual" class="form-label">Inscrição Estadual</label>
-                                            <input type="text" 
-                                                   class="form-control" 
-                                                   id="inscricao_estadual" 
-                                                   name="inscricao_estadual" 
-                                                   value="{{ fornecedor.inscricao_estadual or '' }}"
-                                                   maxlength="20"
-                                                   placeholder="Inscrição Estadual">
                                         </div>
                                     </div>
                                 </div>
@@ -152,11 +142,15 @@
                         <div id="extras-pj" class="row mt-3" style="display: none;">
                             <div class="col-md-3">
                                 <label for="data_fundacao" class="form-label">Data Fundação</label>
-                                <input type="date" 
-                                       class="form-control" 
-                                       id="data_fundacao" 
-                                       name="data_fundacao" 
-                                       value="{{ fornecedor.data_fundacao or '' }}">
+                                <input type="text"
+                                       class="form-control"
+                                       id="data_fundacao"
+                                       name="data_fundacao"
+                                       value="{{ fornecedor.data_fundacao.strftime('%d/%m/%Y') if fornecedor.data_fundacao else '' }}"
+                                       inputmode="numeric"
+                                       maxlength="10"
+                                       autocomplete="off"
+                                       placeholder="DD/MM/AAAA">
                             </div>
                             <div class="col-md-3">
                                 <label for="porte_empresa" class="form-label">Porte</label>
@@ -771,6 +765,13 @@
             value = value.replace(/(\d{5})(\d)/, '$1-$2');
             return value;
         }
+
+        function mascaraData(value) {
+            value = value.replace(/\D/g, '').slice(0, 8);
+            value = value.replace(/(\d{2})(\d)/, '$1/$2');
+            value = value.replace(/(\d{2})(\d)/, '$1/$2');
+            return value;
+        }
         
         // Máscara para telefone
         function mascaraTelefone(value) {
@@ -796,6 +797,13 @@
         document.getElementById('cep').addEventListener('input', function() {
             this.value = mascaraCep(this.value);
         });
+
+        const dataFundacaoInput = document.getElementById('data_fundacao');
+        if (dataFundacaoInput) {
+            dataFundacaoInput.addEventListener('input', function() {
+                this.value = mascaraData(this.value);
+            });
+        }
         
         ['telefone', 'celular', 'whatsapp', 'contato_telefone'].forEach(id => {
             const element = document.getElementById(id);
@@ -859,10 +867,11 @@
                             let camposPreenchidos = [];
                             
                             // Preenche razão social e fantasia
-                            if (data.data.nome) {
+                            const razaoSocialApi = data.data.razao_social || data.data.nome;
+                            if (razaoSocialApi) {
                                 const razaoSocial = document.getElementById('razao_social_pj');
                                 if (razaoSocial) {
-                                    razaoSocial.value = data.data.nome;
+                                    razaoSocial.value = razaoSocialApi;
                                     camposPreenchidos.push('Razão Social');
                                 }
                             }
