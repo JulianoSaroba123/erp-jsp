@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}OS {{ ordem.numero }} - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('ordem_servico.listar') }}">Minhas OS</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">{{ ordem.numero }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+            <div>
+                <h3 class="mb-1"><i class="fas fa-wrench me-2 text-primary"></i>OS {{ ordem.numero }}</h3>
+                <p class="text-muted mb-0">{{ ordem.titulo or 'Ordem de Serviço' }}</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('ordem_servico.listar') }}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-1"></i>Voltar</a>
+                <a href="{{ url_for('ordem_servico.apontamento_colaborador', id=ordem.id) }}" class="btn btn-primary"><i class="fas fa-clock me-1"></i>Preencher apontamento</a>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4"><strong>Cliente</strong><br>{{ ordem.cliente.nome if ordem.cliente else '-' }}</div>
+            <div class="col-md-4"><strong>Solicitante</strong><br>{{ ordem.solicitante or '-' }}</div>
+            <div class="col-md-4"><strong>Status</strong><br><span class="badge bg-secondary">{{ ordem.status_formatado if ordem.status_formatado is defined else ordem.status }}</span></div>
+            <div class="col-md-4"><strong>Data de abertura</strong><br>{{ ordem.data_abertura.strftime('%d/%m/%Y') if ordem.data_abertura else '-' }}</div>
+            <div class="col-md-4"><strong>Previsão</strong><br>{{ ordem.data_prevista.strftime('%d/%m/%Y') if ordem.data_prevista else '-' }}</div>
+            <div class="col-md-4"><strong>Prioridade</strong><br>{{ ordem.prioridade or '-' }}</div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-4"><strong>Equipamento</strong><br>{{ ordem.equipamento or '-' }}</div>
+            <div class="col-md-4"><strong>Marca / Modelo</strong><br>{{ ordem.marca_modelo or '-' }}</div>
+            <div class="col-md-4"><strong>Nº de série</strong><br>{{ ordem.numero_serie or '-' }}</div>
+        </div>
+
+        {% if ordem.descricao_problema %}
+        <div class="mb-4"><strong>Descrição do problema / serviço</strong><div class="p-3 bg-light rounded mt-2">{{ ordem.descricao_problema }}</div></div>
+        {% elif ordem.descricao %}
+        <div class="mb-4"><strong>Descrição</strong><div class="p-3 bg-light rounded mt-2">{{ ordem.descricao }}</div></div>
+        {% endif %}
+
+        {% if trabalho %}
+        <div class="card bg-light border-0">
+            <div class="card-body">
+                <h5 class="mb-3"><i class="fas fa-user-clock me-2"></i>Meu apontamento</h5>
+                <div class="row g-3">
+                    <div class="col-md-3"><strong>Data</strong><br>{{ trabalho.data_trabalho.strftime('%d/%m/%Y') if trabalho.data_trabalho else '-' }}</div>
+                    <div class="col-md-3"><strong>Horas normais</strong><br>{{ trabalho.horas_normais_formatado }}</div>
+                    <div class="col-md-3"><strong>Horas extras</strong><br>{{ trabalho.horas_extras_formatado }}</div>
+                    <div class="col-md-3"><strong>Total</strong><br>{{ trabalho.total_horas_formatado }}</div>
+                    <div class="col-md-3"><strong>KM inicial</strong><br>{{ trabalho.km_inicial if trabalho.km_inicial is not none else '-' }}</div>
+                    <div class="col-md-3"><strong>KM final</strong><br>{{ trabalho.km_final if trabalho.km_final is not none else '-' }}</div>
+                    <div class="col-md-6"><strong>KM percorrido</strong><br>{{ trabalho.km_total }} km</div>
+                </div>
+                {% if trabalho.descricao_atividade %}<div class="mt-3"><strong>Atividade realizada</strong><div class="mt-1">{{ trabalho.descricao_atividade }}</div></div>{% endif %}
+                {% if trabalho.observacoes %}<div class="mt-3"><strong>Observações</strong><div class="mt-1">{{ trabalho.observacoes }}</div></div>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
