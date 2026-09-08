@@ -20,6 +20,14 @@ for endpoint in (
 ):
     assert endpoint in bloco_whitelist, f'Endpoint operacional ausente: {endpoint}'
 
+# O guard interno da própria OS precisa permitir as mesmas rotas de campo.
+bloco_guard_os = OS.split('def restringir_rotas_colaborador():', 1)[1].split('return None', 1)[0]
+for endpoint in (
+    "'ordem_servico.novo_operacional'",
+    "'ordem_servico.editar_operacional'",
+):
+    assert endpoint in bloco_guard_os, f'Guard interno da OS bloqueia rota operacional: {endpoint}'
+
 # Cadastro administrativo permanece fora da whitelist.
 for endpoint in (
     "'cliente.novo'",
