@@ -2,6 +2,59 @@
 {% block title %}Pedido de Compra{% endblock %}
 {% block head %}
 <link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-e.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+<style>
+    .pedido-compra-itens-wrap {
+        overflow-x: auto;
+        padding-bottom: 2px;
+    }
+
+    .pedido-compra-itens-table {
+        width: 100%;
+        min-width: 1120px;
+        table-layout: fixed;
+        margin-bottom: 0;
+    }
+
+    .pedido-compra-itens-table th {
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    .pedido-compra-itens-table td {
+        vertical-align: middle;
+        padding: .65rem .5rem;
+    }
+
+    .pedido-compra-itens-table .form-control,
+    .pedido-compra-itens-table .form-select {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .pedido-compra-itens-table .pc-col-tipo { width: 8%; }
+    .pedido-compra-itens-table .pc-col-referencia { width: 24%; }
+    .pedido-compra-itens-table .pc-col-descricao { width: 24%; }
+    .pedido-compra-itens-table .pc-col-unidade { width: 8%; }
+    .pedido-compra-itens-table .pc-col-qtd { width: 10%; }
+    .pedido-compra-itens-table .pc-col-valor { width: 11%; }
+    .pedido-compra-itens-table .pc-col-desconto { width: 9%; }
+    .pedido-compra-itens-table .pc-col-acoes { width: 6%; }
+
+    .pedido-compra-itens-table .btn-remover-item {
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
+
+    @media (max-width: 1199.98px) {
+        .pedido-compra-itens-table {
+            min-width: 1040px;
+        }
+    }
+</style>
 {% endblock %}
 {% block breadcrumb %}<span>Pedidos de Compra</span>{% endblock %}
 {% block content %}
@@ -84,8 +137,18 @@
 
     <div class="col-12">
         <h4>Itens</h4>
-        <div class="cc-table-container table-responsive">
-            <table class="table cc-table table-bordered align-middle">
+        <div class="cc-table-container table-responsive pedido-compra-itens-wrap">
+            <table class="table cc-table table-bordered align-middle pedido-compra-itens-table">
+                <colgroup>
+                    <col class="pc-col-tipo">
+                    <col class="pc-col-referencia">
+                    <col class="pc-col-descricao">
+                    <col class="pc-col-unidade">
+                    <col class="pc-col-qtd">
+                    <col class="pc-col-valor">
+                    <col class="pc-col-desconto">
+                    <col class="pc-col-acoes">
+                </colgroup>
                 <thead>
                     <tr>
                         <th>Tipo</th>
@@ -95,7 +158,7 @@
                         <th>Qtd comprada</th>
                         <th>Valor unitario</th>
                         <th>Desconto</th>
-                        <th>Acoes</th>
+                        <th class="text-center">Acoes</th>
                     </tr>
                 </thead>
                 <tbody id="itens-body">
@@ -125,8 +188,10 @@
                         <td><input class="form-control" type="text" name="item_quantidade[]" value="{{ item.quantidade_comprada if item else '1' }}"></td>
                         <td><input class="form-control" type="text" name="item_valor_unitario[]" value="{{ item.valor_unitario if item else '0,00' }}"></td>
                         <td><input class="form-control" type="text" name="item_desconto[]" value="{{ item.desconto if item else '0,00' }}"></td>
-                        <td>
-                            <button class="btn btn-outline-danger btn-sm btn-remover-item" type="button">Remover</button>
+                        <td class="text-center">
+                            <button class="btn btn-outline-danger btn-sm btn-remover-item" type="button" title="Remover item" aria-label="Remover item">
+                                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -170,8 +235,10 @@
         <td><input class="form-control" type="text" name="item_quantidade[]" value="1"></td>
         <td><input class="form-control" type="text" name="item_valor_unitario[]" value="0,00"></td>
         <td><input class="form-control" type="text" name="item_desconto[]" value="0,00"></td>
-        <td>
-            <button class="btn btn-outline-danger btn-sm btn-remover-item" type="button">Remover</button>
+        <td class="text-center">
+            <button class="btn btn-outline-danger btn-sm btn-remover-item" type="button" title="Remover item" aria-label="Remover item">
+                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+            </button>
         </td>
     </tr>
 </template>
