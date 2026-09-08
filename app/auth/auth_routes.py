@@ -71,8 +71,10 @@ def login():
     import time
     current_time = int(time.time())
     
-    # Se já está logado, redireciona para dashboard
+    # Se já está logado, respeita o destino permitido pelo perfil.
     if current_user.is_authenticated:
+        if getattr(current_user, 'tipo_usuario', None) == 'colaborador':
+            return redirect(url_for('ordem_servico.listar'))
         return redirect(url_for('painel.dashboard'))
     
     if request.method == 'POST':
@@ -138,9 +140,11 @@ def login():
                 else:
                     flash(f'Bem-vindo de volta, {usuario.nome}!', 'success')
                 
-                # Redireciona para página solicitada ou dashboard
+                # Redireciona conforme o perfil. Colaborador entra direto em Minhas OS.
                 next_page = request.args.get('next')
-                if not next_page or not is_safe_url(next_page):
+                if usuario.tipo_usuario == 'colaborador':
+                    next_page = url_for('ordem_servico.listar')
+                elif not next_page or not is_safe_url(next_page):
                     next_page = url_for('painel.dashboard')
                 
                 return redirect(next_page)

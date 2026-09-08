@@ -99,6 +99,39 @@ def create_app(config_name=None):
 
     # Registra blueprints
     register_blueprints(app)
+
+    # Catraca global do perfil Colaborador.
+    # Regra de whitelist: qualquer endpoint fora da operação própria é bloqueado.
+    from flask_login import current_user
+    from flask import redirect, url_for
+
+    @app.before_request
+    def restringir_acesso_global_colaborador():
+        if not getattr(current_user, 'is_authenticated', False):
+            return None
+        if getattr(current_user, 'tipo_usuario', None) != 'colaborador':
+            return None
+
+        endpoint = request.endpoint
+        if endpoint is None:
+            return None
+
+        endpoints_permitidos = {
+            'ordem_servico.listar',
+            'ordem_servico.visualizar',
+            'ordem_servico.apontamento_colaborador',
+            'auth.perfil',
+            'auth.alterar_senha',
+            'auth.logout',
+            'auth.login',
+        }
+
+        if endpoint == 'static' or endpoint.endswith('.static'):
+            return None
+        if endpoint in endpoints_permitidos:
+            return None
+
+        return redirect(url_for('ordem_servico.listar'))
     
     # Registra rotas auxiliares
     register_auxiliary_routes(app)
