@@ -1400,98 +1400,164 @@ def conciliacao_bancaria():
 
 @bp_financeiro.route('/conciliacao-bancaria/upload', methods=['GET', 'POST'])
 def upload_extrato():
-    """Upload de arquivo de extrato bancário."""
+    """Importa extratos bancários OFX/CSV com controle de idempotência."""
     if request.method == 'POST':
         try:
-            # Validar arquivo
             if 'arquivo' not in request.files:
                 flash('Nenhum arquivo selecionado.', 'warning')
                 return redirect(url_for('financeiro.upload_extrato'))
-            
+
             arquivo = request.files['arquivo']
-            if arquivo.filename == '':
+            if not arquivo.filename:
                 flash('Nenhum arquivo selecionado.', 'warning')
                 return redirect(url_for('financeiro.upload_extrato'))
-            
-            # Validar conta bancária
+
             conta_id = request.form.get('conta_bancaria_id', type=int)
             if not conta_id:
                 flash('Selecione uma conta bancária.', 'warning')
                 return redirect(url_for('financeiro.upload_extrato'))
-            
+
             conta = ContaBancaria.query.get(conta_id)
             if not conta:
                 flash('Conta bancária não encontrada.', 'danger')
                 return redirect(url_for('financeiro.upload_extrato'))
-            
-            # Processar arquivo CSV
-            import csv
-            import io
+
+            from sqlalchemy.exc import IntegrityError
             from app.financeiro.financeiro_model import ExtratoBancario
-            
-            # Ler arquivo
-            stream = io.StringIO(arquivo.stream.read().decode("UTF-8"), newline=None)
-            csv_reader = csv.DictReader(stream)
-            
-            # Formato esperado das colunas (pode variar por banco)
-            # data,descricao,documento,valor,tipo
-            
-            contador = 0
-            for row in csv_reader:
+            from app.financeiro.extrato_importacao_service import (
+                ErroImportacaoExtrato,
+                gerar_fingerprints,
+                parse_arquivo,
+                resumir_movimentos,
+            )
+
+            conteudo = arquivo.stream.read()
+            if not conteudo:
+                flash('O arquivo selecionado está vazio.', 'warning')
+                return redirect(url_for('financeiro.upload_extrato'))
+
+            try:
+                resultado = parse_arquivo(conteudo, arquivo.filename)
+            except ErroImportacaoExtrato as exc:
+                flash(f'Não foi possível importar o extrato: {str(exc)}', 'danger')
+                return redirect(url_for('financeiro.upload_extrato'))
+
+            gerar_fingerprints(
+                resultado.movimentos,
+                conta_chave=str(conta_id),
+            )
+
+            if not resultado.movimentos:
+                flash(
+                    f'Nenhum movimento válido encontrado. Erros: {len(resultado.erros)}.',
+                    'warning',
+                )
+                return redirect(url_for('financeiro.upload_extrato'))
+
+            resumo = resumir_movimentos(resultado.movimentos)
+            importados = 0
+            ignorados = 0
+            erros_banco = 0
+
+            for movimento in resultado.movimentos:
+                fingerprint = movimento.get('fingerprint')
+                identificador_externo = movimento.get('identificador_externo')
+
+                duplicado = ExtratoBancario.buscar_duplicado_importacao(
+                    conta_id=conta_id,
+                    fingerprint=fingerprint,
+                    identificador_externo=identificador_externo,
+                )
+                if duplicado:
+                    ignorados += 1
+                    continue
+
+                documento = (
+                    movimento.get('identificacao')
+                    or movimento.get('documento')
+                    or ''
+                )
+
+                extrato = ExtratoBancario(
+                    conta_bancaria_id=conta_id,
+                    data_movimento=movimento['data_movimento'],
+                    descricao=(movimento.get('descricao') or '')[:255],
+                    documento=documento[:50],
+                    valor=movimento['valor'],
+                    tipo_movimento=movimento['tipo_movimento'],
+                    arquivo_origem=(arquivo.filename or '')[:255],
+                    identificador_externo=identificador_externo,
+                    fingerprint_importacao=fingerprint,
+                    ativo=True,
+                )
+
                 try:
-                    # Parsear data (formato DD/MM/YYYY)
-                    data_str = row.get('data', '').strip()
-                    if '/' in data_str:
-                        dia, mes, ano = data_str.split('/')
-                        data_movimento = date(int(ano), int(mes), int(dia))
-                    else:
-                        continue  # Pular linha sem data válida
-                    
-                    # Parsear descrição
-                    descricao = row.get('descricao', '').strip()
-                    if not descricao:
-                        continue
-                    
-                    # Parsear valor
-                    valor_str = row.get('valor', '0').strip()
-                    valor = converter_valor_monetario(valor_str)
-                    
-                    # Tipo de movimento
-                    tipo = row.get('tipo', 'debito').strip().lower()
-                    if tipo not in ['debito', 'credito']:
-                        tipo = 'debito' if valor < 0 else 'credito'
-                    
-                    # Documento (opcional)
-                    documento = row.get('documento', '').strip()
-                    
-                    # Criar extrato
-                    extrato = ExtratoBancario(
-                        conta_bancaria_id=conta_id,
-                        data_movimento=data_movimento,
-                        descricao=descricao,
-                        documento=documento,
-                        valor=abs(valor),
-                        tipo_movimento=tipo,
-                        arquivo_origem=arquivo.filename
+                    with db.session.begin_nested():
+                        db.session.add(extrato)
+                        db.session.flush()
+                    importados += 1
+                except IntegrityError:
+                    ignorados += 1
+                except Exception as exc:
+                    erros_banco += 1
+                    logger.warning(
+                        'Erro ao gravar movimento do extrato %s (linha/bloco %s): %s',
+                        arquivo.filename,
+                        movimento.get('linha_origem'),
+                        exc,
                     )
-                    db.session.add(extrato)
-                    contador += 1
-                
-                except Exception as e:
-                    continue  # Pular linhas com erro
-            
+
             db.session.commit()
-            flash(f'Extrato importado com sucesso! {contador} lançamentos adicionados.', 'success')
-            return redirect(url_for('financeiro.conciliacao_bancaria', conta_id=conta_id))
-        
+
+            erros_total = len(resultado.erros) + erros_banco
+            total_analisados = len(resultado.movimentos) + len(resultado.erros)
+
+            def _brl(valor, mostrar_sinal=False):
+                decimal = Decimal(valor)
+                sinal = ''
+                if mostrar_sinal:
+                    sinal = '+' if decimal >= 0 else '-'
+                numero = (
+                    f'{abs(decimal):,.2f}'
+                    .replace(',', 'X')
+                    .replace('.', ',')
+                    .replace('X', '.')
+                )
+                return f'{sinal}R$ {numero}'
+
+            categoria_flash = (
+                'warning'
+                if erros_total
+                else ('success' if importados else 'info')
+            )
+            flash(
+                (
+                    f'Extrato processado ({resultado.formato}). '
+                    f'Movimentos: {total_analisados} | '
+                    f'Importados: {importados} | '
+                    f'Já existentes/ignorados: {ignorados} | '
+                    f'Erros: {erros_total} | '
+                    f'Créditos: {_brl(resumo["total_creditos"])} | '
+                    f'Débitos: {_brl(resumo["total_debitos"])} | '
+                    f'Líquido: {_brl(resumo["liquido"], mostrar_sinal=True)}'
+                ),
+                categoria_flash,
+            )
+            return redirect(
+                url_for('financeiro.conciliacao_bancaria', conta_id=conta_id)
+            )
+
         except Exception as e:
             db.session.rollback()
+            logger.exception('Erro ao processar importação de extrato bancário')
             flash(f'Erro ao processar arquivo: {str(e)}', 'danger')
             return redirect(url_for('financeiro.upload_extrato'))
-    
-    # GET - Exibir formulário
+
     contas = ContaBancaria.query.filter_by(ativo=True).all()
-    return render_template('financeiro/conciliacao_bancaria/upload.html', contas=contas)
+    return render_template(
+        'financeiro/conciliacao_bancaria/upload.html',
+        contas=contas,
+    )
 
 
 @bp_financeiro.route('/conciliacao-bancaria/conciliar/<int:extrato_id>/<int:lancamento_id>', methods=['POST'])

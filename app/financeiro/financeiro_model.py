@@ -12,6 +12,7 @@ Data: 2025
 
 from datetime import datetime, date
 from decimal import Decimal
+from sqlalchemy import or_
 from app.extensoes import db
 from app.models import BaseModel
 
@@ -618,6 +619,18 @@ class ExtratoBancario(BaseModel):
     """
     
     __tablename__ = 'extratos_bancarios'
+    __table_args__ = (
+        db.Index(
+            'uq_extratos_bancarios_conta_fingerprint_importacao',
+            'conta_bancaria_id', 'fingerprint_importacao',
+            unique=True,
+        ),
+        db.Index(
+            'uq_extratos_bancarios_conta_identificador_externo',
+            'conta_bancaria_id', 'identificador_externo',
+            unique=True,
+        ),
+    )
     
     # Conta bancária relacionada
     conta_bancaria_id = db.Column(db.Integer, db.ForeignKey('contas_bancarias.id'), nullable=False)
@@ -640,6 +653,8 @@ class ExtratoBancario(BaseModel):
     # Importação
     arquivo_origem = db.Column(db.String(255))
     data_importacao = db.Column(db.DateTime, default=datetime.utcnow)
+    identificador_externo = db.Column(db.String(255))
+    fingerprint_importacao = db.Column(db.String(64))
     
     # Observações
     observacoes = db.Column(db.Text)
@@ -666,6 +681,25 @@ class ExtratoBancario(BaseModel):
         """Retorna status da conciliação."""
         return 'Conciliado' if self.conciliado else 'Pendente'
     
+    @classmethod
+    def buscar_duplicado_importacao(
+        cls, conta_id, fingerprint=None, identificador_externo=None
+    ):
+        """Localiza movimento ja importado por fingerprint ou identificador bancario."""
+        criterios = []
+        if fingerprint:
+            criterios.append(cls.fingerprint_importacao == fingerprint)
+        if identificador_externo:
+            criterios.append(cls.identificador_externo == identificador_externo)
+
+        if not criterios:
+            return None
+
+        return cls.query.filter(
+            cls.conta_bancaria_id == conta_id,
+            or_(*criterios),
+        ).first()
+
     @classmethod
     def get_pendentes(cls, conta_id=None):
         """Retorna extratos pendentes de conciliação."""
