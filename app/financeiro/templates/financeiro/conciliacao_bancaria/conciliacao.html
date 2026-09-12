@@ -99,7 +99,7 @@
                             <tbody>
                                 {% for extrato in extratos_pendentes %}
                                 <tr id="extrato-{{ extrato.id }}" class="extrato-row" data-extrato-id="{{ extrato.id }}">
-                                    <td>{{ extrato.data_movimento.strftime('%d/%m/%Y') }}</td>
+                                    <td>{{ extrato.data_movimento.strftime('%d/%m/%Y') if extrato.data_movimento else '—' }}</td>
                                     <td>
                                         <small>{{ extrato.descricao }}</small>
                                         {% if extrato.documento %}
@@ -165,7 +165,7 @@
                             <tbody>
                                 {% for lanc in lancamentos_pendentes %}
                                 <tr id="lancamento-{{ lanc.id }}" class="lancamento-row" data-lancamento-id="{{ lanc.id }}">
-                                    <td>{{ lanc.data_vencimento.strftime('%d/%m/%Y') }}</td>
+                                    <td>{{ (lanc.data_vencimento or lanc.data_lancamento).strftime('%d/%m/%Y') if (lanc.data_vencimento or lanc.data_lancamento) else '—' }}</td>
                                     <td>
                                         <small>{{ lanc.descricao }}</small>
                                         {% if lanc.categoria %}
