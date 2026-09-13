@@ -13,9 +13,15 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-handshake"></i> Conciliação Bancária</h2>
         <div>
-            <a href="{{ url_for('financeiro.upload_extrato') }}" class="btn btn-primary">
+            {% if conta_selecionada %}
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalImportarExtrato">
                 <i class="fas fa-upload"></i> Importar Extrato
-            </a>
+            </button>
+            {% else %}
+            <button type="button" class="btn btn-primary" disabled title="Selecione e carregue uma conta primeiro">
+                <i class="fas fa-upload"></i> Importar Extrato
+            </button>
+            {% endif %}
             <a href="{{ url_for('financeiro.historico_conciliacao') }}" class="btn btn-info">
                 <i class="fas fa-history"></i> Histórico
             </a>
@@ -45,6 +51,58 @@
             </form>
         </div>
     </div>
+
+    {% if conta_selecionada %}
+    <div class="modal fade" id="modalImportarExtrato" tabindex="-1" aria-labelledby="modalImportarExtratoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form method="POST" action="{{ url_for('financeiro.upload_extrato') }}" enctype="multipart/form-data">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="modalImportarExtratoLabel">
+                            <i class="fas fa-upload"></i> Importar Extrato
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-light border mb-3">
+                            <small class="text-muted d-block">Conta selecionada</small>
+                            <strong>{{ conta_selecionada.nome }}</strong>
+                            {% if conta_selecionada.banco or conta_selecionada.numero_conta %}
+                            <div class="small text-muted">
+                                {{ conta_selecionada.banco }}
+                                {% if conta_selecionada.numero_conta %}({{ conta_selecionada.numero_conta }}){% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <input type="hidden" name="conta_bancaria_id" value="{{ conta_selecionada.id }}">
+
+                        <div class="mb-3">
+                            <label for="arquivoExtratoInline" class="form-label">Arquivo OFX ou CSV *</label>
+                            <input type="file" name="arquivo" id="arquivoExtratoInline" class="form-control" accept=".ofx,.csv" required>
+                            <div class="form-text">
+                                Para o Cora, prefira OFX. CSV permanece disponível como fallback.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info mb-0">
+                            <small>
+                                <strong>Proteção contra duplicidade ativa.</strong>
+                                Reimportar o mesmo movimento não cria outro extrato.
+                            </small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Importar e atualizar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     {% if conta_selecionada %}
     <!-- Informações da Conta -->
@@ -134,9 +192,9 @@
                     <div class="text-center py-5 text-muted">
                         <i class="fas fa-check-circle fa-3x mb-3"></i>
                         <p>Nenhum extrato pendente de conciliação.</p>
-                        <a href="{{ url_for('financeiro.upload_extrato') }}" class="btn btn-primary">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalImportarExtrato">
                             <i class="fas fa-upload"></i> Importar Extrato
-                        </a>
+                        </button>
                     </div>
                     {% endif %}
                 </div>

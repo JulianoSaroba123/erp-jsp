@@ -123,6 +123,43 @@ def _qtd_conta(conta_id):
     return ExtratoBancario.query.filter_by(conta_bancaria_id=conta_id).count()
 
 
+def test_upload_inline_volta_para_conciliacao():
+    app = create_app("testing")
+
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        conta_id = _nova_conta("Cora Inline")
+
+    client = _login_admin(app)
+
+    response = client.get(
+        f"/financeiro/conciliacao-bancaria/upload?conta_id={conta_id}",
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert f"/financeiro/conciliacao-bancaria?conta_id={conta_id}" in response.headers["Location"]
+
+    response = client.get(
+        f"/financeiro/conciliacao-bancaria?conta_id={conta_id}",
+        follow_redirects=False,
+    )
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'id="modalImportarExtrato"' in html
+    assert 'name="conta_bancaria_id"' in html
+    assert f'value="{conta_id}"' in html
+    assert 'accept=".ofx,.csv"' in html
+
+    response = client.post(
+        "/financeiro/conciliacao-bancaria/upload",
+        data={"conta_bancaria_id": str(conta_id)},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    assert f"/financeiro/conciliacao-bancaria?conta_id={conta_id}" in response.headers["Location"]
+
+
 def test_upload_idempotente_nos_dois_sentidos():
     app = create_app("testing")
 
@@ -183,5 +220,6 @@ def test_upload_idempotente_nos_dois_sentidos():
 
 
 if __name__ == "__main__":
+    test_upload_inline_volta_para_conciliacao()
     test_upload_idempotente_nos_dois_sentidos()
     print("IMPORTACAO CORA UPLOAD: OK")
