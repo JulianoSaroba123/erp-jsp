@@ -1,0 +1,323 @@
+{% extends 'base.html' %}
+
+{% block title %}Configuração Fiscal - {{ super() }}{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="{{ url_for('configuracao.visualizar') }}">
+                Configurações
+            </a>
+        </li>
+        <li class="breadcrumb-item active">Fiscal</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-10 col-xl-11">
+
+        <div class="cc-form-card card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="mb-1">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>
+                        Configuração Fiscal
+                    </h4>
+                    <small class="text-muted">
+                        Parâmetros fiscais da empresa e preparação para NFS-e
+                    </small>
+                </div>
+
+                <span class="badge bg-warning text-dark">
+                    Fundação fiscal
+                </span>
+            </div>
+
+            <div class="card-body">
+
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    <a href="{{ url_for('configuracao.visualizar') }}"
+                       class="btn btn-outline-secondary">
+                        <i class="fas fa-building me-2"></i>
+                        Dados da Empresa
+                    </a>
+
+                    <a href="{{ url_for('configuracao.fiscal') }}"
+                       class="btn btn-primary">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>
+                        Fiscal
+                    </a>
+                </div>
+
+                <div class="alert alert-warning">
+                    <div class="fw-bold mb-1">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Transmissão fiscal bloqueada nesta etapa
+                    </div>
+                    Esta tela apenas armazena parâmetros fiscais.
+                    Nenhuma NFS-e será enviada à prefeitura ou a qualquer
+                    provedor durante o D24F01.
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>{{ configuracao.razao_social or configuracao.nome_fantasia }}</strong>
+                    {% if configuracao.cnpj %}
+                        <span class="ms-2">
+                            CNPJ: {{ configuracao.cnpj }}
+                        </span>
+                    {% endif %}
+                </div>
+
+                <form method="POST"
+                      action="{{ url_for('configuracao.fiscal') }}">
+
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="fas fa-id-card me-2"></i>
+                            01 - Identificação Fiscal
+                        </h6>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    Inscrição Municipal
+                                </label>
+                                <input type="text"
+                                       name="inscricao_municipal"
+                                       class="form-control"
+                                       maxlength="50"
+                                       value="{{ configuracao_fiscal.inscricao_municipal or '' }}">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    Regime Tributário
+                                </label>
+                                <select name="regime_tributario"
+                                        class="form-select">
+                                    <option value="">
+                                        Selecione
+                                    </option>
+
+                                    {% for regime in regimes_tributarios %}
+                                    <option value="{{ regime }}"
+                                        {% if configuracao_fiscal.regime_tributario == regime %}
+                                            selected
+                                        {% endif %}>
+                                        {{ regime|replace('_', ' ') }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label d-block">
+                                    Simples Nacional
+                                </label>
+
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="optante_simples_nacional"
+                                           id="optante_simples_nacional"
+                                           {% if configuracao_fiscal.optante_simples_nacional %}
+                                               checked
+                                           {% endif %}>
+
+                                    <label class="form-check-label"
+                                           for="optante_simples_nacional">
+                                        Empresa optante
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="fas fa-percentage me-2"></i>
+                            02 - Tributação de Serviços
+                        </h6>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    CNAE Principal
+                                </label>
+                                <input type="text"
+                                       name="cnae_principal"
+                                       class="form-control"
+                                       maxlength="20"
+                                       placeholder="0000-0/00"
+                                       value="{{ configuracao_fiscal.cnae_principal or '' }}">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    Código de Serviço Municipal
+                                </label>
+                                <input type="text"
+                                       name="codigo_servico_municipal"
+                                       class="form-control"
+                                       maxlength="30"
+                                       value="{{ configuracao_fiscal.codigo_servico_municipal or '' }}">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    Código LC 116
+                                </label>
+                                <input type="text"
+                                       name="codigo_lc116"
+                                       class="form-control"
+                                       maxlength="20"
+                                       value="{{ configuracao_fiscal.codigo_lc116 or '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    Alíquota ISS Padrão (%)
+                                </label>
+                                <input type="number"
+                                       name="aliquota_iss_padrao"
+                                       class="form-control"
+                                       min="0"
+                                       max="100"
+                                       step="0.01"
+                                       value="{{ configuracao_fiscal.aliquota_iss_padrao if configuracao_fiscal.aliquota_iss_padrao is not none else '' }}">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    Município IBGE
+                                </label>
+                                <input type="text"
+                                       name="municipio_ibge"
+                                       class="form-control"
+                                       maxlength="7"
+                                       inputmode="numeric"
+                                       placeholder="7 dígitos"
+                                       value="{{ configuracao_fiscal.municipio_ibge or '' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="fas fa-plug me-2"></i>
+                            03 - Integração NFS-e
+                        </h6>
+
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">
+                                    Ambiente
+                                </label>
+                                <select name="ambiente"
+                                        class="form-select">
+                                    {% for ambiente in ambientes_fiscais %}
+                                    <option value="{{ ambiente }}"
+                                        {% if (configuracao_fiscal.ambiente or 'HOMOLOGACAO') == ambiente %}
+                                            selected
+                                        {% endif %}>
+                                        {{ ambiente }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">
+                                    Provider
+                                </label>
+                                <input type="text"
+                                       name="provider"
+                                       class="form-control"
+                                       maxlength="50"
+                                       placeholder="Ainda não definido"
+                                       value="{{ configuracao_fiscal.provider or '' }}">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">
+                                    Série RPS
+                                </label>
+                                <input type="text"
+                                       name="serie_rps"
+                                       class="form-control"
+                                       maxlength="20"
+                                       required
+                                       value="{{ configuracao_fiscal.serie_rps or '1' }}">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">
+                                    Próximo RPS
+                                </label>
+                                <input type="number"
+                                       name="proximo_rps"
+                                       class="form-control"
+                                       min="1"
+                                       step="1"
+                                       required
+                                       value="{{ configuracao_fiscal.proximo_rps or 1 }}">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Status da Integração
+                                </label>
+
+                                <div class="form-control bg-light">
+                                    <span class="badge bg-secondary">
+                                        DESATIVADA
+                                    </span>
+                                    <span class="ms-2 text-muted">
+                                        Liberação somente no D24F02
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">
+                                    Transmissão
+                                </label>
+
+                                <div class="form-control bg-light">
+                                    <i class="fas fa-lock me-2"></i>
+                                    Bloqueada
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section text-end">
+                        <a href="{{ url_for('configuracao.visualizar') }}"
+                           class="btn btn-secondary me-2">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Voltar
+                        </a>
+
+                        <button type="submit"
+                                class="btn btn-success">
+                            <i class="fas fa-save me-2"></i>
+                            Salvar Configuração Fiscal
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
