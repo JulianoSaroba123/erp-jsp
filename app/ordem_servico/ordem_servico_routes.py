@@ -2422,23 +2422,129 @@ def iniciar_servico(id):
 @ordem_servico_bp.route('/<int:id>/concluir', methods=['POST'])
 def concluir_servico(id):
     """
-    Conclui o serviço (muda status para concluida).
-    
-    Args:
-        id: ID da ordem de serviço
+    Conclui a OS mantendo a decisao fiscal independente.
+
+    A conclusao operacional e financeira nunca deve ser bloqueada
+    por erro ou pendencia da camada fiscal.
     """
-    ordem = OrdemServico.get_by_id(id)
+    # D24F01-C3 - conclusao com decisao fiscal independente
+    ordem = db.session.get(OrdemServico, id)
+
     if not ordem:
-        flash('Ordem de serviço não encontrada!', 'error')
+        flash('Ordem de servi\u00e7o n\u00e3o encontrada!', 'error')
         return redirect(url_for('ordem_servico.listar'))
-    
+
+    situacao_fiscal = (
+        request.form.get('situacao_fiscal') or 'PENDENTE'
+    ).strip().upper()
+
+    motivo_nao_emissao = (
+        request.form.get('motivo_nao_emissao') or ''
+    ).strip() or None
+
+    observacao_fiscal = (
+        request.form.get('observacao_fiscal') or ''
+    ).strip() or None
+
+    # 1. Conclusao operacional / financeira
     try:
         ordem.concluir_servico()
-        flash(f'Serviço da OS "{ordem.numero}" concluído!', 'success')
+
     except Exception as e:
-        flash(f'Erro ao concluir serviço: {str(e)}', 'error')
-    
-    return redirect(url_for('ordem_servico.visualizar', id=id))
+        flash(
+            f'Erro ao concluir servi\u00e7o: {str(e)}',
+            'error'
+        )
+        return redirect(
+            url_for('ordem_servico.visualizar', id=id)
+        )
+
+    flash(
+        f'Servi\u00e7o da OS "{ordem.numero}" conclu\u00eddo!',
+        'success'
+    )
+
+    # 2. Decisao fiscal independente
+    try:
+        from app.fiscal.os_fiscal_service import (
+            registrar_decisao_fiscal,
+            DecisaoFiscalInvalida,
+        )
+
+        usuario_id = getattr(current_user, 'id', None)
+
+        if usuario_id is None:
+            raise DecisaoFiscalInvalida(
+                'Usu\u00e1rio respons\u00e1vel pela decis\u00e3o fiscal '
+                'n\u00e3o identificado.'
+            )
+
+        if situacao_fiscal == 'NAO_EMITIR' and not motivo_nao_emissao:
+            registrar_decisao_fiscal(
+                ordem_servico_id=id,
+                situacao='PENDENTE',
+                usuario_id=usuario_id,
+                observacao=(
+                    'Conclus\u00e3o realizada. A op\u00e7\u00e3o '
+                    'N\u00c3O EMITIR foi informada sem motivo e '
+                    'permaneceu pendente.'
+                ),
+            )
+
+            flash(
+                'OS conclu\u00edda, mas o motivo da n\u00e3o emiss\u00e3o '
+                '\u00e9 obrigat\u00f3rio. A situa\u00e7\u00e3o fiscal '
+                'ficou PENDENTE.',
+                'warning'
+            )
+
+        else:
+            if situacao_fiscal == 'PENDENTE' and not observacao_fiscal:
+                observacao_fiscal = (
+                    'Decis\u00e3o fiscal adiada no fechamento da OS.'
+                )
+
+            registrar_decisao_fiscal(
+                ordem_servico_id=id,
+                situacao=situacao_fiscal,
+                usuario_id=usuario_id,
+                motivo=motivo_nao_emissao,
+                observacao=observacao_fiscal,
+            )
+
+            if situacao_fiscal == 'EMITIR_NFSE':
+                flash(
+                    'Decis\u00e3o fiscal registrada: EMITIR_NFSE. '
+                    'A NFS-e ainda n\u00e3o foi transmitida.',
+                    'info'
+                )
+
+            elif situacao_fiscal == 'NAO_EMITIR':
+                flash(
+                    'Decis\u00e3o fiscal registrada: N\u00c3O EMITIR.',
+                    'info'
+                )
+
+            else:
+                flash(
+                    'Decis\u00e3o fiscal adiada. A OS ficou '
+                    'fiscalmente PENDENTE.',
+                    'info'
+                )
+
+    except Exception as e:
+        db.session.rollback()
+
+        flash(
+            'A OS foi conclu\u00edda normalmente, por\u00e9m a decis\u00e3o '
+            f'fiscal n\u00e3o p\u00f4de ser registrada: {str(e)}',
+            'warning'
+        )
+
+    return redirect(
+        url_for('ordem_servico.visualizar', id=id)
+    )
+
 
 @ordem_servico_bp.route('/<int:id>/cancelar', methods=['POST'])
 def cancelar_servico(id):

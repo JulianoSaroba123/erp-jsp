@@ -1048,12 +1048,15 @@
                                 </button>
                             </form>
                         {% elif ordem.status == 'em_execucao' %}
-                            <form method="POST" action="{{ url_for('ordem_servico.concluir_servico', id=ordem.id) }}">
-                                <button type="submit" class="btn btn-success w-100 action-btn" 
-                                        onclick="return confirm('Confirma a conclusão da OS?')">
-                                    <i class="fas fa-check me-2"></i>Concluir OS
-                                </button>
-                            </form>
+                            <button
+    type="button"
+    class="btn btn-success w-100 action-btn"
+    onclick='abrirModalConclusaoFiscal(
+        {{ url_for("ordem_servico.concluir_servico", id=ordem.id)|tojson }},
+        {{ ordem.numero|tojson }}
+    )'>
+    <i class="fas fa-check me-2"></i>Concluir OS
+</button>
                         {% endif %}
                         
                         <form method="POST" action="{{ url_for('ordem_servico.excluir', id=ordem.id) }}">
@@ -1069,5 +1072,7 @@
         </div>
     </div>
 </div>
+
+{% include 'os/_modal_conclusao_fiscal.html' %}
 
 {% endblock %}

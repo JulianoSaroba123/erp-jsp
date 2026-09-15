@@ -96,6 +96,44 @@ class OrdemServico(BaseModel):
     # Possíveis prioridades: baixa, normal, alta, urgente
 
         
+    # ========================================================
+    # CONTROLE FISCAL
+    # ========================================================
+    # Independente do status operacional e financeiro da OS.
+    situacao_fiscal = db.Column(
+        db.String(30),
+        default='PENDENTE',
+        nullable=False,
+        server_default='PENDENTE',
+        index=True
+    )
+
+    motivo_nao_emissao = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    observacao_fiscal = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    decisao_fiscal_em = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    decisao_fiscal_usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey('usuarios.id', ondelete='SET NULL'),
+        nullable=True
+    )
+
+    decisao_fiscal_usuario = db.relationship(
+        'Usuario',
+        foreign_keys=[decisao_fiscal_usuario_id]
+    )
+
     # Datas
     data_abertura = db.Column(db.Date, default=date.today, nullable=False)
     data_prevista = db.Column(db.Date)
@@ -539,7 +577,7 @@ class OrdemServico(BaseModel):
     
     def iniciar_servico(self):
         """Marca o início do serviço."""
-        if self.status == 'pendente':
+        if self.status in ['pendente', 'aberta']:
             self.status = 'em_execucao'
             self.data_inicio = datetime.now()
             self.save()
@@ -606,7 +644,7 @@ class OrdemServico(BaseModel):
     
     def pode_iniciar(self):
         """Verifica se a OS pode ser iniciada."""
-        return self.status == 'pendente'
+        return self.status in ['pendente', 'aberta']
     
     def pode_concluir(self):
         """Verifica se a OS pode ser concluída."""
@@ -675,6 +713,78 @@ class OrdemServico(BaseModel):
             db.session.rollback()
             print(f"Erro ao deletar ordem de serviço: {e}")
             raise e
+
+
+class OrdemServicoFiscalHistorico(db.Model):
+    """Registro de auditoria das decisoes fiscais tomadas em uma OS."""
+
+    __tablename__ = 'os_fiscal_historico'
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True,
+        autoincrement=True
+    )
+
+    ordem_servico_id = db.Column(
+        db.Integer,
+        db.ForeignKey('ordem_servico.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True
+    )
+
+    situacao_anterior = db.Column(
+        db.String(30),
+        nullable=True
+    )
+
+    situacao_nova = db.Column(
+        db.String(30),
+        nullable=False
+    )
+
+    motivo = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    observacao = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    usuario_id = db.Column(
+        db.Integer,
+        db.ForeignKey('usuarios.id', ondelete='SET NULL'),
+        nullable=True
+    )
+
+    criado_em = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+        index=True
+    )
+
+    ordem_servico = db.relationship(
+        'OrdemServico',
+        backref=db.backref(
+            'historico_fiscal',
+            lazy='dynamic'
+        )
+    )
+
+    usuario = db.relationship(
+        'Usuario',
+        foreign_keys=[usuario_id]
+    )
+
+    def __repr__(self):
+        return (
+            f'<OrdemServicoFiscalHistorico '
+            f'os={self.ordem_servico_id} '
+            f'{self.situacao_anterior}->{self.situacao_nova}>'
+        )
 
 
 class OrdemServicoItem(BaseModel):
