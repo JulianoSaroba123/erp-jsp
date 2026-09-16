@@ -32,6 +32,10 @@ class TransmissaoNfseInvalida(ValueError):
     """A fronteira de transmissao recebeu dados invalidos."""
 
 
+class TransicaoStatusNfseInvalida(ValueError):
+    """A tentativa de alterar o ciclo de vida NFS-e e invalida."""
+
+
 def gerar_chave_emissao_original(ordem_servico_id: int) -> str:
     """Chave deterministica para a primeira intencao NFS-e de uma OS."""
     return f"nfse:os:{ordem_servico_id}:emissao:original"
@@ -254,6 +258,13 @@ def preparar_payload_nfse(
 
     return payload
 
+_STATUS_DOCUMENTO_POR_RESULTADO_TRANSMISSAO = {
+    "PROCESSANDO": "PROCESSANDO",
+    "ACEITA": "AUTORIZADA",
+    "REJEITADA": "REJEITADA",
+}
+
+
 def _normalizar_resultado_transmissao_nfse(
     resultado,
 ) -> dict:
@@ -317,6 +328,84 @@ def _normalizar_resultado_transmissao_nfse(
         "numero_nfse": campos_texto["numero_nfse"],
         "dados_provider": dict(dados_provider),
     }
+
+
+def aplicar_resultado_transmissao_nfse(
+    *,
+    documento: NfseDocumento,
+    resultado: dict,
+) -> NfseDocumento:
+    """Aplica ao documento um resultado canonico de transmissao.
+
+    D24F01-C10H:
+    - nao realiza transmissao;
+    - nao executa commit;
+    - nao consome RPS;
+    - nao altera financeiro;
+    - preserva o estado fiscal em erros tecnicos;
+    - permite somente transicoes externas conhecidas.
+    """
+
+    if documento is None:
+        raise TransicaoStatusNfseInvalida(
+            "Documento NFS-e nao informado."
+        )
+
+    resultado_normalizado = _normalizar_resultado_transmissao_nfse(
+        resultado
+    )
+
+    status_resultado = resultado_normalizado["status"]
+
+    # ERRO representa falha tecnica/operacional.
+    # Nao e um estado fiscal persistivel do documento.
+    if status_resultado == "ERRO":
+        return documento
+
+    status_atual = str(
+        getattr(documento, "status", "") or ""
+    ).strip().upper()
+
+    if status_atual not in {
+        "PENDENTE_ENVIO",
+        "PROCESSANDO",
+    }:
+        raise TransicaoStatusNfseInvalida(
+            "Documento NFS-e em estado "
+            f"{status_atual or '<VAZIO>'} nao pode receber "
+            "resultado de transmissao."
+        )
+
+    novo_status = _STATUS_DOCUMENTO_POR_RESULTADO_TRANSMISSAO.get(
+        status_resultado
+    )
+
+    if novo_status is None:
+        raise TransicaoStatusNfseInvalida(
+            "Resultado de transmissao sem transicao fiscal conhecida: "
+            f"{status_resultado}."
+        )
+
+    numero_nfse = resultado_normalizado["numero_nfse"]
+
+    if novo_status == "AUTORIZADA" and not numero_nfse:
+        raise TransicaoStatusNfseInvalida(
+            "NFS-e autorizada deve possuir numero_nfse."
+        )
+
+    # Todas as validacoes ocorrem antes de qualquer mutacao.
+    documento.status = novo_status
+    documento.mensagem_status = resultado_normalizado["mensagem"]
+
+    protocolo = resultado_normalizado["protocolo"]
+
+    if protocolo is not None:
+        documento.protocolo = protocolo
+
+    if novo_status == "AUTORIZADA":
+        documento.numero_nfse = numero_nfse
+
+    return documento
 
 
 def transmitir_payload_nfse(
