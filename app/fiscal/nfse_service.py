@@ -450,6 +450,53 @@ def transmitir_payload_nfse(
         resultado
     )
 
+def transmitir_e_aplicar_nfse(
+    *,
+    documento: NfseDocumento,
+    payload: dict,
+    configuracao: ConfiguracaoFiscal,
+) -> tuple[NfseDocumento, dict]:
+    """Orquestra transmissao e aplicacao do resultado NFS-e.
+
+    D24F01-C10I:
+    - valida o documento antes da fronteira externa;
+    - transmite somente payload ja preparado;
+    - aplica somente resultado canonico;
+    - nao executa commit;
+    - nao consome ou incrementa RPS;
+    - nao altera financeiro.
+
+    Erros tecnicos do provider propagam sem mutar o documento.
+    """
+
+    if documento is None:
+        raise TransicaoStatusNfseInvalida(
+            "Documento NFS-e nao informado."
+        )
+
+    status_atual = str(
+        getattr(documento, "status", "") or ""
+    ).strip().upper()
+
+    if status_atual != "PENDENTE_ENVIO":
+        raise TransicaoStatusNfseInvalida(
+            "Documento NFS-e em estado "
+            f"{status_atual or '<VAZIO>'} nao pode ser transmitido."
+        )
+
+    resultado = transmitir_payload_nfse(
+        payload=payload,
+        configuracao=configuracao,
+    )
+
+    aplicar_resultado_transmissao_nfse(
+        documento=documento,
+        resultado=resultado,
+    )
+
+    return documento, resultado
+
+
 def preparar_nfse_da_os(
     ordem_servico_id: int,
 ) -> tuple[NfseDocumento, bool]:
