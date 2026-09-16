@@ -61,6 +61,12 @@ class NfseDocumento(BaseModel):
 
     provider = db.Column(db.String(50))
 
+    # Idempotencia da intencao fiscal.
+    chave_idempotencia = db.Column(
+        db.String(160),
+        unique=True,
+    )
+
     # Identificacao RPS / NFS-e.
     serie_rps = db.Column(db.String(20))
     numero_rps = db.Column(db.Integer)
