@@ -29,22 +29,27 @@ AMBIENTES_SEFIN_NACIONAL = {
 
 ROTAS_SEFIN_NACIONAL = {
     "emitir_nfse": {
+        "servico": "SEFIN_NACIONAL",
         "metodo": "POST",
         "rota": "/nfse",
     },
     "consultar_nfse": {
+        "servico": "SEFIN_NACIONAL",
         "metodo": "GET",
         "rota": "/nfse/{chave_acesso}",
     },
     "consultar_dps": {
+        "servico": "SEFIN_NACIONAL",
         "metodo": "GET",
         "rota": "/dps/{id_dps}",
     },
     "verificar_dps": {
+        "servico": "SEFIN_NACIONAL",
         "metodo": "HEAD",
         "rota": "/dps/{id_dps}",
     },
     "parametros_convenio": {
+        "servico": "PARAMETRIZACAO",
         "metodo": "GET",
         "rota": (
             "/parametros_municipais/"
