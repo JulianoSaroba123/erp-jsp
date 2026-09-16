@@ -595,3 +595,105 @@ def montar_dps_canonica(
         "iss": dict(iss or {}),
         "ibs_cbs": dict(ibs_cbs or {}),
     }
+
+
+def montar_prestador_canonico(configuracao, configuracao_fiscal):
+    """Monta o prestador canonico da DPS a partir dos cadastros oficiais."""
+
+    if configuracao is None:
+        raise DpsCanonicaInvalida(
+            "Configuracao institucional do prestador nao informada."
+        )
+
+    if configuracao_fiscal is None:
+        raise DpsCanonicaInvalida(
+            "Configuracao fiscal do prestador nao informada."
+        )
+
+    configuracao_id = getattr(configuracao, "id", None)
+    configuracao_fiscal_id = getattr(
+        configuracao_fiscal,
+        "configuracao_id",
+        None,
+    )
+
+    if configuracao_id is None:
+        raise DpsCanonicaInvalida(
+            "Identificador da configuracao institucional nao informado."
+        )
+
+    if configuracao_fiscal_id is None:
+        raise DpsCanonicaInvalida(
+            "Vinculo da configuracao fiscal com a configuracao institucional "
+            "nao informado."
+        )
+
+    if configuracao_id != configuracao_fiscal_id:
+        raise DpsCanonicaInvalida(
+            "Configuracao fiscal nao pertence a configuracao institucional "
+            "informada."
+        )
+
+    cnpj_original = getattr(configuracao, "cnpj", None)
+    cnpj = "".join(
+        caractere
+        for caractere in str(cnpj_original or "")
+        if caractere.isdigit()
+    )
+
+    if len(cnpj) != 14:
+        raise DpsCanonicaInvalida(
+            "CNPJ do prestador deve possuir 14 digitos."
+        )
+
+    razao_social = str(
+        getattr(configuracao, "razao_social", None) or ""
+    ).strip()
+
+    if not razao_social:
+        raise DpsCanonicaInvalida(
+            "Razao social do prestador nao informada."
+        )
+
+    inscricao_municipal = str(
+        getattr(configuracao_fiscal, "inscricao_municipal", None) or ""
+    ).strip()
+
+    if not inscricao_municipal:
+        raise DpsCanonicaInvalida(
+            "Inscricao municipal do prestador nao informada."
+        )
+
+    municipio_ibge = str(
+        getattr(configuracao_fiscal, "municipio_ibge", None) or ""
+    ).strip()
+
+    if not municipio_ibge.isdigit() or len(municipio_ibge) != 7:
+        raise DpsCanonicaInvalida(
+            "Municipio IBGE do prestador deve possuir 7 digitos."
+        )
+
+    return {
+        "tipo_documento": "CNPJ",
+        "documento": cnpj,
+        "inscricao_municipal": inscricao_municipal,
+        "municipio_ibge": municipio_ibge,
+        "nome": razao_social,
+        "regime_tributario": {
+            "op_simp_nac": getattr(
+                configuracao_fiscal,
+                "op_simp_nac",
+                None,
+            ),
+            "reg_ap_trib_sn": getattr(
+                configuracao_fiscal,
+                "reg_ap_trib_sn",
+                None,
+            ),
+            "reg_esp_trib": getattr(
+                configuracao_fiscal,
+                "reg_esp_trib",
+                None,
+            ),
+        },
+    }
