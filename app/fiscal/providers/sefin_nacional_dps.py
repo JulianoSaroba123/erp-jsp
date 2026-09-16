@@ -1,16 +1,18 @@
 """Modelo interno canonico da DPS da NFS-e Nacional.
 
-D24F02-B4:
-- representa dados fiscais antes da serializacao XML;
-- nao depende de SQLAlchemy;
+D24F02-B4.1:
+- alinha obrigatoriedades ao XSD v1.01;
+- adiciona identificacao formal da DPS;
+- gera Id canonico da DPS;
 - nao gera XML;
 - nao assina documento;
 - nao realiza HTTP;
-- preserva suporte a CNPJ alfanumerico.
+- preserva CNPJ alfanumerico.
 """
 
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
+import re
 
 
 class DpsCanonicaInvalida(ValueError):
@@ -68,15 +70,177 @@ def _data_iso(valor, *, campo: str) -> str:
         ) from exc
 
 
+def _datetime_emissao(valor) -> str:
+    if not isinstance(valor, datetime):
+        raise DpsCanonicaInvalida(
+            "dhEmi deve ser datetime."
+        )
+
+    if valor.tzinfo is None or valor.utcoffset() is None:
+        raise DpsCanonicaInvalida(
+            "dhEmi deve possuir timezone."
+        )
+
+    texto = valor.replace(
+        microsecond=0
+    ).isoformat()
+
+    # O schema atual aceita offsets de hora cheia.
+    if not re.fullmatch(
+        r"20\d{2}-\d{2}-\d{2}T"
+        r"\d{2}:\d{2}:\d{2}"
+        r"[+-]\d{2}:00",
+        texto,
+    ):
+        raise DpsCanonicaInvalida(
+            "dhEmi fora do formato aceito pelo XSD."
+        )
+
+    return texto
+
+
+def _documento_federal(
+    documento,
+    *,
+    tipo_documento: str,
+) -> str:
+    valor = _texto(
+        documento,
+        campo="documento",
+        obrigatorio=True,
+    ).upper()
+
+    tipo = tipo_documento.upper()
+
+    if tipo == "CPF":
+        somente_digitos = "".join(
+            c for c in valor if c.isdigit()
+        )
+
+        if len(somente_digitos) != 11:
+            raise DpsCanonicaInvalida(
+                "CPF deve possuir 11 digitos."
+            )
+
+        return somente_digitos
+
+    if tipo == "CNPJ":
+        normalizado = "".join(
+            c
+            for c in valor
+            if c.isalnum()
+        ).upper()
+
+        if not re.fullmatch(
+            r"[0-9A-Z]{14}",
+            normalizado,
+        ):
+            raise DpsCanonicaInvalida(
+                "CNPJ deve possuir 14 caracteres alfanumericos."
+            )
+
+        return normalizado
+
+    raise DpsCanonicaInvalida(
+        "Tipo de documento deve ser CPF ou CNPJ."
+    )
+
+
+def gerar_id_dps(
+    *,
+    municipio_ibge,
+    tipo_documento,
+    documento,
+    serie,
+    numero_dps,
+) -> str:
+    """Gera Id de 45 caracteres conforme TSIdDPS."""
+
+    municipio = _texto(
+        municipio_ibge,
+        campo="municipio_ibge",
+        obrigatorio=True,
+    )
+
+    if not re.fullmatch(r"[0-9]{7}", municipio):
+        raise DpsCanonicaInvalida(
+            "Municipio IBGE deve possuir 7 digitos."
+        )
+
+    tipo = str(tipo_documento or "").strip().upper()
+
+    documento_normalizado = _documento_federal(
+        documento,
+        tipo_documento=tipo,
+    )
+
+    if tipo == "CPF":
+        tipo_inscricao = "1"
+        inscricao_id = documento_normalizado.zfill(14)
+    else:
+        tipo_inscricao = "2"
+        inscricao_id = documento_normalizado
+
+    serie_texto = _texto(
+        serie,
+        campo="serie",
+        obrigatorio=True,
+    )
+
+    if not re.fullmatch(
+        r"[0-9]{1,4}|[0-8][0-9]{4}",
+        serie_texto,
+    ):
+        raise DpsCanonicaInvalida(
+            "Serie DPS invalida."
+        )
+
+    numero_texto = _texto(
+        numero_dps,
+        campo="numero_dps",
+        obrigatorio=True,
+    )
+
+    if not re.fullmatch(
+        r"[1-9][0-9]{0,14}",
+        numero_texto,
+    ):
+        raise DpsCanonicaInvalida(
+            "Numero DPS invalido."
+        )
+
+    identificador = (
+        "DPS"
+        + municipio
+        + tipo_inscricao
+        + inscricao_id
+        + serie_texto.zfill(5)
+        + numero_texto.zfill(15)
+    )
+
+    if len(identificador) != 45:
+        raise DpsCanonicaInvalida(
+            "Id DPS nao possui 45 caracteres."
+        )
+
+    return identificador
+
+
 def montar_dps_canonica(
     *,
     ambiente,
     versao_layout,
+    data_emissao,
+    versao_aplicativo,
+    serie,
+    numero_dps,
     competencia,
+    tipo_emitente,
+    municipio_emissao_ibge,
     prestador: dict,
-    tomador: dict,
     servico: dict,
     valores: dict,
+    tomador: dict | None = None,
     iss: dict | None = None,
     ibs_cbs: dict | None = None,
 ) -> dict:
@@ -88,10 +252,16 @@ def montar_dps_canonica(
         obrigatorio=True,
     ).upper()
 
-    if ambiente_normalizado not in {
-        "HOMOLOGACAO",
-        "PRODUCAO",
-    }:
+    mapa_ambiente = {
+        "PRODUCAO": "1",
+        "HOMOLOGACAO": "2",
+    }
+
+    tp_amb = mapa_ambiente.get(
+        ambiente_normalizado
+    )
+
+    if tp_amb is None:
         raise DpsCanonicaInvalida(
             "Ambiente da DPS invalido."
         )
@@ -102,52 +272,105 @@ def montar_dps_canonica(
         obrigatorio=True,
     )
 
-    prestador_documento = _texto(
+    ver_aplic = _texto(
+        versao_aplicativo,
+        campo="versao_aplicativo",
+        obrigatorio=True,
+    )
+
+    if len(ver_aplic) > 20:
+        raise DpsCanonicaInvalida(
+            "Versao do aplicativo excede 20 caracteres."
+        )
+
+    tipo_emitente = str(
+        tipo_emitente or ""
+    ).strip()
+
+    if tipo_emitente not in {
+        "1",
+        "2",
+        "3",
+    }:
+        raise DpsCanonicaInvalida(
+            "Tipo emitente da DPS invalido."
+        )
+
+    municipio_emissao = _texto(
+        municipio_emissao_ibge,
+        campo="municipio_emissao_ibge",
+        obrigatorio=True,
+    )
+
+    if not re.fullmatch(
+        r"[0-9]{7}",
+        municipio_emissao,
+    ):
+        raise DpsCanonicaInvalida(
+            "Municipio de emissao deve possuir 7 digitos."
+        )
+
+    tipo_documento_prestador = _texto(
+        prestador.get(
+            "tipo_documento",
+            "CNPJ",
+        ),
+        campo="prestador.tipo_documento",
+        obrigatorio=True,
+    ).upper()
+
+    documento_prestador = _documento_federal(
         prestador.get("documento"),
-        campo="prestador.documento",
-        obrigatorio=True,
+        tipo_documento=tipo_documento_prestador,
     )
 
-    prestador_im = _texto(
-        prestador.get("inscricao_municipal"),
-        campo="prestador.inscricao_municipal",
-        obrigatorio=True,
+    id_dps = gerar_id_dps(
+        municipio_ibge=municipio_emissao,
+        tipo_documento=tipo_documento_prestador,
+        documento=documento_prestador,
+        serie=serie,
+        numero_dps=numero_dps,
     )
 
-    prestador_municipio = _texto(
+    municipio_prestador = _texto(
         prestador.get("municipio_ibge"),
         campo="prestador.municipio_ibge",
         obrigatorio=True,
     )
 
-    if len(prestador_municipio) != 7:
+    if not re.fullmatch(
+        r"[0-9]{7}",
+        municipio_prestador,
+    ):
         raise DpsCanonicaInvalida(
-            "Municipio IBGE do prestador deve possuir 7 caracteres."
+            "Municipio IBGE do prestador invalido."
         )
 
-    tipo_tomador = _texto(
-        tomador.get("tipo_documento"),
-        campo="tomador.tipo_documento",
-        obrigatorio=True,
-    ).upper()
+    reg_trib = dict(
+        prestador.get("regime_tributario")
+        or {}
+    )
 
-    if tipo_tomador not in {
-        "CPF",
-        "CNPJ",
-    }:
+    if not reg_trib:
         raise DpsCanonicaInvalida(
-            "Tipo de documento do tomador deve ser CPF ou CNPJ."
+            "Regime tributario do prestador nao informado."
         )
 
-    tomador_documento = _texto(
-        tomador.get("documento"),
-        campo="tomador.documento",
+    op_simp_nac = _texto(
+        reg_trib.get("op_simp_nac"),
+        campo="prestador.regime_tributario.op_simp_nac",
         obrigatorio=True,
     )
 
-    tomador_nome = _texto(
-        tomador.get("nome"),
-        campo="tomador.nome",
+    reg_esp_trib = _texto(
+        reg_trib.get("reg_esp_trib"),
+        campo="prestador.regime_tributario.reg_esp_trib",
+        obrigatorio=True,
+    )
+
+    codigo_lista_nacional = _texto(
+        servico.get("codigo_lista_nacional"),
+        campo="servico.codigo_lista_nacional",
         obrigatorio=True,
     )
 
@@ -157,53 +380,46 @@ def montar_dps_canonica(
         obrigatorio=True,
     )
 
-    codigo_municipal = _texto(
-        servico.get("codigo_tributacao_municipal"),
-        campo="servico.codigo_tributacao_municipal",
-        obrigatorio=True,
-    )
-
     municipio_incidencia = _texto(
         servico.get("municipio_incidencia_ibge"),
         campo="servico.municipio_incidencia_ibge",
         obrigatorio=True,
     )
 
-    if len(municipio_incidencia) != 7:
+    if not re.fullmatch(
+        r"[0-9]{7}",
+        municipio_incidencia,
+    ):
         raise DpsCanonicaInvalida(
-            "Municipio de incidencia deve possuir 7 caracteres."
+            "Municipio de incidencia invalido."
         )
 
-    endereco = tomador.get("endereco") or {}
+    tomador_canonico = None
 
-    return {
-        "identificacao": {
-            "ambiente": ambiente_normalizado,
-            "versao_layout": versao,
-            "competencia": _data_iso(
-                competencia,
-                campo="competencia",
-            ),
-        },
-        "prestador": {
-            "documento": prestador_documento,
-            "inscricao_municipal": prestador_im,
-            "municipio_ibge": prestador_municipio,
-            "regime_tributario": _texto(
-                prestador.get("regime_tributario"),
-                campo="prestador.regime_tributario",
-            ),
-            "optante_simples_nacional": bool(
-                prestador.get(
-                    "optante_simples_nacional",
-                    False,
-                )
-            ),
-        },
-        "tomador": {
+    if tomador:
+        tipo_tomador = _texto(
+            tomador.get("tipo_documento"),
+            campo="tomador.tipo_documento",
+            obrigatorio=True,
+        ).upper()
+
+        documento_tomador = _documento_federal(
+            tomador.get("documento"),
+            tipo_documento=tipo_tomador,
+        )
+
+        nome_tomador = _texto(
+            tomador.get("nome"),
+            campo="tomador.nome",
+            obrigatorio=True,
+        )
+
+        endereco = tomador.get("endereco") or {}
+
+        tomador_canonico = {
             "tipo_documento": tipo_tomador,
-            "documento": tomador_documento,
-            "nome": tomador_nome,
+            "documento": documento_tomador,
+            "nome": nome_tomador,
             "email": _texto(
                 tomador.get("email"),
                 campo="tomador.email",
@@ -242,13 +458,60 @@ def montar_dps_canonica(
                     campo="tomador.endereco.pais",
                 ),
             },
-        },
-        "servico": {
-            "codigo_lista_nacional": _texto(
-                servico.get("codigo_lista_nacional"),
-                campo="servico.codigo_lista_nacional",
+        }
+
+    return {
+        "identificacao": {
+            "id": id_dps,
+            "ambiente": ambiente_normalizado,
+            "tp_amb": tp_amb,
+            "dh_emi": _datetime_emissao(
+                data_emissao
             ),
-            "codigo_tributacao_municipal": codigo_municipal,
+            "versao_layout": versao,
+            "versao_aplicativo": ver_aplic,
+            "serie": str(serie),
+            "numero_dps": str(numero_dps),
+            "competencia": _data_iso(
+                competencia,
+                campo="competencia",
+            ),
+            "tipo_emitente": tipo_emitente,
+            "municipio_emissao_ibge": municipio_emissao,
+        },
+        "prestador": {
+            "tipo_documento": tipo_documento_prestador,
+            "documento": documento_prestador,
+            "inscricao_municipal": _texto(
+                prestador.get("inscricao_municipal"),
+                campo="prestador.inscricao_municipal",
+            ),
+            "municipio_ibge": municipio_prestador,
+            "nome": _texto(
+                prestador.get("nome"),
+                campo="prestador.nome",
+            ),
+            "regime_tributario": {
+                "op_simp_nac": op_simp_nac,
+                "reg_ap_trib_sn": _texto(
+                    reg_trib.get("reg_ap_trib_sn"),
+                    campo=(
+                        "prestador.regime_tributario."
+                        "reg_ap_trib_sn"
+                    ),
+                ),
+                "reg_esp_trib": reg_esp_trib,
+            },
+        },
+        "tomador": tomador_canonico,
+        "servico": {
+            "codigo_lista_nacional": codigo_lista_nacional,
+            "codigo_tributacao_municipal": _texto(
+                servico.get(
+                    "codigo_tributacao_municipal"
+                ),
+                campo="servico.codigo_tributacao_municipal",
+            ),
             "nbs": _texto(
                 servico.get("nbs"),
                 campo="servico.nbs",
@@ -260,6 +523,14 @@ def montar_dps_canonica(
             "valor_servicos": _valor_decimal(
                 valores.get("valor_servicos"),
                 campo="valor_servicos",
+            ),
+            "valor_recebido": (
+                _valor_decimal(
+                    valores.get("valor_recebido"),
+                    campo="valor_recebido",
+                )
+                if valores.get("valor_recebido") is not None
+                else None
             ),
             "desconto_incondicionado": _valor_decimal(
                 valores.get(
