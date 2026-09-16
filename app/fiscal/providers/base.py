@@ -24,6 +24,14 @@ class TransmissaoProviderNaoImplementada(ErroProviderNfse):
     """O provider ainda nao possui transporte externo implementado."""
 
 
+STATUS_TRANSMISSAO_NFSE_VALIDOS = frozenset({
+    "ACEITA",
+    "REJEITADA",
+    "PROCESSANDO",
+    "ERRO",
+})
+
+
 class NfseProvider(ABC):
     """Contrato minimo para providers NFS-e."""
 
@@ -53,6 +61,13 @@ class NfseProvider(ABC):
         configuracao,
     ) -> dict:
         """Contrato da fronteira externa de transmissao NFS-e.
+
+        Providers concretos devem retornar dict no contrato canonico:
+        - status;
+        - mensagem;
+        - protocolo;
+        - numero_nfse;
+        - dados_provider.
 
         A implementacao base nunca realiza comunicacao externa.
         Providers municipais futuros deverao sobrescrever este metodo.

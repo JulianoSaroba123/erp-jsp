@@ -17,6 +17,9 @@ from app.fiscal.providers.registry import normalizar_codigo_provider
 from app.fiscal.providers.resolver import resolver_provider_nfse
 
 
+from app.fiscal.providers.base import STATUS_TRANSMISSAO_NFSE_VALIDOS
+
+
 class ConflitoIdempotencia(ValueError):
     """A mesma chave foi reutilizada para outro contexto fiscal."""
 
@@ -251,6 +254,71 @@ def preparar_payload_nfse(
 
     return payload
 
+def _normalizar_resultado_transmissao_nfse(
+    resultado,
+) -> dict:
+    """Valida e normaliza o retorno canonico de um provider NFS-e."""
+
+    if not isinstance(resultado, dict):
+        raise TransmissaoNfseInvalida(
+            "Provider NFS-e deve retornar dict na transmissao."
+        )
+
+    status = resultado.get("status")
+
+    if not isinstance(status, str) or not status.strip():
+        raise TransmissaoNfseInvalida(
+            "Resultado NFS-e deve informar status."
+        )
+
+    status = status.strip().upper()
+
+    if status not in STATUS_TRANSMISSAO_NFSE_VALIDOS:
+        raise TransmissaoNfseInvalida(
+            f"Status de transmissao NFS-e invalido: {status}."
+        )
+
+    campos_texto = {}
+
+    for campo in (
+        "mensagem",
+        "protocolo",
+        "numero_nfse",
+    ):
+        valor = resultado.get(campo)
+
+        if valor is not None and not isinstance(valor, str):
+            raise TransmissaoNfseInvalida(
+                f"Campo {campo} do resultado NFS-e deve ser texto ou None."
+            )
+
+        if isinstance(valor, str):
+            valor = valor.strip() or None
+
+        campos_texto[campo] = valor
+
+    dados_provider = resultado.get(
+        "dados_provider",
+        {},
+    )
+
+    if dados_provider is None:
+        dados_provider = {}
+
+    if not isinstance(dados_provider, dict):
+        raise TransmissaoNfseInvalida(
+            "Campo dados_provider deve ser dict."
+        )
+
+    return {
+        "status": status,
+        "mensagem": campos_texto["mensagem"],
+        "protocolo": campos_texto["protocolo"],
+        "numero_nfse": campos_texto["numero_nfse"],
+        "dados_provider": dict(dados_provider),
+    }
+
+
 def transmitir_payload_nfse(
     *,
     payload: dict,
@@ -289,12 +357,9 @@ def transmitir_payload_nfse(
         configuracao=configuracao,
     )
 
-    if not isinstance(resultado, dict):
-        raise TransmissaoNfseInvalida(
-            "Provider NFS-e deve retornar dict na transmissao."
-        )
-
-    return resultado
+    return _normalizar_resultado_transmissao_nfse(
+        resultado
+    )
 
 def preparar_nfse_da_os(
     ordem_servico_id: int,
