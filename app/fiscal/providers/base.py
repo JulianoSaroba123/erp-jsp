@@ -32,6 +32,22 @@ STATUS_TRANSMISSAO_NFSE_VALIDOS = frozenset({
 })
 
 
+class ErroTransmissaoNfse(ErroProviderNfse):
+    """Erro tecnico ocorrido na fronteira externa de transmissao."""
+
+
+class ErroComunicacaoNfse(ErroTransmissaoNfse):
+    """Falha de comunicacao com o servico externo NFS-e."""
+
+
+class IndisponibilidadeNfse(ErroComunicacaoNfse):
+    """Servico externo NFS-e temporariamente indisponivel."""
+
+
+class ErroAutenticacaoNfse(ErroTransmissaoNfse):
+    """Falha de autenticacao, credencial ou certificado fiscal."""
+
+
 class NfseProvider(ABC):
     """Contrato minimo para providers NFS-e."""
 
