@@ -613,7 +613,10 @@ def montar_dps_canonica(
                 campo="deducoes",
             ),
         },
-        "iss": dict(iss or {}),
+        "iss": montar_iss_canonico(
+            iss=iss,
+            configuracao_fiscal=configuracao_fiscal,
+        ),
         "ibs_cbs": dict(ibs_cbs or {}),
     }
 
@@ -717,4 +720,78 @@ def montar_prestador_canonico(configuracao, configuracao_fiscal):
                 None,
             ),
         },
+    }
+
+def montar_iss_canonico(iss=None, configuracao_fiscal=None):
+    """Monta o bloco canonico de tributacao municipal do ISSQN."""
+
+    from decimal import Decimal, InvalidOperation
+
+    dados = dict(iss or {})
+
+    # ISS ainda e opcional na montagem canonica durante o B4.4B.
+    # Quando informado, seu contrato passa a ser estrito.
+    if not dados:
+        return {}
+
+    tributacao_issqn = _texto(
+        dados.get("tributacao_issqn"),
+        campo="iss.tributacao_issqn",
+        obrigatorio=True,
+    )
+
+    if tributacao_issqn not in {"1", "2", "3", "4"}:
+        raise DpsCanonicaInvalida(
+            "Tributacao do ISSQN deve possuir codigo entre 1 e 4."
+        )
+
+    tipo_retencao = _texto(
+        dados.get("tipo_retencao"),
+        campo="iss.tipo_retencao",
+        obrigatorio=True,
+    )
+
+    if tipo_retencao not in {"1", "2", "3"}:
+        raise DpsCanonicaInvalida(
+            "Tipo de retencao do ISSQN deve possuir codigo entre 1 e 3."
+        )
+
+    aliquota = dados.get("aliquota")
+
+    if (
+        aliquota in (None, "")
+        and configuracao_fiscal is not None
+    ):
+        aliquota = getattr(
+            configuracao_fiscal,
+            "aliquota_iss_padrao",
+            None,
+        )
+
+    aliquota_canonica = None
+
+    if aliquota not in (None, ""):
+        try:
+            aliquota_decimal = Decimal(
+                str(aliquota).strip().replace(",", ".")
+            )
+        except (InvalidOperation, ValueError):
+            raise DpsCanonicaInvalida(
+                "Aliquota do ISSQN invalida."
+            )
+
+        if not Decimal("0") <= aliquota_decimal <= Decimal("100"):
+            raise DpsCanonicaInvalida(
+                "Aliquota do ISSQN deve estar entre 0 e 100."
+            )
+
+        aliquota_canonica = format(
+            aliquota_decimal.quantize(Decimal("0.01")),
+            "f",
+        )
+
+    return {
+        "tributacao_issqn": tributacao_issqn,
+        "tipo_retencao": tipo_retencao,
+        "aliquota": aliquota_canonica,
     }
