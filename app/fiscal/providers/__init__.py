@@ -15,6 +15,9 @@ from app.fiscal.providers.registry import (
     registrar_provider,
 )
 
+from app.fiscal.providers.resolver import resolver_provider_nfse
+
+
 __all__ = [
     "ConflitoRegistroProvider",
     "ErroProviderNfse",
@@ -26,4 +29,5 @@ __all__ = [
     "obter_provider",
     "providers_registrados",
     "registrar_provider",
+    "resolver_provider_nfse",
 ]
