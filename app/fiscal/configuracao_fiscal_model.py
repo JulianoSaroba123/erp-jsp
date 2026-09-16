@@ -53,6 +53,26 @@ class ConfiguracaoFiscal(BaseModel):
     aliquota_iss_padrao = db.Column(db.Numeric(5, 2))
     municipio_ibge = db.Column(db.String(7))
 
+    # Regime tributario da DPS Nacional
+    #
+    # Campos especificos do leiaute nacional.
+    # Permanecem nullable no banco para nao fabricar
+    # informacao fiscal em configuracoes preexistentes.
+    op_simp_nac = db.Column(
+        db.String(1),
+        nullable=True,
+    )
+
+    reg_ap_trib_sn = db.Column(
+        db.String(1),
+        nullable=True,
+    )
+
+    reg_esp_trib = db.Column(
+        db.String(1),
+        nullable=True,
+    )
+
     # Integracao NFS-e
     ambiente = db.Column(
         db.String(20),
