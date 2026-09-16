@@ -11,7 +11,7 @@ Data: 2025
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, make_response
-from flask_login import current_user
+from flask_login import current_user, login_required
 from app.extensoes import db
 from app.ordem_servico.ordem_servico_model import (
     OrdemServico, OrdemServicoItem, OrdemServicoProduto, OrdemServicoParcela, OrdemServicoAnexo
@@ -2420,6 +2420,7 @@ def iniciar_servico(id):
     return redirect(url_for('ordem_servico.visualizar', id=id))
 
 @ordem_servico_bp.route('/<int:id>/concluir', methods=['POST'])
+@login_required
 def concluir_servico(id):
     """
     Conclui a OS mantendo a decisao fiscal independente.
@@ -2513,11 +2514,57 @@ def concluir_servico(id):
             )
 
             if situacao_fiscal == 'EMITIR_NFSE':
-                flash(
-                    'Decis\u00e3o fiscal registrada: EMITIR_NFSE. '
-                    'A NFS-e ainda n\u00e3o foi transmitida.',
-                    'info'
-                )
+                # D24F01-C8 - prepara somente o rascunho fiscal local.
+                # A decisao fiscal acima ja foi persistida em commit proprio.
+                # Uma falha nesta etapa nunca deve desfazer a conclusao da OS.
+                try:
+                    from app.fiscal.nfse_service import (
+                        preparar_nfse_da_os,
+                    )
+
+                    documento_nfse, criado_nfse = preparar_nfse_da_os(
+                        id
+                    )
+
+                    if criado_nfse:
+                        mensagem_nfse = (
+                            'Decisao fiscal registrada: EMITIR_NFSE. '
+                            'Rascunho da NFS-e preparado. '
+                            'Nenhuma NFS-e foi transmitida.'
+                        )
+                    else:
+                        mensagem_nfse = (
+                            'Decisao fiscal registrada: EMITIR_NFSE. '
+                            'Rascunho da NFS-e ja estava preparado. '
+                            'Nenhuma NFS-e foi transmitida.'
+                        )
+
+                    flash(
+                        mensagem_nfse,
+                        'info'
+                    )
+
+                except Exception as nfse_error:
+                    # A OS e a decisao EMITIR_NFSE permanecem validas.
+                    # O rollback afeta apenas eventual transacao fiscal
+                    # ainda pendente nesta sessao.
+                    db.session.rollback()
+
+                    from flask import current_app
+
+                    current_app.logger.exception(
+                        'Falha ao preparar rascunho NFS-e da OS %s: %s',
+                        id,
+                        nfse_error,
+                    )
+
+                    flash(
+                        'A decisao fiscal EMITIR_NFSE foi registrada, '
+                        'mas o rascunho da NFS-e nao pode ser preparado. '
+                        'Nenhuma NFS-e foi transmitida e a preparacao '
+                        'podera ser tentada novamente.',
+                        'warning'
+                    )
 
             elif situacao_fiscal == 'NAO_EMITIR':
                 flash(
