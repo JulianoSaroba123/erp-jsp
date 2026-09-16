@@ -237,9 +237,11 @@ def montar_dps_canonica(
     competencia,
     tipo_emitente,
     municipio_emissao_ibge,
-    prestador: dict,
     servico: dict,
     valores: dict,
+    prestador: dict | None = None,
+    configuracao=None,
+    configuracao_fiscal=None,
     tomador: dict | None = None,
     iss: dict | None = None,
     ibs_cbs: dict | None = None,
@@ -308,6 +310,25 @@ def montar_dps_canonica(
     ):
         raise DpsCanonicaInvalida(
             "Municipio de emissao deve possuir 7 digitos."
+        )
+
+    # --------------------------------------------------------
+    # PRESTADOR CANONICO
+    # --------------------------------------------------------
+    # Quando as fontes institucionais/fiscais sao fornecidas,
+    # elas sao a fonte de verdade do prestador da DPS.
+    #
+    # O parametro prestador permanece temporariamente como
+    # compatibilidade dos testes canonicos anteriores (B4.2).
+    # --------------------------------------------------------
+    if configuracao is not None or configuracao_fiscal is not None:
+        prestador = montar_prestador_canonico(
+            configuracao=configuracao,
+            configuracao_fiscal=configuracao_fiscal,
+        )
+    elif prestador is None:
+        raise DpsCanonicaInvalida(
+            "Prestador canonico ou configuracao fiscal deve ser informado."
         )
 
     tipo_documento_prestador = _texto(
