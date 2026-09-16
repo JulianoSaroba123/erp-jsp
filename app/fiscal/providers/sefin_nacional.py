@@ -11,6 +11,9 @@ D24F02-B1:
 """
 
 from app.fiscal.providers.base import NfseProvider
+from app.fiscal.providers.sefin_nacional_config import (
+    obter_configuracao_sefin,
+)
 from app.fiscal.providers.registry import (
     normalizar_codigo_provider,
     registrar_provider,
@@ -77,11 +80,17 @@ class SefinNacionalProvider(NfseProvider):
                 "Ordem de servico nao informada."
             )
 
+        ambiente = str(
+            configuracao.ambiente
+        ).strip().upper()
+
+        metadados = obter_configuracao_sefin(
+            ambiente
+        )
+
         return {
             "provider": self.codigo,
-            "ambiente": str(
-                configuracao.ambiente
-            ).strip().upper(),
+            "ambiente": ambiente,
             "tipo_documento": "DPS",
             "documento_id": getattr(
                 documento,
@@ -93,6 +102,15 @@ class SefinNacionalProvider(NfseProvider):
                 "id",
                 None,
             ),
-            "layout": None,
+            "layout": {
+                "versao": metadados["layout_dps"],
+                "perfil_xsd": metadados["perfil_xsd"],
+            },
+            "municipio_prestador": {
+                "codigo_ibge": metadados[
+                    "codigo_municipio"
+                ],
+            },
+            "rotas": metadados["rotas"],
             "conteudo": None,
         }
