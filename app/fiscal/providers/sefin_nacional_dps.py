@@ -374,6 +374,55 @@ def montar_dps_canonica(
         obrigatorio=True,
     )
 
+    # cTribNac - TSCodTribNac
+    # XSD v1.01: exatamente 6 digitos.
+    if not re.fullmatch(
+        r"[0-9]{6}",
+        codigo_lista_nacional,
+    ):
+        raise DpsCanonicaInvalida(
+            "Codigo de tributacao nacional deve possuir 6 digitos."
+        )
+
+    codigo_tributacao_municipal = _texto(
+        servico.get("codigo_tributacao_municipal"),
+        campo="servico.codigo_tributacao_municipal",
+    )
+
+    # cTribMun - TCCodTribMun
+    # Opcional; quando informado, exatamente 3 digitos.
+    if codigo_tributacao_municipal is not None:
+        if not re.fullmatch(
+            r"[0-9]{3}",
+            codigo_tributacao_municipal,
+        ):
+            raise DpsCanonicaInvalida(
+                "Codigo de tributacao municipal deve possuir 3 digitos."
+            )
+
+    nbs = _texto(
+        servico.get("nbs"),
+        campo="servico.nbs",
+    )
+
+    # cNBS - TSCodNBS
+    # Opcional; quando informado, exatamente 9 digitos.
+    if nbs is not None and not re.fullmatch(
+        r"[0-9]{9}",
+        nbs,
+    ):
+        raise DpsCanonicaInvalida(
+            "Codigo NBS deve possuir 9 digitos."
+        )
+
+    # O grupo IBS/CBS permanece opcional nesta etapa.
+    # Contudo, se ele for efetivamente informado,
+    # a classificacao NBS precisa estar presente.
+    if ibs_cbs and nbs is None:
+        raise DpsCanonicaInvalida(
+            "Codigo NBS deve ser informado quando IBS/CBS for informado."
+        )
+
     descricao_servico = _texto(
         servico.get("descricao"),
         campo="servico.descricao",
@@ -506,16 +555,8 @@ def montar_dps_canonica(
         "tomador": tomador_canonico,
         "servico": {
             "codigo_lista_nacional": codigo_lista_nacional,
-            "codigo_tributacao_municipal": _texto(
-                servico.get(
-                    "codigo_tributacao_municipal"
-                ),
-                campo="servico.codigo_tributacao_municipal",
-            ),
-            "nbs": _texto(
-                servico.get("nbs"),
-                campo="servico.nbs",
-            ),
+            "codigo_tributacao_municipal": codigo_tributacao_municipal,
+            "nbs": nbs,
             "descricao": descricao_servico,
             "municipio_incidencia_ibge": municipio_incidencia,
         },
