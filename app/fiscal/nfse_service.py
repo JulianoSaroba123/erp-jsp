@@ -25,6 +25,10 @@ class PreparacaoNfseInvalida(ValueError):
     """A OS ou a configuracao nao permite preparar a NFS-e."""
 
 
+class TransmissaoNfseInvalida(ValueError):
+    """A fronteira de transmissao recebeu dados invalidos."""
+
+
 def gerar_chave_emissao_original(ordem_servico_id: int) -> str:
     """Chave deterministica para a primeira intencao NFS-e de uma OS."""
     return f"nfse:os:{ordem_servico_id}:emissao:original"
@@ -246,6 +250,51 @@ def preparar_payload_nfse(
         )
 
     return payload
+
+def transmitir_payload_nfse(
+    *,
+    payload: dict,
+    configuracao: ConfiguracaoFiscal,
+) -> dict:
+    """Executa a fronteira externa de transmissao da NFS-e.
+
+    D24F01-C10E:
+    - recebe somente payload ja preparado localmente;
+    - resolve e valida o provider configurado;
+    - respeita obrigatoriamente o disjuntor integracao_ativa;
+    - nao prepara novo payload;
+    - nao persiste alteracoes;
+    - nao consome RPS;
+    - nao altera financeiro.
+
+    Neste estagio nao existe provider municipal real nem transporte HTTP.
+    """
+
+    if configuracao is None:
+        raise TransmissaoNfseInvalida(
+            "Configuracao fiscal nao informada."
+        )
+
+    if not isinstance(payload, dict):
+        raise TransmissaoNfseInvalida(
+            "Payload NFS-e deve ser um dict."
+        )
+
+    provider = resolver_provider_nfse(configuracao)
+
+    provider.validar_integracao_externa(configuracao)
+
+    resultado = provider.transmitir(
+        payload=payload,
+        configuracao=configuracao,
+    )
+
+    if not isinstance(resultado, dict):
+        raise TransmissaoNfseInvalida(
+            "Provider NFS-e deve retornar dict na transmissao."
+        )
+
+    return resultado
 
 def preparar_nfse_da_os(
     ordem_servico_id: int,

@@ -20,6 +20,10 @@ class IntegracaoFiscalDesativada(ErroProviderNfse):
     """Operacao externa bloqueada pelo disjuntor fiscal."""
 
 
+class TransmissaoProviderNaoImplementada(ErroProviderNfse):
+    """O provider ainda nao possui transporte externo implementado."""
+
+
 class NfseProvider(ABC):
     """Contrato minimo para providers NFS-e."""
 
@@ -41,6 +45,25 @@ class NfseProvider(ABC):
 
         Esta operacao nao pode transmitir documentos.
         """
+
+    def transmitir(
+        self,
+        *,
+        payload: dict,
+        configuracao,
+    ) -> dict:
+        """Contrato da fronteira externa de transmissao NFS-e.
+
+        A implementacao base nunca realiza comunicacao externa.
+        Providers municipais futuros deverao sobrescrever este metodo.
+        """
+
+        self.validar_integracao_externa(configuracao)
+
+        raise TransmissaoProviderNaoImplementada(
+            "Transmissao NFS-e ainda nao implementada "
+            f"para o provider {self.codigo}."
+        )
 
     def validar_integracao_externa(self, configuracao) -> None:
         """Bloqueia operacao externa se a integracao estiver desativada."""
