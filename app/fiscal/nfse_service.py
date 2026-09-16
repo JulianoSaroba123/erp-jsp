@@ -13,6 +13,8 @@ from app.fiscal.nfse_documento_model import (
     NfseDocumento,
 )
 from app.ordem_servico.ordem_servico_model import OrdemServico
+from app.fiscal.providers.registry import normalizar_codigo_provider
+from app.fiscal.providers.resolver import resolver_provider_nfse
 
 
 class ConflitoIdempotencia(ValueError):
@@ -140,6 +142,110 @@ def obter_ou_criar_rascunho(
 
         raise
 
+
+def preparar_payload_nfse(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao: ConfiguracaoFiscal,
+) -> dict:
+    """Prepara localmente o payload tecnico de uma NFS-e.
+
+    Esta funcao NAO:
+    - transmite NFS-e;
+    - realiza chamadas externas;
+    - gera ou consome RPS;
+    - incrementa proximo_rps;
+    - altera status do documento;
+    - realiza commit;
+    - cria lancamento financeiro.
+    """
+
+    if documento is None:
+        raise PreparacaoNfseInvalida(
+            "Documento NFS-e nao informado."
+        )
+
+    if ordem_servico is None:
+        raise PreparacaoNfseInvalida(
+            "Ordem de servico nao informada."
+        )
+
+    if configuracao is None:
+        raise PreparacaoNfseInvalida(
+            "Configuracao fiscal nao informada."
+        )
+
+    if not documento.pode_ser_editada:
+        raise PreparacaoNfseInvalida(
+            "Documento NFS-e nao permite preparacao local."
+        )
+
+    if ordem_servico.status != "concluida":
+        raise PreparacaoNfseInvalida(
+            "A NFS-e somente pode ser preparada para OS concluida."
+        )
+
+    if ordem_servico.situacao_fiscal != "EMITIR_NFSE":
+        raise PreparacaoNfseInvalida(
+            "A OS nao possui decisao fiscal EMITIR_NFSE."
+        )
+
+    if documento.ordem_servico_id != ordem_servico.id:
+        raise PreparacaoNfseInvalida(
+            "Documento NFS-e nao pertence a ordem de servico informada."
+        )
+
+    if documento.configuracao_fiscal_id != configuracao.id:
+        raise PreparacaoNfseInvalida(
+            "Documento NFS-e nao pertence a configuracao fiscal informada."
+        )
+
+    ambiente_configuracao = (
+        configuracao.ambiente or "HOMOLOGACAO"
+    ).strip().upper()
+
+    ambiente_documento = (
+        documento.ambiente or ""
+    ).strip().upper()
+
+    if ambiente_configuracao not in AMBIENTES_NFSE:
+        raise PreparacaoNfseInvalida(
+            "Ambiente da configuracao fiscal e invalido."
+        )
+
+    if ambiente_documento != ambiente_configuracao:
+        raise PreparacaoNfseInvalida(
+            "Ambiente do documento diverge da configuracao fiscal."
+        )
+
+    provider_configuracao = normalizar_codigo_provider(
+        configuracao.provider
+    )
+
+    provider_documento = normalizar_codigo_provider(
+        documento.provider
+    )
+
+    if provider_documento != provider_configuracao:
+        raise PreparacaoNfseInvalida(
+            "Provider do documento diverge da configuracao fiscal."
+        )
+
+    provider = resolver_provider_nfse(configuracao)
+
+    payload = provider.preparar_payload(
+        documento=documento,
+        ordem_servico=ordem_servico,
+        configuracao=configuracao,
+    )
+
+    if not isinstance(payload, dict):
+        raise PreparacaoNfseInvalida(
+            "Provider NFS-e retornou payload local invalido."
+        )
+
+    return payload
 
 def preparar_nfse_da_os(
     ordem_servico_id: int,
