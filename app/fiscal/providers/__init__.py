@@ -31,3 +31,5 @@ __all__ = [
     "registrar_provider",
     "resolver_provider_nfse",
 ]
+
+from app.fiscal.providers.sefin_nacional import SefinNacionalProvider
