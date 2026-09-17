@@ -1,4 +1,4 @@
-﻿"""Testes D24F02-B5.2 - raiz DPS e identificacao infDPS."""
+"""Testes D24F02-B5.2 - raiz DPS e identificacao infDPS."""
 
 import pytest
 from lxml import etree
@@ -51,6 +51,14 @@ def _dps_canonica():
             },
         },
         "tomador": None,
+        "servico": {
+            "codigo_lista_nacional": "010101",
+            "codigo_tributacao_municipal": "101",
+            "nbs": "123456789",
+            "descricao": "Servico de teste",
+            "municipio_incidencia_ibge": "3554508",
+            "municipio_prestacao_ibge": "3550308",
+        },
     }
 
 

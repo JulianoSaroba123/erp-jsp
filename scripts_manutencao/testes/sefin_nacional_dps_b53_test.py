@@ -23,6 +23,16 @@ def _localname(elemento):
     return etree.QName(elemento).localname
 
 
+def _filho(pai, nome):
+    for elemento in pai:
+        if _localname(elemento) == nome:
+            return elemento
+
+    raise AssertionError(
+        f"Elemento XML nao encontrado: {nome}"
+    )
+
+
 def _dps_canonica():
     return {
         "identificacao": {
@@ -66,6 +76,14 @@ def _dps_canonica():
                 "pais": "BR",
             },
         },
+        "servico": {
+            "codigo_lista_nacional": "010101",
+            "codigo_tributacao_municipal": "101",
+            "nbs": "123456789",
+            "descricao": "Servico de teste",
+            "municipio_incidencia_ibge": "3554508",
+            "municipio_prestacao_ibge": "3550308",
+        },
     }
 
 
@@ -78,7 +96,7 @@ def _inf_dps(dados=None):
 
 def test_b53_001_prestador_respeita_ordem_xsd():
     inf_dps = _inf_dps()
-    prest = inf_dps[-2]
+    prest = _filho(inf_dps, "prest")
 
     assert _localname(prest) == "prest"
 
@@ -99,7 +117,7 @@ def test_b53_001_prestador_respeita_ordem_xsd():
 
 def test_b53_002_regime_tributario_respeita_tc_reg_trib():
     inf_dps = _inf_dps()
-    prest = inf_dps[-2]
+    prest = _filho(inf_dps, "prest")
     reg_trib = prest[-1]
 
     assert _localname(reg_trib) == "regTrib"
@@ -131,7 +149,10 @@ def test_b53_003_reg_ap_trib_sn_pode_ser_omitido():
     ] = None
 
     inf_dps = _inf_dps(dados)
-    reg_trib = inf_dps[-2][-1]
+    reg_trib = _filho(
+        _filho(inf_dps, "prest"),
+        "regTrib",
+    )
 
     assert [
         _localname(elemento)
@@ -144,7 +165,7 @@ def test_b53_003_reg_ap_trib_sn_pode_ser_omitido():
 
 def test_b53_004_tomador_cnpj_nome_email():
     inf_dps = _inf_dps()
-    toma = inf_dps[-1]
+    toma = _filho(inf_dps, "toma")
 
     assert _localname(toma) == "toma"
 
@@ -168,7 +189,10 @@ def test_b53_005_tomador_pode_ser_cpf():
     dados["tomador"]["tipo_documento"] = "CPF"
     dados["tomador"]["documento"] = "12345678901"
 
-    toma = _inf_dps(dados)[-1]
+    toma = _filho(
+        _inf_dps(dados),
+        "toma",
+    )
 
     assert _localname(toma[0]) == "CPF"
     assert toma[0].text == "12345678901"
@@ -219,7 +243,7 @@ def test_b53_008_rejeita_regime_tributario_ausente():
 
 def test_b53_009_nao_inventa_endereco_nacional():
     inf_dps = _inf_dps()
-    toma = inf_dps[-1]
+    toma = _filho(inf_dps, "toma")
 
     nomes = [
         _localname(elemento)

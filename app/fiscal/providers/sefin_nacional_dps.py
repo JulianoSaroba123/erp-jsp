@@ -464,6 +464,22 @@ def montar_dps_canonica(
             "Municipio de incidencia invalido."
         )
 
+    municipio_prestacao = _texto(
+        servico.get("municipio_prestacao_ibge"),
+        campo="servico.municipio_prestacao_ibge",
+    )
+
+    if (
+        municipio_prestacao is not None
+        and not re.fullmatch(
+            r"[0-9]{7}",
+            municipio_prestacao,
+        )
+    ):
+        raise DpsCanonicaInvalida(
+            "Municipio de prestacao invalido."
+        )
+
     tomador_canonico = None
 
     if tomador:
@@ -580,6 +596,15 @@ def montar_dps_canonica(
             "nbs": nbs,
             "descricao": descricao_servico,
             "municipio_incidencia_ibge": municipio_incidencia,
+            **(
+                {
+                    "municipio_prestacao_ibge": (
+                        municipio_prestacao
+                    )
+                }
+                if municipio_prestacao is not None
+                else {}
+            ),
         },
         "valores": {
             "valor_servicos": _valor_decimal(

@@ -301,6 +301,87 @@ def _adicionar_tomador(inf_dps, tomador):
     return tomador_xml
 
 
+
+def _adicionar_servico(inf_dps, servico):
+    """Serializa TCServ conforme DPS 1.01."""
+
+    if not isinstance(servico, dict):
+        raise SerializacaoDpsInvalida(
+            "Grupo servico da DPS canonica nao informado."
+        )
+
+    serv_xml = etree.SubElement(
+        inf_dps,
+        _qname("serv"),
+    )
+
+    loc_prest = etree.SubElement(
+        serv_xml,
+        _qname("locPrest"),
+    )
+
+    adicionar_elemento_nfse(
+        loc_prest,
+        "cLocPrestacao",
+        _valor_obrigatorio(
+            servico,
+            "municipio_prestacao_ibge",
+            grupo="servico",
+        ),
+    )
+
+    c_serv = etree.SubElement(
+        serv_xml,
+        _qname("cServ"),
+    )
+
+    adicionar_elemento_nfse(
+        c_serv,
+        "cTribNac",
+        _valor_obrigatorio(
+            servico,
+            "codigo_lista_nacional",
+            grupo="servico",
+        ),
+    )
+
+    codigo_municipal = _valor_opcional(
+        servico,
+        "codigo_tributacao_municipal",
+    )
+
+    if codigo_municipal is not None:
+        adicionar_elemento_nfse(
+            c_serv,
+            "cTribMun",
+            codigo_municipal,
+        )
+
+    adicionar_elemento_nfse(
+        c_serv,
+        "xDescServ",
+        _valor_obrigatorio(
+            servico,
+            "descricao",
+            grupo="servico",
+        ),
+    )
+
+    nbs = _valor_opcional(
+        servico,
+        "nbs",
+    )
+
+    if nbs is not None:
+        adicionar_elemento_nfse(
+            c_serv,
+            "cNBS",
+            nbs,
+        )
+
+    return serv_xml
+
+
 def montar_xml_dps(dps_canonica: dict):
     """Monta a estrutura XML inicial DPS/infDPS conforme layout 1.01."""
 
@@ -375,6 +456,11 @@ def montar_xml_dps(dps_canonica: dict):
     _adicionar_tomador(
         inf_dps,
         dps_canonica.get("tomador"),
+    )
+
+    _adicionar_servico(
+        inf_dps,
+        dps_canonica.get("servico"),
     )
 
     return raiz
