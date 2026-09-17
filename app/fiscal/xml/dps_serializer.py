@@ -796,3 +796,18 @@ def montar_xml_dps(dps_canonica: dict):
     )
 
     return raiz
+
+
+
+def montar_xml_dps_serializado(
+    dps_canonica: dict,
+) -> bytes:
+    """Monta e serializa a DPS canonica em bytes UTF-8 estaveis."""
+
+    raiz = montar_xml_dps(
+        dps_canonica
+    )
+
+    return serializar_xml(
+        raiz
+    )
