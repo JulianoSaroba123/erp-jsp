@@ -59,6 +59,13 @@ def _dps_canonica():
             "municipio_incidencia_ibge": "3554508",
             "municipio_prestacao_ibge": "3550308",
         },
+        "valores": {
+            "valor_servicos": "1500.00",
+            "valor_recebido": "1500.00",
+            "desconto_incondicionado": "0.00",
+            "desconto_condicionado": "0.00",
+            "deducoes": "0.00",
+        },
     }
 
 

@@ -382,6 +382,42 @@ def _adicionar_servico(inf_dps, servico):
     return serv_xml
 
 
+
+def _adicionar_valores_basicos(inf_dps, valores):
+    """Serializa o bloco inicial TCInfoValores da DPS 1.01."""
+
+    if not isinstance(valores, dict):
+        raise SerializacaoDpsInvalida(
+            "Grupo valores da DPS canonica nao informado."
+        )
+
+    valores_xml = etree.SubElement(
+        inf_dps,
+        _qname("valores"),
+    )
+
+    v_serv_prest = etree.SubElement(
+        valores_xml,
+        _qname("vServPrest"),
+    )
+
+    # vReceb nao e emitido neste marco.
+    # No XSD ele representa valor recebido pelo intermediario,
+    # enquanto o campo canonico valor_recebido ainda e generico.
+
+    adicionar_elemento_nfse(
+        v_serv_prest,
+        "vServ",
+        _valor_obrigatorio(
+            valores,
+            "valor_servicos",
+            grupo="valores",
+        ),
+    )
+
+    return valores_xml
+
+
 def montar_xml_dps(dps_canonica: dict):
     """Monta a estrutura XML inicial DPS/infDPS conforme layout 1.01."""
 
@@ -461,6 +497,11 @@ def montar_xml_dps(dps_canonica: dict):
     _adicionar_servico(
         inf_dps,
         dps_canonica.get("servico"),
+    )
+
+    _adicionar_valores_basicos(
+        inf_dps,
+        dps_canonica.get("valores"),
     )
 
     return raiz

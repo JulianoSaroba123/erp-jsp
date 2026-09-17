@@ -91,6 +91,13 @@ def _dps_canonica():
             "municipio_incidencia_ibge": "3554508",
             "municipio_prestacao_ibge": "3550308",
         },
+        "valores": {
+            "valor_servicos": "1500.00",
+            "valor_recebido": "1500.00",
+            "desconto_incondicionado": "0.00",
+            "desconto_condicionado": "0.00",
+            "deducoes": "0.00",
+        },
     }
 
 
@@ -109,10 +116,13 @@ def test_b54a_001_servico_entra_apos_prestador():
         for elemento in inf_dps
     ]
 
-    assert nomes[-2:] == [
-        "prest",
-        "serv",
-    ]
+    assert "prest" in nomes
+    assert "serv" in nomes
+
+    assert (
+        nomes.index("prest")
+        < nomes.index("serv")
+    )
 
 
 def test_b54a_002_tc_serv_respeita_ordem_xsd():
