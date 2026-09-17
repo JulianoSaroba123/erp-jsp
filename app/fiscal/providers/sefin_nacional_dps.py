@@ -244,6 +244,7 @@ def montar_dps_canonica(
     configuracao_fiscal=None,
     tomador: dict | None = None,
     iss: dict | None = None,
+    totais_tributos: dict | None = None,
     ibs_cbs: dict | None = None,
 ) -> dict:
     """Monta representacao interna validada da DPS."""
@@ -642,6 +643,15 @@ def montar_dps_canonica(
             iss=iss,
             configuracao_fiscal=configuracao_fiscal,
         ),
+        **(
+            {
+                "totais_tributos": montar_totais_tributos_canonico(
+                    totais_tributos
+                )
+            }
+            if totais_tributos
+            else {}
+        ),
         "ibs_cbs": montar_ibs_cbs_canonico(
             ibs_cbs=ibs_cbs,
         ),
@@ -822,6 +832,36 @@ def montar_iss_canonico(iss=None, configuracao_fiscal=None):
         "tipo_retencao": tipo_retencao,
         "aliquota": aliquota_canonica,
     }
+
+def montar_totais_tributos_canonico(
+    totais_tributos=None,
+):
+    """Monta a declaracao canonica de totais tributarios da DPS."""
+
+    dados = dict(
+        totais_tributos or {}
+    )
+
+    if not dados:
+        return {}
+
+    indicador = _texto(
+        dados.get("indicador"),
+        campo="totais_tributos.indicador",
+        obrigatorio=True,
+    )
+
+    # B5.4D suporta somente a declaracao explicita
+    # correspondente ao indTotTrib=0 do layout DPS 1.01.
+    if indicador != "0":
+        raise DpsCanonicaInvalida(
+            "Indicador de totais tributarios deve ser 0 neste contrato."
+        )
+
+    return {
+        "indicador": indicador,
+    }
+
 
 def montar_ibs_cbs_canonico(ibs_cbs=None):
     """Monta o bloco canonico minimo de IBS/CBS da DPS."""

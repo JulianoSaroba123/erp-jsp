@@ -500,6 +500,105 @@ def _adicionar_valores_basicos(inf_dps, valores):
     return valores_xml
 
 
+
+def _adicionar_tributacao_municipal(
+    valores_xml,
+    iss,
+    totais_tributos,
+):
+    """Serializa trib/tribMun/totTrib da DPS 1.01."""
+
+    iss_informado = isinstance(iss, dict) and bool(iss)
+    totais_informados = (
+        isinstance(totais_tributos, dict)
+        and bool(totais_tributos)
+    )
+
+    # Compatibilidade dos marcos anteriores enquanto o XML
+    # ainda esta sendo construido incrementalmente.
+    if not iss_informado and not totais_informados:
+        return None
+
+    if not iss_informado:
+        raise SerializacaoDpsInvalida(
+            "Grupo ISS canonico obrigatorio quando totais tributarios "
+            "sao informados."
+        )
+
+    if not totais_informados:
+        raise SerializacaoDpsInvalida(
+            "Grupo totais_tributos canonico obrigatorio quando ISS "
+            "e informado."
+        )
+
+    trib_xml = etree.SubElement(
+        valores_xml,
+        _qname("trib"),
+    )
+
+    trib_mun = etree.SubElement(
+        trib_xml,
+        _qname("tribMun"),
+    )
+
+    adicionar_elemento_nfse(
+        trib_mun,
+        "tribISSQN",
+        _valor_obrigatorio(
+            iss,
+            "tributacao_issqn",
+            grupo="iss",
+        ),
+    )
+
+    adicionar_elemento_nfse(
+        trib_mun,
+        "tpRetISSQN",
+        _valor_obrigatorio(
+            iss,
+            "tipo_retencao",
+            grupo="iss",
+        ),
+    )
+
+    aliquota = _valor_opcional(
+        iss,
+        "aliquota",
+    )
+
+    if aliquota is not None:
+        adicionar_elemento_nfse(
+            trib_mun,
+            "pAliq",
+            aliquota,
+        )
+
+    indicador = _valor_obrigatorio(
+        totais_tributos,
+        "indicador",
+        grupo="totais_tributos",
+    )
+
+    if indicador != "0":
+        raise SerializacaoDpsInvalida(
+            "Indicador de totais tributarios incompativel "
+            "com o contrato XML atual."
+        )
+
+    tot_trib = etree.SubElement(
+        trib_xml,
+        _qname("totTrib"),
+    )
+
+    adicionar_elemento_nfse(
+        tot_trib,
+        "indTotTrib",
+        indicador,
+    )
+
+    return trib_xml
+
+
 def montar_xml_dps(dps_canonica: dict):
     """Monta a estrutura XML inicial DPS/infDPS conforme layout 1.01."""
 
@@ -581,9 +680,15 @@ def montar_xml_dps(dps_canonica: dict):
         dps_canonica.get("servico"),
     )
 
-    _adicionar_valores_basicos(
+    valores_xml = _adicionar_valores_basicos(
         inf_dps,
         dps_canonica.get("valores"),
+    )
+
+    _adicionar_tributacao_municipal(
+        valores_xml,
+        dps_canonica.get("iss"),
+        dps_canonica.get("totais_tributos"),
     )
 
     return raiz
