@@ -99,6 +99,208 @@ def adicionar_elemento_nfse(pai, nome: str, valor):
     return elemento
 
 
+
+def _valor_opcional(dados, chave):
+    """Obtem valor textual opcional sem fabricar conteudo."""
+
+    if not isinstance(dados, dict):
+        return None
+
+    valor = dados.get(chave)
+
+    if valor is None:
+        return None
+
+    valor = str(valor).strip()
+
+    return valor or None
+
+
+def _adicionar_identificador_federal(
+    pai,
+    pessoa,
+    *,
+    grupo,
+):
+    """Serializa a escolha CPF/CNPJ do contrato nacional."""
+
+    tipo_documento = _valor_obrigatorio(
+        pessoa,
+        "tipo_documento",
+        grupo=grupo,
+    ).upper()
+
+    if tipo_documento not in {"CPF", "CNPJ"}:
+        raise SerializacaoDpsInvalida(
+            f"Tipo de documento nao suportado em {grupo}: "
+            f"{tipo_documento}."
+        )
+
+    documento = _valor_obrigatorio(
+        pessoa,
+        "documento",
+        grupo=grupo,
+    )
+
+    adicionar_elemento_nfse(
+        pai,
+        tipo_documento,
+        documento,
+    )
+
+
+def _adicionar_regime_tributario(prestador_xml, regime):
+    """Serializa TCRegTrib conforme layout DPS 1.01."""
+
+    if not isinstance(regime, dict):
+        raise SerializacaoDpsInvalida(
+            "Grupo prestador.regime_tributario nao informado."
+        )
+
+    reg_trib = etree.SubElement(
+        prestador_xml,
+        _qname("regTrib"),
+    )
+
+    adicionar_elemento_nfse(
+        reg_trib,
+        "opSimpNac",
+        _valor_obrigatorio(
+            regime,
+            "op_simp_nac",
+            grupo="prestador.regime_tributario",
+        ),
+    )
+
+    reg_ap_trib_sn = _valor_opcional(
+        regime,
+        "reg_ap_trib_sn",
+    )
+
+    if reg_ap_trib_sn is not None:
+        adicionar_elemento_nfse(
+            reg_trib,
+            "regApTribSN",
+            reg_ap_trib_sn,
+        )
+
+    adicionar_elemento_nfse(
+        reg_trib,
+        "regEspTrib",
+        _valor_obrigatorio(
+            regime,
+            "reg_esp_trib",
+            grupo="prestador.regime_tributario",
+        ),
+    )
+
+    return reg_trib
+
+
+def _adicionar_prestador(inf_dps, prestador):
+    """Serializa TCInfoPrestador."""
+
+    if not isinstance(prestador, dict):
+        raise SerializacaoDpsInvalida(
+            "Grupo prestador da DPS canonica nao informado."
+        )
+
+    prestador_xml = etree.SubElement(
+        inf_dps,
+        _qname("prest"),
+    )
+
+    _adicionar_identificador_federal(
+        prestador_xml,
+        prestador,
+        grupo="prestador",
+    )
+
+    inscricao_municipal = _valor_opcional(
+        prestador,
+        "inscricao_municipal",
+    )
+
+    if inscricao_municipal is not None:
+        adicionar_elemento_nfse(
+            prestador_xml,
+            "IM",
+            inscricao_municipal,
+        )
+
+    nome = _valor_opcional(
+        prestador,
+        "nome",
+    )
+
+    if nome is not None:
+        adicionar_elemento_nfse(
+            prestador_xml,
+            "xNome",
+            nome,
+        )
+
+    # municipio_ibge nao possui tag direta em TCInfoPrestador.
+    # Endereco do prestador nao integra o contrato canonico atual.
+
+    _adicionar_regime_tributario(
+        prestador_xml,
+        prestador.get("regime_tributario"),
+    )
+
+    return prestador_xml
+
+
+def _adicionar_tomador(inf_dps, tomador):
+    """Serializa TCInfoPessoa quando houver tomador."""
+
+    if tomador is None:
+        return None
+
+    if not isinstance(tomador, dict):
+        raise SerializacaoDpsInvalida(
+            "Grupo tomador da DPS canonica invalido."
+        )
+
+    tomador_xml = etree.SubElement(
+        inf_dps,
+        _qname("toma"),
+    )
+
+    _adicionar_identificador_federal(
+        tomador_xml,
+        tomador,
+        grupo="tomador",
+    )
+
+    adicionar_elemento_nfse(
+        tomador_xml,
+        "xNome",
+        _valor_obrigatorio(
+            tomador,
+            "nome",
+            grupo="tomador",
+        ),
+    )
+
+    # O endereco canonico atual nao possui municipio IBGE.
+    # TCEnderNac exige cMun, portanto <end> nao e emitido neste marco.
+
+    email = _valor_opcional(
+        tomador,
+        "email",
+    )
+
+    if email is not None:
+        adicionar_elemento_nfse(
+            tomador_xml,
+            "email",
+            email,
+        )
+
+    return tomador_xml
+
+
 def montar_xml_dps(dps_canonica: dict):
     """Monta a estrutura XML inicial DPS/infDPS conforme layout 1.01."""
 
@@ -164,5 +366,15 @@ def montar_xml_dps(dps_canonica: dict):
                 chave_canonica,
             ),
         )
+
+    _adicionar_prestador(
+        inf_dps,
+        dps_canonica.get("prestador"),
+    )
+
+    _adicionar_tomador(
+        inf_dps,
+        dps_canonica.get("tomador"),
+    )
 
     return raiz

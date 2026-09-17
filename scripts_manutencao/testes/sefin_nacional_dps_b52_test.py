@@ -37,7 +37,20 @@ def _dps_canonica():
             "competencia": "2026-09-16",
             "tipo_emitente": "1",
             "municipio_emissao_ibge": "3554508",
-        }
+        },
+        "prestador": {
+            "tipo_documento": "CNPJ",
+            "documento": "12345678000195",
+            "inscricao_municipal": "123456",
+            "municipio_ibge": "3554508",
+            "nome": "JSP TESTE",
+            "regime_tributario": {
+                "op_simp_nac": "1",
+                "reg_ap_trib_sn": None,
+                "reg_esp_trib": "0",
+            },
+        },
+        "tomador": None,
     }
 
 
@@ -68,10 +81,12 @@ def test_b52_003_respeita_ordem_do_tc_inf_dps():
     raiz = montar_xml_dps(_dps_canonica())
     inf_dps = raiz[0]
 
-    assert [
+    nomes = [
         _localname(elemento)
         for elemento in inf_dps
-    ] == [
+    ]
+
+    assert nomes[:8] == [
         "tpAmb",
         "dhEmi",
         "verAplic",
@@ -89,7 +104,7 @@ def test_b52_004_mapeia_valores_canonicos():
 
     valores = {
         _localname(elemento): elemento.text
-        for elemento in inf_dps
+        for elemento in inf_dps[:8]
     }
 
     assert valores == {
