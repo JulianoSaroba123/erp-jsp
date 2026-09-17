@@ -1561,6 +1561,201 @@ def upload_extrato():
         return voltar_conciliacao()
 
 
+@bp_financeiro.route(
+    '/conciliacao-bancaria/conciliar-nn',
+    methods=['POST']
+)
+def conciliar_nn():
+    # Adapta payload HTTP para o motor N:N.
+    from app.financeiro.conciliacao_adapter import (
+        executar_conciliacao_bancaria,
+    )
+    from app.financeiro.conciliacao_service import (
+        ConciliacaoInvalida,
+        SolicitacaoAlocacao,
+    )
+
+    try:
+        payload = request.get_json(silent=True)
+
+        if not isinstance(payload, dict):
+            raise ConciliacaoInvalida(
+                'Corpo JSON invalido para conciliacao.'
+            )
+
+        try:
+            extrato_id = int(payload.get('extrato_id'))
+        except (TypeError, ValueError) as exc:
+            raise ConciliacaoInvalida(
+                'extrato_id invalido.'
+            ) from exc
+
+        if extrato_id <= 0:
+            raise ConciliacaoInvalida(
+                'extrato_id deve ser maior que zero.'
+            )
+
+        alocacoes_payload = payload.get('alocacoes')
+
+        if (
+            not isinstance(alocacoes_payload, list)
+            or not alocacoes_payload
+        ):
+            raise ConciliacaoInvalida(
+                'Informe ao menos uma alocacao.'
+            )
+
+        alocacoes = []
+
+        for indice, item in enumerate(
+            alocacoes_payload,
+            start=1,
+        ):
+            if not isinstance(item, dict):
+                raise ConciliacaoInvalida(
+                    f'Alocacao {indice} invalida.'
+                )
+
+            try:
+                lancamento_id = int(
+                    item.get('lancamento_id')
+                )
+            except (TypeError, ValueError) as exc:
+                raise ConciliacaoInvalida(
+                    f'lancamento_id invalido na alocacao {indice}.'
+                ) from exc
+
+            if lancamento_id <= 0:
+                raise ConciliacaoInvalida(
+                    f'lancamento_id deve ser maior que zero '
+                    f'na alocacao {indice}.'
+                )
+
+            try:
+                valor = Decimal(
+                    str(item.get('valor'))
+                )
+            except Exception as exc:
+                raise ConciliacaoInvalida(
+                    f'valor invalido na alocacao {indice}.'
+                ) from exc
+
+            if not valor.is_finite():
+                raise ConciliacaoInvalida(
+                    f'valor invalido na alocacao {indice}.'
+                )
+
+            if valor <= 0:
+                raise ConciliacaoInvalida(
+                    f'valor deve ser maior que zero '
+                    f'na alocacao {indice}.'
+                )
+
+            alocacoes.append(
+                SolicitacaoAlocacao(
+                    lancamento_id=lancamento_id,
+                    valor=valor,
+                )
+            )
+
+        observacoes = payload.get('observacoes')
+
+        if observacoes is not None:
+            observacoes = str(observacoes).strip() or None
+
+            if (
+                observacoes is not None
+                and len(observacoes) > 1000
+            ):
+                raise ConciliacaoInvalida(
+                    'observacoes excedem 1000 caracteres.'
+                )
+
+        usuario = None
+
+        for atributo in (
+            'username',
+            'email',
+            'nome',
+        ):
+            valor_usuario = getattr(
+                current_user,
+                atributo,
+                None,
+            )
+
+            if valor_usuario:
+                usuario = str(valor_usuario)
+                break
+
+        if usuario is None:
+            usuario_id = getattr(
+                current_user,
+                'id',
+                None,
+            )
+
+            if usuario_id is not None:
+                usuario = str(usuario_id)
+
+        resultado = executar_conciliacao_bancaria(
+            extrato_id=extrato_id,
+            alocacoes=alocacoes,
+            usuario=usuario,
+            observacoes=observacoes,
+        )
+
+        preparacao = resultado.preparacao
+
+        return jsonify({
+            'ok': True,
+            'extrato_id': preparacao.extrato_id,
+            'valor_extrato': str(
+                preparacao.valor_extrato
+            ),
+            'valor_ja_conciliado': str(
+                preparacao.valor_ja_conciliado
+            ),
+            'total_novo': str(
+                preparacao.total_novo
+            ),
+            'saldo_final_extrato': str(
+                preparacao.saldo_final_extrato
+            ),
+            'status_final': preparacao.status_final,
+            'itens_criados': resultado.itens_criados,
+            'itens_atualizados': resultado.itens_atualizados,
+        }), 200
+
+    except ConciliacaoInvalida as exc:
+        db.session.rollback()
+
+        logger.warning(
+            'Conciliacao bancaria N:N rejeitada: %s',
+            exc,
+        )
+
+        return jsonify({
+            'ok': False,
+            'erro': str(exc),
+        }), 400
+
+    except Exception:
+        db.session.rollback()
+
+        logger.exception(
+            'Erro inesperado na conciliacao bancaria N:N'
+        )
+
+        return jsonify({
+            'ok': False,
+            'erro': (
+                'Erro interno ao processar '
+                'a conciliacao bancaria.'
+            ),
+        }), 500
+
+
 @bp_financeiro.route('/conciliacao-bancaria/conciliar/<int:extrato_id>/<int:lancamento_id>', methods=['POST'])
 def conciliar_manual(extrato_id, lancamento_id):
     """Conciliar manualmente um extrato com um lançamento."""
