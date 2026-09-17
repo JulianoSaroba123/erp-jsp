@@ -385,3 +385,303 @@ def preparar_conciliacao(
         status_final=status_final,
         alocacoes=tuple(normalizadas),
     )
+
+
+# ============================================================
+# D25F01-A2.3 - PERSISTENCIA ORM TRANSACIONAL
+# ============================================================
+
+from datetime import datetime
+
+
+@dataclass(frozen=True)
+class ResultadoPersistenciaConciliacao:
+    preparacao: PreparacaoConciliacao
+    itens_criados: int
+    itens_atualizados: int
+
+
+def executar_conciliacao_orm(
+    *,
+    session,
+    extrato_model,
+    lancamento_model,
+    item_model,
+    extrato_id,
+    alocacoes,
+    usuario=None,
+    observacoes=None,
+):
+    """
+    Executa conciliacao usando uma sessao SQLAlchemy.
+
+    A funcao recebe os models por injecao para permanecer desacoplada
+    do bootstrap Flask.
+
+    Regras:
+    - bloqueia o extrato e os lancamentos quando o banco suporta lock;
+    - considera conciliacoes ativas ja existentes;
+    - valida toda a operacao antes de persistir;
+    - cria ou atualiza o par extrato+lancamento;
+    - commit unico;
+    - rollback integral em qualquer falha;
+    - nao altera status financeiro do lancamento;
+    - nao movimenta saldo de conta bancaria.
+    """
+
+    try:
+        try:
+            chave_extrato = int(extrato_id)
+        except (TypeError, ValueError):
+            raise ConciliacaoInvalida(
+                "extrato_id invalido."
+            )
+
+        if chave_extrato <= 0:
+            raise ConciliacaoInvalida(
+                "extrato_id invalido."
+            )
+
+        solicitacoes = list(alocacoes)
+
+        extrato = (
+            session.query(extrato_model)
+            .filter(
+                extrato_model.id == chave_extrato
+            )
+            .with_for_update()
+            .one_or_none()
+        )
+
+        if extrato is None:
+            raise ConciliacaoInvalida(
+                f"Extrato {chave_extrato} nao encontrado."
+            )
+
+        ids_lancamentos = sorted(
+            {
+                int(item.lancamento_id)
+                for item in solicitacoes
+            }
+        )
+
+        lancamentos_db = (
+            session.query(lancamento_model)
+            .filter(
+                lancamento_model.id.in_(
+                    ids_lancamentos
+                )
+            )
+            .order_by(lancamento_model.id)
+            .with_for_update()
+            .all()
+        )
+
+        lancamentos_por_id = {
+            item.id: item
+            for item in lancamentos_db
+        }
+
+        itens_extrato_todos = (
+            session.query(item_model)
+            .filter(
+                item_model.extrato_id
+                == chave_extrato
+            )
+            .with_for_update()
+            .all()
+        )
+
+        itens_extrato_ativos = [
+            item
+            for item in itens_extrato_todos
+            if bool(item.ativo)
+        ]
+
+        valor_ja_extrato = sum(
+            (
+                _valor_monetario(
+                    item.valor_conciliado,
+                    "valor_conciliado_extrato",
+                )
+                for item in itens_extrato_ativos
+            ),
+            Decimal("0.00"),
+        ).quantize(CENTAVO)
+
+        itens_lancamentos_ativos = (
+            session.query(item_model)
+            .filter(
+                item_model.lancamento_id.in_(
+                    ids_lancamentos
+                ),
+                item_model.ativo.is_(True),
+            )
+            .all()
+        )
+
+        conciliado_por_lancamento = {
+            identificador: Decimal("0.00")
+            for identificador
+            in ids_lancamentos
+        }
+
+        for item in itens_lancamentos_ativos:
+            atual = conciliado_por_lancamento.get(
+                item.lancamento_id,
+                Decimal("0.00"),
+            )
+
+            conciliado_por_lancamento[
+                item.lancamento_id
+            ] = (
+                atual
+                + _valor_monetario(
+                    item.valor_conciliado,
+                    "valor_conciliado_lancamento",
+                )
+            ).quantize(CENTAVO)
+
+        lancamentos_dominio = {}
+
+        for identificador, registro in (
+            lancamentos_por_id.items()
+        ):
+            lancamentos_dominio[
+                identificador
+            ] = LancamentoConciliavel(
+                lancamento_id=identificador,
+                valor_total=_valor_monetario(
+                    registro.valor,
+                    f"valor_lancamento_{identificador}",
+                ),
+                tipo=registro.tipo,
+                valor_ja_conciliado=(
+                    conciliado_por_lancamento.get(
+                        identificador,
+                        Decimal("0.00"),
+                    )
+                ),
+                conta_bancaria_id=(
+                    registro.conta_bancaria_id
+                ),
+            )
+
+        preparacao = preparar_conciliacao(
+            extrato_id=chave_extrato,
+            valor_extrato=extrato.valor,
+            tipo_movimento=extrato.tipo_movimento,
+            conta_bancaria_id=(
+                extrato.conta_bancaria_id
+            ),
+            valor_ja_conciliado=(
+                valor_ja_extrato
+            ),
+            alocacoes=solicitacoes,
+            lancamentos=lancamentos_dominio,
+        )
+
+        pares_existentes = {
+            item.lancamento_id: item
+            for item in itens_extrato_todos
+        }
+
+        criados = 0
+        atualizados = 0
+
+        for alocacao in preparacao.alocacoes:
+            existente = pares_existentes.get(
+                alocacao.lancamento_id
+            )
+
+            if existente is None:
+                novo = item_model(
+                    extrato_id=chave_extrato,
+                    lancamento_id=(
+                        alocacao.lancamento_id
+                    ),
+                    valor_conciliado=alocacao.valor,
+                    usuario=usuario,
+                    observacoes=observacoes,
+                    ativo=True,
+                )
+
+                session.add(novo)
+                pares_existentes[
+                    alocacao.lancamento_id
+                ] = novo
+
+                criados += 1
+                continue
+
+            if bool(existente.ativo):
+                valor_atual = _valor_monetario(
+                    existente.valor_conciliado,
+                    "valor_conciliado_existente",
+                )
+
+                existente.valor_conciliado = (
+                    valor_atual
+                    + alocacao.valor
+                ).quantize(CENTAVO)
+
+            else:
+                existente.ativo = True
+                existente.valor_conciliado = (
+                    alocacao.valor
+                )
+
+            if usuario is not None:
+                existente.usuario = usuario
+
+            if observacoes is not None:
+                existente.observacoes = observacoes
+
+            atualizados += 1
+
+        conciliado_integral = (
+            preparacao.status_final
+            == "CONCILIADO"
+        )
+
+        extrato.conciliado = conciliado_integral
+
+        if conciliado_integral:
+            extrato.data_conciliacao = (
+                datetime.utcnow()
+            )
+        else:
+            extrato.data_conciliacao = None
+
+        ids_ativos_finais = {
+            item.lancamento_id
+            for item in itens_extrato_ativos
+        }
+
+        ids_ativos_finais.update(
+            item.lancamento_id
+            for item in preparacao.alocacoes
+        )
+
+        if (
+            conciliado_integral
+            and len(ids_ativos_finais) == 1
+        ):
+            extrato.lancamento_id = next(
+                iter(ids_ativos_finais)
+            )
+        else:
+            # O campo legado nao consegue representar N:N.
+            extrato.lancamento_id = None
+
+        session.commit()
+
+        return ResultadoPersistenciaConciliacao(
+            preparacao=preparacao,
+            itens_criados=criados,
+            itens_atualizados=atualizados,
+        )
+
+    except Exception:
+        session.rollback()
+        raise
