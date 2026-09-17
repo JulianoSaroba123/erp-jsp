@@ -1,4 +1,4 @@
-"""Fundacao de serializacao XML da DPS Nacional."""
+﻿"""Fundacao de serializacao XML da DPS Nacional."""
 
 from lxml import etree
 
@@ -61,6 +61,174 @@ def serializar_xml(elemento) -> bytes:
 
 class SerializacaoDpsInvalida(ValueError):
     """Erro de contrato entre a DPS canonica e o XML."""
+
+
+class EstruturaXmlDpsInvalida(SerializacaoDpsInvalida):
+    """Erro de invariantes estruturais internas da DPS XML."""
+
+
+def _qname_elemento(elemento, *, contexto):
+    """Obtem QName de elemento XML com erro estrutural controlado."""
+
+    if elemento is None:
+        raise EstruturaXmlDpsInvalida(
+            f"Elemento XML ausente: {contexto}."
+        )
+
+    try:
+        return etree.QName(str(elemento.tag))
+    except (TypeError, ValueError) as exc:
+        raise EstruturaXmlDpsInvalida(
+            f"Elemento XML invalido: {contexto}."
+        ) from exc
+
+
+def _nomes_filhos_nfse(elemento, *, contexto):
+    """Lista filhos diretos garantindo o namespace oficial."""
+
+    nomes = []
+
+    for filho in elemento:
+        qname = _qname_elemento(
+            filho,
+            contexto=f"{contexto}.filho",
+        )
+
+        if qname.namespace != NAMESPACE_NFSE:
+            raise EstruturaXmlDpsInvalida(
+                f"Namespace invalido em filho de {contexto}: "
+                f"{qname.localname}."
+            )
+
+        nomes.append(qname.localname)
+
+    return nomes
+
+
+def validar_estrutura_xml_dps(raiz) -> None:
+    """Valida invariantes internas da DPS antes da validacao XSD."""
+
+    qname_raiz = _qname_elemento(
+        raiz,
+        contexto="DPS",
+    )
+
+    if qname_raiz.localname != "DPS":
+        raise EstruturaXmlDpsInvalida(
+            "Elemento raiz da DPS deve ser DPS."
+        )
+
+    if qname_raiz.namespace != NAMESPACE_NFSE:
+        raise EstruturaXmlDpsInvalida(
+            "Namespace da raiz DPS invalido."
+        )
+
+    if raiz.get("versao") != VERSAO_DPS:
+        raise EstruturaXmlDpsInvalida(
+            "Versao estrutural da DPS invalida."
+        )
+
+    nomes_raiz = _nomes_filhos_nfse(
+        raiz,
+        contexto="DPS",
+    )
+
+    if nomes_raiz != ["infDPS"]:
+        raise EstruturaXmlDpsInvalida(
+            "DPS deve conter exatamente um infDPS."
+        )
+
+    inf_dps = raiz[0]
+
+    identificador = str(
+        inf_dps.get("Id") or ""
+    ).strip()
+
+    if not identificador:
+        raise EstruturaXmlDpsInvalida(
+            "Atributo Id de infDPS obrigatorio."
+        )
+
+    nomes = _nomes_filhos_nfse(
+        inf_dps,
+        contexto="infDPS",
+    )
+
+    identificacao_esperada = [
+        "tpAmb",
+        "dhEmi",
+        "verAplic",
+        "serie",
+        "nDPS",
+        "dCompet",
+        "tpEmit",
+        "cLocEmi",
+    ]
+
+    if nomes[:len(identificacao_esperada)] != identificacao_esperada:
+        raise EstruturaXmlDpsInvalida(
+            "Ordem estrutural da identificacao da DPS invalida."
+        )
+
+    grupos = nomes[len(identificacao_esperada):]
+
+    grupos_obrigatorios = (
+        "prest",
+        "serv",
+        "valores",
+    )
+
+    grupos_opcionais = (
+        "toma",
+        "IBSCBS",
+    )
+
+    grupos_permitidos = set(
+        grupos_obrigatorios + grupos_opcionais
+    )
+
+    inesperados = [
+        nome
+        for nome in grupos
+        if nome not in grupos_permitidos
+    ]
+
+    if inesperados:
+        raise EstruturaXmlDpsInvalida(
+            "Grupo estrutural inesperado em infDPS: "
+            + ", ".join(inesperados)
+            + "."
+        )
+
+    for nome in grupos_obrigatorios:
+        if grupos.count(nome) != 1:
+            raise EstruturaXmlDpsInvalida(
+                f"Grupo {nome} deve ocorrer exatamente uma vez."
+            )
+
+    for nome in grupos_opcionais:
+        if grupos.count(nome) > 1:
+            raise EstruturaXmlDpsInvalida(
+                f"Grupo {nome} nao pode ocorrer mais de uma vez."
+            )
+
+    ordem_esperada = ["prest"]
+
+    if "toma" in grupos:
+        ordem_esperada.append("toma")
+
+    ordem_esperada.extend([
+        "serv",
+        "valores",
+    ])
+
+    if "IBSCBS" in grupos:
+        ordem_esperada.append("IBSCBS")
+
+    if grupos != ordem_esperada:
+        raise EstruturaXmlDpsInvalida(
+            "Ordem dos grupos principais de infDPS invalida."
+        )
 
 
 def _valor_obrigatorio(dados, chave, *, grupo="identificacao"):
@@ -808,6 +976,12 @@ def montar_xml_dps_serializado(
         dps_canonica
     )
 
+    validar_estrutura_xml_dps(
+        raiz
+    )
+
     return serializar_xml(
         raiz
     )
+
+
