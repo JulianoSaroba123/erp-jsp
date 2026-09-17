@@ -731,6 +731,91 @@ class ExtratoBancario(BaseModel):
         db.session.commit()
 
 
+
+
+class ConciliacaoBancariaItem(BaseModel):
+    """
+    Aloca??o entre um movimento banc?rio e um lan?amento financeiro.
+
+    Permite:
+    - um extrato conciliado com v?rios lan?amentos;
+    - um lan?amento conciliado com v?rios extratos;
+    - evolu??o futura para pagamentos parciais.
+
+    O campo legado ExtratoBancario.lancamento_id permanece temporariamente
+    para compatibilidade durante a migra??o da concilia??o antiga.
+    """
+
+    __tablename__ = 'conciliacao_bancaria_itens'
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            'extrato_id',
+            'lancamento_id',
+            name='uq_conciliacao_bancaria_extrato_lancamento'
+        ),
+        db.CheckConstraint(
+            'valor_conciliado > 0',
+            name='ck_conciliacao_bancaria_valor_positivo'
+        ),
+    )
+
+    extrato_id = db.Column(
+        db.Integer,
+        db.ForeignKey('extratos_bancarios.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+
+    lancamento_id = db.Column(
+        db.Integer,
+        db.ForeignKey('lancamentos_financeiros.id', ondelete='RESTRICT'),
+        nullable=False,
+        index=True,
+    )
+
+    valor_conciliado = db.Column(
+        db.Numeric(12, 2),
+        nullable=False,
+    )
+
+    data_conciliacao = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+
+    usuario = db.Column(db.String(100))
+    observacoes = db.Column(db.Text)
+
+    extrato = db.relationship(
+        'ExtratoBancario',
+        backref=db.backref(
+            'itens_conciliacao',
+            lazy=True,
+            cascade='all, delete-orphan',
+        ),
+        foreign_keys=[extrato_id],
+    )
+
+    lancamento = db.relationship(
+        'LancamentoFinanceiro',
+        backref=db.backref(
+            'itens_conciliacao_bancaria',
+            lazy=True,
+        ),
+        foreign_keys=[lancamento_id],
+    )
+
+    def __repr__(self):
+        return (
+            f'<ConciliacaoBancariaItem '
+            f'E:{self.extrato_id} '
+            f'L:{self.lancamento_id} '
+            f'R$ {self.valor_conciliado}>'
+        )
+
+
 class CustoFixo(BaseModel):
     """Modelo para Custos Fixos Recorrentes."""
     __tablename__ = 'custos_fixos'
