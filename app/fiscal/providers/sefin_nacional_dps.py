@@ -617,7 +617,9 @@ def montar_dps_canonica(
             iss=iss,
             configuracao_fiscal=configuracao_fiscal,
         ),
-        "ibs_cbs": dict(ibs_cbs or {}),
+        "ibs_cbs": montar_ibs_cbs_canonico(
+            ibs_cbs=ibs_cbs,
+        ),
     }
 
 
@@ -794,4 +796,53 @@ def montar_iss_canonico(iss=None, configuracao_fiscal=None):
         "tributacao_issqn": tributacao_issqn,
         "tipo_retencao": tipo_retencao,
         "aliquota": aliquota_canonica,
+    }
+
+def montar_ibs_cbs_canonico(ibs_cbs=None):
+    """Monta o bloco canonico minimo de IBS/CBS da DPS."""
+
+    dados = dict(ibs_cbs or {})
+
+    # O grupo continua opcional.
+    # Quando informado, seu contrato canonico passa a ser estrito.
+    if not dados:
+        return {}
+
+    c_ind_op = _texto(
+        dados.get("c_ind_op"),
+        campo="ibs_cbs.c_ind_op",
+        obrigatorio=True,
+    )
+
+    if not re.fullmatch(r"[0-9]{6}", c_ind_op):
+        raise DpsCanonicaInvalida(
+            "Indicador da operacao IBS/CBS deve possuir 6 digitos."
+        )
+
+    cst = _texto(
+        dados.get("cst"),
+        campo="ibs_cbs.cst",
+        obrigatorio=True,
+    )
+
+    if not re.fullmatch(r"[0-9]{3}", cst):
+        raise DpsCanonicaInvalida(
+            "CST do IBS/CBS deve possuir 3 digitos."
+        )
+
+    c_class_trib = _texto(
+        dados.get("c_class_trib"),
+        campo="ibs_cbs.c_class_trib",
+        obrigatorio=True,
+    )
+
+    if not re.fullmatch(r"[0-9]{6}", c_class_trib):
+        raise DpsCanonicaInvalida(
+            "Classificacao tributaria IBS/CBS deve possuir 6 digitos."
+        )
+
+    return {
+        "c_ind_op": c_ind_op,
+        "cst": cst,
+        "c_class_trib": c_class_trib,
     }
