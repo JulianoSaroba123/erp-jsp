@@ -156,7 +156,11 @@
                             </thead>
                             <tbody>
                                 {% for extrato in extratos_pendentes %}
-                                <tr id="extrato-{{ extrato.id }}" class="extrato-row" data-extrato-id="{{ extrato.id }}">
+                                <tr id="extrato-{{ extrato.id }}"
+                                    class="extrato-row"
+                                    data-extrato-id="{{ extrato.id }}"
+                                    data-extrato-valor="{{ extrato.valor }}"
+                                    data-extrato-tipo="{{ extrato.tipo_movimento }}">
                                     <td>{{ extrato.data_movimento.strftime('%d/%m/%Y') if extrato.data_movimento else '—' }}</td>
                                     <td>
                                         <small>{{ extrato.descricao }}</small>
@@ -208,6 +212,71 @@
                     <h5 class="mb-0"><i class="fas fa-file-alt"></i> Lançamentos do Sistema</h5>
                 </div>
                 <div class="card-body p-0">
+
+                    <div id="painel-conciliacao-nn" class="p-3 border-bottom bg-light">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                            <div>
+                                <div class="fw-bold">
+                                    <i class="fas fa-project-diagram"></i>
+                                    Conciliação múltipla
+                                </div>
+                                <small class="text-muted">
+                                    Selecione um extrato e marque um ou mais lançamentos compatíveis.
+                                </small>
+                            </div>
+                            <span class="badge bg-secondary">B1 - pré-visualização</span>
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-6 col-xl-3">
+                                <div class="conciliacao-resumo-item">
+                                    <small class="text-muted d-block">Extrato</small>
+                                    <strong id="resumo-valor-extrato">R$ 0,00</strong>
+                                </div>
+                            </div>
+                            <div class="col-6 col-xl-3">
+                                <div class="conciliacao-resumo-item">
+                                    <small class="text-muted d-block">Selecionado</small>
+                                    <strong id="resumo-valor-selecionado">R$ 0,00</strong>
+                                </div>
+                            </div>
+                            <div class="col-6 col-xl-3">
+                                <div class="conciliacao-resumo-item">
+                                    <small class="text-muted d-block">Restante</small>
+                                    <strong id="resumo-valor-restante">R$ 0,00</strong>
+                                </div>
+                            </div>
+                            <div class="col-6 col-xl-3">
+                                <div class="conciliacao-resumo-item">
+                                    <small class="text-muted d-block">Itens</small>
+                                    <strong id="resumo-itens">0</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="status-conciliacao-nn"
+                             class="alert alert-secondary py-2 mt-3 mb-3">
+                            Selecione um extrato para começar.
+                        </div>
+
+                        <button
+                            type="button"
+                            id="btn-previsualizar-conciliacao"
+                            class="btn btn-primary w-100"
+                            onclick="previsualizarConciliacao()"
+                            disabled
+                        >
+                            <i class="fas fa-eye"></i>
+                            Pré-visualizar conciliação
+                        </button>
+
+                        <div class="text-center mt-2">
+                            <small class="text-muted">
+                                Nenhum dado financeiro é gravado nesta etapa.
+                            </small>
+                        </div>
+                    </div>
+
                     {% if lancamentos_pendentes %}
                     <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
                         <table class="table table-hover mb-0">
@@ -217,12 +286,16 @@
                                     <th>Descrição</th>
                                     <th>Tipo</th>
                                     <th>Valor</th>
-                                    <th>Ações</th>
+                                    <th>Selecionar</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for lanc in lancamentos_pendentes %}
-                                <tr id="lancamento-{{ lanc.id }}" class="lancamento-row" data-lancamento-id="{{ lanc.id }}">
+                                <tr id="lancamento-{{ lanc.id }}"
+                                    class="lancamento-row"
+                                    data-lancamento-id="{{ lanc.id }}"
+                                    data-lancamento-valor="{{ lanc.valor }}"
+                                    data-lancamento-tipo="{{ lanc.tipo }}">
                                     <td>{{ (lanc.data_vencimento or lanc.data_lancamento).strftime('%d/%m/%Y') if (lanc.data_vencimento or lanc.data_lancamento) else '—' }}</td>
                                     <td>
                                         <small>{{ lanc.descricao }}</small>
@@ -244,10 +317,20 @@
                                         <span class="text-danger fw-bold">{{ lanc.valor_formatado }}</span>
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-success" onclick="conciliar({{ lanc.id }})" id="btn-lanc-{{ lanc.id }}" disabled>
-                                            <i class="fas fa-link"></i>
-                                        </button>
+                                    <td class="text-center">
+                                        <div class="form-check d-flex justify-content-center">
+                                            <input
+                                                class="form-check-input lancamento-checkbox"
+                                                type="checkbox"
+                                                value="{{ lanc.id }}"
+                                                id="lanc-check-{{ lanc.id }}"
+                                                data-lancamento-id="{{ lanc.id }}"
+                                                data-valor="{{ lanc.valor }}"
+                                                data-tipo="{{ lanc.tipo }}"
+                                                disabled
+                                                aria-label="Selecionar {{ lanc.descricao }}"
+                                            >
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -272,6 +355,23 @@
     background-color: #fff3cd !important;
     border-left: 4px solid #ffc107;
 }
+.lancamento-row.selecionado {
+    background-color: #d1e7dd !important;
+    border-left: 4px solid #198754;
+}
+
+.lancamento-row.incompativel {
+    opacity: 0.45;
+}
+
+.conciliacao-resumo-item {
+    height: 100%;
+    padding: 0.65rem 0.75rem;
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
 .sticky-top {
     position: sticky;
     top: 0;
@@ -281,41 +381,200 @@
 
 <script>
 let extratoSelecionado = null;
+let valorExtratoSelecionado = 0;
+let tipoExtratoSelecionado = null;
+
+function numeroSeguro(valor) {
+    const numero = Number(String(valor ?? '0').replace(',', '.'));
+    return Number.isFinite(numero) ? Math.abs(numero) : 0;
+}
+
+function moeda(valor) {
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(valor);
+}
+
+function lancamentoCompativel(tipoExtrato, tipoLancamento) {
+    if (tipoExtrato === 'credito') {
+        return ['receita', 'conta_receber'].includes(tipoLancamento);
+    }
+
+    if (tipoExtrato === 'debito') {
+        return ['despesa', 'conta_pagar'].includes(tipoLancamento);
+    }
+
+    return false;
+}
+
+function limparSelecaoLancamentos() {
+    document.querySelectorAll('.lancamento-checkbox').forEach(check => {
+        check.checked = false;
+        check.disabled = true;
+
+        const row = check.closest('.lancamento-row');
+        if (row) {
+            row.classList.remove('selecionado', 'incompativel');
+        }
+    });
+}
 
 function selecionarExtrato(extratoId) {
-    // Remover seleção anterior
     document.querySelectorAll('.extrato-row').forEach(row => {
         row.classList.remove('selected');
     });
-    
-    // Selecionar novo
+
+    limparSelecaoLancamentos();
+
     const row = document.getElementById('extrato-' + extratoId);
+    if (!row) {
+        return;
+    }
+
     row.classList.add('selected');
     extratoSelecionado = extratoId;
-    
-    // Habilitar botões de conciliação
-    document.querySelectorAll('[id^="btn-lanc-"]').forEach(btn => {
-        btn.disabled = false;
+    valorExtratoSelecionado = numeroSeguro(row.dataset.extratoValor);
+    tipoExtratoSelecionado = row.dataset.extratoTipo;
+
+    document.querySelectorAll('.lancamento-checkbox').forEach(check => {
+        const compativel = lancamentoCompativel(
+            tipoExtratoSelecionado,
+            check.dataset.tipo
+        );
+
+        check.disabled = !compativel;
+
+        const lancamentoRow = check.closest('.lancamento-row');
+        if (lancamentoRow) {
+            lancamentoRow.classList.toggle('incompativel', !compativel);
+        }
     });
+
+    atualizarResumoConciliacao();
 }
 
-function conciliar(lancamentoId) {
-    if (!extratoSelecionado) {
-        alert('Selecione um extrato primeiro!');
-        return;
-    }
-    
-    if (!confirm('Confirma a conciliação deste lançamento com o extrato selecionado?')) {
-        return;
-    }
-    
-    // Criar formulário e enviar
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = `/financeiro/conciliacao-bancaria/conciliar/${extratoSelecionado}/${lancamentoId}`;
-    document.body.appendChild(form);
-    form.submit();
+function obterLancamentosSelecionados() {
+    return Array.from(
+        document.querySelectorAll('.lancamento-checkbox:checked')
+    );
 }
+
+function atualizarResumoConciliacao() {
+    const selecionados = obterLancamentosSelecionados();
+
+    const totalSelecionado = selecionados.reduce(
+        (total, check) => total + numeroSeguro(check.dataset.valor),
+        0
+    );
+
+    const restante = valorExtratoSelecionado - totalSelecionado;
+
+    document.getElementById('resumo-valor-extrato').textContent =
+        moeda(valorExtratoSelecionado);
+
+    document.getElementById('resumo-valor-selecionado').textContent =
+        moeda(totalSelecionado);
+
+    document.getElementById('resumo-valor-restante').textContent =
+        moeda(restante);
+
+    document.getElementById('resumo-itens').textContent =
+        selecionados.length;
+
+    document.querySelectorAll('.lancamento-row').forEach(row => {
+        const check = row.querySelector('.lancamento-checkbox');
+        row.classList.toggle(
+            'selecionado',
+            Boolean(check && check.checked)
+        );
+    });
+
+    const status = document.getElementById('status-conciliacao-nn');
+    const botao = document.getElementById(
+        'btn-previsualizar-conciliacao'
+    );
+
+    botao.disabled = true;
+    status.className = 'alert py-2 mt-3 mb-3';
+
+    if (!extratoSelecionado) {
+        status.classList.add('alert-secondary');
+        status.textContent = 'Selecione um extrato para começar.';
+        return;
+    }
+
+    if (selecionados.length === 0) {
+        status.classList.add('alert-info');
+        status.textContent =
+            'Extrato selecionado. Marque um ou mais lançamentos.';
+        return;
+    }
+
+    const tolerancia = 0.005;
+
+    if (totalSelecionado > valorExtratoSelecionado + tolerancia) {
+        status.classList.add('alert-danger');
+        status.textContent =
+            'Seleção excede o valor disponível do extrato.';
+        return;
+    }
+
+    botao.disabled = false;
+
+    if (Math.abs(restante) <= tolerancia) {
+        status.classList.add('alert-success');
+        status.textContent =
+            'Conciliação integral: seleção fecha exatamente o valor do extrato.';
+        return;
+    }
+
+    status.classList.add('alert-warning');
+    status.textContent =
+        'Conciliação parcial: ainda existe saldo disponível no extrato.';
+}
+
+function previsualizarConciliacao() {
+    if (!extratoSelecionado) {
+        return;
+    }
+
+    const selecionados = obterLancamentosSelecionados();
+    if (selecionados.length === 0) {
+        return;
+    }
+
+    const totalSelecionado = selecionados.reduce(
+        (total, check) => total + numeroSeguro(check.dataset.valor),
+        0
+    );
+
+    if (totalSelecionado > valorExtratoSelecionado + 0.005) {
+        return;
+    }
+
+    const ids = selecionados.map(
+        check => check.dataset.lancamentoId
+    );
+
+    const restante = valorExtratoSelecionado - totalSelecionado;
+
+    alert(
+        'Pré-visualização D25F01-B1\n\n' +
+        'Extrato: #' + extratoSelecionado + '\n' +
+        'Lançamentos: ' + ids.join(', ') + '\n' +
+        'Valor do extrato: ' + moeda(valorExtratoSelecionado) + '\n' +
+        'Selecionado: ' + moeda(totalSelecionado) + '\n' +
+        'Restante: ' + moeda(restante) + '\n\n' +
+        'Nenhuma gravação foi realizada.'
+    );
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.lancamento-checkbox').forEach(check => {
+        check.addEventListener('change', atualizarResumoConciliacao);
+    });
+});
 </script>
 
 {% endblock %}
