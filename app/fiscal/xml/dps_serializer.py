@@ -599,6 +599,105 @@ def _adicionar_tributacao_municipal(
     return trib_xml
 
 
+def _adicionar_ibs_cbs(
+    inf_dps,
+    ibs_cbs,
+):
+    """Serializa o grupo declaratorio IBS/CBS da DPS 1.01."""
+
+    if ibs_cbs is None or ibs_cbs == {}:
+        return None
+
+    if not isinstance(ibs_cbs, dict):
+        raise SerializacaoDpsInvalida(
+            "Grupo ibs_cbs da DPS canonica invalido."
+        )
+
+    ibs_xml = etree.SubElement(
+        inf_dps,
+        _qname("IBSCBS"),
+    )
+
+    adicionar_elemento_nfse(
+        ibs_xml,
+        "finNFSe",
+        _valor_obrigatorio(
+            ibs_cbs,
+            "fin_nfse",
+            grupo="ibs_cbs",
+        ),
+    )
+
+    ind_final = _valor_opcional(
+        ibs_cbs,
+        "ind_final",
+    )
+
+    if ind_final is not None:
+        adicionar_elemento_nfse(
+            ibs_xml,
+            "indFinal",
+            ind_final,
+        )
+
+    adicionar_elemento_nfse(
+        ibs_xml,
+        "cIndOp",
+        _valor_obrigatorio(
+            ibs_cbs,
+            "c_ind_op",
+            grupo="ibs_cbs",
+        ),
+    )
+
+    adicionar_elemento_nfse(
+        ibs_xml,
+        "indDest",
+        _valor_obrigatorio(
+            ibs_cbs,
+            "ind_dest",
+            grupo="ibs_cbs",
+        ),
+    )
+
+    valores_xml = etree.SubElement(
+        ibs_xml,
+        _qname("valores"),
+    )
+
+    trib_xml = etree.SubElement(
+        valores_xml,
+        _qname("trib"),
+    )
+
+    g_ibs_cbs = etree.SubElement(
+        trib_xml,
+        _qname("gIBSCBS"),
+    )
+
+    adicionar_elemento_nfse(
+        g_ibs_cbs,
+        "CST",
+        _valor_obrigatorio(
+            ibs_cbs,
+            "cst",
+            grupo="ibs_cbs",
+        ),
+    )
+
+    adicionar_elemento_nfse(
+        g_ibs_cbs,
+        "cClassTrib",
+        _valor_obrigatorio(
+            ibs_cbs,
+            "c_class_trib",
+            grupo="ibs_cbs",
+        ),
+    )
+
+    return ibs_xml
+
+
 def montar_xml_dps(dps_canonica: dict):
     """Monta a estrutura XML inicial DPS/infDPS conforme layout 1.01."""
 
@@ -689,6 +788,11 @@ def montar_xml_dps(dps_canonica: dict):
         valores_xml,
         dps_canonica.get("iss"),
         dps_canonica.get("totais_tributos"),
+    )
+
+    _adicionar_ibs_cbs(
+        inf_dps,
+        dps_canonica.get("ibs_cbs"),
     )
 
     return raiz

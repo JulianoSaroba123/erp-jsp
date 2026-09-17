@@ -864,12 +864,10 @@ def montar_totais_tributos_canonico(
 
 
 def montar_ibs_cbs_canonico(ibs_cbs=None):
-    """Monta o bloco canonico minimo de IBS/CBS da DPS."""
+    """Monta o bloco canonico declaratorio de IBS/CBS da DPS."""
 
     dados = dict(ibs_cbs or {})
 
-    # O grupo continua opcional.
-    # Quando informado, seu contrato canonico passa a ser estrito.
     if not dados:
         return {}
 
@@ -906,8 +904,62 @@ def montar_ibs_cbs_canonico(ibs_cbs=None):
             "Classificacao tributaria IBS/CBS deve possuir 6 digitos."
         )
 
+    modo_xml = any(
+        chave in dados
+        for chave in (
+            "fin_nfse",
+            "ind_final",
+            "ind_dest",
+        )
+    )
+
+    if not modo_xml:
+        return {
+            "c_ind_op": c_ind_op,
+            "cst": cst,
+            "c_class_trib": c_class_trib,
+        }
+
+    fin_nfse = _texto(
+        dados.get("fin_nfse"),
+        campo="ibs_cbs.fin_nfse",
+        obrigatorio=True,
+    )
+
+    if fin_nfse != "0":
+        raise DpsCanonicaInvalida(
+            "Finalidade da NFS-e IBS/CBS deve ser 0."
+        )
+
+    ind_dest = _texto(
+        dados.get("ind_dest"),
+        campo="ibs_cbs.ind_dest",
+        obrigatorio=True,
+    )
+
+    if ind_dest not in {"0", "1"}:
+        raise DpsCanonicaInvalida(
+            "Indicador do destinatario IBS/CBS deve ser 0 ou 1."
+        )
+
+    ind_final = _texto(
+        dados.get("ind_final"),
+        campo="ibs_cbs.ind_final",
+    )
+
+    if (
+        ind_final is not None
+        and ind_final not in {"0", "1"}
+    ):
+        raise DpsCanonicaInvalida(
+            "Indicador de consumidor final IBS/CBS deve ser 0 ou 1."
+        )
+
     return {
+        "fin_nfse": fin_nfse,
+        "ind_final": ind_final,
         "c_ind_op": c_ind_op,
+        "ind_dest": ind_dest,
         "cst": cst,
         "c_class_trib": c_class_trib,
     }
