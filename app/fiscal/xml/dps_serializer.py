@@ -383,6 +383,38 @@ def _adicionar_servico(inf_dps, servico):
 
 
 
+
+def _valor_monetario_nao_zero(
+    dados,
+    chave,
+    *,
+    grupo="valores",
+):
+    """Retorna valor monetario somente quando diferente de zero."""
+
+    from decimal import Decimal, InvalidOperation
+
+    valor = _valor_opcional(
+        dados,
+        chave,
+    )
+
+    if valor is None:
+        return None
+
+    try:
+        decimal = Decimal(valor)
+    except InvalidOperation as exc:
+        raise SerializacaoDpsInvalida(
+            f"Valor monetario invalido: {grupo}.{chave}."
+        ) from exc
+
+    if decimal == 0:
+        return None
+
+    return valor
+
+
 def _adicionar_valores_basicos(inf_dps, valores):
     """Serializa o bloco inicial TCInfoValores da DPS 1.01."""
 
@@ -414,6 +446,56 @@ def _adicionar_valores_basicos(inf_dps, valores):
             grupo="valores",
         ),
     )
+
+    desconto_incondicionado = _valor_monetario_nao_zero(
+        valores,
+        "desconto_incondicionado",
+    )
+
+    desconto_condicionado = _valor_monetario_nao_zero(
+        valores,
+        "desconto_condicionado",
+    )
+
+    if (
+        desconto_incondicionado is not None
+        or desconto_condicionado is not None
+    ):
+        descontos_xml = etree.SubElement(
+            valores_xml,
+            _qname("vDescCondIncond"),
+        )
+
+        if desconto_incondicionado is not None:
+            adicionar_elemento_nfse(
+                descontos_xml,
+                "vDescIncond",
+                desconto_incondicionado,
+            )
+
+        if desconto_condicionado is not None:
+            adicionar_elemento_nfse(
+                descontos_xml,
+                "vDescCond",
+                desconto_condicionado,
+            )
+
+    deducoes = _valor_monetario_nao_zero(
+        valores,
+        "deducoes",
+    )
+
+    if deducoes is not None:
+        deducoes_xml = etree.SubElement(
+            valores_xml,
+            _qname("vDedRed"),
+        )
+
+        adicionar_elemento_nfse(
+            deducoes_xml,
+            "vDR",
+            deducoes,
+        )
 
     return valores_xml
 
