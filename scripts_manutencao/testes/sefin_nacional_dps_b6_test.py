@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from app.fiscal.xsd import obter_caminho_xsd_dps
 from app.fiscal.xml.dps_serializer import (
     montar_xml_dps_serializado,
 )
@@ -20,14 +21,7 @@ from app.fiscal.xml.dps_xsd_validator import (
 
 ROOT = Path(__file__).resolve().parents[2]
 
-XSD_DPS = (
-    ROOT
-    / "tmp_nfse_xsd"
-    / "xsd"
-    / "Schemas"
-    / "1.01"
-    / "DPS_v1.01.xsd"
-)
+XSD_DPS = obter_caminho_xsd_dps()
 
 XSD_TIPOS_SIMPLES = (
     XSD_DPS.parent
