@@ -224,7 +224,7 @@
                                     Selecione um extrato e marque um ou mais lançamentos compatíveis.
                                 </small>
                             </div>
-                            <span class="badge bg-secondary">B1 - pré-visualização</span>
+                            <span class="badge bg-secondary">B2.2 - integração N:N</span>
                         </div>
 
                         <div class="row g-2">
@@ -261,18 +261,18 @@
 
                         <button
                             type="button"
-                            id="btn-previsualizar-conciliacao"
+                            id="btn-conciliar-nn"
                             class="btn btn-primary w-100"
-                            onclick="previsualizarConciliacao()"
+                            onclick="conciliarSelecionados()"
                             disabled
                         >
                             <i class="fas fa-eye"></i>
-                            Pré-visualizar conciliação
+                            Conciliar selecionados
                         </button>
 
                         <div class="text-center mt-2">
                             <small class="text-muted">
-                                Nenhum dado financeiro é gravado nesta etapa.
+                                A confirmação grava a conciliação N:N.
                             </small>
                         </div>
                     </div>
@@ -383,6 +383,7 @@
 let extratoSelecionado = null;
 let valorExtratoSelecionado = 0;
 let tipoExtratoSelecionado = null;
+let conciliacaoEmAndamento = false;
 
 function numeroSeguro(valor) {
     const numero = Number(String(valor ?? '0').replace(',', '.'));
@@ -492,7 +493,7 @@ function atualizarResumoConciliacao() {
 
     const status = document.getElementById('status-conciliacao-nn');
     const botao = document.getElementById(
-        'btn-previsualizar-conciliacao'
+        'btn-conciliar-nn'
     );
 
     botao.disabled = true;
@@ -534,40 +535,214 @@ function atualizarResumoConciliacao() {
         'Conciliação parcial: ainda existe saldo disponível no extrato.';
 }
 
-function previsualizarConciliacao() {
+async function conciliarSelecionados() {
+    if (conciliacaoEmAndamento) {
+        return;
+    }
+
     if (!extratoSelecionado) {
+        alert('Selecione um extrato primeiro.');
         return;
     }
 
     const selecionados = obterLancamentosSelecionados();
+
     if (selecionados.length === 0) {
+        alert('Selecione ao menos um lançamento.');
         return;
     }
 
-    const totalSelecionado = selecionados.reduce(
-        (total, check) => total + numeroSeguro(check.dataset.valor),
+    const alocacoes = selecionados.map(check => ({
+        lancamento_id: Number(
+            check.dataset.lancamentoId
+        ),
+        valor: numeroSeguro(
+            check.dataset.valor
+        ).toFixed(2)
+    }));
+
+    const totalSelecionado = alocacoes.reduce(
+        (total, item) =>
+            total + numeroSeguro(item.valor),
         0
     );
 
-    if (totalSelecionado > valorExtratoSelecionado + 0.005) {
+    if (
+        totalSelecionado >
+        valorExtratoSelecionado + 0.005
+    ) {
+        alert(
+            'A seleção excede o valor disponível do extrato.'
+        );
         return;
     }
 
-    const ids = selecionados.map(
-        check => check.dataset.lancamentoId
+    const restante =
+        valorExtratoSelecionado -
+        totalSelecionado;
+
+    const tipoOperacao =
+        Math.abs(restante) <= 0.005
+            ? 'INTEGRAL'
+            : 'PARCIAL';
+
+    const resumo = [
+        'Confirma a conciliação N:N?',
+        '',
+        'Extrato: #' + extratoSelecionado,
+        'Lançamentos: ' +
+            alocacoes
+                .map(item => item.lancamento_id)
+                .join(', '),
+        'Valor do extrato: ' +
+            moeda(valorExtratoSelecionado),
+        'Selecionado: ' +
+            moeda(totalSelecionado),
+        'Restante: ' +
+            moeda(restante),
+        'Tipo: ' + tipoOperacao,
+        '',
+        'Esta ação grava a conciliação.'
+    ].join('\n');
+
+    if (!confirm(resumo)) {
+        return;
+    }
+
+    const botao = document.getElementById(
+        'btn-conciliar-nn'
     );
 
-    const restante = valorExtratoSelecionado - totalSelecionado;
+    const textoOriginal = botao.innerHTML;
 
-    alert(
-        'Pré-visualização D25F01-B1\n\n' +
-        'Extrato: #' + extratoSelecionado + '\n' +
-        'Lançamentos: ' + ids.join(', ') + '\n' +
-        'Valor do extrato: ' + moeda(valorExtratoSelecionado) + '\n' +
-        'Selecionado: ' + moeda(totalSelecionado) + '\n' +
-        'Restante: ' + moeda(restante) + '\n\n' +
-        'Nenhuma gravação foi realizada.'
-    );
+    conciliacaoEmAndamento = true;
+    botao.disabled = true;
+    botao.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2" ' +
+        'role="status" aria-hidden="true"></span>' +
+        'Processando...';
+
+    document
+        .querySelectorAll('.lancamento-checkbox')
+        .forEach(check => {
+            check.disabled = true;
+        });
+
+    try {
+        const resposta = await fetch(
+            '/financeiro/conciliacao-bancaria/conciliar-nn',
+            {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRFToken':
+                        '{{ csrf_token() if csrf_token is defined else "" }}'
+                },
+                body: JSON.stringify({
+                    extrato_id: Number(
+                        extratoSelecionado
+                    ),
+                    alocacoes: alocacoes,
+                    observacoes:
+                        'Conciliação N:N realizada pela interface financeira.'
+                })
+            }
+        );
+
+        const contentType =
+            resposta.headers.get(
+                'content-type'
+            ) || '';
+
+        let dados = null;
+
+        if (
+            contentType.includes(
+                'application/json'
+            )
+        ) {
+            dados = await resposta.json();
+        }
+
+        if (
+            !resposta.ok ||
+            !dados ||
+            dados.ok !== true
+        ) {
+            const mensagem =
+                dados && dados.erro
+                    ? dados.erro
+                    : (
+                        'Falha HTTP ' +
+                        resposta.status +
+                        ' ao conciliar.'
+                    );
+
+            throw new Error(mensagem);
+        }
+
+        const saldoFinal =
+            numeroSeguro(
+                dados.saldo_final_extrato
+            );
+
+        const mensagemSucesso = [
+            'Conciliação realizada com sucesso.',
+            '',
+            'Status: ' +
+                dados.status_final,
+            'Valor conciliado agora: ' +
+                moeda(
+                    numeroSeguro(
+                        dados.total_novo
+                    )
+                ),
+            'Saldo restante do extrato: ' +
+                moeda(saldoFinal),
+            'Itens criados: ' +
+                dados.itens_criados,
+            'Itens atualizados: ' +
+                dados.itens_atualizados
+        ].join('\n');
+
+        alert(mensagemSucesso);
+
+        window.location.reload();
+        return;
+
+    } catch (erro) {
+        console.error(
+            'Erro na conciliação N:N:',
+            erro
+        );
+
+        alert(
+            'Não foi possível concluir a conciliação.\n\n' +
+            erro.message
+        );
+
+    } finally {
+        conciliacaoEmAndamento = false;
+        botao.innerHTML = textoOriginal;
+
+        if (document.visibilityState !== 'hidden') {
+            document
+                .querySelectorAll(
+                    '.lancamento-checkbox'
+                )
+                .forEach(check => {
+                    check.disabled =
+                        !lancamentoCompativel(
+                            tipoExtratoSelecionado,
+                            check.dataset.tipo
+                        );
+                });
+
+            atualizarResumoConciliacao();
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
