@@ -159,7 +159,9 @@
                                 <tr id="extrato-{{ extrato.id }}"
                                     class="extrato-row"
                                     data-extrato-id="{{ extrato.id }}"
-                                    data-extrato-valor="{{ extrato.valor }}"
+                                    data-extrato-valor="{{ extrato.valor_disponivel_conciliacao }}"
+                                    data-extrato-valor-original="{{ extrato.valor }}"
+                                    data-extrato-ja-conciliado="{{ extrato.valor_ja_conciliado_nn }}"
                                     data-extrato-tipo="{{ extrato.tipo_movimento }}">
                                     <td>{{ extrato.data_movimento.strftime('%d/%m/%Y') if extrato.data_movimento else '—' }}</td>
                                     <td>
@@ -286,7 +288,7 @@
                                     <th>Descrição</th>
                                     <th>Tipo</th>
                                     <th>Valor</th>
-                                    <th>Selecionar</th>
+                                    <th>Selecionar / Valor a conciliar</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -318,18 +320,43 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
-                                        <div class="form-check d-flex justify-content-center">
-                                            <input
-                                                class="form-check-input lancamento-checkbox"
+                                        <div class="d-flex flex-column align-items-center gap-1">
+                                            <div class="form-check">
+                                                <input
+                                                    class="form-check-input lancamento-checkbox"
                                                 type="checkbox"
                                                 value="{{ lanc.id }}"
                                                 id="lanc-check-{{ lanc.id }}"
                                                 data-lancamento-id="{{ lanc.id }}"
-                                                data-valor="{{ lanc.valor }}"
+                                                data-valor="{{ lanc.valor_disponivel_conciliacao }}"
+                                                data-valor-disponivel="{{ lanc.valor_disponivel_conciliacao }}"
+                                                data-valor-original="{{ lanc.valor }}"
                                                 data-tipo="{{ lanc.tipo }}"
                                                 disabled
                                                 aria-label="Selecionar {{ lanc.descricao }}"
                                             >
+                                            </div>
+
+                                            <div class="input-group input-group-sm" style="max-width: 150px;">
+                                                <span class="input-group-text">R$</span>
+                                                <input
+                                                    type="number"
+                                                    class="form-control text-end valor-conciliar-input"
+                                                    id="valor-conciliar-{{ lanc.id }}"
+                                                    data-lancamento-id="{{ lanc.id }}"
+                                                    min="0.01"
+                                                    step="0.01"
+                                                    max="{{ lanc.valor_disponivel_conciliacao }}"
+                                                    value="{{ lanc.valor_disponivel_conciliacao }}"
+                                                    inputmode="decimal"
+                                                    disabled
+                                                    aria-label="Valor a conciliar de {{ lanc.descricao }}"
+                                                >
+                                            </div>
+
+                                            <small class="text-muted">
+                                                Disponível: {{ lanc.valor_disponivel_formatado }}
+                                            </small>
                                         </div>
                                     </td>
                                 </tr>
@@ -414,7 +441,17 @@ function limparSelecaoLancamentos() {
         check.checked = false;
         check.disabled = true;
 
+        const input = obterInputValorConciliar(check);
+
+        if (input) {
+            input.disabled = true;
+            input.value = numeroSeguro(
+                check.dataset.valorDisponivel
+            ).toFixed(2);
+        }
+
         const row = check.closest('.lancamento-row');
+
         if (row) {
             row.classList.remove('selecionado', 'incompativel');
         }
@@ -429,6 +466,7 @@ function selecionarExtrato(extratoId) {
     limparSelecaoLancamentos();
 
     const row = document.getElementById('extrato-' + extratoId);
+
     if (!row) {
         return;
     }
@@ -446,9 +484,22 @@ function selecionarExtrato(extratoId) {
 
         check.disabled = !compativel;
 
+        const input = obterInputValorConciliar(check);
+
+        if (input) {
+            input.disabled = true;
+            input.value = numeroSeguro(
+                check.dataset.valorDisponivel
+            ).toFixed(2);
+        }
+
         const lancamentoRow = check.closest('.lancamento-row');
+
         if (lancamentoRow) {
-            lancamentoRow.classList.toggle('incompativel', !compativel);
+            lancamentoRow.classList.toggle(
+                'incompativel',
+                !compativel
+            );
         }
     });
 
@@ -461,14 +512,102 @@ function obterLancamentosSelecionados() {
     );
 }
 
-function atualizarResumoConciliacao() {
-    const selecionados = obterLancamentosSelecionados();
+function obterInputValorConciliar(check) {
+    return document.getElementById(
+        'valor-conciliar-' + check.dataset.lancamentoId
+    );
+}
 
-    const totalSelecionado = selecionados.reduce(
-        (total, check) => total + numeroSeguro(check.dataset.valor),
+function obterValorConciliar(check) {
+    const input = obterInputValorConciliar(check);
+
+    if (!input) {
+        return 0;
+    }
+
+    return numeroSeguro(input.value);
+}
+
+function obterTotalSelecionado(excluirCheck = null) {
+    return obterLancamentosSelecionados()
+        .filter(check => check !== excluirCheck)
+        .reduce(
+            (total, check) => total + obterValorConciliar(check),
+            0
+        );
+}
+
+function prepararValorAoSelecionar(check) {
+    const input = obterInputValorConciliar(check);
+
+    if (!input) {
+        return;
+    }
+
+    const disponivelLancamento = numeroSeguro(
+        check.dataset.valorDisponivel
+    );
+
+    if (!check.checked) {
+        input.disabled = true;
+        input.value = disponivelLancamento.toFixed(2);
+        return;
+    }
+
+    const totalOutros = obterTotalSelecionado(check);
+
+    const restanteExtrato = Math.max(
+        valorExtratoSelecionado - totalOutros,
         0
     );
 
+    const sugerido = Math.min(
+        disponivelLancamento,
+        restanteExtrato
+    );
+
+    input.disabled = false;
+    input.value = sugerido.toFixed(2);
+}
+
+function validarSelecaoFinanceira() {
+    const selecionados = obterLancamentosSelecionados();
+
+    for (const check of selecionados) {
+        const valor = obterValorConciliar(check);
+        const disponivel = numeroSeguro(
+            check.dataset.valorDisponivel
+        );
+
+        if (valor <= 0) {
+            return (
+                'Informe um valor maior que zero ' +
+                'para todos os lançamentos selecionados.'
+            );
+        }
+
+        if (valor > disponivel + 0.005) {
+            return (
+                'Um dos valores informados excede ' +
+                'o saldo disponível do lançamento.'
+            );
+        }
+    }
+
+    const total = obterTotalSelecionado();
+
+    if (total > valorExtratoSelecionado + 0.005) {
+        return (
+            'A seleção excede o saldo disponível do extrato.'
+        );
+    }
+
+    return null;
+}
+
+function atualizarResumoConciliacao() {
+    const selecionados = obterLancamentosSelecionados();
+    const totalSelecionado = obterTotalSelecionado();
     const restante = valorExtratoSelecionado - totalSelecionado;
 
     document.getElementById('resumo-valor-extrato').textContent =
@@ -485,6 +624,7 @@ function atualizarResumoConciliacao() {
 
     document.querySelectorAll('.lancamento-row').forEach(row => {
         const check = row.querySelector('.lancamento-checkbox');
+
         row.classList.toggle(
             'selecionado',
             Boolean(check && check.checked)
@@ -492,9 +632,7 @@ function atualizarResumoConciliacao() {
     });
 
     const status = document.getElementById('status-conciliacao-nn');
-    const botao = document.getElementById(
-        'btn-conciliar-nn'
-    );
+    const botao = document.getElementById('btn-conciliar-nn');
 
     botao.disabled = true;
     status.className = 'alert py-2 mt-3 mb-3';
@@ -508,31 +646,33 @@ function atualizarResumoConciliacao() {
     if (selecionados.length === 0) {
         status.classList.add('alert-info');
         status.textContent =
-            'Extrato selecionado. Marque um ou mais lançamentos.';
+            'Selecione um ou mais lançamentos compatíveis.';
         return;
     }
 
-    const tolerancia = 0.005;
+    const erro = validarSelecaoFinanceira();
 
-    if (totalSelecionado > valorExtratoSelecionado + tolerancia) {
+    if (erro) {
         status.classList.add('alert-danger');
-        status.textContent =
-            'Seleção excede o valor disponível do extrato.';
+        status.textContent = erro;
         return;
     }
 
-    botao.disabled = false;
-
-    if (Math.abs(restante) <= tolerancia) {
-        status.classList.add('alert-success');
+    if (totalSelecionado < valorExtratoSelecionado - 0.005) {
+        status.classList.add('alert-warning');
         status.textContent =
-            'Conciliação integral: seleção fecha exatamente o valor do extrato.';
+            'Conciliação parcial. Restará ' +
+            moeda(restante) +
+            ' no extrato.';
+        botao.disabled = false;
         return;
     }
 
-    status.classList.add('alert-warning');
+    status.classList.add('alert-success');
     status.textContent =
-        'Conciliação parcial: ainda existe saldo disponível no extrato.';
+        'Conciliação integral. O saldo disponível ' +
+        'do extrato será totalmente conciliado.';
+    botao.disabled = false;
 }
 
 async function conciliarSelecionados() {
@@ -552,20 +692,25 @@ async function conciliarSelecionados() {
         return;
     }
 
-    const alocacoes = selecionados.map(check => ({
-        lancamento_id: Number(
-            check.dataset.lancamentoId
-        ),
-        valor: numeroSeguro(
-            check.dataset.valor
-        ).toFixed(2)
-    }));
+    const erroValidacao = validarSelecaoFinanceira();
 
-    const totalSelecionado = alocacoes.reduce(
-        (total, item) =>
-            total + numeroSeguro(item.valor),
-        0
+    if (erroValidacao) {
+        alert(erroValidacao);
+        return;
+    }
+
+    const alocacoes = selecionados.map(
+        check => ({
+            lancamento_id: Number(
+                check.dataset.lancamentoId
+            ),
+            valor: obterValorConciliar(
+                check
+            ).toFixed(2)
+        })
     );
+
+    const totalSelecionado = obterTotalSelecionado();
 
     if (
         totalSelecionado >
@@ -747,7 +892,15 @@ async function conciliarSelecionados() {
 
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.lancamento-checkbox').forEach(check => {
-        check.addEventListener('change', atualizarResumoConciliacao);
+        check.addEventListener('change', () => {
+            prepararValorAoSelecionar(check);
+            atualizarResumoConciliacao();
+        });
+    });
+
+    document.querySelectorAll('.valor-conciliar-input').forEach(input => {
+        input.addEventListener('input', atualizarResumoConciliacao);
+        input.addEventListener('change', atualizarResumoConciliacao);
     });
 });
 </script>

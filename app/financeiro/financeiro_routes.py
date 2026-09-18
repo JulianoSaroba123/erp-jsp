@@ -1371,22 +1371,165 @@ def conciliacao_bancaria():
         if conta_id:
             conta_selecionada = ContaBancaria.query.get(conta_id)
             if conta_selecionada:
-                # Buscar extratos pendentes desta conta
-                from app.financeiro.financeiro_model import ExtratoBancario
-                extratos_pendentes = ExtratoBancario.get_pendentes(conta_id).all()
-                
-                # Buscar lançamentos não conciliados desta conta
-                lancamentos_pendentes = LancamentoFinanceiro.query.filter_by(
-                    conta_bancaria_id=conta_id,
-                    ativo=True
-                ).filter(
-                    ~LancamentoFinanceiro.id.in_(
-                        db.session.query(ExtratoBancario.lancamento_id).filter(
-                            ExtratoBancario.lancamento_id.isnot(None)
+                # D25F01-B2.3
+                # Saldos disponiveis considerando conciliacoes N:N ativas.
+                # O legado 1:1 continua respeitado durante a transicao.
+                from decimal import Decimal
+                from sqlalchemy import func
+                from app.financeiro.financeiro_model import (
+                    ExtratoBancario,
+                    ConciliacaoBancariaItem,
+                )
+
+                soma_extrato_nn = (
+                    db.session.query(
+                        ConciliacaoBancariaItem.extrato_id.label(
+                            'extrato_id'
+                        ),
+                        func.sum(
+                            ConciliacaoBancariaItem.valor_conciliado
+                        ).label('valor_conciliado')
+                    )
+                    .filter(
+                        ConciliacaoBancariaItem.ativo.is_(True)
+                    )
+                    .group_by(
+                        ConciliacaoBancariaItem.extrato_id
+                    )
+                    .subquery()
+                )
+
+                extratos_com_saldo = (
+                    db.session.query(
+                        ExtratoBancario,
+                        func.coalesce(
+                            soma_extrato_nn.c.valor_conciliado,
+                            0
+                        ).label('valor_ja_conciliado')
+                    )
+                    .outerjoin(
+                        soma_extrato_nn,
+                        soma_extrato_nn.c.extrato_id
+                        == ExtratoBancario.id
+                    )
+                    .filter(
+                        ExtratoBancario.conta_bancaria_id == conta_id,
+                        ExtratoBancario.conciliado.is_(False),
+                        ExtratoBancario.ativo.is_(True),
+                        func.abs(ExtratoBancario.valor)
+                        > func.coalesce(
+                            soma_extrato_nn.c.valor_conciliado,
+                            0
                         )
                     )
-                ).order_by(LancamentoFinanceiro.data_vencimento.desc()).limit(50).all()
-        
+                    .order_by(
+                        ExtratoBancario.data_movimento.desc()
+                    )
+                    .all()
+                )
+
+                extratos_pendentes = []
+
+                for extrato, valor_ja_conciliado in extratos_com_saldo:
+                    valor_total = abs(
+                        Decimal(str(extrato.valor or 0))
+                    )
+                    valor_ja = Decimal(
+                        str(valor_ja_conciliado or 0)
+                    )
+                    valor_disponivel = max(
+                        valor_total - valor_ja,
+                        Decimal('0.00')
+                    )
+
+                    extrato.valor_ja_conciliado_nn = valor_ja
+                    extrato.valor_disponivel_conciliacao = (
+                        valor_disponivel
+                    )
+                    extrato.valor_disponivel_formatado = (
+                        formatar_valor_real(valor_disponivel)
+                    )
+
+                    extratos_pendentes.append(extrato)
+
+                soma_lancamento_nn = (
+                    db.session.query(
+                        ConciliacaoBancariaItem.lancamento_id.label(
+                            'lancamento_id'
+                        ),
+                        func.sum(
+                            ConciliacaoBancariaItem.valor_conciliado
+                        ).label('valor_conciliado')
+                    )
+                    .filter(
+                        ConciliacaoBancariaItem.ativo.is_(True)
+                    )
+                    .group_by(
+                        ConciliacaoBancariaItem.lancamento_id
+                    )
+                    .subquery()
+                )
+
+                lancamentos_com_saldo = (
+                    db.session.query(
+                        LancamentoFinanceiro,
+                        func.coalesce(
+                            soma_lancamento_nn.c.valor_conciliado,
+                            0
+                        ).label('valor_ja_conciliado')
+                    )
+                    .outerjoin(
+                        soma_lancamento_nn,
+                        soma_lancamento_nn.c.lancamento_id
+                        == LancamentoFinanceiro.id
+                    )
+                    .filter(
+                        LancamentoFinanceiro.conta_bancaria_id == conta_id,
+                        LancamentoFinanceiro.ativo.is_(True),
+                        ~LancamentoFinanceiro.id.in_(
+                            db.session.query(
+                                ExtratoBancario.lancamento_id
+                            ).filter(
+                                ExtratoBancario.lancamento_id.isnot(None)
+                            )
+                        ),
+                        func.abs(LancamentoFinanceiro.valor)
+                        > func.coalesce(
+                            soma_lancamento_nn.c.valor_conciliado,
+                            0
+                        )
+                    )
+                    .order_by(
+                        LancamentoFinanceiro.data_vencimento.desc()
+                    )
+                    .limit(50)
+                    .all()
+                )
+
+                lancamentos_pendentes = []
+
+                for lancamento, valor_ja_conciliado in lancamentos_com_saldo:
+                    valor_total = abs(
+                        Decimal(str(lancamento.valor or 0))
+                    )
+                    valor_ja = Decimal(
+                        str(valor_ja_conciliado or 0)
+                    )
+                    valor_disponivel = max(
+                        valor_total - valor_ja,
+                        Decimal('0.00')
+                    )
+
+                    lancamento.valor_ja_conciliado_nn = valor_ja
+                    lancamento.valor_disponivel_conciliacao = (
+                        valor_disponivel
+                    )
+                    lancamento.valor_disponivel_formatado = (
+                        formatar_valor_real(valor_disponivel)
+                    )
+
+                    lancamentos_pendentes.append(lancamento)
+
         return render_template('financeiro/conciliacao_bancaria/conciliacao.html',
                              contas=contas,
                              conta_selecionada=conta_selecionada,
