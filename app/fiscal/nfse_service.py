@@ -158,6 +158,195 @@ def obter_ou_criar_rascunho(
         raise
 
 
+def _bloquear_documento_nfse_para_rps(
+    documento_id: int,
+):
+    """Carrega e bloqueia o documento durante a reserva do RPS."""
+    return (
+        NfseDocumento.query
+        .filter_by(id=documento_id)
+        .with_for_update()
+        .one_or_none()
+    )
+
+
+def _bloquear_configuracao_fiscal_para_rps(
+    configuracao_fiscal_id: int,
+):
+    """Carrega e bloqueia a configuracao durante a reserva do RPS."""
+    return (
+        ConfiguracaoFiscal.query
+        .filter_by(id=configuracao_fiscal_id)
+        .with_for_update()
+        .one_or_none()
+    )
+
+
+def _flush_reserva_rps() -> None:
+    """Materializa a reserva sem assumir o commit da transacao."""
+    db.session.flush()
+
+
+def reservar_rps_nfse(
+    *,
+    documento: NfseDocumento,
+    configuracao: ConfiguracaoFiscal,
+) -> tuple[NfseDocumento, bool]:
+    """Reserva de forma idempotente a numeracao RPS de um documento.
+
+    D24F02-B7-A4:
+    - bloqueia documento e configuracao fiscal para evitar corrida;
+    - reutiliza a numeracao quando ela ja estiver reservada;
+    - usa configuracao.serie_rps e configuracao.proximo_rps;
+    - incrementa proximo_rps somente em uma nova reserva;
+    - nao executa commit;
+    - nao transmite;
+    - nao monta XML;
+    - nao altera financeiro.
+
+    O chamador continua responsavel pelo commit ou rollback da transacao.
+    """
+
+    if documento is None:
+        raise PreparacaoNfseInvalida(
+            "Documento NFS-e nao informado para reserva de RPS."
+        )
+
+    if configuracao is None:
+        raise PreparacaoNfseInvalida(
+            "Configuracao fiscal nao informada para reserva de RPS."
+        )
+
+    documento_id = getattr(
+        documento,
+        "id",
+        None,
+    )
+
+    configuracao_id = getattr(
+        configuracao,
+        "id",
+        None,
+    )
+
+    if documento_id is None:
+        raise PreparacaoNfseInvalida(
+            "Documento NFS-e deve estar persistido antes da reserva de RPS."
+        )
+
+    if configuracao_id is None:
+        raise PreparacaoNfseInvalida(
+            "Configuracao fiscal deve estar persistida antes da reserva de RPS."
+        )
+
+    documento_bloqueado = _bloquear_documento_nfse_para_rps(
+        documento_id
+    )
+
+    if documento_bloqueado is None:
+        raise PreparacaoNfseInvalida(
+            "Documento NFS-e nao encontrado para reserva de RPS."
+        )
+
+    configuracao_bloqueada = (
+        _bloquear_configuracao_fiscal_para_rps(
+            configuracao_id
+        )
+    )
+
+    if configuracao_bloqueada is None:
+        raise PreparacaoNfseInvalida(
+            "Configuracao fiscal nao encontrada para reserva de RPS."
+        )
+
+    if (
+        documento_bloqueado.configuracao_fiscal_id
+        != configuracao_bloqueada.id
+    ):
+        raise PreparacaoNfseInvalida(
+            "Documento NFS-e nao pertence a configuracao fiscal informada."
+        )
+
+    if not documento_bloqueado.pode_ser_editada:
+        raise PreparacaoNfseInvalida(
+            "Documento NFS-e nao permite reserva de RPS."
+        )
+
+    numero_atual = getattr(
+        documento_bloqueado,
+        "numero_rps",
+        None,
+    )
+
+    serie_atual = str(
+        getattr(
+            documento_bloqueado,
+            "serie_rps",
+            "",
+        )
+        or ""
+    ).strip()
+
+    # Reserva existente valida: idempotencia pura.
+    if numero_atual is not None and serie_atual:
+        if (
+            isinstance(numero_atual, bool)
+            or not isinstance(numero_atual, int)
+            or numero_atual < 1
+        ):
+            raise PreparacaoNfseInvalida(
+                "Numero RPS previamente reservado e invalido."
+            )
+
+        return documento_bloqueado, False
+
+    # Estado parcial nao pode ser completado silenciosamente.
+    if numero_atual is not None or serie_atual:
+        raise PreparacaoNfseInvalida(
+            "Documento NFS-e possui reserva RPS parcial ou inconsistente."
+        )
+
+    serie = str(
+        getattr(
+            configuracao_bloqueada,
+            "serie_rps",
+            "",
+        )
+        or ""
+    ).strip()
+
+    if not serie:
+        raise PreparacaoNfseInvalida(
+            "Serie RPS da configuracao fiscal nao informada."
+        )
+
+    proximo_rps = getattr(
+        configuracao_bloqueada,
+        "proximo_rps",
+        None,
+    )
+
+    if (
+        isinstance(proximo_rps, bool)
+        or not isinstance(proximo_rps, int)
+        or proximo_rps < 1
+    ):
+        raise PreparacaoNfseInvalida(
+            "Proximo RPS da configuracao fiscal e invalido."
+        )
+
+    documento_bloqueado.serie_rps = serie
+    documento_bloqueado.numero_rps = proximo_rps
+
+    configuracao_bloqueada.proximo_rps = (
+        proximo_rps + 1
+    )
+
+    _flush_reserva_rps()
+
+    return documento_bloqueado, True
+
+
 def preparar_payload_nfse(
     *,
     documento: NfseDocumento,
