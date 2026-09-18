@@ -15,6 +15,10 @@ from app.fiscal.nfse_documento_model import (
 from app.ordem_servico.ordem_servico_model import OrdemServico
 from app.fiscal.providers.registry import normalizar_codigo_provider
 from app.fiscal.providers.resolver import resolver_provider_nfse
+from app.fiscal.dps_erp_adapter import montar_dps_canonica_da_os
+from app.fiscal.xml.dps_serializer import montar_xml_dps_serializado
+from app.fiscal.xml.dps_xsd_validator import validar_xml_dps_xsd
+from app.fiscal.xsd import obter_caminho_xsd_dps
 
 
 from app.fiscal.providers.base import STATUS_TRANSMISSAO_NFSE_VALIDOS
@@ -263,6 +267,89 @@ _STATUS_DOCUMENTO_POR_RESULTADO_TRANSMISSAO = {
     "ACEITA": "AUTORIZADA",
     "REJEITADA": "REJEITADA",
 }
+
+
+def preparar_payload_nfse_com_dps(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao_fiscal: ConfiguracaoFiscal,
+    configuracao_institucional,
+    versao_layout: str,
+    tipo_emitente,
+    municipio_incidencia_ibge,
+    iss: dict,
+    totais_tributos: dict,
+    municipio_prestacao_ibge=None,
+    ibs_cbs=None,
+    data_emissao=None,
+    versao_aplicativo="ERP-JSP",
+) -> dict:
+    """Integra ERP -> DPS -> XML -> XSD ao payload tecnico NFS-e.
+
+    D24F02-B7-A3:
+    - preserva a preparacao tecnica existente do provider;
+    - nao transmite;
+    - nao assina digitalmente;
+    - nao acessa certificado;
+    - nao realiza HTTP;
+    - nao reserva nem consome novo RPS;
+    - somente publica conteudo apos validacao XSD positiva.
+    """
+
+    payload = preparar_payload_nfse(
+        documento=documento,
+        ordem_servico=ordem_servico,
+        configuracao=configuracao_fiscal,
+    )
+
+    dps_canonica = montar_dps_canonica_da_os(
+        documento=documento,
+        ordem_servico=ordem_servico,
+        configuracao=configuracao_institucional,
+        configuracao_fiscal=configuracao_fiscal,
+        versao_layout=versao_layout,
+        tipo_emitente=tipo_emitente,
+        municipio_incidencia_ibge=municipio_incidencia_ibge,
+        iss=iss,
+        totais_tributos=totais_tributos,
+        municipio_prestacao_ibge=municipio_prestacao_ibge,
+        ibs_cbs=ibs_cbs,
+        data_emissao=data_emissao,
+        versao_aplicativo=versao_aplicativo,
+    )
+
+    xml_dps = montar_xml_dps_serializado(
+        dps_canonica
+    )
+
+    caminho_xsd = obter_caminho_xsd_dps(
+        versao_layout
+    )
+
+    resultado_xsd = validar_xml_dps_xsd(
+        xml_dps,
+        caminho_xsd,
+    )
+
+    if not resultado_xsd.valido:
+        erros = "; ".join(
+            str(erro)
+            for erro in resultado_xsd.erros
+        )
+
+        mensagem = "XML da DPS invalido perante o XSD."
+
+        if erros:
+            mensagem = f"{mensagem} {erros}"
+
+        raise PreparacaoNfseInvalida(
+            mensagem
+        )
+
+    payload["conteudo"] = xml_dps
+
+    return payload
 
 
 def _normalizar_resultado_transmissao_nfse(
