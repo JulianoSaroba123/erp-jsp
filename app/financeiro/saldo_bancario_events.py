@@ -117,36 +117,32 @@ def _snapshot_quitado(snapshot):
 
 
 def _conta_padrao_para_os(connection):
-    """Escolhe conta principal; se nao houver, aceita a unica conta ativa."""
+    """Retorna a conta somente quando existe exatamente uma conta ativa."""
     tabela = ContaBancaria.__table__
     linhas = connection.execute(
-        select(tabela.c.id, tabela.c.principal).where(
+        select(tabela.c.id).where(
             tabela.c.ativo.is_(True),
             tabela.c.ativa.is_(True),
         ).order_by(tabela.c.id)
     ).all()
 
-    principais = [linha.id for linha in linhas if bool(linha.principal)]
-    if len(principais) == 1:
-        return principais[0]
     if len(linhas) == 1:
         return linhas[0].id
     return None
 
 
-def _os_recebida_sem_conta(target):
+def _os_sem_conta(target):
     return (
         getattr(target, 'origem', None) == 'ORDEM_SERVICO'
         and target.conta_bancaria_id is None
-        and target.status in _STATUS_QUITADOS
-        and target.data_pagamento is not None
     )
 
 
 def _antes_inserir(mapper, connection, target):
-    # As telas de OS nao possuem seletor de conta. Se existir uma conta
-    # principal (ou somente uma conta ativa), vincula o NOVO recebimento nela.
-    if _os_recebida_sem_conta(target):
+    # A OS nao possui seletor de conta. Se existir exatamente uma conta ativa,
+    # vincula qualquer NOVO lancamento de OS, inclusive contas a receber
+    # pendentes. O status pendente continua sem impacto no saldo bancario.
+    if _os_sem_conta(target):
         conta_id = _conta_padrao_para_os(connection)
         if conta_id is not None:
             target.conta_bancaria_id = conta_id
@@ -156,10 +152,12 @@ def _antes_atualizar(mapper, connection, target):
     anterior = _snapshot_persistido(connection, target)
     setattr(target, _ATTR_SNAPSHOT, anterior)
 
-    # Nao retrovincula recebimentos historicos apenas porque outro campo mudou.
-    # Vinculo automatico so ocorre na transicao real de nao quitado -> quitado.
-    if not _os_recebida_sem_conta(target):
+    if not _os_sem_conta(target):
         return
+
+    # Nao retrovincula recebimentos historicos apenas porque outro campo mudou:
+    # isso poderia simular uma nova entrada de caixa. Pendente sem conta pode
+    # receber a conta unica com seguranca, pois seu impacto financeiro e zero.
     if _snapshot_quitado(anterior):
         return
 
@@ -245,9 +243,9 @@ def _proteger_metodo_legado_marcar_como_pago():
     ``ContaBancaria`` e pode disparar autoflush do lancamento antes da alteracao
     manual da conta. Por isso o guard precisa existir ANTES de chamar o metodo.
 
-    Se o lancamento ainda nao possui conta (caso comum de OS legada/automatica),
-    o evento continua habilitado: no before_update ele pode vincular a conta
-    padrao e aplicar o delta corretamente.
+    Se o lancamento ainda nao possui conta, o evento continua habilitado:
+    no before_update ele pode vincular a unica conta ativa e aplicar o delta
+    corretamente quando houver baixa real.
     """
     original = LancamentoFinanceiro.marcar_como_pago
     if bool(getattr(original, '_saldo_bancario_protegido', False)):
