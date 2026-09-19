@@ -801,6 +801,28 @@ def aplicar_resultado_transmissao_nfse(
             "NFS-e autorizada deve possuir numero_nfse."
         )
 
+    dados_provider = resultado_normalizado["dados_provider"]
+
+    chave_acesso = dados_provider.get(
+        "chave_acesso"
+    )
+
+    if chave_acesso is not None:
+        if not isinstance(
+            chave_acesso,
+            str,
+        ):
+            raise TransicaoStatusNfseInvalida(
+                "chave_acesso do provider deve ser texto ou None."
+            )
+
+        chave_acesso = chave_acesso.strip() or None
+
+    if chave_acesso is not None and len(chave_acesso) > 100:
+        raise TransicaoStatusNfseInvalida(
+            "chave_acesso excede 100 caracteres."
+        )
+
     # Todas as validacoes ocorrem antes de qualquer mutacao.
     documento.status = novo_status
     documento.mensagem_status = resultado_normalizado["mensagem"]
@@ -812,6 +834,9 @@ def aplicar_resultado_transmissao_nfse(
 
     if novo_status == "AUTORIZADA":
         documento.numero_nfse = numero_nfse
+
+        if chave_acesso is not None:
+            documento.chave_acesso = chave_acesso
 
     return documento
 
