@@ -143,7 +143,7 @@ def executar_testes():
         assert recebimento_os.conta_bancaria_id == conta.id
         assert saldo(conta) == dinheiro('1085.00')
 
-        # 8) OS pendente sem conta, baixada pelo metodo legado, vincula conta e soma uma vez.
+        # 8) OS pendente nova recebe a unica conta ativa sem mexer no saldo.
         os_pendente = LancamentoFinanceiro(
             descricao='TEST_SALDO_OS_Pendente',
             valor=dinheiro('15.00'),
@@ -156,12 +156,47 @@ def executar_testes():
         )
         db.session.add(os_pendente)
         db.session.commit()
-        assert os_pendente.conta_bancaria_id is None
+        assert os_pendente.conta_bancaria_id == conta.id
+        assert saldo(conta) == dinheiro('1085.00')
+
+        # Ao baixar, a entrada ocorre uma unica vez.
         os_pendente.marcar_como_pago(data_pagamento=date(2026, 9, 7))
         assert os_pendente.conta_bancaria_id == conta.id
         assert saldo(conta) == dinheiro('1100.00')
 
-        # 9) Recebimento historico ja quitado nao e retrovinculado por mera edicao.
+        # 9) Com mais de uma conta ativa, OS nova nao escolhe conta sozinha.
+        conta_secundaria = ContaBancaria(
+            nome='Conta Secundaria',
+            tipo='conta_corrente',
+            saldo_inicial=dinheiro('0.00'),
+            saldo_atual=dinheiro('0.00'),
+            limite_credito=dinheiro('0.00'),
+            ativa=True,
+            principal=False,
+            ativo=True,
+        )
+        db.session.add(conta_secundaria)
+        db.session.commit()
+
+        os_multiplas_contas = LancamentoFinanceiro(
+            descricao='TEST_SALDO_OS_MultiplasContas',
+            valor=dinheiro('30.00'),
+            tipo='conta_receber',
+            status='pendente',
+            data_lancamento=date(2026, 9, 7),
+            origem='ORDEM_SERVICO',
+            categoria='Serviços',
+            ativo=True,
+        )
+        db.session.add(os_multiplas_contas)
+        db.session.commit()
+        assert os_multiplas_contas.conta_bancaria_id is None
+        assert saldo(conta) == dinheiro('1100.00')
+
+        conta_secundaria.ativa = False
+        db.session.commit()
+
+        # 10) Recebimento historico ja quitado nao e retrovinculado por mera edicao.
         conta.ativa = False
         db.session.commit()
         legado = LancamentoFinanceiro(
