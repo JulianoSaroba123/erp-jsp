@@ -1102,10 +1102,10 @@ document.addEventListener(
                                     data-lancamento-tipo="{{ lanc.tipo }}"
                                     data-data-lancamento="{{ lanc.data_lancamento.isoformat() if lanc.data_lancamento else '' }}"
                                     data-data-vencimento="{{ lanc.data_vencimento.isoformat() if lanc.data_vencimento else '' }}"
-                                    data-cliente-nome="{{ (lanc.cliente.nome if lanc.cliente else '')|e }}"
-                                    data-cliente-razao="{{ (lanc.cliente.razao_social if lanc.cliente else '')|e }}"
-                                    data-cliente-fantasia="{{ (lanc.cliente.nome_fantasia if lanc.cliente else '')|e }}"
-                                    data-cliente-documento="{{ (lanc.cliente.cpf_cnpj if lanc.cliente else '')|e }}"
+                                    data-cliente-nome="{{ ((lanc.cliente.nome or '') if lanc.cliente else '')|e }}"
+                                    data-cliente-razao="{{ ((lanc.cliente.razao_social or '') if lanc.cliente else '')|e }}"
+                                    data-cliente-fantasia="{{ ((lanc.cliente.nome_fantasia or '') if lanc.cliente else '')|e }}"
+                                    data-cliente-documento="{{ ((lanc.cliente.cpf_cnpj or '') if lanc.cliente else '')|e }}"
                                     data-lancamento-documento="{{ (lanc.numero_documento or '')|e }}">
                                     <td>{{ (lanc.data_vencimento or lanc.data_lancamento).strftime('%d/%m/%Y') if (lanc.data_vencimento or lanc.data_lancamento) else '—' }}</td>
                                     <td>
