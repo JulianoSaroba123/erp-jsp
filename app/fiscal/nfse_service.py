@@ -20,6 +20,7 @@ from app.fiscal.xml.dps_serializer import montar_xml_dps_serializado
 from app.fiscal.xml.dps_signer import (
     AssinaturaXmlDpsInvalida,
     assinar_xml_dps,
+    validar_assinatura_xml_dps,
 )
 from app.fiscal.xml.dps_xsd_validator import validar_xml_dps_xsd
 from app.fiscal.xsd import obter_caminho_xsd_dps
@@ -826,6 +827,7 @@ def preparar_nfse_para_envio(
     - aceita somente documento PREPARADA;
     - exige payload tecnico ja montado;
     - exige conteudo XML presente;
+    - exige assinatura XMLDSIG criptograficamente valida;
     - muda somente para PENDENTE_ENVIO;
     - nao executa commit;
     - nao transmite;
@@ -865,6 +867,16 @@ def preparar_nfse_para_envio(
         raise TransicaoStatusNfseInvalida(
             "Payload NFS-e nao possui XML preparado para envio."
         )
+
+    try:
+        validar_assinatura_xml_dps(
+            bytes(conteudo)
+        )
+    except AssinaturaXmlDpsInvalida as exc:
+        raise TransicaoStatusNfseInvalida(
+            "Payload NFS-e possui assinatura XMLDSIG invalida: "
+            f"{exc}"
+        ) from exc
 
     documento.status = "PENDENTE_ENVIO"
     documento.mensagem_status = (

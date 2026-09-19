@@ -20,8 +20,16 @@ def _payload(conteudo=b"<DPS>VALIDA</DPS>"):
     }
 
 
-def test_b7final_001_preparada_vira_pendente_envio():
+def test_b7final_001_preparada_vira_pendente_envio(
+    monkeypatch,
+):
     documento = _documento()
+
+    monkeypatch.setattr(
+        service,
+        "validar_assinatura_xml_dps",
+        lambda xml: None,
+    )
 
     resultado = service.preparar_nfse_para_envio(
         documento=documento,
@@ -94,6 +102,12 @@ def test_b7final_004_nao_transmite(
         transmitir_proibido,
     )
 
+    monkeypatch.setattr(
+        service,
+        "validar_assinatura_xml_dps",
+        lambda xml: None,
+    )
+
     service.preparar_nfse_para_envio(
         documento=documento,
         payload=_payload(),
@@ -108,6 +122,12 @@ def test_b7final_005_habilita_contrato_da_transmissao(
     documento = _documento()
     payload = _payload()
     eventos = []
+
+    monkeypatch.setattr(
+        service,
+        "validar_assinatura_xml_dps",
+        lambda xml: None,
+    )
 
     service.preparar_nfse_para_envio(
         documento=documento,
