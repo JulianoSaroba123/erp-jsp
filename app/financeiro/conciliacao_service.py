@@ -411,6 +411,7 @@ def executar_conciliacao_orm(
     alocacoes,
     usuario=None,
     observacoes=None,
+    finalizador_transacional=None,
 ):
     """
     Executa conciliacao usando uma sessao SQLAlchemy.
@@ -425,8 +426,8 @@ def executar_conciliacao_orm(
     - cria ou atualiza o par extrato+lancamento;
     - commit unico;
     - rollback integral em qualquer falha;
-    - nao altera status financeiro do lancamento;
-    - nao movimenta saldo de conta bancaria.
+    - por padrao nao altera status financeiro;
+    - permite finalizador transacional opcional antes do commit.
     """
 
     try:
@@ -673,6 +674,18 @@ def executar_conciliacao_orm(
         else:
             # O campo legado nao consegue representar N:N.
             extrato.lancamento_id = None
+
+        if finalizador_transacional is not None:
+            finalizador_transacional(
+                session=session,
+                extrato=extrato,
+                lancamentos=lancamentos_por_id,
+                preparacao=preparacao,
+                conciliado_por_lancamento=(
+                    conciliado_por_lancamento
+                ),
+                usuario=usuario,
+            )
 
         session.commit()
 

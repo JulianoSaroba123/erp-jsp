@@ -231,6 +231,13 @@ def sincronizar_lancamentos_proposta(proposta):
             and lancamento.data_pagamento
             is not None
         ):
+            # Financeiro quitado e a fonte de verdade
+            # para a parcela comercial correspondente.
+            parcela.status = "recebido"
+            parcela.data_pagamento = (
+                lancamento.data_pagamento
+            )
+
             resultado.append(lancamento)
             continue
 
