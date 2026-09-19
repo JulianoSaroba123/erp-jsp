@@ -237,10 +237,25 @@ def test_os_concluida_vincula_unica_conta_ativa_sem_movimentar_saldo():
             status_pagamento="pendente",
             data_abertura=date(2026, 9, 18),
             data_conclusao=date(2026, 9, 18),
-            valor_total=Decimal("750.00"),
             ativo=True,
         )
         db.session.add(ordem)
+        db.session.flush()
+
+        item = OrdemServicoItem(
+            ordem_servico_id=ordem.id,
+            descricao="Servico fechado conta unica",
+            tipo_servico="fechado",
+            quantidade=Decimal("1.00"),
+            valor_unitario=Decimal("750.00"),
+        )
+        item.calcular_total()
+        db.session.add(item)
+        db.session.commit()
+
+        # Reproduz o fluxo real da OS: o total e materializado depois dos itens.
+        ordem.valor_servico = Decimal("750.00")
+        ordem.valor_total = Decimal("750.00")
         db.session.commit()
 
         resultado = gerar_lancamento_ordem_servico(
