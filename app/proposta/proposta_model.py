@@ -385,167 +385,367 @@ class Proposta(BaseModel):
         return parcelas_criadas
     
     def gerar_ordem_servico(self):
-        """
-        Gera uma nova Ordem de Serviço a partir desta proposta aprovada.
-        Transfere todos os dados incluindo condições de pagamento e parcelas.
-        
-        Returns:
-            OrdemServico: Nova OS criada ou None se não foi possível
+        """Converte proposta aprovada em OS preservando o financeiro.
+
+        Regras D25F03:
+        - uma proposta gera no maximo uma OS ativa;
+        - recebiveis nascem na proposta, nao novamente na OS;
+        - entrada tambem vira parcela tecnica da OS;
+        - lancamentos existentes sao vinculados a OS/parcela correspondente;
+        - recebimentos anteriores permanecem preservados.
         """
         if not self.pode_converter:
             return None
-        
-        from app.ordem_servico.ordem_servico_model import OrdemServico, OrdemServicoItem, OrdemServicoProduto, OrdemServicoParcela
-        from datetime import timedelta
-        
-        # Determinar condições de pagamento da proposta
-        condicao_pgto = 'a_vista'
-        num_parcelas = 0
-        valor_entrada = 0.0
-        data_primeira_parcela = None
-        
-        # Verificar se há parcelas cadastradas na proposta (usa parcelas_pagamento, não parcelas)
-        if hasattr(self, 'parcelas_pagamento') and self.parcelas_pagamento:
-            parcelas_proposta = [p for p in self.parcelas_pagamento if p.ativo]
-            print(f"🔍 DEBUG: Proposta {self.codigo} tem {len(parcelas_proposta)} parcelas ativas")
-            
-            if parcelas_proposta:
-                condicao_pgto = 'parcelado'
-                
-                # Separar entrada (numero_parcela=0) das parcelas normais
-                parcela_entrada = next((p for p in parcelas_proposta if p.numero_parcela == 0), None)
-                parcelas_normais = [p for p in parcelas_proposta if p.numero_parcela > 0]
-                
-                # Pegar valor de entrada
-                if parcela_entrada:
-                    valor_entrada = float(parcela_entrada.valor_parcela or 0)
-                    print(f"   💰 Entrada (parcela 0): R$ {valor_entrada}")
-                else:
-                    valor_entrada = 0.0
-                
-                # Número de parcelas = apenas as parcelas normais (não conta entrada)
-                num_parcelas = len(parcelas_normais)
-                
-                # Data da primeira parcela normal
-                if parcelas_normais:
-                    primeira_parcela = min(parcelas_normais, key=lambda p: p.numero_parcela)
-                    data_primeira_parcela = primeira_parcela.data_vencimento
-                    print(f"   📅 Data 1ª parcela: {data_primeira_parcela}")
-                
-                print(f"   📊 Parcelas normais: {num_parcelas}")
+
+        from app.ordem_servico.ordem_servico_model import (
+            OrdemServico,
+            OrdemServicoItem,
+            OrdemServicoProduto,
+            OrdemServicoParcela,
+        )
+        from app.financeiro.financeiro_model import (
+            LancamentoFinanceiro,
+        )
+        from app.financeiro.proposta_financeiro_service import (
+            sincronizar_lancamentos_proposta,
+        )
+
+        # Idempotencia tambem no dominio:
+        # nao depende apenas da protecao da rota HTTP.
+        existente = OrdemServico.query.filter_by(
+            proposta_id=self.id,
+            ativo=True,
+        ).first()
+
+        if existente is not None:
+            return existente
+
+        # Garante que os recebiveis da proposta existem
+        # ANTES da transferencia de responsabilidade para a OS.
+        sincronizar_lancamentos_proposta(self)
+        db.session.flush()
+
+        parcelas_proposta = sorted(
+            [
+                parcela
+                for parcela in (
+                    getattr(
+                        self,
+                        "parcelas_pagamento",
+                        [],
+                    )
+                    or []
+                )
+                if bool(
+                    getattr(
+                        parcela,
+                        "ativo",
+                        True,
+                    )
+                )
+            ],
+            key=lambda parcela: (
+                int(
+                    getattr(
+                        parcela,
+                        "numero_parcela",
+                        0,
+                    )
+                    or 0
+                ),
+                parcela.id or 0,
+            ),
+        )
+
+        parcela_entrada = next(
+            (
+                parcela
+                for parcela in parcelas_proposta
+                if int(
+                    parcela.numero_parcela
+                    or 0
+                ) == 0
+            ),
+            None,
+        )
+
+        parcelas_normais = [
+            parcela
+            for parcela in parcelas_proposta
+            if int(
+                parcela.numero_parcela
+                or 0
+            ) > 0
+        ]
+
+        def parcela_recebida(parcela):
+            status = (
+                str(
+                    getattr(
+                        parcela,
+                        "status",
+                        "",
+                    )
+                    or ""
+                )
+                .strip()
+                .lower()
+            )
+
+            return (
+                status
+                in {"pago", "recebido"}
+                or getattr(
+                    parcela,
+                    "data_pagamento",
+                    None,
+                )
+                is not None
+            )
+
+        valor_entrada = (
+            float(
+                parcela_entrada.valor_parcela
+                or 0
+            )
+            if parcela_entrada is not None
+            else 0.0
+        )
+
+        data_primeira_parcela = (
+            parcelas_normais[0].data_vencimento
+            if parcelas_normais
+            else None
+        )
+
+        if parcelas_proposta:
+            condicao_pgto = "parcelado"
         else:
-            print(f"⚠️ DEBUG: Proposta {self.codigo} NÃO tem parcelas cadastradas!")
-        
-        print(f"✅ DEBUG: Condições finais - Pagamento: {condicao_pgto} | Parcelas: {num_parcelas} | Entrada: R$ {valor_entrada}")
-        
-        # Se não tem parcelas, é à vista
-        if num_parcelas == 0:
-            condicao_pgto = 'a_vista'
-            num_parcelas = 1
-        
-        # Criar nova OS com todos os campos obrigatórios
+            condicao_pgto = "a_vista"
+
+        recebidas = sum(
+            1
+            for parcela in parcelas_proposta
+            if parcela_recebida(parcela)
+        )
+
+        if not parcelas_proposta:
+            status_pagamento = "pendente"
+        elif recebidas == 0:
+            status_pagamento = "pendente"
+        elif recebidas == len(
+            parcelas_proposta
+        ):
+            status_pagamento = "pago"
+        else:
+            status_pagamento = "parcial"
+
         nova_os = OrdemServico(
-            # Campos obrigatórios do banco
-            numero=OrdemServico.gerar_proximo_numero(),  # Gera número sequencial
+            numero=OrdemServico.gerar_proximo_numero(),
             proposta_id=self.id,
             cliente_id=self.cliente_id,
-            titulo=self.titulo or 'Ordem de Serviço',
-            descricao=self.descricao or '',
-            observacoes=f"OS gerada automaticamente da Proposta {self.codigo}",
-            tipo_os='comercial',  # OS de proposta sempre é comercial (com valores)
-            status='pendente',
-            prioridade=self.prioridade or 'normal',
+            titulo=(
+                self.titulo
+                or "Ordem de Servi?o"
+            ),
+            descricao=self.descricao or "",
+            observacoes=(
+                "OS gerada automaticamente da "
+                f"Proposta {self.codigo}"
+            ),
+            tipo_os="comercial",
+            status="pendente",
+            prioridade=self.prioridade or "normal",
             data_abertura=date.today(),
-            data_prevista=date.today() + timedelta(days=7),
-            
-            # Campos opcionais com valores padrão
-            solicitante=self.cliente.nome if self.cliente else None,
-            tecnico_responsavel=self.vendedor or 'Juliano',
-            tipo_servico='a_vista',
-            
-            # Valores financeiros
-            valor_servico=0.0,
-            valor_pecas=0.0,
-            valor_desconto=float(self.desconto or 0),
-            valor_total=float(self.valor_total or 0),
-            
-            # Garantia
-            prazo_garantia=90,  # 90 dias padrão
-            
-            # Condições de pagamento (transferidas da proposta)
+            data_prevista=(
+                date.today()
+                + timedelta(days=7)
+            ),
+            solicitante=(
+                self.cliente.nome
+                if self.cliente
+                else None
+            ),
+            tecnico_responsavel=(
+                self.vendedor
+                or "Juliano"
+            ),
+            tipo_servico="a_vista",
+            valor_servico=0,
+            valor_pecas=0,
+            valor_desconto=float(
+                self.desconto
+                or 0
+            ),
+            valor_total=float(
+                self.valor_total
+                or 0
+            ),
+            prazo_garantia=90,
             condicao_pagamento=condicao_pgto,
-            numero_parcelas=num_parcelas,
+            numero_parcelas=max(
+                1,
+                len(parcelas_normais),
+            ),
             valor_entrada=valor_entrada,
-            data_primeira_parcela=data_primeira_parcela,
-            status_pagamento='pendente'
+            data_primeira_parcela=(
+                data_primeira_parcela
+            ),
+            status_pagamento=(
+                status_pagamento
+            ),
         )
-        
-        # Salvar a OS primeiro para ter o ID
-        from app.extensoes import db
+
         db.session.add(nova_os)
-        db.session.flush()  # Gera o ID sem fazer commit
-        
-        # Transferir produtos
+        db.session.flush()
+
+        # ----------------------------------------------------
+        # ITENS
+        # ----------------------------------------------------
+
         for produto in self.itens_produto:
-            if produto.ativo:
-                os_produto = OrdemServicoProduto(
-                    ordem_servico_id=nova_os.id,
-                    produto_id=produto.produto_id,
-                    descricao=produto.descricao,
-                    quantidade=produto.quantidade,
-                    valor_unitario=produto.valor_unitario,
-                    valor_total=produto.valor_total
-                )
-                db.session.add(os_produto)
-        
-        # Transferir serviços
+            if not produto.ativo:
+                continue
+
+            item = OrdemServicoProduto(
+                ordem_servico_id=nova_os.id,
+                produto_id=produto.produto_id,
+                descricao=produto.descricao,
+                quantidade=produto.quantidade,
+                valor_unitario=(
+                    produto.valor_unitario
+                ),
+                valor_total=(
+                    produto.valor_total
+                ),
+            )
+
+            db.session.add(item)
+
         for servico in self.itens_servico:
-            if servico.ativo:
-                os_servico = OrdemServicoItem(
-                    ordem_servico_id=nova_os.id,
-                    descricao=servico.descricao,
-                    tipo_servico=servico.tipo_servico or 'fechado',
-                    quantidade=servico.quantidade,
-                    valor_unitario=servico.valor_unitario,
-                    valor_total=servico.valor_total
-                )
-                db.session.add(os_servico)
-        
-        # Transferir parcelas da proposta para a OS (apenas parcelas normais, não a entrada)
-        parcelas_criadas = 0
-        if hasattr(self, 'parcelas_pagamento') and self.parcelas_pagamento:
-            parcelas_proposta = [p for p in self.parcelas_pagamento if p.ativo]
-            print(f"📋 DEBUG: Proposta tem {len(parcelas_proposta)} parcelas ativas no total")
-            
-            # Filtrar apenas parcelas normais (numero_parcela > 0), entrada já foi transferida como valor_entrada
-            parcelas_normais = [p for p in parcelas_proposta if p.numero_parcela > 0]
-            print(f"🔄 DEBUG: Transferindo {len(parcelas_normais)} parcelas da proposta para OS (entrada não incluída)")
-            
-            for parcela_prop in parcelas_normais:
-                os_parcela = OrdemServicoParcela(
-                    ordem_servico_id=nova_os.id,
-                    numero_parcela=parcela_prop.numero_parcela,
-                    data_vencimento=parcela_prop.data_vencimento,
-                    valor=parcela_prop.valor_parcela,  # Campo correto: valor_parcela
-                    pago=False,  # Parcela inicia como não paga
-                    ativo=True  # Garantir que a parcela está ativa
-                )
-                db.session.add(os_parcela)
-                parcelas_criadas += 1
-                print(f"   ✅ Parcela {parcela_prop.numero_parcela}: R$ {parcela_prop.valor_parcela} - Venc: {parcela_prop.data_vencimento} - Ativo: True")
-        else:
-            print(f"⚠️ DEBUG: Proposta NÃO tem parcelas_pagamento para transferir")
-        
-        print(f"💾 DEBUG: Total de {parcelas_criadas} parcelas adicionadas à sessão")
-        
-        # Atualizar valores da OS
+            if not servico.ativo:
+                continue
+
+            item = OrdemServicoItem(
+                ordem_servico_id=nova_os.id,
+                descricao=servico.descricao,
+                tipo_servico=(
+                    servico.tipo_servico
+                    or "fechado"
+                ),
+                quantidade=servico.quantidade,
+                valor_unitario=(
+                    servico.valor_unitario
+                ),
+                valor_total=(
+                    servico.valor_total
+                ),
+            )
+
+            db.session.add(item)
+
+        db.session.flush()
+
         nova_os.atualizar_valores_automaticos()
-        
-        # Commit de tudo
-        print(f"💾 DEBUG: Fazendo commit da OS e {parcelas_criadas} parcelas...")
+
+        # ----------------------------------------------------
+        # PARCELAS
+        #
+        # A entrada tambem e representada na OS como parcela 0.
+        # Assim status_pagamento consegue enxergar:
+        # entrada recebida + saldo pendente = PARCIAL.
+        # ----------------------------------------------------
+
+        os_por_proposta_parcela = {}
+
+        for parcela_prop in parcelas_proposta:
+            recebida = parcela_recebida(
+                parcela_prop
+            )
+
+            os_parcela = OrdemServicoParcela(
+                ordem_servico_id=nova_os.id,
+                numero_parcela=(
+                    parcela_prop.numero_parcela
+                ),
+                data_vencimento=(
+                    parcela_prop.data_vencimento
+                ),
+                valor=(
+                    parcela_prop.valor_parcela
+                ),
+                pago=recebida,
+                data_pagamento=(
+                    parcela_prop.data_pagamento
+                    if recebida
+                    else None
+                ),
+                ativo=True,
+            )
+
+            db.session.add(os_parcela)
+            db.session.flush()
+
+            os_por_proposta_parcela[
+                parcela_prop.id
+            ] = os_parcela
+
+        # ----------------------------------------------------
+        # TRANSFERENCIA DOS VINCULOS FINANCEIROS
+        #
+        # Nao cria novos LancamentoFinanceiro.
+        # Apenas acrescenta a rastreabilidade da OS nos
+        # recebiveis que ja nasceram na proposta.
+        # ----------------------------------------------------
+
+        lancamentos = (
+            LancamentoFinanceiro.query
+            .filter_by(
+                proposta_id=self.id,
+                ativo=True,
+            )
+            .all()
+        )
+
+        for lancamento in lancamentos:
+            lancamento.ordem_servico_id = (
+                nova_os.id
+            )
+
+            os_parcela = (
+                os_por_proposta_parcela.get(
+                    lancamento
+                    .proposta_parcela_id
+                )
+            )
+
+            if os_parcela is not None:
+                lancamento.ordem_servico_parcela_id = (
+                    os_parcela.id
+                )
+
+        db.session.flush()
+
+        # Status da OS deve refletir todas as parcelas,
+        # inclusive a entrada numero 0.
+        if parcelas_proposta:
+            if recebidas == 0:
+                nova_os.status_pagamento = (
+                    "pendente"
+                )
+            elif recebidas == len(
+                parcelas_proposta
+            ):
+                nova_os.status_pagamento = (
+                    "pago"
+                )
+            else:
+                nova_os.status_pagamento = (
+                    "parcial"
+                )
+
         db.session.commit()
-        print(f"✅ DEBUG: Commit concluído! OS #{nova_os.numero} criada com ID {nova_os.id}")
-        
+
         return nova_os
 
 

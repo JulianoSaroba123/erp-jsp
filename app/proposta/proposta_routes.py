@@ -1297,80 +1297,9 @@ def relatorio_os(id):
 
 @proposta_bp.route('/<int:id>/criar-os', methods=['POST'])
 def criar_os_a_partir_da_proposta(id):
-    """Cria uma Ordem de Serviço a partir de uma Proposta aprovada ou selecionada.
+    """Alias da conversao canonica Proposta -> OS."""
+    return gerar_os_de_proposta(id)
 
-    Copia cliente, título, descrição, itens de serviços e produtos, valores e condições.
-    Retorna: redireciona para a visualização da OS criada.
-    """
-    try:
-        proposta = Proposta.query.options(
-            joinedload(Proposta.itens_produto),
-            joinedload(Proposta.itens_servico)
-        ).filter_by(id=id, ativo=True).first_or_404()
-
-        # Gera nova OS baseada na proposta
-        ordem = OrdemServico(
-            numero=OrdemServico.gerar_proximo_numero(),
-            cliente_id=proposta.cliente_id,
-            titulo=proposta.titulo or f'OS a partir de {proposta.codigo}',
-            descricao=proposta.descricao or proposta.observacoes or '',
-            observacoes=f'Criada a partir da proposta {proposta.codigo}',
-            status='aberta',
-            prioridade=proposta.prioridade or 'normal',
-            condicao_pagamento=proposta.forma_pagamento or 'a_vista',
-            valor_servico=proposta.valor_servicos or 0,
-            valor_pecas=proposta.valor_produtos or 0,
-            valor_desconto=0,
-            valor_total=proposta.valor_total or 0
-        )
-
-        # Salva ordem para obter ID
-        db.session.add(ordem)
-        db.session.flush()
-
-        # Copiar serviços da proposta para itens de OS
-        servicos = PropostaServico.query.filter_by(proposta_id=proposta.id, ativo=True).all()
-        for s in servicos:
-            item = OrdemServicoItem(
-                ordem_servico_id=ordem.id,
-                descricao=s.descricao,
-                quantidade_horas=s.quantidade or 0,
-                valor_hora=s.valor_unitario or 0
-            )
-            item.calcular_total()
-            db.session.add(item)
-
-        # Copiar produtos da proposta para produtos da OS
-        produtos = PropostaProduto.query.filter_by(proposta_id=proposta.id, ativo=True).all()
-        for p in produtos:
-            prod = OrdemServicoProduto(
-                ordem_servico_id=ordem.id,
-                descricao=p.descricao,
-                quantidade=p.quantidade or 1,
-                valor_unitario=p.valor_unitario or 0
-            )
-            prod.calcular_total()
-            db.session.add(prod)
-
-        # Recalcular valores da OS e salvar
-        db.session.flush()
-        ordem.valor_servico = sum([it.valor_total for it in ordem.servicos]) if hasattr(ordem, 'servicos') and ordem.servicos else ordem.valor_servico
-        ordem.valor_pecas = sum([pr.valor_total for pr in ordem.produtos_utilizados]) if hasattr(ordem, 'produtos_utilizados') and ordem.produtos_utilizados else ordem.valor_pecas
-        ordem.valor_total = ordem.valor_total_calculado_novo
-
-        # Opcional: marca proposta como aprovada/convertida
-        proposta.status = 'aprovada'
-
-        db.session.commit()
-
-        flash(f'Ordem de Serviço "{ordem.numero}" criada a partir da proposta {proposta.codigo}!', 'success')
-        return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
-
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f'Erro ao criar OS a partir da proposta {id}: {str(e)}')
-        flash(f'Erro ao criar Ordem de Serviço: {str(e)}', 'error')
-        return redirect(url_for('proposta.visualizar_proposta', id=id))
 
 @proposta_bp.route('/api/clientes/debug')
 def debug_clientes():
