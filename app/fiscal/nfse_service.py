@@ -541,6 +541,87 @@ def preparar_payload_nfse_com_dps(
     return payload
 
 
+def _commit_preparacao_local_nfse() -> None:
+    """Confirma a preparacao fiscal local."""
+    db.session.commit()
+
+
+def _rollback_preparacao_local_nfse() -> None:
+    """Reverte integralmente a preparacao fiscal local."""
+    db.session.rollback()
+
+
+def preparar_documento_nfse_com_dps(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao_fiscal: ConfiguracaoFiscal,
+    configuracao_institucional,
+    versao_layout: str,
+    tipo_emitente,
+    municipio_incidencia_ibge,
+    iss: dict,
+    totais_tributos: dict,
+    municipio_prestacao_ibge=None,
+    ibs_cbs=None,
+    data_emissao=None,
+    versao_aplicativo="ERP-JSP",
+) -> tuple[NfseDocumento, dict]:
+    """Orquestra a preparacao fiscal local completa da DPS.
+
+    D24F02-B7-A5:
+    - reserva RPS de forma idempotente;
+    - monta DPS canonica;
+    - serializa XML;
+    - valida XML contra XSD versionado;
+    - publica o XML somente no payload em memoria;
+    - marca o documento como PREPARADA;
+    - confirma tudo em uma unica transacao;
+    - executa rollback integral em qualquer falha;
+    - nao transmite;
+    - nao assina digitalmente;
+    - nao acessa certificado;
+    - nao realiza HTTP;
+    - nao altera financeiro.
+    """
+
+    try:
+        documento_reservado, _ = reservar_rps_nfse(
+            documento=documento,
+            configuracao=configuracao_fiscal,
+        )
+
+        payload = preparar_payload_nfse_com_dps(
+            documento=documento_reservado,
+            ordem_servico=ordem_servico,
+            configuracao_fiscal=configuracao_fiscal,
+            configuracao_institucional=configuracao_institucional,
+            versao_layout=versao_layout,
+            tipo_emitente=tipo_emitente,
+            municipio_incidencia_ibge=municipio_incidencia_ibge,
+            iss=iss,
+            totais_tributos=totais_tributos,
+            municipio_prestacao_ibge=municipio_prestacao_ibge,
+            ibs_cbs=ibs_cbs,
+            data_emissao=data_emissao,
+            versao_aplicativo=versao_aplicativo,
+        )
+
+        documento_reservado.status = "PREPARADA"
+        documento_reservado.mensagem_status = (
+            "DPS preparada localmente e validada contra o XSD. "
+            "Nenhuma NFS-e foi transmitida."
+        )
+
+        _commit_preparacao_local_nfse()
+
+        return documento_reservado, payload
+
+    except Exception:
+        _rollback_preparacao_local_nfse()
+        raise
+
+
 def _normalizar_resultado_transmissao_nfse(
     resultado,
 ) -> dict:
