@@ -164,7 +164,11 @@ def executar_testes():
         assert os_pendente.conta_bancaria_id == conta.id
         assert saldo(conta) == dinheiro('1100.00')
 
-        # 9) Com mais de uma conta ativa, OS nova nao escolhe conta sozinha.
+        # 9) Com mais de uma conta ativa, OS nova nao escolhe conta sozinha,
+        # mesmo que uma delas esteja marcada como principal.
+        conta.principal = True
+        db.session.commit()
+
         conta_secundaria = ContaBancaria(
             nome='Conta Secundaria',
             tipo='conta_corrente',
