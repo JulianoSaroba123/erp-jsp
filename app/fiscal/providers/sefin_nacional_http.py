@@ -127,6 +127,8 @@ class ClienteHttpSefin:
         status_code: int,
         metodo: str,
         url: str,
+        headers: dict | None = None,
+        conteudo: bytes | None = None,
     ) -> None:
         if 200 <= status_code <= 299:
             return
@@ -136,12 +138,33 @@ class ClienteHttpSefin:
             f"em {metodo} {url}."
         )
 
+        def criar_excecao(
+            classe,
+            texto,
+        ):
+            exc = classe(
+                texto
+            )
+
+            exc.status_code = status_code
+            exc.metodo = metodo
+            exc.url = url
+            exc.headers = dict(
+                headers or {}
+            )
+            exc.conteudo = bytes(
+                conteudo or b""
+            )
+
+            return exc
+
         if status_code in {
             401,
             403,
         }:
-            raise ErroAutenticacaoNfse(
-                mensagem
+            raise criar_excecao(
+                ErroAutenticacaoNfse,
+                mensagem,
             )
 
         if (
@@ -152,24 +175,32 @@ class ClienteHttpSefin:
             }
             or 500 <= status_code <= 599
         ):
-            raise IndisponibilidadeNfse(
-                mensagem
+            raise criar_excecao(
+                IndisponibilidadeNfse,
+                mensagem,
             )
 
         if 400 <= status_code <= 499:
-            raise ErroTransmissaoNfse(
-                mensagem
+            raise criar_excecao(
+                ErroTransmissaoNfse,
+                mensagem,
             )
 
         if 300 <= status_code <= 399:
-            raise ErroComunicacaoNfse(
-                "Redirecionamento HTTP inesperado. "
-                + mensagem
+            raise criar_excecao(
+                ErroComunicacaoNfse,
+                (
+                    "Redirecionamento HTTP inesperado. "
+                    + mensagem
+                ),
             )
 
-        raise ErroComunicacaoNfse(
-            "Status HTTP inesperado. "
-            + mensagem
+        raise criar_excecao(
+            ErroComunicacaoNfse,
+            (
+                "Status HTTP inesperado. "
+                + mensagem
+            ),
         )
 
     def requisitar(
@@ -242,10 +273,30 @@ class ClienteHttpSefin:
                 "Resposta SEFIN possui status HTTP invalido."
             ) from exc
 
+        headers_resposta = dict(
+            getattr(
+                resposta,
+                "headers",
+                {},
+            )
+            or {}
+        )
+
+        conteudo_resposta = bytes(
+            getattr(
+                resposta,
+                "content",
+                b"",
+            )
+            or b""
+        )
+
         self._classificar_status(
             status_code=status_code,
             metodo=metodo_normalizado,
             url=url_normalizada,
+            headers=headers_resposta,
+            conteudo=conteudo_resposta,
         )
 
         return RespostaHttpSefin(
