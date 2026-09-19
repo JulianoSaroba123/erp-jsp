@@ -765,6 +765,66 @@ def aplicar_resultado_transmissao_nfse(
     return documento
 
 
+def preparar_nfse_para_envio(
+    *,
+    documento: NfseDocumento,
+    payload: dict,
+) -> NfseDocumento:
+    """Transiciona uma DPS preparada para a fronteira de envio.
+
+    D24F02-B7-FINAL:
+    - aceita somente documento PREPARADA;
+    - exige payload tecnico ja montado;
+    - exige conteudo XML presente;
+    - muda somente para PENDENTE_ENVIO;
+    - nao executa commit;
+    - nao transmite;
+    - nao assina;
+    - nao acessa certificado;
+    - nao realiza HTTP;
+    - nao altera financeiro.
+    """
+
+    if documento is None:
+        raise TransicaoStatusNfseInvalida(
+            "Documento NFS-e nao informado."
+        )
+
+    if not isinstance(payload, dict):
+        raise TransicaoStatusNfseInvalida(
+            "Payload NFS-e deve ser um dict."
+        )
+
+    status_atual = str(
+        getattr(documento, "status", "") or ""
+    ).strip().upper()
+
+    if status_atual != "PREPARADA":
+        raise TransicaoStatusNfseInvalida(
+            "Documento NFS-e em estado "
+            f"{status_atual or '<VAZIO>'} nao pode ser "
+            "marcado como PENDENTE_ENVIO."
+        )
+
+    conteudo = payload.get("conteudo")
+
+    if not isinstance(
+        conteudo,
+        (bytes, bytearray),
+    ) or not conteudo:
+        raise TransicaoStatusNfseInvalida(
+            "Payload NFS-e nao possui XML preparado para envio."
+        )
+
+    documento.status = "PENDENTE_ENVIO"
+    documento.mensagem_status = (
+        "DPS preparada e liberada para a fronteira de transmissao. "
+        "Nenhuma NFS-e foi transmitida nesta etapa."
+    )
+
+    return documento
+
+
 def transmitir_payload_nfse(
     *,
     payload: dict,
