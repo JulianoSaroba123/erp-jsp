@@ -1,4 +1,4 @@
-﻿"""Provider municipal GeisWeb para Tiete/SP.
+"""Provider municipal GeisWeb para Tiete/SP.
 
 Estagio atual:
 - registrado na arquitetura NFS-e;
@@ -91,16 +91,89 @@ class GeisWebTieteProvider(NfseProvider):
         ordem_servico,
         configuracao,
     ):
-        """Bloqueia preparacao ate o adapter ERP -> GeisWeb existir."""
+        """Prepara metadados tecnicos locais do GeisWeb.
+
+        Neste estagio:
+        - nao monta XML;
+        - nao assina;
+        - nao carrega certificado;
+        - nao acessa rede;
+        - conteudo permanece None.
+        """
 
         self.validar_configuracao(
             configuracao
         )
 
-        raise PreparacaoGeisWebPendente(
-            "Provider GEISWEB_TIETE registrado, mas o adapter "
-            "ERP -> GeisWeb ainda nao foi integrado."
+        metadados = obter_configuracao_geisweb_tiete(
+            getattr(
+                configuracao,
+                "ambiente",
+                None,
+            )
         )
+
+        return {
+            "provider": self.codigo,
+            "ambiente": metadados["ambiente"],
+            "tipo_documento": "RPS_LOTE",
+            "documento_id": getattr(
+                documento,
+                "id",
+                None,
+            ),
+            "ordem_servico_id": getattr(
+                ordem_servico,
+                "id",
+                None,
+            ),
+            "rps": {
+                "serie": getattr(
+                    documento,
+                    "serie_rps",
+                    None,
+                ),
+                "numero": getattr(
+                    documento,
+                    "numero_rps",
+                    None,
+                ),
+            },
+            "layout": {
+                "versao": metadados[
+                    "versao_layout"
+                ],
+                "namespace": metadados[
+                    "namespace_xml"
+                ],
+            },
+            "municipio_prestador": {
+                "codigo_ibge": metadados[
+                    "municipio_ibge"
+                ],
+            },
+            "webservice": {
+                "endpoint": metadados[
+                    "endpoint"
+                ],
+                "wsdl": metadados[
+                    "wsdl"
+                ],
+                "soap_version": metadados[
+                    "soap_version"
+                ],
+                "soap_style": metadados[
+                    "soap_style"
+                ],
+                "soap_use": metadados[
+                    "soap_use"
+                ],
+                "soap_action": metadados[
+                    "soap_action_envia_lote_rps"
+                ],
+            },
+            "conteudo": None,
+        }
 
     def transmitir(
         self,

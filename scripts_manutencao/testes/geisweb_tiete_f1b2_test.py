@@ -1,4 +1,4 @@
-﻿from types import SimpleNamespace
+from types import SimpleNamespace
 
 import pytest
 
@@ -105,23 +105,46 @@ def test_geisweb_producao_permanece_bloqueada():
         )
 
 
-def test_preparacao_permanece_bloqueada_ate_adapter_erp():
+def test_preparacao_local_retorna_payload_tecnico():
     provider = obter_provider(
         "GEISWEB_TIETE"
     )
 
-    with pytest.raises(
-        PreparacaoGeisWebPendente
-    ):
-        provider.preparar_payload(
-            documento=SimpleNamespace(
-                id=1
-            ),
-            ordem_servico=SimpleNamespace(
-                id=1
-            ),
-            configuracao=_configuracao(),
-        )
+    payload = provider.preparar_payload(
+        documento=SimpleNamespace(
+            id=10,
+            serie_rps="A",
+            numero_rps=7,
+        ),
+        ordem_servico=SimpleNamespace(
+            id=20
+        ),
+        configuracao=_configuracao(),
+    )
+
+    assert payload["provider"] == "GEISWEB_TIETE"
+    assert payload["ambiente"] == "HOMOLOGACAO"
+    assert payload["tipo_documento"] == "RPS_LOTE"
+
+    assert payload["documento_id"] == 10
+    assert payload["ordem_servico_id"] == 20
+
+    assert payload["rps"]["serie"] == "A"
+    assert payload["rps"]["numero"] == 7
+
+    assert payload["layout"]["versao"] == "1.01"
+
+    assert (
+        payload["municipio_prestador"]["codigo_ibge"]
+        == "3554508"
+    )
+
+    assert (
+        payload["webservice"]["soap_version"]
+        == "1.1"
+    )
+
+    assert payload["conteudo"] is None
 
 
 def test_transmissao_geisweb_permanece_bloqueada():
