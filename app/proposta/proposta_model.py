@@ -247,11 +247,43 @@ class Proposta(BaseModel):
         return cls.query.filter_by(status=status, ativo=True).all()
     
     def aprovar(self):
-        """Marca a proposta como aprovada."""
-        if self.status == 'pendente' or self.status == 'enviada':
-            self.status = 'aprovada'
+        """Aprova a proposta e sincroniza seus recebiveis.
+
+        A operacao e idempotente:
+        - proposta ja aprovada pode ser sincronizada novamente;
+        - parcelas ja vinculadas nao geram duplicidade;
+        - aprovacao e financeiro fecham na mesma transacao.
+        """
+        status_atual = (
+            str(self.status or "")
+            .strip()
+            .lower()
+        )
+
+        if status_atual not in {
+            "pendente",
+            "enviada",
+            "aprovada",
+        }:
+            return self
+
+        self.status = "aprovada"
+
+        if not self.data_aprovacao:
             self.data_aprovacao = datetime.now()
-            self.save()
+
+        db.session.add(self)
+        db.session.flush()
+
+        from app.financeiro.proposta_financeiro_service import (
+            sincronizar_lancamentos_proposta,
+        )
+
+        sincronizar_lancamentos_proposta(self)
+
+        db.session.commit()
+
+        return self
     
     def rejeitar(self):
         """Marca a proposta como rejeitada."""

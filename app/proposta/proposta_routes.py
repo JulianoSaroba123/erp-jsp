@@ -659,9 +659,31 @@ def editar_proposta(id):
             except Exception as e:
                 logger.error(f"Erro ao processar parcelas da proposta {id}: {e}")
 
-            # Flush para garantir que os itens foram salvos antes de commit final
+            # Flush para garantir que os itens foram salvos antes do commit final
             db.session.flush()
-            
+
+            # D25F03-A3:
+            # uma proposta aprovada deve sair desta transacao
+            # com seus recebiveis financeiros sincronizados.
+            if (
+                str(proposta.status or "")
+                .strip()
+                .lower()
+                == "aprovada"
+            ):
+                proposta.status = "aprovada"
+
+                if not proposta.data_aprovacao:
+                    proposta.data_aprovacao = datetime.now()
+
+                from app.financeiro.proposta_financeiro_service import (
+                    sincronizar_lancamentos_proposta,
+                )
+
+                sincronizar_lancamentos_proposta(
+                    proposta
+                )
+
             # Commit final
             db.session.commit()
             
@@ -1085,32 +1107,59 @@ def api_clientes():
 
 @proposta_bp.route('/api/<int:id>/status', methods=['PUT'])
 def atualizar_status(id):
-    """API para atualizar status de proposta via AJAX."""
+    """Atualiza o status da proposta usando estados canonicos."""
     try:
         proposta = Proposta.query.get_or_404(id)
-        novo_status = request.json.get('status')
-        
-        if novo_status not in ['Pendente', 'Enviada', 'Aprovada', 'Rejeitada']:
-            return jsonify({'error': 'Status inválido'}), 400
-        
-        proposta.status = novo_status
-        
-        # Se aprovada, definir data de aprovação
-        if novo_status == 'Aprovada':
-            proposta.data_aprovacao = date.today()
-        
-        db.session.commit()
-        
+
+        payload = request.get_json(
+            silent=True
+        ) or {}
+
+        novo_status = (
+            str(payload.get("status") or "")
+            .strip()
+            .lower()
+        )
+
+        permitidos = {
+            "pendente",
+            "enviada",
+            "aprovada",
+            "rejeitada",
+        }
+
+        if novo_status not in permitidos:
+            return jsonify({
+                "error": "Status inv?lido"
+            }), 400
+
+        if novo_status == "aprovada":
+            proposta.aprovar()
+        else:
+            proposta.status = novo_status
+            db.session.commit()
+
         return jsonify({
-            'success': True,
-            'status': novo_status,
-            'message': f'Status atualizado para: {novo_status}'
-        })
-        
+            "success": True,
+            "status": proposta.status,
+            "message": (
+                "Status atualizado para: "
+                f"{proposta.status}"
+            ),
+        }), 200
+
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Erro ao atualizar status da proposta {id}: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+
+        logger.exception(
+            "Erro ao atualizar status da proposta %s",
+            id,
+        )
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
 
 @proposta_bp.route('/<int:id>/relatorio-proposta')
 def relatorio_proposta(id):
