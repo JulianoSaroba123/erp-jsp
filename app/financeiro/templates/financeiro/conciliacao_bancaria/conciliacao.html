@@ -990,7 +990,9 @@ document.addEventListener(
                                     data-extrato-valor="{{ extrato.valor_disponivel_conciliacao }}"
                                     data-extrato-valor-original="{{ extrato.valor }}"
                                     data-extrato-ja-conciliado="{{ extrato.valor_ja_conciliado_nn }}"
-                                    data-extrato-tipo="{{ extrato.tipo_movimento }}">
+                                    data-extrato-tipo="{{ extrato.tipo_movimento }}"
+                                    data-extrato-descricao="{{ (extrato.descricao or '')|e }}"
+                                    data-extrato-documento="{{ (extrato.documento or '')|e }}">
                                     <td>{{ extrato.data_movimento.strftime('%d/%m/%Y') if extrato.data_movimento else '—' }}</td>
                                     <td>
                                         <small title="{{ extrato.descricao }}">{{ extrato.descricao }}</small>
@@ -1099,7 +1101,12 @@ document.addEventListener(
                                     data-lancamento-valor="{{ lanc.valor }}"
                                     data-lancamento-tipo="{{ lanc.tipo }}"
                                     data-data-lancamento="{{ lanc.data_lancamento.isoformat() if lanc.data_lancamento else '' }}"
-                                    data-data-vencimento="{{ lanc.data_vencimento.isoformat() if lanc.data_vencimento else '' }}">
+                                    data-data-vencimento="{{ lanc.data_vencimento.isoformat() if lanc.data_vencimento else '' }}"
+                                    data-cliente-nome="{{ (lanc.cliente.nome if lanc.cliente else '')|e }}"
+                                    data-cliente-razao="{{ (lanc.cliente.razao_social if lanc.cliente else '')|e }}"
+                                    data-cliente-fantasia="{{ (lanc.cliente.nome_fantasia if lanc.cliente else '')|e }}"
+                                    data-cliente-documento="{{ (lanc.cliente.cpf_cnpj if lanc.cliente else '')|e }}"
+                                    data-lancamento-documento="{{ (lanc.numero_documento or '')|e }}">
                                     <td>{{ (lanc.data_vencimento or lanc.data_lancamento).strftime('%d/%m/%Y') if (lanc.data_vencimento or lanc.data_lancamento) else '—' }}</td>
                                     <td>
                                         <small title="{{ lanc.descricao }}">{{ lanc.descricao }}</small>
@@ -2472,6 +2479,12 @@ small:first-child {
         inset 4px 0 0 #198754;
 }
 
+.lancamento-row.match-entidade {
+    background: #eefbf5 !important;
+    box-shadow:
+        inset 4px 0 0 #0f766e;
+}
+
 .match-badge {
     display: inline-block;
     margin-left: .4rem;
@@ -2487,6 +2500,11 @@ small:first-child {
 .match-badge.exato {
     background: #dcfce7;
     color: #166534;
+}
+
+.match-badge.entidade {
+    background: #ccfbf1;
+    color: #115e59;
 }
 
 .match-badge.proximo {
@@ -3069,9 +3087,139 @@ function limparBadgesMatch() {
         .forEach(row => {
             row.classList.remove(
                 'match-top',
-                'match-exato'
+                'match-exato',
+                'match-entidade'
             );
         });
+}
+
+function normalizarTextoMatch(valor) {
+    return String(valor ?? '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function somenteDigitosMatch(valor) {
+    return String(valor ?? '').replace(/\D+/g, '');
+}
+
+function tokensSignificativosMatch(valor) {
+    const ignorar = new Set([
+        'ltda', 'me', 'eireli', 'sa', 'cia',
+        'de', 'da', 'do', 'das', 'dos', 'e',
+        'pix', 'transf', 'transferencia',
+        'recebida', 'recebido', 'pagamento'
+    ]);
+
+    return normalizarTextoMatch(valor)
+        .split(' ')
+        .filter(token => (
+            token.length >= 3 &&
+            !ignorar.has(token)
+        ));
+}
+
+function pontuacaoEntidadeLancamento(row) {
+    if (!extratoSelecionado || !row) {
+        return 0;
+    }
+
+    const extratoRow = document.getElementById(
+        'extrato-' + extratoSelecionado
+    );
+
+    if (!extratoRow) {
+        return 0;
+    }
+
+    const textoExtrato = normalizarTextoMatch([
+        extratoRow.dataset.extratoDocumento || '',
+        extratoRow.dataset.extratoDescricao || ''
+    ].join(' '));
+
+    if (!textoExtrato) {
+        return 0;
+    }
+
+    const documentoExtrato = somenteDigitosMatch(
+        extratoRow.dataset.extratoDocumento
+    );
+
+    const documentoCliente = somenteDigitosMatch(
+        row.dataset.clienteDocumento
+    );
+
+    if (
+        documentoExtrato.length >= 8 &&
+        documentoCliente.length >= 8 &&
+        documentoExtrato === documentoCliente
+    ) {
+        return 350000;
+    }
+
+    const identidades = [
+        row.dataset.clienteNome || '',
+        row.dataset.clienteRazao || '',
+        row.dataset.clienteFantasia || '',
+        row.dataset.lancamentoDocumento || ''
+    ]
+        .map(normalizarTextoMatch)
+        .filter(valor => valor.length >= 4);
+
+    for (const identidade of identidades) {
+        if (
+            textoExtrato.includes(identidade) ||
+            identidade.includes(textoExtrato)
+        ) {
+            return 250000;
+        }
+    }
+
+    const tokensExtrato = new Set(
+        tokensSignificativosMatch(textoExtrato)
+    );
+
+    let maiorSobreposicao = 0;
+    let maiorToken = 0;
+
+    for (const identidade of identidades) {
+        const tokensIdentidade =
+            tokensSignificativosMatch(identidade);
+
+        let sobreposicao = 0;
+
+        for (const token of tokensIdentidade) {
+            if (tokensExtrato.has(token)) {
+                sobreposicao += 1;
+                maiorToken = Math.max(
+                    maiorToken,
+                    token.length
+                );
+            }
+        }
+
+        maiorSobreposicao = Math.max(
+            maiorSobreposicao,
+            sobreposicao
+        );
+    }
+
+    if (maiorSobreposicao >= 2) {
+        return 180000;
+    }
+
+    if (
+        maiorSobreposicao === 1 &&
+        maiorToken >= 5
+    ) {
+        return 50000;
+    }
+
+    return 0;
 }
 
 function scoreLancamentoMatch(row) {
@@ -3138,7 +3286,15 @@ function scoreLancamentoMatch(row) {
     let score = 0;
 
     /*
-     * Mesmo valor e o sinal mais forte.
+     * Identidade do pagador/cliente e o sinal mais forte.
+     * Valor e data continuam relevantes, mas nao devem
+     * colocar outro cliente acima de um nome/documento
+     * claramente compativel com o extrato.
+     */
+    score += pontuacaoEntidadeLancamento(row);
+
+    /*
+     * Mesmo valor continua sendo um sinal forte.
      */
     if (diferencaValor <= 0.005) {
         score += 100000;
@@ -3228,6 +3384,9 @@ function ordenarPorMelhorCorrespondencia() {
                 valorExtratoSelecionado
             );
 
+            const entidadeScore =
+                pontuacaoEntidadeLancamento(row);
+
             const descricao =
                 row.querySelector(
                     'td:nth-child(2)'
@@ -3245,7 +3404,19 @@ function ordenarPorMelhorCorrespondencia() {
             badge.className =
                 'match-badge';
 
-            if (diferenca <= 0.005) {
+            if (entidadeScore >= 180000) {
+                badge.classList.add(
+                    'entidade'
+                );
+
+                badge.textContent =
+                    'Cliente compatível';
+
+                row.classList.add(
+                    'match-entidade'
+                );
+
+            } else if (diferenca <= 0.005) {
                 badge.classList.add(
                     'exato'
                 );
