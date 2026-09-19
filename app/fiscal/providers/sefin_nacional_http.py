@@ -179,6 +179,7 @@ class ClienteHttpSefin:
         url,
         headers: Mapping | None = None,
         conteudo: bytes | bytearray | None = None,
+        certificado_cliente=None,
     ) -> RespostaHttpSefin:
         metodo_normalizado = (
             self._normalizar_metodo(
@@ -217,6 +218,7 @@ class ClienteHttpSefin:
                 timeout=self._timeout,
                 verify=True,
                 allow_redirects=False,
+                cert=certificado_cliente,
             )
         except requests.Timeout as exc:
             raise ErroComunicacaoNfse(
