@@ -33,3 +33,4 @@ __all__ = [
 ]
 
 from app.fiscal.providers.sefin_nacional import SefinNacionalProvider
+from app.fiscal.providers.geisweb_tiete import GeisWebTieteProvider
