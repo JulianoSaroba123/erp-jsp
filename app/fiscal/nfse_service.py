@@ -17,6 +17,10 @@ from app.fiscal.providers.registry import normalizar_codigo_provider
 from app.fiscal.providers.resolver import resolver_provider_nfse
 from app.fiscal.dps_erp_adapter import montar_dps_canonica_da_os
 from app.fiscal.xml.dps_serializer import montar_xml_dps_serializado
+from app.fiscal.xml.dps_signer import (
+    AssinaturaXmlDpsInvalida,
+    assinar_xml_dps,
+)
 from app.fiscal.xml.dps_xsd_validator import validar_xml_dps_xsd
 from app.fiscal.xsd import obter_caminho_xsd_dps
 
@@ -473,14 +477,16 @@ def preparar_payload_nfse_com_dps(
     ibs_cbs=None,
     data_emissao=None,
     versao_aplicativo="ERP-JSP",
+    material_certificado=None,
 ) -> dict:
     """Integra ERP -> DPS -> XML -> XSD ao payload tecnico NFS-e.
 
     D24F02-B7-A3:
     - preserva a preparacao tecnica existente do provider;
     - nao transmite;
-    - nao assina digitalmente;
-    - nao acessa certificado;
+    - preserva o fluxo B7 quando nao ha certificado;
+    - quando informado, assina a DPS com XMLDSIG;
+    - valida novamente o XML assinado contra o XSD;
     - nao realiza HTTP;
     - nao reserva nem consome novo RPS;
     - somente publica conteudo apos validacao XSD positiva.
@@ -536,7 +542,42 @@ def preparar_payload_nfse_com_dps(
             mensagem
         )
 
-    payload["conteudo"] = xml_dps
+    xml_conteudo = xml_dps
+
+    if material_certificado is not None:
+        try:
+            xml_conteudo = assinar_xml_dps(
+                xml_dps,
+                material_certificado=material_certificado,
+            )
+        except AssinaturaXmlDpsInvalida as exc:
+            raise PreparacaoNfseInvalida(
+                f"Falha ao assinar XML da DPS: {exc}"
+            ) from exc
+
+        resultado_xsd_assinado = validar_xml_dps_xsd(
+            xml_conteudo,
+            caminho_xsd,
+        )
+
+        if not resultado_xsd_assinado.valido:
+            erros = "; ".join(
+                str(erro)
+                for erro in resultado_xsd_assinado.erros
+            )
+
+            mensagem = (
+                "XML assinado da DPS invalido perante o XSD."
+            )
+
+            if erros:
+                mensagem = f"{mensagem} {erros}"
+
+            raise PreparacaoNfseInvalida(
+                mensagem
+            )
+
+    payload["conteudo"] = xml_conteudo
 
     return payload
 
@@ -566,6 +607,7 @@ def preparar_documento_nfse_com_dps(
     ibs_cbs=None,
     data_emissao=None,
     versao_aplicativo="ERP-JSP",
+    material_certificado=None,
 ) -> tuple[NfseDocumento, dict]:
     """Orquestra a preparacao fiscal local completa da DPS.
 
@@ -579,8 +621,8 @@ def preparar_documento_nfse_com_dps(
     - confirma tudo em uma unica transacao;
     - executa rollback integral em qualquer falha;
     - nao transmite;
-    - nao assina digitalmente;
-    - nao acessa certificado;
+    - opcionalmente assina a DPS com certificado A1 em memoria;
+    - preserva a preparacao sem assinatura quando nao informado;
     - nao realiza HTTP;
     - nao altera financeiro.
     """
@@ -605,13 +647,21 @@ def preparar_documento_nfse_com_dps(
             ibs_cbs=ibs_cbs,
             data_emissao=data_emissao,
             versao_aplicativo=versao_aplicativo,
+            material_certificado=material_certificado,
         )
 
         documento_reservado.status = "PREPARADA"
-        documento_reservado.mensagem_status = (
-            "DPS preparada localmente e validada contra o XSD. "
-            "Nenhuma NFS-e foi transmitida."
-        )
+        if material_certificado is None:
+            documento_reservado.mensagem_status = (
+                "DPS preparada localmente e validada contra o XSD. "
+                "Nenhuma NFS-e foi transmitida."
+            )
+        else:
+            documento_reservado.mensagem_status = (
+                "DPS preparada localmente, assinada digitalmente "
+                "e validada contra o XSD. "
+                "Nenhuma NFS-e foi transmitida."
+            )
 
         _commit_preparacao_local_nfse()
 
