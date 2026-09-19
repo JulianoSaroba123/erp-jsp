@@ -22,6 +22,14 @@ from app.financeiro.financeiro_model import ContaBancaria, LancamentoFinanceiro
 
 
 _STATUS_QUITADOS = {'pago', 'recebido'}
+_ORIGENS_CONTA_AUTOMATICA = {
+    'ORDEM_SERVICO',
+    'PROPOSTA',
+}
+_ORIGENS_CONTA_AUTOMATICA = {
+    'ORDEM_SERVICO',
+    'PROPOSTA',
+}
 _TIPOS_ENTRADA = {'receita', 'conta_receber'}
 _TIPOS_SAIDA = {'despesa', 'conta_pagar'}
 _CATEGORIA_TRANSFERENCIA = 'Transferência Bancária'
@@ -131,18 +139,18 @@ def _conta_padrao_para_os(connection):
     return None
 
 
-def _os_sem_conta(target):
+def _origem_automatica_sem_conta(target):
     return (
-        getattr(target, 'origem', None) == 'ORDEM_SERVICO'
+        getattr(target, 'origem', None)
+        in _ORIGENS_CONTA_AUTOMATICA
         and target.conta_bancaria_id is None
     )
 
 
 def _antes_inserir(mapper, connection, target):
-    # A OS nao possui seletor de conta. Se existir exatamente uma conta ativa,
-    # vincula qualquer NOVO lancamento de OS, inclusive contas a receber
-    # pendentes. O status pendente continua sem impacto no saldo bancario.
-    if _os_sem_conta(target):
+    # Lancamentos automaticos de OS/Proposta recebem conta somente quando
+    # existe exatamente uma conta ativa. Pendente continua sem impacto no saldo.
+    if _origem_automatica_sem_conta(target):
         conta_id = _conta_padrao_para_os(connection)
         if conta_id is not None:
             target.conta_bancaria_id = conta_id
@@ -152,7 +160,7 @@ def _antes_atualizar(mapper, connection, target):
     anterior = _snapshot_persistido(connection, target)
     setattr(target, _ATTR_SNAPSHOT, anterior)
 
-    if not _os_sem_conta(target):
+    if not _origem_automatica_sem_conta(target):
         return
 
     # Nao retrovincula recebimentos historicos apenas porque outro campo mudou:
