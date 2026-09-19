@@ -69,6 +69,21 @@ class LancamentoFinanceiro(BaseModel):
         nullable=True,
         index=True,
     )
+
+    # D25F03 - rastreabilidade Proposta -> Financeiro
+    proposta_id = db.Column(
+        db.Integer,
+        db.ForeignKey('propostas.id'),
+        nullable=True,
+        index=True,
+    )
+    proposta_parcela_id = db.Column(
+        db.Integer,
+        db.ForeignKey('parcelas_proposta.id'),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
     
     # Controle de recorrência
     recorrente = db.Column(db.Boolean, default=False)
@@ -98,6 +113,19 @@ class LancamentoFinanceiro(BaseModel):
         'OrdemServicoParcela',
         backref='lancamentos_financeiros',
         foreign_keys=[ordem_servico_parcela_id],
+    )
+    proposta = db.relationship(
+        'Proposta',
+        backref='lancamentos_financeiros',
+        foreign_keys=[proposta_id],
+    )
+    proposta_parcela = db.relationship(
+        'ParcelaProposta',
+        backref=db.backref(
+            'lancamento_financeiro',
+            uselist=False,
+        ),
+        foreign_keys=[proposta_parcela_id],
     )
     conta_bancaria = db.relationship('ContaBancaria', backref='lancamentos', foreign_keys=[conta_bancaria_id])
     centro_custo = db.relationship('CentroCusto', backref='lancamentos', foreign_keys=[centro_custo_id])
@@ -169,6 +197,7 @@ class LancamentoFinanceiro(BaseModel):
             'MANUAL': 'Lançamento Manual',
             'CUSTO_FIXO': 'Custo Fixo Recorrente',
             'ORDEM_SERVICO': 'Ordem de Serviço',
+            'PROPOSTA': 'Proposta Comercial',
             'IMPORTACAO': 'Importação',
             'INTEGRACAO': 'Integração'
         }
@@ -181,6 +210,7 @@ class LancamentoFinanceiro(BaseModel):
             'MANUAL': 'primary',
             'CUSTO_FIXO': 'warning',
             'ORDEM_SERVICO': 'info',
+            'PROPOSTA': 'success',
             'IMPORTACAO': 'secondary',
             'INTEGRACAO': 'dark'
         }
@@ -193,6 +223,7 @@ class LancamentoFinanceiro(BaseModel):
             'MANUAL': 'fa-hand-pointer',
             'CUSTO_FIXO': 'fa-repeat',
             'ORDEM_SERVICO': 'fa-wrench',
+            'PROPOSTA': 'fa-file-signature',
             'IMPORTACAO': 'fa-file-import',
             'INTEGRACAO': 'fa-plug'
         }
