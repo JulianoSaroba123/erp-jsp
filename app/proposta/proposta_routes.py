@@ -1167,6 +1167,32 @@ def atualizar_status(id):
                 "error": "Status inv?lido"
             }), 400
 
+        # D25F03-A5.2:
+        # proposta que ja possui financeiro nao pode voltar
+        # silenciosamente para um estado comercial anterior.
+        if novo_status != "aprovada":
+            from app.financeiro.financeiro_model import (
+                LancamentoFinanceiro,
+            )
+
+            financeiro_vinculado = (
+                LancamentoFinanceiro.query
+                .filter_by(
+                    proposta_id=proposta.id,
+                    ativo=True,
+                )
+                .first()
+            )
+
+            if financeiro_vinculado is not None:
+                return jsonify({
+                    "error": (
+                        "Proposta possui lan?amentos "
+                        "financeiros vinculados e n?o "
+                        "pode ter o status rebaixado."
+                    )
+                }), 409
+
         if novo_status == "aprovada":
             proposta.aprovar()
         else:
