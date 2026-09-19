@@ -86,6 +86,15 @@ class LancamentoFinanceiro(BaseModel):
     )
     
     # Controle de recorrência
+    # D26F01 - Pedido de Venda -> Financeiro
+    pedido_id = db.Column(
+        db.Integer,
+        db.ForeignKey('pedidos.id'),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+
     recorrente = db.Column(db.Boolean, default=False)
     frequencia = db.Column(db.String(20))  # mensal, anual, semanal
     
@@ -127,6 +136,15 @@ class LancamentoFinanceiro(BaseModel):
         ),
         foreign_keys=[proposta_parcela_id],
     )
+    pedido = db.relationship(
+        'Pedido',
+        backref=db.backref(
+            'lancamento_financeiro',
+            uselist=False,
+        ),
+        foreign_keys=[pedido_id],
+    )
+
     conta_bancaria = db.relationship('ContaBancaria', backref='lancamentos', foreign_keys=[conta_bancaria_id])
     centro_custo = db.relationship('CentroCusto', backref='lancamentos', foreign_keys=[centro_custo_id])
     plano_conta = db.relationship('PlanoContas', backref='lancamentos', foreign_keys=[plano_conta_id])
@@ -198,6 +216,7 @@ class LancamentoFinanceiro(BaseModel):
             'CUSTO_FIXO': 'Custo Fixo Recorrente',
             'ORDEM_SERVICO': 'Ordem de Serviço',
             'PROPOSTA': 'Proposta Comercial',
+            'PEDIDO': 'Pedido de Venda',
             'IMPORTACAO': 'Importação',
             'INTEGRACAO': 'Integração'
         }
@@ -211,6 +230,7 @@ class LancamentoFinanceiro(BaseModel):
             'CUSTO_FIXO': 'warning',
             'ORDEM_SERVICO': 'info',
             'PROPOSTA': 'success',
+            'PEDIDO': 'info',
             'IMPORTACAO': 'secondary',
             'INTEGRACAO': 'dark'
         }
@@ -224,6 +244,7 @@ class LancamentoFinanceiro(BaseModel):
             'CUSTO_FIXO': 'fa-repeat',
             'ORDEM_SERVICO': 'fa-wrench',
             'PROPOSTA': 'fa-file-signature',
+            'PEDIDO': 'fa-shopping-cart',
             'IMPORTACAO': 'fa-file-import',
             'INTEGRACAO': 'fa-plug'
         }

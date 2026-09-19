@@ -260,6 +260,12 @@ def novo():
         pedido.recalcular_totais()
 
         try:
+            from app.financeiro.pedido_financeiro_service import (
+                sincronizar_lancamentos_pedido,
+            )
+
+            sincronizar_lancamentos_pedido(pedido)
+
             db.session.commit()
             flash(f"Pedido {pedido.numero} criado com sucesso.", "success")
             return redirect(url_for("pedido.visualizar", id=pedido.id))
@@ -372,6 +378,12 @@ def editar(id):
         pedido.recalcular_totais()
 
         try:
+            from app.financeiro.pedido_financeiro_service import (
+                sincronizar_lancamentos_pedido,
+            )
+
+            sincronizar_lancamentos_pedido(pedido)
+
             db.session.commit()
             flash(f"Pedido {pedido.numero} atualizado com sucesso.", "success")
             return redirect(url_for("pedido.visualizar", id=pedido.id))
