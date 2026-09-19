@@ -305,85 +305,207 @@ class Proposta(BaseModel):
         self.save()
     
     def gerar_parcelas(self):
-        """
-        Gera as parcelas de pagamento baseado nos dados de parcelamento.
-        
-        Remove parcelas existentes e cria novas baseado em:
-        - numero_parcelas
-        - entrada (percentual)
-        - data_primeira_parcela
-        - intervalo_parcelas
-        - valor_total
+        """Gera parcelas sem destruir identidade financeira existente.
+
+        Enquanto a proposta ainda nao possui financeiro vinculado,
+        o comportamento permanece compativel com o fluxo legado.
+
+        Depois que uma parcela origina LancamentoFinanceiro,
+        sua identidade passa a ser historico comercial/financeiro e
+        nao pode mais ser apagada e recriada silenciosamente.
         """
         try:
-            # Verifica se os campos existem (para compatibilidade com BD antigo)
-            if not hasattr(self, 'numero_parcelas') or not hasattr(self, 'intervalo_parcelas'):
-                return
-            
-            if self.forma_pagamento != 'parcelado' or not self.numero_parcelas:
-                return
-        except Exception as e:
-            # Se houver erro ao acessar os campos, retorna silenciosamente
-            return
-        
-        # Remove parcelas antigas
-        ParcelaProposta.query.filter_by(proposta_id=self.id).delete()
-        
-        # Calcula valores
-        valor_total = Decimal(str(self.valor_total or 0))
-        percentual_entrada = Decimal(str(self.entrada or 0))
-        valor_entrada = valor_total * (percentual_entrada / 100)
-        valor_restante = valor_total - valor_entrada
-        numero_parcelas = int(self.numero_parcelas or 1)
-        valor_parcela = valor_restante / numero_parcelas if numero_parcelas > 0 else Decimal(0)
-        
-        # Data da primeira parcela (ou hoje se não definida)
-        data_base = self.data_primeira_parcela or date.today()
-        intervalo = int(self.intervalo_parcelas or 30)
-        
+            if (
+                not hasattr(self, "numero_parcelas")
+                or not hasattr(
+                    self,
+                    "intervalo_parcelas",
+                )
+            ):
+                return []
+
+            if (
+                self.forma_pagamento != "parcelado"
+                or not self.numero_parcelas
+            ):
+                return []
+
+        except Exception:
+            return []
+
+        parcelas_existentes = (
+            ParcelaProposta.query
+            .filter_by(
+                proposta_id=self.id,
+                ativo=True,
+            )
+            .order_by(
+                ParcelaProposta.numero_parcela,
+                ParcelaProposta.id,
+            )
+            .all()
+        )
+
+        # D25F03-A5:
+        # se qualquer parcela ja estiver ligada ao Financeiro,
+        # o parcelamento vira documento historico protegido.
+        if parcelas_existentes:
+            from app.financeiro.financeiro_model import (
+                LancamentoFinanceiro,
+            )
+
+            ids_parcelas = [
+                parcela.id
+                for parcela in parcelas_existentes
+                if parcela.id is not None
+            ]
+
+            vinculado = (
+                LancamentoFinanceiro.query
+                .filter(
+                    LancamentoFinanceiro
+                    .proposta_id
+                    == self.id,
+                    LancamentoFinanceiro
+                    .proposta_parcela_id
+                    .in_(ids_parcelas),
+                    LancamentoFinanceiro
+                    .ativo
+                    .is_(True),
+                )
+                .first()
+            )
+
+            if vinculado is not None:
+                return parcelas_existentes
+
+        # Ainda sem financeiro:
+        # o fluxo legado pode reconstruir o parcelamento.
+        ParcelaProposta.query.filter_by(
+            proposta_id=self.id
+        ).delete(
+            synchronize_session=False
+        )
+
+        valor_total = Decimal(
+            str(self.valor_total or 0)
+        )
+
+        percentual_entrada = Decimal(
+            str(self.entrada or 0)
+        )
+
+        valor_entrada = (
+            valor_total
+            * percentual_entrada
+            / Decimal("100")
+        )
+
+        valor_restante = (
+            valor_total
+            - valor_entrada
+        )
+
+        numero_parcelas = int(
+            self.numero_parcelas or 1
+        )
+
+        valor_parcela = (
+            valor_restante
+            / numero_parcelas
+            if numero_parcelas > 0
+            else Decimal("0")
+        )
+
+        data_base = (
+            self.data_primeira_parcela
+            or date.today()
+        )
+
+        intervalo = int(
+            self.intervalo_parcelas
+            or 30
+        )
+
         parcelas_criadas = []
-        
-        # Cria entrada se houver
+
         if valor_entrada > 0:
-            parcela_entrada = ParcelaProposta(
+            entrada = ParcelaProposta(
                 proposta_id=self.id,
                 numero_parcela=0,
-                valor_parcela=float(valor_entrada),
+                valor_parcela=float(
+                    valor_entrada
+                ),
                 data_vencimento=data_base,
-                descricao=f"Entrada ({percentual_entrada}%)",
-                status='pendente'
+                descricao=(
+                    f"Entrada "
+                    f"({percentual_entrada}%)"
+                ),
+                status="pendente",
             )
-            db.session.add(parcela_entrada)
-            parcelas_criadas.append(parcela_entrada)
-        
-        # Cria parcelas restantes
-        for i in range(1, numero_parcelas + 1):
-            # Calcula data de vencimento (entrada + intervalo * número da parcela)
-            dias_apos_entrada = intervalo * i
-            data_venc = data_base + timedelta(days=dias_apos_entrada)
-            
-            # Ajusta última parcela para incluir centavos restantes
-            if i == numero_parcelas:
-                # Soma todas as parcelas criadas
-                total_parcelas = sum(p.valor_parcela for p in parcelas_criadas)
-                valor_ajustado = float(valor_total) - total_parcelas
+
+            db.session.add(entrada)
+            parcelas_criadas.append(
+                entrada
+            )
+
+        for numero in range(
+            1,
+            numero_parcelas + 1,
+        ):
+            data_vencimento = (
+                data_base
+                + timedelta(
+                    days=intervalo * numero
+                )
+            )
+
+            if numero == numero_parcelas:
+                total_anterior = sum(
+                    Decimal(
+                        str(
+                            parcela.valor_parcela
+                            or 0
+                        )
+                    )
+                    for parcela
+                    in parcelas_criadas
+                )
+
+                valor_atual = (
+                    valor_total
+                    - total_anterior
+                )
+
             else:
-                valor_ajustado = float(valor_parcela)
-            
+                valor_atual = valor_parcela
+
             parcela = ParcelaProposta(
                 proposta_id=self.id,
-                numero_parcela=i,
-                valor_parcela=valor_ajustado,
-                data_vencimento=data_venc,
-                descricao=f"Parcela {i}/{numero_parcelas}",
-                status='pendente'
+                numero_parcela=numero,
+                valor_parcela=float(
+                    valor_atual
+                ),
+                data_vencimento=(
+                    data_vencimento
+                ),
+                descricao=(
+                    f"Parcela "
+                    f"{numero}/"
+                    f"{numero_parcelas}"
+                ),
+                status="pendente",
             )
+
             db.session.add(parcela)
-            parcelas_criadas.append(parcela)
-        
+            parcelas_criadas.append(
+                parcela
+            )
+
         db.session.commit()
+
         return parcelas_criadas
-    
+
     def gerar_ordem_servico(self):
         """Converte proposta aprovada em OS preservando o financeiro.
 

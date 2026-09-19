@@ -389,6 +389,40 @@ def editar_proposta(id):
     ).filter_by(id=id, ativo=True).first_or_404()
     
     if request.method == 'POST':
+
+        # D25F03-A5:
+        # depois que uma proposta gera recebiveis, ela passa a
+        # representar contrato comercial/financeiro historico.
+        # Alteracoes devem ocorrer por revisao/duplicacao, nao
+        # reescrevendo o documento que originou o recebimento.
+        from app.financeiro.financeiro_model import (
+            LancamentoFinanceiro,
+        )
+
+        financeiro_vinculado = (
+            LancamentoFinanceiro.query
+            .filter_by(
+                proposta_id=proposta.id,
+                ativo=True,
+            )
+            .first()
+        )
+
+        if financeiro_vinculado is not None:
+            flash(
+                "Esta proposta j? possui lan?amentos financeiros "
+                "vinculados e est? protegida contra edi??o. "
+                "Crie uma revis?o/duplica??o para alterar o contrato.",
+                "warning",
+            )
+
+            return redirect(
+                url_for(
+                    "proposta.visualizar_proposta",
+                    id=proposta.id,
+                )
+            )
+
         try:
             # Debug: Log dos dados recebidos
             logger.debug(f"💾 Salvando proposta {id}")
