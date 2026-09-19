@@ -48,6 +48,20 @@ def _query_base_pedidos():
     )
 
 
+def _pedido_possui_financeiro_ativo(pedido_id):
+    from app.financeiro.financeiro_model import LancamentoFinanceiro
+
+    return (
+        LancamentoFinanceiro.query
+        .filter_by(
+            pedido_id=pedido_id,
+            ativo=True,
+        )
+        .first()
+        is not None
+    )
+
+
 def _carregar_form_context(pedido=None, proposta_id=None):
     clientes = Cliente.query.filter(Cliente.ativo.is_(True)).order_by(Cliente.nome.asc()).all()
     produtos = Produto.query.filter(Produto.ativo.is_(True)).order_by(Produto.nome.asc()).all()
@@ -360,10 +374,30 @@ def editar(id):
                     **context,
                 )
 
+        novo_status = normalizar_status(
+            request.form.get("status")
+        )
+
+        if (
+            novo_status != Pedido.STATUS_CONCLUIDO
+            and _pedido_possui_financeiro_ativo(pedido.id)
+        ):
+            flash(
+                "Pedido possui lancamento financeiro vinculado "
+                "e nao pode retornar para um status anterior.",
+                "error",
+            )
+            return redirect(
+                url_for(
+                    "pedido.visualizar",
+                    id=pedido.id,
+                )
+            )
+
         pedido.cliente_id = parse_int(request.form.get("cliente_id"), default=pedido.cliente_id)
         pedido.proposta_id = proposta_id
         pedido.data_pedido = _parse_data(request.form.get("data_pedido")) or pedido.data_pedido
-        pedido.status = normalizar_status(request.form.get("status"))
+        pedido.status = novo_status
         pedido.responsavel = (request.form.get("responsavel") or "").strip()
         pedido.solicitante = (request.form.get("solicitante") or "").strip()
         pedido.telefone_contato = (request.form.get("telefone_contato") or "").strip()
@@ -420,6 +454,19 @@ def excluir(id):
 
     if request.method == "GET":
         return render_template("pedido/confirmar_exclusao.html", pedido=pedido)
+
+    if _pedido_possui_financeiro_ativo(pedido.id):
+        flash(
+            "Pedido possui lancamento financeiro vinculado "
+            "e nao pode ser excluido.",
+            "error",
+        )
+        return redirect(
+            url_for(
+                "pedido.visualizar",
+                id=pedido.id,
+            )
+        )
 
     try:
         pedido.ativo = False
