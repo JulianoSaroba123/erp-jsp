@@ -68,6 +68,65 @@ def converter_valor_monetario(valor_str):
         return Decimal('0.00')
 
 
+
+def resolver_composicao_lancamento(form):
+    """Calcula a composicao financeira do lancamento."""
+
+    valor_original = converter_valor_monetario(
+        form.get("valor_original") or form.get("valor")
+    )
+
+    juros = converter_valor_monetario(
+        form.get("juros") or "0"
+    )
+
+    multa = converter_valor_monetario(
+        form.get("multa") or "0"
+    )
+
+    desconto = converter_valor_monetario(
+        form.get("desconto") or "0"
+    )
+
+    if valor_original <= 0:
+        raise ValueError(
+            "Valor original deve ser maior que zero."
+        )
+
+    if juros < 0 or multa < 0 or desconto < 0:
+        raise ValueError(
+            "Juros, multa e desconto nao podem ser negativos."
+        )
+
+    valor_final = (
+        valor_original
+        + juros
+        + multa
+        - desconto
+    ).quantize(Decimal("0.01"))
+
+    if valor_final <= 0:
+        raise ValueError(
+            "Valor final deve ser maior que zero."
+        )
+
+    return {
+        "valor": valor_final,
+        "valor_original": valor_original.quantize(
+            Decimal("0.01")
+        ),
+        "juros": juros.quantize(
+            Decimal("0.01")
+        ),
+        "multa": multa.quantize(
+            Decimal("0.01")
+        ),
+        "desconto": desconto.quantize(
+            Decimal("0.01")
+        ),
+    }
+
+
 def resolver_data_pagamento(status, data_pagamento_str, data_lancamento, data_existente=None):
     """Mantém a data real de quitação e aplica fallback explícito quando necessário."""
     if not status_eh_pago(status):
@@ -389,11 +448,17 @@ def criar_lancamento():
             return redirect(url_for('financeiro.novo_lancamento'))
         
         # Conversões
-        valor = converter_valor_monetario(valor_str)
-        
-        if valor <= 0:
-            flash('Valor deve ser maior que zero', 'danger')
-            return redirect(url_for('financeiro.novo_lancamento'))
+        try:
+            composicao = resolver_composicao_lancamento(
+                request.form
+            )
+        except ValueError as e:
+            flash(str(e), 'danger')
+            return redirect(
+                url_for('financeiro.novo_lancamento')
+            )
+
+        valor = composicao["valor"]
         
         # Datas
         data_lancamento = datetime.strptime(data_lancamento_str, '%Y-%m-%d').date() if data_lancamento_str else date.today()
@@ -404,6 +469,10 @@ def criar_lancamento():
         lancamento = LancamentoFinanceiro(
             descricao=descricao,
             valor=valor,
+            valor_original=composicao["valor_original"],
+            juros=composicao["juros"],
+            multa=composicao["multa"],
+            desconto=composicao["desconto"],
             tipo=tipo,
             categoria=categoria,
             subcategoria=subcategoria,
@@ -489,11 +558,24 @@ def atualizar_lancamento(id):
             return redirect(url_for('financeiro.editar_lancamento', id=id))
         
         # Conversões
-        lancamento.valor = converter_valor_monetario(valor_str)
-        
-        if lancamento.valor <= 0:
-            flash('Valor deve ser maior que zero', 'danger')
-            return redirect(url_for('financeiro.editar_lancamento', id=id))
+        try:
+            composicao = resolver_composicao_lancamento(
+                request.form
+            )
+        except ValueError as e:
+            flash(str(e), 'danger')
+            return redirect(
+                url_for(
+                    'financeiro.editar_lancamento',
+                    id=id
+                )
+            )
+
+        lancamento.valor = composicao["valor"]
+        lancamento.valor_original = composicao["valor_original"]
+        lancamento.juros = composicao["juros"]
+        lancamento.multa = composicao["multa"]
+        lancamento.desconto = composicao["desconto"]
         
         # Datas
         if data_lancamento_str:
@@ -1486,11 +1568,21 @@ def conciliacao_bancaria():
                     .filter(
                         LancamentoFinanceiro.conta_bancaria_id == conta_id,
                         LancamentoFinanceiro.ativo.is_(True),
+                        # D25F01-HF1:
+                        # O legado 1:1 so deve esconder o lancamento
+                        # quando o extrato ainda nao possui vinculo N:N ativo.
                         ~LancamentoFinanceiro.id.in_(
                             db.session.query(
                                 ExtratoBancario.lancamento_id
                             ).filter(
-                                ExtratoBancario.lancamento_id.isnot(None)
+                                ExtratoBancario.lancamento_id.isnot(None),
+                                ~db.session.query(
+                                    ConciliacaoBancariaItem.id
+                                ).filter(
+                                    ConciliacaoBancariaItem.extrato_id
+                                    == ExtratoBancario.id,
+                                    ConciliacaoBancariaItem.ativo.is_(True),
+                                ).exists(),
                             )
                         ),
                         func.abs(LancamentoFinanceiro.valor)

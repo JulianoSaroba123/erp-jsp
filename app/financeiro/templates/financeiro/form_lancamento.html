@@ -84,12 +84,12 @@
                                     <i class="fas fa-align-left me-1"></i>
                                     Descrição *
                                 </label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="descricao" 
-                                       name="descricao" 
-                                       value="{{ lancamento.descricao if lancamento else '' }}" 
-                                       required 
+                                <input type="text"
+                                       class="form-control"
+                                       id="descricao"
+                                       name="descricao"
+                                       value="{{ lancamento.descricao if lancamento else '' }}"
+                                       required
                                        placeholder="Descrição do lançamento">
                             </div>
 
@@ -99,12 +99,12 @@
                                     <i class="fas fa-dollar-sign me-1"></i>
                                     Valor *
                                 </label>
-                                <input type="text" 
-                                       class="form-control valor-monetario" 
-                                       id="valor" 
-                                       name="valor" 
-                                       value="{% if lancamento %}{{ lancamento.valor_formatado }}{% endif %}" 
-                                       required 
+                                <input type="text"
+                                       class="form-control valor-monetario"
+                                       id="valor"
+                                       name="valor"
+                                       value="{% if lancamento %}{{ lancamento.valor_formatado }}{% endif %}"
+                                       required
                                        placeholder="R$ 0,00">
                             </div>
 
@@ -123,17 +123,94 @@
                                 </select>
                             </div>
 
-                            <!-- Categoria -->
+
+                            <!-- Composi??o do Valor -->
+                            <div class="col-12">
+                                <div class="card border mt-2 mb-2">
+                                    <div class="card-body">
+                                        <h6 class="mb-1">
+                                            <i class="fas fa-coins me-2"></i>
+                                            Composi??o do valor
+                                        </h6>
+
+                                        <small class="text-muted">
+                                            Informe acr?scimos ou descontos aplicados ao lan?amento.
+                                        </small>
+
+                                        <div class="row g-3 mt-1">
+
+                                            <div class="col-md-3">
+                                                <label for="valor_original"
+                                                       class="form-label">
+                                                    Valor original
+                                                </label>
+
+                                                <input type="text"
+                                                       class="form-control valor-monetario"
+                                                       id="valor_original"
+                                                       name="valor_original"
+                                                       value="{% if lancamento and lancamento.valor_original is not none %}R$ {{ '%.2f'|format(lancamento.valor_original)|replace('.', ',') }}{% elif lancamento %}{{ lancamento.valor_formatado }}{% endif %}"
+                                                       placeholder="R$ 0,00">
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <label for="juros"
+                                                       class="form-label">
+                                                    Juros
+                                                </label>
+
+                                                <input type="text"
+                                                       class="form-control valor-monetario"
+                                                       id="juros"
+                                                       name="juros"
+                                                       value="{% if lancamento and lancamento.juros %}R$ {{ '%.2f'|format(lancamento.juros)|replace('.', ',') }}{% else %}R$ 0,00{% endif %}"
+                                                       placeholder="R$ 0,00">
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <label for="multa"
+                                                       class="form-label">
+                                                    Multa
+                                                </label>
+
+                                                <input type="text"
+                                                       class="form-control valor-monetario"
+                                                       id="multa"
+                                                       name="multa"
+                                                       value="{% if lancamento and lancamento.multa %}R$ {{ '%.2f'|format(lancamento.multa)|replace('.', ',') }}{% else %}R$ 0,00{% endif %}"
+                                                       placeholder="R$ 0,00">
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <label for="desconto"
+                                                       class="form-label">
+                                                    Desconto
+                                                </label>
+
+                                                <input type="text"
+                                                       class="form-control valor-monetario"
+                                                       id="desconto"
+                                                       name="desconto"
+                                                       value="{% if lancamento and lancamento.desconto %}R$ {{ '%.2f'|format(lancamento.desconto)|replace('.', ',') }}{% else %}R$ 0,00{% endif %}"
+                                                       placeholder="R$ 0,00">
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+<!-- Categoria -->
                             <div class="col-md-4">
                                 <label for="categoria" class="form-label">
                                     <i class="fas fa-folder me-1"></i>
                                     Categoria
                                 </label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="categoria" 
-                                       name="categoria" 
-                                       value="{{ lancamento.categoria if lancamento else '' }}" 
+                                <input type="text"
+                                       class="form-control"
+                                       id="categoria"
+                                       name="categoria"
+                                       value="{{ lancamento.categoria if lancamento else '' }}"
                                        placeholder="Ex: Vendas, Aluguel, Materiais">
                             </div>
 
@@ -143,11 +220,11 @@
                                     <i class="fas fa-folder-open me-1"></i>
                                     Subcategoria
                                 </label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="subcategoria" 
-                                       name="subcategoria" 
-                                       value="{{ lancamento.subcategoria if lancamento else '' }}" 
+                                <input type="text"
+                                       class="form-control"
+                                       id="subcategoria"
+                                       name="subcategoria"
+                                       value="{{ lancamento.subcategoria if lancamento else '' }}"
                                        placeholder="Subcategoria específica">
                             </div>
 
@@ -171,10 +248,10 @@
                                     <i class="fas fa-calendar me-1"></i>
                                     Data do Lançamento
                                 </label>
-                                <input type="date" 
-                                       class="form-control" 
-                                       id="data_lancamento" 
-                                       name="data_lancamento" 
+                                <input type="date"
+                                       class="form-control"
+                                       id="data_lancamento"
+                                       name="data_lancamento"
                                        value="{% if lancamento %}{{ lancamento.data_lancamento.strftime('%Y-%m-%d') }}{% else %}{{ now().strftime('%Y-%m-%d') }}{% endif %}">
                             </div>
 
@@ -184,10 +261,10 @@
                                     <i class="fas fa-calendar-alt me-1"></i>
                                     Data de Vencimento
                                 </label>
-                                <input type="date" 
-                                       class="form-control" 
-                                       id="data_vencimento" 
-                                       name="data_vencimento" 
+                                <input type="date"
+                                       class="form-control"
+                                       id="data_vencimento"
+                                       name="data_vencimento"
                                        value="{% if lancamento and lancamento.data_vencimento %}{{ lancamento.data_vencimento.strftime('%Y-%m-%d') }}{% endif %}">
                             </div>
 
@@ -210,11 +287,11 @@
                                     <i class="fas fa-file-alt me-1"></i>
                                     Nº do Documento
                                 </label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="numero_documento" 
-                                       name="numero_documento" 
-                                       value="{{ lancamento.numero_documento if lancamento else '' }}" 
+                                <input type="text"
+                                       class="form-control"
+                                       id="numero_documento"
+                                       name="numero_documento"
+                                       value="{{ lancamento.numero_documento if lancamento else '' }}"
                                        placeholder="Ex: NF123, Boleto456">
                             </div>
 
@@ -309,10 +386,10 @@
                             <!-- Recorrência -->
                             <div class="col-md-6">
                                 <div class="form-check form-switch">
-                                    <input class="form-check-input" 
-                                           type="checkbox" 
-                                           id="recorrente" 
-                                           name="recorrente" 
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           id="recorrente"
+                                           name="recorrente"
                                            {% if lancamento and lancamento.recorrente %}checked{% endif %}>
                                     <label class="form-check-label" for="recorrente">
                                         <i class="fas fa-repeat me-1"></i>
@@ -341,10 +418,10 @@
                                     <i class="fas fa-comment me-1"></i>
                                     Observações
                                 </label>
-                                <textarea class="form-control" 
-                                          id="observacoes" 
-                                          name="observacoes" 
-                                          rows="3" 
+                                <textarea class="form-control"
+                                          id="observacoes"
+                                          name="observacoes"
+                                          rows="3"
                                           placeholder="Observações adicionais sobre este lançamento">{{ lancamento.observacoes if lancamento else '' }}</textarea>
                             </div>
                         </div>
@@ -382,13 +459,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (valorInput) {
         valorInput.addEventListener('input', function(e) {
             let value = e.target.value;
-            
+
             // Remove tudo que não é dígito
             value = value.replace(/\D/g, '');
-            
+
             // Converte para centavos
             value = (parseFloat(value) / 100).toFixed(2);
-            
+
             // Formata como moeda brasileira
             if (value !== 'NaN') {
                 e.target.value = 'R$ ' + value.replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
@@ -414,26 +491,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const statusSelect = document.getElementById('status');
     const campoDataPagamento = document.getElementById('campo_data_pagamento');
     const dataPagamentoInput = document.getElementById('data_pagamento');
-    
+
     if (tipoSelect && statusSelect) {
         function filtrarStatus() {
             const tipo = tipoSelect.value;
             const statusAtual = statusSelect.value;
-            
+
             // Limpar todas as opções
             statusSelect.innerHTML = '';
-            
+
             // Adicionar opções comuns
             statusSelect.innerHTML += '<option value="pendente">Pendente</option>';
             statusSelect.innerHTML += '<option value="cancelado">Cancelado</option>';
-            
+
             // Adicionar opções específicas baseadas no tipo
             if (tipo === 'receita' || tipo === 'conta_receber') {
                 statusSelect.innerHTML += '<option value="recebido">Recebido</option>';
             } else if (tipo === 'despesa' || tipo === 'conta_pagar') {
                 statusSelect.innerHTML += '<option value="pago">Pago</option>';
             }
-            
+
             // Tentar manter o status atual se for válido para o novo tipo
             const opcoes = Array.from(statusSelect.options).map(opt => opt.value);
             if (opcoes.includes(statusAtual)) {
@@ -451,16 +528,99 @@ document.addEventListener('DOMContentLoaded', function() {
             dataPagamentoInput.disabled = !quitado;
             dataPagamentoInput.required = quitado;
         }
-        
+
         // Aplicar filtro quando mudar o tipo
         tipoSelect.addEventListener('change', filtrarStatus);
         statusSelect.addEventListener('change', atualizarCampoDataPagamento);
-        
+
         // Aplicar filtro inicial
         filtrarStatus();
     }
 });
 </script>
+
+<script>
+// D25F01_COMPOSICAO_FINANCEIRA
+document.addEventListener('DOMContentLoaded', function () {
+
+    const valorFinal = document.getElementById('valor');
+    const valorOriginal = document.getElementById('valor_original');
+    const juros = document.getElementById('juros');
+    const multa = document.getElementById('multa');
+    const desconto = document.getElementById('desconto');
+
+    function lerMoeda(input) {
+        if (!input) {
+            return 0;
+        }
+
+        let texto = String(input.value || '')
+            .replace('R$', '')
+            .replace(/\s/g, '')
+            .replace(/\./g, '')
+            .replace(',', '.');
+
+        const numero = parseFloat(texto);
+
+        return Number.isFinite(numero)
+            ? numero
+            : 0;
+    }
+
+    function formatarMoeda(valor) {
+        return 'R$ ' + valor.toLocaleString(
+            'pt-BR',
+            {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }
+        );
+    }
+
+    function recalcular() {
+        const original = lerMoeda(valorOriginal);
+        const valorJuros = lerMoeda(juros);
+        const valorMulta = lerMoeda(multa);
+        const valorDesconto = lerMoeda(desconto);
+
+        const total =
+            original
+            + valorJuros
+            + valorMulta
+            - valorDesconto;
+
+        if (valorFinal) {
+            valorFinal.value = formatarMoeda(
+                Math.max(total, 0)
+            );
+        }
+    }
+
+    [
+        valorOriginal,
+        juros,
+        multa,
+        desconto
+    ].forEach(function (campo) {
+        if (!campo) {
+            return;
+        }
+
+        campo.addEventListener(
+            'input',
+            recalcular
+        );
+
+        campo.addEventListener(
+            'change',
+            recalcular
+        );
+    });
+
+    recalcular();
+});
+</script>
+
 
 <style>
 .text-neon {

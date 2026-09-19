@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
@@ -686,7 +686,7 @@
         
         // Auto-hide alerts após 5 segundos
         setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert');
+            const alerts = document.querySelectorAll('.alert.alert-dismissible');
             alerts.forEach(alert => {
                 const bsAlert = new bootstrap.Alert(alert);
                 bsAlert.close();
