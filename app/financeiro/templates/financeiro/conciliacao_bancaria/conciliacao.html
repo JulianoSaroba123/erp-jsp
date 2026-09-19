@@ -5,6 +5,765 @@
 {% block breadcrumb %}
 <li class="breadcrumb-item"><a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a></li>
 <li class="breadcrumb-item active">Conciliação Bancária</li>
+<script>
+/* D25F01-UX3-LISTA */
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function () {
+
+        const cardLancamentos =
+            document.querySelector(
+                '.lancamentos-card'
+            );
+
+        function abrirPassoLancamentos() {
+            if (!cardLancamentos) {
+                return;
+            }
+
+            cardLancamentos.classList.add(
+                'ux3-ativo'
+            );
+
+            window.setTimeout(
+                function () {
+                    cardLancamentos.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                },
+                100
+            );
+        }
+
+        /*
+         * A linha inteira do extrato vira clicavel.
+         * Elementos interativos continuam funcionando.
+         */
+        document
+            .querySelectorAll('.extrato-row')
+            .forEach(function (row) {
+
+                row.addEventListener(
+                    'click',
+                    function (event) {
+
+                        if (
+                            event.target.closest(
+                                'button, a, input, select, label'
+                            )
+                        ) {
+                            return;
+                        }
+
+                        const id = Number(
+                            row.dataset.extratoId
+                        );
+
+                        if (!id) {
+                            return;
+                        }
+
+                        selecionarExtrato(id);
+                        abrirPassoLancamentos();
+                    }
+                );
+            });
+
+        /*
+         * O botao original continua executando
+         * selecionarExtrato pelo onclick existente.
+         */
+        document
+            .querySelectorAll(
+                '.btn-selecionar-extrato'
+            )
+            .forEach(function (botao) {
+
+                botao.addEventListener(
+                    'click',
+                    function () {
+                        abrirPassoLancamentos();
+                    }
+                );
+            });
+    }
+);
+</script>
+
+<script>
+/* =========================================================
+   D25F01-UX4-GESTAO-FILA
+   ========================================================= */
+
+document.addEventListener(
+    'DOMContentLoaded',
+    function () {
+
+        const extratoRows = Array.from(
+            document.querySelectorAll(
+                '.extrato-row'
+            )
+        );
+
+        const dual = document.querySelector(
+            '.conciliacao-dual'
+        );
+
+        const workbench = document.querySelector(
+            '.conciliacao-workbench'
+        );
+
+        const lancamentosCard =
+            document.querySelector(
+                '.lancamentos-card'
+            );
+
+        if (
+            !extratoRows.length ||
+            !dual ||
+            !workbench ||
+            !lancamentosCard
+        ) {
+            console.warn(
+                'UX4: estrutura original incompleta.'
+            );
+            return;
+        }
+
+        /* -------------------------------------------------
+           RAIZ DA NOVA EXPERIENCIA
+           ------------------------------------------------- */
+
+        const root =
+            document.createElement('div');
+
+        root.id =
+            'ux4-conciliacao';
+
+        /*
+         * Entra exatamente onde estava o cockpit.
+         */
+        workbench.parentNode.insertBefore(
+            root,
+            workbench
+        );
+
+        const intro =
+            document.createElement('div');
+
+        intro.className =
+            'ux4-intro';
+
+        intro.innerHTML = `
+            <div>
+                <div class="ux4-intro-title">
+                    Movimentos pendentes de concilia&ccedil;&atilde;o
+                </div>
+
+                <div class="ux4-intro-text">
+                    Escolha um movimento banc&aacute;rio e vincule
+                    os lan&ccedil;amentos correspondentes.
+                </div>
+            </div>
+
+            <div class="ux4-intro-count">
+                ${extratoRows.length}
+                movimento${extratoRows.length === 1 ? '' : 's'}
+            </div>
+        `;
+
+        root.appendChild(
+            intro
+        );
+
+        workbench.style.display =
+            'none';
+
+        /* -------------------------------------------------
+           HELPERS
+           ------------------------------------------------- */
+
+        function texto(elemento) {
+            if (!elemento) {
+                return '';
+            }
+
+            return elemento
+                .textContent
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function dataKey(dataBR) {
+            const p =
+                String(dataBR).split('/');
+
+            if (p.length !== 3) {
+                return '';
+            }
+
+            return (
+                p[2] +
+                '-' +
+                p[1].padStart(2, '0') +
+                '-' +
+                p[0].padStart(2, '0')
+            );
+        }
+
+        /* -------------------------------------------------
+           AGRUPAMENTO POR DATA
+           ------------------------------------------------- */
+
+        const grupos =
+            new Map();
+
+        extratoRows.forEach(
+            function (row) {
+
+                const celulas =
+                    row.querySelectorAll(
+                        'td'
+                    );
+
+                if (celulas.length < 5) {
+                    return;
+                }
+
+                const data =
+                    texto(celulas[0]);
+
+                if (!grupos.has(data)) {
+                    grupos.set(
+                        data,
+                        []
+                    );
+                }
+
+                grupos.get(data).push(
+                    row
+                );
+            }
+        );
+
+        const datas =
+            Array.from(
+                grupos.keys()
+            );
+
+        datas.sort(
+            function (a, b) {
+                return dataKey(b)
+                    .localeCompare(
+                        dataKey(a)
+                    );
+            }
+        );
+
+        /* -------------------------------------------------
+           FECHAR TODOS
+           ------------------------------------------------- */
+
+        function fecharTodos() {
+            document
+                .querySelectorAll(
+                    '.ux4-movimento'
+                )
+                .forEach(
+                    function (card) {
+
+                        card.classList.remove(
+                            'ativo'
+                        );
+
+                        const workspace =
+                            card.querySelector(
+                                '.ux4-workspace'
+                            );
+
+                        if (workspace) {
+                            workspace.hidden =
+                                true;
+                        }
+
+                        const botao =
+                            card.querySelector(
+                                '.ux4-abrir'
+                            );
+
+                        if (botao) {
+                            botao.innerHTML =
+                                '<i class="fas fa-list-check me-1"></i>' +
+                                'Ver lan&ccedil;amentos';
+                        }
+                    }
+                );
+        }
+
+        /* -------------------------------------------------
+           ABRIR MOVIMENTO
+           ------------------------------------------------- */
+
+        /* D25F01-UX4-TOGGLE */
+        function abrirMovimento(
+            card,
+            workspace,
+            extratoId
+        ) {
+            const jaAberto =
+                card.classList.contains(
+                    'ativo'
+                ) &&
+                workspace.hidden === false;
+
+            /*
+             * Se clicar novamente no movimento aberto,
+             * recolhe a conciliacao.
+             */
+            if (jaAberto) {
+                workspace.hidden = true;
+
+                card.classList.remove(
+                    'ativo'
+                );
+
+                document.body.classList.remove(
+                    'ux4-movimento-aberto'
+                );
+
+                const botao =
+                    card.querySelector(
+                        '.ux4-abrir'
+                    );
+
+                if (botao) {
+                    botao.innerHTML =
+                        '<i class="fas fa-list-check me-1"></i>' +
+                        'Ver lan&ccedil;amentos';
+                }
+
+                document
+                    .querySelectorAll(
+                        '.extrato-row'
+                    )
+                    .forEach(function (row) {
+                        row.classList.remove(
+                            'selected'
+                        );
+                    });
+
+                extratoSelecionado = null;
+                valorExtratoSelecionado = 0;
+                tipoExtratoSelecionado = null;
+
+                limparSelecaoLancamentos();
+                atualizarResumoConciliacao();
+
+                return;
+            }
+
+            fecharTodos();
+
+            /*
+             * Usa exatamente a regra N:N existente.
+             */
+            selecionarExtrato(
+                Number(extratoId)
+            );
+
+            card.classList.add(
+                'ativo'
+            );
+
+            workspace.hidden =
+                false;
+
+            document.body.classList.add(
+                'ux4-movimento-aberto'
+            );
+
+            /*
+             * Move os componentes reais.
+             * Nada e clonado.
+             */
+            workspace.appendChild(
+                workbench
+            );
+
+            workspace.appendChild(
+                lancamentosCard
+            );
+
+            workbench.style.display =
+                'block';
+
+            lancamentosCard.style.display =
+                'block';
+
+            const botao =
+                card.querySelector(
+                    '.ux4-abrir'
+                );
+
+            if (botao) {
+                botao.innerHTML =
+                    '<i class="fas fa-chevron-up me-1"></i>' +
+                    'Fechar lan&ccedil;amentos';
+            }
+
+            /*
+             * Mantem a ordenacao atual dos lancamentos.
+             */
+            const ordenar =
+                document.getElementById(
+                    'ordenar-lancamentos'
+                );
+
+            if (ordenar) {
+                ordenar.dispatchEvent(
+                    new Event(
+                        'change'
+                    )
+                );
+            }
+
+            if (
+                typeof atualizarResumoConciliacao
+                === 'function'
+            ) {
+                atualizarResumoConciliacao();
+            }
+
+            const ordenarMatch =
+                document.getElementById(
+                    'ordenar-lancamentos'
+                );
+
+            if (ordenarMatch) {
+                ordenarMatch.value = 'match';
+
+                ordenarLancamentos(
+                    'match'
+                );
+            }
+
+            window.setTimeout(
+                function () {
+                    card.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                },
+                80
+            );
+        }
+
+        /* -------------------------------------------------
+           CONSTRUCAO DOS DIAS E MOVIMENTOS
+           ------------------------------------------------- */
+
+        datas.forEach(
+            function (data) {
+
+                const movimentos =
+                    grupos.get(data);
+
+                const dia =
+                    document.createElement(
+                        'section'
+                    );
+
+                dia.className =
+                    'ux4-dia';
+
+                const header =
+                    document.createElement(
+                        'div'
+                    );
+
+                header.className =
+                    'ux4-dia-header';
+
+                header.innerHTML = `
+                    <div class="ux4-dia-data">
+                        ${data || 'Sem data'}
+                    </div>
+
+                    <div class="ux4-dia-linha"></div>
+
+                    <div class="ux4-dia-total">
+                        ${movimentos.length}
+                        movimento${movimentos.length === 1 ? '' : 's'}
+                    </div>
+                `;
+
+                dia.appendChild(
+                    header
+                );
+
+                movimentos.forEach(
+                    function (row) {
+
+                        const celulas =
+                            row.querySelectorAll(
+                                'td'
+                            );
+
+                        const id =
+                            row.dataset
+                                .extratoId;
+
+                        const tipo =
+                            String(
+                                row.dataset
+                                    .extratoTipo
+                                || ''
+                            ).toLowerCase();
+
+                        const descricao =
+                            texto(
+                                celulas[1]
+                                    .querySelector(
+                                        'small'
+                                    )
+                            );
+
+                        const docEl =
+                            celulas[1]
+                                .querySelector(
+                                    '.badge'
+                                );
+
+                        const documento =
+                            texto(docEl);
+
+                        const valor =
+                            texto(
+                                celulas[3]
+                            );
+
+                        const card =
+                            document.createElement(
+                                'article'
+                            );
+
+                        card.className =
+                            'ux4-movimento';
+
+                        card.dataset.extratoId =
+                            id;
+
+                        const topo =
+                            document.createElement(
+                                'div'
+                            );
+
+                        topo.className =
+                            'ux4-movimento-topo';
+
+                        const info =
+                            document.createElement(
+                                'div'
+                            );
+
+                        info.className =
+                            'ux4-movimento-info';
+
+                        const desc =
+                            document.createElement(
+                                'div'
+                            );
+
+                        desc.className =
+                            'ux4-movimento-descricao';
+
+                        desc.textContent =
+                            descricao;
+
+                        desc.title =
+                            descricao;
+
+                        info.appendChild(
+                            desc
+                        );
+
+                        if (documento) {
+                            const doc =
+                                document.createElement(
+                                    'div'
+                                );
+
+                            doc.className =
+                                'ux4-movimento-documento';
+
+                            doc.textContent =
+                                documento;
+
+                            doc.title =
+                                documento;
+
+                            info.appendChild(
+                                doc
+                            );
+                        }
+
+                        const tipoEl =
+                            document.createElement(
+                                'span'
+                            );
+
+                        tipoEl.className =
+                            'ux4-tipo ' + tipo;
+
+                        tipoEl.textContent =
+                            tipo === 'credito'
+                                ? 'Cr?dito'
+                                : 'D?bito';
+
+                        const valorEl =
+                            document.createElement(
+                                'div'
+                            );
+
+                        valorEl.className =
+                            'ux4-movimento-valor ' +
+                            tipo;
+
+                        valorEl.textContent =
+                            valor;
+
+                        const botao =
+                            document.createElement(
+                                'button'
+                            );
+
+                        botao.type =
+                            'button';
+
+                        botao.className =
+                            'btn btn-outline-primary ux4-abrir';
+
+                        botao.innerHTML =
+                            '<i class="fas fa-list-check me-1"></i>' +
+                            'Ver lan&ccedil;amentos';
+
+                        const workspace =
+                            document.createElement(
+                                'div'
+                            );
+
+                        workspace.className =
+                            'ux4-workspace';
+
+                        workspace.hidden =
+                            true;
+
+                        const titulo =
+                            document.createElement(
+                                'div'
+                            );
+
+                        titulo.className =
+                            'ux4-lancamentos-titulo';
+
+                        titulo.innerHTML = `
+                            <strong>
+                                Lan&ccedil;amentos
+                            </strong>
+
+                            <small>
+                                Selecione um ou mais lan&ccedil;amentos
+                                para este movimento.
+                            </small>
+                        `;
+
+                        workspace.appendChild(
+                            titulo
+                        );
+
+                        botao.addEventListener(
+                            'click',
+                            function () {
+                                abrirMovimento(
+                                    card,
+                                    workspace,
+                                    id
+                                );
+                            }
+                        );
+
+                        /*
+                         * Tambem deixa a linha do movimento
+                         * clicavel, exceto nos controles.
+                         */
+                        topo.addEventListener(
+                            'click',
+                            function (event) {
+
+                                if (
+                                    event.target.closest(
+                                        'button, input, select, label, a'
+                                    )
+                                ) {
+                                    return;
+                                }
+
+                                abrirMovimento(
+                                    card,
+                                    workspace,
+                                    id
+                                );
+                            }
+                        );
+
+                        topo.appendChild(
+                            info
+                        );
+
+                        topo.appendChild(
+                            tipoEl
+                        );
+
+                        topo.appendChild(
+                            valorEl
+                        );
+
+                        topo.appendChild(
+                            botao
+                        );
+
+                        card.appendChild(
+                            topo
+                        );
+
+                        card.appendChild(
+                            workspace
+                        );
+
+                        dia.appendChild(
+                            card
+                        );
+                    }
+                );
+
+                root.appendChild(
+                    dia
+                );
+            }
+        );
+
+        /*
+         * A estrutura antiga continua no DOM,
+         * apenas invisivel.
+         */
+        dual.style.display =
+            'none';
+    }
+);
+</script>
+
 {% endblock %}
 
 {% block content %}
@@ -134,11 +893,80 @@
     </div>
 
     <!-- Área de Conciliação -->
-    <div class="row">
+
+    <!-- D25F01-UX2 -->
+    <div class="card conciliacao-workbench mb-3">
+<div id="painel-conciliacao-nn" class="card-body p-3">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+        <div>
+            <div class="fw-bold">
+                <i class="fas fa-project-diagram"></i>
+                Conciliação múltipla
+            </div>
+            <small class="text-muted">
+                Selecione um extrato e marque um ou mais lançamentos compatíveis.
+            </small>
+        </div>
+        <span class="badge bg-primary-subtle text-primary border">Fluxo N:N</span>
+    </div>
+
+    <div class="row g-2">
+        <div class="col-6 col-xl-3">
+            <div class="conciliacao-resumo-item">
+                <small class="text-muted d-block">Extrato</small>
+                <strong id="resumo-valor-extrato">R$ 0,00</strong>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="conciliacao-resumo-item">
+                <small class="text-muted d-block">Selecionado</small>
+                <strong id="resumo-valor-selecionado">R$ 0,00</strong>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="conciliacao-resumo-item">
+                <small class="text-muted d-block">Restante</small>
+                <strong id="resumo-valor-restante">R$ 0,00</strong>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="conciliacao-resumo-item">
+                <small class="text-muted d-block">Itens</small>
+                <strong id="resumo-itens">0</strong>
+            </div>
+        </div>
+    </div>
+
+    <div id="status-conciliacao-nn"
+         class="alert alert-secondary py-2 mt-3 mb-3">
+        Selecione um extrato para começar.
+    </div>
+
+    <button
+        type="button"
+        id="btn-conciliar-nn"
+        class="btn btn-primary w-100"
+        onclick="conciliarSelecionados()"
+        disabled
+    >
+        <i class="fas fa-eye"></i>
+        Conciliar selecionados
+    </button>
+
+    <div class="text-center mt-2">
+        <small class="text-muted">
+            A confirmação grava a conciliação N:N.
+        </small>
+    </div>
+</div>
+
+    </div>
+
+    <div class="row g-3 conciliacao-dual">
         <!-- Extratos Pendentes -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-warning text-white">
+        <div class="col-xl-6">
+            <div class="card conciliacao-card extratos-card h-100">
+                <div class="card-header conciliacao-header extratos-header">
                     <h5 class="mb-0"><i class="fas fa-file-invoice-dollar"></i> Extratos Bancários Pendentes</h5>
                 </div>
                 <div class="card-body p-0">
@@ -165,7 +993,7 @@
                                     data-extrato-tipo="{{ extrato.tipo_movimento }}">
                                     <td>{{ extrato.data_movimento.strftime('%d/%m/%Y') if extrato.data_movimento else '—' }}</td>
                                     <td>
-                                        <small>{{ extrato.descricao }}</small>
+                                        <small title="{{ extrato.descricao }}">{{ extrato.descricao }}</small>
                                         {% if extrato.documento %}
                                         <br><span class="badge bg-secondary">Doc: {{ extrato.documento }}</span>
                                         {% endif %}
@@ -185,8 +1013,13 @@
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-info" onclick="selecionarExtrato({{ extrato.id }})">
-                                            <i class="fas fa-hand-pointer"></i>
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-primary btn-selecionar-extrato"
+                                            onclick="selecionarExtrato({{ extrato.id }})"
+                                        >
+                                            <i class="fas fa-arrow-right me-1"></i>
+                                            Selecionar
                                         </button>
                                     </td>
                                 </tr>
@@ -208,76 +1041,43 @@
         </div>
 
         <!-- Lançamentos Pendentes -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-file-alt"></i> Lançamentos do Sistema</h5>
+        <div class="col-xl-6">
+            <div class="card conciliacao-card lancamentos-card h-100">
+                <div class="card-header conciliacao-header lancamentos-header">
+                    <div>
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-alt me-1"></i>
+                            Lan&ccedil;amentos
+                        </h5>
+                    </div>
+
+                    <div class="ordenacao-lancamentos">
+                        <label for="ordenar-lancamentos">
+                            Ordenar
+                        </label>
+
+                        <select
+                            id="ordenar-lancamentos"
+                            class="form-select form-select-sm"
+                        >
+                            <option value="match" selected>
+                                Melhores correspond&ecirc;ncias
+                            </option>
+                            <option value="data-desc">
+                                Data: mais recentes
+                            </option>
+
+                            <option value="data-asc">
+                                Data: mais antigos
+                            </option>
+
+                            <option value="original">
+                                Ordem original
+                            </option>
+                        </select>
+                    </div>
                 </div>
                 <div class="card-body p-0">
-
-                    <div id="painel-conciliacao-nn" class="p-3 border-bottom bg-light">
-                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-                            <div>
-                                <div class="fw-bold">
-                                    <i class="fas fa-project-diagram"></i>
-                                    Conciliação múltipla
-                                </div>
-                                <small class="text-muted">
-                                    Selecione um extrato e marque um ou mais lançamentos compatíveis.
-                                </small>
-                            </div>
-                            <span class="badge bg-secondary">B2.2 - integração N:N</span>
-                        </div>
-
-                        <div class="row g-2">
-                            <div class="col-6 col-xl-3">
-                                <div class="conciliacao-resumo-item">
-                                    <small class="text-muted d-block">Extrato</small>
-                                    <strong id="resumo-valor-extrato">R$ 0,00</strong>
-                                </div>
-                            </div>
-                            <div class="col-6 col-xl-3">
-                                <div class="conciliacao-resumo-item">
-                                    <small class="text-muted d-block">Selecionado</small>
-                                    <strong id="resumo-valor-selecionado">R$ 0,00</strong>
-                                </div>
-                            </div>
-                            <div class="col-6 col-xl-3">
-                                <div class="conciliacao-resumo-item">
-                                    <small class="text-muted d-block">Restante</small>
-                                    <strong id="resumo-valor-restante">R$ 0,00</strong>
-                                </div>
-                            </div>
-                            <div class="col-6 col-xl-3">
-                                <div class="conciliacao-resumo-item">
-                                    <small class="text-muted d-block">Itens</small>
-                                    <strong id="resumo-itens">0</strong>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="status-conciliacao-nn"
-                             class="alert alert-secondary py-2 mt-3 mb-3">
-                            Selecione um extrato para começar.
-                        </div>
-
-                        <button
-                            type="button"
-                            id="btn-conciliar-nn"
-                            class="btn btn-primary w-100"
-                            onclick="conciliarSelecionados()"
-                            disabled
-                        >
-                            <i class="fas fa-eye"></i>
-                            Conciliar selecionados
-                        </button>
-
-                        <div class="text-center mt-2">
-                            <small class="text-muted">
-                                A confirmação grava a conciliação N:N.
-                            </small>
-                        </div>
-                    </div>
 
                     {% if lancamentos_pendentes %}
                     <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
@@ -288,7 +1088,7 @@
                                     <th>Descrição</th>
                                     <th>Tipo</th>
                                     <th>Valor</th>
-                                    <th>Selecionar / Valor a conciliar</th>
+                                    <th class="text-center">A&ccedil;&atilde;o / Valor</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -297,10 +1097,12 @@
                                     class="lancamento-row"
                                     data-lancamento-id="{{ lanc.id }}"
                                     data-lancamento-valor="{{ lanc.valor }}"
-                                    data-lancamento-tipo="{{ lanc.tipo }}">
+                                    data-lancamento-tipo="{{ lanc.tipo }}"
+                                    data-data-lancamento="{{ lanc.data_lancamento.isoformat() if lanc.data_lancamento else '' }}"
+                                    data-data-vencimento="{{ lanc.data_vencimento.isoformat() if lanc.data_vencimento else '' }}">
                                     <td>{{ (lanc.data_vencimento or lanc.data_lancamento).strftime('%d/%m/%Y') if (lanc.data_vencimento or lanc.data_lancamento) else '—' }}</td>
                                     <td>
-                                        <small>{{ lanc.descricao }}</small>
+                                        <small title="{{ lanc.descricao }}">{{ lanc.descricao }}</small>
                                         {% if lanc.categoria %}
                                         <br><span class="badge bg-info">{{ lanc.categoria.nome }}</span>
                                         {% endif %}
@@ -319,11 +1121,11 @@
                                         <span class="text-danger fw-bold">{{ lanc.valor_formatado }}</span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-center">
-                                        <div class="d-flex flex-column align-items-center gap-1">
-                                            <div class="form-check">
-                                                <input
-                                                    class="form-check-input lancamento-checkbox"
+                                    <td class="acao-lancamento">
+                                        <div class="acao-lancamento-grid">
+
+                                            <input
+                                                class="btn-check lancamento-checkbox"
                                                 type="checkbox"
                                                 value="{{ lanc.id }}"
                                                 id="lanc-check-{{ lanc.id }}"
@@ -332,13 +1134,24 @@
                                                 data-valor-disponivel="{{ lanc.valor_disponivel_conciliacao }}"
                                                 data-valor-original="{{ lanc.valor }}"
                                                 data-tipo="{{ lanc.tipo }}"
+                                                autocomplete="off"
                                                 disabled
                                                 aria-label="Selecionar {{ lanc.descricao }}"
                                             >
-                                            </div>
 
-                                            <div class="input-group input-group-sm" style="max-width: 150px;">
-                                                <span class="input-group-text">R$</span>
+                                            <label
+                                                class="btn btn-sm btn-outline-primary btn-selecionar-lancamento"
+                                                for="lanc-check-{{ lanc.id }}"
+                                            >
+                                                <i class="fas fa-check me-1"></i>
+                                                Selecionar
+                                            </label>
+
+                                            <div class="input-group input-group-sm campo-conciliar">
+                                                <span class="input-group-text">
+                                                    R$
+                                                </span>
+
                                                 <input
                                                     type="number"
                                                     class="form-control text-end valor-conciliar-input"
@@ -350,13 +1163,11 @@
                                                     value="{{ lanc.valor_disponivel_conciliacao }}"
                                                     inputmode="decimal"
                                                     disabled
+                                                    title="Disponivel: {{ lanc.valor_disponivel_formatado }}"
                                                     aria-label="Valor a conciliar de {{ lanc.descricao }}"
                                                 >
                                             </div>
 
-                                            <small class="text-muted">
-                                                Disponível: {{ lanc.valor_disponivel_formatado }}
-                                            </small>
                                         </div>
                                     </td>
                                 </tr>
@@ -378,25 +1189,225 @@
 </div>
 
 <style>
-.extrato-row.selected {
-    background-color: #fff3cd !important;
-    border-left: 4px solid #ffc107;
-}
-.lancamento-row.selecionado {
-    background-color: #d1e7dd !important;
-    border-left: 4px solid #198754;
+/* D25F01-UX2 */
+
+.conciliacao-workbench {
+    border: 1px solid #cfe2ff;
+    border-radius: 12px;
+    overflow: hidden;
+    background:
+        linear-gradient(
+            180deg,
+            #f8fbff 0%,
+            #eef6ff 100%
+        );
+    box-shadow: 0 4px 14px rgba(15, 23, 42, .05);
 }
 
-.lancamento-row.incompativel {
-    opacity: 0.45;
+#painel-conciliacao-nn {
+    background: transparent !important;
+    border: 0 !important;
 }
 
 .conciliacao-resumo-item {
-    height: 100%;
-    padding: 0.65rem 0.75rem;
-    background-color: #ffffff;
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
+    min-height: 64px;
+    padding: .65rem .75rem;
+    background: #fff;
+    border: 1px solid #dce5ee;
+    border-radius: 9px;
+}
+
+.conciliacao-resumo-item small {
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.conciliacao-resumo-item strong {
+    display: block;
+    margin-top: .15rem;
+    font-size: 1.02rem;
+    color: #0f172a;
+}
+
+#btn-conciliar-nn {
+    min-height: 42px;
+    border-radius: 8px;
+    font-weight: 700;
+}
+
+.conciliacao-card {
+    border: 1px solid #dce3ea;
+    border-radius: 11px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(15, 23, 42, .05);
+}
+
+.conciliacao-header {
+    height: 58px;
+    padding: .65rem .8rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.extratos-header {
+    background: #fff5d9;
+    color: #17324d;
+}
+
+.lancamentos-header {
+    background: #e8f5ef;
+    color: #17324d;
+}
+
+.conciliacao-header h5 {
+    font-size: .96rem;
+    font-weight: 700;
+}
+
+.ordenacao-lancamentos {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+}
+
+.ordenacao-lancamentos label {
+    margin: 0;
+    color: #64748b;
+    font-size: .68rem;
+    font-weight: 700;
+}
+
+#ordenar-lancamentos {
+    width: 180px;
+    font-size: .72rem;
+}
+
+.conciliacao-card .table-responsive {
+    height: 520px;
+    max-height: 520px !important;
+    overflow-y: auto !important;
+    scrollbar-width: thin;
+}
+
+.conciliacao-card table {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.conciliacao-card thead th {
+    height: 38px;
+    padding: .4rem .45rem !important;
+    background: #f8fafc !important;
+    color: #64748b;
+    font-size: .64rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.extrato-row,
+.lancamento-row {
+    height: 60px !important;
+}
+
+.extrato-row td,
+.lancamento-row td {
+    height: 60px !important;
+    padding: .35rem .45rem !important;
+    vertical-align: middle !important;
+    border-color: #e9eef3;
+}
+
+.extrato-row td:nth-child(2) small:first-child,
+.lancamento-row td:nth-child(2) small:first-child {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.extrato-row td:nth-child(2) .badge,
+.lancamento-row td:nth-child(2) .badge {
+    display: inline-block;
+    max-width: 190px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .59rem;
+}
+
+.extrato-row.selected {
+    background: #eaf4ff !important;
+    box-shadow: inset 4px 0 0 #0d6efd;
+}
+
+.lancamento-row.selecionado {
+    background: #ecfdf3 !important;
+    box-shadow: inset 4px 0 0 #198754;
+}
+
+.lancamento-row.incompativel {
+    opacity: .35;
+}
+
+.btn-selecionar-extrato {
+    width: 92px;
+    font-size: .67rem;
+    font-weight: 700;
+}
+
+.acao-lancamento {
+    width: 205px;
+}
+
+.acao-lancamento-grid {
+    display: grid;
+    grid-template-columns: 92px 105px;
+    align-items: center;
+    justify-content: end;
+    gap: .4rem;
+}
+
+.btn-selecionar-lancamento {
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .66rem;
+    font-weight: 700;
+}
+
+.btn-check:checked + .btn-selecionar-lancamento {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: #fff;
+}
+
+.btn-check:disabled + .btn-selecionar-lancamento {
+    opacity: .35;
+}
+
+.campo-conciliar {
+    width: 105px;
+}
+
+.campo-conciliar .input-group-text,
+.campo-conciliar .form-control {
+    height: 32px;
+    font-size: .7rem;
+}
+
+.valor-conciliar-input {
+    font-weight: 700;
+}
+
+.valor-conciliar-input:enabled {
+    border-color: #0d6efd;
+    background: #fff;
 }
 
 .sticky-top {
@@ -404,6 +1415,1086 @@
     top: 0;
     z-index: 10;
 }
+
+@media (max-width: 1199px) {
+    .conciliacao-card {
+        margin-bottom: .75rem;
+    }
+
+    .conciliacao-card .table-responsive {
+        height: auto;
+        max-height: 520px !important;
+    }
+}
+
+
+/* =========================================================
+   D25F01-UX2B
+   Acabamento profissional das tabelas
+   ========================================================= */
+
+/* Mais espaco para o lado que possui mais informacoes */
+@media (min-width: 1200px) {
+    .conciliacao-dual > .col-xl-6:first-child {
+        flex: 0 0 auto;
+        width: 42%;
+    }
+
+    .conciliacao-dual > .col-xl-6:last-child {
+        flex: 0 0 auto;
+        width: 58%;
+    }
+
+    .lancamentos-card .table-responsive {
+        overflow-x: hidden !important;
+    }
+}
+
+/* ---------------------------------------------------------
+   TABELAS
+   --------------------------------------------------------- */
+
+.conciliacao-card table {
+    width: 100%;
+    table-layout: fixed !important;
+}
+
+.conciliacao-card thead th {
+    height: 36px !important;
+    padding: .38rem .42rem !important;
+    font-size: .62rem !important;
+    letter-spacing: .015em;
+}
+
+.extrato-row,
+.lancamento-row {
+    height: 58px !important;
+}
+
+.extrato-row td,
+.lancamento-row td {
+    height: 58px !important;
+    padding: .32rem .42rem !important;
+    font-size: .72rem;
+}
+
+/* Hover mais limpo */
+.extrato-row:hover,
+.lancamento-row:hover {
+    background-color: #f8fbff;
+}
+
+/* ---------------------------------------------------------
+   TABELA DE EXTRATOS
+   --------------------------------------------------------- */
+
+.extratos-card th:nth-child(1),
+.extratos-card td:nth-child(1) {
+    width: 80px;
+}
+
+.extratos-card th:nth-child(3),
+.extratos-card td:nth-child(3) {
+    width: 64px;
+    text-align: center;
+}
+
+.extratos-card th:nth-child(4),
+.extratos-card td:nth-child(4) {
+    width: 96px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.extratos-card th:nth-child(5),
+.extratos-card td:nth-child(5) {
+    width: 98px;
+    text-align: center;
+}
+
+/* ---------------------------------------------------------
+   TABELA DE LANCAMENTOS
+   --------------------------------------------------------- */
+
+.lancamentos-card th:nth-child(1),
+.lancamentos-card td:nth-child(1) {
+    width: 76px;
+    white-space: nowrap;
+}
+
+.lancamentos-card th:nth-child(3),
+.lancamentos-card td:nth-child(3) {
+    width: 82px;
+    text-align: center;
+}
+
+.lancamentos-card th:nth-child(4),
+.lancamentos-card td:nth-child(4) {
+    width: 94px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.lancamentos-card th:nth-child(5),
+.lancamentos-card td:nth-child(5) {
+    width: 185px;
+}
+
+/* Descricao ocupa todo o espaco restante */
+.extratos-card td:nth-child(2),
+.lancamentos-card td:nth-child(2) {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.extratos-card td:nth-child(2) small:first-child,
+.lancamentos-card td:nth-child(2) small:first-child {
+    display: block !important;
+    max-width: 100%;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+/* ---------------------------------------------------------
+   VALORES
+   --------------------------------------------------------- */
+
+.extratos-card td:nth-child(4) span,
+.lancamentos-card td:nth-child(4) span {
+    font-size: .76rem;
+    font-weight: 800 !important;
+}
+
+/* ---------------------------------------------------------
+   CONTROLE SELECIONAR + VALOR
+   --------------------------------------------------------- */
+
+.acao-lancamento {
+    padding-left: .25rem !important;
+    padding-right: .25rem !important;
+}
+
+.acao-lancamento-grid {
+    display: grid !important;
+    grid-template-columns: 78px minmax(88px, 1fr) !important;
+    align-items: center;
+    gap: .3rem !important;
+    width: 100%;
+}
+
+.btn-selecionar-lancamento {
+    width: 78px !important;
+    min-width: 78px !important;
+    height: 31px !important;
+    padding: .15rem .25rem !important;
+    font-size: .60rem !important;
+    white-space: nowrap;
+}
+
+.campo-conciliar {
+    width: 100% !important;
+    min-width: 0;
+}
+
+.campo-conciliar .input-group {
+    width: 100% !important;
+}
+
+.campo-conciliar .input-group-text {
+    width: 25px;
+    height: 31px !important;
+    padding: .15rem .2rem !important;
+    justify-content: center;
+    font-size: .62rem !important;
+}
+
+.valor-conciliar-input {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 31px !important;
+    padding: .15rem .28rem !important;
+    font-size: .68rem !important;
+    font-weight: 800 !important;
+}
+
+/* Libera espaco interno dos inputs number */
+.valor-conciliar-input::-webkit-inner-spin-button,
+.valor-conciliar-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.valor-conciliar-input {
+    -moz-appearance: textfield;
+}
+
+/* ---------------------------------------------------------
+   BADGES
+   --------------------------------------------------------- */
+
+.extrato-row .badge,
+.lancamento-row .badge {
+    font-size: .56rem !important;
+    padding: .22rem .34rem !important;
+}
+
+/* Documento mais discreto */
+.extrato-row td:nth-child(2) .badge {
+    max-width: 165px;
+}
+
+/* ---------------------------------------------------------
+   SCROLL
+   --------------------------------------------------------- */
+
+.conciliacao-card .table-responsive {
+    scrollbar-width: thin;
+    scrollbar-color: #94a3b8 transparent;
+}
+
+@media (max-width: 1199px) {
+    .acao-lancamento-grid {
+        grid-template-columns: 85px 110px !important;
+        justify-content: end;
+    }
+
+    .lancamentos-card .table-responsive {
+        overflow-x: auto !important;
+    }
+}
+
+
+
+
+/* =========================================================
+   D25F01-UX2C-TIPOGRAFIA
+   Mais contraste e leitura operacional
+   ========================================================= */
+
+/* Titulos dos dois paineis */
+.conciliacao-header h5 {
+    font-size: 1rem !important;
+    font-weight: 800 !important;
+    color: #17324d !important;
+}
+
+/* Cabecalho das colunas */
+.conciliacao-card thead th {
+    color: #334155 !important;
+    font-size: .66rem !important;
+    font-weight: 800 !important;
+    letter-spacing: .02em;
+}
+
+/* Texto geral das linhas */
+.extrato-row td,
+.lancamento-row td {
+    color: #1e293b;
+    font-size: .76rem !important;
+    font-weight: 500;
+}
+
+/* Data */
+.extrato-row td:first-child,
+.lancamento-row td:first-child {
+    color: #334155 !important;
+    font-weight: 700 !important;
+}
+
+/* Descricao principal */
+.extrato-row td:nth-child(2) small:first-child,
+.lancamento-row td:nth-child(2) small:first-child {
+    color: #1e293b !important;
+    font-size: .76rem !important;
+    font-weight: 700 !important;
+}
+
+/* Valores */
+.extrato-row td:nth-child(4) span,
+.lancamento-row td:nth-child(4) span {
+    font-size: .79rem !important;
+    font-weight: 900 !important;
+}
+
+/* Badges de tipo/documento */
+.extrato-row .badge,
+.lancamento-row .badge {
+    font-weight: 700 !important;
+}
+
+/* Botoes Selecionar */
+.btn-selecionar-extrato,
+.btn-selecionar-lancamento {
+    font-weight: 800 !important;
+}
+
+/* Campo monetario */
+.valor-conciliar-input {
+    color: #0f172a !important;
+    font-weight: 800 !important;
+}
+
+/* Ordenacao */
+.ordenacao-lancamentos label {
+    color: #334155 !important;
+    font-weight: 800 !important;
+}
+
+#ordenar-lancamentos {
+    color: #1e293b !important;
+    font-weight: 700 !important;
+}
+
+/* Cockpit */
+.conciliacao-resumo-item small {
+    color: #475569 !important;
+    font-weight: 800 !important;
+}
+
+.conciliacao-resumo-item strong {
+    color: #0f172a !important;
+    font-size: 1.08rem !important;
+    font-weight: 900 !important;
+}
+
+#status-conciliacao-nn {
+    color: #334155;
+    font-weight: 600;
+}
+
+
+
+
+/* =========================================================
+   D25F01-UX3-LISTA
+   Fluxo vertical de conciliacao
+   ========================================================= */
+
+/*
+ * Fluxo operacional:
+ * 1. escolher extrato
+ * 2. selecionar lancamentos
+ */
+
+.conciliacao-dual {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+}
+
+/* Cancela o layout 42/58 anterior */
+.conciliacao-dual > .col-xl-6:first-child,
+.conciliacao-dual > .col-xl-6:last-child {
+    flex: 0 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Cards ocupam largura total */
+.extratos-card,
+.lancamentos-card {
+    width: 100% !important;
+}
+
+/* Marcacao visual dos passos */
+.extratos-header {
+    position: relative;
+    padding-left: 3.35rem !important;
+}
+
+.extratos-header::before {
+    content: "1";
+    position: absolute;
+    left: .85rem;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #0d6efd;
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 900;
+}
+
+.lancamentos-header {
+    position: relative;
+    padding-left: 3.35rem !important;
+}
+
+.lancamentos-header::before {
+    content: "2";
+    position: absolute;
+    left: .85rem;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #198754;
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 900;
+}
+
+/* ---------------------------------------------------------
+   EXTRATOS
+   --------------------------------------------------------- */
+
+.extratos-card .table-responsive {
+    height: 300px !important;
+    max-height: 300px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+.extratos-card table {
+    table-layout: fixed !important;
+}
+
+.extratos-card th:nth-child(1),
+.extratos-card td:nth-child(1) {
+    width: 90px !important;
+}
+
+.extratos-card th:nth-child(3),
+.extratos-card td:nth-child(3) {
+    width: 90px !important;
+}
+
+.extratos-card th:nth-child(4),
+.extratos-card td:nth-child(4) {
+    width: 125px !important;
+}
+
+.extratos-card th:nth-child(5),
+.extratos-card td:nth-child(5) {
+    width: 120px !important;
+}
+
+/* Descricao agora respira */
+.extratos-card td:nth-child(2) small:first-child {
+    font-size: .80rem !important;
+    font-weight: 700 !important;
+}
+
+/* Linha inteira parece clicavel */
+.extrato-row {
+    cursor: pointer;
+}
+
+.extrato-row:hover {
+    background: #f0f7ff !important;
+}
+
+/* Botao maior */
+.btn-selecionar-extrato {
+    width: 102px !important;
+    height: 33px !important;
+    font-size: .69rem !important;
+}
+
+/* ---------------------------------------------------------
+   LANCAMENTOS
+   --------------------------------------------------------- */
+
+.lancamentos-card {
+    transition:
+        border-color .2s ease,
+        box-shadow .2s ease;
+}
+
+.lancamentos-card.ux3-ativo {
+    border-color: #86b7fe !important;
+    box-shadow:
+        0 6px 22px rgba(13, 110, 253, .10);
+}
+
+.lancamentos-card .table-responsive {
+    height: 380px !important;
+    max-height: 380px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+.lancamentos-card table {
+    table-layout: fixed !important;
+}
+
+.lancamentos-card th:nth-child(1),
+.lancamentos-card td:nth-child(1) {
+    width: 90px !important;
+}
+
+.lancamentos-card th:nth-child(3),
+.lancamentos-card td:nth-child(3) {
+    width: 105px !important;
+}
+
+.lancamentos-card th:nth-child(4),
+.lancamentos-card td:nth-child(4) {
+    width: 125px !important;
+}
+
+.lancamentos-card th:nth-child(5),
+.lancamentos-card td:nth-child(5) {
+    width: 275px !important;
+}
+
+/* Descricao ganha o espaco restante */
+.lancamentos-card td:nth-child(2) small:first-child {
+    font-size: .80rem !important;
+    font-weight: 700 !important;
+}
+
+/* Controle mais confortavel */
+.acao-lancamento-grid {
+    grid-template-columns:
+        110px
+        minmax(135px, 150px) !important;
+
+    justify-content: end !important;
+    gap: .5rem !important;
+}
+
+.btn-selecionar-lancamento {
+    width: 110px !important;
+    min-width: 110px !important;
+    font-size: .68rem !important;
+}
+
+.campo-conciliar {
+    width: 100% !important;
+}
+
+.valor-conciliar-input {
+    font-size: .76rem !important;
+}
+
+/* ---------------------------------------------------------
+   LEITURA
+   --------------------------------------------------------- */
+
+.extrato-row td,
+.lancamento-row td {
+    font-size: .78rem !important;
+}
+
+.extrato-row td:nth-child(4) span,
+.lancamento-row td:nth-child(4) span {
+    font-size: .82rem !important;
+}
+
+/* ---------------------------------------------------------
+   RESPONSIVO
+   --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+    .extratos-card .table-responsive,
+    .lancamentos-card .table-responsive {
+        overflow-x: auto !important;
+    }
+
+    .acao-lancamento-grid {
+        grid-template-columns:
+            95px
+            120px !important;
+    }
+}
+
+
+
+
+/* =========================================================
+   D25F01-UX3B-TIPOGRAFIA
+   Escala de leitura para operacao financeira
+   ========================================================= */
+
+/* Titulos dos blocos */
+.extratos-header h5,
+.lancamentos-header h5 {
+    font-size: 1.04rem !important;
+    font-weight: 800 !important;
+}
+
+/* Cabecalho das colunas */
+.conciliacao-card thead th {
+    font-size: .72rem !important;
+    font-weight: 800 !important;
+    color: #334155 !important;
+    letter-spacing: .02em;
+}
+
+/* Texto geral das tabelas */
+.extrato-row td,
+.lancamento-row td {
+    font-size: .84rem !important;
+    color: #1e293b !important;
+}
+
+/* Datas */
+.extrato-row td:first-child,
+.lancamento-row td:first-child {
+    font-size: .82rem !important;
+    font-weight: 700 !important;
+    color: #334155 !important;
+}
+
+/* Descricao principal */
+.extrato-row td:nth-child(2) small:first-child,
+.lancamento-row td:nth-child(2) small:first-child {
+    font-size: .86rem !important;
+    font-weight: 700 !important;
+    color: #172033 !important;
+}
+
+/* Valores financeiros */
+.extrato-row td:nth-child(4) span,
+.lancamento-row td:nth-child(4) span {
+    font-size: .88rem !important;
+    font-weight: 900 !important;
+}
+
+/* Tipo e documento */
+.extrato-row .badge,
+.lancamento-row .badge {
+    font-size: .64rem !important;
+    font-weight: 700 !important;
+}
+
+/* Botoes */
+.btn-selecionar-extrato,
+.btn-selecionar-lancamento {
+    font-size: .74rem !important;
+    font-weight: 800 !important;
+}
+
+/* Campo valor a conciliar */
+.valor-conciliar-input {
+    font-size: .82rem !important;
+    font-weight: 900 !important;
+    color: #0f172a !important;
+}
+
+.campo-conciliar .input-group-text {
+    font-size: .72rem !important;
+    font-weight: 700 !important;
+}
+
+/* Ordenacao */
+.ordenacao-lancamentos label {
+    font-size: .72rem !important;
+    font-weight: 800 !important;
+}
+
+#ordenar-lancamentos {
+    font-size: .78rem !important;
+    font-weight: 700 !important;
+}
+
+/* Cockpit */
+#painel-conciliacao-nn {
+    font-size: .86rem;
+}
+
+.conciliacao-resumo-item small {
+    font-size: .72rem !important;
+    font-weight: 800 !important;
+}
+
+.conciliacao-resumo-item strong {
+    font-size: 1.12rem !important;
+    font-weight: 900 !important;
+}
+
+#status-conciliacao-nn {
+    font-size: .84rem !important;
+    font-weight: 600 !important;
+}
+
+#btn-conciliar-nn {
+    font-size: .86rem !important;
+    font-weight: 800 !important;
+}
+
+
+
+
+/* =========================================================
+   D25F01-UX4-GESTAO-FILA
+   Conciliacao por movimento / data
+   ========================================================= */
+
+/*
+ * A estrutura original permanece no DOM.
+ * Ela continua sendo a fonte dos dados e da logica N:N.
+ */
+.conciliacao-dual {
+    display: none !important;
+}
+
+/*
+ * O cockpit somente aparece quando o usuario
+ * abre um movimento bancario.
+ */
+body:not(.ux4-movimento-aberto)
+.conciliacao-workbench {
+    display: none !important;
+}
+
+/* ---------------------------------------------------------
+   RAIZ
+   --------------------------------------------------------- */
+
+#ux4-conciliacao {
+    margin-top: 1rem;
+}
+
+.ux4-intro {
+    margin-bottom: 1rem;
+    padding: .75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background: #f8fafc;
+    border: 1px solid #dce3ea;
+    border-radius: 10px;
+}
+
+.ux4-intro-title {
+    color: #172033;
+    font-size: .90rem;
+    font-weight: 800;
+}
+
+.ux4-intro-text {
+    margin-top: .1rem;
+    color: #64748b;
+    font-size: .75rem;
+}
+
+.ux4-intro-count {
+    padding: .45rem .7rem;
+    border-radius: 999px;
+    background: #e8f1ff;
+    color: #0d6efd;
+    font-size: .73rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------
+   DATA
+   --------------------------------------------------------- */
+
+.ux4-dia {
+    margin-bottom: 1.35rem;
+}
+
+.ux4-dia-header {
+    display: flex;
+    align-items: center;
+    gap: .7rem;
+    margin: 1rem 0 .6rem;
+}
+
+.ux4-dia-data {
+    padding: .40rem .72rem;
+    border-radius: 7px;
+    background: #17324d;
+    color: #fff;
+    font-size: .82rem;
+    font-weight: 900;
+    white-space: nowrap;
+}
+
+.ux4-dia-linha {
+    flex: 1;
+    height: 1px;
+    background: #d5dee7;
+}
+
+.ux4-dia-total {
+    color: #64748b;
+    font-size: .72rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------
+   MOVIMENTO BANCARIO
+   --------------------------------------------------------- */
+
+.ux4-movimento {
+    margin-bottom: .7rem;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid #dce3ea;
+    border-radius: 11px;
+    box-shadow:
+        0 2px 8px rgba(15, 23, 42, .045);
+
+    transition:
+        border-color .16s ease,
+        box-shadow .16s ease;
+}
+
+.ux4-movimento:hover {
+    border-color: #b8cce1;
+}
+
+.ux4-movimento.ativo {
+    border-color: #86b7fe;
+    box-shadow:
+        0 6px 20px rgba(13, 110, 253, .10);
+}
+
+.ux4-movimento-topo {
+    min-height: 72px;
+    padding: .75rem .9rem;
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1fr)
+        95px
+        135px
+        155px;
+
+    align-items: center;
+    gap: .8rem;
+}
+
+.ux4-movimento-info {
+    min-width: 0;
+}
+
+.ux4-movimento-descricao {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #172033;
+    font-size: .94rem;
+    font-weight: 900;
+}
+
+.ux4-movimento-documento {
+    margin-top: .18rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #475569;
+    font-size: .76rem;
+    font-weight: 700;
+}
+
+.ux4-tipo {
+    justify-self: center;
+    padding: .28rem .52rem;
+    border-radius: 999px;
+    font-size: .68rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.ux4-tipo.debito {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.ux4-tipo.credito {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.ux4-movimento-valor {
+    text-align: right;
+    white-space: nowrap;
+    font-size: 1rem;
+    font-weight: 900;
+}
+
+.ux4-movimento-valor.debito {
+    color: #dc3545;
+}
+
+.ux4-movimento-valor.credito {
+    color: #198754;
+}
+
+.ux4-abrir {
+    min-height: 35px;
+    border-width: 2px;
+    border-radius: 7px;
+    font-size: .73rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+/* ---------------------------------------------------------
+   AREA DOS LANCAMENTOS
+   --------------------------------------------------------- */
+
+.ux4-workspace {
+    padding: .8rem;
+    background:
+        linear-gradient(
+            180deg,
+            #f7fbff 0%,
+            #ffffff 100%
+        );
+    border-top: 1px solid #dce8f5;
+}
+
+.ux4-workspace[hidden] {
+    display: none !important;
+}
+
+.ux4-lancamentos-titulo {
+    margin-bottom: .6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.ux4-lancamentos-titulo strong {
+    color: #172033;
+    font-size: .88rem;
+    font-weight: 900;
+}
+
+.ux4-lancamentos-titulo small {
+    color: #64748b;
+    font-size: .70rem;
+}
+
+/*
+ * O cockpit existente passa a fazer parte do
+ * movimento selecionado.
+ */
+.ux4-workspace
+.conciliacao-workbench {
+    display: block !important;
+    margin-bottom: .75rem !important;
+    box-shadow: none !important;
+}
+
+/*
+ * A tabela de lancamentos existente tambem e movida.
+ * Nao clonamos nada, portanto os listeners continuam.
+ */
+.ux4-workspace
+.lancamentos-card {
+    width: 100% !important;
+    margin: 0 !important;
+    border-radius: 9px !important;
+    box-shadow: none !important;
+}
+
+.ux4-workspace
+.lancamentos-card
+.table-responsive {
+    height: 340px !important;
+    max-height: 340px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+/* Cabecalho dos lancamentos */
+.ux4-workspace
+.lancamentos-header {
+    min-height: 56px;
+    padding-left: .8rem !important;
+}
+
+.ux4-workspace
+.lancamentos-header::before {
+    display: none !important;
+}
+
+/* Mais leitura */
+.ux4-workspace
+.lancamento-row
+td {
+    font-size: .82rem !important;
+}
+
+.ux4-workspace
+.lancamento-row
+td:nth-child(2)
+small:first-child {
+    font-size: .86rem !important;
+    font-weight: 800 !important;
+}
+
+/* ---------------------------------------------------------
+   MOBILE
+   --------------------------------------------------------- */
+
+@media (max-width: 850px) {
+    .ux4-movimento-topo {
+        grid-template-columns:
+            minmax(0, 1fr)
+            auto;
+    }
+
+    .ux4-tipo {
+        justify-self: end;
+    }
+
+    .ux4-movimento-valor {
+        text-align: left;
+    }
+
+    .ux4-abrir {
+        width: 100%;
+    }
+}
+
+
+
+
+/* =========================================================
+   D25F01-UX4-MATCH
+   Ranking visual dos candidatos
+   ========================================================= */
+
+.lancamento-row.match-top {
+    background: #f0f7ff !important;
+}
+
+.lancamento-row.match-exato {
+    background: #ecfdf3 !important;
+    box-shadow:
+        inset 4px 0 0 #198754;
+}
+
+.match-badge {
+    display: inline-block;
+    margin-left: .4rem;
+    padding: .20rem .38rem;
+    border-radius: 999px;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: .58rem;
+    font-weight: 800;
+    vertical-align: middle;
+}
+
+.match-badge.exato {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.match-badge.proximo {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+
 </style>
 
 <script>
@@ -890,7 +2981,385 @@ async function conciliarSelecionados() {
     }
 }
 
+
+
+/* =========================================================
+   D25F01-UX4-MATCH
+   ========================================================= */
+
+function dataISOParaNumero(dataISO) {
+    if (!dataISO) {
+        return null;
+    }
+
+    const data = new Date(
+        dataISO + 'T12:00:00'
+    );
+
+    const tempo = data.getTime();
+
+    return Number.isFinite(tempo)
+        ? tempo
+        : null;
+}
+
+function diferencaDias(dataA, dataB) {
+    const a = dataISOParaNumero(dataA);
+    const b = dataISOParaNumero(dataB);
+
+    if (a === null || b === null) {
+        return 9999;
+    }
+
+    return Math.abs(
+        Math.round(
+            (a - b) / 86400000
+        )
+    );
+}
+
+function obterDataExtratoSelecionado() {
+    if (!extratoSelecionado) {
+        return '';
+    }
+
+    const row = document.getElementById(
+        'extrato-' + extratoSelecionado
+    );
+
+    if (!row) {
+        return '';
+    }
+
+    if (row.dataset.extratoData) {
+        return row.dataset.extratoData;
+    }
+
+    const celula = row.querySelector(
+        'td:first-child'
+    );
+
+    if (!celula) {
+        return '';
+    }
+
+    const texto = celula.textContent.trim();
+    const partes = texto.split('/');
+
+    if (partes.length !== 3) {
+        return '';
+    }
+
+    return (
+        partes[2] +
+        '-' +
+        partes[1].padStart(2, '0') +
+        '-' +
+        partes[0].padStart(2, '0')
+    );
+}
+
+function limparBadgesMatch() {
+    document
+        .querySelectorAll('.match-badge')
+        .forEach(el => el.remove());
+
+    document
+        .querySelectorAll('.lancamento-row')
+        .forEach(row => {
+            row.classList.remove(
+                'match-top',
+                'match-exato'
+            );
+        });
+}
+
+function scoreLancamentoMatch(row) {
+    const check = row.querySelector(
+        '.lancamento-checkbox'
+    );
+
+    if (!check) {
+        return -999999;
+    }
+
+    /*
+     * Incompativel fica no fim.
+     */
+    const compativel =
+        !check.disabled ||
+        lancamentoCompativel(
+            tipoExtratoSelecionado,
+            check.dataset.tipo
+        );
+
+    if (!compativel) {
+        return -999999;
+    }
+
+    const valorLancamento = numeroSeguro(
+        check.dataset.valorDisponivel
+    );
+
+    const valorExtrato =
+        valorExtratoSelecionado;
+
+    const diferencaValor = Math.abs(
+        valorLancamento -
+        valorExtrato
+    );
+
+    const dataExtrato =
+        obterDataExtratoSelecionado();
+
+    const dataLancamento =
+        row.dataset.dataLancamento || '';
+
+    const dataVencimento =
+        row.dataset.dataVencimento || '';
+
+    const diasLancamento =
+        diferencaDias(
+            dataExtrato,
+            dataLancamento
+        );
+
+    const diasVencimento =
+        diferencaDias(
+            dataExtrato,
+            dataVencimento
+        );
+
+    const dias = Math.min(
+        diasLancamento,
+        diasVencimento
+    );
+
+    let score = 0;
+
+    /*
+     * Mesmo valor e o sinal mais forte.
+     */
+    if (diferencaValor <= 0.005) {
+        score += 100000;
+    } else {
+        /*
+         * Quanto menor a diferenca,
+         * melhor o candidato.
+         */
+        score += Math.max(
+            0,
+            20000 - diferencaValor * 10
+        );
+    }
+
+    /*
+     * Data proxima ajuda, mas nunca supera
+     * um casamento exato de valor.
+     */
+    score += Math.max(
+        0,
+        5000 - dias * 80
+    );
+
+    return score;
+}
+
+function ordenarPorMelhorCorrespondencia() {
+    const linhas = Array.from(
+        document.querySelectorAll(
+            '.lancamento-row'
+        )
+    );
+
+    if (!linhas.length) {
+        return;
+    }
+
+    limparBadgesMatch();
+
+    const tbody =
+        linhas[0].parentElement;
+
+    linhas.sort((a, b) => {
+        return (
+            scoreLancamentoMatch(b) -
+            scoreLancamentoMatch(a)
+        );
+    });
+
+    linhas.forEach(
+        row => tbody.appendChild(row)
+    );
+
+    /*
+     * Marca visualmente os melhores.
+     */
+    const compativeis = linhas.filter(
+        row => {
+            const check = row.querySelector(
+                '.lancamento-checkbox'
+            );
+
+            return (
+                check &&
+                lancamentoCompativel(
+                    tipoExtratoSelecionado,
+                    check.dataset.tipo
+                )
+            );
+        }
+    );
+
+    compativeis
+        .slice(0, 3)
+        .forEach((row, index) => {
+
+            const check = row.querySelector(
+                '.lancamento-checkbox'
+            );
+
+            const valor = numeroSeguro(
+                check.dataset.valorDisponivel
+            );
+
+            const diferenca = Math.abs(
+                valor -
+                valorExtratoSelecionado
+            );
+
+            const descricao =
+                row.querySelector(
+                    'td:nth-child(2)'
+                );
+
+            if (!descricao) {
+                return;
+            }
+
+            const badge =
+                document.createElement(
+                    'span'
+                );
+
+            badge.className =
+                'match-badge';
+
+            if (diferenca <= 0.005) {
+                badge.classList.add(
+                    'exato'
+                );
+
+                badge.textContent =
+                    'Valor igual';
+
+                row.classList.add(
+                    'match-exato'
+                );
+
+            } else if (index === 0) {
+                badge.classList.add(
+                    'proximo'
+                );
+
+                badge.textContent =
+                    'Melhor candidato';
+
+                row.classList.add(
+                    'match-top'
+                );
+
+            } else {
+                badge.textContent =
+                    'Sugestao';
+            }
+
+            descricao.appendChild(
+                badge
+            );
+        });
+}
+
+
+function ordenarLancamentos(criterio) {
+    if (criterio === 'match') {
+        ordenarPorMelhorCorrespondencia();
+        return;
+    }
+
+    limparBadgesMatch();
+
+    const linhas = Array.from(
+        document.querySelectorAll('.lancamento-row')
+    );
+
+    if (!linhas.length) {
+        return;
+    }
+
+    const tbody = linhas[0].parentElement;
+
+    linhas.forEach((row, index) => {
+        if (!row.dataset.ordemOriginal) {
+            row.dataset.ordemOriginal = String(index);
+        }
+    });
+
+    linhas.sort((a, b) => {
+        if (criterio === 'original') {
+            return (
+                Number(a.dataset.ordemOriginal) -
+                Number(b.dataset.ordemOriginal)
+            );
+        }
+
+        const dataA =
+            a.dataset.dataLancamento || '';
+
+        const dataB =
+            b.dataset.dataLancamento || '';
+
+        if (!dataA && !dataB) {
+            return 0;
+        }
+
+        if (!dataA) {
+            return 1;
+        }
+
+        if (!dataB) {
+            return -1;
+        }
+
+        if (criterio === 'data-asc') {
+            return dataA.localeCompare(dataB);
+        }
+
+        return dataB.localeCompare(dataA);
+    });
+
+    linhas.forEach(row => {
+        tbody.appendChild(row);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    const ordenarSelect =
+        document.getElementById('ordenar-lancamentos');
+
+    if (ordenarSelect) {
+        ordenarSelect.addEventListener(
+            'change',
+            () => ordenarLancamentos(
+                ordenarSelect.value
+            )
+        );
+
+        ordenarLancamentos(
+            ordenarSelect.value
+        );
+    }
+
     document.querySelectorAll('.lancamento-checkbox').forEach(check => {
         check.addEventListener('change', () => {
             prepararValorAoSelecionar(check);

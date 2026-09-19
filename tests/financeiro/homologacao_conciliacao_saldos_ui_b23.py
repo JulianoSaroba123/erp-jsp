@@ -30,7 +30,8 @@ for marker in [
     "data-valor-disponivel",
     "valor-conciliar-input",
     "Valor a conciliar",
-    "Disponível:",
+    # UX4: saldo disponivel continua representado
+    # pelos atributos e pelo campo de conciliacao.
     "function obterValorConciliar(check)",
     "function obterTotalSelecionado(excluirCheck = null)",
     "function prepararValorAoSelecionar(check)",
