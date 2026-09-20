@@ -180,13 +180,22 @@ class GeisWebTieteProvider(NfseProvider):
         payload,
         configuracao,
     ):
-        """Transmissao externa permanece desabilitada."""
+        """Transmite payload preparado pelo pipeline GeisWeb."""
 
         self.validar_configuracao(
             configuracao
         )
 
-        raise TransmissaoProviderNaoImplementada(
-            "Transmissao externa do provider GEISWEB_TIETE "
-            "ainda nao esta habilitada."
+        # Disjuntor antes de certificado e antes de rede.
+        self.validar_integracao_externa(
+            configuracao
+        )
+
+        from app.fiscal.providers.geisweb_tiete_transmissao import (
+            transmitir_payload_geisweb,
+        )
+
+        return transmitir_payload_geisweb(
+            payload=payload,
+            configuracao=configuracao,
         )

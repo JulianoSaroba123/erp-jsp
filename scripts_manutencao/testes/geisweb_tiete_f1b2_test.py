@@ -2,6 +2,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from app.fiscal.providers.base import IntegracaoFiscalDesativada
+
 from app.fiscal.providers import (
     obter_provider,
     providers_registrados,
@@ -147,13 +149,13 @@ def test_preparacao_local_retorna_payload_tecnico():
     assert payload["conteudo"] is None
 
 
-def test_transmissao_geisweb_permanece_bloqueada():
+def test_transmissao_geisweb_bloqueia_quando_integracao_desativada():
     provider = obter_provider(
         "GEISWEB_TIETE"
     )
 
     with pytest.raises(
-        TransmissaoProviderNaoImplementada
+        IntegracaoFiscalDesativada
     ):
         provider.transmitir(
             payload={},
