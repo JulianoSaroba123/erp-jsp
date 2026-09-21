@@ -15,6 +15,13 @@ from app.fiscal.nfse_documento_model import (
 from app.ordem_servico.ordem_servico_model import OrdemServico
 from app.fiscal.providers.registry import normalizar_codigo_provider
 from app.fiscal.providers.resolver import resolver_provider_nfse
+from app.fiscal.providers.geisweb_tiete_preparacao import (
+    PreparacaoLocalGeisWebInvalida,
+    preparar_payload_geisweb_com_xml,
+)
+from app.fiscal.providers.geisweb_tiete_xsd import (
+    validar_xml_envio_lote_rps,
+)
 from app.fiscal.dps_erp_adapter import montar_dps_canonica_da_os
 from app.fiscal.xml.dps_serializer import montar_xml_dps_serializado
 from app.fiscal.xml.dps_signer import (
@@ -456,6 +463,72 @@ def preparar_payload_nfse(
 
     return payload
 
+
+def preparar_payload_nfse_com_geisweb(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao_fiscal: ConfiguracaoFiscal,
+    configuracao_institucional,
+    numero_lote,
+    data_emissao,
+    tipo_lancamento,
+    regime_geisweb,
+    codigo_nacional,
+    base_calculo,
+    ibs_cbs,
+    outros_impostos,
+    ncm="",
+    tomador=None,
+    servico=None,
+    valores=None,
+) -> dict:
+    """Prepara localmente o XML do provider GEISWEB_TIETE.
+
+    Nenhuma assinatura, certificado ou comunicacao externa ocorre aqui.
+    """
+
+    payload = preparar_payload_nfse(
+        documento=documento,
+        ordem_servico=ordem_servico,
+        configuracao=configuracao_fiscal,
+    )
+
+    provider = normalizar_codigo_provider(
+        payload.get("provider")
+    )
+
+    if provider != "GEISWEB_TIETE":
+        raise PreparacaoNfseInvalida(
+            "Preparacao GeisWeb recebeu payload de outro provider."
+        )
+
+    try:
+        return preparar_payload_geisweb_com_xml(
+            payload=payload,
+            documento=documento,
+            ordem_servico=ordem_servico,
+            configuracao_institucional=configuracao_institucional,
+            configuracao_fiscal=configuracao_fiscal,
+            numero_lote=numero_lote,
+            data_emissao=data_emissao,
+            tipo_lancamento=tipo_lancamento,
+            regime_geisweb=regime_geisweb,
+            codigo_nacional=codigo_nacional,
+            base_calculo=base_calculo,
+            ibs_cbs=ibs_cbs,
+            outros_impostos=outros_impostos,
+            ncm=ncm,
+            tomador=tomador,
+            servico=servico,
+            valores=valores,
+        )
+
+    except PreparacaoLocalGeisWebInvalida as exc:
+        raise PreparacaoNfseInvalida(
+            f"Falha na preparacao local GeisWeb: {exc}"
+        ) from exc
+
 _STATUS_DOCUMENTO_POR_RESULTADO_TRANSMISSAO = {
     "PROCESSANDO": "PROCESSANDO",
     "ACEITA": "AUTORIZADA",
@@ -893,15 +966,50 @@ def preparar_nfse_para_envio(
             "Payload NFS-e nao possui XML preparado para envio."
         )
 
-    try:
-        validar_assinatura_xml_dps(
+    provider_payload = normalizar_codigo_provider(
+        payload.get("provider")
+    )
+
+    if provider_payload in {
+        None,
+        "SEFIN_NACIONAL",
+    }:
+        try:
+            validar_assinatura_xml_dps(
+                bytes(conteudo)
+            )
+        except AssinaturaXmlDpsInvalida as exc:
+            raise TransicaoStatusNfseInvalida(
+                "Payload NFS-e possui assinatura XMLDSIG invalida: "
+                f"{exc}"
+            ) from exc
+
+    elif provider_payload == "GEISWEB_TIETE":
+        validacao_geisweb = validar_xml_envio_lote_rps(
             bytes(conteudo)
         )
-    except AssinaturaXmlDpsInvalida as exc:
+
+        if not validacao_geisweb.valido:
+            erros = "; ".join(
+                str(erro)
+                for erro in validacao_geisweb.erros
+            )
+
+            mensagem = (
+                "Payload GeisWeb possui XML invalido perante o XSD."
+            )
+
+            if erros:
+                mensagem = f"{mensagem} {erros}"
+
+            raise TransicaoStatusNfseInvalida(
+                mensagem
+            )
+
+    else:
         raise TransicaoStatusNfseInvalida(
-            "Payload NFS-e possui assinatura XMLDSIG invalida: "
-            f"{exc}"
-        ) from exc
+            "Provider do payload NFS-e nao suportado no gate de envio."
+        )
 
     documento.status = "PENDENTE_ENVIO"
     documento.mensagem_status = (
