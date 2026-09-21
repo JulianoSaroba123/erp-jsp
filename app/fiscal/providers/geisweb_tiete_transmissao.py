@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import os
 
@@ -14,6 +14,9 @@ from app.fiscal.providers.geisweb_tiete_mtls import (
 )
 from app.fiscal.providers.geisweb_tiete_response import (
     normalizar_resposta_geisweb,
+)
+from app.fiscal.providers.geisweb_tiete_resultado import (
+    interpretar_resultado_envio_geisweb,
 )
 from app.fiscal.providers.geisweb_tiete_signer import (
     assinar_xml_geisweb,
@@ -116,6 +119,12 @@ def transmitir_payload_geisweb(
         response_parameter=PARAMETRO_RESPOSTA,
     )
 
+    resultado_funcional = (
+        interpretar_resultado_envio_geisweb(
+            resposta.payload
+        )
+    )
+
     ambiente = getattr(
         configuracao,
         "ambiente",
@@ -123,18 +132,42 @@ def transmitir_payload_geisweb(
     )
 
     return {
-        "status": "PROCESSANDO",
-        "mensagem": (
-            "Resposta SOAP recebida do GeisWeb Tiete; "
-            "conteudo aguardando interpretacao funcional."
-        ),
+        "status": resultado_funcional.status,
+        "mensagem": resultado_funcional.mensagem,
         "protocolo": None,
-        "numero_nfse": None,
+        "numero_nfse": resultado_funcional.numero_nfse,
         "dados_provider": {
             "provider": "GEISWEB_TIETE",
             "ambiente": ambiente,
             "operacao": OPERACAO_ENVIO,
             "http_status": resposta_http.status_code,
+            "numero_lote": resultado_funcional.numero_lote,
+            "codigo_verificacao": (
+                resultado_funcional.codigo_verificacao
+            ),
+            "chave_nacional": (
+                resultado_funcional.chave_nacional
+            ),
+            "mensagens": [
+                {
+                    "erro": mensagem.erro,
+                    "status": mensagem.status,
+                }
+                for mensagem
+                in resultado_funcional.mensagens
+            ],
+            "nfse": [
+                {
+                    "numero_rps": nota.numero_rps,
+                    "numero_nfse": nota.numero_nfse,
+                    "codigo_verificacao": (
+                        nota.codigo_verificacao
+                    ),
+                    "chave_nacional": nota.chave_nacional,
+                }
+                for nota
+                in resultado_funcional.nfse
+            ],
             "resposta": resposta.payload,
             "resposta_is_xml": resposta.payload_is_xml,
         },

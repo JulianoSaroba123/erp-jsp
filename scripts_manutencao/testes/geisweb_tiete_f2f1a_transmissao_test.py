@@ -137,6 +137,26 @@ def _preparar_fluxo_feliz(monkeypatch):
         normalizar,
     )
 
+    def interpretar(payload):
+        chamadas["payload_funcional"] = payload
+
+        return SimpleNamespace(
+            status="ACEITA",
+            mensagem="NFS-e emitida.",
+            numero_lote="123",
+            numero_nfse="456",
+            codigo_verificacao="ABC123",
+            chave_nacional=None,
+            mensagens=(),
+            nfse=(),
+        )
+
+    monkeypatch.setattr(
+        tx,
+        "interpretar_resultado_envio_geisweb",
+        interpretar,
+    )
+
     return chamadas, session, material
 
 
@@ -182,9 +202,9 @@ def test_f2f1a_orquestra_fluxo_completo_mockado(monkeypatch):
 
     assert session.closed is True
 
-    assert resultado["status"] == "PROCESSANDO"
+    assert resultado["status"] == "ACEITA"
     assert resultado["protocolo"] is None
-    assert resultado["numero_nfse"] is None
+    assert resultado["numero_nfse"] == "456"
 
     dados = resultado["dados_provider"]
 
