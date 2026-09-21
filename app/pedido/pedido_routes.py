@@ -48,7 +48,7 @@ def _query_base_pedidos():
     )
 
 
-def _pedido_possui_financeiro_ativo(pedido_id):
+def _obter_financeiro_ativo(pedido_id):
     from app.financeiro.financeiro_model import LancamentoFinanceiro
 
     return (
@@ -58,8 +58,11 @@ def _pedido_possui_financeiro_ativo(pedido_id):
             ativo=True,
         )
         .first()
-        is not None
     )
+
+
+def _pedido_possui_financeiro_ativo(pedido_id):
+    return _obter_financeiro_ativo(pedido_id) is not None
 
 
 def _carregar_form_context(pedido=None, proposta_id=None):
@@ -81,6 +84,12 @@ def _carregar_form_context(pedido=None, proposta_id=None):
     if proposta_id:
         proposta_preselecionada = Proposta.query.filter_by(id=proposta_id, ativo=True).first()
 
+    financeiro_vinculado = None
+    if pedido:
+        financeiro_vinculado = _obter_financeiro_ativo(
+            pedido.id
+        )
+
     return {
         "clientes": clientes,
         "produtos": produtos,
@@ -89,6 +98,7 @@ def _carregar_form_context(pedido=None, proposta_id=None):
         "proposta_preselecionada": proposta_preselecionada,
         "status_choices": Pedido.STATUS_CHOICES,
         "today": date.today(),
+        "financeiro_vinculado": financeiro_vinculado,
     }
 
 
@@ -316,11 +326,16 @@ def visualizar(id):
         .order_by(PedidoCompra.id.desc())
         .all()
     )
+    financeiro_vinculado = _obter_financeiro_ativo(
+        pedido.id
+    )
+
     return render_template(
         "pedido/visualizar.html",
         pedido=pedido,
         itens=itens,
         pedidos_compra=pedidos_compra,
+        financeiro_vinculado=financeiro_vinculado,
     )
 
 

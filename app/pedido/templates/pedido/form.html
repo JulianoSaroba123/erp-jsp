@@ -50,11 +50,34 @@
                 </div>
                 <div class="col-lg-2 col-md-6">
                     <label class="form-label">Status</label>
+
+                    {% if pedido and financeiro_vinculado %}
+                    <select
+                        class="form-select"
+                        disabled
+                        aria-disabled="true"
+                        title="Status protegido por vinculo financeiro"
+                    >
+                        <option selected>{{ pedido.status_label }}</option>
+                    </select>
+
+                    <input
+                        type="hidden"
+                        name="status"
+                        value="{{ pedido.status }}"
+                    >
+
+                    <div class="form-text text-warning">
+                        <i class="fas fa-lock me-1"></i>
+                        Status bloqueado: pedido possui financeiro vinculado.
+                    </div>
+                    {% else %}
                     <select class="form-select" name="status">
                         {% for status, label in status_choices %}
                         <option value="{{ status }}" {% if pedido and pedido.status == status %}selected{% elif not pedido and status == 'RASCUNHO' %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
+                    {% endif %}
                 </div>
                 <div class="col-lg-2 col-md-6">
                     <label class="form-label">Data do Pedido</label>
