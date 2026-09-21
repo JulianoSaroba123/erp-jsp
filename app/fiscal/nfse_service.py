@@ -954,6 +954,9 @@ def aplicar_resultado_transmissao_nfse(
         "chave_acesso"
     )
 
+    if chave_acesso is None:
+        chave_acesso = dados_provider.get("chave_nacional")
+
     if chave_acesso is not None:
         if not isinstance(
             chave_acesso,
@@ -969,6 +972,23 @@ def aplicar_resultado_transmissao_nfse(
         raise TransicaoStatusNfseInvalida(
             "chave_acesso excede 100 caracteres."
         )
+    codigo_verificacao = dados_provider.get("codigo_verificacao")
+
+    if codigo_verificacao is not None:
+        if not isinstance(codigo_verificacao, str):
+            raise TransicaoStatusNfseInvalida(
+                "codigo_verificacao do provider deve ser texto ou None."
+            )
+
+        codigo_verificacao = codigo_verificacao.strip() or None
+
+    if (
+        codigo_verificacao is not None
+        and len(codigo_verificacao) > 100
+    ):
+        raise TransicaoStatusNfseInvalida(
+            "codigo_verificacao excede 100 caracteres."
+        )
 
     # Todas as validacoes ocorrem antes de qualquer mutacao.
     documento.status = novo_status
@@ -981,6 +1001,9 @@ def aplicar_resultado_transmissao_nfse(
 
     if novo_status == "AUTORIZADA":
         documento.numero_nfse = numero_nfse
+
+        if codigo_verificacao is not None:
+            documento.codigo_verificacao = codigo_verificacao
 
         if chave_acesso is not None:
             documento.chave_acesso = chave_acesso
