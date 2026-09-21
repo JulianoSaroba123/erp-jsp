@@ -98,3 +98,198 @@ def test_h3_s5e_003_codigo_invalido_nao_muta_documento():
     assert documento.numero_nfse is None
     assert documento.chave_acesso is None
     assert documento.codigo_verificacao is None
+
+
+def test_h3_s5e_004_rejeitada_nao_persiste_campos_autorizacao():
+    documento = _documento()
+
+    resultado = {
+        "status": "REJEITADA",
+        "mensagem": "RPS rejeitado pelo GeisWeb.",
+        "protocolo": None,
+        "numero_nfse": None,
+        "dados_provider": {
+            "provider": "GEISWEB_TIETE",
+            "numero_lote": "1",
+            "chave_acesso": "NAO-DEVE-PERSISTIR",
+            "chave_nacional": "NAO-DEVE-PERSISTIR-2",
+            "codigo_verificacao": "NAO-DEVE-PERSISTIR-3",
+        },
+    }
+
+    aplicar_resultado_transmissao_nfse(
+        documento=documento,
+        resultado=resultado,
+    )
+
+    assert documento.status == "REJEITADA"
+    assert documento.mensagem_status == "RPS rejeitado pelo GeisWeb."
+    assert documento.numero_nfse is None
+    assert documento.chave_acesso is None
+    assert documento.codigo_verificacao is None
+
+
+def test_h3_s5e_005_processando_persiste_protocolo_sem_autorizacao():
+    documento = _documento()
+
+    resultado = {
+        "status": "PROCESSANDO",
+        "mensagem": "Lote recebido e em processamento.",
+        "protocolo": "PROTOCOLO-H3-001",
+        "numero_nfse": None,
+        "dados_provider": {
+            "provider": "GEISWEB_TIETE",
+            "chave_acesso": "NAO-DEVE-PERSISTIR",
+            "chave_nacional": "NAO-DEVE-PERSISTIR-2",
+            "codigo_verificacao": "NAO-DEVE-PERSISTIR-3",
+        },
+    }
+
+    aplicar_resultado_transmissao_nfse(
+        documento=documento,
+        resultado=resultado,
+    )
+
+    assert documento.status == "PROCESSANDO"
+    assert documento.mensagem_status == (
+        "Lote recebido e em processamento."
+    )
+    assert documento.protocolo == "PROTOCOLO-H3-001"
+    assert documento.numero_nfse is None
+    assert documento.chave_acesso is None
+    assert documento.codigo_verificacao is None
+
+
+def test_h3_s5e_006_erro_tecnico_preserva_estado_integralmente():
+    documento = _documento()
+
+    documento.mensagem_status = "Estado anterior."
+    documento.protocolo = "PROTOCOLO-ANTERIOR"
+    documento.numero_nfse = None
+    documento.codigo_verificacao = None
+    documento.chave_acesso = None
+
+    antes = (
+        documento.status,
+        documento.mensagem_status,
+        documento.protocolo,
+        documento.numero_nfse,
+        documento.codigo_verificacao,
+        documento.chave_acesso,
+    )
+
+    resultado = {
+        "status": "ERRO",
+        "mensagem": "Falha tecnica do provider.",
+        "protocolo": "NAO-DEVE-PERSISTIR",
+        "numero_nfse": None,
+        "dados_provider": {
+            "provider": "GEISWEB_TIETE",
+        },
+    }
+
+    aplicar_resultado_transmissao_nfse(
+        documento=documento,
+        resultado=resultado,
+    )
+
+    depois = (
+        documento.status,
+        documento.mensagem_status,
+        documento.protocolo,
+        documento.numero_nfse,
+        documento.codigo_verificacao,
+        documento.chave_acesso,
+    )
+
+    assert depois == antes
+
+
+def test_h3_s5e_007_rejeitada_invalida_nao_muta_documento():
+    from app.fiscal.nfse_service import TransmissaoNfseInvalida
+
+    documento = _documento()
+
+    antes = (
+        documento.status,
+        documento.mensagem_status,
+        documento.protocolo,
+        documento.numero_nfse,
+        documento.codigo_verificacao,
+        documento.chave_acesso,
+    )
+
+    resultado = {
+        "status": "REJEITADA",
+        "mensagem": 123,
+        "protocolo": None,
+        "numero_nfse": None,
+        "dados_provider": {
+            "provider": "GEISWEB_TIETE",
+        },
+    }
+
+    with pytest.raises(
+        TransmissaoNfseInvalida,
+        match="mensagem",
+    ):
+        aplicar_resultado_transmissao_nfse(
+            documento=documento,
+            resultado=resultado,
+        )
+
+    depois = (
+        documento.status,
+        documento.mensagem_status,
+        documento.protocolo,
+        documento.numero_nfse,
+        documento.codigo_verificacao,
+        documento.chave_acesso,
+    )
+
+    assert depois == antes
+
+
+def test_h3_s5e_008_processando_invalido_nao_muta_documento():
+    from app.fiscal.nfse_service import TransmissaoNfseInvalida
+
+    documento = _documento()
+
+    antes = (
+        documento.status,
+        documento.mensagem_status,
+        documento.protocolo,
+        documento.numero_nfse,
+        documento.codigo_verificacao,
+        documento.chave_acesso,
+    )
+
+    resultado = {
+        "status": "PROCESSANDO",
+        "mensagem": "Em processamento.",
+        "protocolo": 123,
+        "numero_nfse": None,
+        "dados_provider": {
+            "provider": "GEISWEB_TIETE",
+        },
+    }
+
+    with pytest.raises(
+        TransmissaoNfseInvalida,
+        match="protocolo",
+    ):
+        aplicar_resultado_transmissao_nfse(
+            documento=documento,
+            resultado=resultado,
+        )
+
+    depois = (
+        documento.status,
+        documento.mensagem_status,
+        documento.protocolo,
+        documento.numero_nfse,
+        documento.codigo_verificacao,
+        documento.chave_acesso,
+    )
+
+    assert depois == antes
