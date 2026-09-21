@@ -746,6 +746,80 @@ def preparar_documento_nfse_com_dps(
         raise
 
 
+
+def preparar_documento_nfse_com_geisweb(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao_fiscal: ConfiguracaoFiscal,
+    configuracao_institucional,
+    numero_lote,
+    data_emissao,
+    tipo_lancamento,
+    regime_geisweb,
+    codigo_nacional,
+    base_calculo,
+    ibs_cbs,
+    outros_impostos,
+    ncm="",
+    tomador=None,
+    servico=None,
+    valores=None,
+) -> tuple[NfseDocumento, dict]:
+    """Orquestra a preparacao fiscal local do GEISWEB_TIETE.
+
+    - reserva RPS de forma idempotente;
+    - monta EnviaLoteRps;
+    - valida XML contra o XSD GeisWeb;
+    - publica o XML somente no payload em memoria;
+    - marca o documento como PREPARADA;
+    - confirma tudo em uma unica transacao;
+    - executa rollback integral em qualquer falha;
+    - nao assina;
+    - nao carrega certificado;
+    - nao realiza HTTP;
+    - nao transmite NFS-e.
+    """
+
+    try:
+        documento_reservado, _ = reservar_rps_nfse(
+            documento=documento,
+            configuracao=configuracao_fiscal,
+        )
+
+        payload = preparar_payload_nfse_com_geisweb(
+            documento=documento_reservado,
+            ordem_servico=ordem_servico,
+            configuracao_fiscal=configuracao_fiscal,
+            configuracao_institucional=configuracao_institucional,
+            numero_lote=numero_lote,
+            data_emissao=data_emissao,
+            tipo_lancamento=tipo_lancamento,
+            regime_geisweb=regime_geisweb,
+            codigo_nacional=codigo_nacional,
+            base_calculo=base_calculo,
+            ibs_cbs=ibs_cbs,
+            outros_impostos=outros_impostos,
+            ncm=ncm,
+            tomador=tomador,
+            servico=servico,
+            valores=valores,
+        )
+
+        documento_reservado.status = "PREPARADA"
+        documento_reservado.mensagem_status = (
+            "NFS-e GeisWeb preparada localmente e validada "
+            "contra o XSD. Nenhuma NFS-e foi transmitida."
+        )
+
+        _commit_preparacao_local_nfse()
+
+        return documento_reservado, payload
+
+    except Exception:
+        _rollback_preparacao_local_nfse()
+        raise
+
 def _normalizar_resultado_transmissao_nfse(
     resultado,
 ) -> dict:
