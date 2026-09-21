@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """D26F01-A5 - Integridade Pedido <-> Financeiro."""
 
 from __future__ import annotations
@@ -43,6 +43,7 @@ def _seed_cliente_produto(db):
     produto = Produto(
         nome="Produto Integridade",
         preco_venda=840,
+        controla_estoque=False,
     )
 
     db.session.add_all([cliente, produto])

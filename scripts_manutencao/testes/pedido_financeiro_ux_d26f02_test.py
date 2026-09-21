@@ -43,6 +43,7 @@ def _seed_cliente_produto(db):
     produto = Produto(
         nome="Produto UX",
         preco_venda=840,
+        controla_estoque=False,
     )
 
     db.session.add_all(

@@ -65,6 +65,21 @@ def _pedido_possui_financeiro_ativo(pedido_id):
     return _obter_financeiro_ativo(pedido_id) is not None
 
 
+def _pedido_possui_movimento_estoque(pedido_id):
+    from app.estoque.estoque_model import MovimentacaoEstoque
+
+    return (
+        MovimentacaoEstoque.query
+        .filter_by(
+            pedido_id=pedido_id,
+            tipo=MovimentacaoEstoque.TIPO_SAIDA,
+            origem=MovimentacaoEstoque.ORIGEM_PEDIDO,
+        )
+        .first()
+        is not None
+    )
+
+
 def _carregar_form_context(pedido=None, proposta_id=None):
     clientes = Cliente.query.filter(Cliente.ativo.is_(True)).order_by(Cliente.nome.asc()).all()
     produtos = Produto.query.filter(Produto.ativo.is_(True)).order_by(Produto.nome.asc()).all()
@@ -284,10 +299,14 @@ def novo():
         pedido.recalcular_totais()
 
         try:
+            from app.estoque.pedido_estoque_service import (
+                sincronizar_estoque_pedido,
+            )
             from app.financeiro.pedido_financeiro_service import (
                 sincronizar_lancamentos_pedido,
             )
 
+            sincronizar_estoque_pedido(pedido)
             sincronizar_lancamentos_pedido(pedido)
 
             db.session.commit()
@@ -373,6 +392,19 @@ def editar(id):
                 **context,
             )
 
+        if _pedido_possui_movimento_estoque(pedido.id):
+            flash(
+                "Pedido possui movimentacao de estoque vinculada "
+                "e nao pode ser editado.",
+                "error",
+            )
+            return redirect(
+                url_for(
+                    "pedido.visualizar",
+                    id=pedido.id,
+                )
+            )
+
         proposta_id = parse_int(request.form.get("proposta_id"), default=None)
         if proposta_id:
             ja_vinculado = Pedido.query.filter(
@@ -427,10 +459,14 @@ def editar(id):
         pedido.recalcular_totais()
 
         try:
+            from app.estoque.pedido_estoque_service import (
+                sincronizar_estoque_pedido,
+            )
             from app.financeiro.pedido_financeiro_service import (
                 sincronizar_lancamentos_pedido,
             )
 
+            sincronizar_estoque_pedido(pedido)
             sincronizar_lancamentos_pedido(pedido)
 
             db.session.commit()
@@ -469,6 +505,19 @@ def excluir(id):
 
     if request.method == "GET":
         return render_template("pedido/confirmar_exclusao.html", pedido=pedido)
+
+    if _pedido_possui_movimento_estoque(pedido.id):
+        flash(
+            "Pedido possui movimentacao de estoque vinculada "
+            "e nao pode ser excluido.",
+            "error",
+        )
+        return redirect(
+            url_for(
+                "pedido.visualizar",
+                id=pedido.id,
+            )
+        )
 
     if _pedido_possui_financeiro_ativo(pedido.id):
         flash(
