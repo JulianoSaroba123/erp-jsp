@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """D26F03-A4 - Gatilho Pedido -> Estoque."""
 
 from decimal import Decimal
@@ -353,6 +353,153 @@ def test_editar_rascunho_para_concluido_movimenta_uma_vez(
         .count()
         == 1
     )
+
+
+
+def test_pedido_legado_concluido_sem_movimento_nao_baixa_estoque_ao_editar(
+    app_ctx,
+):
+    """Pedido ja concluido antes do D26F03 nao sofre baixa retroativa."""
+
+    from app.extensoes import db
+    from app.estoque.estoque_model import MovimentacaoEstoque
+    from app.financeiro.financeiro_model import LancamentoFinanceiro
+    from app.financeiro.pedido_financeiro_service import (
+        sincronizar_lancamentos_pedido,
+    )
+    from app.pedido.pedido_model import Pedido
+    from app.produto.produto_model import Produto
+
+    cliente, produto = _seed_cliente_produto(
+        db,
+        estoque="10.000",
+    )
+
+    produto_id = produto.id
+
+    usuario = _seed_admin(db)
+
+    client = app_ctx.test_client()
+    _autenticar(client, usuario)
+
+    # Primeiro cria um pedido sem movimentar estoque.
+    response = client.post(
+        "/pedido/novo",
+        data=_payload(
+            cliente,
+            produto,
+            "RASCUNHO",
+            quantidade="2.000",
+        ),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+
+    pedido = Pedido.query.one()
+
+    # Simula um pedido legado:
+    # ele ja estava CONCLUIDO antes da entrada do D26F03
+    # e ja possuia financeiro, mas nunca teve movimento
+    # de estoque registrado.
+    pedido.status = Pedido.STATUS_CONCLUIDO
+
+    sincronizar_lancamentos_pedido(
+        pedido
+    )
+
+    db.session.commit()
+
+    pedido_id = pedido.id
+
+    db.session.refresh(produto)
+
+    assert (
+        Decimal(str(produto.estoque_atual))
+        == Decimal("10.000")
+    )
+
+    assert (
+        MovimentacaoEstoque.query
+        .filter_by(
+            pedido_id=pedido_id,
+        )
+        .count()
+        == 0
+    )
+
+    assert (
+        LancamentoFinanceiro.query
+        .filter_by(
+            pedido_id=pedido_id,
+            origem="PEDIDO",
+            ativo=True,
+        )
+        .count()
+        == 1
+    )
+
+    payload = _payload(
+        cliente,
+        produto,
+        "CONCLUIDO",
+        quantidade="2.000",
+    )
+
+    payload["observacoes"] = (
+        "Edicao administrativa de pedido legado."
+    )
+
+    # Editar um pedido que JA ERA concluido nao pode
+    # disparar baixa retroativa de estoque.
+    response = client.post(
+        f"/pedido/{pedido_id}/editar",
+        data=payload,
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+
+    db.session.expire_all()
+
+    produto = db.session.get(
+        Produto,
+        produto_id,
+    )
+
+    pedido = db.session.get(
+        Pedido,
+        pedido_id,
+    )
+
+    assert pedido.status == Pedido.STATUS_CONCLUIDO
+
+    assert (
+        Decimal(str(produto.estoque_atual))
+        == Decimal("10.000")
+    )
+
+    assert (
+        MovimentacaoEstoque.query
+        .filter_by(
+            pedido_id=pedido_id,
+        )
+        .count()
+        == 0
+    )
+
+    # Financeiro tambem permanece idempotente.
+    assert (
+        LancamentoFinanceiro.query
+        .filter_by(
+            pedido_id=pedido_id,
+            origem="PEDIDO",
+            ativo=True,
+        )
+        .count()
+        == 1
+    )
+
 
 
 def test_pedido_com_movimento_estoque_nao_pode_ser_excluido(

@@ -421,6 +421,10 @@ def editar(id):
                     **context,
                 )
 
+        status_anterior = normalizar_status(
+            pedido.status
+        )
+
         novo_status = normalizar_status(
             request.form.get("status")
         )
@@ -466,7 +470,12 @@ def editar(id):
                 sincronizar_lancamentos_pedido,
             )
 
-            sincronizar_estoque_pedido(pedido)
+            if (
+                status_anterior != Pedido.STATUS_CONCLUIDO
+                and novo_status == Pedido.STATUS_CONCLUIDO
+            ):
+                sincronizar_estoque_pedido(pedido)
+
             sincronizar_lancamentos_pedido(pedido)
 
             db.session.commit()
