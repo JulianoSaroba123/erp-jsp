@@ -85,7 +85,7 @@ def test_f2d2_executa_post_na_session_injetada_com_soap11():
     assert chamada["timeout"] == (10.0, 60.0)
 
     assert chamada["headers"] == {
-        "Content-Type": "text/xml; charset=utf-8",
+        "Content-Type": "text/xml; charset=ISO-8859-1",
         "SOAPAction": '"urn:EnviaSignLoteRps"',
     }
 
@@ -211,3 +211,32 @@ def test_f2d2_bloqueia_endpoint_sem_https_antes_do_post():
         )
 
     assert session.calls == []
+
+
+def test_f2d2_alinha_charset_iso_8859_1():
+    session = FakeSession()
+
+    envelope = (
+        "<soapenv:Envelope>"
+        "TIET\u00ca - NFS-e"
+        "</soapenv:Envelope>"
+    )
+
+    enviar_soap_geisweb(
+        session,
+        endpoint=ENDPOINT_FAKE,
+        soap_action=SOAP_ACTION,
+        envelope=envelope,
+    )
+
+    chamada = session.calls[0]
+
+    assert chamada["data"] == (
+        envelope.encode("ISO-8859-1")
+    )
+
+    assert b"TIET\xca - NFS-e" in chamada["data"]
+
+    assert chamada["headers"]["Content-Type"] == (
+        "text/xml; charset=ISO-8859-1"
+    )

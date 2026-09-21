@@ -115,7 +115,7 @@ def enviar_soap_geisweb(
         )
 
     if isinstance(envelope, str):
-        payload = envelope.encode("utf-8")
+        payload = envelope.encode("ISO-8859-1")
     elif isinstance(envelope, bytes):
         payload = envelope
     else:
@@ -129,7 +129,7 @@ def enviar_soap_geisweb(
         )
 
     headers = {
-        "Content-Type": "text/xml; charset=utf-8",
+        "Content-Type": "text/xml; charset=ISO-8859-1",
         "SOAPAction": _normalizar_soap_action(soap_action),
     }
 
