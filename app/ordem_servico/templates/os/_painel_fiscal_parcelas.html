@@ -359,6 +359,67 @@
 
                                 {% endif %}
 
+                                {% if documento.status == 'PREPARADA' %}
+
+                                <div class="mt-2">
+
+                                    <div class="alert alert-info py-2 px-2 small text-start">
+
+                                        <i class="fas fa-shield-alt me-1"></i>
+
+                                        O XML fiscal j&aacute; foi preparado
+                                        e validado.
+
+                                        A libera&ccedil;&atilde;o abaixo
+                                        <strong>
+                                            n&atilde;o transmite a NFS-e.
+                                        </strong>
+
+                                    </div>
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for(
+                                            'ordem_servico.liberar_nfse_parcela_para_envio',
+                                            id=ordem.id,
+                                            parcela_id=parcela.id
+                                        ) }}">
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-warning btn-sm"
+                                            onclick="return confirm(
+                                                'Liberar este documento para a fronteira de envio? Nenhuma NFS-e sera transmitida nesta etapa.'
+                                            );">
+
+                                            <i class="fas fa-unlock-alt me-2"></i>
+                                            Liberar para envio
+
+                                        </button>
+
+                                    </form>
+
+                                </div>
+
+                                {% endif %}
+
+                                {% if documento.status == 'PENDENTE_ENVIO' %}
+
+                                <div class="alert alert-warning py-2 px-2 mt-2 mb-0 small text-start">
+
+                                    <i class="fas fa-hourglass-half me-1"></i>
+
+                                    Documento liberado para a fronteira
+                                    de transmiss&atilde;o.
+
+                                    <strong>
+                                        Ainda n&atilde;o transmitido.
+                                    </strong>
+
+                                </div>
+
+                                {% endif %}
+
                             {% else %}
 
                                 <form method="POST"

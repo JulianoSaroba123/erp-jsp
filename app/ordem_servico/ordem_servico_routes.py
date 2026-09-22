@@ -1857,6 +1857,152 @@ def preparar_nfse_parcela_xml(id, parcela_id):
     )
 
 
+@ordem_servico_bp.route(
+    '/<int:id>/fiscal/parcela/<int:parcela_id>/liberar-envio',
+    methods=['POST'],
+)
+@login_required
+def liberar_nfse_parcela_para_envio(id, parcela_id):
+    """Libera uma NFS-e preparada para a fronteira de envio.
+
+    Esta rota:
+    - revalida o artefato fiscal persistido;
+    - muda PREPARADA -> PENDENTE_ENVIO;
+    - nao transmite;
+    - nao realiza HTTP/SOAP;
+    - nao altera RPS;
+    - nao altera financeiro.
+    """
+
+    if getattr(current_user, 'tipo_usuario', None) != 'admin':
+        flash(
+            'Acesso fiscal restrito a administradores.',
+            'danger',
+        )
+        return redirect(
+            url_for(
+                'ordem_servico.visualizar',
+                id=id,
+            )
+        )
+
+    from app.fiscal.configuracao_fiscal_model import (
+        ConfiguracaoFiscal,
+    )
+    from app.fiscal.nfse_documento_model import (
+        NfseDocumento,
+    )
+    from app.fiscal.nfse_service import (
+        TransicaoStatusNfseInvalida,
+        TransmissaoNfseInvalida,
+        liberar_documento_nfse_geisweb_para_envio,
+    )
+
+    ordem = OrdemServico.query.filter_by(
+        id=id,
+        ativo=True,
+    ).first()
+
+    if ordem is None:
+        flash(
+            'Ordem de servico nao encontrada.',
+            'danger',
+        )
+        return redirect(
+            url_for(
+                'ordem_servico.listar',
+            )
+        )
+
+    documento = NfseDocumento.query.filter_by(
+        ordem_servico_id=id,
+        ordem_servico_parcela_id=parcela_id,
+        ativo=True,
+    ).first()
+
+    if documento is None:
+        flash(
+            'Documento fiscal da parcela nao encontrado.',
+            'danger',
+        )
+        return redirect(
+            url_for(
+                'ordem_servico.visualizar',
+                id=id,
+            )
+        )
+
+    configuracao = db.session.get(
+        ConfiguracaoFiscal,
+        documento.configuracao_fiscal_id,
+    )
+
+    if configuracao is None:
+        flash(
+            'Configuracao fiscal do documento nao encontrada.',
+            'danger',
+        )
+        return redirect(
+            url_for(
+                'ordem_servico.visualizar',
+                id=id,
+            )
+        )
+
+    try:
+        liberar_documento_nfse_geisweb_para_envio(
+            documento=documento,
+            ordem_servico=ordem,
+            configuracao=configuracao,
+        )
+
+        db.session.commit()
+
+        flash(
+            (
+                f'Documento fiscal #{documento.id} liberado para '
+                'a fronteira de envio. '
+                'Nenhuma NFS-e foi transmitida.'
+            ),
+            'success',
+        )
+
+    except (
+        TransmissaoNfseInvalida,
+        TransicaoStatusNfseInvalida,
+    ) as exc:
+        db.session.rollback()
+
+        flash(
+            f'Nao foi possivel liberar a NFS-e: {exc}',
+            'danger',
+        )
+
+    except Exception:
+        db.session.rollback()
+
+        current_app.logger.exception(
+            'Erro ao liberar NFS-e da parcela %s da OS %s',
+            parcela_id,
+            id,
+        )
+
+        flash(
+            (
+                'Erro inesperado durante a liberacao fiscal. '
+                'Nenhuma NFS-e foi transmitida.'
+            ),
+            'danger',
+        )
+
+    return redirect(
+        url_for(
+            'ordem_servico.visualizar',
+            id=id,
+        )
+    )
+
+
 @ordem_servico_bp.route('/<int:id>/apontamento', methods=['GET', 'POST'])
 def apontamento_colaborador(id):
     if not usuario_eh_colaborador():
