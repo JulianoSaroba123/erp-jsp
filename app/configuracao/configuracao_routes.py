@@ -192,8 +192,13 @@ def fiscal():
             request.form.get('serie_rps') or '1'
         ).strip()
 
-        optante_simples_nacional = bool(
-            request.form.get('optante_simples_nacional')
+        # Regime tributario e opcao pelo Simples nao podem
+        # ficar em estados contraditorios.
+        optante_simples_nacional = (
+            regime_tributario in {
+                'SIMPLES_NACIONAL',
+                'MEI',
+            }
         )
 
         # -----------------------------------------------

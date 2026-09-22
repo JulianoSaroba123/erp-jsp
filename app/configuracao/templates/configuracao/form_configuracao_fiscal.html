@@ -152,11 +152,11 @@
                                 <div class="form-check form-switch mt-2">
                                     <input class="form-check-input fiscal-switch"
                                            type="checkbox"
-                                           name="optante_simples_nacional"
                                            id="optante_simples_nacional"
                                            {% if configuracao_fiscal.optante_simples_nacional %}
                                                checked
-                                           {% endif %}>
+                                           {% endif %}
+                                           disabled>
 
                                     <label class="form-check-label"
                                            for="optante_simples_nacional">
@@ -344,6 +344,36 @@
                     </div>
 
                 </form>
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const regime = document.querySelector(
+                            'select[name="regime_tributario"]'
+                        );
+                        const simples = document.getElementById(
+                            'optante_simples_nacional'
+                        );
+
+                        if (!regime || !simples) {
+                            return;
+                        }
+
+                        function atualizarSimples() {
+                            simples.checked = (
+                                regime.value === 'SIMPLES_NACIONAL' ||
+                                regime.value === 'MEI'
+                            );
+                        }
+
+                        regime.addEventListener(
+                            'change',
+                            atualizarSimples
+                        );
+
+                        atualizarSimples();
+                    });
+                </script>
+
             </div>
         </div>
     </div>
