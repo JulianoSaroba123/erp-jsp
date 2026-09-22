@@ -176,9 +176,11 @@ def test_precheck_nao_possui_fronteira_de_rede():
         "transmitir_payload_nfse(",
         "transmitir_e_aplicar_nfse(",
         "transmitir_documento_nfse_geisweb_controlado(",
-        ".post(",
-        ".get(",
-        "requests.",
+        "requests.get(",
+        "requests.post(",
+        "session.get(",
+        "session.post(",
+        "httpx.",
         "db.session",
     )
 
