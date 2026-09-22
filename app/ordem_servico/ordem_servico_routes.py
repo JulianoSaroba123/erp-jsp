@@ -2133,6 +2133,182 @@ def precheck_nfse_parcela_transmissao(id, parcela_id):
     )
 
 
+@ordem_servico_bp.route(
+    '/<int:id>/fiscal/parcela/<int:parcela_id>/transmitir-homologacao',
+    methods=['POST'],
+)
+@login_required
+def transmitir_nfse_parcela_homologacao(id, parcela_id):
+    """Transmissao externa real, exclusivamente em homologacao."""
+
+    if getattr(current_user, 'tipo_usuario', None) != 'admin':
+        flash(
+            'Acesso fiscal restrito a administradores.',
+            'danger',
+        )
+        return redirect(
+            url_for('ordem_servico.visualizar', id=id)
+        )
+
+    from app.fiscal.configuracao_fiscal_model import (
+        ConfiguracaoFiscal,
+    )
+    from app.fiscal.nfse_documento_model import (
+        NfseDocumento,
+    )
+    from app.fiscal.nfse_service import (
+        TransicaoStatusNfseInvalida,
+        TransmissaoNfseInvalida,
+        transmitir_nfse_geisweb_homologacao_one_shot,
+    )
+
+    ordem = OrdemServico.query.filter_by(
+        id=id,
+        ativo=True,
+    ).first()
+
+    if ordem is None:
+        flash('Ordem de servico nao encontrada.', 'danger')
+        return redirect(url_for('ordem_servico.listar'))
+
+    documento = (
+        NfseDocumento.query
+        .filter_by(
+            ordem_servico_id=id,
+            ordem_servico_parcela_id=parcela_id,
+            ativo=True,
+        )
+        .with_for_update()
+        .first()
+    )
+
+    if documento is None:
+        db.session.rollback()
+
+        flash(
+            'Documento fiscal da parcela nao encontrado.',
+            'danger',
+        )
+
+        return redirect(
+            url_for('ordem_servico.visualizar', id=id)
+        )
+
+    configuracao = db.session.get(
+        ConfiguracaoFiscal,
+        documento.configuracao_fiscal_id,
+    )
+
+    if configuracao is None:
+        db.session.rollback()
+
+        flash(
+            'Configuracao fiscal nao encontrada.',
+            'danger',
+        )
+
+        return redirect(
+            url_for('ordem_servico.visualizar', id=id)
+        )
+
+    try:
+        documento, resultado = (
+            transmitir_nfse_geisweb_homologacao_one_shot(
+                documento=documento,
+                ordem_servico=ordem,
+                configuracao=configuracao,
+                confirmacao=request.form.get(
+                    'confirmacao',
+                    '',
+                ),
+            )
+        )
+
+        configuracao.integracao_ativa = False
+
+        status_final = str(
+            documento.status or ''
+        ).strip().upper()
+
+        db.session.commit()
+
+        if status_final == 'AUTORIZADA':
+            flash(
+                (
+                    'HOMOLOGACAO GEISWEB AUTORIZADA. '
+                    f'RPS {documento.serie_rps}/'
+                    f'{documento.numero_rps}. '
+                    f'NFS-e {documento.numero_nfse}. '
+                    'Integracao externa novamente desativada.'
+                ),
+                'success',
+            )
+
+        elif status_final == 'REJEITADA':
+            flash(
+                (
+                    'GeisWeb rejeitou o RPS em homologacao. '
+                    f'Motivo: '
+                    f'{documento.mensagem_status or "sem mensagem"}.'
+                ),
+                'danger',
+            )
+
+        elif status_final == 'PROCESSANDO':
+            flash(
+                (
+                    'GeisWeb informou que o lote esta em processamento. '
+                    'NAO retransmita este RPS.'
+                ),
+                'warning',
+            )
+
+        else:
+            flash(
+                (
+                    'Resposta GeisWeb inconclusiva. '
+                    'NAO retransmita automaticamente. '
+                    'Confira o portal/log antes de nova tentativa.'
+                ),
+                'warning',
+            )
+
+    except (
+        TransmissaoNfseInvalida,
+        TransicaoStatusNfseInvalida,
+    ) as exc:
+        db.session.rollback()
+
+        flash(
+            f'Transmissao bloqueada: {exc}',
+            'danger',
+        )
+
+    except Exception:
+        db.session.rollback()
+
+        current_app.logger.exception(
+            'Falha tecnica na transmissao GeisWeb '
+            'da parcela %s da OS %s',
+            parcela_id,
+            id,
+        )
+
+        flash(
+            (
+                'Falha tecnica durante a chamada externa. '
+                'O resultado pode ser indeterminado. '
+                'NAO retransmita antes de conferir '
+                'o GeisWeb e os logs.'
+            ),
+            'danger',
+        )
+
+    return redirect(
+        url_for('ordem_servico.visualizar', id=id)
+    )
+
+
 @ordem_servico_bp.route('/<int:id>/apontamento', methods=['GET', 'POST'])
 def apontamento_colaborador(id):
     if not usuario_eh_colaborador():

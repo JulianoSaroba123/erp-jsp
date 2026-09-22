@@ -440,6 +440,64 @@
 
                                 </form>
 
+                                {% if documento.ambiente == 'HOMOLOGACAO' %}
+
+                                <div class="border border-danger rounded p-2 mt-3 text-start">
+
+                                    <div class="small text-danger fw-bold mb-2">
+                                        <i class="fas fa-satellite-dish me-1"></i>
+                                        CHAMADA EXTERNA REAL - HOMOLOGA&Ccedil;&Atilde;O
+                                    </div>
+
+                                    <div class="small mb-2">
+                                        Envia o RPS
+                                        {{ documento.serie_rps }}/{{ documento.numero_rps }}
+                                        ao GeisWeb de homologa&ccedil;&atilde;o.
+                                    </div>
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for(
+                                            'ordem_servico.transmitir_nfse_parcela_homologacao',
+                                            id=ordem.id,
+                                            parcela_id=parcela.id
+                                        ) }}"
+                                        onsubmit="
+                                            var b=this.querySelector('button[type=submit]');
+                                            b.disabled=true;
+                                            b.innerText='Transmitindo...';
+                                        ">
+
+                                        <label class="form-label small">
+                                            Digite
+                                            <strong>TRANSMITIR</strong>
+                                            para autorizar:
+                                        </label>
+
+                                        <input
+                                            type="text"
+                                            name="confirmacao"
+                                            class="form-control form-control-sm mb-2"
+                                            autocomplete="off"
+                                            pattern="TRANSMITIR"
+                                            placeholder="TRANSMITIR"
+                                            required>
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-danger btn-sm w-100">
+
+                                            <i class="fas fa-paper-plane me-2"></i>
+                                            Transmitir em HOMOLOGA&Ccedil;&Atilde;O
+
+                                        </button>
+
+                                    </form>
+
+                                </div>
+
+                                {% endif %}
+
                                 {% endif %}
 
                             {% else %}

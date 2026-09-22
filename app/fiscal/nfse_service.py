@@ -1636,6 +1636,78 @@ def transmitir_documento_nfse_geisweb_controlado(
     )
 
 
+def transmitir_nfse_geisweb_homologacao_one_shot(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao: ConfiguracaoFiscal,
+    confirmacao: str,
+) -> tuple[NfseDocumento, dict]:
+    """Transmite uma unica NFS-e exclusivamente em HOMOLOGACAO.
+
+    Regras:
+    - exige token textual TRANSMITIR;
+    - exige ambiente HOMOLOGACAO;
+    - exige integracao global desligada em repouso;
+    - repete o pre-check A1/mTLS antes da chamada;
+    - ativa a integracao somente durante esta chamada;
+    - exige autorizacao explicita do gate H3-S5R;
+    - sempre restaura integracao_ativa=False;
+    - nao executa commit.
+    """
+
+    token = str(
+        confirmacao or ""
+    ).strip().upper()
+
+    if token != "TRANSMITIR":
+        raise TransmissaoNfseInvalida(
+            "Confirmacao invalida. Digite TRANSMITIR."
+        )
+
+    if configuracao is None:
+        raise TransmissaoNfseInvalida(
+            "Configuracao fiscal nao informada."
+        )
+
+    ambiente = str(
+        getattr(configuracao, "ambiente", "") or ""
+    ).strip().upper()
+
+    if ambiente != "HOMOLOGACAO":
+        raise TransmissaoNfseInvalida(
+            "Transmissao one-shot permitida somente em HOMOLOGACAO."
+        )
+
+    if getattr(
+        configuracao,
+        "integracao_ativa",
+        False,
+    ) is True:
+        raise TransmissaoNfseInvalida(
+            "Integracao externa deve permanecer desativada em repouso."
+        )
+
+    precheck_transmissao_geisweb(
+        documento=documento,
+        ordem_servico=ordem_servico,
+        configuracao=configuracao,
+    )
+
+    configuracao.integracao_ativa = True
+
+    try:
+        return transmitir_documento_nfse_geisweb_controlado(
+            documento=documento,
+            ordem_servico=ordem_servico,
+            configuracao=configuracao,
+            autorizar_transmissao=True,
+        )
+
+    finally:
+        configuracao.integracao_ativa = False
+
+
 def transmitir_payload_nfse(
     *,
     payload: dict,
