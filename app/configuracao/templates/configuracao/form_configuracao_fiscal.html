@@ -19,6 +19,34 @@
 {% endblock %}
 
 {% block content %}
+
+<style>
+    #optante_simples_nacional.fiscal-switch {
+        width: 2.8rem;
+        height: 1.4rem;
+        cursor: pointer;
+        border: 2px solid #64748b;
+        background-color: #cbd5e1;
+        box-shadow: none;
+    }
+
+    #optante_simples_nacional.fiscal-switch:checked {
+        background-color: #00aaff;
+        border-color: #0077aa;
+        box-shadow: 0 0 0 0.18rem rgba(0, 170, 255, 0.18);
+    }
+
+    #optante_simples_nacional.fiscal-switch:checked + .form-check-label {
+        color: #075985;
+        font-weight: 700;
+    }
+
+    #optante_simples_nacional.fiscal-switch + .form-check-label {
+        margin-left: 0.35rem;
+        cursor: pointer;
+    }
+</style>
+
 <div class="row justify-content-center">
     <div class="col-12 col-lg-10 col-xl-11">
 
@@ -122,7 +150,7 @@
                                 </label>
 
                                 <div class="form-check form-switch mt-2">
-                                    <input class="form-check-input"
+                                    <input class="form-check-input fiscal-switch"
                                            type="checkbox"
                                            name="optante_simples_nacional"
                                            id="optante_simples_nacional"
