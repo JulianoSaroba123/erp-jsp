@@ -1341,6 +1341,64 @@ def preparar_nfse_para_envio(
     return documento
 
 
+def validar_elegibilidade_transmissao_geisweb(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao: ConfiguracaoFiscal,
+) -> dict:
+    """Valida a elegibilidade tecnica para futura transmissao GeisWeb.
+
+    H3-S5Q:
+    - aceita somente documento PENDENTE_ENVIO;
+    - respeita o disjuntor integracao_ativa;
+    - usa somente o XML fiscal persistido;
+    - revalida hash, XSD, provider e ambiente via H3-S5O;
+    - nao gera novo XML;
+    - nao reserva novo RPS;
+    - nao altera status;
+    - nao executa commit;
+    - nao transmite;
+    - nao realiza HTTP ou SOAP.
+    """
+
+    if documento is None:
+        raise TransmissaoNfseInvalida(
+            "Documento NFS-e nao informado."
+        )
+
+    if configuracao is None:
+        raise TransmissaoNfseInvalida(
+            "Configuracao fiscal nao informada."
+        )
+
+    status_atual = str(
+        getattr(documento, "status", "") or ""
+    ).strip().upper()
+
+    if status_atual != "PENDENTE_ENVIO":
+        raise TransicaoStatusNfseInvalida(
+            "Documento NFS-e em estado "
+            f"{status_atual or '<VAZIO>'} nao esta elegivel "
+            "para transmissao."
+        )
+
+    if getattr(
+        configuracao,
+        "integracao_ativa",
+        False,
+    ) is not True:
+        raise TransmissaoNfseInvalida(
+            "Integracao externa NFS-e esta desativada."
+        )
+
+    return reconstruir_payload_geisweb_para_envio(
+        documento=documento,
+        ordem_servico=ordem_servico,
+        configuracao=configuracao,
+    )
+
+
 def transmitir_payload_nfse(
     *,
     payload: dict,
