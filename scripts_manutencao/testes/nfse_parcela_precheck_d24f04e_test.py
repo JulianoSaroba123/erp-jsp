@@ -154,7 +154,54 @@ def test_precheck_bloqueia_sem_senha(
         )
 
 
-def test_precheck_nao_possui_fronteira_de_   assert rotas[endpoint] == (
+def test_precheck_nao_possui_fronteira_de_rede():
+    fonte = inspect.getsource(
+        service.precheck_transmissao_geisweb
+    )
+
+    assert (
+        "reconstruir_payload_geisweb_para_envio("
+        in fonte
+    )
+
+    assert (
+        "carregar_certificado_a1_do_ambiente("
+        in fonte
+    )
+
+    assert "criar_session_a1(" in fonte
+
+    proibidos = (
+        "enviar_soap_geisweb(",
+        "transmitir_payload_nfse(",
+        "transmitir_e_aplicar_nfse(",
+        "transmitir_documento_nfse_geisweb_controlado(",
+        ".post(",
+        ".get(",
+        "requests.",
+        "db.session",
+    )
+
+    for termo in proibidos:
+        assert termo not in fonte
+
+
+def test_rota_precheck_registrada():
+    app = create_app("testing")
+
+    rotas = {
+        regra.endpoint: regra.rule
+        for regra in app.url_map.iter_rules()
+    }
+
+    endpoint = (
+        "ordem_servico."
+        "precheck_nfse_parcela_transmissao"
+    )
+
+    assert endpoint in rotas
+
+    assert rotas[endpoint] == (
         "/ordem_servico/<int:id>/fiscal/parcela/"
         "<int:parcela_id>/precheck-transmissao"
     )
