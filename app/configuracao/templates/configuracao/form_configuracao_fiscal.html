@@ -21,29 +21,29 @@
 {% block content %}
 
 <style>
-    #optante_simples_nacional.fiscal-switch {
-        width: 2.8rem;
-        height: 1.4rem;
-        cursor: pointer;
-        border: 2px solid #64748b;
-        background-color: #cbd5e1;
-        box-shadow: none;
-    }
-
-    #optante_simples_nacional.fiscal-switch:checked {
-        background-color: #00aaff;
-        border-color: #0077aa;
-        box-shadow: 0 0 0 0.18rem rgba(0, 170, 255, 0.18);
-    }
-
-    #optante_simples_nacional.fiscal-switch:checked + .form-check-label {
-        color: #075985;
+    .simples-status {
+        min-height: 42px;
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.55rem 0.8rem;
+        border-radius: 0.5rem;
+        border: 2px solid #94a3b8;
+        background: #e2e8f0;
+        color: #475569;
         font-weight: 700;
+        transition: all 0.15s ease-in-out;
     }
 
-    #optante_simples_nacional.fiscal-switch + .form-check-label {
-        margin-left: 0.35rem;
-        cursor: pointer;
+    .simples-status.optante {
+        border-color: #0077aa;
+        background: #00aaff;
+        color: #ffffff;
+        box-shadow: 0 0 0 0.18rem rgba(0, 170, 255, 0.16);
+    }
+
+    .simples-status i {
+        font-size: 1rem;
     }
 </style>
 
@@ -149,19 +149,17 @@
                                     Simples Nacional
                                 </label>
 
-                                <div class="form-check form-switch mt-2">
-                                    <input class="form-check-input fiscal-switch"
-                                           type="checkbox"
-                                           id="optante_simples_nacional"
-                                           {% if configuracao_fiscal.optante_simples_nacional %}
-                                               checked
-                                           {% endif %}
-                                           disabled>
+                                <div id="simples_status"
+                                     class="simples-status {% if configuracao_fiscal.optante_simples_nacional %}optante{% endif %}">
+                                    <i class="fas fa-check-circle"></i>
 
-                                    <label class="form-check-label"
-                                           for="optante_simples_nacional">
-                                        Empresa optante
-                                    </label>
+                                    <span id="simples_status_texto">
+                                        {% if configuracao_fiscal.optante_simples_nacional %}
+                                            OPTANTE DO SIMPLES NACIONAL
+                                        {% else %}
+                                            N&Atilde;O OPTANTE
+                                        {% endif %}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -350,19 +348,33 @@
                         const regime = document.querySelector(
                             'select[name="regime_tributario"]'
                         );
-                        const simples = document.getElementById(
-                            'optante_simples_nacional'
+
+                        const status = document.getElementById(
+                            'simples_status'
                         );
 
-                        if (!regime || !simples) {
+                        const texto = document.getElementById(
+                            'simples_status_texto'
+                        );
+
+                        if (!regime || !status || !texto) {
                             return;
                         }
 
                         function atualizarSimples() {
-                            simples.checked = (
+                            const optante = (
                                 regime.value === 'SIMPLES_NACIONAL' ||
                                 regime.value === 'MEI'
                             );
+
+                            status.classList.toggle(
+                                'optante',
+                                optante
+                            );
+
+                            texto.textContent = optante
+                                ? 'OPTANTE DO SIMPLES NACIONAL'
+                                : 'N\u00c3O OPTANTE';
                         }
 
                         regime.addEventListener(
