@@ -1203,6 +1203,38 @@ def reconstruir_payload_geisweb_para_envio(
 
     return payload
 
+def liberar_documento_nfse_geisweb_para_envio(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao: ConfiguracaoFiscal,
+) -> NfseDocumento:
+    """Libera artefato GeisWeb persistido para a fronteira de envio.
+
+    H3-S5P:
+    - usa somente o XML fiscal persistido;
+    - revalida integridade, XSD, provider e ambiente via H3-S5O;
+    - nao gera novo XML;
+    - nao reserva novo RPS;
+    - nao assina novamente;
+    - nao transmite;
+    - nao executa commit;
+    - somente apos todas as validacoes muda
+      PREPARADA para PENDENTE_ENVIO.
+    """
+
+    payload = reconstruir_payload_geisweb_para_envio(
+        documento=documento,
+        ordem_servico=ordem_servico,
+        configuracao=configuracao,
+    )
+
+    return preparar_nfse_para_envio(
+        documento=documento,
+        payload=payload,
+    )
+
+
 def preparar_nfse_para_envio(
     *,
     documento: NfseDocumento,
