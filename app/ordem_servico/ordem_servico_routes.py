@@ -2003,6 +2003,136 @@ def liberar_nfse_parcela_para_envio(id, parcela_id):
     )
 
 
+@ordem_servico_bp.route(
+    '/<int:id>/fiscal/parcela/<int:parcela_id>/precheck-transmissao',
+    methods=['POST'],
+)
+@login_required
+def precheck_nfse_parcela_transmissao(id, parcela_id):
+    """Testa certificado e mTLS sem transmitir NFS-e."""
+
+    if getattr(current_user, 'tipo_usuario', None) != 'admin':
+        flash(
+            'Acesso fiscal restrito a administradores.',
+            'danger',
+        )
+        return redirect(
+            url_for(
+                'ordem_servico.visualizar',
+                id=id,
+            )
+        )
+
+    from app.fiscal.configuracao_fiscal_model import (
+        ConfiguracaoFiscal,
+    )
+    from app.fiscal.nfse_documento_model import (
+        NfseDocumento,
+    )
+    from app.fiscal.nfse_service import (
+        TransicaoStatusNfseInvalida,
+        TransmissaoNfseInvalida,
+        precheck_transmissao_geisweb,
+    )
+
+    ordem = OrdemServico.query.filter_by(
+        id=id,
+        ativo=True,
+    ).first()
+
+    documento = NfseDocumento.query.filter_by(
+        ordem_servico_id=id,
+        ordem_servico_parcela_id=parcela_id,
+        ativo=True,
+    ).first()
+
+    if ordem is None or documento is None:
+        flash(
+            'OS ou documento fiscal nao encontrado.',
+            'danger',
+        )
+        return redirect(
+            url_for(
+                'ordem_servico.visualizar',
+                id=id,
+            )
+        )
+
+    configuracao = db.session.get(
+        ConfiguracaoFiscal,
+        documento.configuracao_fiscal_id,
+    )
+
+    if configuracao is None:
+        flash(
+            'Configuracao fiscal nao encontrada.',
+            'danger',
+        )
+        return redirect(
+            url_for(
+                'ordem_servico.visualizar',
+                id=id,
+            )
+        )
+
+    try:
+        resultado = precheck_transmissao_geisweb(
+            documento=documento,
+            ordem_servico=ordem,
+            configuracao=configuracao,
+        )
+
+        validade = resultado[
+            'certificado_valido_ate'
+        ]
+
+        flash(
+            (
+                'PRE-CHECK GEISWEB OK. '
+                f'RPS {documento.serie_rps}/'
+                f'{documento.numero_rps}. '
+                f'Certificado A1 valido ate {validade}. '
+                'mTLS pronto. '
+                'Integracao externa continua desativada. '
+                'Nenhuma NFS-e foi transmitida.'
+            ),
+            'success',
+        )
+
+    except (
+        TransmissaoNfseInvalida,
+        TransicaoStatusNfseInvalida,
+    ) as exc:
+
+        flash(
+            f'PRE-CHECK GEISWEB BLOQUEADO: {exc}',
+            'danger',
+        )
+
+    except Exception:
+        current_app.logger.exception(
+            'Erro inesperado no pre-check GeisWeb '
+            'da parcela %s da OS %s',
+            parcela_id,
+            id,
+        )
+
+        flash(
+            (
+                'Erro inesperado no pre-check GeisWeb. '
+                'Nenhuma NFS-e foi transmitida.'
+            ),
+            'danger',
+        )
+
+    return redirect(
+        url_for(
+            'ordem_servico.visualizar',
+            id=id,
+        )
+    )
+
+
 @ordem_servico_bp.route('/<int:id>/apontamento', methods=['GET', 'POST'])
 def apontamento_colaborador(id):
     if not usuario_eh_colaborador():

@@ -405,7 +405,7 @@
 
                                 {% if documento.status == 'PENDENTE_ENVIO' %}
 
-                                <div class="alert alert-warning py-2 px-2 mt-2 mb-0 small text-start">
+                                <div class="alert alert-warning py-2 px-2 mt-2 small text-start">
 
                                     <i class="fas fa-hourglass-half me-1"></i>
 
@@ -417,6 +417,28 @@
                                     </strong>
 
                                 </div>
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for(
+                                        'ordem_servico.precheck_nfse_parcela_transmissao',
+                                        id=ordem.id,
+                                        parcela_id=parcela.id
+                                    ) }}">
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-outline-warning btn-sm"
+                                        onclick="return confirm(
+                                            'Executar somente o pre-check do certificado A1 e mTLS? Nenhuma requisicao sera enviada ao GeisWeb.'
+                                        );">
+
+                                        <i class="fas fa-shield-alt me-2"></i>
+                                        Pr&eacute;-check transmiss&atilde;o
+
+                                    </button>
+
+                                </form>
 
                                 {% endif %}
 

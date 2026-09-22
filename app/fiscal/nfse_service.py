@@ -8,6 +8,7 @@ from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 
 import hashlib
+import os
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 
@@ -39,6 +40,18 @@ from app.fiscal.xml.dps_signer import (
 )
 from app.fiscal.xml.dps_xsd_validator import validar_xml_dps_xsd
 from app.fiscal.xsd import obter_caminho_xsd_dps
+from app.fiscal.certificado_a1 import (
+    ENV_PFX_PASSWORD,
+    CertificadoA1Invalido,
+    carregar_certificado_a1_do_ambiente,
+)
+from app.fiscal.providers.geisweb_tiete_mtls import (
+    GeisWebMtlsError,
+    criar_session_a1,
+)
+from app.fiscal.providers.geisweb_tiete_config import (
+    ENDPOINT_HOMOLOGACAO,
+)
 
 
 from app.fiscal.providers.base import STATUS_TRANSMISSAO_NFSE_VALIDOS
@@ -1355,6 +1368,173 @@ def preparar_nfse_para_envio(
     )
 
     return documento
+
+
+def precheck_transmissao_geisweb(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao: ConfiguracaoFiscal,
+) -> dict:
+    """Executa o pre-check tecnico da transmissao GeisWeb.
+
+    D24F04-E:
+    - aceita somente PENDENTE_ENVIO;
+    - revalida o XML fiscal persistido;
+    - revalida hash, XSD, provider e ambiente;
+    - exige endpoint conhecido de HOMOLOGACAO;
+    - carrega e valida o certificado A1;
+    - valida a senha do PFX;
+    - valida periodo de validade do certificado;
+    - constroi SSLContext e Session mTLS;
+    - nao realiza GET/POST;
+    - nao executa SOAP;
+    - nao transmite NFS-e;
+    - nao altera documento;
+    - nao altera configuracao;
+    - nao executa commit.
+    """
+
+    if documento is None:
+        raise TransmissaoNfseInvalida(
+            "Documento NFS-e nao informado."
+        )
+
+    if ordem_servico is None:
+        raise TransmissaoNfseInvalida(
+            "Ordem de servico nao informada."
+        )
+
+    if configuracao is None:
+        raise TransmissaoNfseInvalida(
+            "Configuracao fiscal nao informada."
+        )
+
+    status = str(
+        getattr(documento, "status", "") or ""
+    ).strip().upper()
+
+    if status != "PENDENTE_ENVIO":
+        raise TransicaoStatusNfseInvalida(
+            "Documento NFS-e nao esta em PENDENTE_ENVIO."
+        )
+
+    provider = normalizar_codigo_provider(
+        getattr(
+            configuracao,
+            "provider",
+            None,
+        )
+    )
+
+    if provider != "GEISWEB_TIETE":
+        raise TransmissaoNfseInvalida(
+            "Provider fiscal nao corresponde ao GEISWEB_TIETE."
+        )
+
+    ambiente = str(
+        getattr(
+            configuracao,
+            "ambiente",
+            "",
+        ) or ""
+    ).strip().upper()
+
+    if ambiente != "HOMOLOGACAO":
+        raise TransmissaoNfseInvalida(
+            "Pre-check D24F04-E permitido somente em HOMOLOGACAO."
+        )
+
+    payload = reconstruir_payload_geisweb_para_envio(
+        documento=documento,
+        ordem_servico=ordem_servico,
+        configuracao=configuracao,
+    )
+
+    webservice = payload.get(
+        "webservice"
+    )
+
+    if not isinstance(
+        webservice,
+        dict,
+    ):
+        raise TransmissaoNfseInvalida(
+            "Payload nao possui configuracao de webservice."
+        )
+
+    endpoint = str(
+        webservice.get(
+            "endpoint"
+        ) or ""
+    ).strip()
+
+    if endpoint != ENDPOINT_HOMOLOGACAO:
+        raise TransmissaoNfseInvalida(
+            "Endpoint GeisWeb de homologacao nao corresponde "
+            "ao endpoint tecnico homologado."
+        )
+
+    senha = os.environ.get(
+        ENV_PFX_PASSWORD
+    )
+
+    if senha is None:
+        raise TransmissaoNfseInvalida(
+            "Senha do certificado A1 nao configurada no ambiente."
+        )
+
+    try:
+        material = (
+            carregar_certificado_a1_do_ambiente()
+        )
+    except CertificadoA1Invalido as exc:
+        raise TransmissaoNfseInvalida(
+            f"Certificado A1 indisponivel ou invalido: {exc}"
+        ) from exc
+
+    try:
+        session = criar_session_a1(
+            material.caminho,
+            senha,
+        )
+    except GeisWebMtlsError as exc:
+        raise TransmissaoNfseInvalida(
+            "Infraestrutura mTLS do GeisWeb nao pode ser criada."
+        ) from exc
+
+    try:
+        certificado = material.certificado
+
+        validade_inicio = (
+            certificado.not_valid_before_utc
+        )
+
+        validade_fim = (
+            certificado.not_valid_after_utc
+        )
+
+    finally:
+        session.close()
+
+    return {
+        "ok": True,
+        "provider": provider,
+        "ambiente": ambiente,
+        "endpoint": endpoint,
+        "certificado_valido_de": (
+            validade_inicio.isoformat()
+        ),
+        "certificado_valido_ate": (
+            validade_fim.isoformat()
+        ),
+        "mtls_pronto": True,
+        "integracao_ativa": (
+            configuracao.integracao_ativa is True
+        ),
+        "numero_rps": documento.numero_rps,
+        "serie_rps": documento.serie_rps,
+    }
 
 
 def validar_elegibilidade_transmissao_geisweb(
