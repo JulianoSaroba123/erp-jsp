@@ -1,4 +1,5 @@
-﻿from types import SimpleNamespace
+import hashlib
+from types import SimpleNamespace
 
 import pytest
 
@@ -101,6 +102,24 @@ def test_h2_prepara_documento_geisweb_sem_rede(
             },
         )
     )
+
+    # H3-S5N-C: artefato fiscal persistido
+    conteudo = bytes(payload["conteudo"])
+
+    assert documento_resultado is documento
+    assert documento.xml_envio == conteudo
+
+    hash_esperado = hashlib.sha256(
+        conteudo
+    ).hexdigest()
+
+    assert documento.xml_envio_sha256 == hash_esperado
+    assert len(documento.xml_envio_sha256) == 64
+
+    assert documento.preparado_em is not None
+    assert documento.preparado_em.tzinfo is not None
+
+    assert documento.status == "PREPARADA"
 
     assert documento_resultado is documento
     assert documento.status == "PREPARADA"

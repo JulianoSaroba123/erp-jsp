@@ -79,6 +79,11 @@ class NfseDocumento(BaseModel):
     # Retorno operacional.
     mensagem_status = db.Column(db.Text)
 
+    # Artefato fiscal preparado e imutavel para transmissao.
+    xml_envio = db.Column(db.LargeBinary)
+    xml_envio_sha256 = db.Column(db.String(64))
+    preparado_em = db.Column(db.DateTime(timezone=True))
+
     __table_args__ = (
         db.CheckConstraint(
             "status IN ("

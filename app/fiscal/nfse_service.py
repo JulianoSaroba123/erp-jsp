@@ -6,6 +6,9 @@ Nenhuma funcao deste modulo gera lancamento financeiro.
 
 from sqlalchemy.exc import IntegrityError
 
+import hashlib
+from datetime import datetime, timezone
+
 from app.extensoes import db
 from app.fiscal.configuracao_fiscal_model import ConfiguracaoFiscal
 from app.fiscal.nfse_documento_model import (
@@ -806,10 +809,32 @@ def preparar_documento_nfse_com_geisweb(
             valores=valores,
         )
 
+        conteudo = payload.get("conteudo")
+
+        if not isinstance(
+            conteudo,
+            (bytes, bytearray),
+        ) or not conteudo:
+            raise PreparacaoNfseInvalida(
+                "Payload GeisWeb nao possui XML valido "
+                "para persistencia."
+            )
+
+        xml_envio = bytes(conteudo)
+
+        documento_reservado.xml_envio = xml_envio
+        documento_reservado.xml_envio_sha256 = hashlib.sha256(
+            xml_envio
+        ).hexdigest()
+        documento_reservado.preparado_em = datetime.now(
+            timezone.utc
+        )
+
         documento_reservado.status = "PREPARADA"
         documento_reservado.mensagem_status = (
             "NFS-e GeisWeb preparada localmente e validada "
-            "contra o XSD. Nenhuma NFS-e foi transmitida."
+            "contra o XSD. Artefato fiscal persistido. "
+            "Nenhuma NFS-e foi transmitida."
         )
 
         _commit_preparacao_local_nfse()
