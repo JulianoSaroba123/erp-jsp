@@ -5,8 +5,10 @@ Nenhum segredo fiscal deve ser persistido no banco.
 """
 
 from dataclasses import dataclass
+import base64
 from datetime import datetime, timezone
 import os
+import tempfile
 from pathlib import Path
 
 from cryptography import x509
@@ -14,6 +16,7 @@ from cryptography.hazmat.primitives.serialization import pkcs12
 
 
 ENV_PFX_PATH = "NFSE_CERTIFICADO_PFX_PATH"
+ENV_PFX_B64_PATH = "NFSE_CERTIFICADO_PFX_B64_PATH"
 ENV_PFX_PASSWORD = "NFSE_CERTIFICADO_PFX_PASSWORD"
 
 
@@ -151,6 +154,119 @@ def carregar_certificado_a1(
     )
 
 
+def _materializar_pfx_base64(
+    caminho_base64,
+) -> Path:
+    """Decodifica PFX Base64 para arquivo efemero protegido.
+
+    O Secret File permanece textual no Render.
+    O PFX binario existe somente no filesystem efemero do container.
+    """
+
+    origem = Path(
+        str(caminho_base64 or "").strip()
+    ).expanduser()
+
+    if not str(caminho_base64 or "").strip():
+        raise CertificadoA1Invalido(
+            "Caminho do certificado A1 Base64 nao informado."
+        )
+
+    if (
+        not origem.exists()
+        or not origem.is_file()
+    ):
+        raise CertificadoA1Invalido(
+            "Arquivo Base64 do certificado A1 nao encontrado."
+        )
+
+    try:
+        conteudo_base64 = (
+            origem.read_text(
+                encoding="ascii"
+            )
+            .strip()
+        )
+    except (
+        OSError,
+        UnicodeError,
+    ) as exc:
+        raise CertificadoA1Invalido(
+            "Nao foi possivel ler o certificado A1 Base64."
+        ) from exc
+
+    if not conteudo_base64:
+        raise CertificadoA1Invalido(
+            "Arquivo Base64 do certificado A1 esta vazio."
+        )
+
+    try:
+        dados_pfx = base64.b64decode(
+            conteudo_base64,
+            validate=True,
+        )
+    except Exception as exc:
+        raise CertificadoA1Invalido(
+            "Conteudo Base64 do certificado A1 e invalido."
+        ) from exc
+
+    if not dados_pfx:
+        raise CertificadoA1Invalido(
+            "Certificado A1 decodificado esta vazio."
+        )
+
+    diretorio = (
+        Path(
+            tempfile.gettempdir()
+        )
+        / "erp_jsp_nfse"
+    )
+
+    try:
+        diretorio.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        destino = (
+            diretorio
+            / f"certificado_a1_{os.getpid()}.pfx"
+        )
+
+        temporario = destino.with_suffix(
+            ".tmp"
+        )
+
+        temporario.write_bytes(
+            dados_pfx
+        )
+
+        try:
+            temporario.chmod(
+                0o600
+            )
+        except OSError:
+            pass
+
+        temporario.replace(
+            destino
+        )
+
+        try:
+            destino.chmod(
+                0o600
+            )
+        except OSError:
+            pass
+
+        return destino
+
+    except OSError as exc:
+        raise CertificadoA1Invalido(
+            "Nao foi possivel materializar o certificado A1."
+        ) from exc
+
+
 def carregar_certificado_a1_do_ambiente(
     *,
     ambiente=None,
@@ -168,9 +284,22 @@ def carregar_certificado_a1_do_ambiente(
         ENV_PFX_PATH
     )
 
-    if not str(caminho or "").strip():
+    caminho_base64 = origem.get(
+        ENV_PFX_B64_PATH
+    )
+
+    if str(caminho or "").strip():
+        caminho_resolvido = caminho
+
+    elif str(caminho_base64 or "").strip():
+        caminho_resolvido = _materializar_pfx_base64(
+            caminho_base64
+        )
+
+    else:
         raise CertificadoA1Invalido(
-            f"Variavel {ENV_PFX_PATH} nao configurada."
+            "Certificado A1 nao configurado. "
+            f"Informe {ENV_PFX_PATH} ou {ENV_PFX_B64_PATH}."
         )
 
     senha = origem.get(
@@ -178,7 +307,7 @@ def carregar_certificado_a1_do_ambiente(
     )
 
     return carregar_certificado_a1(
-        caminho=caminho,
+        caminho=caminho_resolvido,
         senha=senha,
         agora=agora,
     )
