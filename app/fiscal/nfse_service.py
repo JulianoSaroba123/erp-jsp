@@ -1036,6 +1036,173 @@ def aplicar_resultado_transmissao_nfse(
     return documento
 
 
+
+def reconstruir_payload_geisweb_para_envio(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao: ConfiguracaoFiscal,
+) -> dict:
+    """Reconstr?i o envelope t?cnico usando o XML fiscal persistido.
+
+    H3-S5O:
+    - nao gera novo XML;
+    - nao reserva novo RPS;
+    - valida SHA-256 do artefato persistido;
+    - valida novamente o XML contra o XSD GeisWeb;
+    - reconstr?i somente metadados de transporte;
+    - nao transmite;
+    - nao executa commit.
+    """
+
+    if documento is None:
+        raise TransmissaoNfseInvalida(
+            "Documento NFS-e nao informado."
+        )
+
+    if ordem_servico is None:
+        raise TransmissaoNfseInvalida(
+            "Ordem de servico nao informada."
+        )
+
+    if configuracao is None:
+        raise TransmissaoNfseInvalida(
+            "Configuracao fiscal nao informada."
+        )
+
+    status_atual = str(
+        getattr(documento, "status", "") or ""
+    ).strip().upper()
+
+    if status_atual not in {
+        "PREPARADA",
+        "PENDENTE_ENVIO",
+    }:
+        raise TransicaoStatusNfseInvalida(
+            "Documento NFS-e em estado "
+            f"{status_atual or '<VAZIO>'} nao possui "
+            "artefato liberado para envio."
+        )
+
+    provider_documento = normalizar_codigo_provider(
+        getattr(documento, "provider", None)
+    )
+
+    provider_configuracao = normalizar_codigo_provider(
+        getattr(configuracao, "provider", None)
+    )
+
+    if provider_documento != "GEISWEB_TIETE":
+        raise TransmissaoNfseInvalida(
+            "Documento nao pertence ao provider GEISWEB_TIETE."
+        )
+
+    if provider_configuracao != provider_documento:
+        raise TransmissaoNfseInvalida(
+            "Provider atual diverge do provider do documento preparado."
+        )
+
+    ambiente_documento = str(
+        getattr(documento, "ambiente", "") or ""
+    ).strip().upper()
+
+    ambiente_configuracao = str(
+        getattr(configuracao, "ambiente", "") or ""
+    ).strip().upper()
+
+    if (
+        not ambiente_documento
+        or ambiente_documento != ambiente_configuracao
+    ):
+        raise TransmissaoNfseInvalida(
+            "Ambiente fiscal atual diverge do documento preparado."
+        )
+
+    conteudo = getattr(
+        documento,
+        "xml_envio",
+        None,
+    )
+
+    if not isinstance(
+        conteudo,
+        (bytes, bytearray),
+    ) or not conteudo:
+        raise TransmissaoNfseInvalida(
+            "Documento NFS-e nao possui XML de envio persistido."
+        )
+
+    xml_envio = bytes(conteudo)
+
+    hash_persistido = str(
+        getattr(
+            documento,
+            "xml_envio_sha256",
+            "",
+        )
+        or ""
+    ).strip().lower()
+
+    hash_calculado = hashlib.sha256(
+        xml_envio
+    ).hexdigest()
+
+    if (
+        len(hash_persistido) != 64
+        or hash_persistido != hash_calculado
+    ):
+        raise TransmissaoNfseInvalida(
+            "Integridade do XML fiscal persistido nao confere."
+        )
+
+    validacao = validar_xml_envio_lote_rps(
+        xml_envio
+    )
+
+    if not validacao.valido:
+        erros = "; ".join(
+            str(erro)
+            for erro in validacao.erros
+        )
+
+        mensagem = (
+            "XML fiscal persistido nao e mais valido "
+            "perante o XSD GeisWeb."
+        )
+
+        if erros:
+            mensagem = f"{mensagem} {erros}"
+
+        raise TransmissaoNfseInvalida(
+            mensagem
+        )
+
+    provider = resolver_provider_nfse(
+        configuracao
+    )
+
+    payload = provider.preparar_payload(
+        documento=documento,
+        ordem_servico=ordem_servico,
+        configuracao=configuracao,
+    )
+
+    if not isinstance(payload, dict):
+        raise TransmissaoNfseInvalida(
+            "Provider GeisWeb retornou payload tecnico invalido."
+        )
+
+    if normalizar_codigo_provider(
+        payload.get("provider")
+    ) != "GEISWEB_TIETE":
+        raise TransmissaoNfseInvalida(
+            "Payload reconstruido pertence a outro provider."
+        )
+
+    payload["conteudo"] = xml_envio
+
+    return payload
+
 def preparar_nfse_para_envio(
     *,
     documento: NfseDocumento,
