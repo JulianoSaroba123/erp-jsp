@@ -1399,6 +1399,47 @@ def validar_elegibilidade_transmissao_geisweb(
     )
 
 
+def transmitir_documento_nfse_geisweb_controlado(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao: ConfiguracaoFiscal,
+    autorizar_transmissao: bool = False,
+) -> tuple[NfseDocumento, dict]:
+    """Orquestra de forma controlada a transmissao GeisWeb.
+
+    H3-S5R:
+    - exige autorizacao explicita por chamada;
+    - preserva o disjuntor integracao_ativa do H3-S5Q;
+    - usa somente o XML fiscal persistido;
+    - reconstroi e revalida o payload antes da transmissao;
+    - nao gera novo XML;
+    - nao reserva novo RPS;
+    - nao executa commit;
+    - aplica somente o resultado canonico existente.
+
+    Com autorizar_transmissao=False, nenhuma fronteira externa
+    pode ser alcan?ada.
+    """
+
+    if autorizar_transmissao is not True:
+        raise TransmissaoNfseInvalida(
+            "Transmissao externa GeisWeb nao autorizada nesta chamada."
+        )
+
+    payload = validar_elegibilidade_transmissao_geisweb(
+        documento=documento,
+        ordem_servico=ordem_servico,
+        configuracao=configuracao,
+    )
+
+    return transmitir_e_aplicar_nfse(
+        documento=documento,
+        payload=payload,
+        configuracao=configuracao,
+    )
+
+
 def transmitir_payload_nfse(
     *,
     payload: dict,
