@@ -144,8 +144,10 @@ class Produto(BaseModel):
     def valor_estoque(self):
         """Valor total do estoque (custo * quantidade)."""
         if self.preco_custo and self.estoque_atual:
-            return float(self.preco_custo) * self.estoque_atual
-        return 0
+            custo = Decimal(str(self.preco_custo))
+            quantidade = Decimal(str(self.estoque_atual))
+            return custo * quantidade
+        return Decimal("0")
     
     @classmethod
     def buscar_por_codigo(cls, codigo):
