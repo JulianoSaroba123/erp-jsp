@@ -45,6 +45,20 @@
             </div>
 
             <div class="card-body">
+
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    <a href="{{ url_for('configuracao.visualizar') }}"
+                       class="btn btn-primary">
+                        <i class="fas fa-building me-2"></i>
+                        Dados da Empresa
+                    </a>
+
+                    <a href="{{ url_for('configuracao.fiscal') }}"
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-file-invoice-dollar me-2"></i>
+                        Fiscal
+                    </a>
+                </div>
                 <form method="POST" enctype="multipart/form-data" action="{{ url_for('configuracao.editar') }}">
                     <!-- Identificação -->
                     <div class="form-section">

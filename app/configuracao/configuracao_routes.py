@@ -2,11 +2,14 @@
 # Inclui upload de logo, busca CNPJ (BrasilAPI) e CEP (ViaCEP)
 
 import os
+from decimal import Decimal, InvalidOperation
 import requests
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, send_from_directory
 from werkzeug.utils import secure_filename
+from flask_login import login_required, current_user
 from app.extensoes import db
 from app.configuracao.configuracao_model import Configuracao
+from app.fiscal.configuracao_fiscal_model import ConfiguracaoFiscal, REGIMES_TRIBUTARIOS, AMBIENTES_FISCAIS
 from app.configuracao.configuracao_utils import get_config
 
 bp_config = Blueprint('configuracao', __name__, template_folder='templates')
@@ -128,6 +131,200 @@ def editar():
         return redirect(url_for('configuracao.visualizar'))
 
     return render_template('configuracao/form_configuracao.html', configuracao=conf)
+
+
+
+@bp_config.route('/fiscal', methods=['GET', 'POST'])
+@login_required
+def fiscal():
+    """Configuracao fiscal da empresa.
+
+    Esta rota apenas persiste parametros fiscais.
+    Nenhuma NFS-e e transmitida nesta etapa.
+    """
+    if current_user.tipo_usuario != 'admin':
+        flash(
+            'Acesso negado. Configuracao fiscal restrita a administradores.',
+            'danger',
+        )
+        return redirect(url_for('painel.dashboard'))
+
+    conf = Configuracao.get_solo()
+
+    config_fiscal = ConfiguracaoFiscal.query.filter_by(
+        configuracao_id=conf.id
+    ).first()
+
+    if request.method == 'POST':
+        inscricao_municipal = (
+            request.form.get('inscricao_municipal') or ''
+        ).strip() or None
+
+        regime_tributario = (
+            request.form.get('regime_tributario') or ''
+        ).strip().upper() or None
+
+        cnae_principal = (
+            request.form.get('cnae_principal') or ''
+        ).strip() or None
+
+        codigo_servico_municipal = (
+            request.form.get('codigo_servico_municipal') or ''
+        ).strip() or None
+
+        codigo_lc116 = (
+            request.form.get('codigo_lc116') or ''
+        ).strip() or None
+
+        municipio_ibge = (
+            request.form.get('municipio_ibge') or ''
+        ).strip() or None
+
+        ambiente = (
+            request.form.get('ambiente') or 'HOMOLOGACAO'
+        ).strip().upper()
+
+        provider = (
+            request.form.get('provider') or ''
+        ).strip() or None
+
+        serie_rps = (
+            request.form.get('serie_rps') or '1'
+        ).strip()
+
+        optante_simples_nacional = bool(
+            request.form.get('optante_simples_nacional')
+        )
+
+        # -----------------------------------------------
+        # VALIDACOES
+        # -----------------------------------------------
+        if (
+            regime_tributario
+            and regime_tributario not in REGIMES_TRIBUTARIOS
+        ):
+            flash('Regime tributario invalido.', 'danger')
+            return redirect(url_for('configuracao.fiscal'))
+
+        if ambiente not in AMBIENTES_FISCAIS:
+            flash('Ambiente fiscal invalido.', 'danger')
+            return redirect(url_for('configuracao.fiscal'))
+
+        if municipio_ibge:
+            if not municipio_ibge.isdigit() or len(municipio_ibge) != 7:
+                flash(
+                    'O codigo IBGE do municipio deve possuir 7 digitos.',
+                    'danger',
+                )
+                return redirect(url_for('configuracao.fiscal'))
+
+        aliquota_raw = (
+            request.form.get('aliquota_iss_padrao') or ''
+        ).strip()
+
+        aliquota_iss_padrao = None
+
+        if aliquota_raw:
+            try:
+                aliquota_iss_padrao = Decimal(
+                    aliquota_raw.replace(',', '.')
+                )
+            except InvalidOperation:
+                flash('Aliquota de ISS invalida.', 'danger')
+                return redirect(url_for('configuracao.fiscal'))
+
+            if not Decimal('0') <= aliquota_iss_padrao <= Decimal('100'):
+                flash(
+                    'A aliquota de ISS deve estar entre 0 e 100.',
+                    'danger',
+                )
+                return redirect(url_for('configuracao.fiscal'))
+
+        proximo_rps_raw = (
+            request.form.get('proximo_rps') or '1'
+        ).strip()
+
+        try:
+            proximo_rps = int(proximo_rps_raw)
+        except ValueError:
+            flash('O proximo RPS deve ser numerico.', 'danger')
+            return redirect(url_for('configuracao.fiscal'))
+
+        if proximo_rps < 1:
+            flash('O proximo RPS deve ser maior ou igual a 1.', 'danger')
+            return redirect(url_for('configuracao.fiscal'))
+
+        if not serie_rps:
+            flash('A serie do RPS e obrigatoria.', 'danger')
+            return redirect(url_for('configuracao.fiscal'))
+
+        try:
+            if config_fiscal is None:
+                config_fiscal = ConfiguracaoFiscal(
+                    configuracao_id=conf.id
+                )
+                db.session.add(config_fiscal)
+
+            config_fiscal.inscricao_municipal = inscricao_municipal
+            config_fiscal.regime_tributario = regime_tributario
+            config_fiscal.optante_simples_nacional = (
+                optante_simples_nacional
+            )
+
+            config_fiscal.cnae_principal = cnae_principal
+            config_fiscal.codigo_servico_municipal = (
+                codigo_servico_municipal
+            )
+            config_fiscal.codigo_lc116 = codigo_lc116
+            config_fiscal.aliquota_iss_padrao = aliquota_iss_padrao
+            config_fiscal.municipio_ibge = municipio_ibge
+
+            config_fiscal.ambiente = ambiente
+            config_fiscal.provider = provider
+            config_fiscal.serie_rps = serie_rps
+            config_fiscal.proximo_rps = proximo_rps
+
+            # D24F01:
+            # integracao permanece obrigatoriamente desativada.
+            # Habilitacao real somente no D24F02.
+            config_fiscal.integracao_ativa = False
+
+            db.session.commit()
+
+            flash(
+                'Configuracao fiscal salva com sucesso. '
+                'Nenhuma NFS-e foi transmitida.',
+                'success',
+            )
+
+            return redirect(url_for('configuracao.fiscal'))
+
+        except Exception:
+            db.session.rollback()
+
+            current_app.logger.exception(
+                'Erro ao salvar configuracao fiscal'
+            )
+
+            flash(
+                'Nao foi possivel salvar a configuracao fiscal.',
+                'danger',
+            )
+
+    if config_fiscal is None:
+        # Objeto somente em memoria para exibir defaults.
+        # GET nao grava nada no banco.
+        config_fiscal = ConfiguracaoFiscal(
+            configuracao_id=conf.id
+        )
+
+    return render_template(
+        'configuracao/form_configuracao_fiscal.html',
+        configuracao=conf,
+        configuracao_fiscal=config_fiscal,
+        regimes_tributarios=sorted(REGIMES_TRIBUTARIOS),
+        ambientes_fiscais=sorted(AMBIENTES_FISCAIS),
+    )
 
 
 @bp_config.route('/lookup/cnpj')

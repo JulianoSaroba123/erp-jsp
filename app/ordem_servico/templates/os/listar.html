@@ -242,14 +242,16 @@
                                                 </button>
                                             </form>
                                         {% elif ordem.status in ['em_andamento', 'aguardando_pecas', 'aguardando_cliente'] %}
-                                            <form method="POST" action="{{ url_for('ordem_servico.concluir_servico', id=ordem.id) }}" style="display: inline;">
-                                                <button type="submit" 
-                                                        class="btn btn-outline-success btn-sm" 
-                                                        title="Concluir Serviço"
-                                                        onclick="return confirm('Confirma a conclusão do serviço?')">
-                                                    <i class="fas fa-check"></i>
-                                                </button>
-                                            </form>
+                                            <button
+    type="button"
+    class="btn btn-outline-success btn-sm"
+    title="Concluir Servi?o"
+    onclick='abrirModalConclusaoFiscal(
+        {{ url_for("ordem_servico.concluir_servico", id=ordem.id)|tojson }},
+        {{ ordem.numero|tojson }}
+    )'>
+    <i class="fas fa-check"></i>
+</button>
                                         {% endif %}
                                         <a href="{{ url_for('ordem_servico.excluir', id=ordem.id) }}" 
                                            class="btn btn-outline-danger" 
@@ -300,4 +302,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+{% include 'os/_modal_conclusao_fiscal.html' %}
+
 {% endblock %}

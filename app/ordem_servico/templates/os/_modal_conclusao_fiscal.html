@@ -1,0 +1,282 @@
+﻿
+<style>
+/* D24F01-C4-RADIO-VISIVEL */
+
+#modalConclusaoFiscal .fiscal-opcao {
+    border-width: 2px !important;
+    transition:
+        border-color .15s ease,
+        background-color .15s ease,
+        box-shadow .15s ease;
+}
+
+#modalConclusaoFiscal .form-check-input {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    margin-top: 0.05rem !important;
+
+    -webkit-appearance: none;
+    appearance: none;
+    border-radius: 50% !important;
+
+    border: 2px solid #6c757d !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
+
+    opacity: 1 !important;
+    box-shadow: none !important;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+#modalConclusaoFiscal .form-check-input:checked {
+    border: 2px solid #0d6efd !important;
+    background-color: #0d6efd !important;
+    background-image: none !important;
+    box-shadow: inset 0 0 0 4px #ffffff !important;
+}
+
+#modalConclusaoFiscal .fiscal-opcao-selecionada {
+    border-color: #0d6efd !important;
+    background-color: rgba(13, 110, 253, 0.06) !important;
+    box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.08);
+}
+</style>
+
+﻿<!-- D24F01-C4 - Modal compartilhado de decisao fiscal -->
+<div class="modal fade"
+     id="modalConclusaoFiscal"
+     tabindex="-1"
+     aria-labelledby="modalConclusaoFiscalLabel"
+     aria-hidden="true">
+
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title fw-bold"
+                        id="modalConclusaoFiscalLabel">
+                        <i class="fas fa-file-invoice me-2"></i>
+                        Concluir OS
+                    </h5>
+
+                    <small class="text-muted"
+                           id="modalConclusaoFiscalNumero">
+                    </small>
+                </div>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Fechar">
+                </button>
+            </div>
+
+            <form method="POST" id="formConclusaoFiscal">
+
+                <div class="modal-body">
+
+                    <div class="alert alert-light border mb-4">
+                        <strong>O serviço será concluído normalmente.</strong>
+                        <div class="small text-muted mt-1">
+                            Agora informe o que deverá acontecer com a
+                            emissão fiscal desta OS.
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-3">
+
+                        <!-- EMITIR -->
+                        <label class="border rounded-3 p-3 fiscal-opcao"
+                               style="cursor:pointer;">
+
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="radio"
+                                       name="situacao_fiscal"
+                                       id="fiscalEmitir"
+                                       value="EMITIR_NFSE">
+
+                                <span class="fw-bold text-success">
+                                    <i class="fas fa-file-invoice-dollar me-2"></i>
+                                    Emitir nota agora
+                                </span>
+                            </div>
+
+                            <div class="small text-muted ms-4 mt-1">
+                                Marca a OS para preparação da NFS-e.
+                                Nesta etapa a nota ainda não será transmitida.
+                            </div>
+                        </label>
+
+                        <!-- NAO EMITIR -->
+                        <label class="border rounded-3 p-3 fiscal-opcao"
+                               style="cursor:pointer;">
+
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="radio"
+                                       name="situacao_fiscal"
+                                       id="fiscalNaoEmitir"
+                                       value="NAO_EMITIR">
+
+                                <span class="fw-bold text-danger">
+                                    <i class="fas fa-ban me-2"></i>
+                                    Não emitir nota
+                                </span>
+                            </div>
+
+                            <div class="small text-muted ms-4 mt-1">
+                                A OS será concluída, mas ficará registrada
+                                como decisão de não emissão.
+                            </div>
+                        </label>
+
+                        <div id="grupoMotivoNaoEmissao"
+                             class="ms-4 d-none">
+
+                            <label for="motivoNaoEmissao"
+                                   class="form-label fw-bold">
+                                Motivo da não emissão
+                                <span class="text-danger">*</span>
+                            </label>
+
+                            <textarea class="form-control"
+                                      name="motivo_nao_emissao"
+                                      id="motivoNaoEmissao"
+                                      rows="3"
+                                      maxlength="1000"
+                                      placeholder="Informe o motivo da não emissão..."></textarea>
+                        </div>
+
+                        <!-- PENDENTE -->
+                        <label class="border rounded-3 p-3 fiscal-opcao"
+                               style="cursor:pointer;">
+
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="radio"
+                                       name="situacao_fiscal"
+                                       id="fiscalPendente"
+                                       value="PENDENTE"
+                                       checked>
+
+                                <span class="fw-bold text-warning">
+                                    <i class="fas fa-clock me-2"></i>
+                                    Decidir depois
+                                </span>
+                            </div>
+
+                            <div class="small text-muted ms-4 mt-1">
+                                Conclui a OS normalmente e mantém a decisão
+                                fiscal pendente para análise posterior.
+                            </div>
+                        </label>
+
+                    </div>
+
+                    <div class="mt-4">
+                        <label for="observacaoFiscal"
+                               class="form-label">
+                            Observação fiscal
+                            <span class="text-muted">(opcional)</span>
+                        </label>
+
+                        <textarea class="form-control"
+                                  name="observacao_fiscal"
+                                  id="observacaoFiscal"
+                                  rows="2"
+                                  maxlength="1000"
+                                  placeholder="Observações adicionais..."></textarea>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            data-bs-dismiss="modal">
+                        Cancelar
+                    </button>
+
+                    <button type="submit"
+                            class="btn btn-success">
+                        <i class="fas fa-check me-2"></i>
+                        Concluir OS
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const modalEl = document.getElementById('modalConclusaoFiscal');
+    const form = document.getElementById('formConclusaoFiscal');
+    const numero = document.getElementById('modalConclusaoFiscalNumero');
+
+    const radioNaoEmitir = document.getElementById('fiscalNaoEmitir');
+    const radioPendente = document.getElementById('fiscalPendente');
+
+    const grupoMotivo = document.getElementById('grupoMotivoNaoEmissao');
+    const motivo = document.getElementById('motivoNaoEmissao');
+    const observacao = document.getElementById('observacaoFiscal');
+
+    function atualizarCamposFiscal() {
+        const naoEmitir = radioNaoEmitir.checked;
+
+        grupoMotivo.classList.toggle('d-none', !naoEmitir);
+        motivo.required = naoEmitir;
+
+        if (!naoEmitir) {
+            motivo.value = '';
+        }
+
+        document
+            .querySelectorAll('#modalConclusaoFiscal .fiscal-opcao')
+            .forEach(function (opcao) {
+                const radio = opcao.querySelector(
+                    'input[name="situacao_fiscal"]'
+                );
+
+                opcao.classList.toggle(
+                    'fiscal-opcao-selecionada',
+                    Boolean(radio && radio.checked)
+                );
+            });
+    }
+
+    document
+        .querySelectorAll('input[name="situacao_fiscal"]')
+        .forEach(function (radio) {
+            radio.addEventListener('change', atualizarCamposFiscal);
+        });
+
+    window.abrirModalConclusaoFiscal = function (actionUrl, numeroOs) {
+        form.action = actionUrl;
+
+        numero.textContent = numeroOs
+            ? 'OS ' + numeroOs
+            : '';
+
+        form.reset();
+
+        radioPendente.checked = true;
+        motivo.value = '';
+        observacao.value = '';
+
+        atualizarCamposFiscal();
+
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    };
+
+    atualizarCamposFiscal();
+})();
+</script>
