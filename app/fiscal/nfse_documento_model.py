@@ -61,6 +61,36 @@ class NfseDocumento(BaseModel):
 
     provider = db.Column(db.String(50))
 
+    # Parcela financeira que originou esta NFS-e.
+    #
+    # Nullable para preservar documentos legados criados antes
+    # da emissao fiscal por parcela.
+    ordem_servico_parcela_id = db.Column(
+        db.Integer,
+        db.ForeignKey(
+            "ordem_servico_parcelas.id",
+            ondelete="RESTRICT",
+        ),
+        nullable=True,
+        index=True,
+    )
+
+    ordem_servico_parcela = db.relationship(
+        "OrdemServicoParcela",
+        foreign_keys=[ordem_servico_parcela_id],
+        backref=db.backref(
+            "nfse_documentos",
+            lazy="select",
+        ),
+    )
+
+    # Valor fiscal imutavel da intencao de emissao.
+    # Para emissao parcelada corresponde ao valor da parcela.
+    valor_servicos = db.Column(
+        db.Numeric(12, 2),
+        nullable=True,
+    )
+
     # Idempotencia da intencao fiscal.
     chave_idempotencia = db.Column(
         db.String(160),
@@ -85,6 +115,14 @@ class NfseDocumento(BaseModel):
     preparado_em = db.Column(db.DateTime(timezone=True))
 
     __table_args__ = (
+        db.UniqueConstraint(
+            "ordem_servico_parcela_id",
+            name="uq_nfse_documento_parcela",
+        ),
+        db.CheckConstraint(
+            "valor_servicos IS NULL OR valor_servicos > 0",
+            name="ck_nfse_documento_valor_servicos",
+        ),
         db.CheckConstraint(
             "status IN ("
             "'RASCUNHO', "

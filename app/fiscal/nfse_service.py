@@ -4,10 +4,12 @@ Nenhuma funcao deste modulo transmite NFS-e.
 Nenhuma funcao deste modulo gera lancamento financeiro.
 """
 
+from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 
 import hashlib
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation
 
 from app.extensoes import db
 from app.fiscal.configuracao_fiscal_model import ConfiguracaoFiscal
@@ -15,7 +17,10 @@ from app.fiscal.nfse_documento_model import (
     AMBIENTES_NFSE,
     NfseDocumento,
 )
-from app.ordem_servico.ordem_servico_model import OrdemServico
+from app.ordem_servico.ordem_servico_model import (
+    OrdemServico,
+    OrdemServicoParcela,
+)
 from app.fiscal.providers.registry import normalizar_codigo_provider
 from app.fiscal.providers.resolver import resolver_provider_nfse
 from app.fiscal.providers.geisweb_tiete_preparacao import (
@@ -56,8 +61,19 @@ class TransicaoStatusNfseInvalida(ValueError):
 
 
 def gerar_chave_emissao_original(ordem_servico_id: int) -> str:
-    """Chave deterministica para a primeira intencao NFS-e de uma OS."""
+    """Chave legada para a primeira intencao NFS-e de uma OS."""
     return f"nfse:os:{ordem_servico_id}:emissao:original"
+
+
+def gerar_chave_emissao_parcela(
+    ordem_servico_id: int,
+    parcela_id: int,
+) -> str:
+    """Chave deterministica da emissao original de uma parcela."""
+    return (
+        f"nfse:os:{ordem_servico_id}:"
+        f"parcela:{parcela_id}:emissao:original"
+    )
 
 
 def _normalizar_provider(provider):
@@ -1527,6 +1543,590 @@ def transmitir_e_aplicar_nfse(
     )
 
     return documento, resultado
+
+
+def _valor_fiscal_da_parcela(
+    parcela: OrdemServicoParcela,
+) -> Decimal:
+    """Normaliza e valida o valor fiscal de uma parcela."""
+
+    try:
+        valor = Decimal(
+            str(getattr(parcela, "valor", None) or "0")
+        ).quantize(Decimal("0.01"))
+    except (
+        InvalidOperation,
+        TypeError,
+        ValueError,
+    ) as exc:
+        raise PreparacaoNfseInvalida(
+            "Valor da parcela e invalido para emissao fiscal."
+        ) from exc
+
+    if valor <= Decimal("0"):
+        raise PreparacaoNfseInvalida(
+            "Valor da parcela deve ser maior que zero."
+        )
+
+    return valor
+
+
+def _validar_documento_parcela_existente(
+    documento: NfseDocumento,
+    *,
+    ordem_servico_id: int,
+    parcela_id: int,
+    configuracao_fiscal_id: int,
+    ambiente: str,
+    provider,
+    chave_idempotencia: str,
+    valor_servicos: Decimal,
+) -> None:
+    """Impede que uma parcela seja reutilizada em outro contexto."""
+
+    provider_normalizado = _normalizar_provider(provider)
+
+    try:
+        valor_documento = Decimal(
+            str(documento.valor_servicos or "0")
+        ).quantize(Decimal("0.01"))
+    except (InvalidOperation, TypeError, ValueError):
+        valor_documento = Decimal("0")
+
+    mesmo_contexto = (
+        documento.ordem_servico_id == ordem_servico_id
+        and documento.ordem_servico_parcela_id == parcela_id
+        and documento.configuracao_fiscal_id
+        == configuracao_fiscal_id
+        and documento.ambiente == ambiente
+        and documento.provider == provider_normalizado
+        and documento.chave_idempotencia
+        == chave_idempotencia
+        and valor_documento == valor_servicos
+    )
+
+    if not mesmo_contexto:
+        raise ConflitoIdempotencia(
+            "Parcela ja associada a contexto fiscal diferente."
+        )
+
+
+def preparar_nfse_da_parcela(
+    ordem_servico_id: int,
+    parcela_id: int,
+) -> tuple[NfseDocumento, bool]:
+    """Cria ou recupera a intencao NFS-e de uma parcela da OS.
+
+    D24F04:
+    - exige OS concluida e decisao EMITIR_NFSE;
+    - exige parcela ativa pertencente a OS;
+    - usa exatamente o valor financeiro da parcela;
+    - uma parcela possui no maximo uma intencao fiscal original;
+    - permite varias NFS-e na mesma OS, uma por parcela;
+    - adota com seguranca o rascunho legado da OS quando ele
+      ainda nao consumiu RPS nem possui XML;
+    - nao reserva RPS;
+    - nao gera XML;
+    - nao transmite;
+    - nao altera financeiro.
+    """
+
+    ordem = db.session.get(
+        OrdemServico,
+        ordem_servico_id,
+    )
+
+    if ordem is None:
+        raise PreparacaoNfseInvalida(
+            f"Ordem de servico {ordem_servico_id} nao encontrada."
+        )
+
+    if ordem.status != "concluida":
+        raise PreparacaoNfseInvalida(
+            "A NFS-e somente pode ser criada para OS concluida."
+        )
+
+    if ordem.situacao_fiscal != "EMITIR_NFSE":
+        raise PreparacaoNfseInvalida(
+            "A OS nao possui decisao fiscal EMITIR_NFSE."
+        )
+
+    parcela = OrdemServicoParcela.query.filter_by(
+        id=parcela_id,
+        ordem_servico_id=ordem_servico_id,
+        ativo=True,
+    ).first()
+
+    if parcela is None:
+        raise PreparacaoNfseInvalida(
+            "Parcela nao encontrada ou nao pertence a OS."
+        )
+
+    valor_servicos = _valor_fiscal_da_parcela(
+        parcela
+    )
+
+    configuracoes = ConfiguracaoFiscal.query.filter_by(
+        ativo=True
+    ).all()
+
+    if len(configuracoes) != 1:
+        raise PreparacaoNfseInvalida(
+            "Deve existir exatamente uma configuracao fiscal ativa."
+        )
+
+    configuracao = configuracoes[0]
+
+    ambiente = (
+        configuracao.ambiente or "HOMOLOGACAO"
+    ).strip().upper()
+
+    if ambiente not in AMBIENTES_NFSE:
+        raise PreparacaoNfseInvalida(
+            "Ambiente da configuracao fiscal e invalido."
+        )
+
+    provider = _normalizar_provider(
+        configuracao.provider
+    )
+
+    chave = gerar_chave_emissao_parcela(
+        ordem_servico_id,
+        parcela_id,
+    )
+
+    # --------------------------------------------------------
+    # 1. Idempotencia pela chave nova
+    # --------------------------------------------------------
+
+    existente = NfseDocumento.query.filter_by(
+        chave_idempotencia=chave,
+        ativo=True,
+    ).first()
+
+    if existente is not None:
+        _validar_documento_parcela_existente(
+            existente,
+            ordem_servico_id=ordem_servico_id,
+            parcela_id=parcela_id,
+            configuracao_fiscal_id=configuracao.id,
+            ambiente=ambiente,
+            provider=provider,
+            chave_idempotencia=chave,
+            valor_servicos=valor_servicos,
+        )
+        return existente, False
+
+    # --------------------------------------------------------
+    # 2. Protecao pela parcela
+    # --------------------------------------------------------
+
+    existente_parcela = NfseDocumento.query.filter_by(
+        ordem_servico_parcela_id=parcela_id,
+        ativo=True,
+    ).first()
+
+    if existente_parcela is not None:
+        _validar_documento_parcela_existente(
+            existente_parcela,
+            ordem_servico_id=ordem_servico_id,
+            parcela_id=parcela_id,
+            configuracao_fiscal_id=configuracao.id,
+            ambiente=ambiente,
+            provider=provider,
+            chave_idempotencia=chave,
+            valor_servicos=valor_servicos,
+        )
+        return existente_parcela, False
+
+    # --------------------------------------------------------
+    # 3. Adocao segura do rascunho legado da OS
+    # --------------------------------------------------------
+
+    chave_legada = gerar_chave_emissao_original(
+        ordem_servico_id
+    )
+
+    candidatos_legados = NfseDocumento.query.filter_by(
+        ordem_servico_id=ordem_servico_id,
+        configuracao_fiscal_id=configuracao.id,
+        status="RASCUNHO",
+        ambiente=ambiente,
+        provider=provider,
+        ordem_servico_parcela_id=None,
+        ativo=True,
+    ).all()
+
+    legados_seguros = [
+        documento
+        for documento in candidatos_legados
+        if documento.chave_idempotencia in {
+            None,
+            chave_legada,
+        }
+        and documento.numero_rps is None
+        and documento.xml_envio is None
+        and documento.xml_envio_sha256 is None
+        and documento.preparado_em is None
+    ]
+
+    if len(legados_seguros) > 1:
+        raise PreparacaoNfseInvalida(
+            "Existem multiplos rascunhos legados seguros "
+            "para a mesma OS."
+        )
+
+    if len(legados_seguros) == 1:
+        documento = legados_seguros[0]
+
+        documento.ordem_servico_parcela_id = parcela.id
+        documento.valor_servicos = valor_servicos
+        documento.chave_idempotencia = chave
+        documento.mensagem_status = (
+            "Rascunho legado adotado para a parcela "
+            f"{parcela.numero_parcela}. "
+            "Nenhum RPS foi consumido."
+        )
+
+        try:
+            db.session.commit()
+            return documento, False
+        except Exception:
+            db.session.rollback()
+            raise
+
+    # --------------------------------------------------------
+    # 4. Nova intencao fiscal da parcela
+    # --------------------------------------------------------
+
+    documento = NfseDocumento(
+        ordem_servico_id=ordem_servico_id,
+        ordem_servico_parcela_id=parcela.id,
+        configuracao_fiscal_id=configuracao.id,
+        status="RASCUNHO",
+        ambiente=ambiente,
+        provider=provider,
+        chave_idempotencia=chave,
+        valor_servicos=valor_servicos,
+        mensagem_status=(
+            "Rascunho fiscal criado para a parcela "
+            f"{parcela.numero_parcela}. "
+            "Nenhum RPS foi consumido."
+        ),
+    )
+
+    try:
+        db.session.add(documento)
+        db.session.commit()
+        return documento, True
+
+    except IntegrityError:
+        db.session.rollback()
+
+        existente = NfseDocumento.query.filter(
+            or_(
+                NfseDocumento.chave_idempotencia == chave,
+                NfseDocumento.ordem_servico_parcela_id
+                == parcela_id,
+            )
+        ).first()
+
+        if existente is None:
+            raise
+
+        _validar_documento_parcela_existente(
+            existente,
+            ordem_servico_id=ordem_servico_id,
+            parcela_id=parcela_id,
+            configuracao_fiscal_id=configuracao.id,
+            ambiente=ambiente,
+            provider=provider,
+            chave_idempotencia=chave,
+            valor_servicos=valor_servicos,
+        )
+
+        return existente, False
+
+
+def preparar_nfse_parcela_geisweb(
+    *,
+    documento_id: int,
+    ordem_servico_id: int,
+    parcela_id: int,
+    c_class_trib: str,
+    c_class_trib_reg: str,
+    ibs,
+    cbs,
+    pis="0.00",
+    cofins="0.00",
+    csll="0.00",
+    irrf="0.00",
+    inss="0.00",
+) -> tuple[NfseDocumento, dict]:
+    """Prepara RPS/XML GeisWeb de uma parcela.
+
+    D24F04-C:
+    - exige documento RASCUNHO vinculado a parcela;
+    - usa exatamente o valor fiscal congelado da parcela;
+    - deriva TipoLancamento e Regime GeisWeb da configuracao;
+    - reserva RPS de forma idempotente;
+    - gera e valida XML GeisWeb;
+    - persiste o artefato fiscal;
+    - nao transmite;
+    - nao executa HTTP/SOAP;
+    - nao altera financeiro.
+    """
+
+    from app.configuracao.configuracao_model import Configuracao
+
+    documento = db.session.get(
+        NfseDocumento,
+        documento_id,
+    )
+
+    if documento is None:
+        raise PreparacaoNfseInvalida(
+            "Documento fiscal nao encontrado."
+        )
+
+    ordem = db.session.get(
+        OrdemServico,
+        ordem_servico_id,
+    )
+
+    if ordem is None:
+        raise PreparacaoNfseInvalida(
+            "Ordem de servico nao encontrada."
+        )
+
+    parcela = OrdemServicoParcela.query.filter_by(
+        id=parcela_id,
+        ordem_servico_id=ordem_servico_id,
+        ativo=True,
+    ).first()
+
+    if parcela is None:
+        raise PreparacaoNfseInvalida(
+            "Parcela nao encontrada ou nao pertence a OS."
+        )
+
+    if documento.status != "RASCUNHO":
+        raise PreparacaoNfseInvalida(
+            "Somente documento RASCUNHO pode ser preparado."
+        )
+
+    if documento.ordem_servico_id != ordem.id:
+        raise PreparacaoNfseInvalida(
+            "Documento fiscal nao pertence a OS."
+        )
+
+    if documento.ordem_servico_parcela_id != parcela.id:
+        raise PreparacaoNfseInvalida(
+            "Documento fiscal nao pertence a parcela."
+        )
+
+    valor_documento = Decimal(
+        str(documento.valor_servicos or "0")
+    ).quantize(
+        Decimal("0.01")
+    )
+
+    valor_parcela = Decimal(
+        str(parcela.valor or "0")
+    ).quantize(
+        Decimal("0.01")
+    )
+
+    if valor_documento <= Decimal("0"):
+        raise PreparacaoNfseInvalida(
+            "Valor fiscal do documento deve ser maior que zero."
+        )
+
+    if valor_documento != valor_parcela:
+        raise PreparacaoNfseInvalida(
+            "Valor fiscal diverge do valor da parcela."
+        )
+
+    configuracoes = ConfiguracaoFiscal.query.filter_by(
+        ativo=True
+    ).all()
+
+    if len(configuracoes) != 1:
+        raise PreparacaoNfseInvalida(
+            "Deve existir exatamente uma configuracao fiscal ativa."
+        )
+
+    configuracao_fiscal = configuracoes[0]
+
+    if (
+        documento.configuracao_fiscal_id
+        != configuracao_fiscal.id
+    ):
+        raise PreparacaoNfseInvalida(
+            "Documento pertence a outra configuracao fiscal."
+        )
+
+    configuracao_institucional = db.session.get(
+        Configuracao,
+        configuracao_fiscal.configuracao_id,
+    )
+
+    if configuracao_institucional is None:
+        raise PreparacaoNfseInvalida(
+            "Configuracao institucional nao encontrada."
+        )
+
+    provider = normalizar_codigo_provider(
+        configuracao_fiscal.provider
+    )
+
+    if provider != "GEISWEB_TIETE":
+        raise PreparacaoNfseInvalida(
+            "D24F04-C suporta somente GEISWEB_TIETE."
+        )
+
+    regime_erp = str(
+        configuracao_fiscal.regime_tributario or ""
+    ).strip().upper()
+
+    if regime_erp == "SIMPLES_NACIONAL":
+        tipo_lancamento = "P"
+        regime_geisweb = "1"
+
+    elif regime_erp == "MEI":
+        tipo_lancamento = "P"
+        regime_geisweb = "2"
+
+    elif regime_erp in {
+        "LUCRO_PRESUMIDO",
+        "LUCRO_REAL",
+        "OUTRO",
+    }:
+        tipo_lancamento = "N"
+        regime_geisweb = "6"
+
+    else:
+        raise PreparacaoNfseInvalida(
+            "Regime tributario nao mapeado para GeisWeb."
+        )
+
+    def codigo_seis(valor, campo):
+        codigo = str(valor or "").strip()
+
+        if (
+            len(codigo) != 6
+            or not codigo.isdigit()
+        ):
+            raise PreparacaoNfseInvalida(
+                f"{campo} deve possuir exatamente 6 digitos."
+            )
+
+        return codigo
+
+    c_class_trib = codigo_seis(
+        c_class_trib,
+        "cClassTrib",
+    )
+
+    c_class_trib_reg = codigo_seis(
+        c_class_trib_reg,
+        "cClassTribReg",
+    )
+
+    def valor_tributo(valor, campo):
+        try:
+            numero = Decimal(
+                str(valor)
+            ).quantize(
+                Decimal("0.01")
+            )
+        except (
+            InvalidOperation,
+            TypeError,
+            ValueError,
+        ) as exc:
+            raise PreparacaoNfseInvalida(
+                f"{campo} possui valor invalido."
+            ) from exc
+
+        if numero < Decimal("0"):
+            raise PreparacaoNfseInvalida(
+                f"{campo} nao pode ser negativo."
+            )
+
+        return numero
+
+    ibs_valor = valor_tributo(
+        ibs,
+        "IBS",
+    )
+
+    cbs_valor = valor_tributo(
+        cbs,
+        "CBS",
+    )
+
+    outros_impostos = {
+        "pis": valor_tributo(pis, "PIS"),
+        "cofins": valor_tributo(
+            cofins,
+            "COFINS",
+        ),
+        "csll": valor_tributo(
+            csll,
+            "CSLL",
+        ),
+        "irrf": valor_tributo(
+            irrf,
+            "IRRF",
+        ),
+        "inss": valor_tributo(
+            inss,
+            "INSS",
+        ),
+    }
+
+    codigo_nacional = str(
+        configuracao_fiscal.codigo_lc116 or ""
+    ).strip()
+
+    if not codigo_nacional:
+        raise PreparacaoNfseInvalida(
+            "Codigo nacional LC116 nao configurado."
+        )
+
+    # Cada documento fiscal corresponde a um lote unitario.
+    numero_lote = str(documento.id)
+
+    return preparar_documento_nfse_com_geisweb(
+        documento=documento,
+        ordem_servico=ordem,
+        configuracao_fiscal=configuracao_fiscal,
+        configuracao_institucional=(
+            configuracao_institucional
+        ),
+        numero_lote=numero_lote,
+        data_emissao=datetime.now(
+            timezone.utc
+        ).replace(
+            microsecond=0
+        ),
+        tipo_lancamento=tipo_lancamento,
+        regime_geisweb=regime_geisweb,
+        codigo_nacional=codigo_nacional,
+        base_calculo=valor_documento,
+        ibs_cbs={
+            "c_class_trib": c_class_trib,
+            "ibs": ibs_valor,
+            "cbs": cbs_valor,
+            "c_class_trib_reg": c_class_trib_reg,
+        },
+        outros_impostos=outros_impostos,
+        ncm="",
+        valores={
+            "valor_servicos": valor_documento,
+        },
+    )
 
 
 def preparar_nfse_da_os(

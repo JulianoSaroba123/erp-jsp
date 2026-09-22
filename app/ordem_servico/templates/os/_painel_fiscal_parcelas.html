@@ -1,0 +1,429 @@
+{% if ordem.status == 'concluida'
+      and ordem.situacao_fiscal == 'EMITIR_NFSE' %}
+
+<div class="card info-card border-info mb-4">
+
+    <div class="card-header">
+        <h5 class="card-title mb-0 fw-bold">
+            <i class="fas fa-file-invoice-dollar me-2"></i>
+            Fiscal NFS-e
+        </h5>
+    </div>
+
+    <div class="card-body">
+
+        <div class="d-flex flex-wrap gap-2 mb-3">
+
+            <span class="badge bg-info text-dark">
+                {{ ordem.situacao_fiscal }}
+            </span>
+
+            <span class="badge bg-secondary">
+                Emiss&atilde;o por parcela
+            </span>
+
+        </div>
+
+        {% if nfse_legados %}
+
+        <div class="alert alert-warning py-2">
+
+            <i class="fas fa-link me-2"></i>
+
+            Existe
+            <strong>{{ nfse_legados|length }}</strong>
+            rascunho fiscal anterior ainda sem parcela.
+
+            Ao vincular a primeira parcela, o ERP tentar&aacute;
+            reaproveitar esse rascunho com seguran&ccedil;a,
+            sem reservar novo RPS.
+
+        </div>
+
+        {% endif %}
+
+
+        {% if ordem.parcelas %}
+
+            {% for parcela in ordem.parcelas if parcela.ativo %}
+
+                {% set documento = nfse_por_parcela.get(parcela.id) %}
+
+                <div class="border rounded p-3 mb-3">
+
+                    <div class="row align-items-center g-3">
+
+                        <div class="col-lg-3 col-md-4">
+
+                            <div class="fw-bold">
+                                Parcela fiscal {{ loop.index }}
+                            </div>
+
+                            <small class="text-muted">
+
+                                {% if parcela.numero_parcela == 0 %}
+                                    Entrada
+                                {% else %}
+                                    Parcela financeira
+                                    {{ parcela.numero_parcela }}
+                                {% endif %}
+
+                            </small>
+
+                        </div>
+
+
+                        <div class="col-lg-3 col-md-4">
+
+                            <div class="text-muted small">
+                                Valor da NFS-e
+                            </div>
+
+                            <div class="fw-bold fs-5">
+
+                                R$
+                                {{
+                                    "{:,.2f}".format(
+                                        parcela.valor|float
+                                    )
+                                    .replace(",", "X")
+                                    .replace(".", ",")
+                                    .replace("X", ".")
+                                }}
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-lg-2 col-md-4">
+
+                            <div class="text-muted small">
+                                Financeiro
+                            </div>
+
+                            {% if parcela.pago %}
+
+                                <span class="badge bg-success">
+                                    RECEBIDA
+                                </span>
+
+                            {% else %}
+
+                                <span class="badge bg-warning text-dark">
+                                    PENDENTE
+                                </span>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="col-lg-4 text-lg-end">
+
+                            {% if documento %}
+
+                                {% set status_cor = {
+                                    'RASCUNHO': 'secondary',
+                                    'PREPARADA': 'primary',
+                                    'PENDENTE_ENVIO': 'warning',
+                                    'PROCESSANDO': 'info',
+                                    'AUTORIZADA': 'success',
+                                    'REJEITADA': 'danger',
+                                    'CANCELADA': 'dark'
+                                }.get(
+                                    documento.status,
+                                    'secondary'
+                                ) %}
+
+                                <div class="mb-2">
+
+                                    <span class="badge bg-{{ status_cor }}">
+                                        {{ documento.status }}
+                                    </span>
+
+                                </div>
+
+                                <div class="small text-muted">
+                                    Documento fiscal
+                                    #{{ documento.id }}
+                                </div>
+
+                                <div class="small">
+                                    Valor fiscal:
+                                    R$
+                                    {{
+                                        "{:,.2f}".format(
+                                            documento.valor_servicos|float
+                                        )
+                                        .replace(",", "X")
+                                        .replace(".", ",")
+                                        .replace("X", ".")
+                                    }}
+                                </div>
+
+                                {% if documento.numero_rps %}
+
+                                <div class="small">
+                                    RPS:
+                                    {{ documento.serie_rps }}
+                                    /
+                                    {{ documento.numero_rps }}
+                                </div>
+
+                                {% endif %}
+
+                                {% if documento.status == 'RASCUNHO' %}
+
+                                <div class="small text-primary mt-1 mb-2">
+                                    Pronto para preparar RPS/XML
+                                </div>
+
+                                {% set valor_fiscal =
+                                    documento.valor_servicos|float %}
+
+                                {% set ibs_sugerido =
+                                    valor_fiscal * 0.001 %}
+
+                                {% set cbs_sugerido =
+                                    valor_fiscal * 0.009 %}
+
+                                <details class="text-start mt-2">
+
+                                    <summary class="btn btn-outline-primary btn-sm">
+                                        Preparar RPS/XML
+                                    </summary>
+
+                                    <form
+                                        method="POST"
+                                        class="border rounded p-3 mt-2 bg-light"
+                                        action="{{ url_for(
+                                            'ordem_servico.preparar_nfse_parcela_xml',
+                                            id=ordem.id,
+                                            parcela_id=parcela.id
+                                        ) }}">
+
+                                        <div class="alert alert-warning py-2 small">
+
+                                            <strong>
+                                                Confer&ecirc;ncia fiscal obrigat&oacute;ria.
+                                            </strong>
+
+                                            Estes campos ser&atilde;o incorporados
+                                            ao XML e o RPS ser&aacute; reservado.
+
+                                            Ainda n&atilde;o haver&aacute;
+                                            transmiss&atilde;o ao GeisWeb.
+
+                                        </div>
+
+                                        <div class="row g-2">
+
+                                            <div class="col-md-6">
+
+                                                <label class="form-label small">
+                                                    cClassTrib
+                                                </label>
+
+                                                <input
+                                                    type="text"
+                                                    class="form-control form-control-sm"
+                                                    name="c_class_trib"
+                                                    value="000001"
+                                                    minlength="6"
+                                                    maxlength="6"
+                                                    pattern="[0-9]{6}"
+                                                    required>
+
+                                            </div>
+
+                                            <div class="col-md-6">
+
+                                                <label class="form-label small">
+                                                    cClassTribReg
+                                                </label>
+
+                                                <input
+                                                    type="text"
+                                                    class="form-control form-control-sm"
+                                                    name="c_class_trib_reg"
+                                                    value="000001"
+                                                    minlength="6"
+                                                    maxlength="6"
+                                                    pattern="[0-9]{6}"
+                                                    required>
+
+                                            </div>
+
+                                            <div class="col-md-6">
+
+                                                <label class="form-label small">
+                                                    IBS (R$)
+                                                </label>
+
+                                                <input
+                                                    type="number"
+                                                    class="form-control form-control-sm"
+                                                    name="ibs"
+                                                    min="0"
+                                                    step="0.01"
+                                                    value="{{ '%.2f'|format(
+                                                        ibs_sugerido
+                                                    ) }}"
+                                                    required>
+
+                                            </div>
+
+                                            <div class="col-md-6">
+
+                                                <label class="form-label small">
+                                                    CBS (R$)
+                                                </label>
+
+                                                <input
+                                                    type="number"
+                                                    class="form-control form-control-sm"
+                                                    name="cbs"
+                                                    min="0"
+                                                    step="0.01"
+                                                    value="{{ '%.2f'|format(
+                                                        cbs_sugerido
+                                                    ) }}"
+                                                    required>
+
+                                            </div>
+
+                                        </div>
+
+                                        <input
+                                            type="hidden"
+                                            name="pis"
+                                            value="0.00">
+
+                                        <input
+                                            type="hidden"
+                                            name="cofins"
+                                            value="0.00">
+
+                                        <input
+                                            type="hidden"
+                                            name="csll"
+                                            value="0.00">
+
+                                        <input
+                                            type="hidden"
+                                            name="irrf"
+                                            value="0.00">
+
+                                        <input
+                                            type="hidden"
+                                            name="inss"
+                                            value="0.00">
+
+                                        <div class="small text-muted mt-2 mb-3">
+
+                                            Tipo de lan&ccedil;amento e regime
+                                            GeisWeb s&atilde;o derivados
+                                            automaticamente do cadastro fiscal.
+
+                                            Valor/base:
+                                            <strong>
+                                                R$
+                                                {{
+                                                    "{:,.2f}".format(
+                                                        valor_fiscal
+                                                    )
+                                                    .replace(",", "X")
+                                                    .replace(".", ",")
+                                                    .replace("X", ".")
+                                                }}
+                                            </strong>
+
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-primary w-100"
+                                            onclick="return confirm(
+                                                'Confirmar a reserva do RPS e a geracao do XML desta parcela? Ainda nao havera transmissao.'
+                                            );">
+
+                                            <i class="fas fa-file-code me-2"></i>
+                                            Confirmar RPS/XML
+
+                                        </button>
+
+                                    </form>
+
+                                </details>
+
+                                {% endif %}
+
+                            {% else %}
+
+                                <form method="POST"
+                                      action="{{ url_for(
+                                          'ordem_servico.criar_rascunho_nfse_parcela',
+                                          id=ordem.id,
+                                          parcela_id=parcela.id
+                                      ) }}">
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-primary"
+                                        onclick="return confirm(
+                                            'Criar a intencao fiscal desta parcela? Nenhuma NFS-e sera transmitida.'
+                                        );">
+
+                                        <i class="fas fa-file-invoice me-2"></i>
+
+                                        {% if loop.first and nfse_legados %}
+                                            Vincular rascunho
+                                        {% else %}
+                                            Criar rascunho NFS-e
+                                        {% endif %}
+
+                                    </button>
+
+                                </form>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="alert alert-danger mb-0">
+
+                Esta OS n&atilde;o possui parcelas financeiras
+                cadastradas para emiss&atilde;o fiscal.
+
+            </div>
+
+        {% endif %}
+
+
+        <div class="alert alert-light border mb-0">
+
+            <i class="fas fa-shield-alt me-2"></i>
+
+            Nesta etapa o ERP apenas organiza a
+            inten&ccedil;&atilde;o fiscal por parcela.
+
+            <strong>
+                Nenhuma NFS-e &eacute; transmitida.
+            </strong>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}

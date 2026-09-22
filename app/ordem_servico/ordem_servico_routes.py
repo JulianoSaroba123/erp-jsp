@@ -10,7 +10,7 @@ Autor: JSP Soluções
 Data: 2025
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, make_response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, make_response, current_app
 from flask_login import current_user, login_required
 from app.extensoes import db
 from app.ordem_servico.ordem_servico_model import (
@@ -1604,7 +1604,258 @@ def visualizar(id):
     print(f"📋 OS #{ordem.numero}: {len(ordem.servicos)} serviços, {len(ordem.produtos_utilizados)} produtos")
     print(f"💰 Valores: Serviços={ordem.valor_total_servicos}, Produtos={ordem.valor_total_produtos}")
     
-    return render_template('os/visualizar.html', ordem=ordem, today=date.today())
+    from app.fiscal.nfse_documento_model import NfseDocumento
+
+    documentos_fiscais = (
+        NfseDocumento.query
+        .filter_by(
+            ordem_servico_id=ordem.id,
+            ativo=True,
+        )
+        .order_by(NfseDocumento.id)
+        .all()
+    )
+
+    nfse_por_parcela = {
+        documento.ordem_servico_parcela_id: documento
+        for documento in documentos_fiscais
+        if documento.ordem_servico_parcela_id is not None
+    }
+
+    nfse_legados = [
+        documento
+        for documento in documentos_fiscais
+        if documento.ordem_servico_parcela_id is None
+    ]
+
+    return render_template(
+        'os/visualizar.html',
+        ordem=ordem,
+        today=date.today(),
+        nfse_por_parcela=nfse_por_parcela,
+        nfse_legados=nfse_legados,
+    )
+
+
+@ordem_servico_bp.route(
+    '/<int:id>/fiscal/parcela/<int:parcela_id>/rascunho',
+    methods=['POST'],
+)
+@login_required
+def criar_rascunho_nfse_parcela(id, parcela_id):
+    """Cria ou adota a intencao fiscal de uma parcela.
+
+    Nao reserva RPS.
+    Nao gera XML.
+    Nao transmite.
+    """
+
+    if getattr(current_user, 'tipo_usuario', None) != 'admin':
+        flash(
+            'Acesso fiscal restrito a administradores.',
+            'danger',
+        )
+        return redirect(
+            url_for(
+                'ordem_servico.visualizar',
+                id=id,
+            )
+        )
+
+    from app.fiscal.nfse_service import (
+        ConflitoIdempotencia,
+        PreparacaoNfseInvalida,
+        preparar_nfse_da_parcela,
+    )
+
+    try:
+        documento, criado = preparar_nfse_da_parcela(
+            id,
+            parcela_id,
+        )
+
+        if criado:
+            mensagem = (
+                'Rascunho fiscal da parcela criado com sucesso. '
+                'Nenhum RPS foi reservado e nenhuma NFS-e foi transmitida.'
+            )
+        else:
+            mensagem = (
+                'Rascunho fiscal da parcela vinculado/recuperado '
+                'com sucesso. Nenhuma NFS-e foi transmitida.'
+            )
+
+        flash(
+            mensagem,
+            'success',
+        )
+
+    except (
+        PreparacaoNfseInvalida,
+        ConflitoIdempotencia,
+        ValueError,
+    ) as exc:
+        db.session.rollback()
+
+        flash(
+            f'Nao foi possivel preparar a parcela: {exc}',
+            'danger',
+        )
+
+    except Exception:
+        db.session.rollback()
+
+        current_app.logger.exception(
+            'Erro ao criar rascunho NFS-e da parcela '
+            '%s da OS %s',
+            parcela_id,
+            id,
+        )
+
+        flash(
+            'Erro inesperado ao criar o rascunho fiscal. '
+            'Nenhuma NFS-e foi transmitida.',
+            'danger',
+        )
+
+    return redirect(
+        url_for(
+            'ordem_servico.visualizar',
+            id=id,
+        )
+    )
+
+
+@ordem_servico_bp.route(
+    '/<int:id>/fiscal/parcela/<int:parcela_id>/preparar',
+    methods=['POST'],
+)
+@login_required
+def preparar_nfse_parcela_xml(id, parcela_id):
+    """Reserva RPS e prepara o XML fiscal da parcela.
+
+    Nao transmite NFS-e.
+    """
+
+    if getattr(current_user, 'tipo_usuario', None) != 'admin':
+        flash(
+            'Acesso fiscal restrito a administradores.',
+            'danger',
+        )
+        return redirect(
+            url_for(
+                'ordem_servico.visualizar',
+                id=id,
+            )
+        )
+
+    from app.fiscal.nfse_documento_model import (
+        NfseDocumento,
+    )
+    from app.fiscal.nfse_service import (
+        PreparacaoNfseInvalida,
+        preparar_nfse_parcela_geisweb,
+    )
+
+    documento = NfseDocumento.query.filter_by(
+        ordem_servico_id=id,
+        ordem_servico_parcela_id=parcela_id,
+        ativo=True,
+    ).first()
+
+    if documento is None:
+        flash(
+            'Crie ou vincule o rascunho fiscal da parcela antes '
+            'de preparar o RPS/XML.',
+            'danger',
+        )
+        return redirect(
+            url_for(
+                'ordem_servico.visualizar',
+                id=id,
+            )
+        )
+
+    try:
+        documento, _payload = preparar_nfse_parcela_geisweb(
+            documento_id=documento.id,
+            ordem_servico_id=id,
+            parcela_id=parcela_id,
+            c_class_trib=request.form.get(
+                'c_class_trib'
+            ),
+            c_class_trib_reg=request.form.get(
+                'c_class_trib_reg'
+            ),
+            ibs=request.form.get(
+                'ibs'
+            ),
+            cbs=request.form.get(
+                'cbs'
+            ),
+            pis=request.form.get(
+                'pis',
+                '0.00',
+            ),
+            cofins=request.form.get(
+                'cofins',
+                '0.00',
+            ),
+            csll=request.form.get(
+                'csll',
+                '0.00',
+            ),
+            irrf=request.form.get(
+                'irrf',
+                '0.00',
+            ),
+            inss=request.form.get(
+                'inss',
+                '0.00',
+            ),
+        )
+
+        flash(
+            (
+                f'NFS-e da parcela preparada localmente. '
+                f'RPS {documento.serie_rps}/'
+                f'{documento.numero_rps}. '
+                'XML validado e persistido. '
+                'Nenhuma NFS-e foi transmitida.'
+            ),
+            'success',
+        )
+
+    except PreparacaoNfseInvalida as exc:
+        db.session.rollback()
+
+        flash(
+            f'Falha na preparacao fiscal: {exc}',
+            'danger',
+        )
+
+    except Exception:
+        db.session.rollback()
+
+        current_app.logger.exception(
+            'Erro ao preparar RPS/XML da parcela %s da OS %s',
+            parcela_id,
+            id,
+        )
+
+        flash(
+            'Erro inesperado durante a preparacao fiscal. '
+            'Nenhuma NFS-e foi transmitida.',
+            'danger',
+        )
+
+    return redirect(
+        url_for(
+            'ordem_servico.visualizar',
+            id=id,
+        )
+    )
+
 
 @ordem_servico_bp.route('/<int:id>/apontamento', methods=['GET', 'POST'])
 def apontamento_colaborador(id):
