@@ -28,7 +28,7 @@ from flask import g
 from app import create_app
 from app.extensoes import db
 from app.cliente.cliente_model import Cliente
-from app.financeiro.financeiro_model import LancamentoFinanceiro
+from app.financeiro.financeiro_model import ContaBancaria, LancamentoFinanceiro
 from app.financeiro.financeiro_utils import gerar_lancamento_ordem_servico
 from app.ordem_servico.ordem_servico_model import (
     OrdemServico,
@@ -205,3 +205,70 @@ def test_entrada_antecipada_e_saldo_na_conclusao():
         assert depois[saldo.id].status == "pendente"
         assert depois[saldo.id].data_vencimento == date(2026, 8, 28)
         assert depois[saldo.id].data_pagamento is None
+
+
+def test_os_concluida_vincula_unica_conta_ativa_sem_movimentar_saldo():
+    app = _app()
+    cliente_id = _cliente(app, "Cliente Conta Unica")
+
+    with app.app_context():
+        conta = ContaBancaria(
+            nome="Cora Teste",
+            tipo="conta_corrente",
+            banco="Cora",
+            saldo_inicial=Decimal("1000.00"),
+            saldo_atual=Decimal("1000.00"),
+            limite_credito=Decimal("0.00"),
+            ativa=True,
+            principal=False,
+            ativo=True,
+        )
+        db.session.add(conta)
+        db.session.commit()
+
+        ordem = OrdemServico(
+            numero="OS-GATILHO-CONTA-001",
+            titulo="OS concluida conta unica",
+            cliente_id=cliente_id,
+            tipo_os="comercial",
+            status="concluida",
+            condicao_pagamento="a_vista",
+            numero_parcelas=1,
+            status_pagamento="pendente",
+            data_abertura=date(2026, 9, 18),
+            data_conclusao=date(2026, 9, 18),
+            ativo=True,
+        )
+        db.session.add(ordem)
+        db.session.flush()
+
+        item = OrdemServicoItem(
+            ordem_servico_id=ordem.id,
+            descricao="Servico fechado conta unica",
+            tipo_servico="fechado",
+            quantidade=Decimal("1.00"),
+            valor_unitario=Decimal("750.00"),
+        )
+        item.calcular_total()
+        db.session.add(item)
+        db.session.commit()
+
+        # Reproduz o fluxo real da OS: o total e materializado depois dos itens.
+        ordem.valor_servico = Decimal("750.00")
+        ordem.valor_total = Decimal("750.00")
+        db.session.commit()
+
+        resultado = gerar_lancamento_ordem_servico(
+            ordem,
+            forma_pagamento="pix",
+        )
+
+        assert len(resultado) == 1
+        lancamento = resultado[0]
+        assert lancamento.tipo == "conta_receber"
+        assert lancamento.status == "pendente"
+        assert lancamento.conta_bancaria_id == conta.id
+        assert lancamento.data_pagamento is None
+
+        db.session.refresh(conta)
+        assert conta.saldo_atual == Decimal("1000.00")

@@ -48,6 +48,38 @@ def _query_base_pedidos():
     )
 
 
+def _obter_financeiro_ativo(pedido_id):
+    from app.financeiro.financeiro_model import LancamentoFinanceiro
+
+    return (
+        LancamentoFinanceiro.query
+        .filter_by(
+            pedido_id=pedido_id,
+            ativo=True,
+        )
+        .first()
+    )
+
+
+def _pedido_possui_financeiro_ativo(pedido_id):
+    return _obter_financeiro_ativo(pedido_id) is not None
+
+
+def _pedido_possui_movimento_estoque(pedido_id):
+    from app.estoque.estoque_model import MovimentacaoEstoque
+
+    return (
+        MovimentacaoEstoque.query
+        .filter_by(
+            pedido_id=pedido_id,
+            tipo=MovimentacaoEstoque.TIPO_SAIDA,
+            origem=MovimentacaoEstoque.ORIGEM_PEDIDO,
+        )
+        .first()
+        is not None
+    )
+
+
 def _carregar_form_context(pedido=None, proposta_id=None):
     clientes = Cliente.query.filter(Cliente.ativo.is_(True)).order_by(Cliente.nome.asc()).all()
     produtos = Produto.query.filter(Produto.ativo.is_(True)).order_by(Produto.nome.asc()).all()
@@ -67,6 +99,12 @@ def _carregar_form_context(pedido=None, proposta_id=None):
     if proposta_id:
         proposta_preselecionada = Proposta.query.filter_by(id=proposta_id, ativo=True).first()
 
+    financeiro_vinculado = None
+    if pedido:
+        financeiro_vinculado = _obter_financeiro_ativo(
+            pedido.id
+        )
+
     return {
         "clientes": clientes,
         "produtos": produtos,
@@ -75,6 +113,7 @@ def _carregar_form_context(pedido=None, proposta_id=None):
         "proposta_preselecionada": proposta_preselecionada,
         "status_choices": Pedido.STATUS_CHOICES,
         "today": date.today(),
+        "financeiro_vinculado": financeiro_vinculado,
     }
 
 
@@ -260,6 +299,16 @@ def novo():
         pedido.recalcular_totais()
 
         try:
+            from app.estoque.pedido_estoque_service import (
+                sincronizar_estoque_pedido,
+            )
+            from app.financeiro.pedido_financeiro_service import (
+                sincronizar_lancamentos_pedido,
+            )
+
+            sincronizar_estoque_pedido(pedido)
+            sincronizar_lancamentos_pedido(pedido)
+
             db.session.commit()
             flash(f"Pedido {pedido.numero} criado com sucesso.", "success")
             return redirect(url_for("pedido.visualizar", id=pedido.id))
@@ -296,11 +345,16 @@ def visualizar(id):
         .order_by(PedidoCompra.id.desc())
         .all()
     )
+    financeiro_vinculado = _obter_financeiro_ativo(
+        pedido.id
+    )
+
     return render_template(
         "pedido/visualizar.html",
         pedido=pedido,
         itens=itens,
         pedidos_compra=pedidos_compra,
+        financeiro_vinculado=financeiro_vinculado,
     )
 
 
@@ -338,6 +392,19 @@ def editar(id):
                 **context,
             )
 
+        if _pedido_possui_movimento_estoque(pedido.id):
+            flash(
+                "Pedido possui movimentacao de estoque vinculada "
+                "e nao pode ser editado.",
+                "error",
+            )
+            return redirect(
+                url_for(
+                    "pedido.visualizar",
+                    id=pedido.id,
+                )
+            )
+
         proposta_id = parse_int(request.form.get("proposta_id"), default=None)
         if proposta_id:
             ja_vinculado = Pedido.query.filter(
@@ -354,10 +421,34 @@ def editar(id):
                     **context,
                 )
 
+        status_anterior = normalizar_status(
+            pedido.status
+        )
+
+        novo_status = normalizar_status(
+            request.form.get("status")
+        )
+
+        if (
+            novo_status != Pedido.STATUS_CONCLUIDO
+            and _pedido_possui_financeiro_ativo(pedido.id)
+        ):
+            flash(
+                "Pedido possui lancamento financeiro vinculado "
+                "e nao pode retornar para um status anterior.",
+                "error",
+            )
+            return redirect(
+                url_for(
+                    "pedido.visualizar",
+                    id=pedido.id,
+                )
+            )
+
         pedido.cliente_id = parse_int(request.form.get("cliente_id"), default=pedido.cliente_id)
         pedido.proposta_id = proposta_id
         pedido.data_pedido = _parse_data(request.form.get("data_pedido")) or pedido.data_pedido
-        pedido.status = normalizar_status(request.form.get("status"))
+        pedido.status = novo_status
         pedido.responsavel = (request.form.get("responsavel") or "").strip()
         pedido.solicitante = (request.form.get("solicitante") or "").strip()
         pedido.telefone_contato = (request.form.get("telefone_contato") or "").strip()
@@ -372,6 +463,21 @@ def editar(id):
         pedido.recalcular_totais()
 
         try:
+            from app.estoque.pedido_estoque_service import (
+                sincronizar_estoque_pedido,
+            )
+            from app.financeiro.pedido_financeiro_service import (
+                sincronizar_lancamentos_pedido,
+            )
+
+            if (
+                status_anterior != Pedido.STATUS_CONCLUIDO
+                and novo_status == Pedido.STATUS_CONCLUIDO
+            ):
+                sincronizar_estoque_pedido(pedido)
+
+            sincronizar_lancamentos_pedido(pedido)
+
             db.session.commit()
             flash(f"Pedido {pedido.numero} atualizado com sucesso.", "success")
             return redirect(url_for("pedido.visualizar", id=pedido.id))
@@ -408,6 +514,32 @@ def excluir(id):
 
     if request.method == "GET":
         return render_template("pedido/confirmar_exclusao.html", pedido=pedido)
+
+    if _pedido_possui_movimento_estoque(pedido.id):
+        flash(
+            "Pedido possui movimentacao de estoque vinculada "
+            "e nao pode ser excluido.",
+            "error",
+        )
+        return redirect(
+            url_for(
+                "pedido.visualizar",
+                id=pedido.id,
+            )
+        )
+
+    if _pedido_possui_financeiro_ativo(pedido.id):
+        flash(
+            "Pedido possui lancamento financeiro vinculado "
+            "e nao pode ser excluido.",
+            "error",
+        )
+        return redirect(
+            url_for(
+                "pedido.visualizar",
+                id=pedido.id,
+            )
+        )
 
     try:
         pedido.ativo = False

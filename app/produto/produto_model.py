@@ -47,9 +47,9 @@ class Produto(BaseModel):
     markup = db.Column(db.Numeric(5, 2), default=0)  # Percentual de markup sobre o custo
     
     # Estoque
-    estoque_atual = db.Column(db.Integer, default=0)
-    estoque_minimo = db.Column(db.Integer, default=0)
-    estoque_maximo = db.Column(db.Integer, default=0)
+    estoque_atual = db.Column(db.Numeric(12, 3), default=Decimal("0.000"))
+    estoque_minimo = db.Column(db.Numeric(12, 3), default=Decimal("0.000"))
+    estoque_maximo = db.Column(db.Numeric(12, 3), default=Decimal("0.000"))
     controla_estoque = db.Column(db.Boolean, default=True)
     
     # Fornecedor principal (FK opcional - pode não existir no início)

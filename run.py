@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 ERP JSP v3.0 - Ponto de Entrada
 ================================
@@ -22,10 +22,10 @@ load_dotenv()
 
 # Verifica se DATABASE_URL está configurada
 if not os.getenv('DATABASE_URL'):
-    print("⚠️  AVISO: DATABASE_URL não encontrada no .env")
-    print("⚠️  Será usado SQLite por padrão")
+    print("AVISO: DATABASE_URL nao encontrada no .env")
+    print("AVISO: Sera usado SQLite por padrao")
 else:
-    print(f"✅ DATABASE_URL carregada: {os.getenv('DATABASE_URL')[:50]}...")
+    print(f"DATABASE_URL carregada: {os.getenv('DATABASE_URL')[:50]}...")
 
 try:
     # Importa a aplicação já criada (também usada pelo Gunicorn)

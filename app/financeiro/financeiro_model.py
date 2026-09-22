@@ -69,8 +69,32 @@ class LancamentoFinanceiro(BaseModel):
         nullable=True,
         index=True,
     )
+
+    # D25F03 - rastreabilidade Proposta -> Financeiro
+    proposta_id = db.Column(
+        db.Integer,
+        db.ForeignKey('propostas.id'),
+        nullable=True,
+        index=True,
+    )
+    proposta_parcela_id = db.Column(
+        db.Integer,
+        db.ForeignKey('parcelas_proposta.id'),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
     
     # Controle de recorrência
+    # D26F01 - Pedido de Venda -> Financeiro
+    pedido_id = db.Column(
+        db.Integer,
+        db.ForeignKey('pedidos.id'),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+
     recorrente = db.Column(db.Boolean, default=False)
     frequencia = db.Column(db.String(20))  # mensal, anual, semanal
     
@@ -99,6 +123,28 @@ class LancamentoFinanceiro(BaseModel):
         backref='lancamentos_financeiros',
         foreign_keys=[ordem_servico_parcela_id],
     )
+    proposta = db.relationship(
+        'Proposta',
+        backref='lancamentos_financeiros',
+        foreign_keys=[proposta_id],
+    )
+    proposta_parcela = db.relationship(
+        'ParcelaProposta',
+        backref=db.backref(
+            'lancamento_financeiro',
+            uselist=False,
+        ),
+        foreign_keys=[proposta_parcela_id],
+    )
+    pedido = db.relationship(
+        'Pedido',
+        backref=db.backref(
+            'lancamento_financeiro',
+            uselist=False,
+        ),
+        foreign_keys=[pedido_id],
+    )
+
     conta_bancaria = db.relationship('ContaBancaria', backref='lancamentos', foreign_keys=[conta_bancaria_id])
     centro_custo = db.relationship('CentroCusto', backref='lancamentos', foreign_keys=[centro_custo_id])
     plano_conta = db.relationship('PlanoContas', backref='lancamentos', foreign_keys=[plano_conta_id])
@@ -169,6 +215,8 @@ class LancamentoFinanceiro(BaseModel):
             'MANUAL': 'Lançamento Manual',
             'CUSTO_FIXO': 'Custo Fixo Recorrente',
             'ORDEM_SERVICO': 'Ordem de Serviço',
+            'PROPOSTA': 'Proposta Comercial',
+            'PEDIDO': 'Pedido de Venda',
             'IMPORTACAO': 'Importação',
             'INTEGRACAO': 'Integração'
         }
@@ -181,6 +229,8 @@ class LancamentoFinanceiro(BaseModel):
             'MANUAL': 'primary',
             'CUSTO_FIXO': 'warning',
             'ORDEM_SERVICO': 'info',
+            'PROPOSTA': 'success',
+            'PEDIDO': 'info',
             'IMPORTACAO': 'secondary',
             'INTEGRACAO': 'dark'
         }
@@ -193,6 +243,8 @@ class LancamentoFinanceiro(BaseModel):
             'MANUAL': 'fa-hand-pointer',
             'CUSTO_FIXO': 'fa-repeat',
             'ORDEM_SERVICO': 'fa-wrench',
+            'PROPOSTA': 'fa-file-signature',
+            'PEDIDO': 'fa-shopping-cart',
             'IMPORTACAO': 'fa-file-import',
             'INTEGRACAO': 'fa-plug'
         }
@@ -729,6 +781,91 @@ class ExtratoBancario(BaseModel):
         self.lancamento_id = None
         self.data_conciliacao = None
         db.session.commit()
+
+
+
+
+class ConciliacaoBancariaItem(BaseModel):
+    """
+    Aloca??o entre um movimento banc?rio e um lan?amento financeiro.
+
+    Permite:
+    - um extrato conciliado com v?rios lan?amentos;
+    - um lan?amento conciliado com v?rios extratos;
+    - evolu??o futura para pagamentos parciais.
+
+    O campo legado ExtratoBancario.lancamento_id permanece temporariamente
+    para compatibilidade durante a migra??o da concilia??o antiga.
+    """
+
+    __tablename__ = 'conciliacao_bancaria_itens'
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            'extrato_id',
+            'lancamento_id',
+            name='uq_conciliacao_bancaria_extrato_lancamento'
+        ),
+        db.CheckConstraint(
+            'valor_conciliado > 0',
+            name='ck_conciliacao_bancaria_valor_positivo'
+        ),
+    )
+
+    extrato_id = db.Column(
+        db.Integer,
+        db.ForeignKey('extratos_bancarios.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True,
+    )
+
+    lancamento_id = db.Column(
+        db.Integer,
+        db.ForeignKey('lancamentos_financeiros.id', ondelete='RESTRICT'),
+        nullable=False,
+        index=True,
+    )
+
+    valor_conciliado = db.Column(
+        db.Numeric(12, 2),
+        nullable=False,
+    )
+
+    data_conciliacao = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+
+    usuario = db.Column(db.String(100))
+    observacoes = db.Column(db.Text)
+
+    extrato = db.relationship(
+        'ExtratoBancario',
+        backref=db.backref(
+            'itens_conciliacao',
+            lazy=True,
+            cascade='all, delete-orphan',
+        ),
+        foreign_keys=[extrato_id],
+    )
+
+    lancamento = db.relationship(
+        'LancamentoFinanceiro',
+        backref=db.backref(
+            'itens_conciliacao_bancaria',
+            lazy=True,
+        ),
+        foreign_keys=[lancamento_id],
+    )
+
+    def __repr__(self):
+        return (
+            f'<ConciliacaoBancariaItem '
+            f'E:{self.extrato_id} '
+            f'L:{self.lancamento_id} '
+            f'R$ {self.valor_conciliado}>'
+        )
 
 
 class CustoFixo(BaseModel):

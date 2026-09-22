@@ -83,12 +83,37 @@ def _sincronizar_status_pagamento_os(ordem_servico, parcelas):
 
 
 def _numero_parcela_exibicao(parcela, total_parcelas):
-    """Monta string de exibição da parcela (não usada como identidade)."""
+    """Monta exibicao preservando a semantica da entrada."""
     if not parcela:
         return None
-    total = total_parcelas if total_parcelas > 0 else 1
-    return f'{parcela.numero_parcela}/{total}'
 
+    numero = int(
+        getattr(
+            parcela,
+            "numero_parcela",
+            0,
+        )
+        or 0
+    )
+
+    if numero == 0:
+        return "Entrada"
+
+    # Quando existe entrada numero 0, total_parcelas inclui
+    # essa parcela adicional. Para exibicao comercial,
+    # contamos apenas as parcelas normais.
+    total_normais = total_parcelas
+
+    if total_parcelas > numero:
+        total_normais = total_parcelas - 1
+
+    total_normais = max(
+        1,
+        total_normais,
+        numero,
+    )
+
+    return f"{numero}/{total_normais}"
 
 def _atualizar_lancamento_os(lancamento, ordem_servico, forma_pagamento=None, parcela=None, total_parcelas=0):
     """Aplica atualização segura em lançamento de OS preservando quitados."""

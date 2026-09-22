@@ -68,6 +68,65 @@ def converter_valor_monetario(valor_str):
         return Decimal('0.00')
 
 
+
+def resolver_composicao_lancamento(form):
+    """Calcula a composicao financeira do lancamento."""
+
+    valor_original = converter_valor_monetario(
+        form.get("valor_original") or form.get("valor")
+    )
+
+    juros = converter_valor_monetario(
+        form.get("juros") or "0"
+    )
+
+    multa = converter_valor_monetario(
+        form.get("multa") or "0"
+    )
+
+    desconto = converter_valor_monetario(
+        form.get("desconto") or "0"
+    )
+
+    if valor_original <= 0:
+        raise ValueError(
+            "Valor original deve ser maior que zero."
+        )
+
+    if juros < 0 or multa < 0 or desconto < 0:
+        raise ValueError(
+            "Juros, multa e desconto nao podem ser negativos."
+        )
+
+    valor_final = (
+        valor_original
+        + juros
+        + multa
+        - desconto
+    ).quantize(Decimal("0.01"))
+
+    if valor_final <= 0:
+        raise ValueError(
+            "Valor final deve ser maior que zero."
+        )
+
+    return {
+        "valor": valor_final,
+        "valor_original": valor_original.quantize(
+            Decimal("0.01")
+        ),
+        "juros": juros.quantize(
+            Decimal("0.01")
+        ),
+        "multa": multa.quantize(
+            Decimal("0.01")
+        ),
+        "desconto": desconto.quantize(
+            Decimal("0.01")
+        ),
+    }
+
+
 def resolver_data_pagamento(status, data_pagamento_str, data_lancamento, data_existente=None):
     """Mantém a data real de quitação e aplica fallback explícito quando necessário."""
     if not status_eh_pago(status):
@@ -389,11 +448,17 @@ def criar_lancamento():
             return redirect(url_for('financeiro.novo_lancamento'))
         
         # Conversões
-        valor = converter_valor_monetario(valor_str)
-        
-        if valor <= 0:
-            flash('Valor deve ser maior que zero', 'danger')
-            return redirect(url_for('financeiro.novo_lancamento'))
+        try:
+            composicao = resolver_composicao_lancamento(
+                request.form
+            )
+        except ValueError as e:
+            flash(str(e), 'danger')
+            return redirect(
+                url_for('financeiro.novo_lancamento')
+            )
+
+        valor = composicao["valor"]
         
         # Datas
         data_lancamento = datetime.strptime(data_lancamento_str, '%Y-%m-%d').date() if data_lancamento_str else date.today()
@@ -404,6 +469,10 @@ def criar_lancamento():
         lancamento = LancamentoFinanceiro(
             descricao=descricao,
             valor=valor,
+            valor_original=composicao["valor_original"],
+            juros=composicao["juros"],
+            multa=composicao["multa"],
+            desconto=composicao["desconto"],
             tipo=tipo,
             categoria=categoria,
             subcategoria=subcategoria,
@@ -489,11 +558,24 @@ def atualizar_lancamento(id):
             return redirect(url_for('financeiro.editar_lancamento', id=id))
         
         # Conversões
-        lancamento.valor = converter_valor_monetario(valor_str)
-        
-        if lancamento.valor <= 0:
-            flash('Valor deve ser maior que zero', 'danger')
-            return redirect(url_for('financeiro.editar_lancamento', id=id))
+        try:
+            composicao = resolver_composicao_lancamento(
+                request.form
+            )
+        except ValueError as e:
+            flash(str(e), 'danger')
+            return redirect(
+                url_for(
+                    'financeiro.editar_lancamento',
+                    id=id
+                )
+            )
+
+        lancamento.valor = composicao["valor"]
+        lancamento.valor_original = composicao["valor_original"]
+        lancamento.juros = composicao["juros"]
+        lancamento.multa = composicao["multa"]
+        lancamento.desconto = composicao["desconto"]
         
         # Datas
         if data_lancamento_str:
@@ -1371,22 +1453,175 @@ def conciliacao_bancaria():
         if conta_id:
             conta_selecionada = ContaBancaria.query.get(conta_id)
             if conta_selecionada:
-                # Buscar extratos pendentes desta conta
-                from app.financeiro.financeiro_model import ExtratoBancario
-                extratos_pendentes = ExtratoBancario.get_pendentes(conta_id).all()
-                
-                # Buscar lançamentos não conciliados desta conta
-                lancamentos_pendentes = LancamentoFinanceiro.query.filter_by(
-                    conta_bancaria_id=conta_id,
-                    ativo=True
-                ).filter(
-                    ~LancamentoFinanceiro.id.in_(
-                        db.session.query(ExtratoBancario.lancamento_id).filter(
-                            ExtratoBancario.lancamento_id.isnot(None)
+                # D25F01-B2.3
+                # Saldos disponiveis considerando conciliacoes N:N ativas.
+                # O legado 1:1 continua respeitado durante a transicao.
+                from decimal import Decimal
+                from sqlalchemy import func
+                from app.financeiro.financeiro_model import (
+                    ExtratoBancario,
+                    ConciliacaoBancariaItem,
+                )
+
+                soma_extrato_nn = (
+                    db.session.query(
+                        ConciliacaoBancariaItem.extrato_id.label(
+                            'extrato_id'
+                        ),
+                        func.sum(
+                            ConciliacaoBancariaItem.valor_conciliado
+                        ).label('valor_conciliado')
+                    )
+                    .filter(
+                        ConciliacaoBancariaItem.ativo.is_(True)
+                    )
+                    .group_by(
+                        ConciliacaoBancariaItem.extrato_id
+                    )
+                    .subquery()
+                )
+
+                extratos_com_saldo = (
+                    db.session.query(
+                        ExtratoBancario,
+                        func.coalesce(
+                            soma_extrato_nn.c.valor_conciliado,
+                            0
+                        ).label('valor_ja_conciliado')
+                    )
+                    .outerjoin(
+                        soma_extrato_nn,
+                        soma_extrato_nn.c.extrato_id
+                        == ExtratoBancario.id
+                    )
+                    .filter(
+                        ExtratoBancario.conta_bancaria_id == conta_id,
+                        ExtratoBancario.conciliado.is_(False),
+                        ExtratoBancario.ativo.is_(True),
+                        func.abs(ExtratoBancario.valor)
+                        > func.coalesce(
+                            soma_extrato_nn.c.valor_conciliado,
+                            0
                         )
                     )
-                ).order_by(LancamentoFinanceiro.data_vencimento.desc()).limit(50).all()
-        
+                    .order_by(
+                        ExtratoBancario.data_movimento.desc()
+                    )
+                    .all()
+                )
+
+                extratos_pendentes = []
+
+                for extrato, valor_ja_conciliado in extratos_com_saldo:
+                    valor_total = abs(
+                        Decimal(str(extrato.valor or 0))
+                    )
+                    valor_ja = Decimal(
+                        str(valor_ja_conciliado or 0)
+                    )
+                    valor_disponivel = max(
+                        valor_total - valor_ja,
+                        Decimal('0.00')
+                    )
+
+                    extrato.valor_ja_conciliado_nn = valor_ja
+                    extrato.valor_disponivel_conciliacao = (
+                        valor_disponivel
+                    )
+                    extrato.valor_disponivel_formatado = (
+                        formatar_valor_real(valor_disponivel)
+                    )
+
+                    extratos_pendentes.append(extrato)
+
+                soma_lancamento_nn = (
+                    db.session.query(
+                        ConciliacaoBancariaItem.lancamento_id.label(
+                            'lancamento_id'
+                        ),
+                        func.sum(
+                            ConciliacaoBancariaItem.valor_conciliado
+                        ).label('valor_conciliado')
+                    )
+                    .filter(
+                        ConciliacaoBancariaItem.ativo.is_(True)
+                    )
+                    .group_by(
+                        ConciliacaoBancariaItem.lancamento_id
+                    )
+                    .subquery()
+                )
+
+                lancamentos_com_saldo = (
+                    db.session.query(
+                        LancamentoFinanceiro,
+                        func.coalesce(
+                            soma_lancamento_nn.c.valor_conciliado,
+                            0
+                        ).label('valor_ja_conciliado')
+                    )
+                    .outerjoin(
+                        soma_lancamento_nn,
+                        soma_lancamento_nn.c.lancamento_id
+                        == LancamentoFinanceiro.id
+                    )
+                    .filter(
+                        LancamentoFinanceiro.conta_bancaria_id == conta_id,
+                        LancamentoFinanceiro.ativo.is_(True),
+                        # D25F01-HF1:
+                        # O legado 1:1 so deve esconder o lancamento
+                        # quando o extrato ainda nao possui vinculo N:N ativo.
+                        ~LancamentoFinanceiro.id.in_(
+                            db.session.query(
+                                ExtratoBancario.lancamento_id
+                            ).filter(
+                                ExtratoBancario.lancamento_id.isnot(None),
+                                ~db.session.query(
+                                    ConciliacaoBancariaItem.id
+                                ).filter(
+                                    ConciliacaoBancariaItem.extrato_id
+                                    == ExtratoBancario.id,
+                                    ConciliacaoBancariaItem.ativo.is_(True),
+                                ).exists(),
+                            )
+                        ),
+                        func.abs(LancamentoFinanceiro.valor)
+                        > func.coalesce(
+                            soma_lancamento_nn.c.valor_conciliado,
+                            0
+                        )
+                    )
+                    .order_by(
+                        LancamentoFinanceiro.data_vencimento.desc()
+                    )
+                    .limit(50)
+                    .all()
+                )
+
+                lancamentos_pendentes = []
+
+                for lancamento, valor_ja_conciliado in lancamentos_com_saldo:
+                    valor_total = abs(
+                        Decimal(str(lancamento.valor or 0))
+                    )
+                    valor_ja = Decimal(
+                        str(valor_ja_conciliado or 0)
+                    )
+                    valor_disponivel = max(
+                        valor_total - valor_ja,
+                        Decimal('0.00')
+                    )
+
+                    lancamento.valor_ja_conciliado_nn = valor_ja
+                    lancamento.valor_disponivel_conciliacao = (
+                        valor_disponivel
+                    )
+                    lancamento.valor_disponivel_formatado = (
+                        formatar_valor_real(valor_disponivel)
+                    )
+
+                    lancamentos_pendentes.append(lancamento)
+
         return render_template('financeiro/conciliacao_bancaria/conciliacao.html',
                              contas=contas,
                              conta_selecionada=conta_selecionada,
@@ -1559,6 +1794,201 @@ def upload_extrato():
         logger.exception('Erro ao processar importação de extrato bancário')
         flash(f'Erro ao processar arquivo: {str(e)}', 'danger')
         return voltar_conciliacao()
+
+
+@bp_financeiro.route(
+    '/conciliacao-bancaria/conciliar-nn',
+    methods=['POST']
+)
+def conciliar_nn():
+    # Adapta payload HTTP para o motor N:N.
+    from app.financeiro.conciliacao_adapter import (
+        executar_conciliacao_bancaria,
+    )
+    from app.financeiro.conciliacao_service import (
+        ConciliacaoInvalida,
+        SolicitacaoAlocacao,
+    )
+
+    try:
+        payload = request.get_json(silent=True)
+
+        if not isinstance(payload, dict):
+            raise ConciliacaoInvalida(
+                'Corpo JSON invalido para conciliacao.'
+            )
+
+        try:
+            extrato_id = int(payload.get('extrato_id'))
+        except (TypeError, ValueError) as exc:
+            raise ConciliacaoInvalida(
+                'extrato_id invalido.'
+            ) from exc
+
+        if extrato_id <= 0:
+            raise ConciliacaoInvalida(
+                'extrato_id deve ser maior que zero.'
+            )
+
+        alocacoes_payload = payload.get('alocacoes')
+
+        if (
+            not isinstance(alocacoes_payload, list)
+            or not alocacoes_payload
+        ):
+            raise ConciliacaoInvalida(
+                'Informe ao menos uma alocacao.'
+            )
+
+        alocacoes = []
+
+        for indice, item in enumerate(
+            alocacoes_payload,
+            start=1,
+        ):
+            if not isinstance(item, dict):
+                raise ConciliacaoInvalida(
+                    f'Alocacao {indice} invalida.'
+                )
+
+            try:
+                lancamento_id = int(
+                    item.get('lancamento_id')
+                )
+            except (TypeError, ValueError) as exc:
+                raise ConciliacaoInvalida(
+                    f'lancamento_id invalido na alocacao {indice}.'
+                ) from exc
+
+            if lancamento_id <= 0:
+                raise ConciliacaoInvalida(
+                    f'lancamento_id deve ser maior que zero '
+                    f'na alocacao {indice}.'
+                )
+
+            try:
+                valor = Decimal(
+                    str(item.get('valor'))
+                )
+            except Exception as exc:
+                raise ConciliacaoInvalida(
+                    f'valor invalido na alocacao {indice}.'
+                ) from exc
+
+            if not valor.is_finite():
+                raise ConciliacaoInvalida(
+                    f'valor invalido na alocacao {indice}.'
+                )
+
+            if valor <= 0:
+                raise ConciliacaoInvalida(
+                    f'valor deve ser maior que zero '
+                    f'na alocacao {indice}.'
+                )
+
+            alocacoes.append(
+                SolicitacaoAlocacao(
+                    lancamento_id=lancamento_id,
+                    valor=valor,
+                )
+            )
+
+        observacoes = payload.get('observacoes')
+
+        if observacoes is not None:
+            observacoes = str(observacoes).strip() or None
+
+            if (
+                observacoes is not None
+                and len(observacoes) > 1000
+            ):
+                raise ConciliacaoInvalida(
+                    'observacoes excedem 1000 caracteres.'
+                )
+
+        usuario = None
+
+        for atributo in (
+            'username',
+            'email',
+            'nome',
+        ):
+            valor_usuario = getattr(
+                current_user,
+                atributo,
+                None,
+            )
+
+            if valor_usuario:
+                usuario = str(valor_usuario)
+                break
+
+        if usuario is None:
+            usuario_id = getattr(
+                current_user,
+                'id',
+                None,
+            )
+
+            if usuario_id is not None:
+                usuario = str(usuario_id)
+
+        resultado = executar_conciliacao_bancaria(
+            extrato_id=extrato_id,
+            alocacoes=alocacoes,
+            usuario=usuario,
+            observacoes=observacoes,
+        )
+
+        preparacao = resultado.preparacao
+
+        return jsonify({
+            'ok': True,
+            'extrato_id': preparacao.extrato_id,
+            'valor_extrato': str(
+                preparacao.valor_extrato
+            ),
+            'valor_ja_conciliado': str(
+                preparacao.valor_ja_conciliado
+            ),
+            'total_novo': str(
+                preparacao.total_novo
+            ),
+            'saldo_final_extrato': str(
+                preparacao.saldo_final_extrato
+            ),
+            'status_final': preparacao.status_final,
+            'itens_criados': resultado.itens_criados,
+            'itens_atualizados': resultado.itens_atualizados,
+        }), 200
+
+    except ConciliacaoInvalida as exc:
+        db.session.rollback()
+
+        logger.warning(
+            'Conciliacao bancaria N:N rejeitada: %s',
+            exc,
+        )
+
+        return jsonify({
+            'ok': False,
+            'erro': str(exc),
+        }), 400
+
+    except Exception:
+        db.session.rollback()
+
+        logger.exception(
+            'Erro inesperado na conciliacao bancaria N:N'
+        )
+
+        return jsonify({
+            'ok': False,
+            'erro': (
+                'Erro interno ao processar '
+                'a conciliacao bancaria.'
+            ),
+        }), 500
 
 
 @bp_financeiro.route('/conciliacao-bancaria/conciliar/<int:extrato_id>/<int:lancamento_id>', methods=['POST'])

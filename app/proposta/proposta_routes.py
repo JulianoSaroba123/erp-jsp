@@ -389,6 +389,40 @@ def editar_proposta(id):
     ).filter_by(id=id, ativo=True).first_or_404()
     
     if request.method == 'POST':
+
+        # D25F03-A5:
+        # depois que uma proposta gera recebiveis, ela passa a
+        # representar contrato comercial/financeiro historico.
+        # Alteracoes devem ocorrer por revisao/duplicacao, nao
+        # reescrevendo o documento que originou o recebimento.
+        from app.financeiro.financeiro_model import (
+            LancamentoFinanceiro,
+        )
+
+        financeiro_vinculado = (
+            LancamentoFinanceiro.query
+            .filter_by(
+                proposta_id=proposta.id,
+                ativo=True,
+            )
+            .first()
+        )
+
+        if financeiro_vinculado is not None:
+            flash(
+                "Esta proposta j? possui lan?amentos financeiros "
+                "vinculados e est? protegida contra edi??o. "
+                "Crie uma revis?o/duplica??o para alterar o contrato.",
+                "warning",
+            )
+
+            return redirect(
+                url_for(
+                    "proposta.visualizar_proposta",
+                    id=proposta.id,
+                )
+            )
+
         try:
             # Debug: Log dos dados recebidos
             logger.debug(f"💾 Salvando proposta {id}")
@@ -659,9 +693,31 @@ def editar_proposta(id):
             except Exception as e:
                 logger.error(f"Erro ao processar parcelas da proposta {id}: {e}")
 
-            # Flush para garantir que os itens foram salvos antes de commit final
+            # Flush para garantir que os itens foram salvos antes do commit final
             db.session.flush()
-            
+
+            # D25F03-A3:
+            # uma proposta aprovada deve sair desta transacao
+            # com seus recebiveis financeiros sincronizados.
+            if (
+                str(proposta.status or "")
+                .strip()
+                .lower()
+                == "aprovada"
+            ):
+                proposta.status = "aprovada"
+
+                if not proposta.data_aprovacao:
+                    proposta.data_aprovacao = datetime.now()
+
+                from app.financeiro.proposta_financeiro_service import (
+                    sincronizar_lancamentos_proposta,
+                )
+
+                sincronizar_lancamentos_proposta(
+                    proposta
+                )
+
             # Commit final
             db.session.commit()
             
@@ -1085,32 +1141,85 @@ def api_clientes():
 
 @proposta_bp.route('/api/<int:id>/status', methods=['PUT'])
 def atualizar_status(id):
-    """API para atualizar status de proposta via AJAX."""
+    """Atualiza o status da proposta usando estados canonicos."""
     try:
         proposta = Proposta.query.get_or_404(id)
-        novo_status = request.json.get('status')
-        
-        if novo_status not in ['Pendente', 'Enviada', 'Aprovada', 'Rejeitada']:
-            return jsonify({'error': 'Status inválido'}), 400
-        
-        proposta.status = novo_status
-        
-        # Se aprovada, definir data de aprovação
-        if novo_status == 'Aprovada':
-            proposta.data_aprovacao = date.today()
-        
-        db.session.commit()
-        
+
+        payload = request.get_json(
+            silent=True
+        ) or {}
+
+        novo_status = (
+            str(payload.get("status") or "")
+            .strip()
+            .lower()
+        )
+
+        permitidos = {
+            "pendente",
+            "enviada",
+            "aprovada",
+            "rejeitada",
+        }
+
+        if novo_status not in permitidos:
+            return jsonify({
+                "error": "Status inv?lido"
+            }), 400
+
+        # D25F03-A5.2:
+        # proposta que ja possui financeiro nao pode voltar
+        # silenciosamente para um estado comercial anterior.
+        if novo_status != "aprovada":
+            from app.financeiro.financeiro_model import (
+                LancamentoFinanceiro,
+            )
+
+            financeiro_vinculado = (
+                LancamentoFinanceiro.query
+                .filter_by(
+                    proposta_id=proposta.id,
+                    ativo=True,
+                )
+                .first()
+            )
+
+            if financeiro_vinculado is not None:
+                return jsonify({
+                    "error": (
+                        "Proposta possui lan?amentos "
+                        "financeiros vinculados e n?o "
+                        "pode ter o status rebaixado."
+                    )
+                }), 409
+
+        if novo_status == "aprovada":
+            proposta.aprovar()
+        else:
+            proposta.status = novo_status
+            db.session.commit()
+
         return jsonify({
-            'success': True,
-            'status': novo_status,
-            'message': f'Status atualizado para: {novo_status}'
-        })
-        
+            "success": True,
+            "status": proposta.status,
+            "message": (
+                "Status atualizado para: "
+                f"{proposta.status}"
+            ),
+        }), 200
+
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Erro ao atualizar status da proposta {id}: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+
+        logger.exception(
+            "Erro ao atualizar status da proposta %s",
+            id,
+        )
+
+        return jsonify({
+            "error": str(e)
+        }), 500
+
 
 @proposta_bp.route('/<int:id>/relatorio-proposta')
 def relatorio_proposta(id):
@@ -1248,80 +1357,9 @@ def relatorio_os(id):
 
 @proposta_bp.route('/<int:id>/criar-os', methods=['POST'])
 def criar_os_a_partir_da_proposta(id):
-    """Cria uma Ordem de Serviço a partir de uma Proposta aprovada ou selecionada.
+    """Alias da conversao canonica Proposta -> OS."""
+    return gerar_os_de_proposta(id)
 
-    Copia cliente, título, descrição, itens de serviços e produtos, valores e condições.
-    Retorna: redireciona para a visualização da OS criada.
-    """
-    try:
-        proposta = Proposta.query.options(
-            joinedload(Proposta.itens_produto),
-            joinedload(Proposta.itens_servico)
-        ).filter_by(id=id, ativo=True).first_or_404()
-
-        # Gera nova OS baseada na proposta
-        ordem = OrdemServico(
-            numero=OrdemServico.gerar_proximo_numero(),
-            cliente_id=proposta.cliente_id,
-            titulo=proposta.titulo or f'OS a partir de {proposta.codigo}',
-            descricao=proposta.descricao or proposta.observacoes or '',
-            observacoes=f'Criada a partir da proposta {proposta.codigo}',
-            status='aberta',
-            prioridade=proposta.prioridade or 'normal',
-            condicao_pagamento=proposta.forma_pagamento or 'a_vista',
-            valor_servico=proposta.valor_servicos or 0,
-            valor_pecas=proposta.valor_produtos or 0,
-            valor_desconto=0,
-            valor_total=proposta.valor_total or 0
-        )
-
-        # Salva ordem para obter ID
-        db.session.add(ordem)
-        db.session.flush()
-
-        # Copiar serviços da proposta para itens de OS
-        servicos = PropostaServico.query.filter_by(proposta_id=proposta.id, ativo=True).all()
-        for s in servicos:
-            item = OrdemServicoItem(
-                ordem_servico_id=ordem.id,
-                descricao=s.descricao,
-                quantidade_horas=s.quantidade or 0,
-                valor_hora=s.valor_unitario or 0
-            )
-            item.calcular_total()
-            db.session.add(item)
-
-        # Copiar produtos da proposta para produtos da OS
-        produtos = PropostaProduto.query.filter_by(proposta_id=proposta.id, ativo=True).all()
-        for p in produtos:
-            prod = OrdemServicoProduto(
-                ordem_servico_id=ordem.id,
-                descricao=p.descricao,
-                quantidade=p.quantidade or 1,
-                valor_unitario=p.valor_unitario or 0
-            )
-            prod.calcular_total()
-            db.session.add(prod)
-
-        # Recalcular valores da OS e salvar
-        db.session.flush()
-        ordem.valor_servico = sum([it.valor_total for it in ordem.servicos]) if hasattr(ordem, 'servicos') and ordem.servicos else ordem.valor_servico
-        ordem.valor_pecas = sum([pr.valor_total for pr in ordem.produtos_utilizados]) if hasattr(ordem, 'produtos_utilizados') and ordem.produtos_utilizados else ordem.valor_pecas
-        ordem.valor_total = ordem.valor_total_calculado_novo
-
-        # Opcional: marca proposta como aprovada/convertida
-        proposta.status = 'aprovada'
-
-        db.session.commit()
-
-        flash(f'Ordem de Serviço "{ordem.numero}" criada a partir da proposta {proposta.codigo}!', 'success')
-        return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
-
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f'Erro ao criar OS a partir da proposta {id}: {str(e)}')
-        flash(f'Erro ao criar Ordem de Serviço: {str(e)}', 'error')
-        return redirect(url_for('proposta.visualizar_proposta', id=id))
 
 @proposta_bp.route('/api/clientes/debug')
 def debug_clientes():
