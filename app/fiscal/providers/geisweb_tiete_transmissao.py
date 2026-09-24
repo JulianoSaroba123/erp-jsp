@@ -18,17 +18,14 @@ from app.fiscal.providers.geisweb_tiete_response import (
 from app.fiscal.providers.geisweb_tiete_resultado import (
     interpretar_resultado_envio_geisweb,
 )
-from app.fiscal.providers.geisweb_tiete_signer import (
-    assinar_xml_geisweb,
-)
 from app.fiscal.providers.geisweb_tiete_soap import (
     montar_envelope_soap_geisweb,
     montar_headers_soap_geisweb,
 )
 
 
-OPERACAO_ENVIO = "EnviaSignLoteRps"
-PARAMETRO_RESPOSTA = "EnviaSignLoteRpsResposta"
+OPERACAO_ENVIO = "EnviaLoteRps"
+PARAMETRO_RESPOSTA = "EnviaLoteRpsResposta"
 
 
 class GeisWebTransmissaoError(RuntimeError):
@@ -77,13 +74,12 @@ def transmitir_payload_geisweb(
         carregar_certificado_a1_do_ambiente()
     )
 
-    xml_assinado = assinar_xml_geisweb(
-        conteudo,
-        material_certificado,
-    )
-
+    # Orientacao oficial GeisWeb para este prestador:
+    # utilizar EnviaLoteRps. O certificado A1 permanece
+    # obrigatorio no transporte mTLS, mas o XML fiscal
+    # nao recebe assinatura XMLDSIG neste fluxo.
     envelope = montar_envelope_soap_geisweb(
-        xml_fiscal=xml_assinado,
+        xml_fiscal=conteudo,
         nome_operacao=OPERACAO_ENVIO,
     )
 
@@ -95,7 +91,7 @@ def transmitir_payload_geisweb(
 
     if not soap_action:
         raise GeisWebTransmissaoError(
-            "SOAPAction do EnviaSignLoteRps nao foi resolvida."
+            "SOAPAction do EnviaLoteRps nao foi resolvida."
         )
 
     session = criar_session_a1(

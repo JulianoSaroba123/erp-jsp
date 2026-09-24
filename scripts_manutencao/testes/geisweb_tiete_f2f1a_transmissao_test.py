@@ -50,19 +50,8 @@ def _preparar_fluxo_feliz(monkeypatch):
         lambda: material,
     )
 
-    def assinar(xml, material_recebido):
-        chamadas["xml_normal"] = xml
-        chamadas["material"] = material_recebido
-        return b"<EnviaSignLoteRps/>"
-
-    monkeypatch.setattr(
-        tx,
-        "assinar_xml_geisweb",
-        assinar,
-    )
-
     def montar_envelope(*, xml_fiscal, nome_operacao):
-        chamadas["xml_assinado"] = xml_fiscal
+        chamadas["xml_enviado"] = xml_fiscal
         chamadas["operacao_soap"] = nome_operacao
         return b"<SOAP/>"
 
@@ -77,7 +66,7 @@ def _preparar_fluxo_feliz(monkeypatch):
         "montar_headers_soap_geisweb",
         lambda *, nome_operacao: {
             "SOAPAction": (
-                '"urn:teste#EnviaSignLoteRps"'
+                '"urn:teste#EnviaLoteRps"'
             )
         },
     )
@@ -161,7 +150,7 @@ def _preparar_fluxo_feliz(monkeypatch):
 
 
 def test_f2f1a_orquestra_fluxo_completo_mockado(monkeypatch):
-    chamadas, session, material = _preparar_fluxo_feliz(
+    chamadas, session, _material = _preparar_fluxo_feliz(
         monkeypatch
     )
 
@@ -170,15 +159,12 @@ def test_f2f1a_orquestra_fluxo_completo_mockado(monkeypatch):
         configuracao=_configuracao(),
     )
 
-    assert chamadas["xml_normal"] == b"<EnviaLoteRps/>"
-    assert chamadas["material"] is material
-
-    assert chamadas["xml_assinado"] == (
-        b"<EnviaSignLoteRps/>"
+    assert chamadas["xml_enviado"] == (
+        b"<EnviaLoteRps/>"
     )
 
     assert chamadas["operacao_soap"] == (
-        "EnviaSignLoteRps"
+        "EnviaLoteRps"
     )
 
     assert chamadas["endpoint"] == (
@@ -186,18 +172,18 @@ def test_f2f1a_orquestra_fluxo_completo_mockado(monkeypatch):
     )
 
     assert chamadas["soap_action"] == (
-        '"urn:teste#EnviaSignLoteRps"'
+        '"urn:teste#EnviaLoteRps"'
     )
 
     assert chamadas["envelope"] == b"<SOAP/>"
     assert chamadas["session"] is session
 
     assert chamadas["operation_response"] == (
-        "EnviaSignLoteRps"
+        "EnviaLoteRps"
     )
 
     assert chamadas["response_parameter"] == (
-        "EnviaSignLoteRpsResposta"
+        "EnviaLoteRpsResposta"
     )
 
     assert session.closed is True

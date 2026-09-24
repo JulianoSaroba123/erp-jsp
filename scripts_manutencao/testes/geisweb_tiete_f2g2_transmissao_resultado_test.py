@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from pathlib import Path
 from types import SimpleNamespace
@@ -27,12 +27,6 @@ def _instalar_pipeline(monkeypatch, resultado_funcional):
         tx,
         "carregar_certificado_a1_do_ambiente",
         lambda: material,
-    )
-
-    monkeypatch.setattr(
-        tx,
-        "assinar_xml_geisweb",
-        lambda xml, material: b"<assinado/>",
     )
 
     monkeypatch.setattr(
