@@ -66,7 +66,7 @@ class Proposta(BaseModel):
     # Condições
     condicoes_pagamento = db.Column(db.Text)
     prazo_execucao = db.Column(db.String(500))
-    garantia = db.Column(db.String(500))
+    garantia = db.Column(db.Text)
     forma_pagamento = db.Column(db.String(500), default='a_vista')
     
     # Dados de Parcelamento (quando forma_pagamento = 'parcelado')
