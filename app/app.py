@@ -476,28 +476,6 @@ def create_app(config_name=None):
         # except Exception as e:
         #     print(f" ⚠ Aviso na correção global de 'ativo': {e}")
         
-        # Migração automática: aumentar tamanho dos campos de proposta
-        try:
-            from sqlalchemy import text, inspect
-            inspector = inspect(db.engine)
-            
-            # Verifica se a tabela propostas existe
-            if 'propostas' in inspector.get_table_names():
-                # Tenta aplicar migração (ignora se já foi aplicada)
-                try:
-                    db.session.execute(text("ALTER TABLE propostas ALTER COLUMN forma_pagamento TYPE VARCHAR(500)"))
-                    db.session.execute(text("ALTER TABLE propostas ALTER COLUMN prazo_execucao TYPE VARCHAR(500)"))
-                    db.session.execute(text("ALTER TABLE propostas ALTER COLUMN garantia TYPE VARCHAR(500)"))
-                    db.session.commit()
-                    print("[OK] Migração de campos de proposta aplicada!")
-                except Exception as e:
-                    db.session.rollback()
-                    # Se já foi aplicada ou não precisa, apenas ignora
-                    if 'already exists' not in str(e).lower():
-                        pass  # Silenciosamente ignora
-        except Exception as e:
-            print(f" ⚠ Aviso na migração de campos de proposta: {e}")
-
         # Migração: corrigir horas_normais/horas_extras de varchar para numeric (banco local)
         # No Render já são numeric; localmente podem ter sido criadas como varchar
         try:
