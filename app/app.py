@@ -476,25 +476,37 @@ def create_app(config_name=None):
         # except Exception as e:
         #     print(f" ⚠ Aviso na correção global de 'ativo': {e}")
         
-        # Migração automática: aumentar tamanho dos campos de proposta
+        # Compatibilidade legada dos campos de proposta.
+        # IMPORTANTE: nunca reduzir campos narrativos para VARCHAR(500),
+        # pois isso reintroduz truncamento em propostas técnicas extensas.
         try:
             from sqlalchemy import text, inspect
             inspector = inspect(db.engine)
-            
-            # Verifica se a tabela propostas existe
-            if 'propostas' in inspector.get_table_names():
-                # Tenta aplicar migração (ignora se já foi aplicada)
+
+            if (
+                db.engine.dialect.name == 'postgresql'
+                and 'propostas' in inspector.get_table_names()
+            ):
                 try:
-                    db.session.execute(text("ALTER TABLE propostas ALTER COLUMN forma_pagamento TYPE VARCHAR(500)"))
-                    db.session.execute(text("ALTER TABLE propostas ALTER COLUMN prazo_execucao TYPE VARCHAR(500)"))
-                    db.session.execute(text("ALTER TABLE propostas ALTER COLUMN garantia TYPE VARCHAR(500)"))
+                    db.session.execute(text(
+                        "ALTER TABLE propostas "
+                        "ALTER COLUMN forma_pagamento TYPE VARCHAR(500)"
+                    ))
+                    db.session.execute(text(
+                        "ALTER TABLE propostas "
+                        "ALTER COLUMN prazo_execucao TYPE TEXT"
+                    ))
+                    db.session.execute(text(
+                        "ALTER TABLE propostas "
+                        "ALTER COLUMN garantia TYPE TEXT"
+                    ))
                     db.session.commit()
-                    print("[OK] Migração de campos de proposta aplicada!")
-                except Exception as e:
+                    print("[OK] Campos narrativos de proposta validados como TEXT!")
+                except Exception:
                     db.session.rollback()
-                    # Se já foi aplicada ou não precisa, apenas ignora
-                    if 'already exists' not in str(e).lower():
-                        pass  # Silenciosamente ignora
+                    logger.exception(
+                        "Falha ao validar campos narrativos de proposta"
+                    )
         except Exception as e:
             print(f" ⚠ Aviso na migração de campos de proposta: {e}")
 
