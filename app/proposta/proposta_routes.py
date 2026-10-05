@@ -3,6 +3,7 @@ from sqlalchemy import text, or_
 from sqlalchemy.orm import joinedload
 from decimal import Decimal
 from datetime import datetime, date
+from types import SimpleNamespace
 import logging
 
 # Importar modelos
@@ -54,6 +55,89 @@ def converter_quantidade(quantidade_str):
     except (ValueError, TypeError):
         logger.warning(f"Erro ao converter quantidade: {quantidade_str}")
         return 1.0
+
+def _rascunho_proposta_from_form(form):
+    """Reconstrói os dados digitados para não limpar o formulário após erro."""
+    def inteiro(nome, padrao=None):
+        valor = form.get(nome)
+        if valor in (None, ''):
+            return padrao
+        try:
+            return int(valor)
+        except (TypeError, ValueError):
+            return padrao
+
+    servicos = []
+    servicos_descricoes = form.getlist('servico_descricao[]')
+    servicos_tipos = form.getlist('servico_tipo[]')
+    servicos_qtds = form.getlist('servico_horas[]')
+    servicos_valores = form.getlist('servico_valor[]')
+
+    for i, descricao in enumerate(servicos_descricoes):
+        if not str(descricao or '').strip():
+            continue
+        servicos.append(SimpleNamespace(
+            descricao=descricao,
+            tipo_servico=servicos_tipos[i] if i < len(servicos_tipos) else 'hora',
+            quantidade=converter_quantidade(servicos_qtds[i] if i < len(servicos_qtds) else '1'),
+            valor_unitario=converter_valor_monetario(servicos_valores[i] if i < len(servicos_valores) else '0'),
+        ))
+
+    produtos = []
+    produtos_descricoes = form.getlist('produto_descricao[]')
+    produtos_qtds = form.getlist('produto_quantidade[]')
+    produtos_valores = form.getlist('produto_valor[]')
+
+    for i, descricao in enumerate(produtos_descricoes):
+        if not str(descricao or '').strip():
+            continue
+        produtos.append(SimpleNamespace(
+            descricao=descricao,
+            quantidade=converter_quantidade(produtos_qtds[i] if i < len(produtos_qtds) else '1'),
+            valor_unitario=converter_valor_monetario(produtos_valores[i] if i < len(produtos_valores) else '0'),
+        ))
+
+    valor_servicos = sum(
+        float(item.quantidade or 0) * float(item.valor_unitario or 0)
+        for item in servicos
+    )
+    valor_produtos = sum(
+        float(item.quantidade or 0) * float(item.valor_unitario or 0)
+        for item in produtos
+    )
+    desconto = converter_valor_monetario(form.get('desconto', 0))
+    subtotal = valor_servicos + valor_produtos
+    valor_total = subtotal - (subtotal * desconto / 100)
+
+    return SimpleNamespace(
+        id=None,
+        codigo=None,
+        cliente_id=inteiro('cliente_id'),
+        titulo=form.get('titulo', ''),
+        descricao=form.get('descricao', ''),
+        status=form.get('status', 'pendente') or 'pendente',
+        vendedor=form.get('vendedor', ''),
+        prioridade=form.get('prioridade', 'normal') or 'normal',
+        tempo_estimado=form.get('tempo_estimado', ''),
+        forma_pagamento=form.get('forma_pagamento', ''),
+        prazo_execucao=form.get('prazo_execucao', ''),
+        garantia=form.get('garantia', ''),
+        validade=inteiro('validade', 30),
+        observacoes=form.get('observacoes', ''),
+        condicoes_pagamento=form.get('condicoes_pagamento', ''),
+        desconto=desconto,
+        entrada=converter_valor_monetario(form.get('entrada', 0)),
+        km_estimado=form.get('km_estimado', ''),
+        data_emissao=form.get('data_emissao') or date.today().isoformat(),
+        numero_parcelas=inteiro('numero_parcelas', 1),
+        intervalo_parcelas=inteiro('intervalo_parcelas', 30),
+        data_primeira_parcela=form.get('data_primeira_parcela', ''),
+        itens_servico=servicos,
+        itens_produto=produtos,
+        valor_servicos=valor_servicos,
+        valor_produtos=valor_produtos,
+        valor_total=valor_total,
+    )
 
 proposta_bp = Blueprint('proposta', __name__, template_folder='templates')
 
@@ -132,10 +216,12 @@ def nova_proposta():
             if not titulo or not cliente_id:
                 flash('Título e cliente são obrigatórios', 'error')
                 clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
-                return render_template('proposta/form.html', 
-                                     proposta=None, 
-                                     clientes=clientes,
-                                     today=date.today())
+                return render_template(
+                    'proposta/form.html',
+                    proposta=_rascunho_proposta_from_form(request.form),
+                    clientes=clientes,
+                    today=date.today(),
+                )
             
             # Criar nova proposta
             nova_prop = Proposta(
@@ -344,19 +430,23 @@ def nova_proposta():
                              clientes=clientes,
                              today=date.today())
         
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        logger.error(f"Erro na rota nova proposta: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        flash(f'Erro ao processar proposta: {str(e)}', 'error')
-        
-        # Retornar formulário com erro
+        logger.exception("Erro na rota nova proposta")
+        flash(
+            'Não foi possível salvar a proposta. '
+            'Os dados preenchidos foram preservados para nova tentativa.',
+            'error',
+        )
+
+        # Retornar o formulário sem apagar o trabalho já digitado.
         clientes = Cliente.query.filter_by(ativo=True).order_by(Cliente.nome).all()
-        return render_template('proposta/form.html', 
-                             proposta=None, 
-                             clientes=clientes,
-                             today=date.today())
+        return render_template(
+            'proposta/form.html',
+            proposta=_rascunho_proposta_from_form(request.form),
+            clientes=clientes,
+            today=date.today(),
+        )
 
 @proposta_bp.route('/<int:id>')
 def visualizar_proposta(id):
