@@ -346,8 +346,8 @@ def criar_unidade_cliente(
 
 
 def criar_gerador(
-    *,
     cliente_id,
+    *,
     unidade_id=None,
     equipamento_id=None,
     **dados,
