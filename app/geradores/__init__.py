@@ -1,9 +1,11 @@
 ﻿# -*- coding: utf-8 -*-
 """Modulo de gestao tecnica de grupos geradores do ERP JSP."""
 
-# Produto precisa estar registrado no metadata/class registry porque
-# GeradorConsumivel possui vinculo opcional com produtos.id.
+# Dependencias precisam estar registradas no metadata/class registry.
+# Produto: vinculo opcional dos consumiveis.
+# Usuario: responsavel autenticado opcional nas leituras de horimetro.
 from app.produto.produto_model import Produto as _Produto  # noqa: F401
+from app.auth.usuario_model import Usuario as _Usuario  # noqa: F401
 
 from .gerador_model import (
     ClienteUnidade,
@@ -27,6 +29,15 @@ from .gerador_consumivel_model import (
     GeradorConsumivelEquivalente,
 )
 
+from .gerador_plano_model import (
+    PlanoManutencao,
+    GeradorPlanoManutencao,
+)
+
+from .gerador_horimetro_model import (
+    GeradorHorimetro,
+)
+
 __all__ = [
     "ClienteUnidade",
     "Gerador",
@@ -38,4 +49,7 @@ __all__ = [
     "GeradorCarregador",
     "GeradorConsumivel",
     "GeradorConsumivelEquivalente",
+    "PlanoManutencao",
+    "GeradorPlanoManutencao",
+    "GeradorHorimetro",
 ]
