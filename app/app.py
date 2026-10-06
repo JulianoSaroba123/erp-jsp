@@ -919,6 +919,10 @@ def register_blueprints(app):
     from app.equipamento.equipamento_routes import equipamento_bp
     app.register_blueprint(equipamento_bp)
 
+    # Blueprint de geradores
+    from app.geradores.gerador_routes import geradores_bp
+    app.register_blueprint(geradores_bp)
+
     # Blueprint de ordens de serviço
     from app.ordem_servico.ordem_servico_routes import ordem_servico_bp
     app.register_blueprint(ordem_servico_bp, url_prefix='/ordem_servico')
