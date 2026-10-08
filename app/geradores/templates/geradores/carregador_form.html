@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Carregador - {{ gerador.codigo }}{% endblock %}
+{% block content %}
+
+<form method="post">
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>Carregador de Bateria</strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            {% for nome, rotulo, tipo, step in [
+                ('fabricante','Fabricante','text',''),
+                ('modelo','Modelo','text',''),
+                ('tensao_nominal_v','Tensão nominal / alimentação','text',''),
+                ('corrente_nominal_a','Corrente nominal (A)','number','0.01'),
+                ('tensao_medida_v','Tensão medida (V)','number','0.01')
+            ] %}
+
+            <div class="col-md-4">
+                <label class="form-label">{{ rotulo }}</label>
+                <input
+                    type="{{ tipo }}"
+                    name="{{ nome }}"
+                    class="form-control"
+                    value="{{ form_data.get(nome, '') }}"
+                    {% if step %}step="{{ step }}"{% endif %}
+                >
+            </div>
+
+            {% endfor %}
+
+            <div class="col-12">
+                <label class="form-label">Observações</label>
+                <textarea name="observacoes"
+                          class="form-control"
+                          rows="4">{{ form_data.get('observacoes','') }}</textarea>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-end gap-2">
+    <a href="{{ url_for('geradores.ficha', gerador_id=gerador.id) }}#partida"
+       class="btn btn-outline-secondary">Cancelar</a>
+
+    <button class="btn btn-primary" type="submit">
+        <i class="fas fa-save me-1"></i>
+        Salvar Carregador
+    </button>
+</div>
+
+</form>
+
+{% endblock %}

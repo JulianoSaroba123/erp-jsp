@@ -209,7 +209,7 @@ class GeradorAlternador(BaseModel):
     )
 
     potencia_kva = db.Column(
-        db.Numeric(12, 2),
+        db.String(100),
         nullable=True,
     )
 
@@ -219,7 +219,7 @@ class GeradorAlternador(BaseModel):
     )
 
     corrente_a = db.Column(
-        db.Numeric(12, 2),
+        db.String(100),
         nullable=True,
     )
 
@@ -292,16 +292,6 @@ class GeradorAlternador(BaseModel):
     )
 
     __table_args__ = (
-        CheckConstraint(
-            "potencia_kva IS NULL "
-            "OR potencia_kva >= 0",
-            name="ck_gerador_alternador_potencia",
-        ),
-        CheckConstraint(
-            "corrente_a IS NULL "
-            "OR corrente_a >= 0",
-            name="ck_gerador_alternador_corrente",
-        ),
         CheckConstraint(
             "frequencia_hz IS NULL "
             "OR frequencia_hz > 0",

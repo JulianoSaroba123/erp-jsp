@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}QTA / ATS - {{ gerador.codigo }} - {{ super() }}{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-d.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('geradores.listar') }}">Geradores</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('geradores.ficha', gerador_id=gerador.id) }}">{{ gerador.codigo }}</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">QTA / ATS</span>
+{% endblock %}
+
+{% block content %}
+
+{% macro campo(nome, rotulo, tipo='text', col='col-md-4', step=None) %}
+<div class="{{ col }}">
+    <label class="form-label">{{ rotulo }}</label>
+    <input
+        type="{{ tipo }}"
+        name="{{ nome }}"
+        class="form-control"
+        value="{{ form_data.get(nome, '') }}"
+        {% if step %}step="{{ step }}"{% endif %}
+    >
+</div>
+{% endmacro %}
+
+<form method="post">
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>
+            <i class="fas fa-random me-2"></i>
+            Identificacao do QTA / ATS
+        </strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            {{ campo('fabricante', 'Fabricante') }}
+            {{ campo('modelo', 'Modelo') }}
+
+            {{ campo(
+                'corrente_a',
+                'Corrente nominal (A)',
+                'number',
+                'col-md-3',
+                '0.01'
+            ) }}
+
+            {{ campo(
+                'numero_polos',
+                'Numero de polos',
+                'number',
+                'col-md-3',
+                '1'
+            ) }}
+
+            {{ campo('tensao', 'Tensao') }}
+            <div class="col-md-4">
+    <label class="form-label">Tipo</label>
+    <select name="tipo" class="form-select">
+        <option value="">Selecione...</option>
+        {% for valor, rotulo in [
+            ('CONTATOR', 'Contator'),
+            ('DISJUNTOR', 'Disjuntor'),
+            ('CHAVE_MOTORIZADA', 'Chave motorizada'),
+            ('CHAVE_REVERSORA', 'Chave reversora'),
+            ('OUTRO', 'Outro')
+        ] %}
+        <option value="{{ valor }}" {% if form_data.get('tipo') == valor %}selected{% endif %}>
+            {{ rotulo }}
+        </option>
+        {% endfor %}
+    </select>
+</div>
+            {{ campo('transferencia', 'Transferencia') }}
+            {{ campo('posicao_normal', 'Posicao normal') }}
+
+        </div>
+    </div>
+</div>
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>Controle e Intertravamento</strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            {{ campo(
+                'controle',
+                'Controle',
+                'text',
+                'col-md-6'
+            ) }}
+
+            {{ campo(
+                'intertravamento',
+                'Intertravamento',
+                'text',
+                'col-md-6'
+            ) }}
+
+            <div class="col-12">
+                <label class="form-label">
+                    Observacoes
+                </label>
+
+                <textarea
+                    name="observacoes"
+                    class="form-control"
+                    rows="4"
+                >{{ form_data.get('observacoes', '') }}</textarea>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-end gap-2">
+
+    <a
+        href="{{ url_for('geradores.ficha', gerador_id=gerador.id) }}#qta"
+        class="btn btn-outline-secondary"
+    >
+        Cancelar
+    </a>
+
+    <button
+        type="submit"
+        class="btn btn-primary"
+    >
+        <i class="fas fa-save me-1"></i>
+        Salvar QTA / ATS
+    </button>
+
+</div>
+
+</form>
+
+{% endblock %}

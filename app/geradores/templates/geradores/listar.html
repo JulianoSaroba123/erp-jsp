@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block title %}Geradores - {{ super() }}{% endblock %}
 
@@ -25,9 +25,17 @@
                 Prontuário técnico, horímetro e programação de manutenção
             </p>
         </div>
-        <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+        <div class="col-lg-4 mt-3 mt-lg-0 d-flex justify-content-lg-end align-items-center gap-2 flex-wrap">
+            <a
+                href="{{ url_for('geradores.novo') }}"
+                class="btn btn-primary"
+            >
+                <i class="fas fa-industry me-2"></i>
+                Novo Gerador
+            </a>
+
             <span class="badge bg-info text-dark px-3 py-2">
-                {{ registros|length }} equipamento(s)
+                {{ registros|length }} gerador(es)
             </span>
         </div>
     </div>
@@ -77,6 +85,7 @@
                         <th>Horímetro</th>
                         <th>Plano</th>
                         <th>Próxima manutenção</th>
+                        <th class="text-end">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -172,6 +181,12 @@
                             {% else %}
                             <span class="text-muted">Não programada</span>
                             {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('geradores.ficha', gerador_id=g.id) }}" class="btn btn-sm btn-outline-primary" title="Abrir ficha técnica">
+                                <i class="fas fa-clipboard-list me-1"></i>
+                                Ficha Técnica
+                            </a>
                         </td>
                     </tr>
 

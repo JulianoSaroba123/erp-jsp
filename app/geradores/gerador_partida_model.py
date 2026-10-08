@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 ERP JSP - Modulo GERADORES
 Sistema de partida da Fase G2.
@@ -152,7 +152,7 @@ class GeradorCarregador(BaseModel):
     )
 
     tensao_nominal_v = db.Column(
-        db.Numeric(10, 2),
+        db.String(100),
         nullable=True,
     )
 
@@ -180,11 +180,6 @@ class GeradorCarregador(BaseModel):
     )
 
     __table_args__ = (
-        CheckConstraint(
-            "tensao_nominal_v IS NULL "
-            "OR tensao_nominal_v >= 0",
-            name="ck_gerador_carregador_tensao",
-        ),
         CheckConstraint(
             "corrente_nominal_a IS NULL "
             "OR corrente_nominal_a >= 0",

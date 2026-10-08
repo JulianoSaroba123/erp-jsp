@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Consumível - {{ gerador.codigo }} - {{ super() }}{% endblock %}
+
+{% block content %}
+
+<div class="card main-card">
+    <div class="card-header">
+        <strong>Filtro / Consumível</strong>
+    </div>
+
+    <div class="card-body">
+        <form method="post">
+
+            {% set nomes = {
+                'FILTRO_OLEO': 'Filtro de óleo',
+                'FILTRO_COMBUSTIVEL': 'Filtro de combustível',
+                'PRE_FILTRO_COMBUSTIVEL': 'Pré-filtro de combustível',
+                'SEPARADOR_AGUA': 'Separador de água',
+                'FILTRO_AR_PRIMARIO': 'Filtro de ar primário',
+                'FILTRO_AR_SECUNDARIO': 'Filtro de ar secundário',
+                'FILTRO_BLOW_BY': 'Filtro blow-by',
+                'OLEO': 'Óleo lubrificante',
+                'LIQUIDO_ARREFECIMENTO': 'Líquido de arrefecimento',
+                'CORREIA': 'Correia',
+                'BATERIA': 'Bateria',
+                'OUTRO': 'Outro'
+            } %}
+
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <label class="form-label">Tipo *</label>
+                    <select name="tipo" class="form-select" required>
+                        <option value="">Selecione</option>
+                        {% for tipo in tipos %}
+                        <option value="{{ tipo }}"
+                            {% if form_data.get('tipo') == tipo %}selected{% endif %}>
+                            {{ nomes.get(tipo, tipo) }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Fabricante original</label>
+                    <input class="form-control" name="fabricante_original"
+                           value="{{ form_data.get('fabricante_original', '') }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Referência original</label>
+                    <input class="form-control" name="referencia_original"
+                           value="{{ form_data.get('referencia_original', '') }}">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Descrição</label>
+                    <input class="form-control" name="descricao"
+                           value="{{ form_data.get('descricao', '') }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Quantidade</label>
+                    <input class="form-control" name="quantidade"
+                           inputmode="decimal"
+                           value="{{ form_data.get('quantidade', '') }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Unidade</label>
+                    <input class="form-control" name="unidade"
+                           placeholder="UN, L, JG..."
+                           value="{{ form_data.get('unidade', '') }}">
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">Observações</label>
+                    <textarea class="form-control" rows="4"
+                              name="observacoes">{{ form_data.get('observacoes', '') }}</textarea>
+                </div>
+
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <a class="btn btn-outline-secondary"
+                   href="{{ url_for('geradores.ficha', gerador_id=gerador.id) }}#consumiveis">
+                    Cancelar
+                </a>
+
+                <button class="btn btn-primary" type="submit">
+                    <i class="fas fa-save me-1"></i>
+                    Salvar Consumível
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+{% endblock %}

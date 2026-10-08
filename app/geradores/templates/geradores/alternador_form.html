@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Alternador - {{ gerador.codigo }} - {{ super() }}{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-d.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('geradores.listar') }}">Geradores</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('geradores.ficha', gerador_id=gerador.id) }}">{{ gerador.codigo }}</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Alternador</span>
+{% endblock %}
+
+{% block content %}
+
+{% macro campo(nome, rotulo, tipo='text', col='col-md-4', step=None) %}
+<div class="{{ col }}">
+    <label class="form-label">{{ rotulo }}</label>
+    <input type="{{ tipo }}" name="{{ nome }}" class="form-control"
+           value="{{ form_data.get(nome, '') }}"
+           {% if step %}step="{{ step }}"{% endif %}>
+</div>
+{% endmacro %}
+
+<form method="post">
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>Identificacao do Alternador</strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            {{ campo('fabricante', 'Fabricante') }}
+            {{ campo('modelo', 'Modelo') }}
+            {{ campo('numero_serie', 'Numero de serie') }}
+
+        </div>
+    </div>
+</div>
+
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>Dados Eletricos</strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+            {{ campo('potencia_kva', 'Potencia (kVA)', 'text', 'col-md-3') }}
+            {{ campo('tensao', 'Tensao', 'text', 'col-md-3') }}
+            {{ campo('corrente_a', 'Corrente (A)', 'text', 'col-md-3') }}
+            {{ campo('frequencia_hz', 'Frequencia (Hz)', 'number', 'col-md-3', '0.01') }}
+            {{ campo('rpm', 'RPM', 'number', 'col-md-3', '1') }}
+            {{ campo('numero_polos', 'Numero de polos', 'number', 'col-md-3', '1') }}
+            {{ campo('fator_potencia', 'Fator de potencia', 'number', 'col-md-3', '0.001') }}
+        </div>
+    </div>
+</div>
+
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>Construcao, Excitacao e AVR</strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            {{ campo('classe_isolacao', 'Classe de isolacao') }}
+            {{ campo('grau_protecao', 'Grau de protecao') }}
+            {{ campo('sistema_excitacao', 'Sistema de excitacao') }}
+
+            <div class="col-md-3">
+                <label class="form-label">Possui AVR</label>
+                <select name="possui_avr" class="form-select">
+                    <option value="">Nao informado</option>
+                    <option value="1" {% if form_data.get('possui_avr') == '1' %}selected{% endif %}>
+                        Sim
+                    </option>
+                    <option value="0" {% if form_data.get('possui_avr') == '0' %}selected{% endif %}>
+                        Nao
+                    </option>
+                </select>
+            </div>
+
+            {{ campo('avr_fabricante', 'Fabricante do AVR') }}
+            {{ campo('avr_modelo', 'Modelo do AVR') }}
+            {{ campo('ligacao', 'Ligacao') }}
+
+        </div>
+    </div>
+</div>
+
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>Observacoes</strong>
+    </div>
+
+    <div class="card-body">
+        <textarea
+            name="observacoes"
+            class="form-control"
+            rows="4"
+        >{{ form_data.get('observacoes', '') }}</textarea>
+    </div>
+</div>
+
+<div class="d-flex justify-content-end gap-2">
+    <a
+        href="{{ url_for('geradores.ficha', gerador_id=gerador.id) }}#alternador"
+        class="btn btn-outline-secondary"
+    >
+        Cancelar
+    </a>
+
+    <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save me-1"></i>
+        Salvar Alternador
+    </button>
+</div>
+
+</form>
+
+{% endblock %}

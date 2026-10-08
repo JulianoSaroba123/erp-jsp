@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Motor - {{ gerador.codigo }} - {{ super() }}{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-d.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('geradores.listar') }}">Geradores</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('geradores.ficha', gerador_id=gerador.id) }}">{{ gerador.codigo }}</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Motor</span>
+{% endblock %}
+
+{% block content %}
+
+{% macro campo(nome, rotulo, tipo='text', col='col-md-4', step=None) %}
+<div class="{{ col }}">
+    <label class="form-label">{{ rotulo }}</label>
+    <input
+        type="{{ tipo }}"
+        name="{{ nome }}"
+        class="form-control"
+        value="{{ form_data.get(nome, '') }}"
+        {% if step %}step="{{ step }}"{% endif %}
+    >
+</div>
+{% endmacro %}
+
+<div class="equipamento-header mb-4">
+    <h2 class="mb-1">
+        <i class="fas fa-cog me-2"></i>
+        Motor do {{ gerador.codigo }}
+    </h2>
+    <div class="opacity-75">
+        Cadastro técnico progressivo do motor
+    </div>
+</div>
+
+<form method="post">
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>Identificação do Motor</strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            {{ campo('fabricante', 'Fabricante') }}
+            {{ campo('modelo', 'Modelo') }}
+            {{ campo('variante', 'Variante') }}
+
+            {{ campo('numero_serie', 'Número de série') }}
+
+            {{ campo(
+                'quantidade_cilindros',
+                'Quantidade de cilindros',
+                'number',
+                'col-md-4'
+            ) }}
+
+            {{ campo(
+                'cilindrada_l',
+                'Cilindrada (L)',
+                'number',
+                'col-md-4',
+                '0.001'
+            ) }}
+
+            {{ campo('aspiracao', 'Aspiração') }}
+            {{ campo('combustivel', 'Combustível') }}
+
+            {{ campo(
+                'rpm',
+                'Rotação (RPM)',
+                'number'
+            ) }}
+
+        </div>
+    </div>
+</div>
+
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>Características Técnicas</strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            {{ campo(
+                'potencia',
+                'Potência',
+                'number',
+                'col-md-4',
+                '0.01'
+            ) }}
+
+            {{ campo(
+                'potencia_unidade',
+                'Unidade da potência'
+            ) }}
+
+            <div class="col-md-2">
+                <label class="form-label">Turbo</label>
+                <select name="turbo" class="form-select">
+                    <option value="">Não informado</option>
+                    <option value="1" {% if form_data.get('turbo') == '1' %}selected{% endif %}>
+                        Sim
+                    </option>
+                    <option value="0" {% if form_data.get('turbo') == '0' %}selected{% endif %}>
+                        Não
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label">Intercooler</label>
+                <select name="intercooler" class="form-select">
+                    <option value="">Não informado</option>
+                    <option value="1" {% if form_data.get('intercooler') == '1' %}selected{% endif %}>
+                        Sim
+                    </option>
+                    <option value="0" {% if form_data.get('intercooler') == '0' %}selected{% endif %}>
+                        Não
+                    </option>
+                </select>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>Lubrificação e Operação</strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            {{ campo(
+                'capacidade_oleo_l',
+                'Capacidade de óleo (L)',
+                'number',
+                'col-md-4',
+                '0.01'
+            ) }}
+
+            {{ campo(
+                'especificacao_oleo',
+                'Especificação do óleo',
+                'text',
+                'col-md-8'
+            ) }}
+
+            {{ campo(
+                'pressao_normal_oleo',
+                'Pressão normal do óleo',
+                'text',
+                'col-md-6'
+            ) }}
+
+            {{ campo(
+                'temperatura_normal',
+                'Temperatura normal',
+                'text',
+                'col-md-6'
+            ) }}
+
+            <div class="col-12">
+                <label class="form-label">Observações</label>
+                <textarea
+                    name="observacoes"
+                    class="form-control"
+                    rows="4"
+                >{{ form_data.get('observacoes', '') }}</textarea>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+
+<div class="d-flex justify-content-end gap-2">
+    <a
+        href="{{ url_for('geradores.ficha', gerador_id=gerador.id) }}#motor"
+        class="btn btn-outline-secondary"
+    >
+        Cancelar
+    </a>
+
+    <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save me-1"></i>
+        Salvar Motor
+    </button>
+</div>
+
+</form>
+
+{% endblock %}
