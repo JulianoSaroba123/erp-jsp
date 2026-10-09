@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Controladora - {{ gerador.codigo }} - {{ super() }}{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-d.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('geradores.listar') }}">Geradores</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('geradores.ficha', gerador_id=gerador.id) }}">{{ gerador.codigo }}</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Controladora</span>
+{% endblock %}
+
+{% block content %}
+
+{% macro campo(nome, rotulo, col='col-md-4') %}
+<div class="{{ col }}">
+    <label class="form-label">{{ rotulo }}</label>
+    <input
+        type="text"
+        name="{{ nome }}"
+        class="form-control"
+        value="{{ form_data.get(nome, '') }}"
+    >
+</div>
+{% endmacro %}
+
+<form method="post">
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>
+            <i class="fas fa-microchip me-2"></i>
+            Identificacao da Controladora
+        </strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+            {{ campo('fabricante', 'Fabricante') }}
+            {{ campo('modelo', 'Modelo') }}
+            {{ campo('versao', 'Versao') }}
+            {{ campo('firmware', 'Firmware') }}
+            {{ campo('tensao_alimentacao', 'Tensao de alimentacao') }}
+            {{ campo('comunicacao', 'Comunicacao', 'col-md-8') }}
+        </div>
+    </div>
+</div>
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>Configuracao e Documentacao</strong>
+    </div>
+
+    <div class="card-body">
+        <div class="mb-3">
+            <label class="form-label">
+                Configuracao relevante
+            </label>
+            <textarea
+                name="configuracao_relevante"
+                class="form-control"
+                rows="4"
+            >{{ form_data.get('configuracao_relevante', '') }}</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">
+                Referencia do manual
+            </label>
+            <textarea
+                name="manual_referencia"
+                class="form-control"
+                rows="3"
+            >{{ form_data.get('manual_referencia', '') }}</textarea>
+        </div>
+
+        <div>
+            <label class="form-label">Observacoes</label>
+            <textarea
+                name="observacoes"
+                class="form-control"
+                rows="4"
+            >{{ form_data.get('observacoes', '') }}</textarea>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-end gap-2">
+    <a
+        href="{{ url_for('geradores.ficha', gerador_id=gerador.id) }}#controladora"
+        class="btn btn-outline-secondary"
+    >
+        Cancelar
+    </a>
+
+    <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save me-1"></i>
+        Salvar Controladora
+    </button>
+</div>
+
+</form>
+
+{% endblock %}

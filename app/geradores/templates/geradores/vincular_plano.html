@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Vincular Plano de Manutencao{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h3>Vincular Plano de Manuten&ccedil;&atilde;o</h3>
+<a class="btn btn-outline-primary mb-3 ms-2"
+   href="{{ url_for('gerador_plano_ui.horimetro_g4') }}">
+  Controle de Hor&iacute;metro
+</a>
+
+
+    <a class="btn btn-outline-secondary mb-3"
+       href="{{ url_for('gerador_plano_ui.listar_planos') }}">
+       Voltar aos planos
+    </a>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <form method="POST">
+          <input type="hidden" name="csrf_token_g4"
+                 value="{{ csrf_token_g4 }}">
+
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Gerador</label>
+              <select name="gerador_id"
+                      class="form-select" required>
+                <option value="">Selecione</option>
+                {% for g in geradores %}
+                <option value="{{ g.id }}">{{ g.codigo }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Plano</label>
+              <select name="plano_id"
+                      class="form-select" required>
+                <option value="">Selecione</option>
+                {% for p in planos %}
+                <option value="{{ p.id }}">
+                  {{ p.codigo }} - {{ p.nome }}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">
+                Data-base da programa&ccedil;&atilde;o
+              </label>
+              <input type="date"
+                     name="data_base_programacao"
+                     class="form-control">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">
+                Hor&iacute;metro-base (horas acumuladas)
+              </label>
+              <input type="number" step="0.01" min="0"
+                     name="horimetro_base_programacao"
+                     class="form-control">
+            </div>
+
+            <div class="col-12">
+              <label class="form-label">
+                Observa&ccedil;&otilde;es
+              </label>
+              <textarea name="observacoes"
+                        class="form-control" rows="2"></textarea>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary mt-3"
+                  {% if not geradores or not planos %}disabled{% endif %}>
+            Vincular plano
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h5>Planos vinculados</h5>
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th>Gerador</th>
+                <th>Plano</th>
+                <th>Data-base</th>
+                <th>Hor&iacute;metro-base</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for v in vinculos %}
+              <tr>
+                <td>{{ v.gerador.codigo }}</td>
+                <td>{{ v.plano.nome }}</td>
+                <td>{{ v.data_base_programacao or "-" }}</td>
+                <td>{{ v.horimetro_base_programacao if
+                       v.horimetro_base_programacao is not none
+                       else "-" }}</td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4">
+                  Nenhum plano vinculado.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+</div>
+{% endblock %}

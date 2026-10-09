@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Gerador - {{ super() }}{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-d.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('geradores.listar') }}">Geradores</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Novo Gerador</span>
+{% endblock %}
+
+{% macro campo(nome, rotulo, tipo='text', col='col-md-4', step=None) %}
+<div class="{{ col }}">
+    <label class="form-label" for="{{ nome }}">{{ rotulo }}</label>
+    <input
+        id="{{ nome }}"
+        name="{{ nome }}"
+        type="{{ tipo }}"
+        class="form-control"
+        value="{{ form_data.get(nome, '') }}"
+        {% if step %}step="{{ step }}"{% endif %}
+    >
+</div>
+{% endmacro %}
+
+{% block content %}
+
+<div class="equipamento-header mb-4">
+    <h2 class="mb-2">
+        <i class="fas fa-bolt me-2"></i>
+        Novo Grupo Gerador
+    </h2>
+    <p class="mb-0 opacity-75">
+        Cadastro do prontuário técnico do equipamento
+    </p>
+</div>
+
+<form method="POST">
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>
+            <i class="fas fa-building me-2"></i>
+            Cliente e Local
+        </strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <label class="form-label" for="cliente_id">
+                    Cliente *
+                </label>
+
+                <select
+                    id="cliente_id"
+                    name="cliente_id"
+                    class="form-select"
+                    required
+                >
+                    <option value="">Selecione...</option>
+
+                    {% for cliente in clientes %}
+                    <option
+                        value="{{ cliente.id }}"
+                        {% if form_data.get('cliente_id') == cliente.id|string %}
+                        selected
+                        {% endif %}
+                    >
+                        {{ cliente.nome_exibicao }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="unidade_id">
+                    Unidade / Planta
+                </label>
+
+                <select
+                    id="unidade_id"
+                    name="unidade_id"
+                    class="form-select"
+                >
+                    <option value="">Sem unidade específica</option>
+
+                    {% for unidade in unidades %}
+                    <option
+                        value="{{ unidade.id }}"
+                        data-cliente-id="{{ unidade.cliente_id }}"
+                        {% if form_data.get('unidade_id') == unidade.id|string %}
+                        selected
+                        {% endif %}
+                    >
+                        {{ unidade.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label" for="equipamento_id">
+                    Equipamento existente
+                </label>
+
+                <select
+                    id="equipamento_id"
+                    name="equipamento_id"
+                    class="form-select"
+                >
+                    <option value="">Não vincular</option>
+
+                    {% for equipamento in equipamentos %}
+                    <option
+                        value="{{ equipamento.id }}"
+                        data-cliente-id="{{ equipamento.cliente_id }}"
+                        {% if form_data.get('equipamento_id') == equipamento.id|string %}
+                        selected
+                        {% endif %}
+                    >
+                        {{ equipamento.nome_completo }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+        </div>
+
+        <div class="form-text mt-3">
+            Unidade e equipamento devem pertencer ao cliente selecionado.
+        </div>
+    </div>
+</div>
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>
+            <i class="fas fa-id-card me-2"></i>
+            Identificação do Grupo Gerador
+        </strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            {{ campo(
+                'fabricante_grupo',
+                'Fabricante do grupo'
+            ) }}
+
+            {{ campo(
+                'modelo',
+                'Modelo'
+            ) }}
+
+            {{ campo(
+                'numero_serie',
+                'Número de série'
+            ) }}
+
+            {{ campo(
+                'ano',
+                'Ano',
+                'number'
+            ) }}
+
+            {{ campo(
+                'fabricante_integrador',
+                'Fabricante / Integrador'
+            ) }}
+
+            {{ campo(
+                'local_instalado',
+                'Local instalado',
+                col='col-md-8'
+            ) }}
+
+            {{ campo(
+                'aplicacao',
+                'Aplicação',
+                col='col-md-6'
+            ) }}
+
+            {{ campo(
+                'regime_operacao',
+                'Regime de operação',
+                col='col-md-6'
+            ) }}
+
+            <div class="col-12">
+                <label
+                    class="form-label"
+                    for="descricao"
+                >
+                    Descrição / Identificação complementar
+                </label>
+
+                <textarea
+                    id="descricao"
+                    name="descricao"
+                    class="form-control"
+                    rows="2"
+                >{{ form_data.get('descricao', '') }}</textarea>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>
+            <i class="fas fa-bolt me-2"></i>
+            Dados Elétricos
+        </strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            {{ campo(
+                'potencia_standby_kva',
+                'Potência Standby (kVA)',
+                'number',
+                step='0.01'
+            ) }}
+
+            {{ campo(
+                'potencia_standby_kw',
+                'Potência Standby (kW)',
+                'number',
+                step='0.01'
+            ) }}
+
+            {{ campo(
+                'potencia_prime_kva',
+                'Potência Prime (kVA)',
+                'number',
+                step='0.01'
+            ) }}
+
+            {{ campo(
+                'potencia_prime_kw',
+                'Potência Prime (kW)',
+                'number',
+                step='0.01'
+            ) }}
+
+            {{ campo(
+                'tensao',
+                'Tensão nominal'
+            ) }}
+
+            {{ campo(
+                'numero_fases',
+                'Número de fases'
+            ) }}
+
+            {{ campo(
+                'frequencia_hz',
+                'Frequência (Hz)',
+                'number',
+                step='0.01'
+            ) }}
+
+            {{ campo(
+                'fator_potencia',
+                'Fator de potência',
+                'number',
+                step='0.01'
+            ) }}
+
+            {{ campo(
+                'corrente_nominal_a',
+                'Corrente nominal (A)',
+                'number',
+                step='0.01'
+            ) }}
+
+            {{ campo(
+                'rpm',
+                'Rotação (RPM)',
+                'number'
+            ) }}
+
+        </div>
+    </div>
+</div>
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>
+            <i class="fas fa-shield-alt me-2"></i>
+            Ligação e Proteção
+        </strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            {{ campo(
+                'ligacao',
+                'Ligação'
+            ) }}
+
+            {{ campo(
+                'neutro',
+                'Neutro'
+            ) }}
+
+            {{ campo(
+                'sistema_aterramento',
+                'Sistema de aterramento'
+            ) }}
+
+            {{ campo(
+                'disjuntor_descricao',
+                'Disjuntor / Proteção principal',
+                col='col-md-6'
+            ) }}
+
+            {{ campo(
+                'disjuntor_corrente_a',
+                'Corrente do disjuntor (A)',
+                'number',
+                step='0.01'
+            ) }}
+
+            {{ campo(
+                'disjuntor_capacidade_interrupcao_ka',
+                'Capacidade de interrupção (kA)',
+                'number',
+                step='0.01'
+            ) }}
+
+            {{ campo(
+                'disjuntor_numero_polos',
+                'Número de polos',
+                'number'
+            ) }}
+
+            {{ campo(
+                'protecao_diferencial',
+                'Proteção diferencial',
+                col='col-md-6'
+            ) }}
+
+        </div>
+    </div>
+</div>
+
+<div class="card main-card mb-4">
+    <div class="card-header">
+        <strong>
+            <i class="fas fa-clipboard-check me-2"></i>
+            Situação do Prontuário
+        </strong>
+    </div>
+
+    <div class="card-body">
+        <div class="row g-3">
+
+            <div class="col-md-4">
+                <label class="form-label" for="status">
+                    Status
+                </label>
+
+                <select
+                    id="status"
+                    name="status"
+                    class="form-select"
+                >
+                    {% set status_atual = form_data.get('status', 'ATIVO') %}
+
+                    {% for status in status_validos %}
+                    <option
+                        value="{{ status }}"
+                        {% if status_atual == status %}selected{% endif %}
+                    >
+                        {% if status == 'ATIVO' %}
+                            Ativo
+                        {% elif status == 'INATIVO' %}
+                            Inativo
+                        {% elif status == 'VENDIDO' %}
+                            Vendido
+                        {% elif status == 'SUBSTITUIDO' %}
+                            Substituído
+                        {% elif status == 'FORA_DE_OPERACAO' %}
+                            Fora de operação
+                        {% else %}
+                            {{ status }}
+                        {% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label" for="observacoes">
+                    Observações
+                </label>
+
+                <textarea
+                    id="observacoes"
+                    name="observacoes"
+                    class="form-control"
+                    rows="4"
+                >{{ form_data.get('observacoes', '') }}</textarea>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-end gap-2 mb-4">
+    <a
+        href="{{ url_for('geradores.listar') }}"
+        class="btn btn-outline-secondary"
+    >
+        <i class="fas fa-times me-1"></i>
+        Cancelar
+    </a>
+
+    <button
+        type="submit"
+        class="btn btn-primary"
+    >
+        <i class="fas fa-save me-1"></i>
+        Salvar Gerador
+    </button>
+</div>
+
+</form>
+
+{% endblock %}

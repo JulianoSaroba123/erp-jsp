@@ -1,0 +1,1724 @@
+{% extends "base.html" %}
+
+{% block title %}Ficha {{ gerador.codigo }} - {{ super() }}{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-d.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+
+<a href="{{ url_for('geradores.listar') }}">Geradores</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+
+<span class="current-page">{{ gerador.codigo }}</span>
+{% endblock %}
+
+{% block content %}
+
+<!-- G4-A9-RELATORIOS -->
+<div class="d-flex justify-content-end mb-3">
+<a class="btn btn-outline-primary"
+target="_blank" rel="noopener"
+href="{{ url_for('gerador_plano_ui.relatorio_gerador_g4', gerador_id=gerador.id) }}">
+<i class="fas fa-file-alt"></i>
+Relat&oacute;rios t&eacute;cnicos
+</a>
+</div>
+
+
+<div class="equipamento-header mb-4">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-3">
+                <i class="fas fa-cogs fa-2x"></i>
+
+                <div>
+                    <h2 class="mb-1">
+                        {{ gerador.codigo }}
+                    </h2>
+
+                    <div class="opacity-75">
+                        {{ gerador.fabricante_grupo or 'Fabricante não informado' }}
+                        {% if gerador.modelo %}
+                            · {{ gerador.modelo }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-info text-dark px-3 py-2">
+                {{ gerador.status|replace('_', ' ') }}
+            </span>
+
+            <a
+                href="{{ url_for('geradores.listar') }}"
+                class="btn btn-outline-secondary"
+            >
+                <i class="fas fa-arrow-left me-1"></i>
+                Voltar
+            </a>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-4" id="geradorTabs" role="tablist">
+
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#geral">
+            <i class="fas fa-info-circle me-1"></i>
+            Geral
+        </button>
+    </li>
+
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#motor">
+            <i class="fas fa-engine me-1"></i>
+            Motor
+        </button>
+    </li>
+
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#alternador">
+            <i class="fas fa-bolt me-1"></i>
+            Alternador
+        </button>
+    </li>
+
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#controladora">
+            <i class="fas fa-microchip me-1"></i>
+            Controladora
+        </button>
+    </li>
+
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#qta">
+            <i class="fas fa-random me-1"></i>
+            QTA / ATS
+        </button>
+    </li>
+
+
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#partida">
+            <i class="fas fa-car-battery me-1"></i>
+            Bateria / Carregador
+        </button>
+    </li>
+
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#consumiveis">
+            <i class="fas fa-filter me-1"></i>
+            Filtros e Consumíveis
+        </button>
+    </li>
+
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#plano">
+            <i class="fas fa-tools me-1"></i>
+            Plano
+        </button>
+    </li>
+
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#horimetro">
+            <i class="fas fa-clock me-1"></i>
+            Horímetro
+        </button>
+    </li>
+
+</ul>
+
+<div class="tab-content" id="geradorTabsContent">
+
+
+<div
+    class="tab-pane fade show active"
+    id="geral"
+    role="tabpanel"
+>
+
+    <div class="card main-card mb-4">
+        <div class="card-header">
+            <strong>
+                <i class="fas fa-id-card me-2"></i>
+                Identificação e Localização
+            </strong>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Código JSP</div>
+                    <strong>{{ gerador.codigo }}</strong>
+                </div>
+
+                <div class="col-md-5">
+                    <div class="text-muted small">Cliente</div>
+                    <strong>
+                        {{ gerador.cliente.nome_exibicao if gerador.cliente else '-' }}
+                    </strong>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Unidade / Planta</div>
+                    <strong>
+                        {{ gerador.unidade.nome if gerador.unidade else '-' }}
+                    </strong>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Fabricante do grupo</div>
+                    {{ gerador.fabricante_grupo or '-' }}
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Modelo</div>
+                    {{ gerador.modelo or '-' }}
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Número de série</div>
+                    {{ gerador.numero_serie or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Ano</div>
+                    {{ gerador.ano or '-' }}
+                </div>
+
+                <div class="col-md-5">
+                    <div class="text-muted small">Fabricante / Integrador</div>
+                    {{ gerador.fabricante_integrador or '-' }}
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Local instalado</div>
+                    {{ gerador.local_instalado or '-' }}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Aplicação</div>
+                    {{ gerador.aplicacao or '-' }}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Regime de operação</div>
+                    {{ gerador.regime_operacao or '-' }}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card main-card mb-4">
+        <div class="card-header">
+            <strong>
+                <i class="fas fa-bolt me-2"></i>
+                Dados Elétricos
+            </strong>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Standby</div>
+                    {{ gerador.potencia_standby_kva or '-' }} kVA
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Standby</div>
+                    {{ gerador.potencia_standby_kw or '-' }} kW
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Prime</div>
+                    {{ gerador.potencia_prime_kva or '-' }} kVA
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Prime</div>
+                    {{ gerador.potencia_prime_kw or '-' }} kW
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Tensão</div>
+                    {{ gerador.tensao or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Fases</div>
+                    {{ gerador.numero_fases or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Frequência</div>
+                    {{ gerador.frequencia_hz or '-' }} Hz
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Fator de potência</div>
+                    {{ gerador.fator_potencia or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Corrente nominal</div>
+                    {{ gerador.corrente_nominal_a or '-' }} A
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Rotação</div>
+                    {{ gerador.rpm or '-' }} RPM
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Ligação</div>
+                    {{ gerador.ligacao or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Neutro</div>
+                    {{ gerador.neutro or '-' }}
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Aterramento</div>
+                    {{ gerador.sistema_aterramento or '-' }}
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<div
+    class="tab-pane fade"
+    id="motor"
+    role="tabpanel"
+>
+
+    {% if motor %}
+
+    <div class="card main-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>
+                <i class="fas fa-cog me-2"></i>
+                Motor Diesel
+            </strong>
+
+            <a href="{{ url_for('geradores.editar_motor', gerador_id=gerador.id, motor_id=motor.id) }}"
+               class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-edit me-1"></i>
+                Editar Motor
+            </a>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Fabricante</div>
+                    <strong>{{ motor.fabricante or '-' }}</strong>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Modelo</div>
+                    <strong>{{ motor.modelo or '-' }}</strong>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Variante</div>
+                    {{ motor.variante or '-' }}
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Número de série</div>
+                    {{ motor.numero_serie or '-' }}
+                </div>
+
+                <div class="col-md-2">
+                    <div class="text-muted small">Cilindros</div>
+                    {{ motor.quantidade_cilindros or '-' }}
+                </div>
+
+                <div class="col-md-2">
+                    <div class="text-muted small">Cilindrada</div>
+                    {{ motor.cilindrada_l or '-' }} L
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Aspiração</div>
+                    {{ motor.aspiracao or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Turbo</div>
+                    {% if motor.turbo is sameas true %}
+                        Sim
+                    {% elif motor.turbo is sameas false %}
+                        Não
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Intercooler</div>
+                    {% if motor.intercooler is sameas true %}
+                        Sim
+                    {% elif motor.intercooler is sameas false %}
+                        Não
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Combustível</div>
+                    {{ motor.combustivel or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">RPM</div>
+                    {{ motor.rpm or '-' }}
+                </div>
+
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Potência</div>
+                    {{ motor.potencia or '-' }}
+                    {{ motor.potencia_unidade or '' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Capacidade de óleo</div>
+                    {{ motor.capacidade_oleo_l or '-' }} L
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Especificação do óleo</div>
+                    {{ motor.especificacao_oleo or '-' }}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Pressão normal do óleo</div>
+                    {{ motor.pressao_normal_oleo or '-' }}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Temperatura normal</div>
+                    {{ motor.temperatura_normal or '-' }}
+                </div>
+
+                {% if motor.observacoes %}
+                <div class="col-12">
+                    <div class="text-muted small">Observações</div>
+                    {{ motor.observacoes }}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+
+    <div class="alert alert-secondary">
+        <i class="fas fa-info-circle me-2"></i>
+        Motor ainda não cadastrado para este grupo gerador.
+    </div>
+
+    <a href="{{ url_for('geradores.novo_motor', gerador_id=gerador.id) }}"
+       class="btn btn-primary btn-sm mt-3">
+        <i class="fas fa-cog me-1"></i> Cadastrar Motor
+    </a>
+
+    {% endif %}
+
+</div>
+
+
+<div
+    class="tab-pane fade"
+    id="alternador"
+    role="tabpanel"
+>
+
+    {% if alternador %}
+
+    <div class="card main-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>
+                <i class="fas fa-bolt me-2"></i>
+                Alternador
+            </strong>
+
+    {% if alternador %}
+    <a href="{{ url_for('geradores.editar_alternador', gerador_id=gerador.id, alternador_id=alternador.id) }}"
+       class="btn btn-sm btn-outline-primary">
+        <i class="fas fa-edit me-1"></i>
+        Editar Alternador
+    </a>
+    {% endif %}
+</div>
+
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Fabricante</div>
+                    <strong>{{ alternador.fabricante or '-' }}</strong>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Modelo</div>
+                    <strong>{{ alternador.modelo or '-' }}</strong>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Número de série</div>
+                    {{ alternador.numero_serie or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Potência</div>
+                    {{ alternador.potencia_kva or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Tensão</div>
+                    {{ alternador.tensao or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Corrente</div>
+                    {{ alternador.corrente_a or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Frequência</div>
+                    {{ alternador.frequencia_hz or '-' }} Hz
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">RPM</div>
+                    {{ alternador.rpm or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Número de polos</div>
+                    {{ alternador.numero_polos or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Fator de potência</div>
+                    {{ alternador.fator_potencia or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Ligação</div>
+                    {{ alternador.ligacao or '-' }}
+                </div>
+
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Classe de isolação</div>
+                    {{ alternador.classe_isolacao or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Grau de proteção</div>
+                    {{ alternador.grau_protecao or '-' }}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Sistema de excitação</div>
+                    {{ alternador.sistema_excitacao or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Possui AVR</div>
+                    {% if alternador.possui_avr is sameas true %}
+                        Sim
+                    {% elif alternador.possui_avr is sameas false %}
+                        Não
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Fabricante AVR</div>
+                    {{ alternador.avr_fabricante or '-' }}
+                </div>
+
+                <div class="col-md-5">
+                    <div class="text-muted small">Modelo AVR</div>
+                    {{ alternador.avr_modelo or '-' }}
+                </div>
+
+                {% if alternador.observacoes %}
+                <div class="col-12">
+                    <div class="text-muted small">Observações</div>
+                    {{ alternador.observacoes }}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+
+    <div class="alert alert-secondary">
+        <i class="fas fa-info-circle me-2"></i>
+        Alternador ainda não cadastrado para este grupo gerador.
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+<div
+    class="tab-pane fade"
+    id="controladora"
+    role="tabpanel"
+>
+
+    {% if controladora %}
+
+    <div class="card main-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>
+                <i class="fas fa-microchip me-2"></i>
+                Controladora
+            </strong>
+            <a href="{{ url_for('geradores.editar_controladora', gerador_id=gerador.id, controladora_id=controladora.id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit me-1"></i> Editar Controladora</a>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Fabricante</div>
+                    <strong>{{ controladora.fabricante or '-' }}</strong>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Modelo</div>
+                    <strong>{{ controladora.modelo or '-' }}</strong>
+                </div>
+
+                <div class="col-md-2">
+                    <div class="text-muted small">Versão</div>
+                    {{ controladora.versao or '-' }}
+                </div>
+
+                <div class="col-md-2">
+                    <div class="text-muted small">Firmware</div>
+                    {{ controladora.firmware or '-' }}
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Tensão de alimentação</div>
+                    {{ controladora.tensao_alimentacao or '-' }}
+                </div>
+
+                <div class="col-md-8">
+                    <div class="text-muted small">Comunicação</div>
+                    {{ controladora.comunicacao or '-' }}
+                </div>
+
+                <div class="col-12">
+                    <div class="text-muted small">Configuração relevante</div>
+                    {{ controladora.configuracao_relevante or '-' }}
+                </div>
+
+                <div class="col-12">
+                    <div class="text-muted small">Referência do manual</div>
+                    {{ controladora.manual_referencia or '-' }}
+                </div>
+
+                {% if controladora.observacoes %}
+                <div class="col-12">
+                    <div class="text-muted small">Observações</div>
+                    {{ controladora.observacoes }}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+
+    <div class="alert alert-secondary">
+        <i class="fas fa-info-circle me-2"></i>
+        Controladora ainda não cadastrada para este grupo gerador.
+    </div>
+
+    <div class="mt-3">
+        <a href="{{ url_for('geradores.nova_controladora', gerador_id=gerador.id) }}"
+           class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>
+            Cadastrar Controladora
+        </a>
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+<div
+    class="tab-pane fade"
+    id="qta"
+    role="tabpanel"
+>
+
+    {% if qta %}
+
+    <div class="card main-card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>
+                <i class="fas fa-random me-2"></i>
+                QTA / ATS
+            </strong>
+
+            <a
+                href="{{ url_for('geradores.editar_qta', gerador_id=gerador.id, qta_id=qta.id) }}"
+                class="btn btn-sm btn-outline-primary"
+            >
+                <i class="fas fa-edit me-1"></i>
+                Editar QTA / ATS
+            </a>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Fabricante</div>
+                    <strong>{{ qta.fabricante or '-' }}</strong>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Modelo</div>
+                    <strong>{{ qta.modelo or '-' }}</strong>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Tipo</div>
+                    {{ qta.tipo|replace('_', ' ') if qta.tipo else '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Corrente</div>
+                    {{ qta.corrente_a or '-' }} A
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Número de polos</div>
+                    {{ qta.numero_polos or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Tensão</div>
+                    {{ qta.tensao or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Transferência</div>
+                    {{ qta.transferencia or '-' }}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Controle</div>
+                    {{ qta.controle or '-' }}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Intertravamento</div>
+                    {{ qta.intertravamento or '-' }}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Posição normal</div>
+                    {{ qta.posicao_normal or '-' }}
+                </div>
+
+                {% if qta.observacoes %}
+                <div class="col-12">
+                    <div class="text-muted small">Observações</div>
+                    {{ qta.observacoes }}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+
+    <div class="alert alert-secondary">
+        <i class="fas fa-info-circle me-2"></i>
+        QTA / ATS ainda não cadastrado para este grupo gerador.
+    </div>
+    <div class="mt-3"><a href="{{ url_for('geradores.novo_qta', gerador_id=gerador.id) }}" class="btn btn-primary"><i class="fas fa-plus me-1"></i> Cadastrar QTA / ATS</a></div>
+
+    {% endif %}
+
+</div>
+
+
+<div
+    class="tab-pane fade"
+    id="qta"
+    role="tabpanel"
+>
+
+    {% if qta %}
+
+    <div class="card main-card mb-4">
+        <div class="card-header">
+            <strong>
+                <i class="fas fa-random me-2"></i>
+                QTA / ATS
+            </strong>
+        </div>
+
+        <div class="card-body">
+            <div class="row g-3">
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Fabricante</div>
+                    <strong>{{ qta.fabricante or '-' }}</strong>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Modelo</div>
+                    <strong>{{ qta.modelo or '-' }}</strong>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">Tipo</div>
+                    {{ qta.tipo|replace('_', ' ') if qta.tipo else '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Corrente</div>
+                    {{ qta.corrente_a or '-' }} A
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Número de polos</div>
+                    {{ qta.numero_polos or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Tensão</div>
+                    {{ qta.tensao or '-' }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">Transferência</div>
+                    {{ qta.transferencia or '-' }}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Controle</div>
+                    {{ qta.controle or '-' }}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Intertravamento</div>
+                    {{ qta.intertravamento or '-' }}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="text-muted small">Posição normal</div>
+                    {{ qta.posicao_normal or '-' }}
+                </div>
+
+                {% if qta.observacoes %}
+                <div class="col-12">
+                    <div class="text-muted small">Observações</div>
+                    {{ qta.observacoes }}
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+
+    <div class="alert alert-secondary">
+        <i class="fas fa-info-circle me-2"></i>
+        QTA / ATS ainda não cadastrado para este grupo gerador.
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+<div
+    class="tab-pane fade"
+    id="partida"
+    role="tabpanel"
+>
+
+    <div class="row g-4">
+
+        <div class="col-lg-6">
+
+            <div class="card main-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>
+                        <i class="fas fa-car-battery me-2"></i>
+                        Bateria / Banco de Baterias
+                    </strong>
+
+                    {% if bateria %}
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('geradores.editar_bateria', gerador_id=gerador.id, bateria_id=bateria.id) }}"
+                           class="btn btn-sm btn-outline-primary">
+                            Editar
+                        </a>
+
+                        <form method="post"
+                              action="{{ url_for('geradores.excluir_bateria', gerador_id=gerador.id, bateria_id=bateria.id) }}"
+                              onsubmit="return confirm('Desativar esta bateria?');">
+                            <button class="btn btn-sm btn-outline-danger">
+                                Excluir
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-body">
+
+                    {% if bateria %}
+
+                    <div class="row g-3">
+
+                        <div class="col-md-4">
+                            <div class="text-muted small">Quantidade</div>
+                            {{ bateria.quantidade or '-' }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="text-muted small">Tensão nominal</div>
+                            {{ bateria.tensao_nominal_v or '-' }} V
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="text-muted small">Capacidade</div>
+                            {{ bateria.capacidade_ah or '-' }} Ah
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="text-muted small">Fabricante</div>
+                            {{ bateria.fabricante or '-' }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="text-muted small">Modelo</div>
+                            {{ bateria.modelo or '-' }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="text-muted small">Data de instalação</div>
+                            {% if bateria.data_instalacao %}
+                                {{ bateria.data_instalacao.strftime('%d/%m/%Y') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="text-muted small">Tensão repouso</div>
+                            {{ bateria.tensao_repouso_v or '-' }} V
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="text-muted small">Tensão partida</div>
+                            {{ bateria.tensao_partida_v or '-' }} V
+                        </div>
+
+                    </div>
+
+                    {% else %}
+
+                    <div class="text-muted mb-3">
+                        Nenhuma bateria cadastrada.
+                    </div>
+
+                    <a href="{{ url_for('geradores.nova_bateria', gerador_id=gerador.id) }}"
+                       class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>
+                        Cadastrar Bateria
+                    </a>
+
+                    {% endif %}
+
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="col-lg-6">
+
+            <div class="card main-card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>
+                        <i class="fas fa-plug me-2"></i>
+                        Carregador de Bateria
+                    </strong>
+
+                    {% if carregador %}
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('geradores.editar_carregador', gerador_id=gerador.id, carregador_id=carregador.id) }}"
+                           class="btn btn-sm btn-outline-primary">
+                            Editar
+                        </a>
+
+                        <form method="post"
+                              action="{{ url_for('geradores.excluir_carregador', gerador_id=gerador.id, carregador_id=carregador.id) }}"
+                              onsubmit="return confirm('Desativar este carregador?');">
+                            <button class="btn btn-sm btn-outline-danger">
+                                Excluir
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-body">
+
+                    {% if carregador %}
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <div class="text-muted small">Fabricante</div>
+                            {{ carregador.fabricante or '-' }}
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="text-muted small">Modelo</div>
+                            {{ carregador.modelo or '-' }}
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="text-muted small">Tensão nominal</div>
+                            {{ carregador.tensao_nominal_v or '-' }} V
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="text-muted small">Corrente nominal</div>
+                            {{ carregador.corrente_nominal_a or '-' }} A
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="text-muted small">Tensão medida</div>
+                            {{ carregador.tensao_medida_v or '-' }} V
+                        </div>
+
+                        {% if carregador.observacoes %}
+                        <div class="col-12">
+                            <div class="text-muted small">Observações</div>
+                            {{ carregador.observacoes }}
+                        </div>
+                        {% endif %}
+
+                    </div>
+
+                    {% else %}
+
+                    <div class="text-muted mb-3">
+                        Nenhum carregador cadastrado.
+                    </div>
+
+                    <a href="{{ url_for('geradores.novo_carregador', gerador_id=gerador.id) }}"
+                       class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>
+                        Cadastrar Carregador
+                    </a>
+
+                    {% endif %}
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div
+    class="tab-pane fade"
+    id="consumiveis"
+    role="tabpanel"
+>
+
+    {% set nomes_tipos = {
+        'FILTRO_OLEO': 'Filtro de óleo',
+        'FILTRO_COMBUSTIVEL': 'Filtro de combustível',
+        'PRE_FILTRO_COMBUSTIVEL': 'Pré-filtro de combustível',
+        'SEPARADOR_AGUA': 'Separador de água',
+        'FILTRO_AR_PRIMARIO': 'Filtro de ar primário',
+        'FILTRO_AR_SECUNDARIO': 'Filtro de ar secundário',
+        'FILTRO_BLOW_BY': 'Filtro blow-by',
+        'OLEO': 'Óleo lubrificante',
+        'LIQUIDO_ARREFECIMENTO': 'Líquido de arrefecimento',
+        'CORREIA': 'Correia',
+        'BATERIA': 'Bateria',
+        'OUTRO': 'Outro'
+    } %}
+
+    <div class="card main-card mb-4">
+
+        <div class="card-header d-flex justify-content-between align-items-center">
+
+            <strong>
+                <i class="fas fa-filter me-2"></i>
+                Filtros e Consumíveis
+            </strong>
+
+            <div class="d-flex align-items-center gap-2">
+
+                <span class="badge bg-info text-dark">
+                    {{ consumiveis|length }} item(ns)
+                </span>
+
+                <a
+                    href="{{ url_for('geradores.novo_consumivel', gerador_id=gerador.id) }}"
+                    class="btn btn-sm btn-primary"
+                >
+                    <i class="fas fa-plus me-1"></i>
+                    Adicionar
+                </a>
+
+            </div>
+
+        </div>
+
+        <div class="card-body">
+
+            {% if consumiveis %}
+
+            <div class="table-responsive">
+
+                <table class="table table-hover align-middle mb-0">
+
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Fabricante</th>
+                            <th>Referência</th>
+                            <th>Descrição</th>
+                            <th>Quantidade</th>
+                            <th>Produto</th>
+                            <th>Equivalentes</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in consumiveis %}
+
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ nomes_tipos.get(item.tipo, item.tipo)|replace('_', ' ') }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ item.fabricante_original or '-' }}
+                            </td>
+
+                            <td>
+                                {% if item.referencia_original %}
+                                    <code>{{ item.referencia_original }}</code>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ item.descricao or '-' }}
+                            </td>
+
+                            <td>
+                                {% if item.quantidade is not none %}
+                                    {{ item.quantidade }}
+                                    {{ item.unidade or '' }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+
+                            <td>
+
+                                {% if item.produto %}
+
+                                    <strong>
+                                        {{ item.produto.codigo_display }}
+                                    </strong>
+
+                                    <div class="small">
+                                        {{ item.produto.nome_display }}
+                                    </div>
+
+                                    {% if item.produto.controla_estoque %}
+
+                                    <div class="small text-muted">
+                                        Estoque:
+                                        {{ item.produto.estoque_atual or 0 }}
+                                        {{ item.produto.unidade_medida or '' }}
+                                    </div>
+
+                                    {% else %}
+
+                                    <div class="small text-muted">
+                                        Sem controle de estoque
+                                    </div>
+
+                                    {% endif %}
+
+                                {% else %}
+                                    -
+                                {% endif %}
+
+                            </td>
+
+                            <td style="min-width: 230px;">
+
+                                {% set equivalentes_item =
+                                    equivalentes_por_consumivel.get(item.id, [])
+                                %}
+
+                                {% if equivalentes_item %}
+
+                                    {% for equivalente in equivalentes_item %}
+
+                                    <div class="border rounded px-2 py-1 mb-2">
+
+                                        <div class="d-flex justify-content-between gap-2">
+
+                                            <div>
+                                                <strong>
+                                                    {{ equivalente.fabricante or 'Equivalente' }}
+                                                </strong>
+
+                                                <div>
+                                                    <code>{{ equivalente.referencia }}</code>
+                                                </div>
+
+                                                {% if equivalente.descricao %}
+                                                <div class="small text-muted">
+                                                    {{ equivalente.descricao }}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+
+                                            <div class="d-flex gap-1">
+
+                                                <a
+                                                    href="{{ url_for(
+                                                        'geradores.editar_equivalente',
+                                                        gerador_id=gerador.id,
+                                                        consumivel_id=item.id,
+                                                        equivalente_id=equivalente.id
+                                                    ) }}"
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    title="Editar equivalente"
+                                                >
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+
+                                                <form
+                                                    method="post"
+                                                    action="{{ url_for(
+                                                        'geradores.excluir_equivalente',
+                                                        gerador_id=gerador.id,
+                                                        consumivel_id=item.id,
+                                                        equivalente_id=equivalente.id
+                                                    ) }}"
+                                                    onsubmit="return confirm('Desativar este equivalente?');"
+                                                >
+                                                    <button
+                                                        type="submit"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        title="Excluir equivalente"
+                                                    >
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+
+                                    {% endfor %}
+
+                                {% else %}
+
+                                    <div class="small text-muted mb-2">
+                                        Nenhum equivalente cadastrado.
+                                    </div>
+
+                                {% endif %}
+
+                                <a
+                                    href="{{ url_for(
+                                        'geradores.novo_equivalente',
+                                        gerador_id=gerador.id,
+                                        consumivel_id=item.id
+                                    ) }}"
+                                    class="btn btn-sm btn-outline-success"
+                                >
+                                    <i class="fas fa-plus me-1"></i>
+                                    Equivalente
+                                </a>
+
+                            </td>
+
+                            <td class="text-end">
+
+                                <div class="d-flex justify-content-end gap-1">
+
+                                    <a
+                                        href="{{ url_for(
+                                            'geradores.editar_consumivel',
+                                            gerador_id=gerador.id,
+                                            consumivel_id=item.id
+                                        ) }}"
+                                        class="btn btn-sm btn-outline-primary"
+                                        title="Editar consumível"
+                                    >
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+
+                                    <form
+                                        method="post"
+                                        action="{{ url_for(
+                                            'geradores.excluir_consumivel',
+                                            gerador_id=gerador.id,
+                                            consumivel_id=item.id
+                                        ) }}"
+                                        onsubmit="return confirm('Desativar este filtro ou consumível e seus equivalentes?');"
+                                    >
+                                        <button
+                                            type="submit"
+                                            class="btn btn-sm btn-outline-danger"
+                                            title="Excluir consumível"
+                                        >
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+            <div class="text-center py-4">
+
+                <i class="fas fa-filter fa-2x text-muted mb-3"></i>
+
+                <div class="text-muted mb-3">
+                    Nenhum filtro ou consumível cadastrado para este grupo gerador.
+                </div>
+
+                <a
+                    href="{{ url_for(
+                        'geradores.novo_consumivel',
+                        gerador_id=gerador.id
+                    ) }}"
+                    class="btn btn-primary"
+                >
+                    <i class="fas fa-plus me-1"></i>
+                    Cadastrar primeiro item
+                </a>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+<div
+    class="tab-pane fade"
+    id="plano"
+    role="tabpanel"
+>
+
+    {% if planos_programados %}
+
+        {% for item in planos_programados %}
+<div class="d-flex gap-2 flex-wrap mb-2 justify-content-end">
+
+<a class="btn btn-sm btn-primary"
+href="{{ url_for('gerador_plano_ui.editar_programacao_g4', vinculo_id=item.vinculo.id) }}">
+Editar programa&ccedil;&atilde;o
+</a>
+
+<a class="btn btn-sm btn-outline-primary"
+href="{{ url_for('gerador_plano_ui.editar_plano_g4', plano_id=item.vinculo.plano_id) }}">
+Editar plano
+</a>
+
+</div>
+
+
+        {% set vinculo = item.vinculo %}
+        {% set plano_item = vinculo.plano %}
+        {% set programacao = item.programacao %}
+
+        <div class="card main-card mb-4">
+
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>
+                        <i class="fas fa-tools me-2"></i>
+                        {{ plano_item.nome }}
+                    </strong>
+
+                    <div class="small text-muted">
+                        {{ plano_item.codigo }}
+                        ·
+                        {{ plano_item.tipo|replace('_', ' ') }}
+                    </div>
+                </div>
+
+                {% if programacao.manutencao_necessaria %}
+                    <span class="badge bg-danger">
+                        MANUTENÇÃO NECESSÁRIA
+                    </span>
+                {% else %}
+                    <span class="badge bg-success">
+                        PROGRAMADO
+                    </span>
+                {% endif %}
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-3">
+
+                    <div class="col-md-3">
+                        <div class="text-muted small">
+                            Intervalo em horas
+                        </div>
+                        {% if plano_item.intervalo_horas is not none %}
+                            {{ plano_item.intervalo_horas }} h
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="text-muted small">
+                            Intervalo em meses
+                        </div>
+                        {% if plano_item.intervalo_meses is not none %}
+                            {{ plano_item.intervalo_meses }} mês(es)
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="text-muted small">
+                            Data base
+                        </div>
+                        {% if vinculo.data_base_programacao %}
+                            {{ vinculo.data_base_programacao.strftime('%d/%m/%Y') }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="text-muted small">
+                            Horímetro base
+                        </div>
+                        {% if vinculo.horimetro_base_programacao is not none %}
+                            {{ vinculo.horimetro_base_programacao }} h
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+
+
+                    <div class="col-md-3">
+                        <div class="text-muted small">
+                            Horas atuais
+                        </div>
+                        {% if programacao.horas_atuais is not none %}
+                            {{ programacao.horas_atuais }} h
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="text-muted small">
+                            Próximo horímetro
+                        </div>
+                        {% if programacao.horas_limite is not none %}
+                            {{ programacao.horas_limite }} h
+                        {% else %}
+                            -
+                        {% endif %}
+
+                        {% if programacao.vencida_por_horas %}
+                            <div class="text-danger small">
+                                Vencido por horímetro
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="text-muted small">
+                            Próxima data
+                        </div>
+                        {% if programacao.data_limite %}
+                            {{ programacao.data_limite.strftime('%d/%m/%Y') }}
+                        {% else %}
+                            -
+                        {% endif %}
+
+                        {% if programacao.vencida_por_data %}
+                            <div class="text-danger small">
+                                Vencido por data
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="text-muted small">
+                            Situação
+                        </div>
+
+                        {% if programacao.manutencao_necessaria %}
+                            <strong class="text-danger">
+                                Manutenção necessária
+                            </strong>
+                        {% else %}
+                            <strong class="text-success">
+                                Dentro da programação
+                            </strong>
+                        {% endif %}
+                    </div>
+
+                    {% if plano_item.descricao %}
+                    <div class="col-12">
+                        <div class="text-muted small">
+                            Descrição do plano
+                        </div>
+                        {{ plano_item.descricao }}
+                    </div>
+                    {% endif %}
+
+                    {% if vinculo.observacoes %}
+                    <div class="col-12">
+                        <div class="text-muted small">
+                            Observações do vínculo
+                        </div>
+                        {{ vinculo.observacoes }}
+                    </div>
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endfor %}
+
+    {% else %}
+
+        <div class="alert alert-secondary">
+            <i class="fas fa-info-circle me-2"></i>
+            Nenhum plano de manutenção ativo vinculado a este grupo gerador.
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<div
+    class="tab-pane fade"
+    id="horimetro"
+    role="tabpanel"
+>
+
+
+<!-- G4-A7-REGISTRAR-HORIMETRO -->
+<div class="d-flex justify-content-end mb-3">
+    <a class="btn btn-primary"
+       href="{{ url_for('gerador_plano_ui.horimetro_g4', gerador_id=gerador.id) }}">
+        <i class="fas fa-plus-circle me-1"></i>
+        Registrar leitura
+    </a>
+</div>
+
+{% if ultimo_horimetro %}
+
+    <div class="card main-card mb-4">
+
+        <div class="card-header">
+            <strong>
+                <i class="fas fa-clock me-2"></i>
+                Última Leitura do Horímetro
+            </strong>
+        </div>
+
+        <div class="card-body">
+
+            <div class="row g-3">
+
+                <div class="col-md-3">
+                    <div class="text-muted small">
+                        Leitura atual
+                    </div>
+                    <strong>
+                        {{ ultimo_horimetro.leitura_atual }} h
+                    </strong>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">
+                        Leitura anterior
+                    </div>
+
+                    {% if ultimo_horimetro.leitura_anterior is not none %}
+                        {{ ultimo_horimetro.leitura_anterior }} h
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">
+                        Horas acumuladas
+                    </div>
+                    <strong>
+                        {{ ultimo_horimetro.horas_acumuladas }} h
+                    </strong>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="text-muted small">
+                        Tipo de evento
+                    </div>
+                    {{ ultimo_horimetro.tipo_evento|replace('_', ' ') }}
+                </div>
+
+
+                <div class="col-md-4">
+                    <div class="text-muted small">
+                        Data da leitura
+                    </div>
+                    {{ ultimo_horimetro.data_leitura.strftime('%d/%m/%Y %H:%M') }}
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">
+                        Responsável
+                    </div>
+                    {{ ultimo_horimetro.responsavel }}
+                </div>
+
+                <div class="col-md-4">
+                    <div class="text-muted small">
+                        Usuário ERP
+                    </div>
+
+                    {% if ultimo_horimetro.usuario %}
+                        {{ ultimo_horimetro.usuario.nome or ultimo_horimetro.usuario_id }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </div>
+
+                {% if ultimo_horimetro.justificativa %}
+                <div class="col-12">
+                    <div class="text-muted small">
+                        Justificativa do evento
+                    </div>
+                    {{ ultimo_horimetro.justificativa }}
+                </div>
+                {% endif %}
+
+                {% if ultimo_horimetro.observacoes %}
+                <div class="col-12">
+                    <div class="text-muted small">
+                        Observações
+                    </div>
+                    {{ ultimo_horimetro.observacoes }}
+                </div>
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% else %}
+
+    <div class="alert alert-secondary">
+        <i class="fas fa-info-circle me-2"></i>
+        Nenhuma leitura de horímetro registrada para este grupo gerador.
+    </div>
+
+    {% endif %}
+
+</div>
+
+
+</div>
+
+{% endblock %}
