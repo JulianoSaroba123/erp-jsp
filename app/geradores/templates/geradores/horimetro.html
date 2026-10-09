@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Horimetro - Geradores{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+<h3>Controle de Hor&iacute;metro</h3>
+
+<a class="btn btn-outline-secondary mb-3"
+   href="{{ url_for('gerador_plano_ui.vincular_plano_g4') }}">
+  Voltar aos planos vinculados
+</a>
+
+<div class="card mb-4">
+<div class="card-body">
+
+<h5>Selecionar grupo gerador</h5>
+
+<form method="GET">
+<div class="row g-2 align-items-end">
+<div class="col-md-8">
+<select name="gerador_id" class="form-select" required>
+<option value="">Selecione</option>
+{% for g in geradores %}
+<option value="{{ g.id }}"
+ {% if gerador and gerador.id == g.id %}selected{% endif %}>
+{{ g.codigo }}
+</option>
+{% endfor %}
+</select>
+</div>
+<div class="col-md-4">
+<button type="submit" class="btn btn-primary">
+Consultar
+</button>
+</div>
+</div>
+</form>
+
+</div>
+</div>
+
+{% if gerador %}
+<div class="card mb-4">
+<div class="card-body">
+
+<h5>Nova leitura - {{ gerador.codigo }}</h5>
+
+<form method="POST">
+<input type="hidden" name="csrf_token_g4"
+       value="{{ csrf_token_g4 }}">
+<input type="hidden" name="gerador_id"
+       value="{{ gerador.id }}">
+
+<div class="row g-3">
+
+<div class="col-md-6">
+<label class="form-label">Leitura atual (h)</label>
+<input type="number" step="0.01" min="0"
+       name="leitura_atual"
+       class="form-control" required>
+</div>
+
+<div class="col-md-6">
+<label class="form-label">Respons&aacute;vel</label>
+<input type="text" name="responsavel"
+       class="form-control" required>
+</div>
+
+<div class="col-12">
+<label class="form-label">Observa&ccedil;&otilde;es</label>
+<textarea name="observacoes"
+          class="form-control" rows="2"></textarea>
+</div>
+
+</div>
+
+<p class="text-muted mt-3">
+A leitura ser&aacute; registrada com a data definida
+pelo service G3. O acumulado &eacute; calculado
+pelo backend.
+</p>
+
+<button type="submit" class="btn btn-primary">
+Registrar leitura
+</button>
+</form>
+
+</div>
+</div>
+
+<div class="card">
+<div class="card-body">
+<h5>Hist&oacute;rico de leituras</h5>
+
+<div class="table-responsive">
+<table class="table table-striped">
+<thead>
+<tr>
+<th>Data</th>
+<th>Horas acumuladas</th>
+<th>Respons&aacute;vel</th>
+<th>Evento</th>
+</tr>
+</thead>
+<tbody>
+{% for leitura in leituras %}
+<tr>
+<td>{{ leitura.data_leitura }}</td>
+<td>{{ leitura.horas_acumuladas }}</td>
+<td>{{ leitura.responsavel }}</td>
+<td>{{ leitura.tipo_evento }}</td>
+</tr>
+{% else %}
+<tr>
+<td colspan="4">Nenhuma leitura registrada.</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+</div>
+</div>
+{% endif %}
+</div>
+{% endblock %}

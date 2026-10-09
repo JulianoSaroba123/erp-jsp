@@ -18,6 +18,17 @@
 
 {% block content %}
 
+<!-- G4-A9-RELATORIOS -->
+<div class="d-flex justify-content-end mb-3">
+<a class="btn btn-outline-primary"
+target="_blank" rel="noopener"
+href="{{ url_for('gerador_plano_ui.relatorio_gerador_g4', gerador_id=gerador.id) }}">
+<i class="fas fa-file-alt"></i>
+Relat&oacute;rios t&eacute;cnicos
+</a>
+</div>
+
+
 <div class="equipamento-header mb-4">
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
         <div>
@@ -1383,6 +1394,20 @@
     {% if planos_programados %}
 
         {% for item in planos_programados %}
+<div class="d-flex gap-2 flex-wrap mb-2 justify-content-end">
+
+<a class="btn btn-sm btn-primary"
+href="{{ url_for('gerador_plano_ui.editar_programacao_g4', vinculo_id=item.vinculo.id) }}">
+Editar programa&ccedil;&atilde;o
+</a>
+
+<a class="btn btn-sm btn-outline-primary"
+href="{{ url_for('gerador_plano_ui.editar_plano_g4', plano_id=item.vinculo.plano_id) }}">
+Editar plano
+</a>
+
+</div>
+
 
         {% set vinculo = item.vinculo %}
         {% set plano_item = vinculo.plano %}
@@ -1569,7 +1594,17 @@
     role="tabpanel"
 >
 
-    {% if ultimo_horimetro %}
+
+<!-- G4-A7-REGISTRAR-HORIMETRO -->
+<div class="d-flex justify-content-end mb-3">
+    <a class="btn btn-primary"
+       href="{{ url_for('gerador_plano_ui.horimetro_g4', gerador_id=gerador.id) }}">
+        <i class="fas fa-plus-circle me-1"></i>
+        Registrar leitura
+    </a>
+</div>
+
+{% if ultimo_horimetro %}
 
     <div class="card main-card mb-4">
 

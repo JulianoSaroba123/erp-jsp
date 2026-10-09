@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relat&oacute;rio T&eacute;cnico - {{ gerador.codigo }}</title>
+<style>
+/* G4-A14 | Padrao de Propostas e Ordens de Servico JSP */
+:root {
+    --navy: #163a5c;
+    --navy-deep: #082b55;
+    --navy-medium: #24587d;
+    --orange: #f6a51b;
+    --border: #d6e0e9;
+    --surface: #f6f8fb;
+    --text: #243544;
+    --muted: #627487;
+}
+* { box-sizing: border-box; }
+html { background: #eef2f6; }
+body {
+    margin: 0;
+    font: 12px/1.4 Arial, Helvetica, sans-serif;
+    color: var(--text);
+    background: #eef2f6;
+}
+.toolbar {
+    background: #fff;
+    padding: 13px 22px;
+    border-bottom: 1px solid var(--border);
+}
+.toolbar form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+.toolbar label { font-weight: 700; color: var(--navy); }
+.toolbar select, .toolbar button, .toolbar .botao {
+    min-height: 35px;
+    padding: 8px 13px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    font: 12px Arial, sans-serif;
+}
+.toolbar button {
+    color: #fff;
+    background: var(--navy);
+    border-color: var(--navy);
+    cursor: pointer;
+}
+.toolbar .botao {
+    color: var(--navy);
+    background: #fff;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+.pagina {
+    width: 210mm;
+    max-width: calc(100% - 24px);
+    padding: 12mm;
+    margin: 22px auto;
+    background: #fff;
+    box-shadow: 0 2px 14px rgba(25,50,80,.1);
+}
+.cabecalho {
+    margin-bottom: 6mm;
+}
+.papel-timbrado {
+    width: 100%;
+    display: table;
+    table-layout: fixed;
+    border-collapse: collapse;
+    margin: 0;
+    border: 0;
+}
+.papel-timbrado td {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+    vertical-align: middle;
+}
+.papel-timbrado .logo-celula { width: 29mm; }
+.logo-original {
+    display: block;
+    width: 24mm;
+    height: 24mm;
+    object-fit: contain;
+}
+.papel-timbrado .identidade-celula { padding-left: 4mm !important; }
+.bloco-identidade {
+    background: #edf4fc;
+    border-radius: 5px;
+    padding: 3mm 4mm;
+    text-align: center;
+}
+.nome-empresa {
+    color: var(--navy);
+    font-size: 15pt;
+    font-weight: 800;
+    letter-spacing: -.3px;
+    line-height: 1.2;
+    margin-bottom: 2mm;
+}
+.dados-empresa {
+    font-size: 8.2pt;
+    line-height: 1.35;
+    color: #455569;
+}
+.linha-cabecalho {
+    margin-top: 4mm;
+    border-bottom: 2px solid var(--navy);
+}
+h1 {
+    font-size: 15pt;
+    text-align: center;
+    color: var(--navy-deep);
+    margin: 5mm 0 3mm;
+    line-height: 1.24;
+    font-weight: 800;
+}
+.meta {
+    border: 1px solid var(--navy);
+    border-radius: 5px;
+    background: #e8f1fb;
+    text-align: center;
+    color: var(--navy-deep);
+    font-size: 8.8pt;
+    line-height: 1.5;
+    padding: 2.5mm 3mm;
+    margin: 0 0 1mm;
+}
+.meta span { display: inline-block; margin: 0 2mm; }
+.secao-tecnica {
+    border: 1px solid #b9cadb;
+    border-radius: 4px;
+    margin: 0 0 5mm;
+    padding: 0;
+    background: #fff;
+    break-inside: auto;
+    page-break-inside: auto;
+}
+.titulo-secao {
+    display: flex;
+    align-items: center;
+    min-height: 12mm;
+    margin: 0;
+    padding: 2mm 3mm;
+    font-size: 11pt;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(110deg, #082d5c, #245284);
+    break-after: avoid;
+    page-break-after: avoid;
+}
+.numero-secao {
+    display: inline-flex;
+    width: 10mm;
+    min-width: 10mm;
+    height: 8mm;
+    align-items: center;
+    justify-content: center;
+    margin-right: 3mm;
+    border-radius: 3px;
+    background: var(--orange);
+    color: #fff;
+    font-size: 10pt;
+    font-weight: 800;
+}
+.conteudo-secao { padding: 3mm; }
+.registro {
+    margin: 0 0 3mm;
+    break-inside: auto;
+    page-break-inside: auto;
+}
+.registro:last-child { margin-bottom: 0; }
+h3 {
+    margin: 3mm 0 2mm;
+    background: #eaf2f9;
+    border-left: 3px solid var(--orange);
+    padding: 2mm 3mm;
+    color: var(--navy);
+    font-size: 9pt;
+    break-after: avoid;
+    page-break-after: avoid;
+}
+.dados-tecnicos {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    break-inside: auto;
+    page-break-inside: auto;
+}
+.dados-tecnicos tbody { break-inside: auto; }
+.dados-tecnicos tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+}
+.dados-tecnicos td {
+    border: 1px solid var(--border);
+    padding: 2mm 2.5mm;
+    text-align: left;
+    vertical-align: top;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    font-size: 9pt;
+    line-height: 1.25;
+}
+.dados-tecnicos td:first-child {
+    width: 36%;
+    background: var(--surface);
+    font-size: 8.3pt;
+    font-weight: 700;
+    color: #38516a;
+}
+.vazio {
+    margin: 0;
+    padding: 2mm 0;
+    color: var(--muted);
+    font-size: 9pt;
+    font-style: italic;
+}
+.aviso {
+    color: #814e08;
+    background: #fff4dd;
+    border-left: 3px solid var(--orange);
+    margin: 0 0 3mm;
+    padding: 2mm 3mm;
+    font-size: 9pt;
+}
+.rodape {
+    margin-top: 7mm;
+    padding-top: 3mm;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--muted);
+    font-size: 8pt;
+    line-height: 1.4;
+}
+.rodape strong { color: var(--navy); }
+@page {
+    size: A4 portrait;
+    margin: 12mm 12mm 17mm;
+    @bottom-center {
+        content: "JSP | Relatorio tecnico " counter(page) " / " counter(pages);
+        color: #5f6f7a;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 8pt;
+    }
+}
+@media print {
+    html, body { background: #fff !important; }
+    .toolbar { display: none !important; }
+    .pagina {
+        margin: 0;
+        padding: 0;
+        max-width: none;
+        width: auto;
+        box-shadow: none;
+    }
+    .cabecalho { break-inside: avoid; page-break-inside: avoid; }
+    .secao-tecnica, .conteudo-secao, .registro, .dados-tecnicos {
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+    }
+    .titulo-secao, h3 { break-after: avoid; page-break-after: avoid; }
+    .dados-tecnicos tr { break-inside: avoid; page-break-inside: avoid; }
+    .titulo-secao, .numero-secao, .bloco-identidade, .meta {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+}
+</style>
+</head>
+<body>
+<div class="toolbar">
+    <form method="GET">
+        <label for="secao">Tipo de relat&oacute;rio:</label>
+        <select name="secao" id="secao">
+            <option value="todas" {% if secao_atual == 'todas' %}selected{% endif %}>Relat&oacute;rio Geral Completo</option>
+            {% for codigo, titulo in opcoes %}
+            <option value="{{ codigo }}" {% if secao_atual == codigo %}selected{% endif %}>{{ titulo }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Gerar relat&oacute;rio</button>
+        <button type="button" onclick="window.print()">Imprimir / Salvar PDF</button>
+        <a class="botao" href="{{ url_for('geradores.ficha', gerador_id=gerador.id) }}">Voltar &agrave; ficha</a>
+    </form>
+</div>
+
+<main class="pagina">
+    <header class="cabecalho">
+        <table class="papel-timbrado" role="presentation"><tr>
+            <td class="logo-celula">
+    <!-- G4-A16: Logo dinamica das configuracoes -->
+    {% if config and config.logo_base64 and config.logo_base64.startswith('data:image/') %}
+    <img class="logo-original"
+         src="{{ config.logo_base64 }}"
+         alt="Logomarca JSP">
+    {% else %}
+    <img class="logo-original"
+         src="{{ url_for('static', filename='img/JSP_relatorios_oficial.png') }}"
+         alt="Logomarca JSP">
+    {% endif %}
+</td>
+            <td class="identidade-celula">
+                <div class="bloco-identidade">
+                    <div class="nome-empresa">JSP EL&Eacute;TRICA INDUSTRIAL &amp; SOLAR</div>
+                    <div class="dados-empresa">
+                        CNPJ: 66.298.788/0001-72<br>
+                        INDALECIO COSTA, 890 - CECAP - TIET&Ecirc;/SP - CEP 18530170<br>
+                        Tel: (15) 99670-2036<br>
+                        E-mail: atendimento@jspeletricaind.com.br<br>
+                        Inscri&ccedil;&atilde;o Estadual: 687.290.650.117
+                    </div>
+                </div>
+            </td>
+        </tr></table>
+        <div class="linha-cabecalho"></div>
+        <h1>RELAT&Oacute;RIO T&Eacute;CNICO DE GRUPO GERADOR</h1>
+        <div class="meta">
+            <span><strong>Equipamento:</strong> {{ gerador.codigo }}</span>
+            <span><strong>Emiss&atilde;o:</strong> {{ gerado_em.strftime('%d/%m/%Y %H:%M') }}</span>
+            <span><strong>Modalidade:</strong> {% if secao_atual == 'todas' %}Geral completo{% else %}Por se&ccedil;&atilde;o{% endif %}</span>
+        </div>
+    </header>
+
+    {% for secao in secoes %}
+    <section class="secao-tecnica">
+        <h2 class="titulo-secao"><span class="numero-secao">{{ '%02d'|format(loop.index) }}</span><span>{{ secao.titulo }}</span></h2>
+        <div class="conteudo-secao">
+            {% if secao.aviso %}
+            <p class="aviso">{{ secao.aviso }}</p>
+            {% endif %}
+
+            {% for registro in secao.registros %}
+            <div class="registro">
+                {% if secao.registros|length > 1 %}
+                <h3>Registro {{ loop.index }}</h3>
+                {% endif %}
+                <table class="dados-tecnicos"><tbody>
+                    {% for campo, valor in registro.campos %}
+                    <tr><td>{{ campo }}</td><td>{{ valor }}</td></tr>
+                    {% endfor %}
+                </tbody></table>
+            </div>
+            {% else %}
+            {% if not secao.aviso %}
+            <p class="vazio">Nenhum registro dispon&iacute;vel nesta se&ccedil;&atilde;o.</p>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+
+    <footer class="rodape">
+        <strong>JSP EL&Eacute;TRICA INDUSTRIAL &amp; SOLAR</strong><br>
+        Relat&oacute;rio extra&iacute;do dos registros do ERP JSP. As informa&ccedil;&otilde;es refletem o cadastro do equipamento
+        e n&atilde;o substituem laudo t&eacute;cnico ou responsabilidade t&eacute;cnica profissional.
+    </footer>
+</main>
+</body>
+</html>
