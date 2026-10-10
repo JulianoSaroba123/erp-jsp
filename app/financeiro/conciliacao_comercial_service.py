@@ -57,6 +57,14 @@ def _resumo_vinculos(lancamentos):
     }
 
 
+def _valores_divergentes(lancamentos, valor_documento):
+    """Sinaliza diferença de composição sem presumir dívida."""
+    if not lancamentos:
+        return False
+    total = _resumo_vinculos(lancamentos)["total"]
+    return abs(total - dinheiro(valor_documento)) > Decimal("0.01")
+
+
 def _candidatos_manuais(codigo, cliente_id, lancamentos):
     """Sinal de conferência; nunca assume que um documento foi pago."""
     return [
@@ -153,17 +161,21 @@ def montar_conciliacao(propostas, pedidos, ordens, lancamentos, parcelas=(),
         aprovado = _status(p) == "aprovada"
         precisa = aprovado and dinheiro(p.valor_total) > 0
         sem = precisa and not vinculos
+        valor_divergente = precisa and _valores_divergentes(vinculos, p.valor_total)
         obs = "Recebíveis diretamente vinculados à proposta ou à OS associada."
         if sem:
             obs = "Sem vínculo financeiro identificável. Conferir pagamentos manuais e histórico antes de lançar."
             if not parcelas_da_prop[p.id]:
                 obs += " Também não há parcelas financeiras cadastradas."
+        elif valor_divergente:
+            obs = "Valor comercial diferente da soma dos recebíveis relacionados. Conferir parcelas, descontos, juros e lançamentos históricos."
         elif not aprovado:
             obs = "Proposta não aprovada: não exige recebível automático."
+        revisar = bool(sem or valor_divergente)
         acrescentar(
             "proposta", p, vinculos=vinculos,
-            situacao_nome="revisar" if sem else ("vinculado" if vinculos else "em_andamento"),
-            observacao=obs, alerta=sem,
+            situacao_nome="revisar" if revisar else ("vinculado" if vinculos else "em_andamento"),
+            observacao=obs, alerta=revisar,
             relacionados=(
                 [("Pedido", x.numero, "pedido", x.id) for x in pedidos_associados]
                 + [("OS", x.numero, "os", x.id) for x in os_associadas]
@@ -193,12 +205,19 @@ def montar_conciliacao(propostas, pedidos, ordens, lancamentos, parcelas=(),
         else:
             vinculos = list(vinculos_diretos)
             sem = _status(ped) == "concluido" and dinheiro(ped.valor_total) > 0 and not vinculos
-            nome = "revisar" if sem else (
+            valor_divergente = (
+                _status(ped) == "concluido"
+                and _valores_divergentes(vinculos, ped.valor_total)
+            )
+            nome = "revisar" if sem or valor_divergente else (
                 "vinculado" if vinculos else "em_andamento"
             )
             obs = (
                 "Pedido direto concluído sem recebível vinculado. Conferir antes de lançar."
-                if sem else "Pedido direto: gera recebível ao concluir, não ao confirmar."
+                if sem else
+                "Valor do pedido diferente do recebível vinculado. Conferir alterações ou encargos."
+                if valor_divergente else
+                "Pedido direto: gera recebível ao concluir, não ao confirmar."
             )
             relacionados = []
         acrescentar(
@@ -215,11 +234,17 @@ def montar_conciliacao(propostas, pedidos, ordens, lancamentos, parcelas=(),
         concluida = _status(os) in {"concluida", "finalizada"}
         comercial = str(getattr(os, "tipo_os", "comercial") or "comercial").lower() != "operacional"
         sem = concluida and comercial and dinheiro(os.valor_total) > 0 and not vinculos
-        nome = "revisar" if sem else ("vinculado" if vinculos else "em_andamento")
+        valor_divergente = (
+            concluida and comercial
+            and _valores_divergentes(vinculos, os.valor_total)
+        )
+        nome = "revisar" if sem or valor_divergente else ("vinculado" if vinculos else "em_andamento")
         if not comercial:
             obs = "OS operacional: não tratar como cobrança automática."
         elif sem:
             obs = "OS comercial concluída sem recebível vinculado. Conferir histórico e lançamentos manuais."
+        elif valor_divergente:
+            obs = "Soma dos recebíveis vinculados difere do valor comercial da OS. Conferir parcelas e histórico."
         elif p:
             obs = "OS originada da proposta; conferir recebíveis na proposta e vínculo na OS."
         else:
@@ -227,7 +252,7 @@ def montar_conciliacao(propostas, pedidos, ordens, lancamentos, parcelas=(),
         relacionados = [("Proposta", p.codigo, "proposta", p.id)] if p else []
         acrescentar(
             "os", os, vinculos=vinculos, situacao_nome=nome,
-            observacao=obs, alerta=sem, relacionados=relacionados,
+            observacao=obs, alerta=bool(sem or valor_divergente), relacionados=relacionados,
         )
 
     totais = {
