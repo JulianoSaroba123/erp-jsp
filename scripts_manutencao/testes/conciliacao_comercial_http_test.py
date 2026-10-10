@@ -31,7 +31,15 @@ def app_teste():
             ativo=True, email_confirmado=True, primeiro_login=False,
         )
         admin.set_senha("SenhaTeste123!")
-        db.session.add(admin)
+        colaborador = Usuario(
+            nome="Colaborador Conciliacao",
+            usuario="colaborador_conciliacao_teste",
+            email="colaborador_conciliacao_teste@example.com",
+            tipo_usuario="colaborador", ativo=True,
+            email_confirmado=True, primeiro_login=False,
+        )
+        colaborador.set_senha("SenhaTeste123!")
+        db.session.add_all([admin, colaborador])
         db.session.commit()
     yield app
     with app.app_context():
@@ -127,3 +135,15 @@ def test_menu_financeiro_exibe_conciliacao_para_admin(app_teste):
     resp = client.get("/dashboard")
     assert resp.status_code == 200
     assert 'href="/financeiro/conciliacao-comercial"' in resp.get_data(as_text=True)
+
+
+def test_colaborador_nao_acessa_painel_financeiro(app_teste):
+    client = app_teste.test_client()
+    resposta = client.post("/auth/login", data={
+        "identificador": "colaborador_conciliacao_teste",
+        "senha": "SenhaTeste123!",
+    }, follow_redirects=False)
+    assert resposta.status_code == 302
+    acesso = client.get("/financeiro/conciliacao-comercial", follow_redirects=False)
+    assert acesso.status_code in {302, 403}
+    assert "Conciliação Comercial → Financeiro" not in acesso.get_data(as_text=True)
