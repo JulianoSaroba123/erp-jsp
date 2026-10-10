@@ -239,3 +239,30 @@ def test_servico_nao_usa_escrita_orm():
         "db.session.delete(", "db.session.execute(text(",
     ]:
         assert proibido not in codigo
+
+
+def test_proposta_com_valor_financeiro_divergente_requer_revisao(service):
+    result = montar(
+        service,
+        propostas=[doc("proposta", 1, status="aprovada", valor="200.00")],
+        lans=[lan(10, proposta_id=1, valor="100.00")],
+    )
+    assert linha(result, "proposta")["situacao"] == "revisar"
+
+
+def test_os_concluida_com_valor_financeiro_divergente_requer_revisao(service):
+    result = montar(
+        service,
+        ordens=[doc("os", 1, status="concluida", valor="200.00")],
+        lans=[lan(10, os_id=1, valor="150.00")],
+    )
+    assert linha(result, "os")["situacao"] == "revisar"
+
+
+def test_pedido_direto_concluido_com_valor_divergente(service):
+    result = montar(
+        service,
+        pedidos=[doc("pedido", 1, status="CONCLUIDO", valor="250.00")],
+        lans=[lan(10, pedido_id=1, valor="100.00")],
+    )
+    assert linha(result, "pedido")["situacao"] == "revisar"
