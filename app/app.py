@@ -946,6 +946,10 @@ def register_blueprints(app):
     # Blueprint financeiro
     from app.financeiro.financeiro_routes import bp_financeiro
     app.register_blueprint(bp_financeiro, url_prefix='/financeiro')
+
+    # Conciliação Comercial x Financeiro: apenas leitura, permissão financeira.
+    from app.financeiro.conciliacao_comercial_routes import bp_conciliacao_comercial
+    app.register_blueprint(bp_conciliacao_comercial, url_prefix='/financeiro')
     
     # Blueprint NFS-e
     from app.financeiro.nfse_routes import bp_nfse
