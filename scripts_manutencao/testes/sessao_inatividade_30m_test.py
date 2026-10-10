@@ -43,13 +43,13 @@ def cenario():
     )
 
     login_manager = LoginManager(app)
-    login_manager.login_view = "login"
+    login_manager.login_view = "auth.login"
 
     @login_manager.user_loader
     def obter_usuario(user_id):
         return UsuarioFalso(user_id)
 
-    @app.route("/auth/login", methods=["GET", "POST"], endpoint="login")
+    @app.route("/auth/login", methods=["GET", "POST"], endpoint="auth.login")
     def login():
         if request.method == "POST":
             login_user(UsuarioFalso(), remember=False)
@@ -66,7 +66,7 @@ def cenario():
     @login_required
     def logout():
         idle.expire_idle_session()
-        return redirect(url_for("login"))
+        return redirect(url_for("auth.login"))
 
     @app.route("/private")
     @login_required
