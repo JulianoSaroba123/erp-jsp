@@ -104,6 +104,10 @@ def create_app(config_name=None):
     from app.auth.idle_session import init_idle_session
     init_idle_session(app)
 
+    # Favicon atualizado pela logo em Configuracoes do Sistema.
+    from app.configuracao.favicon_dinamico import init_favicon_dinamico
+    init_favicon_dinamico(app)
+
     # Catraca global do perfil Colaborador.
     # Regra de whitelist: qualquer endpoint fora da operação própria é bloqueado.
     from flask_login import current_user
