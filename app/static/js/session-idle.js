@@ -106,6 +106,17 @@
   });
   document.addEventListener("visibilitychange", tick);
   window.addEventListener("focus", tick);
+  // Nova navegacao autenticada tambem renova o relogio das demais abas.
+  if (channel) channel.postMessage({ action: "renewed", expiresAt });
+
+  // Logout manual em uma aba bloqueia imediatamente as demais abas.
+  document.addEventListener("click", (event) => {
+    const link = event.target.closest && event.target.closest("a[href]");
+    if (link && new URL(link.href, location.href).pathname === "/auth/logout") {
+      if (channel) channel.postMessage({ action: "logout" });
+    }
+  });
+
   setInterval(tick, 1000);
   tick();
 })();
