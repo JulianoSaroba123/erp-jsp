@@ -100,6 +100,10 @@ def create_app(config_name=None):
     # Registra blueprints
     register_blueprints(app)
 
+    # Controle central de expiracao por inatividade.
+    from app.auth.idle_session import init_idle_session
+    init_idle_session(app)
+
     # Catraca global do perfil Colaborador.
     # Regra de whitelist: qualquer endpoint fora da operação própria é bloqueado.
     from flask_login import current_user
