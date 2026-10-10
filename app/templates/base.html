@@ -213,6 +213,12 @@
                         <i class="fas fa-list me-2"></i>
                         <span>Todos os Lançamentos</span>
                     </a>
+                    {% if current_user.is_authenticated and current_user.tem_permissao('visualizar_financeiro') %}
+                    <a href="{{ url_for('conciliacao_comercial.painel') }}" class="nav-link ps-5">
+                        <i class="fas fa-link me-2"></i>
+                        <span>Conciliação Comercial</span>
+                    </a>
+                    {% endif %}
                     
                     <div class="dropdown-divider mx-3"></div>
                     

@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Conciliação Comercial e Financeira | ERP JSP{% endblock %}
+
+{% block breadcrumb %}
+<a href="{{ url_for('financeiro.dashboard') }}">Financeiro</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Conciliação Comercial</span>
+{% endblock %}
+
+{% block content %}
+<style>
+    /* Conciliação: legibilidade local sem alterar estilos globais do ERP. */
+    .jsp-conciliacao-tabela { min-width: 1060px; font-size: .925rem; }
+    .jsp-conciliacao-tabela th,
+    .jsp-conciliacao-tabela td { vertical-align: top; }
+    .jsp-conciliacao-tabela .jsp-conciliacao-codigo { white-space: nowrap; display: inline-block; }
+    .jsp-conciliacao-tabela .jsp-conciliacao-diagnostico { min-width: 270px; line-height: 1.5; font-size: .875rem; }
+    .jsp-conciliacao-tabela .jsp-conciliacao-documento { min-width: 150px; }
+</style>
+<div class="container-fluid py-3">
+    <div class="cc-page-header d-flex flex-wrap justify-content-between gap-3 align-items-start mb-4">
+        <div>
+            <h1 class="h3 mb-2"><i class="fas fa-link me-2"></i>Conciliação Comercial → Financeiro</h1>
+            <p class="text-muted mb-0">Proposta, Pedido, Ordem de Serviço e recebíveis, em uma consulta somente leitura.</p>
+        </div>
+        <a class="btn btn-outline-primary" href="{{ url_for('financeiro.listar_lancamentos') }}">
+            <i class="fas fa-wallet me-1"></i> Todos os lançamentos
+        </a>
+    </div>
+
+    <div class="alert alert-info" role="note">
+        <strong>Como interpretar:</strong> "Revisar vínculo" significa que o sistema não encontrou relação documental
+        suficiente. <strong>Isso não comprova inadimplência nem autoriza lançamento automático.</strong>
+        Consulte também recebimentos manuais e extratos. Proposta e OS podem representar a mesma venda:
+        os valores comerciais <strong>não devem ser somados</strong> entre tipos de documentos.
+    </div>
+
+    <div class="row g-3 mb-4">
+        {% set cards = [
+            ('Propostas aprovadas para revisar', dados.totais.propostas_revisar, 'fa-file-contract'),
+            ('Pedidos com alerta', dados.totais.pedidos_revisar, 'fa-shopping-cart'),
+            ('OS com alerta', dados.totais.os_revisar, 'fa-tools'),
+            ('Documentos verificados', dados.totais.documentos, 'fa-layer-group')
+        ] %}
+        {% for titulo, valor, icone in cards %}
+        <div class="col-xl-3 col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted small mb-2"><i class="fas {{ icone }} me-1"></i> {{ titulo }}</div>
+                    <div class="fs-2 fw-bold">{{ valor }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form action="{{ url_for('conciliacao_comercial.painel') }}" method="get" class="row g-3 align-items-end">
+                <div class="col-lg-4">
+                    <label class="form-label" for="c-busca">Documento, cliente ou status</label>
+                    <input id="c-busca" name="busca" maxlength="100" class="form-control"
+                           value="{{ dados.busca }}" placeholder="Ex.: PROP20260031, PED0001, Ouro Verde">
+                </div>
+                <div class="col-lg-3">
+                    <label class="form-label" for="c-tipo">Origem documental</label>
+                    <select id="c-tipo" class="form-select" name="tipo">
+                        {% for value, title in [
+                            ('todos','Todas'), ('proposta','Propostas'),
+                            ('pedido','Pedidos de venda'), ('os','Ordens de serviço')
+                        ] %}
+                        <option value="{{ value }}" {% if dados.tipo == value %}selected{% endif %}>{{ title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-3">
+                    <label class="form-label" for="c-situacao">Situação</label>
+                    <select id="c-situacao" class="form-select" name="situacao">
+                        {% for value, title in [
+                            ('revisar','Somente revisar'), ('todas','Todas'),
+                            ('vinculado','Vinculado'), ('em_andamento','Em andamento')
+                        ] %}
+                        <option value="{{ value }}" {% if dados.situacao == value %}selected{% endif %}>{{ title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-2 d-flex gap-2 flex-wrap">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-search me-1"></i> Filtrar</button>
+                    <a href="{{ url_for('conciliacao_comercial.painel') }}" class="btn btn-outline-secondary" aria-label="Limpar filtros">
+                        <i class="fas fa-eraser"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h2 class="h6 mb-0">Rastreabilidade dos documentos</h2>
+            <small class="text-muted">{{ dados.total_filtrado }} resultado(s) | Página {{ dados.pagina }} de {{ dados.paginas }}</small>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 jsp-conciliacao-tabela">
+                <thead>
+                    <tr>
+                        <th scope="col" class="jsp-conciliacao-documento">Documento</th>
+                        <th scope="col">Cliente / Situação</th>
+                        <th scope="col" class="text-end">Valor documento</th>
+                        <th scope="col">Vínculos financeiros</th>
+                        <th scope="col">Diagnóstico</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in dados.linhas %}
+                    <tr>
+                        <td>
+                            {% set link_url = (
+                                url_for('proposta.visualizar_proposta', id=item.id) if item.tipo == 'proposta'
+                                else url_for('pedido.visualizar', id=item.id) if item.tipo == 'pedido'
+                                else url_for('ordem_servico.visualizar', id=item.id)
+                            ) %}
+                            <span class="badge bg-secondary mb-1">{{ {'proposta':'Proposta','pedido':'Pedido','os':'OS'}[item.tipo] }}</span>
+                            <div><a href="{{ link_url }}" class="fw-bold jsp-conciliacao-codigo">{{ item.codigo }}</a></div>
+                            <small class="text-muted">Status: {{ item.status }}</small>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">{{ item.cliente }}</div>
+                            {% for nome, numero, tipo_ref, id_ref in item.relacionados %}
+                                {% set url_ref = (
+                                    url_for('proposta.visualizar_proposta', id=id_ref) if tipo_ref == 'proposta'
+                                    else url_for('pedido.visualizar', id=id_ref) if tipo_ref == 'pedido'
+                                    else url_for('ordem_servico.visualizar', id=id_ref)
+                                ) %}
+                                <div class="small"><a href="{{ url_ref }}">{{ nome }} {{ numero }}</a></div>
+                            {% endfor %}
+                        </td>
+                        <td class="text-end text-nowrap fw-semibold">{{ brl(item.valor) }}</td>
+                        <td>
+                            {% if item.financeiro.ids %}
+                                <div>{{ item.financeiro.ids|length }} lançamento(s): #{{ item.financeiro.ids|join(', #') }}</div>
+                                <small class="text-muted">Vinculado: {{ brl(item.financeiro.total) }}</small>
+                                <div><small class="text-success">Com baixa registrada: {{ brl(item.financeiro.recebido) }}</small></div>
+                                <small class="text-muted">Status: {{ item.financeiro.status|join(', ') }}</small>
+                            {% else %}
+                                <span class="text-muted">Nenhum vínculo identificado</span>
+                            {% endif %}
+                            {% if item.candidatos_manuais %}
+                                <div class="small text-warning">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    Referência manual possível: #{{ item.candidatos_manuais|join(', #') }} (não confirmada)
+                                </div>
+                            {% endif %}
+                            {% if item.cliente_id %}
+                                <div class="mt-1">
+                                    <a class="small" href="{{ url_for('financeiro.listar_lancamentos', cliente_id=item.cliente_id) }}">Ver lançamentos do cliente</a>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td class="jsp-conciliacao-diagnostico">
+                            {% if item.situacao == 'revisar' %}
+                            <span class="badge bg-warning text-dark">Revisar vínculo</span>
+                            {% elif item.situacao == 'vinculado' %}
+                            <span class="badge bg-success">Vinculado</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Em andamento / não exigível</span>
+                            {% endif %}
+                            <div class="small text-muted mt-2">{{ item.observacao }}</div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="text-center text-muted py-5">
+                        Nenhum documento encontrado para estes filtros.
+                    </td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if dados.paginas > 1 %}
+        <div class="card-footer d-flex align-items-center justify-content-between">
+            {% if dados.pagina > 1 %}
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('conciliacao_comercial.painel', tipo=dados.tipo, situacao=dados.situacao, busca=dados.busca, pagina=dados.pagina-1) }}">
+                    <i class="fas fa-chevron-left me-1"></i> Anterior
+                </a>
+            {% else %}<span></span>{% endif %}
+            <small>Página {{ dados.pagina }} de {{ dados.paginas }}</small>
+            {% if dados.pagina < dados.paginas %}
+                <a class="btn btn-sm btn-outline-primary" href="{{ url_for('conciliacao_comercial.painel', tipo=dados.tipo, situacao=dados.situacao, busca=dados.busca, pagina=dados.pagina+1) }}">
+                    Próxima <i class="fas fa-chevron-right ms-1"></i>
+                </a>
+            {% else %}<span></span>{% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="alert alert-light border mt-3 small">
+        <strong>Regra de segurança:</strong> painel exclusivamente consultivo. Não baixa recebimentos,
+        não emite NF, não altera pedidos, propostas ou OS e não cria contas a receber.
+        Lançamentos sem chave de vínculo podem existir e precisam de conferência manual.
+    </div>
+</div>
+{% endblock %}
