@@ -39,9 +39,11 @@ def executar_testes():
 
         for campo in ['id="identificador"', 'name="identificador"',
                       'id="senha"', 'name="senha"',
-                      'id="lembrar"', 'name="lembrar"',
                       'id="toggleSenha"', 'id="iconeSenha"']:
             assert campo in html, f"Campo/atributo ausente no HTML: {campo}"
+        assert 'name="lembrar"' not in html, (
+            "Login persistente deve permanecer desativado pela politica de inatividade."
+        )
         assert 'css/command-center.css' in html, "Stylesheet do Design System não referenciada"
         assert 'method="POST"' in html, "Formulário de login não usa POST"
         print("  -> OK: formulário preserva ids/names/comportamento e referencia o novo CSS.")

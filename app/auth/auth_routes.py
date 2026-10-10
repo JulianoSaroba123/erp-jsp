@@ -80,7 +80,7 @@ def login():
     if request.method == 'POST':
         identificador = request.form.get('identificador', '').strip().lower()
         senha = request.form.get('senha', '')
-        lembrar = bool(request.form.get('lembrar'))
+        # O login nao aceita cookies persistentes que reabram sessoes expiradas.
         
         # Validações básicas
         if not identificador or not senha:
@@ -126,7 +126,11 @@ def login():
                 from flask import session
                 session.permanent = True
                 
-                resultado = login_user(usuario, remember=lembrar)
+                resultado = login_user(usuario, remember=False)
+                if not resultado:
+                    raise RuntimeError("Falha ao autenticar usuario.")
+                from app.auth.idle_session import activate_idle_session
+                activate_idle_session()
                 print(f"🔐 Resultado login_user: {resultado}")
                 print(f"🔐 current_user.is_authenticated: {current_user.is_authenticated}")
                 print(f"🔐 current_user.id: {current_user.id if current_user.is_authenticated else 'N/A'}")
@@ -179,7 +183,8 @@ def logout():
     Faz logout do usuário.
     """
     nome = current_user.nome
-    logout_user()
+    from app.auth.idle_session import expire_idle_session
+    expire_idle_session()
     flash(f'Logout realizado com sucesso. Até logo, {nome}!', 'info')
     return redirect(url_for('auth.login'))
 
