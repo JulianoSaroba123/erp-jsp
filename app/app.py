@@ -935,6 +935,10 @@ def register_blueprints(app):
     from app.geradores.gerador_plano_ui_routes import gerador_plano_ui_bp
     app.register_blueprint(gerador_plano_ui_bp)
 
+    # G5-F2: associacao explicita entre OS e geradores (admin + CSRF).
+    from app.geradores.gerador_os_vinculo_routes import gerador_os_vinculo_bp
+    app.register_blueprint(gerador_os_vinculo_bp)
+
     # Blueprint de ordens de serviço
     from app.ordem_servico.ordem_servico_routes import ordem_servico_bp
     app.register_blueprint(ordem_servico_bp, url_prefix='/ordem_servico')
