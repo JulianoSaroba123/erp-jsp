@@ -9,6 +9,7 @@ a partir de uma cópia congelada da versão e das respostas validadas.
 """
 from decimal import Decimal, InvalidOperation
 from collections.abc import Mapping
+import re
 
 VERSAO_CATALOGO = "G5-1.0"
 TIPOS = ("BASICA", "INTERMEDIARIA", "AVANCADA")
@@ -135,7 +136,9 @@ def validar_respostas(tipo, respostas, *, encerrar=False):
 
     normalizadas = []
     for item_id, definicao in itens.items():
-        bruto = respostas.get(item_id) or {}
+        bruto = respostas.get(item_id, {})
+        if bruto is None:
+            bruto = {}
         if not isinstance(bruto, Mapping):
             raise ChecklistDominioError(f"{item_id}: resposta inválida.")
         if set(bruto) - {"status", "medicao", "observacao"}:
@@ -152,6 +155,9 @@ def validar_respostas(tipo, respostas, *, encerrar=False):
         if medicao and definicao["unidade"] is None:
             raise ChecklistDominioError(f"{item_id}: item não admite medição.")
         if medicao:
+            # Apenas decimal simples, limitado, para não admitir expoentes enormes.
+            if not re.fullmatch(r"-?[0-9]{1,12}(?:[,.][0-9]{1,4})?", medicao):
+                raise ChecklistDominioError(f"{item_id}: medição deve ser numérica.")
             try:
                 numero = Decimal(medicao.replace(",", "."))
                 if not numero.is_finite():
