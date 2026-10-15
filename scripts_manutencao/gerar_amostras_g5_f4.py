@@ -71,6 +71,17 @@ def execucao_ficticia(tipo):
         ],
     }
 
+    # Leituras meramente demonstrativas, coerentes com as unidades dos itens.
+    # Nunca confundir amostras com faixa de aceitação ou valores medidos reais.
+    leituras_ficticias = {
+        "MOT_HORIMETRO": "1534,2",
+        "MOT_PRESSAO_OLEO": "3,8",
+        "MOT_TEMPERATURA": "86",
+        "ELE_BATERIA": "27,2",
+        "ELE_TENSAO": "380",
+        "ELE_FREQUENCIA": "60",
+        "ELE_CORRENTE": "285",
+    }
     respostas = {}
     for item in (
         item for secao in modelo["secoes"] for item in secao["itens"]
@@ -82,7 +93,10 @@ def execucao_ficticia(tipo):
             status = "NAO_REALIZADO"
         respostas[item["id"]] = {
             "status": status,
-            "medicao": "12,5" if item["unidade"] and status == "CONFORME" else "",
+            "medicao": (
+                leituras_ficticias.get(item["id"], "0")
+                if item["unidade"] and status == "CONFORME" else ""
+            ),
             "observacao": (
                 "ANOMALIA SIMULADA - apenas para validar paginação e campos."
                 if status == "NAO_CONFORME"
