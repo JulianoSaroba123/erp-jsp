@@ -11,6 +11,9 @@ from app.geradores.gerador_checklist_execucao_service import (
 from app.geradores.gerador_checklist_pdf_service import (
     PDFChecklistError, gerar_pdf_checklist,
 )
+from app.geradores.gerador_checklist_auditoria_service import (
+    conferir_integridade, consultar_historico,
+)
 
 
 gerador_checklist_pdf_bp = Blueprint(
@@ -34,6 +37,17 @@ def pdf_checklist(execucao_id):
         )
     except ExecucaoChecklistError:
         abort(404)
+
+    # Evitar emitir documento concluído se as respostas atuais divergirem
+    # do último evento de auditoria. PDF em branco não é prova de execução.
+    if modo == "preenchido":
+        eventos = consultar_historico(execucao.id)
+        if not conferir_integridade(execucao, eventos):
+            current_app.logger.error(
+                "G5-F5: integridade do checklist %s divergente; PDF bloqueado",
+                execucao.id,
+            )
+            abort(409, description="Integridade do histórico divergente. Revisão necessária.")
 
     try:
         conteudo = gerar_pdf_checklist(execucao, modo=modo)
