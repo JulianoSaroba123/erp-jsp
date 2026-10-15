@@ -89,3 +89,23 @@ avançada preenchida (5 páginas). Correções realizadas no código, ainda não
 **Portão atual:** refazer testes e amostras no HEAD mais recente da branch F4,
 revisar se a página final vazia/intermediária foi eliminada e aprovar somente
 após inspeção dos novos PDFs A4. Nenhum merge/deploy autorizado.
+
+
+## G5-F4-A2 | Falha Windows na gravação de amostras (15/10/2026)
+A execução de homologação informou **53 testes aprovados** (PDF F4 + digital F3),
+mas a geração de amostras falhou ao salvar no disco com `PermissionError:
+[Errno 13] Permission denied` no caminho temporário fixo
+`ERP_JSP_G5_F4_AMOSTRAS/AMOSTRA_BASICA_EM_BRANCO.pdf`.
+Esse resultado não caracteriza erro na geração de PDF em memória;
+a causa provável é um arquivo antigo bloqueado por um visualizador Windows,
+ainda não confirmada definitivamente.
+
+O script `scripts_manutencao/gerar_amostras_g5_f4.py` foi corrigido:
+agora cada execução cria uma pasta única
+`ERP_JSP_G5_F4_REVISAO_*` em `tempfile.gettempdir()`, imprime o caminho
+e **nunca sobrescreve ou remove as amostras anteriores**.
+Adicionado teste de isolamento entre duas pastas de revisão.
+
+**Portão pendente:** validar o teste atualizado, executar o gerador no
+commit corrigido e inspecionar as novas amostras. O PR não está pronto
+para merge apenas com os 53 testes da revisão anterior.
