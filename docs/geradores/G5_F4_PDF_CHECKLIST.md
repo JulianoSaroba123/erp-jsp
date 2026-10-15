@@ -136,3 +136,31 @@ Foi acrescentada auditoria em `gerar_amostras_g5_f4.py`:
 **Aprovação visual pendente**: executar no HEAD atual do PR #39, enviar
 três PDFs **da pasta indicada na mesma execução** e, se houver divergência,
 o arquivo de auditoria. PR continua draft; nenhuma publicação.
+
+
+## G5-F4-A5 | Causa raiz das observações em tupla confirmada por SHA256
+Na revisão do usuário, as três amostras e o manifesto
+`AUDITORIA_G5_F4.json` apresentam **hashes SHA256 idênticos**.
+Isso prova que os arquivos recebidos foram os que o gerador registrou.
+O PDF intermediário e o avançado ainda incluíam `('',)` e
+`('ANOMALIA SIMULADA...',)`, apesar de carregar o módulo PDF correto.
+
+**Causa real:** `execucao_ficticia()`, no script de amostras, continha
+uma vírgula extra após o ramo `else ""` da construção de
+`respostas[item_id]["observacao"]`. Assim, Python criava uma tupla
+de um elemento, e o validador do catálogo convertia a tupla para uma
+string com parênteses e vírgula. O PDF reproduzia o texto que recebera.
+
+**Correções na branch F4 (não publicadas):**
+- Retirada da vírgula indevida na fixture de respostas fictícias.
+- Adicionada checagem explícita `isinstance(observacao, str)` antes da
+  normalização, para interromper execução em vez de produzir amostras inválidas.
+- Novos testes parametrizados para os três modelos (básica, intermediária,
+  avançada), verificando observação com anomalia, justificativa de não
+  realizado e observação vazia, sem notação de tupla.
+- Mantida auditoria do caminho real do módulo, commit e hashes dos PDFs.
+- **Não mudar a função de layout do PDF nem os PDFs históricos**.
+
+**Gate:** nova rodada dos testes F4 e amostras, inspeção dos dois
+preenchidos para ausência de `('',)`, verificação visual das páginas
+A4 e relatório de auditoria, antes de encerrar a homologação.
