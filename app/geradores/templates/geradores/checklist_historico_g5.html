@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Histórico checklist #{{ execucao.id }} | ERP JSP{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  {% set gerador = execucao.identificacao_snapshot.get('gerador', {}) %}
+  {% set ordem = execucao.identificacao_snapshot.get('os', {}) %}
+  <div class="d-flex flex-wrap justify-content-between gap-3 mb-3">
+    <div>
+      <h1 class="h3 mb-1"><i class="fas fa-history me-2"></i>Histórico técnico do checklist #{{ execucao.id }}</h1>
+      <p class="text-muted mb-0">OS {{ ordem.get('numero', '-') }} |
+        {{ gerador.get('codigo', '-') }} | {{ execucao.tipo_plano }} |
+        {{ execucao.estado }}</p>
+    </div>
+    <a class="btn btn-outline-primary" href="{{ url_for('gerador_checklist.editar', execucao_id=execucao.id) }}">
+      <i class="fas fa-arrow-left me-1"></i>Voltar ao checklist
+    </a>
+  </div>
+  {% if integridade_ok %}
+  <div class="alert alert-success">
+    <strong>Snapshot conferido:</strong> as respostas atuais coincidem com o
+    último SHA-256 registrado no histórico.
+  </div>
+  {% else %}
+  <div class="alert alert-danger">
+    <strong>Atenção:</strong> histórico ausente ou divergência entre as respostas
+    atuais e o último registro. Revisar antes de apresentar ao cliente.
+  </div>
+  {% endif %}
+  <div class="alert alert-info">
+    O histórico registra ações realizadas por usuário autenticado e data/hora.
+    O SHA-256 é um recurso de conferência interna de integridade.
+    <strong>Não é assinatura digital, assinatura do cliente ou laudo de conformidade.</strong>
+  </div>
+  <div class="card shadow-sm">
+    <div class="card-header"><strong>Eventos registrados</strong></div>
+    <div class="card-body">
+      {% if eventos %}
+      <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle">
+          <thead>
+            <tr>
+              <th>Sequência</th><th>Data/hora do sistema (UTC)</th>
+              <th>Evento</th><th>Responsável</th>
+              <th>Estado resultante</th><th>SHA-256 das respostas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for evento in eventos %}
+            <tr>
+              <td>#{{ evento.sequencia }}</td>
+              <td>{{ evento.registrado_em.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+              <td>{{ acao_rotulos.get(evento.acao, evento.acao) }}</td>
+              <td>{{ evento.usuario_nome }} <small class="text-muted">(ID {{ evento.usuario_id or 'histórico' }})</small></td>
+              <td>{{ evento.estado_resultante }}</td>
+              <td><code class="small" style="overflow-wrap:anywhere">{{ evento.sha256_respostas }}</code></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p class="mb-0 text-muted">Nenhum evento registrado neste checklist.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
