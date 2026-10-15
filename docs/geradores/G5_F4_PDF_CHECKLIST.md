@@ -70,3 +70,22 @@
 - No F5, planejar histórico avançado, anexos autorizados, materiais efetivamente
   aplicados, assinatura e eventual liberação controlada a colaboradores.
 - Não inferir execução, assinaturas ou notas de conformidade automaticamente.
+
+
+## Revisão visual das três amostras (15/10/2026)
+Arquivos analisados: básica em branco (4 páginas), intermediária preenchida (5 páginas),
+avançada preenchida (5 páginas). Correções realizadas no código, ainda não homologadas:
+1. No texto de observações, expressão de f-string gerava tupla Python `('',)`
+   / `('ANOMALIA...',)` em vez do valor da observação.
+2. Para formulários preenchidos, omitir linha de observação vazia e reduzir
+   espaçamento de itens, sem ocultar qualquer anomalia ou justificativa registrada.
+3. Agrupar título da seção ao seu primeiro item para não deixar títulos soltos
+   no rodapé de páginas.
+4. Corrigir os valores de medições das amostras fictícias: abandonar `12,5`
+   repetido indiscriminadamente para pressão, temperatura, frequência, tensão
+   e horímetro; usar exemplos identificados como fictícios.
+5. Adicionar testes de regressão de observações e layout de blocos agrupados.
+
+**Portão atual:** refazer testes e amostras no HEAD mais recente da branch F4,
+revisar se a página final vazia/intermediária foi eliminada e aprovar somente
+após inspeção dos novos PDFs A4. Nenhum merge/deploy autorizado.
