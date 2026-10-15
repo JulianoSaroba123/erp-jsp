@@ -10,8 +10,9 @@ from app.geradores.gerador_checklist_execucao_service import (
 )
 from app.geradores.gerador_checklist_pdf_service import (
     PDFChecklistError, _seguro, _verificar_snapshot,
-    gerar_pdf_checklist,
+    _item_documento, _estilos, gerar_pdf_checklist,
 )
+from reportlab.platypus import Paragraph, Table
 
 # Fixture de dados fictícios já homologada na F3, reutilizada sem
 # duplicar dados e sem consultar qualquer serviço externo.
@@ -261,6 +262,46 @@ def test_relatorio_g4_continua_acessivel(ctx):
     resposta = client.get(f"/geradores/planos/relatorios/{ids['g1']}")
     assert resposta.status_code == 200
     assert "GER-G5-F3-A" in resposta.get_data(as_text=True)
+
+
+def test_obs_nao_renderiza_tupla_python(ctx):
+    ex, _ = novo_checklist(ctx)
+    item = ex.modelo_snapshot["secoes"][0]["itens"][0]
+    dados = {
+        "status": "NAO_CONFORME", "medicao": None,
+        "observacao": "Vazamento identificado (teste fictício).",
+    }
+    bloco = _item_documento(item, dados, "preenchido", _estilos())
+    tabela = bloco._content[0]
+    assert isinstance(tabela, Table)
+    texto = tabela._cellvalues[1][0].text
+    assert "Vazamento identificado (teste fictício)." in texto
+    assert "('Vazamento" not in texto
+    assert "('Vazamento identificado (teste fictício).',)" not in texto
+
+
+def test_obs_vazia_nao_ocupa_linha_no_pdf_concluido(ctx):
+    ex, _ = novo_checklist(ctx)
+    item = ex.modelo_snapshot["secoes"][0]["itens"][0]
+    dados = {"status": "CONFORME", "medicao": None, "observacao": ""}
+    bloco = _item_documento(item, dados, "preenchido", _estilos())
+    texto = bloco._content[0]._cellvalues[1][0].text
+    assert "Resultado:" in texto
+    assert "Observações / justificativa:" not in texto
+    assert "Sem observações." not in texto
+    assert "('',)" not in texto
+
+
+def test_titulo_secao_agrupado_com_primeiro_item(ctx):
+    ex, _ = novo_checklist(ctx)
+    secao = ex.modelo_snapshot["secoes"][0]
+    item = secao["itens"][0]
+    bloco = _item_documento(
+        item, None, "branco", _estilos(), titulo_secao=secao["titulo"]
+    )
+    assert isinstance(bloco._content[0], Paragraph)
+    assert isinstance(bloco._content[1], Table)
+    assert secao["titulo"] in bloco._content[0].text
 
 
 def test_pdf_service_sem_db_e_sem_rede():
