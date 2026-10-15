@@ -939,6 +939,10 @@ def register_blueprints(app):
     from app.geradores.gerador_os_vinculo_routes import gerador_os_vinculo_bp
     app.register_blueprint(gerador_os_vinculo_bp)
 
+    # G5-F3: execução digital com rascunhos e fechamento imutável.
+    from app.geradores.gerador_checklist_execucao_routes import gerador_checklist_bp
+    app.register_blueprint(gerador_checklist_bp)
+
     # Blueprint de ordens de serviço
     from app.ordem_servico.ordem_servico_routes import ordem_servico_bp
     app.register_blueprint(ordem_servico_bp, url_prefix='/ordem_servico')

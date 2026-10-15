@@ -40,6 +40,7 @@ from .gerador_horimetro_model import (
 
 # G5-F2: tabela explicita de associacao OS x Gerador.
 from .gerador_os_vinculo_model import GeradorOSVinculo
+from .gerador_checklist_execucao_model import GeradorChecklistExecucao
 
 __all__ = [
     "ClienteUnidade",
@@ -56,4 +57,5 @@ __all__ = [
     "GeradorPlanoManutencao",
     "GeradorHorimetro",
     "GeradorOSVinculo",
+    "GeradorChecklistExecucao",
 ]

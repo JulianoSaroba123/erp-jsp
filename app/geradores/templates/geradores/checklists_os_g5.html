@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Checklists da OS {{ ordem.numero }} | ERP JSP{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+    <div>
+      <h1 class="h3 mb-1"><i class="fas fa-tasks me-2"></i>Checklists da OS {{ ordem.numero }}</h1>
+      <div class="text-muted">{{ ordem.cliente.nome if ordem.cliente else 'Cliente' }}</div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-primary" href="{{ url_for('gerador_os_vinculo.geradores_da_os', os_id=ordem.id) }}">Geradores atendidos</a>
+      <a class="btn btn-outline-secondary" href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}">Voltar à OS</a>
+    </div>
+  </div>
+  <div class="alert alert-info">
+    G5-F3: cada grupo gerador possui um checklist próprio.
+    Os dados técnicos e os itens são congelados no momento da abertura.
+    Esta ação não movimenta estoque, não cria cobranças nem conclui a OS.
+  </div>
+  <div class="card shadow-sm mb-4">
+    <div class="card-header"><strong>Checklists iniciados</strong></div>
+    <div class="card-body">
+      {% if checklists %}
+      <div class="table-responsive">
+        <table class="table table-striped align-middle">
+          <thead><tr><th>ID</th><th>Gerador</th><th>Plano</th><th>Situação</th><th>Ação</th></tr></thead>
+          <tbody>
+          {% for execucao in checklists %}
+          <tr>
+            <td>#{{ execucao.id }}</td>
+            <td>{{ execucao.identificacao_snapshot.get('gerador', {}).get('codigo', '-') }}</td>
+            <td>{{ execucao.tipo_plano|capitalize }}</td>
+            <td>
+              {% if execucao.estado == 'CONCLUIDO' %}
+                <span class="badge bg-success">Concluído</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Rascunho</span>
+              {% endif %}
+            </td>
+            <td><a class="btn btn-outline-primary btn-sm" href="{{ url_for('gerador_checklist.editar', execucao_id=execucao.id) }}">Abrir checklist</a></td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p class="text-muted mb-0">Nenhum checklist iniciado.</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="card shadow-sm">
+    <div class="card-header"><strong>Iniciar checklist</strong></div>
+    <div class="card-body">
+      {% if not vinculados %}
+        <p class="mb-0">Vincule primeiro um gerador à OS na área <strong>Geradores atendidos</strong>.</p>
+      {% else %}
+        {% for vinculo in vinculados %}
+        <div class="border rounded p-3 mb-3">
+          <div class="fw-semibold">{{ vinculo.gerador.codigo }} | {{ vinculo.gerador.fabricante_grupo or 'Fabricante não informado' }} {{ vinculo.gerador.modelo or '' }}</div>
+          <div class="text-muted small mb-2">Série: {{ vinculo.gerador.numero_serie or 'não informada' }}</div>
+          {% if ordem.status|lower in ['cancelada', 'cancelado'] %}
+            <span class="text-danger">OS cancelada. Novo checklist bloqueado.</span>
+          {% else %}
+            <form method="post" action="{{ url_for('gerador_checklist.iniciar', vinculo_id=vinculo.id) }}" class="row g-2 align-items-end">
+              <input type="hidden" name="csrf_token_g5_f3" value="{{ csrf_token_g5_f3 }}">
+              <div class="col-md-8">
+                <label for="plano_{{ vinculo.id }}" class="form-label">Tipo de manutenção</label>
+                <select id="plano_{{ vinculo.id }}" class="form-select" name="tipo_plano" required>
+                  <option value="BASICA">Preventiva básica</option>
+                  <option value="INTERMEDIARIA">Preventiva intermediária</option>
+                  <option value="AVANCADA">Preventiva avançada</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">Criar ou abrir checklist</button>
+              </div>
+            </form>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

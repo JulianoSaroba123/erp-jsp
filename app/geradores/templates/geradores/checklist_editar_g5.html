@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Checklist #{{ execucao.id }} | ERP JSP{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  {% set identificacao = execucao.identificacao_snapshot %}
+  {% set gerador = identificacao.get('gerador', {}) %}
+  {% set os = identificacao.get('os', {}) %}
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+    <div>
+      <h1 class="h3">Checklist #{{ execucao.id }} | {{ gerador.get('codigo', '-') }}</h1>
+      <p class="text-muted mb-1">OS {{ os.get('numero', '-') }} | {{ identificacao.get('cliente', {}).get('nome', '-') }}</p>
+      <p class="mb-0"><span class="badge bg-secondary">{{ execucao.tipo_plano }}</span>
+        <span class="badge {% if execucao.estado == 'CONCLUIDO' %}bg-success{% else %}bg-warning text-dark{% endif %}">{{ execucao.estado|replace('_', ' ') }}</span>
+        <span class="badge bg-light text-dark">{{ execucao.versao_catalogo }}</span>
+      </p>
+    </div>
+    <a class="btn btn-outline-primary" href="{{ url_for('gerador_checklist.listar_os', os_id=execucao.vinculo.ordem_servico_id) }}">Voltar aos checklists</a>
+  </div>
+  <div class="alert alert-info">
+    Preencha os resultados observados em campo, não marque itens automaticamente.
+    <strong>Conforme</strong> não significa que os valores foram aprovados pelo ERP:
+    compare as medições às especificações do fabricante.
+    Testes de trip, transferência e carga dependem de procedimento e autorização.
+  </div>
+  <div class="card shadow-sm mb-3">
+    <div class="card-header"><strong>Identificação técnica congelada na abertura</strong></div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-md-4"><small class="text-muted">Gerador</small><div>{{ gerador.get('fabricante') or '-' }} {{ gerador.get('modelo') or '' }}</div></div>
+        <div class="col-md-4"><small class="text-muted">Série</small><div>{{ gerador.get('numero_serie') or '-' }}</div></div>
+        <div class="col-md-4"><small class="text-muted">Potência / tensão</small><div>{{ gerador.get('potencia_kva') or '-' }} kVA | {{ gerador.get('tensao') or '-' }}</div></div>
+        <div class="col-md-4"><small class="text-muted">Motor</small><div>{{ identificacao.get('motor', {}).get('fabricante') or '-' }} {{ identificacao.get('motor', {}).get('modelo') or '' }}</div></div>
+        <div class="col-md-4"><small class="text-muted">Alternador</small><div>{{ identificacao.get('alternador', {}).get('fabricante') or '-' }} {{ identificacao.get('alternador', {}).get('modelo') or '' }}</div></div>
+        <div class="col-md-4"><small class="text-muted">Controladora</small><div>{{ identificacao.get('controladora', {}).get('fabricante') or '-' }} {{ identificacao.get('controladora', {}).get('modelo') or '' }}</div></div>
+      </div>
+      {% if identificacao.get('consumiveis') %}
+      <hr>
+      <strong>Referências técnicas cadastradas</strong>
+      <div class="table-responsive mt-2">
+        <table class="table table-sm">
+          <thead><tr><th>Tipo</th><th>Referência</th><th>Quantidade especificada</th></tr></thead>
+          <tbody>{% for item in identificacao.get('consumiveis') %}
+            <tr><td>{{ item.tipo }}</td><td>{{ item.referencia or '-' }}</td><td>{{ item.quantidade or '-' }} {{ item.unidade or '' }}</td></tr>
+          {% endfor %}</tbody>
+        </table>
+      </div>
+      <p class="small text-muted mb-0">Referências cadastradas não comprovam substituição nem baixa de estoque.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <form method="post" action="{{ url_for('gerador_checklist.salvar', execucao_id=execucao.id) }}" autocomplete="off">
+    <input type="hidden" name="csrf_token_g5_f3" value="{{ csrf_token_g5_f3 }}">
+    {% set bloqueado = execucao.estado == 'CONCLUIDO' %}
+    <fieldset {% if bloqueado %}disabled{% endif %}>
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="data_servico">Data da manutenção</label>
+              <input type="date" class="form-control" name="data_servico" id="data_servico"
+                     value="{{ execucao.data_servico.isoformat() if execucao.data_servico else '' }}">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label" for="observacoes_gerais">Observações gerais</label>
+              <textarea class="form-control" rows="2" maxlength="4000" name="observacoes_gerais" id="observacoes_gerais">{{ execucao.observacoes_gerais or '' }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {% for secao in execucao.modelo_snapshot.get('secoes', []) %}
+      <section class="card shadow-sm mb-3">
+        <div class="card-header"><strong>{{ secao.titulo }}</strong></div>
+        <div class="card-body">
+          {% for item in secao.itens %}
+          {% set registro = respostas.get(item.id, {}) %}
+          <div class="border-bottom pb-3 mb-3">
+            <div class="fw-semibold mb-2">{{ item.descricao }}</div>
+            <div class="row g-2">
+              <div class="col-lg-3 col-md-4">
+                <label for="status_{{ item.id }}" class="form-label small">Resultado</label>
+                <select class="form-select" id="status_{{ item.id }}" name="status__{{ item.id }}">
+                  <option value="" {% if not registro.get('status') %}selected{% endif %}>Não avaliado</option>
+                  {% for status in status_validos %}
+                  <option value="{{ status }}" {% if registro.get('status') == status %}selected{% endif %}>{{ status_rotulos[status] }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              {% if item.unidade %}
+              <div class="col-lg-3 col-md-4">
+                <label for="medicao_{{ item.id }}" class="form-label small">Medição ({{ item.unidade }})</label>
+                <input type="text" inputmode="decimal" maxlength="40" class="form-control"
+                       name="medicao__{{ item.id }}" id="medicao_{{ item.id }}"
+                       value="{{ registro.get('medicao') or '' }}" placeholder="Valor observado">
+              </div>
+              {% endif %}
+              <div class="{% if item.unidade %}col-lg-6 col-md-4{% else %}col-lg-9 col-md-8{% endif %}">
+                <label for="observacao_{{ item.id }}" class="form-label small">Observação / justificativa</label>
+                <textarea class="form-control" rows="2" maxlength="1500"
+                          name="observacao__{{ item.id }}" id="observacao_{{ item.id }}">{{ registro.get('observacao') or '' }}</textarea>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+      {% endfor %}
+    </fieldset>
+    <div class="d-flex flex-wrap gap-2 pb-4">
+      {% if not bloqueado %}
+      <button class="btn btn-outline-primary" type="submit" name="acao" value="salvar">
+        <i class="fas fa-save me-1"></i>Salvar rascunho
+      </button>
+      <button class="btn btn-success" type="submit" name="acao" value="concluir"
+        onclick="return confirm('Concluir este checklist? O registro ficará bloqueado para edição.')">
+        <i class="fas fa-check-circle me-1"></i>Concluir checklist
+      </button>
+      {% else %}
+      <div class="alert alert-success w-100">
+        Checklist concluído em {{ execucao.concluido_em.strftime('%d/%m/%Y %H:%M') if execucao.concluido_em else '-' }}.
+        O registro está bloqueado para edição, inclusive se houver itens não conformes.
+      </div>
+      {% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}
