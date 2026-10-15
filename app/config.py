@@ -128,3 +128,29 @@ config = {
     'testing': TestingConfig,
     'default': DevelopmentConfig
 }
+
+
+def resolver_configuracao_flask(config_name=None, environ=None):
+    """Seleciona o perfil Flask sem habilitar debug por omissão.
+
+    Produção é o padrão seguro. Desenvolvimento e testes exigem seleção
+    explícita; no Render, qualquer perfil diferente de produção é bloqueado.
+    Esta função não acessa banco nem modifica variáveis de ambiente.
+    """
+    ambiente = os.environ if environ is None else environ
+    perfil = config_name if config_name is not None else ambiente.get("FLASK_ENV")
+    perfil = str(perfil).strip().lower() if perfil else "production"
+
+    if perfil not in config or perfil == "default":
+        raise RuntimeError("Perfil Flask inválido ou inseguro. Use production, development ou testing.")
+
+    render_ativo = (
+        str(ambiente.get("RENDER", "")).strip().lower() in ("true", "1", "yes")
+        or bool(ambiente.get("RENDER_SERVICE_ID"))
+    )
+    if render_ativo and perfil != "production":
+        raise RuntimeError(
+            "Configuração insegura bloqueada: Render exige FLASK_ENV=production."
+        )
+
+    return perfil

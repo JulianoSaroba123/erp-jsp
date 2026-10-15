@@ -26,7 +26,7 @@ if sys.platform == 'win32':
 
 from flask import Flask, render_template, request
 from datetime import datetime, date
-from app.config import config
+from app.config import config, resolver_configuracao_flask
 from app.extensoes import init_extensions
 
 def create_app(config_name=None):
@@ -53,12 +53,18 @@ def create_app(config_name=None):
     except Exception:
         pass
 
-    # Determina o ambiente de configuração
-    if config_name is None:
-        config_name = os.environ.get('FLASK_ENV', 'development')
+    # Perfil de produção é o padrão seguro. No Render, desenvolvimento/teste
+    # é sempre bloqueado, mesmo quando FLASK_ENV foi configurada incorretamente.
+    config_name = resolver_configuracao_flask(config_name)
 
-    # Aplica a configuração correta baseada no ambiente
+    # Aplica a configuração correta baseada no ambiente.
     app.config.from_object(config[config_name])
+    app.config['JSP_CONFIG_PROFILE'] = config_name
+
+    # Defesa em profundidade: não servir requisições com debugger ativo
+    # mesmo que uma alteração futura torne ProductionConfig insegura.
+    if config_name == 'production' and app.config.get('DEBUG'):
+        raise RuntimeError("DEBUG=True bloqueado na configuração de produção.")
     
     # Configurações específicas do Jinja2 para desenvolvimento
     if app.config.get('DEBUG'):

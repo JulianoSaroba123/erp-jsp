@@ -18,7 +18,7 @@ app = create_app()
 
 # Log de inicialização para o Render (sem emojis para compatibilidade)
 print("ERP JSP iniciado com sucesso!")
-print(f"Configuracao: {app.config.get('ENV', 'production')}")
+print(f"Configuracao: {app.config.get('JSP_CONFIG_PROFILE', 'desconhecida')}")
 print(f"Debug: {app.config.get('DEBUG', False)}")
 
 # Marca este diretório como um pacote Python

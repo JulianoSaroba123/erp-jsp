@@ -46,9 +46,14 @@ try:
         # Porta do servidor
         port = int(os.environ.get('PORT', 5000))
         
-        # Configurar debug
-        app.config['DEBUG'] = True
-        app.config['PROPAGATE_EXCEPTIONS'] = True
+        # O servidor local só permite debug em desenvolvimento explícito.
+        # Mesmo se run.py for executado por engano no Render, nunca habilitar.
+        modo_desenvolvimento = (
+            app.config.get('JSP_CONFIG_PROFILE') == 'development'
+            and not (os.environ.get('RENDER') or os.environ.get('RENDER_SERVICE_ID'))
+        )
+        app.config['DEBUG'] = modo_desenvolvimento
+        app.config['PROPAGATE_EXCEPTIONS'] = modo_desenvolvimento
         
         print(f" Iniciando servidor em http://127.0.0.1:{port}")
         
@@ -56,7 +61,7 @@ try:
         app.run(
             host='127.0.0.1',  # Apenas localhost por enquanto
             port=port,
-            debug=True,  # Debug habilitado para ver erros
+            debug=modo_desenvolvimento,  # Somente em development local explícito
             use_reloader=False  # Evita recarregamento automático
         )
         
