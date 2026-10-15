@@ -50,6 +50,14 @@ def _campo(objeto, nome, padrao="-"):
     return _seguro(objeto.get(nome), padrao)
 
 
+def _bruto(objeto, nome, padrao="-"):
+    """Valor não escapado para composição de campos, escapado na tabela final."""
+    if not isinstance(objeto, dict):
+        return padrao
+    valor = objeto.get(nome)
+    return str(valor) if valor is not None and valor != "" else padrao
+
+
 def _estilos():
     base = dict(fontName="Helvetica", leading=11, textColor=CINZA)
     return {
@@ -205,12 +213,14 @@ def _consumiveis(identificacao, estilos):
     registro = identificacao.get("consumiveis", [])
     if not isinstance(registro, list) or not registro:
         return []
+    if len(registro) > 150:
+        raise PDFChecklistError("Número excessivo de referências cadastradas.")
     conteudo = [[
         Paragraph("Tipo", estilos["cab"]),
         Paragraph("Referência / fabricante", estilos["cab"]),
         Paragraph("Quantidade cadastrada", estilos["cab"]),
     ]]
-    for item in registro[:150]:
+    for item in registro:
         if not isinstance(item, dict):
             continue
         conteudo.append([
@@ -341,24 +351,25 @@ def gerar_pdf_checklist(execucao, *, modo):
             ("Local", gerador.get("local_instalado") or "-"),
             ("Data da manutenção",
              "____/____/________" if modo == "branco" else
-             getattr(execucao, "data_servico", None) or "-"),
+             (getattr(execucao, "data_servico", None).strftime("%d/%m/%Y")
+              if getattr(execucao, "data_servico", None) else "-")),
         ], estilos),
         Paragraph("Conjunto técnico cadastrado", estilos["sub"]),
         _tabela_dados([
-            ("Motor", f"{_campo(identificacao.get('motor'), 'fabricante')} "
-                      f"{_campo(identificacao.get('motor'), 'modelo')} "
-                      f"| Série: {_campo(identificacao.get('motor'), 'numero_serie')}"),
-            ("Alternador", f"{_campo(identificacao.get('alternador'), 'fabricante')} "
-                           f"{_campo(identificacao.get('alternador'), 'modelo')} "
-                           f"| Série: {_campo(identificacao.get('alternador'), 'numero_serie')}"),
-            ("Controladora", f"{_campo(identificacao.get('controladora'), 'fabricante')} "
-                             f"{_campo(identificacao.get('controladora'), 'modelo')}"),
-            ("QTA/ATS", f"{_campo(identificacao.get('qta'), 'fabricante')} "
-                        f"{_campo(identificacao.get('qta'), 'modelo')}"),
-            ("Bateria", f"{_campo(identificacao.get('bateria'), 'fabricante')} "
-                        f"{_campo(identificacao.get('bateria'), 'modelo')}"),
-            ("Carregador", f"{_campo(identificacao.get('carregador'), 'fabricante')} "
-                           f"{_campo(identificacao.get('carregador'), 'modelo')}"),
+            ("Motor", f"{_bruto(identificacao.get('motor'), 'fabricante')} "
+                      f"{_bruto(identificacao.get('motor'), 'modelo')} "
+                      f"| Série: {_bruto(identificacao.get('motor'), 'numero_serie')}"),
+            ("Alternador", f"{_bruto(identificacao.get('alternador'), 'fabricante')} "
+                           f"{_bruto(identificacao.get('alternador'), 'modelo')} "
+                           f"| Série: {_bruto(identificacao.get('alternador'), 'numero_serie')}"),
+            ("Controladora", f"{_bruto(identificacao.get('controladora'), 'fabricante')} "
+                             f"{_bruto(identificacao.get('controladora'), 'modelo')}"),
+            ("QTA/ATS", f"{_bruto(identificacao.get('qta'), 'fabricante')} "
+                        f"{_bruto(identificacao.get('qta'), 'modelo')}"),
+            ("Bateria", f"{_bruto(identificacao.get('bateria'), 'fabricante')} "
+                        f"{_bruto(identificacao.get('bateria'), 'modelo')}"),
+            ("Carregador", f"{_bruto(identificacao.get('carregador'), 'fabricante')} "
+                           f"{_bruto(identificacao.get('carregador'), 'modelo')}"),
         ], estilos),
     ]
     historia.extend(_consumiveis(identificacao, estilos))
