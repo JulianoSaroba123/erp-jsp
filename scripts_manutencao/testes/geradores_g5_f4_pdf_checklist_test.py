@@ -320,6 +320,18 @@ def test_amostras_criam_pastas_unicas_sem_sobrescrever_arquivos(tmp_path):
     assert arquivo_antigo.read_bytes() == b"PDF anterior que deve permanecer inalterado"
 
 
+def test_procedencia_exige_modulo_pdf_do_proprio_worktree():
+    """Detecta troca silenciosa de módulo PDF por cópia de outra pasta."""
+    from scripts_manutencao.gerar_amostras_g5_f4 import (
+        validar_procedencia_renderizador,
+    )
+
+    resultado = validar_procedencia_renderizador()
+    assert resultado["commit"]
+    assert resultado["worktree"] in resultado["modulo"]
+    assert len(resultado["sha256_modulo"]) == 64
+
+
 def test_pdf_service_sem_db_e_sem_rede():
     raiz = Path(__file__).resolve().parents[2]
     fonte = (
