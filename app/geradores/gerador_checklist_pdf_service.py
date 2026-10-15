@@ -259,7 +259,8 @@ def _consumiveis(identificacao, estilos):
     ]
 
 
-def _item_documento(item, resposta, modo, estilos):
+def _item_documento(item, resposta, modo, estilos, *, titulo_secao=None):
+    """Mantém o título da seção unido ao primeiro item na paginação A4."""
     descricao = _campo(item, "descricao")
     unidade = _campo(item, "unidade", "")
     cabecalho = Paragraph(
@@ -286,10 +287,15 @@ def _item_documento(item, resposta, modo, estilos):
                 f" &nbsp;&nbsp; <b>Medição ({unidade}):</b> "
                 f"{_seguro(resposta.get('medicao'))}"
             )
-        texto += (
-            "<br/><b>Observações / justificativa:</b> "
-            f"{_seguro(resposta.get('observacao'), 'Sem observações.')}"
-        )
+        # Uma expressão com vírgula dentro de f-string vira tupla Python.
+        # Portanto, nunca escrever {_seguro(valor), 'padrão'} aqui.
+        # Além disso, omitir campo vazio reduz páginas sem perder evidência.
+        observacao = str(resposta.get("observacao") or "").strip()
+        if observacao:
+            texto += (
+                "<br/><b>Observações / justificativa:</b> "
+                + _seguro(observacao)
+            )
     tabela = Table(
         [[cabecalho], [Paragraph(texto, estilos["pequeno"])]],
         colWidths=[LARGURA_UTIL], hAlign="LEFT",
@@ -301,9 +307,13 @@ def _item_documento(item, resposta, modo, estilos):
         ("LEFTPADDING", (0, 0), (-1, -1), 7),
         ("RIGHTPADDING", (0, 0), (-1, -1), 7),
         ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
     ]))
-    return KeepTogether([tabela, Spacer(1, 2.4 * mm)])
+    blocos = []
+    if titulo_secao is not None:
+        blocos.append(Paragraph(_seguro(titulo_secao), estilos["sub"]))
+    blocos.extend([tabela, Spacer(1, 1.8 * mm)])
+    return KeepTogether(blocos)
 
 
 def gerar_pdf_checklist(execucao, *, modo):
@@ -376,12 +386,14 @@ def gerar_pdf_checklist(execucao, *, modo):
     historia.append(Paragraph("Itens de inspeção e manutenção", estilos["sub"]))
 
     for secao in modelo["secoes"]:
-        historia.append(
-            Paragraph(_campo(secao, "titulo"), estilos["sub"])
-        )
-        for item in secao["itens"]:
+        # Não permitir título isolado no fim da página: junta seção
+        # e seu primeiro item num único bloco KeepTogether.
+        for indice, item in enumerate(secao["itens"]):
             historia.append(
-                _item_documento(item, resultados.get(item["id"]), modo, estilos)
+                _item_documento(
+                    item, resultados.get(item["id"]), modo, estilos,
+                    titulo_secao=secao["titulo"] if indice == 0 else None,
+                )
             )
 
     historia.append(Paragraph("Observações gerais e recomendações", estilos["sub"]))
