@@ -152,6 +152,12 @@
                     <a href="{{ url_for('ordem_servico.editar', id=ordem.id) }}" class="btn btn-light action-btn mb-2">
                         <i class="fas fa-edit me-2"></i>Editar
                     </a>
+                    {% if current_user.is_authenticated and current_user.tipo_usuario == 'admin' %}
+                    <a href="{{ url_for('gerador_os_vinculo.geradores_da_os', os_id=ordem.id) }}"
+                       class="btn btn-outline-light action-btn mb-2">
+                        <i class="fas fa-industry me-2"></i>Geradores atendidos (G5)
+                    </a>
+                    {% endif %}
                     <a href="{{ url_for('ordem_servico.gerar_relatorio_pdf', id=ordem.id) }}" target="_blank" class="btn btn-light action-btn">
                         <i class="fas fa-file-pdf me-2"></i>PDF Ordem
                     </a>

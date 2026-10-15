@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Geradores da OS {{ ordem.numero }} | ERP JSP{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+    <div>
+      <h1 class="h3 mb-1"><i class="fas fa-industry me-2"></i>Geradores da OS {{ ordem.numero }}</h1>
+      <div class="text-muted">Cliente: {{ ordem.cliente.nome if ordem.cliente else ordem.cliente_id }}</div>
+      <div class="small text-muted">G5-F2 | Associação dos equipamentos atendidos</div>
+    </div>
+    <a class="btn btn-outline-primary" href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}">
+      <i class="fas fa-arrow-left me-2"></i>Voltar à OS
+    </a>
+  </div>
+
+  <div class="alert alert-info">
+    Cada gerador vinculado terá seu próprio checklist na próxima etapa.
+    Esta operação <strong>não cria cobrança, não baixa materiais do estoque,
+    não gera PDF e não altera o status da OS</strong>.
+    O vínculo é permitido apenas para geradores cadastrados no mesmo cliente.
+  </div>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-header"><strong>Equipamentos vinculados</strong></div>
+    <div class="card-body">
+      {% if vinculados %}
+      <div class="table-responsive">
+        <table class="table table-striped align-middle">
+          <thead><tr><th>Gerador</th><th>Identificação</th><th>Vínculo</th><th>Ação</th></tr></thead>
+          <tbody>
+          {% for v in vinculados %}
+          <tr>
+            <td><strong>{{ v.gerador.codigo }}</strong></td>
+            <td>{{ v.gerador.fabricante_grupo or '-' }}
+              {{ v.gerador.modelo or '' }}
+              <div class="small text-muted">Série: {{ v.gerador.numero_serie or 'não informada' }}</div>
+            </td>
+            <td>#{{ v.id }}</td>
+            <td><a class="btn btn-sm btn-outline-primary"
+                   href="{{ url_for('geradores.ficha', gerador_id=v.gerador_id) }}">
+              <i class="fas fa-file-alt me-1"></i>Ficha técnica
+            </a></td>
+          </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <p class="text-muted mb-0">Esta OS ainda não possui geradores vinculados.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-header"><strong>Adicionar gerador do cliente</strong></div>
+    <div class="card-body">
+      {% if ordem.status|lower in ['cancelada', 'cancelado'] %}
+        <div class="alert alert-warning mb-0">OS cancelada. Novas associações estão bloqueadas.</div>
+      {% elif candidatos|length == 0 %}
+        <div class="alert alert-warning mb-0">
+          Não há geradores ativos cadastrados para este cliente.
+          Cadastre primeiro o equipamento no módulo Geradores.
+        </div>
+      {% else %}
+        <form method="post" action="{{ url_for('gerador_os_vinculo.vincular', os_id=ordem.id) }}">
+          <input type="hidden" name="csrf_token_g5" value="{{ csrf_token_g5 }}">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-9">
+              <label class="form-label" for="gerador_id">Gerador a associar</label>
+              <select id="gerador_id" class="form-select" name="gerador_id" required>
+                <option value="">Selecione um gerador</option>
+                {% for gerador in candidatos %}
+                <option value="{{ gerador.id }}"
+                  {% if gerador.id in ja_vinculados %}disabled{% endif %}>
+                  {{ gerador.codigo }} |
+                  {{ gerador.fabricante_grupo or 'Fabricante não informado' }}
+                  {{ gerador.modelo or '' }}
+                  {% if gerador.id in ja_vinculados %}(já vinculado){% endif %}
+                </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <button type="submit" class="btn btn-primary w-100">
+                <i class="fas fa-link me-1"></i>Vincular à OS
+              </button>
+            </div>
+          </div>
+        </form>
+      {% endif %}
+      <p class="small text-muted mt-3 mb-0">
+        No G5-F2 a associação é preservada para auditoria.
+        Desvinculação, se necessária, dependerá de fluxo próprio com justificativa.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
