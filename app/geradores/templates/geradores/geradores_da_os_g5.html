@@ -8,6 +8,7 @@
       <div class="text-muted">Cliente: {{ ordem.cliente.nome if ordem.cliente else ordem.cliente_id }}</div>
       <div class="small text-muted">G5-F2 | Associação dos equipamentos atendidos</div>
     </div>
+    <a class="btn btn-primary" href="{{ url_for('gerador_checklist.listar_os', os_id=ordem.id) }}"><i class="fas fa-clipboard-check me-1"></i>Checklists digitais</a>
     <a class="btn btn-outline-primary" href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}">
       <i class="fas fa-arrow-left me-2"></i>Voltar à OS
     </a>
