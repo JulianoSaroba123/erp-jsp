@@ -185,6 +185,35 @@ def validar_procedencia_renderizador():
         if not observacao and "Observações / justificativa" in texto:
             raise RuntimeError("Observação vazia ocupa espaço indevido.")
 
+    # Também verifica a fixture completa, pois a origem do defeito visual
+    # era uma tupla criada pela amostra, não pela função de paginação.
+    for tipo in ("BASICA", "INTERMEDIARIA", "AVANCADA"):
+        amostra = execucao_ficticia(tipo)
+        registros = {
+            item["item_id"]: item
+            for item in amostra.respostas_snapshot["respostas"]
+        }
+        if registros["SEG_BLOQUEIO"]["observacao"] != "":
+            raise RuntimeError(
+                f"{tipo}: observação vazia foi corrompida na amostra."
+            )
+        if registros["SEG_EPI"]["observacao"] != (
+            "ANOMALIA SIMULADA - apenas para validar paginação e campos."
+        ):
+            raise RuntimeError(
+                f"{tipo}: observação da anomalia foi corrompida."
+            )
+        if any(
+            not isinstance(item["observacao"], str)
+            or item["observacao"] == "('',)"
+            or item["observacao"].startswith("('")
+            for item in registros.values()
+        ):
+            raise RuntimeError(
+                f"{tipo}: observação formatada como tupla na amostra."
+            )
+    print("VERIFICACAO DOS DADOS FICTICIOS NOS 3 PLANOS: APROVADA")
+
     revisao = subprocess.run(
         ["git", "rev-parse", "--short", "HEAD"],
         cwd=raiz, capture_output=True, text=True, check=False,
