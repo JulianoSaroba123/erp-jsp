@@ -181,7 +181,12 @@ def criar_checklist(vinculo_id, tipo, *, usuario_id):
     return execucao, True
 
 
-def obter_checklist(execucao_id, *, bloquear=False):
+def obter_checklist(execucao_id, *, bloquear=False, leitura_historica=False):
+    """Documentos concluídos podem ser consultados mesmo após inativação.
+
+    Uma mudança posterior no equipamento/OS não apaga evidências do passado.
+    Edição/criação continuam exigindo vínculo, OS e gerador ativos e consistentes.
+    """
     execucao_id = _id_positivo(execucao_id, "Checklist")
     query = GeradorChecklistExecucao.query.filter_by(id=execucao_id, ativo=True)
     if bloquear:
@@ -189,7 +194,9 @@ def obter_checklist(execucao_id, *, bloquear=False):
     execucao = query.first()
     if execucao is None:
         raise ExecucaoChecklistError("Checklist não encontrado.")
-    _ativo_e_consistente(execucao.vinculo)
+    if not (leitura_historica and
+            execucao.estado == GeradorChecklistExecucao.ESTADO_CONCLUIDO):
+        _ativo_e_consistente(execucao.vinculo)
     return execucao
 
 
