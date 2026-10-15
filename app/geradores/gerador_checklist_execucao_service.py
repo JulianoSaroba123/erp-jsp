@@ -15,6 +15,7 @@ from app.geradores.gerador_checklist_catalogo import (
     validar_respostas,
 )
 from app.geradores.gerador_checklist_execucao_model import GeradorChecklistExecucao
+from app.geradores.gerador_checklist_auditoria_service import registrar_evento
 from app.geradores.gerador_os_vinculo_model import GeradorOSVinculo
 from app.geradores.gerador_componente_model import (
     GeradorMotor, GeradorAlternador, GeradorControladora, GeradorQTA,
@@ -178,6 +179,8 @@ def criar_checklist(vinculo_id, tipo, *, usuario_id):
     )
     db.session.add(execucao)
     db.session.flush()
+    # Evento e checklist só são persistidos se a mesma transação confirmar.
+    registrar_evento(execucao, acao="CRIADO", usuario_id=usuario_id)
     return execucao, True
 
 
@@ -245,4 +248,9 @@ def salvar_checklist(
         execucao.concluido_por_id = usuario_id
         execucao.concluido_em = datetime.utcnow()
     db.session.flush()
+    registrar_evento(
+        execucao,
+        acao="CONCLUIDO" if concluir else "RASCUNHO_SALVO",
+        usuario_id=usuario_id,
+    )
     return execucao
