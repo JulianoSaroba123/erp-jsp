@@ -229,6 +229,40 @@ def test_pdf_concluido_continua_disponivel_apos_inativar_gerador(ctx):
     ).status_code == 200
 
 
+def test_pdf_rejeita_consumiveis_alem_do_limite(ctx):
+    ex, _ = novo_checklist(ctx)
+    identificacao = dict(ex.identificacao_snapshot)
+    identificacao["consumiveis"] = [
+        {"tipo": "FILTRO", "referencia": f"REFERENCIA-{i}"}
+        for i in range(151)
+    ]
+    ex.identificacao_snapshot = identificacao
+    with pytest.raises(PDFChecklistError, match="excessivo"):
+        gerar_pdf_checklist(ex, modo="branco")
+
+
+def test_pdf_rejeita_item_duplicado_no_snapshot(ctx):
+    ex, _ = novo_checklist(ctx)
+    modelo = dict(ex.modelo_snapshot)
+    secoes = [dict(x) for x in modelo["secoes"]]
+    primeira = dict(secoes[0])
+    primeira["itens"] = list(primeira["itens"]) + [dict(primeira["itens"][0])]
+    secoes[0] = primeira
+    modelo["secoes"] = secoes
+    ex.modelo_snapshot = modelo
+    with pytest.raises(PDFChecklistError, match="duplicados"):
+        gerar_pdf_checklist(ex, modo="branco")
+
+
+def test_relatorio_g4_continua_acessivel(ctx):
+    app, ids = ctx
+    client = app.test_client()
+    login(client)
+    resposta = client.get(f"/geradores/planos/relatorios/{ids['g1']}")
+    assert resposta.status_code == 200
+    assert "GER-G5-F3-A" in resposta.get_data(as_text=True)
+
+
 def test_pdf_service_sem_db_e_sem_rede():
     raiz = Path(__file__).resolve().parents[2]
     fonte = (
