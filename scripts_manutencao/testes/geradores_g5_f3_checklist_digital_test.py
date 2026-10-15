@@ -367,6 +367,38 @@ def test_metodos_http_protegidos(ctx):
     assert client.get(f"/geradores/checklists/vinculos/{ids['v1']}/iniciar").status_code == 405
 
 
+def test_checklist_concluido_permanece_consultavel_apos_inativar_gerador(ctx):
+    app, ids = ctx
+    ex, _ = criar_checklist(ids["v1"], "BASICA", usuario_id=ids["admin"])
+    db.session.commit()
+    salvar_checklist(
+        ex.id, resposta_para("BASICA"),
+        usuario_id=ids["admin"], concluir=True,
+    )
+    db.session.commit()
+    gerador = db.session.get(Gerador, ids["g1"])
+    gerador.ativo = False
+    db.session.commit()
+    client = app.test_client()
+    login(client)
+    resposta = client.get(f"/geradores/checklists/{ex.id}")
+    assert resposta.status_code == 200
+    assert "bloqueado para edição" in resposta.get_data(as_text=True)
+    with pytest.raises(ExecucaoChecklistError):
+        salvar_checklist(ex.id, {}, usuario_id=ids["admin"])
+
+
+def test_checklist_rascunho_rejeita_edicao_de_gerador_inativo(ctx):
+    _, ids = ctx
+    ex, _ = criar_checklist(ids["v1"], "BASICA", usuario_id=ids["admin"])
+    db.session.commit()
+    gerador = db.session.get(Gerador, ids["g1"])
+    gerador.ativo = False
+    db.session.commit()
+    with pytest.raises(ExecucaoChecklistError, match="indisponível"):
+        salvar_checklist(ex.id, {}, usuario_id=ids["admin"])
+
+
 def test_migration_f3_compativel_com_f2():
     codigo = (
         Path(__file__).resolve().parents[2]
