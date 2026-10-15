@@ -947,6 +947,10 @@ def register_blueprints(app):
     from app.geradores.gerador_checklist_pdf_routes import gerador_checklist_pdf_bp
     app.register_blueprint(gerador_checklist_pdf_bp)
 
+    # G5-F5: histórico interno e integridade das respostas.
+    from app.geradores.gerador_checklist_historico_routes import gerador_checklist_historico_bp
+    app.register_blueprint(gerador_checklist_historico_bp)
+
     # Blueprint de ordens de serviço
     from app.ordem_servico.ordem_servico_routes import ordem_servico_bp
     app.register_blueprint(ordem_servico_bp, url_prefix='/ordem_servico')

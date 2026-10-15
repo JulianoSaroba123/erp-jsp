@@ -41,6 +41,7 @@
               <div class="d-flex flex-wrap gap-1">
                 <a class="btn btn-outline-primary btn-sm"
                    href="{{ url_for('gerador_checklist.editar', execucao_id=execucao.id) }}">Abrir checklist</a>
+                <a class="btn btn-outline-info btn-sm" href="{{ url_for('gerador_checklist_historico.historico', execucao_id=execucao.id) }}">Histórico</a>
                 <a class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener"
                    href="{{ url_for('gerador_checklist_pdf.pdf_checklist', execucao_id=execucao.id, modo='branco') }}">PDF em branco</a>
                 {% if execucao.estado == 'CONCLUIDO' %}
