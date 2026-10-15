@@ -304,6 +304,22 @@ def test_titulo_secao_agrupado_com_primeiro_item(ctx):
     assert secao["titulo"] in bloco._content[0].text
 
 
+def test_amostras_criam_pastas_unicas_sem_sobrescrever_arquivos(tmp_path):
+    """Windows mantém PDF aberto/bloqueado: próxima execução não o sobrescreve."""
+    from scripts_manutencao.gerar_amostras_g5_f4 import pasta_nova_amostras
+
+    antiga = pasta_nova_amostras(diretorio_temporario=str(tmp_path))
+    arquivo_antigo = antiga / "AMOSTRA_BASICA_EM_BRANCO.pdf"
+    arquivo_antigo.write_bytes(b"PDF anterior que deve permanecer inalterado")
+
+    nova = pasta_nova_amostras(diretorio_temporario=str(tmp_path))
+    assert nova != antiga
+    assert nova.parent == antiga.parent == tmp_path
+    assert nova.name.startswith("ERP_JSP_G5_F4_REVISAO_")
+    assert not (nova / arquivo_antigo.name).exists()
+    assert arquivo_antigo.read_bytes() == b"PDF anterior que deve permanecer inalterado"
+
+
 def test_pdf_service_sem_db_e_sem_rede():
     raiz = Path(__file__).resolve().parents[2]
     fonte = (
