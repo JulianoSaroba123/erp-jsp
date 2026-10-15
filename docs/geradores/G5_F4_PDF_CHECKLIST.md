@@ -109,3 +109,30 @@ Adicionado teste de isolamento entre duas pastas de revisão.
 **Portão pendente:** validar o teste atualizado, executar o gerador no
 commit corrigido e inspecionar as novas amostras. O PR não está pronto
 para merge apenas com os 53 testes da revisão anterior.
+
+
+## G5-F4-A4 | PDFs recebidos x código versionado
+Três novas amostras enviadas em 15/10/2026: básica em branco **4 páginas**,
+intermediária preenchida **4 páginas** e avançada preenchida **5 páginas**.
+Títulos de seção não ficaram órfãos, e a intermediária não tem página final
+quase vazia. Contudo, os dois PDFs preenchidos **ainda contêm** observações
+como `('',)` e `('ANOMALIA SIMULADA...',)`.
+
+A função `_item_documento` no código do PR já está corrigida para concatenar
+`_seguro(observacao)` apenas quando há texto, sem interpolar tupla.
+A divergência não permite atestar quais arquivos exatos do código foram
+executados na máquina Windows. **Não alegar que o defeito está resolvido no
+documento até rastrear a origem e inspecionar nova amostra.**
+
+Foi acrescentada auditoria em `gerar_amostras_g5_f4.py`:
+- confere o caminho absoluto real dos objetos Python carregados
+  contra o caminho do próprio worktree;
+- testa em memória a função `_item_documento` com observação vazia e NC;
+- detecta implementação legada por inspeção do código;
+- imprime commit de execução e SHA256 do módulo e dos PDFs;
+- salva `AUDITORIA_G5_F4.json` na pasta de amostras exclusiva;
+- interrompe antes de gerar PDFs se detectar mistura ou código incorreto.
+
+**Aprovação visual pendente**: executar no HEAD atual do PR #39, enviar
+três PDFs **da pasta indicada na mesma execução** e, se houver divergência,
+o arquivo de auditoria. PR continua draft; nenhuma publicação.
