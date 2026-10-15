@@ -108,9 +108,17 @@ def execucao_ficticia(tipo):
                 if status == "NAO_CONFORME"
                 else "TESTE NÃO EXECUTADO - autorização fictícia ausente."
                 if status == "NAO_REALIZADO"
-                else "",
+                else ""
             ),
         }
+    # Impede que vírgulas acidentais criem tuplas/listas de observações
+    # que seriam transformadas em "('',)" pela normalização do catálogo.
+    for item_id, resposta in respostas.items():
+        if not isinstance(resposta["observacao"], str):
+            raise TypeError(
+                f"{item_id}: observação da amostra deve ser string, "
+                f"recebido {type(resposta['observacao']).__name__}."
+            )
     validado = validar_respostas(tipo, respostas, encerrar=True)
     return SimpleNamespace(
         id=9999, versao_catalogo=VERSAO_CATALOGO,
