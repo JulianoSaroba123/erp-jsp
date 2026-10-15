@@ -943,6 +943,10 @@ def register_blueprints(app):
     from app.geradores.gerador_checklist_execucao_routes import gerador_checklist_bp
     app.register_blueprint(gerador_checklist_bp)
 
+    # G5-F4: exportacao A4 PDF em branco ou preenchido.
+    from app.geradores.gerador_checklist_pdf_routes import gerador_checklist_pdf_bp
+    app.register_blueprint(gerador_checklist_pdf_bp)
+
     # Blueprint de ordens de serviço
     from app.ordem_servico.ordem_servico_routes import ordem_servico_bp
     app.register_blueprint(ordem_servico_bp, url_prefix='/ordem_servico')

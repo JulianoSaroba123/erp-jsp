@@ -14,7 +14,22 @@
         <span class="badge bg-light text-dark">{{ execucao.versao_catalogo }}</span>
       </p>
     </div>
-    <a class="btn btn-outline-primary" href="{{ url_for('gerador_checklist.listar_os', os_id=execucao.vinculo.ordem_servico_id) }}">Voltar aos checklists</a>
+    <div class="d-flex flex-wrap gap-2">
+      <a class="btn btn-outline-primary" target="_blank" rel="noopener"
+         href="{{ url_for('gerador_checklist_pdf.pdf_checklist', execucao_id=execucao.id, modo='branco') }}">
+        <i class="fas fa-file-pdf me-1"></i>PDF em branco
+      </a>
+      {% if execucao.estado == 'CONCLUIDO' %}
+      <a class="btn btn-primary" target="_blank" rel="noopener"
+         href="{{ url_for('gerador_checklist_pdf.pdf_checklist', execucao_id=execucao.id, modo='preenchido') }}">
+        <i class="fas fa-file-pdf me-1"></i>PDF preenchido
+      </a>
+      {% else %}
+      <span class="btn btn-outline-secondary disabled" aria-disabled="true"
+            title="Conclua o checklist para gerar o PDF preenchido">PDF preenchido após conclusão</span>
+      {% endif %}
+      <a class="btn btn-outline-primary" href="{{ url_for('gerador_checklist.listar_os', os_id=execucao.vinculo.ordem_servico_id) }}">Voltar aos checklists</a>
+    </div>
   </div>
   <div class="alert alert-info">
     Preencha os resultados observados em campo, não marque itens automaticamente.
