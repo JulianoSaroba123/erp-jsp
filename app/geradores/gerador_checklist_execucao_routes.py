@@ -104,7 +104,7 @@ def iniciar(vinculo_id):
 def editar(execucao_id):
     _admin()
     try:
-        execucao = obter_checklist(execucao_id)
+        execucao = obter_checklist(execucao_id, leitura_historica=True)
     except ExecucaoChecklistError:
         abort(404)
     respostas = {
