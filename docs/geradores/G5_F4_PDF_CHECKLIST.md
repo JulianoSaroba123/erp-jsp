@@ -34,6 +34,9 @@
 - Links nas telas G5-F3 para ambos os PDFs. PDF preenchido somente aparece após concluir.
 - `scripts_manutencao/testes/geradores_g5_f4_pdf_checklist_test.py`:
   testes reais de geração e HTTP.
+- `scripts_manutencao/gerar_amostras_g5_f4.py`: gera amostras em PDF no diretório temporário,
+  com dados 100% fictícios e sem gravação no ERP. Executar para inspecionar visualmente
+  A4 básico em branco, intermediário preenchido e avançado preenchido.
 
 ## Proteções
 - Não há escrita no BD, arquivo temporário, uso de APIs externas ou movimentação
@@ -56,6 +59,7 @@
 3. Executar smoke HTTP do relatório G4 com dados fictícios.
 4. Verificar visualmente os dois PDFs impressos A4 (quebras, status, unidades, nomes,
    caracteres PT-BR e logo) e PDF de preventiva avançada com várias páginas.
+   Use `python scripts_manutencao/gerar_amostras_g5_f4.py` e abra os arquivos da pasta temporária exibida no console.
 5. Conferir que não há vazamento de respostas em branco e que documento concluído
    preserva os valores do snapshot.
 6. Manter PR em rascunho, sem publicação até autorização expressa. Como o Render
