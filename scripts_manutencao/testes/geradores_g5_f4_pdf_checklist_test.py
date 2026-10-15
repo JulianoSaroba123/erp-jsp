@@ -332,6 +332,32 @@ def test_procedencia_exige_modulo_pdf_do_proprio_worktree():
     assert len(resultado["sha256_modulo"]) == 64
 
 
+@pytest.mark.parametrize("tipo", ["BASICA", "INTERMEDIARIA", "AVANCADA"])
+def test_amostras_usam_observacoes_de_texto_sem_tuplas(tipo):
+    """Regressão do erro visual '('',)' causado por vírgula na fixture."""
+    from scripts_manutencao.gerar_amostras_g5_f4 import execucao_ficticia
+
+    execucao = execucao_ficticia(tipo)
+    respostas = {
+        item["item_id"]: item
+        for item in execucao.respostas_snapshot["respostas"]
+    }
+    assert respostas["SEG_EPI"]["observacao"] == (
+        "ANOMALIA SIMULADA - apenas para validar paginação e campos."
+    )
+    if "PROT_PRESSAO" in respostas:
+        assert respostas["PROT_PRESSAO"]["observacao"] == (
+            "TESTE NÃO EXECUTADO - autorização fictícia ausente."
+        )
+    assert respostas["SEG_BLOQUEIO"]["observacao"] == ""
+    assert all(
+        isinstance(item["observacao"], str)
+        and not item["observacao"].startswith("('")
+        and item["observacao"] != "('',)"
+        for item in respostas.values()
+    )
+
+
 def test_pdf_service_sem_db_e_sem_rede():
     raiz = Path(__file__).resolve().parents[2]
     fonte = (
