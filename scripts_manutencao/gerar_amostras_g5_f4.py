@@ -2,7 +2,7 @@
 """G5-F4: gera PDFs de demonstração SOMENTE COM DADOS FICTÍCIOS.
 
 Uso:
-    python scripts_manutencao/gerar_amostras_g5_f4.py
+    python -m scripts_manutencao.gerar_amostras_g5_f4
 
 Saída: pasta temporária do Windows/Linux, fora da worktree.
 Não envia dados, não usa registros reais, não modifica o banco.
