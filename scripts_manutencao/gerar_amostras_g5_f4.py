@@ -7,7 +7,11 @@ Uso:
 Saída: pasta temporária do Windows/Linux, fora da worktree.
 Não envia dados, não usa registros reais, não modifica o banco.
 """
+import hashlib
+import inspect
+import json
 import os
+import subprocess
 import tempfile
 from datetime import date, datetime
 from pathlib import Path
@@ -21,7 +25,9 @@ os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 from app.geradores.gerador_checklist_catalogo import (
     VERSAO_CATALOGO, obter_modelo, validar_respostas,
 )
-from app.geradores.gerador_checklist_pdf_service import gerar_pdf_checklist
+from app.geradores.gerador_checklist_pdf_service import (
+    _estilos, _item_documento, gerar_pdf_checklist,
+)
 
 
 def execucao_ficticia(tipo):
@@ -132,7 +138,66 @@ def pasta_nova_amostras(*, diretorio_temporario=None):
     ))
 
 
+def validar_procedencia_renderizador():
+    """Evita amostras feitas por uma cópia antiga/importada de outro worktree."""
+    raiz = Path(__file__).resolve().parents[1]
+    esperado = (raiz / "app/geradores/gerador_checklist_pdf_service.py").resolve()
+    modulo_carregado = Path(inspect.getfile(gerar_pdf_checklist)).resolve()
+    helper_carregado = Path(inspect.getfile(_item_documento)).resolve()
+    if modulo_carregado != esperado or helper_carregado != esperado:
+        raise RuntimeError(
+            "GERADOR PDF INCORRETO: Python carregou módulo de outra worktree. "
+            f"Esperado: {esperado}; usado: {modulo_carregado}"
+        )
+
+    codigo = inspect.getsource(_item_documento)
+    if (
+        'observacao = str(resposta.get("observacao") or "").strip()' not in codigo
+        or "f\"{_seguro(resposta.get('observacao'), 'Sem observações.')}\"" in codigo
+    ):
+        raise RuntimeError(
+            "GERADOR PDF DESATUALIZADO: função de observações não contém "
+            "a correção do PR #39. Confira o commit e a origem do import."
+        )
+
+    item = obter_modelo("BASICA")["secoes"][0]["itens"][0]
+    for observacao in ("", "ANOMALIA SIMULADA - VALIDAÇÃO"):
+        resposta = {
+            "status": "NAO_CONFORME" if observacao else "CONFORME",
+            "medicao": None, "observacao": observacao,
+        }
+        bloco = _item_documento(item, resposta, "preenchido", _estilos())
+        texto = bloco._content[0]._cellvalues[1][0].text
+        if "('',)" in texto or "('ANOMALIA" in texto:
+            raise RuntimeError(
+                "GERADOR PDF COM DEFEITO: observação renderizada como tupla."
+            )
+        if observacao and observacao not in texto:
+            raise RuntimeError("Observação de teste não foi preservada.")
+        if not observacao and "Observações / justificativa" in texto:
+            raise RuntimeError("Observação vazia ocupa espaço indevido.")
+
+    revisao = subprocess.run(
+        ["git", "rev-parse", "--short", "HEAD"],
+        cwd=raiz, capture_output=True, text=True, check=False,
+    )
+    commit = revisao.stdout.strip() if revisao.returncode == 0 else "indisponivel"
+    hash_modulo = hashlib.sha256(esperado.read_bytes()).hexdigest()
+    print(f"WORKTREE DE EXECUCAO: {raiz}")
+    print(f"COMMIT DE EXECUCAO: {commit}")
+    print(f"MODULO REAL DO PDF: {modulo_carregado}")
+    print(f"SHA256 DO MODULO PDF: {hash_modulo}")
+    print("VERIFICACAO DO TEXTO DAS OBSERVACOES: APROVADA")
+    return {
+        "commit": commit,
+        "worktree": str(raiz),
+        "modulo": str(modulo_carregado),
+        "sha256_modulo": hash_modulo,
+    }
+
+
 def main():
+    procedencia = validar_procedencia_renderizador()
     destino = pasta_nova_amostras()
     print(f"PASTA DOS NOVOS PDFs: {destino}")
 
@@ -141,12 +206,21 @@ def main():
         ("AMOSTRA_INTERMEDIARIA_PREENCHIDO.pdf", "INTERMEDIARIA", "preenchido"),
         ("AMOSTRA_AVANCADA_PREENCHIDO.pdf", "AVANCADA", "preenchido"),
     ]
+    manifesto = dict(procedencia)
+    manifesto["arquivos"] = {}
     for nome, tipo, modo in exemplos:
         caminho = destino / nome
         arquivo = gerar_pdf_checklist(execucao_ficticia(tipo), modo=modo)
         caminho.write_bytes(arquivo)
+        hash_pdf = hashlib.sha256(arquivo).hexdigest()
+        manifesto["arquivos"][nome] = {"bytes": len(arquivo), "sha256": hash_pdf}
         print(f"PDF DEMONSTRATIVO: {caminho} ({len(arquivo)} bytes)")
+        print(f"SHA256 DO PDF: {hash_pdf}")
 
+    (destino / "AUDITORIA_G5_F4.json").write_text(
+        json.dumps(manifesto, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    print(f"AUDITORIA DO RENDERIZADOR: {destino / 'AUDITORIA_G5_F4.json'}")
     print("HOMOLOGAÇÃO VISUAL: conferir margens, logo, caracteres e páginas A4.")
     print("Arquivos contêm exclusivamente dados fictícios.")
     print(f"ABRA ESTA PASTA: {destino}")
