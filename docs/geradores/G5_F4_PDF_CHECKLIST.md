@@ -59,7 +59,7 @@
 3. Executar smoke HTTP do relatório G4 com dados fictícios.
 4. Verificar visualmente os dois PDFs impressos A4 (quebras, status, unidades, nomes,
    caracteres PT-BR e logo) e PDF de preventiva avançada com várias páginas.
-   Use `python scripts_manutencao/gerar_amostras_g5_f4.py` e abra os arquivos da pasta temporária exibida no console.
+   Use `python -m scripts_manutencao.gerar_amostras_g5_f4` e abra os arquivos da pasta temporária exibida no console.
 5. Conferir que não há vazamento de respostas em branco e que documento concluído
    preserva os valores do snapshot.
 6. Manter PR em rascunho, sem publicação até autorização expressa. Como o Render
