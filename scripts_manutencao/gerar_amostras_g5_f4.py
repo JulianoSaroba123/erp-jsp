@@ -121,9 +121,20 @@ def execucao_ficticia(tipo):
     )
 
 
+def pasta_nova_amostras(*, diretorio_temporario=None):
+    """Cria pasta única para não sobrescrever PDFs abertos no Windows.
+
+    Nunca remove, substitui ou altera as amostras de revisões anteriores.
+    """
+    return Path(tempfile.mkdtemp(
+        prefix="ERP_JSP_G5_F4_REVISAO_",
+        dir=diretorio_temporario,
+    ))
+
+
 def main():
-    destino = Path(tempfile.gettempdir()) / "ERP_JSP_G5_F4_AMOSTRAS"
-    destino.mkdir(parents=True, exist_ok=True)
+    destino = pasta_nova_amostras()
+    print(f"PASTA DOS NOVOS PDFs: {destino}")
 
     exemplos = [
         ("AMOSTRA_BASICA_EM_BRANCO.pdf", "BASICA", "branco"),
@@ -138,6 +149,8 @@ def main():
 
     print("HOMOLOGAÇÃO VISUAL: conferir margens, logo, caracteres e páginas A4.")
     print("Arquivos contêm exclusivamente dados fictícios.")
+    print(f"ABRA ESTA PASTA: {destino}")
+    return destino
 
 
 if __name__ == "__main__":
