@@ -125,3 +125,48 @@ def test_g1_formulario_aplica_maxlength_sem_truncar_observacoes():
     assert "Gerador.__table__.columns" in codigo
     assert "coluna.type.length" in codigo
     assert Gerador.__table__.columns["descricao"].type.length == 250
+
+
+def test_g1_tela_exibe_erro_e_preserva_formulario(monkeypatch):
+    from flask import get_flashed_messages
+    from app import create_app
+    from app.geradores import gerador_routes as rotas
+    from app.geradores import gerador_service as service
+
+    app = create_app("testing")
+
+    monkeypatch.setattr(
+        rotas,
+        "_contexto_form_gerador",
+        lambda: {},
+    )
+    monkeypatch.setattr(
+        rotas,
+        "render_template",
+        lambda template, **contexto: contexto,
+    )
+    monkeypatch.setattr(
+        service,
+        "_carregar_cliente_ativo",
+        lambda cliente_id: SimpleNamespace(id=int(cliente_id)),
+    )
+    monkeypatch.setattr(
+        service,
+        "_proximo_codigo_gerador",
+        lambda: pytest.fail("Nao pode reservar codigo com erro no texto."),
+    )
+
+    descricao = "D" * 251
+    with app.test_request_context(
+        "/geradores/novo",
+        method="POST",
+        data={"cliente_id": "1", "descricao": descricao},
+    ):
+        resposta = rotas.novo()
+        mensagens = get_flashed_messages(with_categories=True)
+
+    assert resposta["form_data"]["descricao"] == descricao
+    assert any(
+        categoria == "warning" and "250 caracteres" in mensagem
+        for categoria, mensagem in mensagens
+    )
