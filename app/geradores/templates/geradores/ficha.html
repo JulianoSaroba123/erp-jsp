@@ -585,6 +585,11 @@ Relat&oacute;rios t&eacute;cnicos
         Alternador ainda não cadastrado para este grupo gerador.
     </div>
 
+    <a href="{{ url_for('geradores.novo_alternador', gerador_id=gerador.id) }}"
+       class="btn btn-primary btn-sm mt-3">
+        <i class="fas fa-bolt me-1"></i> Cadastrar Alternador
+    </a>
+
     {% endif %}
 
 </div>
