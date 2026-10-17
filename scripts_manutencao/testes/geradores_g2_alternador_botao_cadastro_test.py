@@ -29,12 +29,12 @@ def test_g2_botao_de_cadastro_existe_na_aba_alternador():
 def test_g2_botao_aparece_apenas_quando_alternador_nao_existe():
     secao = _secao_alternador()
     assert secao.count("Cadastrar Alternador") == 1
-    bloco_vazio = secao.split("{% else %}", 1)[1]
+    bloco_vazio = secao.rsplit("{% else %}", 1)[1]
     assert "Cadastrar Alternador" in bloco_vazio
     assert bloco_vazio.index("Cadastrar Alternador") < bloco_vazio.index(
         "{% endif %}"
     )
-    assert "Editar Alternador" in secao.split("{% else %}", 1)[0]
+    assert "Editar Alternador" in secao.rsplit("{% else %}", 1)[0]
 
 
 def test_g2_link_reutiliza_rota_get_existente_sem_acao_automatica():
@@ -43,4 +43,4 @@ def test_g2_link_reutiliza_rota_get_existente_sem_acao_automatica():
     assert 'def novo_alternador(gerador_id):' in rotas
     assert 'methods=["GET", "POST"]' in rotas
     secao = _secao_alternador()
-    assert "<form" not in secao.split("{% else %}", 1)[1]
+    assert "<form" not in secao.rsplit("{% else %}", 1)[1]
