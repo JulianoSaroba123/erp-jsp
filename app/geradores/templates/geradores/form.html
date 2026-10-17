@@ -24,6 +24,7 @@
         class="form-control"
         value="{{ form_data.get(nome, '') }}"
         {% if step %}step="{{ step }}"{% endif %}
+        {% if tipo == 'text' and limites_texto.get(nome) %}maxlength="{{ limites_texto[nome] }}"{% endif %}
     >
 </div>
 {% endmacro %}
@@ -199,7 +200,7 @@
                     class="form-label"
                     for="descricao"
                 >
-                    Descrição / Identificação complementar
+                    Descrição / Identificação complementar (até 250 caracteres)
                 </label>
 
                 <textarea
@@ -207,7 +208,9 @@
                     name="descricao"
                     class="form-control"
                     rows="2"
+                    maxlength="{{ limites_texto['descricao'] }}"
                 >{{ form_data.get('descricao', '') }}</textarea>
+                <div class="form-text">Para informações técnicas longas, utilize o campo Observações abaixo.</div>
             </div>
 
         </div>
