@@ -3,6 +3,7 @@
 
 from decimal import Decimal, InvalidOperation
 
+from sqlalchemy import String
 from sqlalchemy.orm import selectinload
 
 from flask import (
@@ -255,6 +256,12 @@ def _contexto_form_gerador():
         "unidades": unidades,
         "equipamentos": equipamentos,
         "status_validos": Gerador.STATUS_VALIDOS,
+        "limites_texto": {
+            coluna.name: coluna.type.length
+            for coluna in Gerador.__table__.columns
+            if isinstance(coluna.type, String)
+            and coluna.type.length is not None
+        },
     }
 
 

@@ -16,7 +16,7 @@ Responsabilidades atuais:
 A sequence geradores_codigo_seq sera criada pela migration da Fase G1.
 """
 
-from sqlalchemy import text
+from sqlalchemy import String, text
 
 from app.cliente.cliente_model import Cliente
 from app.equipamento.equipamento_model import Equipamento
@@ -111,6 +111,43 @@ def _validar_campos(dados, permitidos):
         raise GeradorDominioError(
             "Campos nao permitidos: "
             f"{lista}."
+        )
+
+
+
+def _validar_tamanhos_textos_gerador(dados):
+    """Valida VARCHAR do prontuario antes de reservar codigo ou gravar no banco.
+
+    Usa o proprio modelo para nao duplicar limites da base de dados.
+    TEXT sem comprimento maximo (ex.: observacoes) permanece livre.
+    """
+
+    for nome, valor in dados.items():
+        if not isinstance(valor, str):
+            continue
+
+        coluna = Gerador.__table__.columns.get(nome)
+        if coluna is None or not isinstance(coluna.type, String):
+            continue
+
+        limite = coluna.type.length
+        if limite is None or len(valor) <= limite:
+            continue
+
+        rotulo = (
+            "Descrição / Identificação complementar"
+            if nome == "descricao"
+            else nome.replace("_", " ").capitalize()
+        )
+        dica = (
+            " Use o campo Observações para os detalhes longos."
+            if nome == "descricao"
+            else ""
+        )
+
+        raise GeradorDominioError(
+            f"O campo '{rotulo}' aceita no máximo {limite} caracteres "
+            f"(informados: {len(valor)}).{dica}"
         )
 
 
@@ -378,6 +415,7 @@ def criar_gerador(
         dados,
         CAMPOS_GERADOR_CRIACAO,
     )
+    _validar_tamanhos_textos_gerador(dados)
 
     status = dados.get(
         "status",
