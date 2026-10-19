@@ -2,7 +2,7 @@
 """G5-F4: exportação de checklists via GET, restrita a administradores."""
 from io import BytesIO
 
-from flask import Blueprint, abort, current_app, request, send_file
+from flask import Blueprint, abort, current_app, render_template, request, send_file
 from flask_login import current_user, login_required
 
 from app.geradores.gerador_checklist_execucao_service import (
@@ -11,6 +11,7 @@ from app.geradores.gerador_checklist_execucao_service import (
 from app.geradores.gerador_checklist_pdf_service import (
     PDFChecklistError, gerar_pdf_checklist,
 )
+from app.geradores.gerador_checklist_generico_pdf_service import gerar_pdf_modelo_generico
 from app.geradores.gerador_checklist_auditoria_service import (
     conferir_integridade, consultar_historico,
 )
@@ -70,6 +71,41 @@ def pdf_checklist(execucao_id):
         download_name=nome,
         as_attachment=False,
         conditional=False,
+    )
+    resposta.headers["Cache-Control"] = "private, no-store, max-age=0"
+    resposta.headers["Pragma"] = "no-cache"
+    resposta.headers["X-Content-Type-Options"] = "nosniff"
+    return resposta
+
+
+@gerador_checklist_pdf_bp.get("/modelo-generico")
+@login_required
+def modelo_generico():
+    """Tela de seleção; não lê nem escreve prontuários/OS."""
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+    return render_template("geradores/checklist_generico_g5.html")
+
+
+@gerador_checklist_pdf_bp.get("/modelo-generico/pdf")
+@login_required
+def modelo_generico_pdf():
+    """PDF referencial genérico, sem IDs reais nem efeitos sobre o banco."""
+    if getattr(current_user, "tipo_usuario", None) != "admin":
+        abort(403)
+    tipo = request.args.get("tipo", "INTERMEDIARIA").strip().upper()
+    try:
+        pdf = gerar_pdf_modelo_generico(tipo)
+    except PDFChecklistError as erro:
+        abort(400, description=str(erro))
+    except Exception:
+        current_app.logger.exception("G5: falha na geração do checklist genérico")
+        abort(500, description="Falha ao gerar checklist genérico.")
+
+    resposta = send_file(
+        BytesIO(pdf), mimetype="application/pdf",
+        download_name=f"JSP_G5_CHECKLIST_GENERICO_{tipo}.pdf",
+        as_attachment=False, conditional=False,
     )
     resposta.headers["Cache-Control"] = "private, no-store, max-age=0"
     resposta.headers["Pragma"] = "no-cache"
