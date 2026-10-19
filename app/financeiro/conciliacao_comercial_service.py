@@ -6,12 +6,74 @@ Ausência de vínculo não é prova de inadimplência e nunca autoriza cobrança
 Não executa flush, commit, rollback ou qualquer escrita.
 """
 from collections import defaultdict
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from math import ceil
 
 LIMITE_DOCUMENTOS = 5000
 SITUACOES = {"todas", "revisar", "vinculado", "em_andamento"}
 TIPOS = {"todos", "proposta", "pedido", "os"}
+PERIODOS = {"todos", "operacao", "transicao", "legado", "sem_data"}
+# Marco aprovado pela gestão: não altera documentos, caixa ou data fiscal.
+MARCO_IMPLANTACAO_FINANCEIRA = date(2026, 9, 1)
+
+
+def _data_civil(valor):
+    """Retorna somente datas válidas, sem converter timestamps de forma ambígua."""
+    if isinstance(valor, datetime):
+        return valor.date()
+    if isinstance(valor, date):
+        return valor
+    return None
+
+
+def _data_documento(tipo_doc, documento):
+    campo = {
+        "proposta": "data_emissao",
+        "pedido": "data_pedido",
+        "os": "data_abertura",
+    }[tipo_doc]
+    return _data_civil(getattr(documento, campo, None))
+
+
+def _classificar_periodo(tipo_doc, documento, vinculos, *, parcelas=(),
+                         relacionados=()):
+    """Classificação documental, nunca confirmação de quitação.
+
+    Transição é apenas indício de movimento posterior ao marco e exige conferência.
+    Ausência de indícios NÃO equivale a pagamento integral no legado.
+    """
+    emissao = _data_documento(tipo_doc, documento)
+    if emissao is None:
+        return "sem_data", None
+    if emissao >= MARCO_IMPLANTACAO_FINANCEIRA:
+        return "operacao", emissao
+
+    datas_posteriores = [
+        getattr(documento, "data_aprovacao", None),
+        getattr(documento, "data_conclusao", None),
+    ]
+    for lancamento in vinculos:
+        datas_posteriores.extend(
+            (getattr(lancamento, "data_pagamento", None),
+             getattr(lancamento, "data_vencimento", None),
+             getattr(lancamento, "data_lancamento", None))
+        )
+    for parcela in parcelas:
+        datas_posteriores.extend(
+            (getattr(parcela, "data_pagamento", None),
+             getattr(parcela, "data_vencimento", None))
+        )
+    for tipo_rel, documento_rel in relacionados:
+        datas_posteriores.append(_data_documento(tipo_rel, documento_rel))
+    if any(
+        (data := _data_civil(valor)) is not None
+        and data >= MARCO_IMPLANTACAO_FINANCEIRA
+        for valor in datas_posteriores
+    ):
+        return "transicao", emissao
+    return "legado", emissao
+
 
 
 def dinheiro(valor):
@@ -79,11 +141,12 @@ def _candidatos_manuais(codigo, cliente_id, lancamentos):
 
 
 def montar_conciliacao(propostas, pedidos, ordens, lancamentos, parcelas=(),
-                       *, tipo="todos", situacao="todas", busca="", pagina=1,
+                       *, tipo="todos", situacao="todas", periodo="todos", busca="", pagina=1,
                        por_pagina=25):
     """Processa objetos já consultados; função pura para teste sem banco."""
     tipo = tipo if tipo in TIPOS else "todos"
     situacao = situacao if situacao in SITUACOES else "todas"
+    periodo = periodo if periodo in PERIODOS else "todos"
     busca = str(busca or "").strip().casefold()[:100]
     try:
         pagina = max(1, int(pagina))
@@ -127,16 +190,23 @@ def montar_conciliacao(propostas, pedidos, ordens, lancamentos, parcelas=(),
     todos = []
 
     def acrescentar(tipo_doc, documento, *, vinculos, situacao_nome,
-                    observacao, alerta, relacionados=None):
+                    observacao, alerta, relacionados=None, parcelas_doc=(),
+                    relacionados_docs=()):
         identificador = (
             documento.codigo if tipo_doc == "proposta" else documento.numero
         )
         resumo = _resumo_vinculos(vinculos)
+        periodo_doc, emissao = _classificar_periodo(
+            tipo_doc, documento, vinculos, parcelas=parcelas_doc,
+            relacionados=relacionados_docs,
+        )
         cliente_id = getattr(documento, "cliente_id", None)
         todos.append({
             "tipo": tipo_doc,
             "id": documento.id,
             "codigo": identificador,
+            "periodo": periodo_doc,
+            "data_documento": emissao,
             "cliente": _nome_cliente(documento),
             "cliente_id": cliente_id,
             "status": _status(documento),
@@ -179,6 +249,11 @@ def montar_conciliacao(propostas, pedidos, ordens, lancamentos, parcelas=(),
             relacionados=(
                 [("Pedido", x.numero, "pedido", x.id) for x in pedidos_associados]
                 + [("OS", x.numero, "os", x.id) for x in os_associadas]
+            ),
+            parcelas_doc=parcelas_da_prop[p.id],
+            relacionados_docs=(
+                [("pedido", x) for x in pedidos_associados]
+                + [("os", x) for x in os_associadas]
             ),
         )
 
@@ -224,6 +299,7 @@ def montar_conciliacao(propostas, pedidos, ordens, lancamentos, parcelas=(),
             "pedido", ped, vinculos=vinculos, situacao_nome=nome,
             observacao=obs, alerta=(nome == "revisar"),
             relacionados=relacionados,
+            relacionados_docs=([("proposta", p)] if ped.proposta_id is not None and p else []),
         )
 
     for os in ordens:
@@ -253,6 +329,7 @@ def montar_conciliacao(propostas, pedidos, ordens, lancamentos, parcelas=(),
         acrescentar(
             "os", os, vinculos=vinculos, situacao_nome=nome,
             observacao=obs, alerta=bool(sem or valor_divergente), relacionados=relacionados,
+            relacionados_docs=([("proposta", p)] if p else []),
         )
 
     totais = {
@@ -260,20 +337,26 @@ def montar_conciliacao(propostas, pedidos, ordens, lancamentos, parcelas=(),
         "pedidos_revisar": sum(r["alerta"] for r in todos if r["tipo"] == "pedido"),
         "os_revisar": sum(r["alerta"] for r in todos if r["tipo"] == "os"),
         "documentos": len(todos),
+        "operacao_revisar": sum(r["alerta"] for r in todos if r["periodo"] == "operacao"),
+        "transicao_revisar": sum(r["alerta"] for r in todos if r["periodo"] == "transicao"),
+        "legado_revisar": sum(r["alerta"] for r in todos if r["periodo"] == "legado"),
+        "sem_data_revisar": sum(r["alerta"] for r in todos if r["periodo"] == "sem_data"),
     }
 
     filtrados = [
         r for r in todos
         if (tipo == "todos" or r["tipo"] == tipo)
         and (situacao == "todas" or r["situacao"] == situacao)
+        and (periodo == "todos" or r["periodo"] == periodo)
         and (
             not busca or busca in (
                 r["codigo"] + " " + r["cliente"] + " " + r["status"]
             ).casefold()
         )
     ]
-    # Documentos a conferir primeiro e ordem estável para paginação.
+    # Priorizar operação atual, sem ocultar alertas históricos.
     filtrados.sort(key=lambda r: (
+        {"operacao": 0, "transicao": 1, "sem_data": 2, "legado": 3}[r["periodo"]],
         0 if r["situacao"] == "revisar" else 1,
         {"proposta": 0, "pedido": 1, "os": 2}[r["tipo"]],
         -r["id"],
@@ -288,12 +371,14 @@ def montar_conciliacao(propostas, pedidos, ordens, lancamentos, parcelas=(),
         "paginas": paginas,
         "tipo": tipo,
         "situacao": situacao,
+        "periodo": periodo,
+        "marco_implantacao": MARCO_IMPLANTACAO_FINANCEIRA,
         "busca": busca,
         "totais": totais,
     }
 
 
-def consultar_conciliacao(*, tipo="todos", situacao="todas", busca="", pagina=1):
+def consultar_conciliacao(*, tipo="todos", situacao="todas", periodo="todos", busca="", pagina=1):
     """Acesso ORM somente leitura, sem transações de escrita."""
     from sqlalchemy.orm import joinedload
     from app.extensoes import db
@@ -330,5 +415,5 @@ def consultar_conciliacao(*, tipo="todos", situacao="todas", busca="", pagina=1)
                 .filter(ParcelaProposta.ativo.is_(True)).all())
     return montar_conciliacao(
         propostas, pedidos, ordens, financeiros, parcelas,
-        tipo=tipo, situacao=situacao, busca=busca, pagina=pagina,
+        tipo=tipo, situacao=situacao, periodo=periodo, busca=busca, pagina=pagina,
     )

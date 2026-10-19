@@ -28,6 +28,7 @@ def painel():
         dados = consultar_conciliacao(
             tipo=request.args.get("tipo", "todos"),
             situacao=request.args.get("situacao", "revisar"),
+            periodo=request.args.get("periodo", "todos"),
             busca=request.args.get("busca", ""),
             pagina=request.args.get("pagina", 1),
         )
