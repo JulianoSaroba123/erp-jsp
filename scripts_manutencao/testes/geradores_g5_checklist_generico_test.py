@@ -94,3 +94,18 @@ def test_servico_generico_nao_acessa_banco_ou_rede():
     assert "requests." not in origem
     assert "http://" not in origem
     assert "https://" not in origem
+
+
+
+def test_amostras_visuais_criadas_em_pastas_exclusivas(tmp_path):
+    from scripts_manutencao.gerar_amostras_g5_generico import gerar_amostras
+
+    primeira = gerar_amostras(str(tmp_path))
+    segunda = gerar_amostras(str(tmp_path))
+    assert set(primeira) == set(segunda) == {
+        "BASICA", "INTERMEDIARIA", "AVANCADA",
+    }
+    for tipo in primeira:
+        assert primeira[tipo] != segunda[tipo]
+        assert primeira[tipo].read_bytes().startswith(b"%PDF-")
+        assert segunda[tipo].read_bytes().startswith(b"%PDF-")
