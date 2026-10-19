@@ -19,7 +19,7 @@ from app.geradores.gerador_checklist_catalogo import (
     ChecklistDominioError, obter_modelo,
 )
 from app.geradores.gerador_checklist_pdf_service import (
-    ALTURA, AZUL, BORDA, FUNDO, LARGURA_UTIL, MARGEM,
+    AZUL, BORDA, FUNDO, LARGURA_UTIL, MARGEM,
     PDFChecklistError, _cabecalho, _estilos, _item_documento, _tabela_dados,
 )
 
