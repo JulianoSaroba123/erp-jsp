@@ -109,3 +109,29 @@ def test_amostras_visuais_criadas_em_pastas_exclusivas(tmp_path):
         assert primeira[tipo] != segunda[tipo]
         assert primeira[tipo].read_bytes().startswith(b"%PDF-")
         assert segunda[tipo].read_bytes().startswith(b"%PDF-")
+
+
+
+def test_cli_isola_banco_em_sqlite_temporario(monkeypatch):
+    from scripts_manutencao.gerar_amostras_g5_generico import (
+        _preparar_banco_descartavel_cli,
+    )
+    monkeypatch.delenv("RENDER", raising=False)
+    monkeypatch.delenv("RENDER_SERVICE_ID", raising=False)
+    monkeypatch.setenv("DATABASE_URL", "postgresql://nao-deve-ser-usado")
+    caminho = _preparar_banco_descartavel_cli()
+    assert caminho.name == "homologacao_descartavel.db"
+    assert caminho.parent.name.startswith("ERP_JSP_G5_GENERICO_SQLITE_")
+    assert caminho.parent.is_dir()
+    assert "erp.db" not in str(caminho)
+    assert caminho.as_posix() in __import__("os").environ["DATABASE_URL"]
+    assert "postgresql://" not in __import__("os").environ["DATABASE_URL"]
+
+
+def test_cli_recusa_execucao_no_render(monkeypatch):
+    from scripts_manutencao.gerar_amostras_g5_generico import (
+        _preparar_banco_descartavel_cli,
+    )
+    monkeypatch.setenv("RENDER", "true")
+    with pytest.raises(RuntimeError, match="fora do Render"):
+        _preparar_banco_descartavel_cli()
