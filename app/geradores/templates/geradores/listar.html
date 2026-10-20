@@ -26,6 +26,13 @@
             </p>
         </div>
         <div class="col-lg-4 mt-3 mt-lg-0 d-flex justify-content-lg-end align-items-center gap-2 flex-wrap">
+            {% if current_user.is_authenticated and current_user.tipo_usuario == 'admin' %}
+            <a href="{{ url_for('gerador_checklist_pdf.modelo_generico') }}"
+               class="btn btn-outline-primary">
+                <i class="fas fa-clipboard-check me-2"></i>Checklist genérico
+            </a>
+            {% endif %}
+
             <a
                 href="{{ url_for('geradores.novo') }}"
                 class="btn btn-primary"

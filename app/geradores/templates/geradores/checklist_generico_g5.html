@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Checklist genérico de geradores | ERP JSP{% endblock %}
+{% block breadcrumb %}
+<a href="{{ url_for('painel.dashboard') }}">Dashboard</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<a href="{{ url_for('geradores.listar') }}">Geradores</a>
+<span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+<span class="current-page">Checklist genérico</span>
+{% endblock %}
+{% block content %}
+<div class="container-fluid py-3">
+  <div class="equipamento-header mb-4">
+    <div class="row align-items-center">
+      <div class="col-lg-9">
+        <h2 class="mb-2"><i class="fas fa-clipboard-check me-2"></i>Checklist genérico de geradores</h2>
+        <p class="mb-0 opacity-75">Preparação de ferramentas, materiais e inspeção manual de campo</p>
+      </div>
+      <div class="col-lg-3 text-lg-end mt-3 mt-lg-0">
+        <a href="{{ url_for('geradores.listar') }}" class="btn btn-outline-secondary">Voltar a Geradores</a>
+      </div>
+    </div>
+  </div>
+  <div class="alert alert-info" role="note">
+    <strong>Modelo independente:</strong> a impressão não exige cliente, gerador ou OS cadastrados.
+    Não cria checklist digital, não altera prontuários, estoque ou dados financeiros.
+    O formulário impresso não comprova execução.
+  </div>
+  <div class="card shadow-sm">
+    <div class="card-header"><strong><i class="fas fa-print me-2"></i>Preparar impressão em A4</strong></div>
+    <div class="card-body">
+      <form method="get" action="{{ url_for('gerador_checklist_pdf.modelo_generico_pdf') }}"
+            target="_blank" class="row g-3 align-items-end">
+        <div class="col-md-8">
+          <label for="tipo" class="form-label">Tipo de manutenção</label>
+          <select class="form-select" id="tipo" name="tipo" required>
+            <option value="BASICA">Preventiva básica</option>
+            <option value="INTERMEDIARIA" selected>Preventiva intermediária</option>
+            <option value="AVANCADA">Preventiva avançada</option>
+          </select>
+          <div class="form-text">Itens técnicos do catálogo G5-1.0, conforme o nível escolhido.</div>
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-primary w-100" type="submit">
+            <i class="fas fa-file-pdf me-2"></i>Gerar PDF em branco
+          </button>
+        </div>
+      </form>
+      <hr>
+      <p class="mb-2 fw-semibold">O formulário inclui:</p>
+      <ul class="mb-0">
+        <li>Identificação manual do cliente, equipamento, equipe e data.</li>
+        <li>Segurança, EPIs, ferramentas, instrumentos e conferência de retorno.</li>
+        <li>Planejamento de filtros, óleo e consumíveis, sem códigos presumidos.</li>
+        <li>Inspeções G5 e campos para medições, classificações e justificativas.</li>
+        <li>Ocorrências, materiais aplicados e assinaturas manuais.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
