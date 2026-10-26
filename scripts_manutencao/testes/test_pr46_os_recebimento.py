@@ -20,7 +20,7 @@ from app.financeiro.financeiro_model import (
 )
 from app.financeiro.financeiro_utils import gerar_lancamento_ordem_servico
 from app.ordem_servico.ordem_servico_model import (
-    OrdemServico, OrdemServicoParcela,
+    OrdemServico, OrdemServicoItem, OrdemServicoParcela,
 )
 from app.ordem_servico.recebimento_parcelas import (
     RecebimentoParcelaInvalido, registrar_recebimento_parcela,
@@ -56,6 +56,17 @@ def caso_jumirim_ficticio():
         )
         db.session.add(ordem)
         db.session.flush()
+        # O model recalcula valor_total de itens em before_insert/before_update.
+        item = OrdemServicoItem(
+            ordem_servico_id=ordem.id,
+            descricao="Serviço técnico de homologação fictício",
+            tipo_servico="fechado",
+            quantidade=Decimal("1.00"),
+            valor_unitario=Decimal("30000.00"),
+            ativo=True,
+        )
+        item.calcular_total()
+        db.session.add(item)
         parcelas = [
             OrdemServicoParcela(
                 ordem_servico_id=ordem.id, numero_parcela=i,
@@ -77,8 +88,7 @@ def caso_jumirim_ficticio():
         )
         db.session.add_all(parcelas + [extrato])
         db.session.commit()
-        # O ERP recalcula o total da OS durante eventos de persistência,
-        # a exemplo das fixtures legadas. Materializar o total após flush.
+        # O ERP recalcula o total conforme o serviço fictício de R$ 30.000.
         ordem.valor_servico = Decimal("30000.00")
         ordem.valor_total = Decimal("30000.00")
         db.session.commit()
