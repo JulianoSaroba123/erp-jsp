@@ -921,6 +921,7 @@
                                     <th>Vencimento</th>
                                     <th class="text-end">Valor</th>
                                     <th class="text-center">Status</th>
+                                    {% if current_user.is_authenticated and current_user.tipo_usuario == "admin" %}<th class="text-center">Recebimento</th>{% endif %}
                                 </tr>
                             </thead>
                             <tbody>
@@ -938,6 +939,18 @@
                                             <span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Pendente</span>
                                         {% endif %}
                                     </td>
+                                    {% if current_user.is_authenticated and current_user.tipo_usuario == 'admin' %}
+                                    <td class="text-center">
+                                      {% if not parcela.pago and not parcela.data_pagamento %}
+                                      <form method="post" action="{{ url_for('ordem_servico.receber_parcela_os', id=ordem.id, parcela_id=parcela.id) }}" onsubmit="return confirm('Confirma recebimento REAL desta parcela? Esta ação cria a baixa financeira.');">
+                                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                        <input type="date" name="data_recebimento" value="{{ today.isoformat() }}" max="{{ today.isoformat() }}" required class="form-control form-control-sm mb-1" aria-label="Data do recebimento">
+                                        <select name="forma_pagamento" class="form-select form-select-sm mb-1" aria-label="Forma de pagamento"><option value="pix">PIX</option><option value="transferencia">Transferência</option><option value="dinheiro">Dinheiro</option><option value="boleto">Boleto</option><option value="cartao_credito">Cartão</option></select>
+                                        <button type="submit" class="btn btn-sm btn-success">Registrar recebimento</button>
+                                      </form>
+                                      {% else %}<span class="text-success">Recebida</span>{% endif %}
+                                    </td>
+                                    {% endif %}
                                 </tr>
                                 {% endfor %}
                             </tbody>
