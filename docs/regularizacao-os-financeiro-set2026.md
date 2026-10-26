@@ -1,46 +1,55 @@
-# Regularização OS -> Financeiro | setembro/2026
+# PR #46 — recebimento de parcelas de OS
+Atualização: 26/10/2026. Implementação validada para revisão de código; sem merge ou implantação.
 
-## Caso de referência
-OS interna 619 (Jumirim, PROP20260021), contrato R$ 30.000,00.
-Parcelas na tabela `ordem_servico_parcelas`: #22 R$ 15.000,00 (17/09/2026, efetivamente recebida no Cora, extrato ID 45), #30 R$ 7.500,00 (17/10/2026), #31 R$ 7.500,00 (17/11/2026). No banco, todas ainda estão marcadas como não pagas e não há `lancamentos_financeiros` para OS 619. NÃO executar baixa direta no banco como parte deste documento.
+## Comportamento
+A visualização da OS oferece “Registrar recebimento” ao administrador para parcela pendente. Solicita data efetiva, valor previamente preenchido e imutável, forma de pagamento, conta ativa e observação opcional. O POST exige autenticação e CSRF.
 
-## Diagnóstico confirmado
-`app/financeiro/financeiro_utils.py::gerar_lancamento_ordem_servico` só cria contas a receber pendentes quando a OS está concluída; OS iniciada processa apenas parcelas já recebidas ou com lançamentos existentes. Por isso as parcelas da OS 619 não aparecem em Contas a Receber.
+A transação recebe apenas a parcela selecionada, vincula o título pelos IDs da OS e da parcela, registra usuário/data/operação e atualiza o status financeiro para parcial ou pago. O status operacional permanece inalterado. Erros revertem a transação; duplicidade e alteração destrutiva de parcela quitada são rejeitadas.
 
-## Requisitos de implementação (pendentes)
-1. Criar fluxo transacional e autenticado de **Receber parcela da OS** a partir da visualização da OS ou do financeiro. Exigir data de recebimento, valor da parcela e conta bancária; permitir conciliação com extrato importado, sem lançar movimentação bancária fictícia.
-2. Em uma única transação: bloquear a parcela contra concorrência, conferir valor e não duplicidade, marcar `pago` e `data_pagamento`, criar/atualizar `LancamentoFinanceiro` de tipo `conta_receber`, origem `ORDEM_SERVICO`, com `ordem_servico_id` e `ordem_servico_parcela_id`, status `recebido`, data real; sincronizar `status_pagamento` da OS. Repetir operação não pode duplicar lançamento nem saldo.
-3. Exibir parcelas pendentes em Contas a Receber mesmo com OS iniciada, mas sem contabilizá-las como recebidas ou reconhecer receita de competência indevidamente. Verificar regras existentes de geração automática para evitar lançamentos duplos ao concluir a OS.
-4. Proteger parcelas recebidas de alterações destrutivas, preservar auditoria e tratar erro com rollback. Não permitir baixa total da OS quando apenas a primeira parcela foi recebida.
-5. Cobrir com testes: OS iniciada com três parcelas, recebimento da primeira, segunda/terceira pendentes, reenvio idempotente, conclusão posterior, concorrência, conciliação do extrato ID 45 e nenhuma duplicação de saldo.
+Os títulos pendentes são gerados antes da conclusão operacional. Repetir sincronização ou concluir a OS preserva o título e o pagamento existentes. Recebíveis não são convertidos automaticamente em receita por competência. A baixa manual não cria extrato nem acrescenta crédito ao saldo bancário; usa sem_movimentacao_bancaria=True e deixa a conciliação para o movimento bancário real já importado.
 
-## Critérios de aceite para OS 619
-- OS permanece **Iniciada**, valor total R$ 30.000,00.
-- Parcela #22 recebida em 17/09/2026 por R$ 15.000,00, vinculada a um único lançamento financeiro e ao extrato Cora ID 45.
-- Parcelas #30 e #31 continuam pendentes, R$ 7.500,00 cada.
-- Contas a Receber e fluxo de caixa exibem valores corretamente; setembro não apresenta entrada duplicada.
-- Implantação e regularização de produção exigem revisão, testes, backup e autorização explícita.
+## Caso Jumirim: somente dados fictícios
+Referências informadas pelo solicitante: OS real 619, proposta PROP20260021 e extrato real Cora 45. Nenhum desses registros reais foi consultado ou alterado nesta execução. Os testes criam cliente e OS artificiais; extrato ID 45 existe somente na fixture descartável.
 
-**Estado:** apenas especificação técnica, sem implementação nem migração aplicada.
+| Parcela | Valor | Vencimento | Estado após o primeiro recebimento |
+| --- | ---: | --- | --- |
+| 1 | R$ 15.000,00 | 17/09/2026 | Recebida em 17/09/2026 |
+| 2 | R$ 7.500,00 | 17/10/2026 | Pendente |
+| 3 | R$ 7.500,00 | 17/11/2026 | Pendente |
 
-## Revisão PR #46 | 26/10/2026 (branch, não publicada)
+Resultado validado: OS iniciada, R$ 15.000,00 recebidos, R$ 15.000,00 em aberto, três títulos e um histórico de pagamento. Conciliação N:N com o extrato fictício mantém o saldo em R$ 15.000,00.
 
-A implementação inicial foi revista sem tocar na OS real 619.
-- recebimento_parcelas.py: administrador, CSRF, conta ativa obrigatória, data efetiva, valor exato, forma validada, lock OS+parcela, auditoria.
-- financeiro_utils.py: contas a receber por parcela antes de concluir a OS; idempotência pelo vínculo, com unicidade histórica da migration 20260801_01.
-- saldo_bancario_events.py: mantém os deltas legados, mas ignora lançamentos marcados sem_movimentacao_bancaria=True.
-- Migration aditiva 20261026_01 revisa 20261015_01 e cria marcador com default False para registros antigos. Não foi aplicada em produção.
-- Baixa manual de OS registra fato financeiro mas NÃO soma ContaBancaria.saldo_atual. O saldo deve ser conferido com evidência bancária, sem crédito fictício.
-- Conciliação N:N utiliza ExtratoBancario existente; a PR não gera extratos artificiais.
-- test_pr46_os_recebimento.py cria dados inteiramente fictícios com três parcelas e extrato simulado ID 45.
+## Alterações desta revisão
+| Arquivo | Alteração |
+| --- | --- |
+| app/ordem_servico/recebimento_parcelas.py | CSRF com Unicode; releitura de OS, parcelas e título após obter lock, inclusive com objetos previamente carregados na sessão. |
+| app/ordem_servico/ordem_servico_routes.py | Edição de parcelas usa o mesmo lock da baixa antes de conferir proteção de parcela quitada. |
+| scripts_manutencao/testes/test_pr46_os_recebimento.py | Fixture PostgreSQL com schema exclusivo; autenticação/CSRF Unicode, quitação total em três estados operacionais e não reconhecimento automático de competência. |
+| scripts_manutencao/testes/test_pr46_postgresql.py | Duas sessões reais: mesma parcela, parcelas distintas até quitação total e geração concorrente; conciliação e migration PostgreSQL. |
+| .github/workflows/pr46_os_financeiro.yml | Jobs SQLite e PostgreSQL 16 descartável, sem configuração ou secrets de produção. |
+| docs/regularizacao-os-financeiro-set2026.md | Relatório e evidências atualizados. |
 
-### Portão antes do merge
-1. Confirmar que a instância local na porta 5001 não aponta para PostgreSQL Render. O ambiente local não está acessível por esta revisão remota.
-2. Executar testes com DATABASE_URL SQLite temporária ANTES do import do pacote app, devido ao bootstrap em app/__init__.py.
-3. Conferir Alembic heads e migrar somente um banco de homologação descartável.
-4. Rodar regressão OS/Financeiro/Proposta/Conciliação e inspecionar os warnings.
-5. Concorrência de duas sessões reais deve ser testada em PostgreSQL não produtivo: SQLite ignora SELECT FOR UPDATE.
-6. Inspecionar extrato real 45 e OS 619 somente em leitura antes de qualquer futura regularização autorizada.
-7. Verificar git diff --check, revisão do PR e autorização expressa antes de merge/deploy.
+Também revisados na implementação existente: financeiro_model.py (unicidade por parcela e marcador bancário), financeiro_utils.py (geração idempotente), saldo_bancario_events.py, formulário os/visualizar.html, migration 20261026_01, diagnóstico da porta local e testes de regressão.
 
-Situação: código e testes adicionados à branch; pytest, migração, conciliação e deploy NÃO foram executados por esta revisão remota.
+## Evidências
+Commit de código: 5ad51a4d4ae7fbe4c95988b14cdec101c73fcf7b.
+[GitHub Actions — execução 40354025065](https://github.com/JulianoSaroba123/erp-jsp/actions/runs/40354025065), concluída com sucesso:
+
+- SQLite CI, Python 3.11: **35 passed, 2 warnings, 8,75 s**.
+- PostgreSQL 16 CI: **5 passed, 1 warning, 6,41 s**.
+- Local isolado, Python 3.12: suíte original **31 passed** e quatro novos cenários **4 passed**. Há warnings de APIs legadas/UTC no Python 3.12; nenhum teste falhou.
+- git diff --check sem erros antes da publicação do código.
+
+A suíte SQLite cobre recebimento repetido, proteção de quitados, valores/formas/contas inválidos, autenticação, autorização administrativa, CSRF, falha de auditoria com rollback, conciliação e regressões OS/Financeiro/Proposta. PostgreSQL comprova concorrência com sessões independentes, inclusive objetos previamente carregados. Migration validada em SQLite e PostgreSQL, com valor padrão False preservando histórico e bloqueio de downgrade quando houver recebimento com marcador True.
+
+## Segurança do ambiente e pendências
+O serviço 127.0.0.1:5001 da máquina do solicitante não está acessível neste ambiente remoto. Portanto **o banco dessa instância permanece NÃO VERIFICADO**. Não se conclui que ele seja local ou que esteja isolado do Render. Não foram feitas gravações nessa instância.
+
+Os testes locais usaram TestingConfig SQLite em memória, com DATABASE_URL SQLite temporária definida antes da importação do aplicativo. O PostgreSQL do CI é um serviço descartável; a fixture aceita apenas loopback, banco erp_jsp_pr46_test e schema exclusivo, recusando sinalização de Render. Nenhuma credencial de produção foi acessada.
+
+Antes de merge/implantação:
+1. Executar scripts_manutencao/diagnosticar_pr46_porta_local.py na máquina que hospeda a porta 5001. Resultado desconhecido/remoto bloqueia testes de escrita.
+2. Revisar o diff e o procedimento Alembic no ambiente de destino; o teste isolado da migration não substitui o inventário do schema existente.
+3. Obter autorização explícita para merge/implantação. Não regularizar OS 619 ou extrato 45 sem uma operação posterior específica e autorizada.
+
+A migration não foi aplicada em produção. Não foram alterados contratos, valores, vencimentos ou ordens reais, nem criadas OS reais.
