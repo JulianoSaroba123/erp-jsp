@@ -188,7 +188,7 @@ def gerar_lancamento_ordem_servico(ordem_servico, forma_pagamento=None):
 
         parcelas = sorted(
             [p for p in (getattr(ordem_servico, 'parcelas', []) or [])
-             if getattr(p, 'ativo', True)],
+             if getattr(p, 'ativo', True) is not False],
             key=lambda p: p.numero_parcela,
         )
         lancamentos_processados = []
