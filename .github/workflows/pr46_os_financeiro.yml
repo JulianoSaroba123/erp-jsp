@@ -46,6 +46,7 @@ jobs:
         run: |
           python -m pytest -q \
             scripts_manutencao/testes/test_pr46_os_recebimento.py \
+            scripts_manutencao/testes/test_pr46_migration_isolada.py \
             scripts_manutencao/testes/test_os_gatilho_financeiro.py \
             scripts_manutencao/testes/test_proposta_os_financeiro.py \
             scripts_manutencao/testes/test_os20260081_fluxo_financeiro.py \
