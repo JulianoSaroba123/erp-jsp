@@ -154,6 +154,9 @@ def registrar_recebimento_parcela(
         db.session.flush()  # ID para o histórico dentro da mesma transação.
 
     status_anterior = lancamento.status
+    # O fato financeiro é registrado, mas não cria um segundo crédito bancário.
+    # O marcador persiste para também impedir deltas indevidos em edições futuras.
+    lancamento.sem_movimentacao_bancaria = True
     lancamento.status = "recebido"
     lancamento.data_pagamento = data_recebimento
     lancamento.forma_pagamento = forma
