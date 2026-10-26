@@ -67,6 +67,7 @@ class LancamentoFinanceiro(BaseModel):
         db.Integer,
         db.ForeignKey('ordem_servico_parcelas.id'),
         nullable=True,
+        unique=True,  # Constraint historica 20260801_01 (alinhar metadata/SQLite)
         index=True,
     )
 
