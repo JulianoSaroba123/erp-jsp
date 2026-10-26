@@ -22,3 +22,25 @@ Parcelas na tabela `ordem_servico_parcelas`: #22 R$ 15.000,00 (17/09/2026, efeti
 - Implantação e regularização de produção exigem revisão, testes, backup e autorização explícita.
 
 **Estado:** apenas especificação técnica, sem implementação nem migração aplicada.
+
+## Revisão PR #46 | 26/10/2026 (branch, não publicada)
+
+A implementação inicial foi revista sem tocar na OS real 619.
+- recebimento_parcelas.py: administrador, CSRF, conta ativa obrigatória, data efetiva, valor exato, forma validada, lock OS+parcela, auditoria.
+- financeiro_utils.py: contas a receber por parcela antes de concluir a OS; idempotência pelo vínculo, com unicidade histórica da migration 20260801_01.
+- saldo_bancario_events.py: mantém os deltas legados, mas ignora lançamentos marcados sem_movimentacao_bancaria=True.
+- Migration aditiva 20261026_01 revisa 20261015_01 e cria marcador com default False para registros antigos. Não foi aplicada em produção.
+- Baixa manual de OS registra fato financeiro mas NÃO soma ContaBancaria.saldo_atual. O saldo deve ser conferido com evidência bancária, sem crédito fictício.
+- Conciliação N:N utiliza ExtratoBancario existente; a PR não gera extratos artificiais.
+- test_pr46_os_recebimento.py cria dados inteiramente fictícios com três parcelas e extrato simulado ID 45.
+
+### Portão antes do merge
+1. Confirmar que a instância local na porta 5001 não aponta para PostgreSQL Render. O ambiente local não está acessível por esta revisão remota.
+2. Executar testes com DATABASE_URL SQLite temporária ANTES do import do pacote app, devido ao bootstrap em app/__init__.py.
+3. Conferir Alembic heads e migrar somente um banco de homologação descartável.
+4. Rodar regressão OS/Financeiro/Proposta/Conciliação e inspecionar os warnings.
+5. Concorrência de duas sessões reais deve ser testada em PostgreSQL não produtivo: SQLite ignora SELECT FOR UPDATE.
+6. Inspecionar extrato real 45 e OS 619 somente em leitura antes de qualquer futura regularização autorizada.
+7. Verificar git diff --check, revisão do PR e autorização expressa antes de merge/deploy.
+
+Situação: código e testes adicionados à branch; pytest, migração, conciliação e deploy NÃO foram executados por esta revisão remota.
