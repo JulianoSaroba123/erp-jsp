@@ -3966,3 +3966,8 @@ def gerar_relatorio_pdf(id):
         print(f" DEBUG PDF: Stack trace: {traceback.format_exc()}")
         flash(f'Erro ao gerar relatório PDF: {str(e)}', 'error')
         return redirect(url_for('ordem_servico.visualizar', id=id))
+
+
+# Registro do recebimento de parcelas sem exigir conclusão operacional.
+from app.ordem_servico.recebimento_parcelas import registrar_rotas_recebimento
+registrar_rotas_recebimento(ordem_servico_bp)
