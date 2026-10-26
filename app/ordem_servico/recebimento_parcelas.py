@@ -114,8 +114,13 @@ def registrar_recebimento_parcela(
         )
 
     existentes = (db.session.query(LancamentoFinanceiro)
-                  .filter_by(ordem_servico_parcela_id=parcela.id, ativo=True)
+                  .filter_by(ordem_servico_parcela_id=parcela.id)
                   .with_for_update().all())
+    if any(l.ativo is False for l in existentes):
+        raise RecebimentoParcelaInvalido(
+            "Existe lançamento histórico inativo vinculado à parcela. "
+            "Revisão financeira necessária antes da baixa."
+        )
     if len(existentes) > 1:
         raise RecebimentoParcelaInvalido(
             "Mais de um lançamento ativo vinculado à parcela. Revisão financeira necessária."
