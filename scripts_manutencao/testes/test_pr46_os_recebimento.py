@@ -121,6 +121,7 @@ def test_recebimento_antecipado_auditoria_e_idempotencia(caso_jumirim_ficticio):
         assert recebimento.status == "recebido"
         assert recebimento.data_pagamento == date(2026, 9, 17)
         assert recebimento.conta_bancaria_id == ids["conta"]
+        assert recebimento.sem_movimentacao_bancaria is True
         assert ordem.status == "iniciada"
         assert ordem.status_pagamento == "parcial"
 
@@ -135,6 +136,7 @@ def test_recebimento_antecipado_auditoria_e_idempotencia(caso_jumirim_ficticio):
             lancamento_id=recebimento.id, acao="pagamento",
         ).count() == 1
         assert db.session.get(ExtratoBancario, ids["extrato"]).conciliado is False
+        db.session.expire_all()  # Eventos de saldo fazem SQL direto: reler do banco.
         assert db.session.get(ContaBancaria, ids["conta"]).saldo_atual == Decimal("15000.00")
 
         with pytest.raises(RecebimentoParcelaInvalido, match="já recebida"):
@@ -185,10 +187,10 @@ def test_detecta_duplicidade_preexistente_e_reverte(caso_jumirim_ficticio):
             data_lancamento=date(2026, 9, 15),
             ativo=True,
         )
+        from sqlalchemy.exc import IntegrityError
         db.session.add(duplicado)
-        db.session.commit()
-        with pytest.raises(RecebimentoParcelaInvalido, match="Mais de um"):
-            _registrar(ids)
+        with pytest.raises(IntegrityError):
+            db.session.commit()
         db.session.rollback()
         assert not db.session.get(OrdemServicoParcela, ids["parcelas"][0]).pago
 
@@ -218,6 +220,7 @@ def test_conciliacao_nn_extrato_existente_nao_duplica_saldo(caso_jumirim_fictici
         ).all()
         assert len(itens) == 1
         assert itens[0].valor_conciliado == Decimal("15000.00")
+        db.session.expire_all()
         assert db.session.get(ContaBancaria, ids["conta"]).saldo_atual == Decimal("15000.00")
         assert ordem.status == "iniciada"
         assert db.session.get(OrdemServicoParcela, ids["parcelas"][0]).pago is True
@@ -311,3 +314,45 @@ def test_nao_admin_bloqueado_na_rota(caso_jumirim_ficticio):
     assert resposta.status_code == 403
     with app.app_context():
         assert db.session.get(OrdemServicoParcela, ids["parcelas"][0]).pago is False
+
+
+
+def test_titulo_inativo_vinculado_bloqueia_recriacao(caso_jumirim_ficticio):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        ordem = db.session.get(OrdemServico, ids["os"])
+        gerar_lancamento_ordem_servico(ordem)
+        titulo = LancamentoFinanceiro.query.filter_by(
+            ordem_servico_parcela_id=ids["parcelas"][0],
+        ).one()
+        titulo.ativo = False
+        db.session.commit()
+        with pytest.raises(RecebimentoParcelaInvalido, match="histórico inativo"):
+            _registrar(ids)
+        db.session.rollback()
+        assert not db.session.get(OrdemServicoParcela, ids["parcelas"][0]).pago
+
+
+def test_evento_bancario_legado_permanece_ativo_para_outros_titulos(caso_jumirim_ficticio):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        conta = db.session.get(ContaBancaria, ids["conta"])
+        inicial = conta.saldo_atual
+        titulo = LancamentoFinanceiro(
+            descricao="Recebimento avulso fictício",
+            tipo="conta_receber", status="pendente",
+            origem="MANUAL", valor=Decimal("75.00"),
+            cliente_id=db.session.get(OrdemServico, ids["os"]).cliente_id,
+            conta_bancaria_id=conta.id,
+            data_lancamento=date(2026, 9, 18),
+            ativo=True, sem_movimentacao_bancaria=False,
+        )
+        db.session.add(titulo)
+        db.session.commit()
+        titulo.status = "recebido"
+        titulo.data_pagamento = date(2026, 9, 18)
+        db.session.commit()
+        db.session.expire_all()
+        assert db.session.get(ContaBancaria, ids["conta"]).saldo_atual == (
+            inicial + Decimal("75.00")
+        )
