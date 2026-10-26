@@ -12,7 +12,7 @@ Data: 2025
 
 from datetime import datetime, date
 from decimal import Decimal
-from sqlalchemy import or_
+from sqlalchemy import or_, false
 from app.extensoes import db
 from app.models import BaseModel
 
@@ -26,6 +26,12 @@ class LancamentoFinanceiro(BaseModel):
     """
     
     __tablename__ = 'lancamentos_financeiros'
+    __table_args__ = (
+        db.UniqueConstraint(
+            'ordem_servico_parcela_id',
+            name='uq_lancamentos_financeiros_ordem_servico_parcela_id',
+        ),
+    )
     
     # Campos básicos
     descricao = db.Column(db.String(255), nullable=False)
@@ -100,6 +106,11 @@ class LancamentoFinanceiro(BaseModel):
     
     # ✨ GESTÃO FINANCEIRA AVANÇADA
     conta_bancaria_id = db.Column(db.Integer, db.ForeignKey('contas_bancarias.id'), nullable=True)
+    # PR46: recebimento comprovado em movimento bancário externo/importado.
+    # O título é baixado, mas o evento de saldo não deve criar segundo crédito.
+    sem_movimentacao_bancaria = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=false()
+    )
     centro_custo_id = db.Column(db.Integer, db.ForeignKey('centros_custo.id'), nullable=True)
     plano_conta_id = db.Column(db.Integer, db.ForeignKey('plano_contas.id'), nullable=True)
     comprovante_anexo = db.Column(db.String(255))  # Path do arquivo

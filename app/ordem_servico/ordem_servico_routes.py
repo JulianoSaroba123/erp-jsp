@@ -366,8 +366,20 @@ def _remover_parcela_segura(parcela):
 
 def _reconciliar_parcelas_ordem(ordem, novas_parcelas):
     """Atualiza parcelas in-place, cria excedentes e remove sobras com segurança."""
+    if ordem.id is not None:
+        # Mesmo lock da baixa. Não gravar alterações de formulário antes de
+        # conferir se outra sessão acabou de receber uma destas parcelas.
+        with db.session.no_autoflush:
+            db.session.query(OrdemServico.id).filter_by(
+                id=ordem.id,
+            ).with_for_update().one()
+            parcelas_atuais = db.session.query(OrdemServicoParcela).filter_by(
+                ordem_servico_id=ordem.id,
+            ).populate_existing().order_by(OrdemServicoParcela.id).all()
+    else:
+        parcelas_atuais = list(getattr(ordem, 'parcelas', []) or [])
     existentes = sorted(
-        list(getattr(ordem, 'parcelas', []) or []),
+        parcelas_atuais,
         key=lambda parcela: (parcela.numero_parcela or 0, parcela.id or 0),
     )
     for indice, (numero, data_vencimento, valor) in enumerate(novas_parcelas):
@@ -1628,12 +1640,27 @@ def visualizar(id):
         if documento.ordem_servico_parcela_id is None
     ]
 
+    contas_recebimento = []
+    csrf_os_recebimento = None
+    if usuario_eh_admin():
+        from app.financeiro.financeiro_model import ContaBancaria
+        from app.ordem_servico.recebimento_parcelas import token_csrf_recebimento
+        contas_recebimento = (
+            ContaBancaria.query
+            .filter_by(ativo=True, ativa=True)
+            .order_by(ContaBancaria.nome)
+            .all()
+        )
+        csrf_os_recebimento = token_csrf_recebimento()
+
     return render_template(
         'os/visualizar.html',
         ordem=ordem,
         today=date.today(),
         nfse_por_parcela=nfse_por_parcela,
         nfse_legados=nfse_legados,
+        contas_recebimento=contas_recebimento,
+        csrf_os_recebimento=csrf_os_recebimento,
     )
 
 
@@ -3966,3 +3993,8 @@ def gerar_relatorio_pdf(id):
         print(f" DEBUG PDF: Stack trace: {traceback.format_exc()}")
         flash(f'Erro ao gerar relatório PDF: {str(e)}', 'error')
         return redirect(url_for('ordem_servico.visualizar', id=id))
+
+
+# Registro do recebimento de parcelas sem exigir conclusão operacional.
+from app.ordem_servico.recebimento_parcelas import registrar_rotas_recebimento
+registrar_rotas_recebimento(ordem_servico_bp)

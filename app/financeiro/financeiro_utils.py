@@ -117,12 +117,12 @@ def _numero_parcela_exibicao(parcela, total_parcelas):
 
 def _atualizar_lancamento_os(lancamento, ordem_servico, forma_pagamento=None, parcela=None, total_parcelas=0):
     """Aplica atualização segura em lançamento de OS preservando quitados."""
+    if _lancamento_recebido(lancamento):
+        # Também preserva conta, forma e data do pagamento confirmado.
+        return
+
     if forma_pagamento is not None:
         lancamento.forma_pagamento = forma_pagamento
-
-    if lancamento.status in {'pago', 'recebido'}:
-        # Preserva lançamentos quitados mesmo com edição de OS.
-        return
 
     status_financeiro = _status_financeiro_por_parcela(ordem_servico, parcela)
     numero_parcela = _numero_parcela_exibicao(parcela, total_parcelas)
@@ -178,8 +178,17 @@ def gerar_lancamento_ordem_servico(ordem_servico, forma_pagamento=None):
         if total_os <= 0:
             return []
 
+        # Mesmo lock empregado pela baixa manual: evita criação concorrente
+        # de contas a receber por dois fluxos do ERP no PostgreSQL.
+        if ordem_servico.id is not None:
+            from app.ordem_servico.ordem_servico_model import OrdemServico
+            db.session.query(OrdemServico).filter_by(
+                id=ordem_servico.id,
+            ).with_for_update().one()
+
         parcelas = sorted(
-            list(getattr(ordem_servico, 'parcelas', []) or []),
+            [p for p in (getattr(ordem_servico, 'parcelas', []) or [])
+             if getattr(p, 'ativo', True) is not False],
             key=lambda p: p.numero_parcela,
         )
         lancamentos_processados = []
@@ -193,28 +202,30 @@ def gerar_lancamento_ordem_servico(ordem_servico, forma_pagamento=None):
             # ainda não estiver marcada como paga.
             todos_parcela_ids = [parcela.id for parcela in parcelas]
             existentes = LancamentoFinanceiro.query.filter(
-                LancamentoFinanceiro.ordem_servico_parcela_id.in_(todos_parcela_ids)
-            ).all()
-            existentes_por_parcela = {
-                lancamento.ordem_servico_parcela_id: lancamento
-                for lancamento in existentes
-            }
+                LancamentoFinanceiro.ordem_servico_parcela_id.in_(todos_parcela_ids),
+            ).with_for_update().all()
+            existentes_por_parcela = {}
+            for lancamento in existentes:
+                pid = lancamento.ordem_servico_parcela_id
+                if lancamento.ativo is False:
+                    raise ValueError(
+                        f'Parcela {pid} possui título inativo vinculado. '
+                        'Revisão financeira necessária antes de recriar.'
+                    )
+                if pid in existentes_por_parcela:
+                    raise ValueError(
+                        f'Parcela {pid} possui lançamentos ativos duplicados.'
+                    )
+                if lancamento.ordem_servico_id != ordem_servico.id:
+                    raise ValueError(
+                        f'Parcela {pid} vinculada a outra OS no financeiro.'
+                    )
+                existentes_por_parcela[pid] = lancamento
 
-            # Antes da conclusão:
-            # - não cria novo contas a receber para parcelas pendentes;
-            # - processa parcela já recebida;
-            # - preserva/reconcilia qualquer lançamento legado já existente.
-            # Na conclusão, nasce também o saldo ainda devido.
-            parcelas_processar = (
-                parcelas
-                if os_concluida
-                else [
-                    parcela
-                    for parcela in parcelas
-                    if _parcela_recebida(parcela)
-                    or existentes_por_parcela.get(parcela.id) is not None
-                ]
-            )
+            # Nova regra: contas a receber representam direitos de cobrança
+            # desde a criação das parcelas, sem depender da conclusão da OS.
+            # Status "pendente" NÃO movimenta caixa nem reconhece receita.
+            parcelas_processar = parcelas
 
             if parcelas_processar:
                 for parcela in parcelas_processar:

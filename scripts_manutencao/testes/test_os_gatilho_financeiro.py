@@ -3,10 +3,9 @@
 Regressao do gatilho OS -> Financeiro.
 
 Regras:
-1. Criar uma OS aberta nao cria conta a receber pendente.
-2. Antes da conclusao, somente pagamento antecipado explicitamente recebido
-   pode gerar movimento financeiro.
-3. Ao concluir a OS, o saldo ainda devido passa a existir como conta a receber.
+1. OS aberta sem parcelas preserva comportamento legado.
+2. OS parcelada tem contas a receber pendentes desde o início.
+3. Baixa antecipada não depende da conclusão operacional.
 4. Reconciliacao continua idempotente e preserva o recebimento antecipado.
 """
 
@@ -168,16 +167,18 @@ def test_entrada_antecipada_e_saldo_na_conclusao():
             forma_pagamento="pix",
         )
 
-        assert len(resultado_antes) == 1
+        assert len(resultado_antes) == 2
 
         antes = LancamentoFinanceiro.query.filter_by(
             ordem_servico_id=ordem.id
         ).all()
 
-        assert len(antes) == 1
-        assert antes[0].ordem_servico_parcela_id == entrada.id
-        assert antes[0].status == "recebido"
-        assert antes[0].data_pagamento == date(2026, 8, 11)
+        assert len(antes) == 2
+        por_parcela_antes = {l.ordem_servico_parcela_id: l for l in antes}
+        assert por_parcela_antes[entrada.id].status == "recebido"
+        assert por_parcela_antes[entrada.id].data_pagamento == date(2026, 8, 11)
+        assert por_parcela_antes[saldo.id].status == "pendente"
+        assert por_parcela_antes[saldo.id].data_pagamento is None
 
         ordem.status = "concluida"
         ordem.data_conclusao = date(2026, 8, 26)

@@ -44,8 +44,11 @@ def _decimal(valor):
     return Decimal(str(valor)).quantize(Decimal('0.01'))
 
 
-def _impacto(*, tipo, status, valor, conta_id, ativo, data_pagamento, categoria):
-    """Retorna o impacto assinado do lancamento em uma conta."""
+def _impacto(*, tipo, status, valor, conta_id, ativo, data_pagamento, categoria,
+             sem_movimentacao_bancaria=False):
+    """Retorna impacto bancário real; recebimento já reconhecido não gera delta."""
+    if sem_movimentacao_bancaria:
+        return Decimal('0.00')
     if not conta_id or not ativo:
         return Decimal('0.00')
     if status not in _STATUS_QUITADOS or data_pagamento is None:
@@ -70,6 +73,9 @@ def _snapshot_atual(target):
         'ativo': bool(getattr(target, 'ativo', True)),
         'data_pagamento': target.data_pagamento,
         'categoria': target.categoria,
+        'sem_movimentacao_bancaria': bool(
+            getattr(target, 'sem_movimentacao_bancaria', False)
+        ),
     }
 
 
@@ -85,6 +91,7 @@ def _snapshot_persistido(connection, target):
             tabela.c.ativo,
             tabela.c.data_pagamento,
             tabela.c.categoria,
+            tabela.c.sem_movimentacao_bancaria,
         ).where(tabela.c.id == target.id)
     ).mappings().first()
 
@@ -99,6 +106,7 @@ def _snapshot_persistido(connection, target):
         'ativo': bool(linha['ativo']),
         'data_pagamento': linha['data_pagamento'],
         'categoria': linha['categoria'],
+        'sem_movimentacao_bancaria': bool(linha['sem_movimentacao_bancaria']),
     }
 
 
@@ -113,6 +121,9 @@ def _impacto_snapshot(snapshot):
         ativo=snapshot['ativo'],
         data_pagamento=snapshot['data_pagamento'],
         categoria=snapshot['categoria'],
+        sem_movimentacao_bancaria=snapshot.get(
+            'sem_movimentacao_bancaria', False
+        ),
     )
 
 
