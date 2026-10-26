@@ -53,11 +53,14 @@ def _valor_monetario(valor):
     texto = str(valor or "").strip().replace(",", ".")
     try:
         numero = Decimal(texto)
+        if not numero.is_finite() or numero <= 0:
+            raise InvalidOperation
+        quantizado = numero.quantize(CENTAVO)
+        if quantizado != numero:
+            raise InvalidOperation
     except (InvalidOperation, ValueError, TypeError) as exc:
         raise RecebimentoParcelaInvalido("Valor de recebimento inválido.") from exc
-    if not numero.is_finite() or numero <= 0 or numero != numero.quantize(CENTAVO):
-        raise RecebimentoParcelaInvalido("Valor de recebimento inválido.")
-    return numero.quantize(CENTAVO)
+    return quantizado
 
 
 def registrar_recebimento_parcela(
@@ -150,6 +153,7 @@ def registrar_recebimento_parcela(
         db.session.add(lancamento)
         db.session.flush()  # ID para o histórico dentro da mesma transação.
 
+    status_anterior = lancamento.status
     lancamento.status = "recebido"
     lancamento.data_pagamento = data_recebimento
     lancamento.forma_pagamento = forma
@@ -168,7 +172,7 @@ def registrar_recebimento_parcela(
     db.session.add(HistoricoFinanceiro(
         lancamento_id=lancamento.id,
         campo_alterado="status",
-        valor_anterior="pendente",
+        valor_anterior=status_anterior,
         valor_novo="recebido",
         usuario=str(usuario),
         acao="pagamento",
