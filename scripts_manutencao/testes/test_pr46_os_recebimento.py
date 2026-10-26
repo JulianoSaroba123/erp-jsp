@@ -356,3 +356,38 @@ def test_evento_bancario_legado_permanece_ativo_para_outros_titulos(caso_jumirim
         assert db.session.get(ContaBancaria, ids["conta"]).saldo_atual == (
             inicial + Decimal("75.00")
         )
+
+
+
+def test_edicao_posterior_ao_recebimento_nao_aplica_delta_bancario(
+    caso_jumirim_ficticio,
+):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        ordem = db.session.get(OrdemServico, ids["os"])
+        gerar_lancamento_ordem_servico(ordem)
+        lancamento = _registrar(ids)
+        db.session.commit()
+        lancamento.observacoes = "Conferido novamente com o extrato"
+        db.session.commit()
+        db.session.expire_all()
+        assert db.session.get(LancamentoFinanceiro, lancamento.id).sem_movimentacao_bancaria
+        assert db.session.get(ContaBancaria, ids["conta"]).saldo_atual == Decimal("15000.00")
+
+
+def test_parcela_quitada_nao_pode_ser_reprecificada(caso_jumirim_ficticio):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        from app.ordem_servico.ordem_servico_routes import _reconciliar_parcelas_ordem
+        ordem = db.session.get(OrdemServico, ids["os"])
+        gerar_lancamento_ordem_servico(ordem)
+        _registrar(ids)
+        db.session.commit()
+        with pytest.raises(ValueError, match="não pode ser alterada"):
+            _reconciliar_parcelas_ordem(ordem, [
+                (1, date(2026, 9, 17), Decimal("14000.00")),
+                (2, date(2026, 10, 17), Decimal("8500.00")),
+                (3, date(2026, 11, 17), Decimal("7500.00")),
+            ])
+        db.session.rollback()
+        assert db.session.get(OrdemServicoParcela, ids["parcelas"][0]).valor == Decimal("15000.00")
