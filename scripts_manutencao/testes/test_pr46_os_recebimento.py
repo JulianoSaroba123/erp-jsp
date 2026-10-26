@@ -27,12 +27,55 @@ from app.ordem_servico.recebimento_parcelas import (
 
 
 @pytest.fixture()
-def caso_jumirim_ficticio():
+def banco_pr46(request, monkeypatch):
+    """PostgreSQL opt-in: somente base descartável local e schema exclusivo."""
+    if getattr(request, 'param', 'sqlite') == 'sqlite':
+        yield 'sqlite:///:memory:'
+        return
+
+    import os
+    from uuid import uuid4
+    from sqlalchemy import create_engine, text
+    from sqlalchemy.engine import make_url
+    from app.config import TestingConfig, config
+
+    uri = os.environ.get('PR46_POSTGRES_TEST_URL')
+    if not uri:
+        pytest.skip('PostgreSQL descartável não configurado')
+    url = make_url(uri)
+    assert url.get_backend_name() == 'postgresql'
+    assert url.host in {'127.0.0.1', 'localhost', '::1'}
+    assert url.database == 'erp_jsp_pr46_test'
+    assert not os.environ.get('RENDER_SERVICE_ID')
+    assert os.environ.get('RENDER', '').lower() not in {'true', '1', 'yes'}
+    schema = 'pr46_' + uuid4().hex
+    engine = create_engine(url)
+    with engine.begin() as conn:
+        conn.execute(text(f'CREATE SCHEMA {schema}'))
+
+    class PostgreSQLTeste(TestingConfig):
+        SQLALCHEMY_DATABASE_URI = uri
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            'connect_args': {'options': f'-csearch_path={schema}'},
+            'pool_size': 5,
+        }
+
+    monkeypatch.setitem(config, 'testing', PostgreSQLTeste)
+    try:
+        yield uri
+    finally:
+        with engine.begin() as conn:
+            conn.execute(text(f'DROP SCHEMA {schema} CASCADE'))
+        engine.dispose()
+
+
+@pytest.fixture()
+def caso_jumirim_ficticio(banco_pr46):
     # Configuracao testing usa SQLAlchemy SQLite :memory:.
     from app.app import create_app
     app = create_app("testing")
     assert app.config["TESTING"] is True
-    assert app.config["SQLALCHEMY_DATABASE_URI"] == "sqlite:///:memory:"
+    assert app.config["SQLALCHEMY_DATABASE_URI"] == banco_pr46
     with app.app_context():
         db.create_all()
         cliente = Cliente(nome="JUMIRIM - HOMOLOGACAO FICTICIA", ativo=True)
@@ -112,6 +155,7 @@ def caso_jumirim_ficticio():
         }
         yield app, ids
         db.session.remove()
+        db.engine.dispose()
 
 
 def _registrar(ids, **overrides):
@@ -423,3 +467,44 @@ def test_parcela_quitada_nao_pode_ser_reprecificada(caso_jumirim_ficticio):
             ])
         db.session.rollback()
         assert db.session.get(OrdemServicoParcela, ids["parcelas"][0]).valor == Decimal("15000.00")
+
+
+def test_csrf_unicode_e_anonimo_nao_gravam(caso_jumirim_ficticio):
+    app, ids = caso_jumirim_ficticio
+    client = app.test_client()
+    path = f"/ordem_servico/{ids['os']}/parcelas/{ids['parcelas'][0]}/receber"
+    assert client.post(path, data={}).status_code == 302
+    client.post('/auth/login', data={
+        'identificador': 'admin_pr46', 'senha': 'SenhaPr46Teste!',
+    })
+    with client.session_transaction() as sess:
+        sess['_csrf_os_recebimento_v1'] = 'token-de-teste'
+    assert client.post(path, data={
+        'csrf_os_recebimento': 'inválido 🔒',
+    }).status_code == 400
+    with app.app_context():
+        assert not db.session.get(OrdemServicoParcela, ids['parcelas'][0]).pago
+
+
+@pytest.mark.parametrize('status', ['aberta', 'iniciada', 'em_andamento'])
+def test_quitacao_total_preserva_status_operacional(caso_jumirim_ficticio, status):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        ordem = db.session.get(OrdemServico, ids['os'])
+        ordem.status = status
+        db.session.commit()
+        gerar_lancamento_ordem_servico(ordem)
+        for indice, valor in enumerate(['15000.00', '7500.00', '7500.00']):
+            _registrar(ids, parcela_id=ids['parcelas'][indice], valor_recebido=valor)
+            db.session.commit()
+        assert ordem.status == status
+        assert ordem.status_pagamento == 'pago'
+        assert LancamentoFinanceiro.query.filter_by(
+            ordem_servico_id=ordem.id, status='recebido',
+        ).count() == 3
+        from app.financeiro.financeiro_routes import calcular_dre
+        titulos = LancamentoFinanceiro.query.filter_by(ordem_servico_id=ordem.id).all()
+        # Baixa de recebível não se transforma em reconhecimento de competência.
+        assert calcular_dre(titulos)['receita_bruta'] == Decimal('0.00')
+        db.session.expire_all()
+        assert db.session.get(ContaBancaria, ids['conta']).saldo_atual == Decimal('15000.00')

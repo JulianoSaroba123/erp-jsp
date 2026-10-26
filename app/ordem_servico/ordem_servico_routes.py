@@ -366,8 +366,20 @@ def _remover_parcela_segura(parcela):
 
 def _reconciliar_parcelas_ordem(ordem, novas_parcelas):
     """Atualiza parcelas in-place, cria excedentes e remove sobras com segurança."""
+    if ordem.id is not None:
+        # Mesmo lock da baixa. Não gravar alterações de formulário antes de
+        # conferir se outra sessão acabou de receber uma destas parcelas.
+        with db.session.no_autoflush:
+            db.session.query(OrdemServico.id).filter_by(
+                id=ordem.id,
+            ).with_for_update().one()
+            parcelas_atuais = db.session.query(OrdemServicoParcela).filter_by(
+                ordem_servico_id=ordem.id,
+            ).populate_existing().order_by(OrdemServicoParcela.id).all()
+    else:
+        parcelas_atuais = list(getattr(ordem, 'parcelas', []) or [])
     existentes = sorted(
-        list(getattr(ordem, 'parcelas', []) or []),
+        parcelas_atuais,
         key=lambda parcela: (parcela.numero_parcela or 0, parcela.id or 0),
     )
     for indice, (numero, data_vencimento, valor) in enumerate(novas_parcelas):

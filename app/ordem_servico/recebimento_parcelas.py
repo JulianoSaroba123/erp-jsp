@@ -45,7 +45,8 @@ def token_csrf_recebimento():
 def verificar_csrf_recebimento():
     informado = request.form.get("csrf_os_recebimento", "")
     esperado = session.get(CHAVE_CSRF, "")
-    if not esperado or not hmac.compare_digest(informado, esperado):
+    if (not isinstance(esperado, str) or not esperado or
+            not hmac.compare_digest(informado.encode('utf-8'), esperado.encode('utf-8'))):
         abort(400, description="Token de segurança do recebimento inválido.")
 
 
@@ -91,13 +92,18 @@ def registrar_recebimento_parcela(
         raise RecebimentoParcelaInvalido("Selecione uma conta bancária válida.")
 
     ordem = (db.session.query(OrdemServico)
-             .filter_by(id=os_id, ativo=True).with_for_update().one_or_none())
+             .filter_by(id=os_id, ativo=True).populate_existing()
+             .with_for_update().one_or_none())
     if ordem is None or str(ordem.status or "").lower() in {"cancelada", "cancelado"}:
         raise RecebimentoParcelaInvalido("Ordem de serviço inválida ou cancelada.")
 
-    parcela = (db.session.query(OrdemServicoParcela)
-               .filter_by(id=parcela_id, ordem_servico_id=os_id, ativo=True)
-               .with_for_update().one_or_none())
+    # Releitura após adquirir o lock: outra transação pode ter quitado uma
+    # parcela enquanto esta sessão ainda mantinha objetos antigos em memória.
+    parcelas = (db.session.query(OrdemServicoParcela)
+                .filter_by(ordem_servico_id=os_id, ativo=True)
+                .order_by(OrdemServicoParcela.id)
+                .populate_existing().with_for_update().all())
+    parcela = next((p for p in parcelas if p.id == parcela_id), None)
     if parcela is None:
         raise RecebimentoParcelaInvalido("Parcela não pertence a esta OS.")
 
@@ -115,7 +121,7 @@ def registrar_recebimento_parcela(
 
     existentes = (db.session.query(LancamentoFinanceiro)
                   .filter_by(ordem_servico_parcela_id=parcela.id)
-                  .with_for_update().all())
+                  .populate_existing().with_for_update().all())
     if any(l.ativo is False for l in existentes):
         raise RecebimentoParcelaInvalido(
             "Existe lançamento histórico inativo vinculado à parcela. "
@@ -174,9 +180,7 @@ def registrar_recebimento_parcela(
     )
     parcela.pago = True
     parcela.data_pagamento = data_recebimento
-    _sincronizar_status_pagamento_os(
-        ordem, [p for p in ordem.parcelas if p.ativo]
-    )
+    _sincronizar_status_pagamento_os(ordem, parcelas)
     db.session.add(HistoricoFinanceiro(
         lancamento_id=lancamento.id,
         campo_alterado="status",
