@@ -1628,12 +1628,27 @@ def visualizar(id):
         if documento.ordem_servico_parcela_id is None
     ]
 
+    contas_recebimento = []
+    csrf_os_recebimento = None
+    if usuario_eh_admin():
+        from app.financeiro.financeiro_model import ContaBancaria
+        from app.ordem_servico.recebimento_parcelas import token_csrf_recebimento
+        contas_recebimento = (
+            ContaBancaria.query
+            .filter_by(ativo=True, ativa=True)
+            .order_by(ContaBancaria.nome)
+            .all()
+        )
+        csrf_os_recebimento = token_csrf_recebimento()
+
     return render_template(
         'os/visualizar.html',
         ordem=ordem,
         today=date.today(),
         nfse_por_parcela=nfse_por_parcela,
         nfse_legados=nfse_legados,
+        contas_recebimento=contas_recebimento,
+        csrf_os_recebimento=csrf_os_recebimento,
     )
 
 
