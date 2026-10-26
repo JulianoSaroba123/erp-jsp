@@ -9,8 +9,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
-from flask import g
-from types import SimpleNamespace
+from app.auth.usuario_model import Usuario
 
 from app.extensoes import db
 from app.cliente.cliente_model import Cliente
@@ -43,7 +42,19 @@ def caso_jumirim_ficticio():
             saldo_atual=Decimal("15000.00"),
             ativa=True, ativo=True, principal=False,
         )
-        db.session.add_all([cliente, conta])
+        admin = Usuario(
+            nome="Admin Homologação PR46", usuario="admin_pr46",
+            email="admin_pr46@example.com", tipo_usuario="admin",
+            ativo=True, email_confirmado=True, primeiro_login=False,
+        )
+        comum = Usuario(
+            nome="Comum Homologação PR46", usuario="comum_pr46",
+            email="comum_pr46@example.com", tipo_usuario="usuario",
+            ativo=True, email_confirmado=True, primeiro_login=False,
+        )
+        admin.set_senha("SenhaPr46Teste!")
+        comum.set_senha("SenhaPr46Teste!")
+        db.session.add_all([cliente, conta, admin, comum])
         db.session.flush()
         ordem = OrdemServico(
             numero="OS-PR46-TESTE", titulo="Manutencao ficticia",
@@ -253,11 +264,12 @@ def test_http_csrf_e_permissoes(caso_jumirim_ficticio):
         "forma_pagamento": "pix",
         "conta_bancaria_id": str(ids["conta"]),
     }
-    @app.before_request
-    def usuario_admin_teste():
-        g._login_user = SimpleNamespace(
-            id=1, tipo_usuario="admin", is_authenticated=True,
-        )
+    # Autenticação real pela interface, inclusive preservando sessão Flask-Login.
+    login = client.post("/auth/login", data={
+        "identificador": "admin_pr46", "senha": "SenhaPr46Teste!",
+    })
+    assert login.status_code == 302
+    assert "/auth/login" not in (login.headers.get("Location") or "")
 
     # Falta token => 400, sem escrever.
     assert client.post(path, data=payload).status_code == 400
@@ -314,12 +326,11 @@ def test_nao_admin_bloqueado_na_rota(caso_jumirim_ficticio):
     app, ids = caso_jumirim_ficticio
     client = app.test_client()
 
-    @app.before_request
-    def usuario_comum_teste():
-        g._login_user = SimpleNamespace(
-            id=9, tipo_usuario="comum", is_authenticated=True,
-        )
-
+    login = client.post("/auth/login", data={
+        "identificador": "comum_pr46", "senha": "SenhaPr46Teste!",
+    })
+    assert login.status_code == 302
+    assert "/auth/login" not in (login.headers.get("Location") or "")
     with client.session_transaction() as sess:
         sess["_csrf_os_recebimento_v1"] = "token-de-teste"
     resposta = client.post(
