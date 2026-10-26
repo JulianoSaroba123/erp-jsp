@@ -254,3 +254,60 @@ def test_http_csrf_e_permissoes(caso_jumirim_ficticio):
         parcela = db.session.get(OrdemServicoParcela, ids["parcelas"][0])
         assert parcela.pago is True
         assert db.session.get(OrdemServico, ids["os"]).status == "iniciada"
+
+
+
+def test_erro_durante_auditoria_reverte_baixa_inteira(caso_jumirim_ficticio):
+    from unittest.mock import patch
+
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        ordem = db.session.get(OrdemServico, ids["os"])
+        assert len(gerar_lancamento_ordem_servico(ordem)) == 3
+        with patch(
+            "app.ordem_servico.recebimento_parcelas.HistoricoFinanceiro",
+            side_effect=RuntimeError("Falha simulada ao criar auditoria"),
+        ):
+            with pytest.raises(RuntimeError, match="Falha simulada"):
+                _registrar(ids)
+        db.session.rollback()
+        db.session.expire_all()
+        parcela = db.session.get(OrdemServicoParcela, ids["parcelas"][0])
+        assert parcela.pago is False
+        assert parcela.data_pagamento is None
+        assert db.session.get(OrdemServico, ids["os"]).status_pagamento == "pendente"
+        lancamento = LancamentoFinanceiro.query.filter_by(
+            ordem_servico_parcela_id=parcela.id,
+        ).one()
+        assert lancamento.status == "pendente"
+        assert lancamento.data_pagamento is None
+        assert HistoricoFinanceiro.query.filter_by(
+            lancamento_id=lancamento.id,
+        ).count() == 0
+
+
+def test_nao_admin_bloqueado_na_rota(caso_jumirim_ficticio):
+    app, ids = caso_jumirim_ficticio
+    client = app.test_client()
+
+    @app.before_request
+    def usuario_comum_teste():
+        g._login_user = SimpleNamespace(
+            id=9, tipo_usuario="comum", is_authenticated=True,
+        )
+
+    with client.session_transaction() as sess:
+        sess["_csrf_os_recebimento_v1"] = "token-de-teste"
+    resposta = client.post(
+        f"/ordem_servico/{ids['os']}/parcelas/{ids['parcelas'][0]}/receber",
+        data={
+            "csrf_os_recebimento": "token-de-teste",
+            "data_recebimento": "2026-09-17",
+            "valor_recebido": "15000.00",
+            "forma_pagamento": "pix",
+            "conta_bancaria_id": str(ids["conta"]),
+        },
+    )
+    assert resposta.status_code == 403
+    with app.app_context():
+        assert db.session.get(OrdemServicoParcela, ids["parcelas"][0]).pago is False
