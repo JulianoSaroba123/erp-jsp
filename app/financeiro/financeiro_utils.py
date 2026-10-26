@@ -203,11 +203,15 @@ def gerar_lancamento_ordem_servico(ordem_servico, forma_pagamento=None):
             todos_parcela_ids = [parcela.id for parcela in parcelas]
             existentes = LancamentoFinanceiro.query.filter(
                 LancamentoFinanceiro.ordem_servico_parcela_id.in_(todos_parcela_ids),
-                LancamentoFinanceiro.ativo.is_(True),
             ).with_for_update().all()
             existentes_por_parcela = {}
             for lancamento in existentes:
                 pid = lancamento.ordem_servico_parcela_id
+                if lancamento.ativo is False:
+                    raise ValueError(
+                        f'Parcela {pid} possui título inativo vinculado. '
+                        'Revisão financeira necessária antes de recriar.'
+                    )
                 if pid in existentes_por_parcela:
                     raise ValueError(
                         f'Parcela {pid} possui lançamentos ativos duplicados.'
