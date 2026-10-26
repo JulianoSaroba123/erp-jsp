@@ -26,6 +26,12 @@ class LancamentoFinanceiro(BaseModel):
     """
     
     __tablename__ = 'lancamentos_financeiros'
+    __table_args__ = (
+        db.UniqueConstraint(
+            'ordem_servico_parcela_id',
+            name='uq_lancamentos_financeiros_ordem_servico_parcela_id',
+        ),
+    )
     
     # Campos básicos
     descricao = db.Column(db.String(255), nullable=False)
@@ -67,7 +73,6 @@ class LancamentoFinanceiro(BaseModel):
         db.Integer,
         db.ForeignKey('ordem_servico_parcelas.id'),
         nullable=True,
-        unique=True,  # Constraint historica 20260801_01 (alinhar metadata/SQLite)
         index=True,
     )
 
