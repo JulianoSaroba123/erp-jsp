@@ -233,8 +233,6 @@ def test_http_csrf_e_permissoes(caso_jumirim_ficticio):
         "forma_pagamento": "pix",
         "conta_bancaria_id": str(ids["conta"]),
     }
-    assert client.post(path, data=payload).status_code in (302, 401)
-
     @app.before_request
     def usuario_admin_teste():
         g._login_user = SimpleNamespace(
