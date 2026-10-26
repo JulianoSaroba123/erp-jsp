@@ -12,7 +12,7 @@ Data: 2025
 
 from datetime import datetime, date
 from decimal import Decimal
-from sqlalchemy import or_
+from sqlalchemy import or_, false
 from app.extensoes import db
 from app.models import BaseModel
 
@@ -104,7 +104,7 @@ class LancamentoFinanceiro(BaseModel):
     # PR46: recebimento comprovado em movimento bancário externo/importado.
     # O título é baixado, mas o evento de saldo não deve criar segundo crédito.
     sem_movimentacao_bancaria = db.Column(
-        db.Boolean, nullable=False, default=False, server_default=db.false()
+        db.Boolean, nullable=False, default=False, server_default=false()
     )
     centro_custo_id = db.Column(db.Integer, db.ForeignKey('centros_custo.id'), nullable=True)
     plano_conta_id = db.Column(db.Integer, db.ForeignKey('plano_contas.id'), nullable=True)
