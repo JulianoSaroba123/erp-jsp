@@ -77,6 +77,13 @@ def caso_jumirim_ficticio():
         )
         db.session.add_all(parcelas + [extrato])
         db.session.commit()
+        # O ERP recalcula o total da OS durante eventos de persistência,
+        # a exemplo das fixtures legadas. Materializar o total após flush.
+        ordem.valor_servico = Decimal("30000.00")
+        ordem.valor_total = Decimal("30000.00")
+        db.session.commit()
+        db.session.refresh(ordem)
+        assert ordem.valor_total == Decimal("30000.00")
         ids = {
             "os": ordem.id, "conta": conta.id,
             "parcelas": [p.id for p in parcelas],
@@ -246,9 +253,13 @@ def test_http_csrf_e_permissoes(caso_jumirim_ficticio):
     assert client.post(path, data=payload).status_code == 400
     with client.session_transaction() as sess:
         sess["_csrf_os_recebimento_v1"] = "token-de-teste"
-    assert client.post(
+    csrf_invalido = client.post(
         path, data={**payload, "csrf_os_recebimento": "invalido"}
-    ).status_code == 400
+    )
+    assert csrf_invalido.status_code == 400, (
+        f"csrf inválido resultou em {csrf_invalido.status_code}; "
+        f"destino={csrf_invalido.headers.get('Location')}"
+    )
     resposta = client.post(
         path, data={**payload, "csrf_os_recebimento": "token-de-teste"}
     )
