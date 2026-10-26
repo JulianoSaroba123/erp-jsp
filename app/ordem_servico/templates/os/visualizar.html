@@ -942,12 +942,52 @@
                                     {% if current_user.is_authenticated and current_user.tipo_usuario == 'admin' %}
                                     <td class="text-center">
                                       {% if not parcela.pago and not parcela.data_pagamento %}
-                                      <form method="post" action="{{ url_for('ordem_servico.receber_parcela_os', id=ordem.id, parcela_id=parcela.id) }}" onsubmit="return confirm('Confirma recebimento REAL desta parcela? Esta ação cria a baixa financeira.');">
-                                        {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                        <input type="date" name="data_recebimento" value="{{ today.isoformat() }}" max="{{ today.isoformat() }}" required class="form-control form-control-sm mb-1" aria-label="Data do recebimento">
-                                        <select name="forma_pagamento" class="form-select form-select-sm mb-1" aria-label="Forma de pagamento"><option value="pix">PIX</option><option value="transferencia">Transferência</option><option value="dinheiro">Dinheiro</option><option value="boleto">Boleto</option><option value="cartao_credito">Cartão</option></select>
-                                        <button type="submit" class="btn btn-sm btn-success">Registrar recebimento</button>
-                                      </form>
+                                        {% if contas_recebimento %}
+                                        <details class="text-start" style="min-width: 260px;">
+                                          <summary class="btn btn-sm btn-outline-success">Registrar recebimento</summary>
+                                          <form method="post"
+                                                action="{{ url_for('ordem_servico.receber_parcela_os', id=ordem.id, parcela_id=parcela.id) }}"
+                                                onsubmit="return confirm('Confirma o recebimento REAL da parcela #{{ parcela.numero_parcela }}? O financeiro será atualizado sem somar o saldo bancário.');"
+                                                class="border rounded p-2 mt-2">
+                                            <input type="hidden" name="csrf_os_recebimento" value="{{ csrf_os_recebimento }}">
+                                            <label class="form-label small" for="data_recebimento_{{ parcela.id }}">Data efetiva</label>
+                                            <input type="date" id="data_recebimento_{{ parcela.id }}"
+                                                   name="data_recebimento" value="{{ today.isoformat() }}"
+                                                   max="{{ today.isoformat() }}" required
+                                                   class="form-control form-control-sm mb-2">
+                                            <label class="form-label small" for="valor_recebido_{{ parcela.id }}">Valor (R$)</label>
+                                            <input type="text" id="valor_recebido_{{ parcela.id }}"
+                                                   name="valor_recebido" value="{{ '%.2f'|format(parcela.valor) }}"
+                                                   readonly required class="form-control form-control-sm mb-2">
+                                            <label class="form-label small" for="forma_pagamento_{{ parcela.id }}">Forma de pagamento</label>
+                                            <select id="forma_pagamento_{{ parcela.id }}" name="forma_pagamento"
+                                                    class="form-select form-select-sm mb-2" required>
+                                              <option value="pix">PIX</option>
+                                              <option value="transferencia">Transferência</option>
+                                              <option value="dinheiro">Dinheiro</option>
+                                              <option value="boleto">Boleto</option>
+                                              <option value="cartao_credito">Cartão de crédito</option>
+                                              <option value="cartao_debito">Cartão de débito</option>
+                                            </select>
+                                            <label class="form-label small" for="conta_bancaria_{{ parcela.id }}">Conta de destino</label>
+                                            <select id="conta_bancaria_{{ parcela.id }}" name="conta_bancaria_id"
+                                                    class="form-select form-select-sm mb-2" required>
+                                              <option value="">Selecione a conta</option>
+                                              {% for conta in contas_recebimento %}
+                                              <option value="{{ conta.id }}">{{ conta.nome }}{% if conta.banco %} ({{ conta.banco }}){% endif %}</option>
+                                              {% endfor %}
+                                            </select>
+                                            <label class="form-label small" for="observacao_recebimento_{{ parcela.id }}">Observação (opcional)</label>
+                                            <textarea id="observacao_recebimento_{{ parcela.id }}"
+                                                      name="observacao" rows="2" maxlength="1000"
+                                                      class="form-control form-control-sm mb-2"></textarea>
+                                            <button type="submit" class="btn btn-sm btn-success w-100">Confirmar recebimento</button>
+                                            <small class="text-muted d-block mt-2">Conciliação com extrato bancário deve ser feita separadamente.</small>
+                                          </form>
+                                        </details>
+                                        {% else %}
+                                        <small class="text-muted">Cadastre uma conta bancária ativa no Financeiro.</small>
+                                        {% endif %}
                                       {% else %}<span class="text-success">Recebida</span>{% endif %}
                                     </td>
                                     {% endif %}
