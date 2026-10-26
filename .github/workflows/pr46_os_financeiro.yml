@@ -1,0 +1,52 @@
+name: PR46 OS Financeiro (SQLite isolado)
+
+on:
+  pull_request:
+    paths:
+      - 'app/ordem_servico/**'
+      - 'app/financeiro/**'
+      - 'migrations/versions/20261026_01_os_recebimento_saldo_externo.py'
+      - 'scripts_manutencao/testes/test_pr46_os_recebimento.py'
+      - 'scripts_manutencao/testes/test_os_gatilho_financeiro.py'
+      - '.github/workflows/pr46_os_financeiro.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regressao-isolada:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: 'sqlite:////tmp/erp_jsp_pr46_ci_bootstrap.sqlite'
+      FLASK_ENV: 'testing'
+      FLASK_DEBUG: '0'
+      RENDER: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Instalar dependências
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install pytest
+      - name: Ambiente estritamente SQLite
+        run: |
+          python - <<'PY'
+          import os
+          uri = os.environ.get('DATABASE_URL', '')
+          assert uri.startswith('sqlite:////tmp/erp_jsp_pr46_ci_')
+          assert not os.environ.get('RENDER_SERVICE_ID')
+          print('Banco isolado SQLite confirmado; nenhuma URL exposta.')
+          PY
+      - name: Testes PR46 e regressões financeiras
+        run: |
+          python -m pytest -q \
+            scripts_manutencao/testes/test_pr46_os_recebimento.py \
+            scripts_manutencao/testes/test_os_gatilho_financeiro.py \
+            scripts_manutencao/testes/test_proposta_os_financeiro.py \
+            scripts_manutencao/testes/test_os20260081_fluxo_financeiro.py \
+            scripts_manutencao/testes/test_conciliacao_baixa_proposta.py
