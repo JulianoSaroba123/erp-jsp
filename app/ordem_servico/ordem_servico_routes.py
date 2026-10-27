@@ -3998,3 +3998,6 @@ def gerar_relatorio_pdf(id):
 # Registro do recebimento de parcelas sem exigir conclusão operacional.
 from app.ordem_servico.recebimento_parcelas import registrar_rotas_recebimento
 registrar_rotas_recebimento(ordem_servico_bp)
+
+from app.ordem_servico.receita_etapas import registrar_rotas_etapa
+registrar_rotas_etapa(ordem_servico_bp)

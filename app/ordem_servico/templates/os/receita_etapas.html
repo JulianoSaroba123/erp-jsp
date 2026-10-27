@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Receita por etapa da OS{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <h1 class="h3">Etapas executadas — OS {{ ordem.numero }}</h1>
+  <p>Registre somente o valor da etapa efetivamente executada. O registro não baixa parcelas nem altera o saldo bancário. Cada etapa entra uma vez no mês indicado.</p>
+  <p>Valor total da OS: R$ {{ '%.2f'|format(ordem.valor_total) }}. Revise o reconhecimento com o contador.</p>
+  <form method="post" class="card p-3 mb-3" onsubmit="return confirm('Confirma o reconhecimento desta etapa executada?');">
+    <input type="hidden" name="csrf" value="{{ csrf }}"><input type="hidden" name="chave" value="{{ chave }}">
+    <label for="descricao">Etapa executada</label><input class="form-control mb-2" id="descricao" name="descricao" maxlength="255" required>
+    <label for="competencia">Data de execução / competência</label><input class="form-control mb-2" type="date" id="competencia" name="competencia" max="{{ today.isoformat() }}" required>
+    <label for="valor">Valor reconhecido (R$)</label><input class="form-control mb-2" id="valor" name="valor" inputmode="decimal" required>
+    <div><button class="btn btn-primary">Registrar etapa</button> <a class="btn btn-secondary" href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}">Voltar à OS</a></div>
+  </form>
+  <h2 class="h5">Etapas registradas</h2>
+  <table class="table"><thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Usuário</th></tr></thead><tbody>
+  {% for e in etapas %}<tr><td>{{ e.data_competencia.strftime('%d/%m/%Y') }}</td><td>{{ e.descricao }}</td><td>R$ {{ '%.2f'|format(e.valor) }}</td><td>{{ e.usuario }}</td></tr>{% else %}<tr><td colspan="4">Nenhuma etapa registrada.</td></tr>{% endfor %}
+  </tbody></table>
+</div>
+{% endblock %}

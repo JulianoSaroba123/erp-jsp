@@ -903,6 +903,14 @@
             </div>
             {% endif %}
 
+            {% if current_user.is_authenticated and current_user.tipo_usuario == 'admin' %}
+            <div class="card info-card mb-3"><div class="card-body">
+                <strong>Receita por etapas executadas</strong>
+                <p class="mb-2">Registre as etapas concluídas para informar o mês de reconhecimento.</p>
+                <a class="btn btn-outline-primary" href="{{ url_for('ordem_servico.receita_etapas_os', id=ordem.id) }}">Gerenciar etapas</a>
+            </div></div>
+            {% endif %}
+
             <!-- Parcelas do Pagamento -->
             {% if ordem.parcelas and ordem.parcelas|length > 0 %}
             <div class="card info-card">

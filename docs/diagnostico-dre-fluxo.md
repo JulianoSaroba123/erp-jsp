@@ -12,3 +12,8 @@ A tela e o Excel do DRE existente recebem aviso de limitação. Não foram alter
 
 ## Implantação
 PR para revisão sem merge/deploy automático. Fica pendente verificar o saldo bancário cadastrado comparado ao extrato, e a semântica de conciliações parciais. Não modificar dados de produção durante a validação.
+
+## Etapas de receita — implementação em revisão
+Conforme preferência do responsável, a versão proposta permite a um administrador registrar explicitamente a descrição, a data e o valor de uma etapa executada na OS. A etapa integra o período correspondente do DRE e é independente dos recebimentos. Não há reconhecimento automático de antecipações nem alteração do extrato ou das parcelas. O total das etapas não pode exceder o valor atual da OS, e operações repetidas são bloqueadas. A nova tabela tem migration aditiva, sem preenchimento automático de dados históricos.
+
+A solução continua parcial: DRE e classificações de custos, despesas, investimentos e competência histórica exigem definição e validação; revisão das etapas registradas, estorno auditável e proteção contra reduções posteriores do valor contratual também precisam ser concluídos antes de disponibilizar em produção. A tela e o Excel preservam aviso de que o DRE não é definitivo. Consultar o contador sobre a aplicação da regra de reconhecimento à empresa.

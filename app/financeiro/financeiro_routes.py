@@ -2502,7 +2502,7 @@ def dre():
         ).all()
         
         # Calcular DRE
-        dre_data = calcular_dre(lancamentos)
+        dre_data = calcular_dre(lancamentos, receita_etapas_periodo(data_inicio, data_fim))
         
         # Comparação com período anterior
         if comparacao == 'mensal' and mes:
@@ -2524,7 +2524,7 @@ def dre():
                 LancamentoFinanceiro.ativo == True
             ).all()
             
-            dre_anterior = calcular_dre(lancamentos_ant)
+            dre_anterior = calcular_dre(lancamentos_ant, receita_etapas_periodo(data_inicio_ant, data_fim_ant))
             titulo_comparacao = f"{data_inicio_ant.strftime('%B/%Y').capitalize()}"
             
         elif comparacao == 'anual':
@@ -2538,7 +2538,7 @@ def dre():
                 LancamentoFinanceiro.ativo == True
             ).all()
             
-            dre_anterior = calcular_dre(lancamentos_ant)
+            dre_anterior = calcular_dre(lancamentos_ant, receita_etapas_periodo(data_inicio_ant, data_fim_ant))
             titulo_comparacao = f"Ano {ano - 1}"
         else:
             dre_anterior = None
@@ -2575,7 +2575,7 @@ def dre():
                     LancamentoFinanceiro.ativo == True
                 ).all()
                 
-                dre_mes = calcular_dre(lanc_mes)
+                dre_mes = calcular_dre(lanc_mes, receita_etapas_periodo(data_ini_mes, data_fim_mes))
                 dre_mes['mes'] = m
                 dre_mes['mes_nome'] = data_ini_mes.strftime('%B').capitalize()
                 dre_mensal.append(dre_mes)
@@ -2596,7 +2596,15 @@ def dre():
         return redirect(url_for('financeiro.dashboard'))
 
 
-def calcular_dre(lancamentos):
+def receita_etapas_periodo(inicio, fim):
+    from app.ordem_servico.ordem_servico_model import ReconhecimentoReceitaOS
+    return Decimal(str(db.session.query(db.func.coalesce(db.func.sum(ReconhecimentoReceitaOS.valor), 0)).filter(
+        ReconhecimentoReceitaOS.ativo.is_(True),
+        ReconhecimentoReceitaOS.data_competencia >= inicio,
+        ReconhecimentoReceitaOS.data_competencia <= fim).scalar()))
+
+
+def calcular_dre(lancamentos, receita_etapas=Decimal('0.00')):
     """Calcula DRE a partir de uma lista de lançamentos."""
     
     # Categorias de receitas
@@ -2617,7 +2625,7 @@ def calcular_dre(lancamentos):
     categorias_financeiras = ['Juros Pagos', 'Juros Recebidos', 'Despesas Bancárias']
     
     # Inicializar valores
-    receita_bruta = Decimal('0.00')
+    receita_bruta = Decimal(str(receita_etapas))
     deducoes = Decimal('0.00')
     custos = Decimal('0.00')
     despesas_operacionais = Decimal('0.00')
@@ -2626,6 +2634,9 @@ def calcular_dre(lancamentos):
     
     # Processar lançamentos
     for lanc in lancamentos:
+        # Receita de OS é reconhecida somente pelas etapas registradas.
+        if getattr(lanc, 'ordem_servico_id', None) and str(lanc.tipo or '').lower() in {'receita', 'conta_receber'}:
+            continue
         valor = lanc.valor
         categoria = lanc.categoria or ''
         
@@ -2711,7 +2722,7 @@ def exportar_dre_excel():
             LancamentoFinanceiro.ativo == True
         ).all()
         
-        dre_data = calcular_dre(lancamentos)
+        dre_data = calcular_dre(lancamentos, receita_etapas_periodo(data_inicio, data_fim))
         
         # Criar Excel
         wb = openpyxl.Workbook()
