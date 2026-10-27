@@ -104,7 +104,7 @@ def test_http_permissoes_csrf_filtro_e_rota_antiga(caso_jumirim_ficticio):
 def test_setembro_124_161_ficticios_preservam_conciliacao(caso_jumirim_ficticio):
     app, ids = caso_jumirim_ficticio
     with app.app_context():
-        duplicado = _criar(ids, id=124)
+        duplicado = _criar(ids, id=124, recorrente=True, frequencia='mensal')
         correto = _criar(ids, id=161, descricao='Aluguel empresa fictício', valor=Decimal('1000.00'))
         extrato = db.session.get(ExtratoBancario, ids['extrato'])
         extrato.valor = Decimal('1000.00')
@@ -123,6 +123,8 @@ def test_setembro_124_161_ficticios_preservam_conciliacao(caso_jumirim_ficticio)
         db.session.expire_all()
         assert resumir_financeiro_periodo(date(2026,9,1), date(2026,9,30)).despesas_realizadas == antes - Decimal('1938.29')
         assert db.session.get(LancamentoFinanceiro, 161).ativo
+        assert db.session.get(LancamentoFinanceiro, 124).recorrente is True
+        assert db.session.get(LancamentoFinanceiro, 124).frequencia == 'mensal'
         assert db.session.get(ContaBancaria, ids['conta']).saldo_atual == saldo
         assert db.session.get(ExtratoBancario, ids['extrato']).valor == Decimal('1000.00')
         assert ConciliacaoBancariaItem.query.filter_by(lancamento_id=161, ativo=True).count() == 1

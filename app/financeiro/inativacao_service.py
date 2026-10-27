@@ -49,8 +49,8 @@ def alterar_atividade(lancamento_id, *, ativar, motivo, usuario):
         'proposta_parcela_id', 'pedido_id', 'custo_fixo_id',
     )) or (lanc.origem or 'MANUAL').strip().upper() != 'MANUAL':
         raise OperacaoFinanceiraInvalida('Lançamento integrado exige revisão manual.')
-    if lanc.categoria == 'Transferência Bancária' or lanc.recorrente:
-        raise OperacaoFinanceiraInvalida('Transferências e recorrências exigem revisão manual.')
+    if lanc.categoria == 'Transferência Bancária':
+        raise OperacaoFinanceiraInvalida('Transferências exigem revisão manual.')
     _vinculos_externos(lanc.id)
     if ativar:
         duplicado = LancamentoFinanceiro.query.filter(
