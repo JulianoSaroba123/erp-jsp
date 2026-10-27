@@ -34,3 +34,32 @@ def test_duas_sessoes_nao_registram_etapa_duplicada(caso_jumirim_ficticio):
         assert sorted(pool.map(registrar, [1, 2])) == ['duplicada', 'registrada']
     with app.app_context():
         assert ReconhecimentoReceitaOS.query.filter_by(ordem_servico_id=ids['os']).count() == 1
+
+
+def test_migration_etapas_postgresql(banco_pr46):
+    import importlib.util
+    from pathlib import Path
+    from sqlalchemy import create_engine, text, inspect
+    from alembic.migration import MigrationContext
+    from alembic.operations import Operations
+    from app.config import config
+    path = Path(__file__).resolve().parents[2] / 'migrations/versions/20261027_01_os_receita_etapas.py'
+    spec = importlib.util.spec_from_file_location('migration_etapas_pg', path)
+    migration = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(migration)
+    engine = create_engine(banco_pr46, **config['testing'].SQLALCHEMY_ENGINE_OPTIONS)
+    try:
+        with engine.begin() as conn:
+            conn.execute(text('CREATE TABLE ordem_servico (id INTEGER PRIMARY KEY)'))
+            conn.execute(text('INSERT INTO ordem_servico (id) VALUES (1)'))
+            with Operations.context(MigrationContext.configure(conn)):
+                migration.upgrade()
+                assert inspect(conn).has_table('os_receita_etapas')
+                conn.execute(text("INSERT INTO os_receita_etapas (id,ordem_servico_id,data_competencia,descricao,valor,usuario,chave_operacao,criado_em,atualizado_em) VALUES (1,1,'2026-09-20','Teste',100,'9','teste','2026-09-20','2026-09-20')"))
+                with pytest.raises(RuntimeError, match='bloqueado'):
+                    migration.downgrade()
+                conn.execute(text('DELETE FROM os_receita_etapas'))
+                migration.downgrade()
+                assert not inspect(conn).has_table('os_receita_etapas')
+    finally:
+        engine.dispose()
