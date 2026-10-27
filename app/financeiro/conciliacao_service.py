@@ -474,6 +474,7 @@ def executar_conciliacao_orm(
                 )
             )
             .order_by(lancamento_model.id)
+            .populate_existing()
             .with_for_update()
             .all()
         )
@@ -482,6 +483,9 @@ def executar_conciliacao_orm(
             item.id: item
             for item in lancamentos_db
         }
+
+        if any(not getattr(item, 'ativo', True) for item in lancamentos_db):
+            raise ConciliacaoInvalida('Lançamento inativo não pode ser conciliado.')
 
         itens_extrato_todos = (
             session.query(item_model)

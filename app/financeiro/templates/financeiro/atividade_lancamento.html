@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Atividade do lançamento{% endblock %}
+{% block content %}
+<div class="container-fluid">
+  <h1 class="h3">Lançamento #{{ lancamento.id }} — {{ lancamento.descricao }}</h1>
+  <p>Valor: {{ lancamento.valor_formatado }} · Situação: <strong>{{ 'Ativo' if lancamento.ativo else 'Inativo' }}</strong></p>
+  <p>O extrato e o saldo bancário não serão alterados. Lançamentos com vínculos financeiros exigem revisão.</p>
+  <form method="post" onsubmit="return confirm('Confirma a alteração do estado deste lançamento?');" class="card p-3 mb-3">
+    <input type="hidden" name="csrf_atividade" value="{{ csrf_atividade }}">
+    <input type="hidden" name="acao" value="{{ 'inativar' if lancamento.ativo else 'reativar' }}">
+    <label class="form-label" for="motivo">Motivo obrigatório</label>
+    <textarea name="motivo" id="motivo" class="form-control mb-2" maxlength="1000" required></textarea>
+    <div><button class="btn btn-{{ 'danger' if lancamento.ativo else 'success' }}">{{ 'Inativar' if lancamento.ativo else 'Reativar' }}</button>
+    <a class="btn btn-secondary" href="{{ url_for('financeiro.listar_lancamentos', atividade='todos') }}">Voltar</a></div>
+  </form>
+  <h2 class="h5">Histórico</h2>
+  <div class="table-responsive"><table class="table"><thead><tr><th>Data UTC</th><th>Usuário</th><th>Operação</th><th>Anterior → novo</th><th>Motivo</th></tr></thead><tbody>
+  {% for item in historico %}<tr><td>{{ item.data_alteracao.strftime('%d/%m/%Y %H:%M:%S') }}</td><td>{{ item.usuario }}</td><td>{{ item.acao }}</td><td>{{ item.valor_anterior }} → {{ item.valor_novo }}</td><td>{{ item.motivo or '—' }}</td></tr>{% else %}<tr><td colspan="5">Nenhum histórico.</td></tr>{% endfor %}
+  </tbody></table></div>
+</div>
+{% endblock %}

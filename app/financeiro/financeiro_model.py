@@ -1115,7 +1115,7 @@ class PlanoContas(BaseModel):
     
     def get_saldo(self, data_inicio=None, data_fim=None):
         """Calcula saldo da conta no período."""
-        query = LancamentoFinanceiro.query.filter_by(plano_conta_id=self.id)
+        query = LancamentoFinanceiro.query.filter_by(plano_conta_id=self.id, ativo=True)
         
         if data_inicio:
             query = query.filter(LancamentoFinanceiro.data_lancamento >= data_inicio)
@@ -1288,7 +1288,8 @@ class OrcamentoAnual(BaseModel):
         query = LancamentoFinanceiro.query.filter(
             LancamentoFinanceiro.data_vencimento >= data_inicio,
             LancamentoFinanceiro.data_vencimento < data_fim,
-            LancamentoFinanceiro.tipo == self.tipo
+            LancamentoFinanceiro.tipo == self.tipo,
+            LancamentoFinanceiro.ativo.is_(True)
         )
         
         # Filtra por centro de custo se definido
@@ -2165,10 +2166,9 @@ class RateioDespesa(BaseModel):
     @classmethod
     def get_por_centro_custo(cls, centro_custo_id, data_inicio=None, data_fim=None):
         """Retorna rateios recebidos por um centro de custo."""
-        query = cls.query.filter_by(centro_custo_id=centro_custo_id, ativo=True)
+        query = cls.query.filter_by(centro_custo_id=centro_custo_id, ativo=True).join(LancamentoFinanceiro).filter(LancamentoFinanceiro.ativo.is_(True))
         
         if data_inicio or data_fim:
-            query = query.join(LancamentoFinanceiro)
             if data_inicio:
                 query = query.filter(LancamentoFinanceiro.data_lancamento >= data_inicio)
             if data_fim:
