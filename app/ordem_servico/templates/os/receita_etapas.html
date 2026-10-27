@@ -13,8 +13,12 @@
     <div><button class="btn btn-primary">Registrar etapa</button> <a class="btn btn-secondary" href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}">Voltar à OS</a></div>
   </form>
   <h2 class="h5">Etapas registradas</h2>
-  <table class="table"><thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Usuário</th></tr></thead><tbody>
-  {% for e in etapas %}<tr><td>{{ e.data_competencia.strftime('%d/%m/%Y') }}</td><td>{{ e.descricao }}</td><td>R$ {{ '%.2f'|format(e.valor) }}</td><td>{{ e.usuario }}</td></tr>{% else %}<tr><td colspan="4">Nenhuma etapa registrada.</td></tr>{% endfor %}
+  <table class="table"><thead><tr><th>Data</th><th>Descrição</th><th>Valor</th><th>Usuário</th><th>Situação / estorno</th></tr></thead><tbody>
+  {% for e in etapas %}<tr><td>{{ e.data_competencia.strftime('%d/%m/%Y') }}</td><td>{{ e.descricao }}</td><td>R$ {{ '%.2f'|format(e.valor) }}</td><td>{{ e.usuario }}</td><td>{% if e.ativo %}
+  <form method="post" action="{{ url_for('ordem_servico.estornar_etapa_os', id=ordem.id, etapa_id=e.id) }}" onsubmit="return confirm('Confirma o estorno desta etapa?');">
+  <input type="hidden" name="csrf" value="{{ csrf }}"><label for="motivo_{{ e.id }}">Motivo</label>
+  <input id="motivo_{{ e.id }}" name="motivo" maxlength="1000" required><button class="btn btn-sm btn-outline-danger">Estornar</button></form>
+  {% else %}Estornada — {{ e.motivo_estorno }} (usuário {{ e.usuario_estorno }}){% endif %}</td></tr>{% else %}<tr><td colspan="5">Nenhuma etapa registrada.</td></tr>{% endfor %}
   </tbody></table>
 </div>
 {% endblock %}

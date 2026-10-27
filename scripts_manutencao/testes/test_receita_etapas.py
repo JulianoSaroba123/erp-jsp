@@ -62,3 +62,48 @@ def test_http_etapas_restricao_e_csrf(caso_jumirim_ficticio):
     assert resposta.status_code == 302
     with app.app_context():
         assert ReconhecimentoReceitaOS.query.filter_by(ordem_servico_id=ids['os']).count() == 1
+
+
+def test_reducao_da_os_abaixo_das_etapas_e_revertida(caso_jumirim_ficticio):
+    from app.ordem_servico.receita_etapas import validar_total_da_os
+    from app.ordem_servico.ordem_servico_model import OrdemServicoItem
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        ordem = db.session.get(OrdemServico, ids['os'])
+        registrar_etapa(os_id=ordem.id, competencia=date(2026,9,20), descricao='Etapa',
+                        valor='20000.00', usuario='9', chave='teste-limite')
+        db.session.commit()
+        item = OrdemServicoItem.query.filter_by(ordem_servico_id=ordem.id).one()
+        item.valor_unitario = Decimal('10000.00')
+        item.calcular_total()
+        ordem.valor_desconto = Decimal('1.00')  # força recálculo do total no flush
+        with pytest.raises(ValueError, match='abaixo'):
+            validar_total_da_os(ordem)
+        db.session.rollback()
+        assert db.session.get(OrdemServico, ids['os']).valor_total == Decimal('30000.00')
+
+
+def test_estorno_auditavel_sem_alterar_caixa(caso_jumirim_ficticio):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        etapa = registrar_etapa(os_id=ids['os'], competencia=date(2026,9,20), descricao='Etapa',
+                                valor='4000', usuario='9', chave='teste-estorno')
+        db.session.commit()
+        etapa_id = etapa.id
+        saldo = db.session.get(ContaBancaria, ids['conta']).saldo_atual
+    client = app.test_client()
+    client.post('/auth/login', data={'identificador':'admin_pr46','senha':'SenhaPr46Teste!'})
+    path = f'/ordem_servico/{ids["os"]}/receita-etapas'
+    client.get(path)
+    with client.session_transaction() as sess:
+        csrf = sess['_csrf_etapas_receita']
+    endpoint = f'{path}/{etapa_id}/estornar'
+    assert client.post(endpoint, data={'motivo':'Erro'}).status_code == 400
+    client.post(endpoint, data={'csrf':csrf,'motivo':'Etapa informada por engano'})
+    with app.app_context():
+        e = db.session.get(ReconhecimentoReceitaOS, etapa_id)
+        assert not e.ativo and e.motivo_estorno == 'Etapa informada por engano'
+        assert e.usuario_estorno and e.data_estorno
+        assert receita_etapas_periodo(date(2026,9,1), date(2026,9,30)) == 0
+        assert db.session.get(ContaBancaria, ids['conta']).saldo_atual == saldo
+        assert not db.session.get(ExtratoBancario, ids['extrato']).conciliado

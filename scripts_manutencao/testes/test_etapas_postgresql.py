@@ -3,6 +3,8 @@ from scripts_manutencao.testes.test_receita_etapas import (
     banco_pr46, caso_jumirim_ficticio,
     test_etapas_separam_competencia_de_caixa_e_sao_idempotentes,
     test_http_etapas_restricao_e_csrf,
+    test_reducao_da_os_abaixo_das_etapas_e_revertida,
+    test_estorno_auditavel_sem_alterar_caixa,
 )
 pytestmark = pytest.mark.parametrize('banco_pr46', ['postgresql'], indirect=True)
 

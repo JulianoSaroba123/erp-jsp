@@ -1002,4 +1002,7 @@ class ReconhecimentoReceitaOS(BaseModel):
     valor = db.Column(db.Numeric(12, 2), nullable=False)
     usuario = db.Column(db.String(100), nullable=False)
     chave_operacao = db.Column(db.String(64), nullable=False)
+    usuario_estorno = db.Column(db.String(100))
+    motivo_estorno = db.Column(db.Text)
+    data_estorno = db.Column(db.DateTime)
     ordem_servico = db.relationship('OrdemServico', backref='etapas_receita')

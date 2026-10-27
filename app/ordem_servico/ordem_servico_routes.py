@@ -3034,6 +3034,8 @@ def editar(id):
 
             # Commit final: salva novas linhas de serviços/produtos/parcelas/anexos
             try:
+                from app.ordem_servico.receita_etapas import validar_total_da_os
+                validar_total_da_os(ordem)
                 db.session.commit()
                 print(f"🏁 DEBUG: Ordem de Serviço salva com sucesso! Total final: R$ {ordem.valor_total}")
                 ordem.valor_total = valor_total_sincronizacao
