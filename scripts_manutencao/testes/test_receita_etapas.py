@@ -104,6 +104,10 @@ def test_estorno_auditavel_sem_alterar_caixa(caso_jumirim_ficticio):
         e = db.session.get(ReconhecimentoReceitaOS, etapa_id)
         assert not e.ativo and e.motivo_estorno == 'Etapa informada por engano'
         assert e.usuario_estorno and e.data_estorno
+        with pytest.raises(ValueError, match='estornada|estornado'):
+            registrar_etapa(os_id=ids['os'], competencia=date(2026,9,20), descricao='Etapa',
+                            valor='4000', usuario='9', chave='teste-estorno')
+        db.session.rollback()
         assert receita_etapas_periodo(date(2026,9,1), date(2026,9,30)) == 0
         assert db.session.get(ContaBancaria, ids['conta']).saldo_atual == saldo
         assert not db.session.get(ExtratoBancario, ids['extrato']).conciliado

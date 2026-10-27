@@ -36,6 +36,8 @@ def registrar_etapa(*, os_id, competencia, descricao, valor, usuario, chave):
         raise ValueError('Ordem inexistente ou cancelada.')
     existente = ReconhecimentoReceitaOS.query.filter_by(chave_operacao=chave).first()
     if existente:
+        if not existente.ativo:
+            raise ValueError('Esta operação foi estornada. Reabra o formulário para novo registro.')
         if (existente.ordem_servico_id != os_id or existente.valor != quantia or
                 existente.data_competencia != competencia or existente.descricao != descricao):
             raise ValueError('Esta operação já foi registrada com outros dados.')
