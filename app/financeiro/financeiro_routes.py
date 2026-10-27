@@ -2347,59 +2347,15 @@ def fluxo_caixa():
         else:
             data_fim = data_hoje + timedelta(days=30)
         
-        # Saldo inicial (soma de todas as contas ou conta específica)
-        query_saldo = ContaBancaria.query.filter_by(ativo=True)
-        if conta_id:
-            query_saldo = query_saldo.filter_by(id=conta_id)
-        
-        contas = query_saldo.all()
-        saldo_inicial = sum(conta.saldo_atual for conta in contas)
-        
-        # Buscar lançamentos futuros
-        query_lancamentos = LancamentoFinanceiro.query.filter(
-            LancamentoFinanceiro.data_vencimento >= data_hoje,
-            LancamentoFinanceiro.data_vencimento <= data_fim,
-            LancamentoFinanceiro.ativo == True
-        )
-        
-        if conta_id:
-            query_lancamentos = query_lancamentos.filter_by(conta_bancaria_id=conta_id)
-        
-        lancamentos = query_lancamentos.order_by(LancamentoFinanceiro.data_vencimento).all()
-        
-        # Calcular projeção dia a dia
-        projecao = []
-        saldo_acumulado = saldo_inicial
-        data_atual = data_hoje
-        
-        while data_atual <= data_fim:
-            # Lançamentos do dia
-            lancamentos_dia = [l for l in lancamentos if l.data_vencimento == data_atual]
-            
-            receitas_dia = sum(l.valor for l in lancamentos_dia if l.tipo == 'RECEITA')
-            despesas_dia = sum(l.valor for l in lancamentos_dia if l.tipo == 'DESPESA')
-            saldo_dia = receitas_dia - despesas_dia
-            saldo_acumulado += saldo_dia
-            
-            projecao.append({
-                'data': data_atual,
-                'receitas': receitas_dia,
-                'despesas': despesas_dia,
-                'saldo_dia': saldo_dia,
-                'saldo_acumulado': saldo_acumulado,
-                'lancamentos': lancamentos_dia
-            })
-            
-            data_atual += timedelta(days=1)
-        
-        # Identificar períodos de saldo negativo
-        alertas = [p for p in projecao if p['saldo_acumulado'] < 0]
-        
-        # Totais do período
-        total_receitas = sum(p['receitas'] for p in projecao)
-        total_despesas = sum(p['despesas'] for p in projecao)
-        saldo_final = projecao[-1]['saldo_acumulado'] if projecao else saldo_inicial
-        
+        from app.financeiro.fluxo_projecao_service import projetar_fluxo
+        resultado = projetar_fluxo(data_hoje, data_fim, conta_id)
+        projecao = resultado['projecao']
+        saldo_inicial = resultado['saldo_inicial']
+        saldo_final = resultado['saldo_final']
+        total_receitas = resultado['total_receitas']
+        total_despesas = resultado['total_despesas']
+        alertas = resultado['alertas']
+
         # Buscar todas as contas para filtro
         todas_contas = ContaBancaria.query.filter_by(ativo=True).all()
         
@@ -2410,6 +2366,7 @@ def fluxo_caixa():
                              total_receitas=total_receitas,
                              total_despesas=total_despesas,
                              alertas=alertas,
+                             atrasados=resultado['atrasados'],
                              contas=todas_contas,
                              conta_id=conta_id,
                              periodo=periodo,
@@ -2441,29 +2398,15 @@ def exportar_fluxo_excel():
             data_fim = data_hoje + timedelta(days=30)
         elif periodo == '60':
             data_fim = data_hoje + timedelta(days=60)
-        else:
+        elif periodo == '90':
             data_fim = data_hoje + timedelta(days=90)
+        else:
+            data_fim = data_hoje + timedelta(days=30)
         
-        # Saldo inicial
-        query_saldo = ContaBancaria.query.filter_by(ativo=True)
-        if conta_id:
-            query_saldo = query_saldo.filter_by(id=conta_id)
-        
-        contas = query_saldo.all()
-        saldo_inicial = sum(conta.saldo_atual for conta in contas)
-        
-        # Buscar lançamentos
-        query_lancamentos = LancamentoFinanceiro.query.filter(
-            LancamentoFinanceiro.data_vencimento >= data_hoje,
-            LancamentoFinanceiro.data_vencimento <= data_fim,
-            LancamentoFinanceiro.ativo == True
-        )
-        
-        if conta_id:
-            query_lancamentos = query_lancamentos.filter_by(conta_bancaria_id=conta_id)
-        
-        lancamentos = query_lancamentos.order_by(LancamentoFinanceiro.data_vencimento).all()
-        
+        from app.financeiro.fluxo_projecao_service import projetar_fluxo
+        resultado = projetar_fluxo(data_hoje, data_fim, conta_id)
+        saldo_inicial = resultado['saldo_inicial']
+
         # Criar Excel
         wb = openpyxl.Workbook()
         ws = wb.active
@@ -2485,33 +2428,14 @@ def exportar_fluxo_excel():
             cell.font = Font(color='FFFFFF', bold=True)
             cell.alignment = Alignment(horizontal='center')
         
-        # Dados
-        saldo_acumulado = saldo_inicial
-        data_atual = data_hoje
-        
-        while data_atual <= data_fim:
-            lancamentos_dia = [l for l in lancamentos if l.data_vencimento == data_atual]
-            
-            receitas_dia = sum(l.valor for l in lancamentos_dia if l.tipo == 'RECEITA')
-            despesas_dia = sum(l.valor for l in lancamentos_dia if l.tipo == 'DESPESA')
-            saldo_dia = receitas_dia - despesas_dia
-            saldo_acumulado += saldo_dia
-            
-            ws.append([
-                data_atual.strftime('%d/%m/%Y'),
-                float(receitas_dia),
-                float(despesas_dia),
-                float(saldo_dia),
-                float(saldo_acumulado)
-            ])
-            
-            # Colorir linha se saldo negativo
-            if saldo_acumulado < 0:
+        # Os mesmos valores apresentados na tela.
+        for dia in resultado['projecao']:
+            ws.append([dia['data'].strftime('%d/%m/%Y'), float(dia['receitas']),
+                       float(dia['despesas']), float(dia['saldo_dia']), float(dia['saldo_acumulado'])])
+            if dia['saldo_acumulado'] < 0:
                 for cell in ws[ws.max_row]:
                     cell.fill = PatternFill(start_color='FFE6E6', end_color='FFE6E6', fill_type='solid')
-            
-            data_atual += timedelta(days=1)
-        
+
         # Ajustar largura das colunas
         ws.column_dimensions['A'].width = 15
         ws.column_dimensions['B'].width = 15
@@ -2815,6 +2739,9 @@ def exportar_dre_excel():
         ws.merge_cells('A1:C1')
         ws.merge_cells('A2:C2')
         ws.append([])
+        ws['A3'] = 'EM REVISÃO: competência e reconhecimento incompletos; valores não representam DRE definitiva.'
+        ws['A3'].font = Font(color='9C5700', bold=True)
+        ws.merge_cells('A3:C3')
         
         # Colunas
         ws.append(['Descrição', 'Valor (R$)', '% s/ Rec. Líq.'])

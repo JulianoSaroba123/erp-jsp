@@ -53,6 +53,8 @@
     </div>
 </div>
 
+<div class="alert alert-info">O saldo inicial usa o saldo cadastrado nas contas. A projeção considera títulos pendentes pelo vencimento, descontando valores já conciliados. Títulos vencidos não entram nos dias futuros: {{ atrasados|length }} lançamento(s) vencido(s) precisam de revisão.</div>
+
 <!-- Cards de Resumo -->
 <div class="row mb-4">
     <div class="col-md-3">
@@ -215,13 +217,14 @@
                             </button>
                             <div class="collapse mt-2" id="lancamentos-{{ loop.index }}">
                                 <ul class="list-group list-group-sm">
-                                    {% for lanc in item.lancamentos %}
+                                    {% for linha in item.lancamentos %}
+                                    {% set lanc = linha.lancamento %}
                                     <li class="list-group-item">
                                         <strong>{{ lanc.descricao }}</strong>
                                         <br>
                                         <small>
                                             {{ lanc.tipo }} - 
-                                            R$ {{ "{:,.2f}".format(lanc.valor).replace(',', '_').replace('.', ',').replace('_', '.') }}
+                                            R$ {{ "{:,.2f}".format(linha.valor_restante).replace(',', '_').replace('.', ',').replace('_', '.') }}
                                             {% if lanc.categoria %} | {{ lanc.categoria }}{% endif %}
                                         </small>
                                     </li>
