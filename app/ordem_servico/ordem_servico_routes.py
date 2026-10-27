@@ -10,7 +10,7 @@ Autor: JSP Soluções
 Data: 2025
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, make_response, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, make_response, current_app, abort
 from flask_login import current_user, login_required
 from app.extensoes import db
 from app.ordem_servico.ordem_servico_model import (
@@ -472,8 +472,8 @@ def extrair_colaboradores_form(form_data):
 
 def processar_colaboradores_os(ordem, form_data):
     """Salva os apontamentos de colaboradores da OS."""
-    for item in list(getattr(ordem, 'colaboradores_trabalho', []) or []):
-        db.session.delete(item)
+    existentes = {item.id: item for item in (getattr(ordem, 'colaboradores_trabalho', []) or []) if item.id and item.ativo}
+    utilizados = set()
 
     total_horas = Decimal('0')
     total_horas_normais = Decimal('0')
@@ -517,7 +517,16 @@ def processar_colaboradores_os(ordem, form_data):
             except:
                 percentual_adicional_cobranca = None
 
-        trabalho = OrdemServicoColaborador(
+        trabalho_id_texto = colaborador_data.get('id', '')
+        trabalho_id = safe_int_convert(trabalho_id_texto) if trabalho_id_texto else None
+        if trabalho_id_texto and (not trabalho_id or trabalho_id not in existentes or trabalho_id in utilizados):
+            raise ValueError('Apontamento inválido ou repetido para esta ordem de serviço.')
+        if trabalho_id and existentes[trabalho_id].colaborador_id != colaborador_id:
+            raise ValueError('Para trocar o colaborador, remova o apontamento e adicione outro.')
+        trabalho = existentes[trabalho_id] if trabalho_id else OrdemServicoColaborador()
+        if trabalho_id:
+            utilizados.add(trabalho_id)
+        valores = dict(
             ordem_servico_id=ordem.id,
             colaborador_id=colaborador_id,
             data_trabalho=data_trabalho,
@@ -535,6 +544,8 @@ def processar_colaboradores_os(ordem, form_data):
             observacoes=colaborador_data.get('observacoes', ''),
             percentual_adicional_cobranca=percentual_adicional_cobranca
         )
+        for campo, valor in valores.items():
+            setattr(trabalho, campo, valor)
 
         # Sempre calcular automaticamente a partir dos horários detalhados
         trabalho.calcular_horas_automatico()
@@ -552,6 +563,10 @@ def processar_colaboradores_os(ordem, form_data):
         total_horas_extras += Decimal(str(trabalho.horas_extras or 0))
         total_km += trabalho.km_total
         db.session.add(trabalho)
+
+    for trabalho_id, trabalho in existentes.items():
+        if trabalho_id not in utilizados:
+            trabalho.ativo = False
 
     if ordem.tipo_os == 'operacional':
         if total_horas > 0:
@@ -3809,6 +3824,10 @@ def gerar_relatorio_pdf(id):
     Returns:
         PDF file: Relatório da ordem de serviço em PDF
     """
+    if request.args.get('fechamento') == '1' and (
+        not current_user.is_authenticated or not usuario_eh_admin()
+    ):
+        abort(403)
     print(f"DEBUG PDF: Iniciando geração de PDF para OS ID: {id}")
     
     try:
