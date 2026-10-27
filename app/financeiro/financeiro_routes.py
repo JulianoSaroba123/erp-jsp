@@ -10,8 +10,9 @@ Autor: JSP Soluções
 Data: 2025
 """
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file, abort
 from flask_login import current_user
+from werkzeug.exceptions import HTTPException
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 import io
@@ -294,7 +295,14 @@ def listar_lancamentos():
         print(f"DEBUG: Filtros: tipo={tipo}, status={status}, cliente={cliente_id}, fornecedor={fornecedor_id}")
         
         # Query base
-        query = LancamentoFinanceiro.query.filter_by(ativo=True)
+        atividade = request.args.get('atividade', 'ativos')
+        if atividade not in {'ativos', 'inativos', 'todos'}:
+            abort(400)
+        if atividade != 'ativos' and getattr(current_user, 'tipo_usuario', None) != 'admin':
+            abort(403)
+        query = LancamentoFinanceiro.query
+        if atividade != 'todos':
+            query = query.filter_by(ativo=atividade == 'ativos')
         
         # Aplicar filtros
         if tipo:
@@ -375,6 +383,7 @@ def listar_lancamentos():
                              resumo_financeiro=resumo_lista,
                              filtros={
                                  'tipo': tipo,
+                                 'atividade': atividade,
                                  'status': status,
                                  'categoria': categoria,
                                  'cliente_id': cliente_id,
@@ -383,6 +392,8 @@ def listar_lancamentos():
                                  'data_fim': data_fim
                              })
     
+    except HTTPException:
+        raise
     except Exception as e:
         print(f"DEBUG: Erro em listar_lancamentos: {str(e)}")
         flash(f'Erro ao listar lançamentos: {str(e)}', 'danger')
@@ -530,7 +541,10 @@ def editar_lancamento(id):
 def atualizar_lancamento(id):
     """Atualiza lançamento financeiro."""
     try:
-        lancamento = LancamentoFinanceiro.query.get_or_404(id)
+        lancamento = LancamentoFinanceiro.query.filter_by(id=id).populate_existing().with_for_update().first_or_404()
+        if not lancamento.ativo:
+            flash('Reative o lançamento antes de editá-lo.', 'warning')
+            return redirect(url_for('financeiro.listar_lancamentos'))
         
         # Dados do formulário
         lancamento.descricao = request.form.get('descricao')
@@ -616,38 +630,21 @@ def atualizar_lancamento(id):
 
 @bp_financeiro.route('/lancamentos/<int:id>/excluir', methods=['GET', 'POST'])
 def excluir_lancamento(id):
-    """Exclui lançamento financeiro (soft delete)."""
-    try:
-        lancamento = LancamentoFinanceiro.query.get_or_404(id)
-        
-        # Se for GET, mostrar página de confirmação
-        if request.method == 'GET':
-            return render_template('financeiro/confirmar_exclusao.html', 
-                                 lancamento=lancamento,
-                                 data_hoje=datetime.now().date())
-        
-        # Se for POST, executar exclusão
-        if request.method == 'POST':
-            # Soft delete
-            lancamento.ativo = False
-            lancamento.data_exclusao = datetime.utcnow()
-            
-            db.session.commit()
-            
-            flash(f'Lançamento "{lancamento.descricao}" excluído com sucesso!', 'success')
-            return redirect(url_for('financeiro.listar_lancamentos'))
-    
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao excluir lançamento: {str(e)}', 'danger')
-        return redirect(url_for('financeiro.listar_lancamentos'))
+    """Substitui a antiga exclusão pelo fluxo auditado."""
+    # O fluxo antigo ignorava conciliação, motivo, permissão e auditoria.
+    if request.method == 'POST':
+        abort(403)
+    return redirect(url_for('financeiro.atividade_lancamento', id=id))
 
 
 @bp_financeiro.route('/lancamentos/<int:id>/pagar', methods=['POST'])
 def marcar_como_pago(id):
     """Marca lançamento como pago/recebido."""
     try:
-        lancamento = LancamentoFinanceiro.query.get_or_404(id)
+        lancamento = LancamentoFinanceiro.query.filter_by(id=id).populate_existing().with_for_update().first_or_404()
+        if not lancamento.ativo:
+            flash('Lançamento inativo não pode ser pago.', 'warning')
+            return redirect(url_for('financeiro.listar_lancamentos'))
         data_pagamento_str = request.form.get('data_pagamento')
         
         if data_pagamento_str:
@@ -1997,8 +1994,13 @@ def conciliar_manual(extrato_id, lancamento_id):
     try:
         from app.financeiro.financeiro_model import ExtratoBancario
         
-        extrato = ExtratoBancario.query.get_or_404(extrato_id)
-        lancamento = LancamentoFinanceiro.query.get_or_404(lancamento_id)
+        extrato = ExtratoBancario.query.filter_by(id=extrato_id).with_for_update().one_or_none()
+        if extrato is None:
+            abort(404)
+        lancamento = LancamentoFinanceiro.query.filter_by(id=lancamento_id).populate_existing().with_for_update().one_or_none()
+        if lancamento is None or not lancamento.ativo:
+            flash('Lançamento inexistente ou inativo.', 'warning')
+            return redirect(url_for('financeiro.conciliacao_bancaria', conta_id=extrato.conta_bancaria_id))
         
         # Verificar se já não está conciliado
         if extrato.conciliado:
@@ -4343,3 +4345,6 @@ def exportar_relatorio_customizado(id, formato):
     except Exception as e:
         flash(f'Erro ao exportar: {str(e)}', 'danger')
         return redirect(url_for('financeiro.relatorios_customizados'))
+
+from app.financeiro.atividade_routes import registrar_rotas_atividade
+registrar_rotas_atividade(bp_financeiro)
