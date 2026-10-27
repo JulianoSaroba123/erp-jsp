@@ -988,3 +988,21 @@ def recalcular_valor_total(mapper, connection, target):
     produtos = Decimal(str(target.valor_total_produtos or 0))
     desconto = Decimal(str(target.valor_desconto or 0))
     target.valor_total = float(servicos + produtos - desconto)
+
+class ReconhecimentoReceitaOS(BaseModel):
+    """Etapa efetivamente executada, independente de parcelas e extratos."""
+    __tablename__ = 'os_receita_etapas'
+    __table_args__ = (
+        db.UniqueConstraint('chave_operacao', name='uq_os_receita_etapa_operacao'),
+        db.CheckConstraint('valor > 0', name='ck_os_receita_etapa_valor_positivo'),
+    )
+    ordem_servico_id = db.Column(db.Integer, db.ForeignKey('ordem_servico.id'), nullable=False, index=True)
+    data_competencia = db.Column(db.Date, nullable=False, index=True)
+    descricao = db.Column(db.String(255), nullable=False)
+    valor = db.Column(db.Numeric(12, 2), nullable=False)
+    usuario = db.Column(db.String(100), nullable=False)
+    chave_operacao = db.Column(db.String(64), nullable=False)
+    usuario_estorno = db.Column(db.String(100))
+    motivo_estorno = db.Column(db.Text)
+    data_estorno = db.Column(db.DateTime)
+    ordem_servico = db.relationship('OrdemServico', backref='etapas_receita')

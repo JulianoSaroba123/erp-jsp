@@ -3034,6 +3034,8 @@ def editar(id):
 
             # Commit final: salva novas linhas de serviços/produtos/parcelas/anexos
             try:
+                from app.ordem_servico.receita_etapas import validar_total_da_os
+                validar_total_da_os(ordem)
                 db.session.commit()
                 print(f"🏁 DEBUG: Ordem de Serviço salva com sucesso! Total final: R$ {ordem.valor_total}")
                 ordem.valor_total = valor_total_sincronizacao
@@ -3998,3 +4000,6 @@ def gerar_relatorio_pdf(id):
 # Registro do recebimento de parcelas sem exigir conclusão operacional.
 from app.ordem_servico.recebimento_parcelas import registrar_rotas_recebimento
 registrar_rotas_recebimento(ordem_servico_bp)
+
+from app.ordem_servico.receita_etapas import registrar_rotas_etapa
+registrar_rotas_etapa(ordem_servico_bp)
