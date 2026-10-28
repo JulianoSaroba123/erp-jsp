@@ -609,6 +609,9 @@ import base64
 
 # Cria o blueprint
 ordem_servico_bp = Blueprint('ordem_servico', __name__, template_folder='templates')
+from app.ordem_servico.custos_routes import registrar_rotas_custos
+registrar_rotas_custos(ordem_servico_bp)
+
 
 
 @ordem_servico_bp.before_request
@@ -2380,7 +2383,10 @@ def apontamento_colaborador(id):
         return redirect(url_for('ordem_servico.visualizar', id=id))
 
     colaborador = colaborador_do_usuario_atual()
-    ordem = OrdemServico.query.filter_by(id=id, ativo=True).first()
+    query = OrdemServico.query.filter_by(id=id, ativo=True)
+    if request.method == 'POST':
+        query = query.with_for_update()
+    ordem = query.first()
     if (
         colaborador is None
         or ordem is None
@@ -2401,6 +2407,8 @@ def apontamento_colaborador(id):
 
     if request.method == 'POST':
         try:
+            from app.ordem_servico.custos_service import snapshot, auditar
+            anterior = snapshot(trabalho)
             data_texto = (request.form.get('data_trabalho') or '').strip()
             trabalho.data_trabalho = datetime.strptime(data_texto, '%Y-%m-%d').date() if data_texto else date.today()
             trabalho.hora_entrada_manha = _hora_apontamento(request.form.get('hora_entrada_manha'))
@@ -2422,6 +2430,9 @@ def apontamento_colaborador(id):
 
             trabalho.calcular_horas_automatico()
             _recalcular_resumo_apontamentos(ordem)
+            db.session.flush()
+            if snapshot(trabalho) != anterior:
+                auditar('apontamento', trabalho, anterior, str(current_user.id), 'edicao', 'Apontamento do próprio colaborador')
             db.session.commit()
             flash('Apontamento salvo com sucesso.', 'success')
             return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
@@ -4047,6 +4058,3 @@ def gerar_relatorio_pdf(id):
 # Registro do recebimento de parcelas sem exigir conclusão operacional.
 from app.ordem_servico.recebimento_parcelas import registrar_rotas_recebimento
 registrar_rotas_recebimento(ordem_servico_bp)
-
-from app.ordem_servico.custos_routes import registrar_rotas_custos
-registrar_rotas_custos(ordem_servico_bp)

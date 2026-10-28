@@ -7,6 +7,8 @@ import pytest
 from flask import render_template
 from werkzeug.datastructures import MultiDict
 from app.extensoes import db
+from app.fiscal.nfse_documento_model import NfseDocumento
+from app.fiscal.configuracao_fiscal_model import ConfiguracaoFiscal
 from app.ordem_servico.custos_model import CustoOrdemServico, EventoCustoInterno
 from app.ordem_servico.custos_service import salvar_custo, inativar_custo, resumo_custos, CustoInvalido
 from app.colaborador.colaborador_model import Colaborador, OrdemServicoColaborador
@@ -292,3 +294,111 @@ def test_confidencialidade_pdf_cliente_parametros_e_api_salario(caso_custos):
         html=render_template('os/pdf_ordem_servico.html',ordem=db.session.get(OrdemServico,ids['os']),config=get_config(),
             fechamento=True,com_custos=True,now=__import__('datetime').datetime.now,anexos_base64={})
         assert '123.45' not in html and 'SEGREDO_INTERNO_PR49' not in html
+
+
+def test_duplicidade_exata_bloqueada_mesmo_com_chaves_distintas(caso_custos):
+    app,ids=caso_custos
+    with app.app_context():
+        salvar(ids,'100',lancamento_id=None); db.session.commit()
+        with pytest.raises(CustoInvalido,match='idêntico'):
+            salvar(ids,'100',lancamento_id=None)
+        db.session.rollback()
+        assert CustoOrdemServico.query.count()==1
+
+
+def test_http_edicao_os_preserva_apontamento_material_e_custo(caso_custos):
+    from app.financeiro.financeiro_utils import gerar_lancamento_ordem_servico
+    app,ids=caso_custos
+    with app.app_context():
+        t=apontamento(ids); tid=t.id
+        p=OrdemServicoProduto(ordem_servico_id=ids['os'],descricao='Material histórico fictício',quantidade=Decimal('1'),valor_unitario=Decimal('10'))
+        p.calcular_total(); db.session.add(p); db.session.commit(); pid=p.id
+        salvar(ids,'50',categoria='material',modalidade='unidade',colaborador_id=None,lancamento_id=None,produto_os_id=pid,descricao='Material comprado')
+        db.session.commit()
+        ordem=db.session.get(OrdemServico,ids['os'])
+        d=form_apontamento(ordem,t)
+        d.update({'cliente_id':str(ordem.cliente_id),'titulo':'Título editado com vínculos',
+            'tipo_os':'comercial','tipo_servico':'atendimento','status':'iniciada',
+            'condicao_pagamento':'parcelado','status_pagamento':'pendente','numero_parcelas':'3',
+            'valor_entrada':'405','valor_desconto':'0','forma_pagamento':'pix','data_abertura':'2026-09-11',
+            'data_primeira_parcela':'2026-09-17',
+            'servico_descricao[]':'Serviço fictício','servico_tipo[]':'fechado','servico_quantidade[]':'1','servico_valor[]':'800',
+            'produto_os_id[]':str(pid),'produto_id[]':'','produto_descricao[]':'Material histórico fictício',
+            'produto_descricao_custom[]':'','produto_quantidade[]':'1','produto_valor[]':'10',
+            'parcela_data[]':['2026-09-17','2026-10-17','2026-11-17'],
+            'parcela_valor[]':['405','202.50','202.50']})
+    client=app.test_client(); login(client)
+    r=client.post(f"/ordem_servico/{ids['os']}/editar",data=d)
+    assert r.status_code==302
+    with app.app_context():
+        ordem=db.session.get(OrdemServico,ids['os'])
+        assert ordem.titulo=='Título editado com vínculos'
+        assert db.session.get(OrdemServicoColaborador,tid).ativo
+        assert db.session.get(OrdemServicoProduto,pid).descricao=='Material histórico fictício'
+        c=CustoOrdemServico.query.one()
+        assert c.produto_os_id==pid and c.valor==50
+        assert EventoCustoInterno.query.filter_by(entidade='apontamento',registro_id=tid).count()>0
+
+
+def test_custo_materiais_historico_nao_usa_preco_atual_estoque(caso_custos):
+    from app.produto.produto_model import Produto
+    app,ids=caso_custos
+    with app.app_context():
+        produto=Produto(nome='Peça de teste',preco_custo=Decimal('90'),preco_venda=Decimal('150'),estoque_atual=10,ativo=True)
+        db.session.add(produto); db.session.flush()
+        p=OrdemServicoProduto(ordem_servico_id=ids['os'],produto_id=produto.id,descricao=produto.nome,quantidade=Decimal('1'),valor_unitario=150)
+        p.calcular_total(); db.session.add(p); db.session.commit()
+        salvar(ids,'70',categoria='material',modalidade='unidade',colaborador_id=None,lancamento_id=None,produto_os_id=p.id,descricao='Material por nota histórica')
+        db.session.commit(); saldo=produto.estoque_atual
+        produto.preco_custo=Decimal('120'); db.session.commit()
+        assert CustoOrdemServico.query.one().valor==70 and produto.estoque_atual==saldo
+
+
+def test_falha_de_auditoria_reverte_custo_e_preserva_financeiro(caso_custos,monkeypatch):
+    import app.ordem_servico.custos_service as service
+    app,ids=caso_custos
+    with app.app_context():
+        antes=bancario(ids)
+        def falhar(*args,**kw): raise RuntimeError('Falha simulada de auditoria')
+        monkeypatch.setattr(service,'auditar',falhar)
+        with pytest.raises(RuntimeError,match='simulada'):
+            salvar(ids)
+        db.session.rollback()
+        assert CustoOrdemServico.query.count()==0
+        assert bancario(ids)==antes
+
+
+def test_previa_interface_e_visibilidade_administrativa(caso_custos):
+    import os
+    import re
+    from pathlib import Path
+    from jinja2 import ChoiceLoader, DictLoader
+    app,ids=caso_custos
+    with app.app_context():
+        salvar(ids,descricao='SEGREDO_INTERNO_PR49_LUA')
+        salvar(ids,'200',os_id=None,descricao='Organização interna Luã')
+        salvar(ids,colaborador_id=ids['juliano'],lancamento_id=166,descricao='SEGREDO_INTERNO_PR49_FRAGA')
+        salvar(ids,'100',os_id=None,colaborador_id=ids['juliano'],lancamento_id=166,descricao='Organização interna Fraga')
+        db.session.commit()
+    client=app.test_client();login(client,False)
+    pagina=client.get(f"/ordem_servico/{ids['os']}")
+    assert pagina.status_code==200 and b'SEGREDO_INTERNO_PR49' not in pagina.data
+    assert b'Gerenciar custos e rateios' not in pagina.data
+    client.get('/auth/logout');login(client)
+    pagina=client.get(f"/ordem_servico/{ids['os']}/custos")
+    assert pagina.status_code==200 and b'SEGREDO_INTERNO_PR49' in pagina.data
+    assert b'Gerenciar custos e rateios' in pagina.data
+    if os.environ.get('PR49_PREVIEW_PATH'):
+        destino=Path(os.environ['PR49_PREVIEW_PATH']).resolve()
+        raiz=Path(__file__).resolve().parents[2]
+        assert destino==raiz/'docs/pr49-previa.html'
+        # Usa o template funcional; apenas a base recebe estilos offline simplificados.
+        base='''<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Prévia PR49 — dados fictícios</title><style>
+        *{box-sizing:border-box}body{margin:0;padding:25px;background:#101c2b;color:#e7edf5;font:15px Arial;line-height:1.5}a{color:#65d5d4}h1{font-size:25px}.card{background:#1a2c40;border:1px solid #365267;border-radius:12px;margin:20px 0}.card-header{padding:16px;background:#223d53;font-size:18px}.card-body{padding:20px}.row{display:flex;flex-wrap:wrap;gap:15px}.row>div{flex:1 1 28%}.col-12{flex-basis:100%!important}.form-control,.form-select{width:100%;padding:10px;border:1px solid #547083;border-radius:6px;background:#152438;color:white}.form-label{display:block;margin-bottom:5px}small{color:#afc6d8}.fs-5{font-size:24px;color:#69ded7}.alert{background:#443c22;padding:12px;border-left:4px solid #e9c266;margin:12px 0}.btn,button{display:inline-block;padding:8px 12px;background:#187b83;border:0;border-radius:6px;color:white;text-decoration:none;cursor:default}table{width:100%;border-collapse:collapse}td,th{padding:12px;text-align:left;border-bottom:1px solid #365267}pre{white-space:pre-wrap;font-size:11px}.text-end{text-align:right}.badge{background:#806426;padding:4px 8px;border-radius:6px}.table-responsive{overflow:auto}details{margin:12px 0}.mt-3{margin-top:15px}.mb-1{margin-bottom:5px}
+        </style></head><body><p><strong>JSP — PRÉVIA COM DADOS FICTÍCIOS</strong><br>Gerada dos templates da PR49, com base e estilos simplificados para leitura offline. A tela publicada utiliza o layout atual do ERP. Os controles desta prévia não executam operações.</p>{% block content %}{% endblock %}<script>document.querySelectorAll('form').forEach(f=>f.addEventListener('submit',e=>e.preventDefault()));</script></body></html>'''
+        app.jinja_loader=ChoiceLoader([DictLoader({'base.html':base}),app.jinja_loader]);app.jinja_env.cache.clear()
+        pagina=client.get(f"/ordem_servico/{ids['os']}/custos")
+        assert pagina.status_code==200
+        html=re.sub(r'(name="csrf_custos" value=")[^"]+',r'\1TOKEN_DE_PREVIA',pagina.get_data(as_text=True))
+        html=html.replace('SEGREDO_INTERNO_PR49_LUA','Instalação elétrica — Luã (teste)').replace('SEGREDO_INTERNO_PR49_FRAGA','Instalação elétrica — Fraga (teste)')
+        destino.parent.mkdir(exist_ok=True);destino.write_text(html,encoding='utf-8')

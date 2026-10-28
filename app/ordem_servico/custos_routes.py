@@ -91,7 +91,12 @@ def pagina_custos(ordem):
     alocados = dict(db.session.query(CustoOrdemServico.lancamento_id, func.sum(CustoOrdemServico.valor))
         .filter(CustoOrdemServico.ativo.is_(True), CustoOrdemServico.lancamento_id.isnot(None))
         .group_by(CustoOrdemServico.lancamento_id).all())
+    ativos = CustoOrdemServico.query.filter_by(ordem_servico_id=os_id, ativo=True).all()
+    suspeitas = [(a.id,b.id) for i,a in enumerate(ativos) for b in ativos[i+1:]
+        if (a.categoria,a.colaborador_id,a.data_custo,a.valor) == (b.categoria,b.colaborador_id,b.data_custo,b.valor)]
+    sem_pagamento = sum(c.situacao == 'realizado' and not c.lancamento_id for c in ativos)
     return render_template('os/custos.html', ordem=ordem, custos=custos, editar=editar, atividade=filtro,
+        suspeitas=suspeitas, sem_pagamento=sem_pagamento,
         resumo=resumo_custos(os_id), colaboradores=Colaborador.query.order_by(Colaborador.nome).all(),
         apontamentos=OrdemServicoColaborador.query.filter_by(ordem_servico_id=os_id, ativo=True).all() if ordem else [],
         materiais=OrdemServicoProduto.query.filter_by(ordem_servico_id=os_id, ativo=True).all() if ordem else [],

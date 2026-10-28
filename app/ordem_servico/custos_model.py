@@ -62,8 +62,7 @@ def preservar_historico(mapper, connection, target):
 
 
 def proteger_pagamento_com_rateio(mapper, connection, target):
-    campos = ('valor','tipo','status','ativo','data_pagamento','conta_bancaria_id',
-              'ordem_servico_id','ordem_servico_parcela_id','proposta_id','pedido_id','sem_movimentacao_bancaria')
+    campos = [c.name for c in target.__table__.columns if c.name not in {'atualizado_em', 'usuario_editor', 'data_edicao_auditoria'}]
     if not any(inspect(target).attrs[c].history.has_changes() for c in campos):
         return
     if not inspect(connection).has_table('os_custos_internos'):

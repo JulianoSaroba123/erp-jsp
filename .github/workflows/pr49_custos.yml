@@ -7,6 +7,7 @@ on:
       - 'migrations/versions/20261028_01*'
       - 'scripts_manutencao/testes/test_pr49*'
       - '.github/workflows/pr49_custos.yml'
+      - 'docs/pr49-*'
   workflow_dispatch:
 permissions:
   contents: read
@@ -27,11 +28,20 @@ jobs:
       - run: >-
           python -m pytest -q scripts_manutencao/testes/test_pr49_custos.py
           scripts_manutencao/testes/test_pr49_migration.py
+          scripts_manutencao/testes/test_pr49_compat48.py
           scripts_manutencao/testes/test_pr46_os_recebimento.py
           scripts_manutencao/testes/test_atividade_financeira.py
           scripts_manutencao/testes/test_os_gatilho_financeiro.py
           scripts_manutencao/testes/test_proposta_os_financeiro.py
           scripts_manutencao/testes/test_conciliacao_baixa_proposta.py
+          scripts_manutencao/testes/pedido_compra_test.py
+          scripts_manutencao/testes/pedido_estoque_service_d26f03_test.py
+          scripts_manutencao/testes/nfse_parcela_preparacao_d24f04c_test.py
+      - name: Homologação legada N:N (processos isolados)
+        run: |
+          python tests/financeiro/homologacao_conciliacao_adapter_a24.py
+          python tests/financeiro/homologacao_mr_jacky_a3.py
+          python tests/financeiro/homologacao_conciliacao_rota_nn_b21.py
   postgresql:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -63,3 +73,44 @@ jobs:
           scripts_manutencao/testes/test_pr49_migration.py
           scripts_manutencao/testes/test_pr46_postgresql.py
           scripts_manutencao/testes/test_atividade_postgresql.py
+
+  compatibilidade-pr48:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pr49_test
+          POSTGRES_PASSWORD: ephemeral_pr49_ci
+          POSTGRES_DB: erp_jsp_pr46_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pr49_test -d erp_jsp_pr46_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: sqlite:////tmp/erp_jsp_pr49_compat_bootstrap.sqlite
+      PR46_POSTGRES_TEST_URL: postgresql+psycopg://pr49_test:ephemeral_pr49_ci@127.0.0.1:5432/erp_jsp_pr46_test
+      FLASK_ENV: testing
+      RENDER: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compor árvore temporária com versão revisada da PR48 (sem merge)
+        run: |
+          git fetch origin bee214378a91c786111f86cc3cfbbe4edb03d416
+          git diff --binary 15a140a7e42da8ffbc60736a5c6fd35d72b0e798 FETCH_HEAD > /tmp/pr48.patch
+          git apply --3way /tmp/pr48.patch
+      - run: python -m pip install -r requirements.txt pytest
+      - name: Custos, etapas e migrações coexistem sem reconhecimento ou caixa duplicado
+        run: >-
+          python -m pytest -q scripts_manutencao/testes/test_pr49_compat48.py
+          scripts_manutencao/testes/test_pr49_custos.py
+          scripts_manutencao/testes/test_receita_etapas.py
+          scripts_manutencao/testes/test_fluxo_projecao.py
+          scripts_manutencao/testes/test_etapas_migration.py

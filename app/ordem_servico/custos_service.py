@@ -175,6 +175,8 @@ def inativar_custo(*, os_id, custo_id, versao, usuario, motivo):
     if not custo or not custo.ativo or custo.ordem_servico_id != os_id or str(custo.versao) != str(versao):
         raise CustoInvalido('Custo inválido ou alterado por outro usuário.')
     motivo = str(motivo or '').strip()
+    if not usuario:
+        raise CustoInvalido('Usuário obrigatório.')
     if not motivo or len(motivo) > 1000:
         raise CustoInvalido('Informe um motivo (até 1000 caracteres).')
     if custo.lancamento_id:
@@ -193,9 +195,15 @@ def resumo_custos(os_id):
     realizados = sum((c.valor for c in diretos if c.situacao == 'realizado'), Decimal('0'))
     estimados = sum((c.valor for c in diretos if c.situacao == 'estimado'), Decimal('0'))
     receita = Decimal(str(ordem.valor_total or 0)) if ordem else Decimal('0')
-    # Parcelas são a fonte da baixa; não somar novamente os títulos financeiros.
-    recebida = db.session.query(func.coalesce(func.sum(OrdemServicoParcela.valor), 0)).filter_by(
-        ordem_servico_id=os_id, ativo=True, pago=True).scalar() if ordem else Decimal('0')
+    # Parcelas são a fonte da baixa; não somar novamente seus títulos financeiros.
+    parcelas = OrdemServicoParcela.query.filter_by(ordem_servico_id=os_id, ativo=True).all() if ordem else []
+    legado = LancamentoFinanceiro.query.filter(
+        LancamentoFinanceiro.ordem_servico_id == os_id, LancamentoFinanceiro.ativo.is_(True),
+        LancamentoFinanceiro.ordem_servico_parcela_id.is_(None),
+        LancamentoFinanceiro.tipo.in_(['receita','conta_receber']),
+        LancamentoFinanceiro.status.in_(['pago','recebido']),
+        LancamentoFinanceiro.data_pagamento.isnot(None)).all() if ordem else []
+    recebida = sum((p.valor for p in parcelas if p.pago), Decimal('0')) if parcelas else sum((l.valor for l in legado), Decimal('0'))
     apontados = OrdemServicoColaborador.query.filter_by(ordem_servico_id=os_id, ativo=True).all() if ordem else []
     materiais = OrdemServicoProduto.query.filter_by(ordem_servico_id=os_id, ativo=True).all() if ordem else []
     faltantes = sum(c.situacao == 'nao_informado' for c in custos)
@@ -203,7 +211,8 @@ def resumo_custos(os_id):
     faltantes += sum(not any(c.produto_os_id == p.id for c in custos) for p in materiais)
     tributos = [c for c in custos if c.categoria == 'tributos']
     margem = receita - realizados
-    return dict(contratada=receita, recebida=Decimal(recebida), realizados=realizados,
+    return dict(contratada=receita, recebida=Decimal(recebida), recebimentos_revisar=bool(parcelas and legado),
+        fonte_recebida='parcelas baixadas' if parcelas else 'títulos recebidos sem parcelamento', realizados=realizados,
         estimados=estimados, nao_informados=faltantes, margem=margem,
         percentual=(margem / receita * 100) if receita else None,
         incompleta=not custos or faltantes > 0 or any(c.situacao == 'estimado' for c in custos),
