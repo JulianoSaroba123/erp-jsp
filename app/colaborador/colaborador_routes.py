@@ -12,11 +12,18 @@ Data: 2025
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort
 from datetime import datetime, date
+from flask_login import current_user, login_required
 from app.extensoes import db
 from app.colaborador.colaborador_model import Colaborador, OrdemServicoColaborador
 
 # Cria o blueprint
 colaborador_bp = Blueprint('colaborador', __name__, template_folder='templates')
+
+@colaborador_bp.before_request
+@login_required
+def proteger_dados_colaborador():
+    if request.endpoint not in {'colaborador.api_buscar_ativos', 'colaborador.api_dados'} and getattr(current_user, 'tipo_usuario', None) != 'admin':
+        abort(403)
 
 # Handler de erros
 @colaborador_bp.errorhandler(404)
@@ -247,7 +254,7 @@ def api_buscar_ativos():
             'nome': c.nome,
             'cargo': c.cargo_formatado,
             'valor_hora': float(c.valor_hora or 0),
-            'salario_mensal': float(c.salario_mensal or 0)
+            **({'salario_mensal': float(c.salario_mensal or 0)} if getattr(current_user, 'tipo_usuario', None) == 'admin' else {})
         } for c in colaboradores]
         
         return jsonify({'sucesso': True, 'colaboradores': resultado})

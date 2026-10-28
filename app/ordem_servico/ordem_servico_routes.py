@@ -472,7 +472,12 @@ def extrair_colaboradores_form(form_data):
 
 def processar_colaboradores_os(ordem, form_data):
     """Salva os apontamentos de colaboradores da OS."""
+    from app.ordem_servico.custos_model import CustoOrdemServico
+    from app.ordem_servico.custos_service import snapshot, auditar
     existentes = {item.id: item for item in (getattr(ordem, 'colaboradores_trabalho', []) or []) if item.id and item.ativo}
+    if existentes and form_data.get('apontamentos_revisao') != ordem.apontamentos_revisao:
+        raise ValueError('Apontamentos alterados ou formulário antigo. Recarregue a OS antes de editar.')
+    historico = []
     utilizados = set()
 
     total_horas = Decimal('0')
@@ -483,7 +488,7 @@ def processar_colaboradores_os(ordem, form_data):
     for colaborador_data in extrair_colaboradores_form(form_data):
         colaborador_id = safe_int_convert(colaborador_data.get('colaborador_id'))
         if not colaborador_id:
-            continue
+            raise ValueError('Colaborador inválido no apontamento.')
 
         data_trabalho = date.today()
         if colaborador_data.get('data_trabalho'):
@@ -524,6 +529,7 @@ def processar_colaboradores_os(ordem, form_data):
         if trabalho_id and existentes[trabalho_id].colaborador_id != colaborador_id:
             raise ValueError('Para trocar o colaborador, remova o apontamento e adicione outro.')
         trabalho = existentes[trabalho_id] if trabalho_id else OrdemServicoColaborador()
+        anterior = snapshot(trabalho) if trabalho_id else '{}'
         if trabalho_id:
             utilizados.add(trabalho_id)
         valores = dict(
@@ -552,7 +558,9 @@ def processar_colaboradores_os(ordem, form_data):
         
         # Calcular valores com adicionais (custo e receita por hora)
         colaborador_obj = Colaborador.query.get(colaborador_id)
-        if colaborador_obj:
+        if not colaborador_obj or (not trabalho_id and not colaborador_obj.ativo):
+            raise ValueError('Colaborador inexistente ou inativo para novo apontamento.')
+        if colaborador_obj and not trabalho_id:
             salario = colaborador_obj.salario_mensal or Decimal('0')
             valor_hora = colaborador_obj.valor_hora or Decimal('0')
             if salario > 0 or valor_hora > 0:
@@ -563,10 +571,19 @@ def processar_colaboradores_os(ordem, form_data):
         total_horas_extras += Decimal(str(trabalho.horas_extras or 0))
         total_km += trabalho.km_total
         db.session.add(trabalho)
+        historico.append((trabalho, anterior, 'edicao' if trabalho_id else 'criacao'))
 
     for trabalho_id, trabalho in existentes.items():
         if trabalho_id not in utilizados:
+            if CustoOrdemServico.query.filter_by(apontamento_id=trabalho_id, ativo=True).first():
+                raise ValueError('Apontamento possui custo ativo. Revise/inative o custo antes de remover o apontamento.')
+            anterior = snapshot(trabalho)
             trabalho.ativo = False
+            historico.append((trabalho, anterior, 'inativacao'))
+    db.session.flush()
+    for trabalho, anterior, operacao in historico:
+        if anterior != snapshot(trabalho):
+            auditar('apontamento', trabalho, anterior, str(current_user.id), operacao, 'Edição administrativa da OS')
 
     if ordem.tipo_os == 'operacional':
         if total_horas > 0:
@@ -1655,6 +1672,10 @@ def visualizar(id):
         if documento.ordem_servico_parcela_id is None
     ]
 
+    custos_resumo = None
+    if usuario_eh_admin():
+        from app.ordem_servico.custos_service import resumo_custos
+        custos_resumo = resumo_custos(ordem.id)
     contas_recebimento = []
     csrf_os_recebimento = None
     if usuario_eh_admin():
@@ -1676,6 +1697,7 @@ def visualizar(id):
         nfse_legados=nfse_legados,
         contas_recebimento=contas_recebimento,
         csrf_os_recebimento=csrf_os_recebimento,
+        custos_resumo=custos_resumo,
     )
 
 
@@ -2427,10 +2449,13 @@ def editar(id):
     
     # Carregar OS com eager loading de parcelas e colaboradores
     from sqlalchemy.orm import joinedload
-    ordem = OrdemServico.query.options(
+    query_ordem = OrdemServico.query.options(
         joinedload(OrdemServico.parcelas),
         joinedload(OrdemServico.colaboradores_trabalho)
-    ).filter_by(id=id, ativo=True).first()
+    ).filter_by(id=id, ativo=True)
+    if request.method == 'POST':
+        query_ordem = query_ordem.with_for_update(of=OrdemServico)
+    ordem = query_ordem.first()
     
     if not ordem:
         print(f" DEBUG: Ordem com ID {id} não encontrada")
@@ -2796,14 +2821,9 @@ def editar(id):
                     print(f"  ➕ Adicionado serviço: {item.descricao} - {item.quantidade} {item.tipo_servico} = R$ {item.valor_total}")
                 print(f" {servicos_adicionados} serviços adicionados")
 
-                print(f"DEBUG: Removendo {len(ordem.produtos_utilizados)} produtos antigos via loop delete")
-                produtos_removidos = 0
-                for produto_existente in list(ordem.produtos_utilizados):
-                    print(f"  🗑️ Removendo produto: {produto_existente.descricao}")
-                    db.session.delete(produto_existente)
-                    produtos_removidos += 1
-                print(f" {produtos_removidos} produtos removidos")
-
+                produtos_existentes = {p.id: p for p in ordem.produtos_utilizados}
+                produtos_utilizados_ids = set()
+                produtos_os_ids = request.form.getlist('produto_os_id[]')
                 produtos_id = request.form.getlist('produto_id[]')
                 produtos_desc = request.form.getlist('produto_descricao[]')
                 produtos_desc_custom = request.form.getlist('produto_descricao_custom[]')
@@ -2843,18 +2863,27 @@ def editar(id):
                         qtd_value = produtos_qtd[i] if i < len(produtos_qtd) else ''
                         valor_value = produtos_valor[i] if i < len(produtos_valor) else ''
 
-                        produto = OrdemServicoProduto(
-                            ordem_servico_id=ordem.id,
-                            descricao=descricao,
-                            produto_id=produto_cadastrado_id,
-                            quantidade=safe_decimal_convert(qtd_value, 1),
-                            valor_unitario=safe_decimal_convert(valor_value, 0)
-                        )
+                        origem_texto = produtos_os_ids[i] if i < len(produtos_os_ids) else ''
+                        origem_id = safe_int_convert(origem_texto) if origem_texto else None
+                        if origem_texto and (not origem_id or origem_id not in produtos_existentes or origem_id in produtos_utilizados_ids):
+                            raise ValueError('Material inválido ou repetido para esta OS.')
+                        produto = produtos_existentes[origem_id] if origem_id else OrdemServicoProduto(ordem_servico_id=ordem.id)
+                        if origem_id:
+                            produtos_utilizados_ids.add(origem_id)
+                        produto.descricao = descricao
+                        produto.produto_id = produto_cadastrado_id
+                        produto.quantidade = safe_decimal_convert(qtd_value, 1)
+                        produto.valor_unitario = safe_decimal_convert(valor_value, 0)
                         produto.calcular_total()
                         db.session.add(produto)
                         produtos_adicionados += 1
                         print(f"  ➕ Adicionado produto: {descricao} (ID: {produto_cadastrado_id})")
-                print(f" {produtos_adicionados} produtos adicionados")
+                for origem_id, produto in produtos_existentes.items():
+                    if origem_id not in produtos_utilizados_ids:
+                        db.session.delete(produto)
+                db.session.flush()
+                db.session.expire(ordem, ['produtos_utilizados', 'servicos'])
+                print(f" {produtos_adicionados} produtos adicionados ou preservados")
 
                 ordem.valor_servico = ordem.valor_total_servicos
                 ordem.valor_pecas = ordem.valor_total_produtos
@@ -3813,6 +3842,7 @@ def api_equipamentos_cliente(cliente_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @ordem_servico_bp.route('/<int:id>/relatorio-pdf')
+@login_required
 def gerar_relatorio_pdf(id):
     """
     Gera relatório em PDF da ordem de serviço.
@@ -3944,7 +3974,7 @@ def gerar_relatorio_pdf(id):
         
         # Renderiza o template HTML com timestamp para evitar cache
         html_content = render_template(
-            'os/pdf_ordem_servico.html',
+            'os/pdf_fechamento_interno.html' if fechamento else 'os/pdf_ordem_servico.html',
             ordem=ordem,
             now=dt.now,
             logo_base64=get_logo_base64(),  # Função para obter logo em base64
@@ -4017,3 +4047,6 @@ def gerar_relatorio_pdf(id):
 # Registro do recebimento de parcelas sem exigir conclusão operacional.
 from app.ordem_servico.recebimento_parcelas import registrar_rotas_recebimento
 registrar_rotas_recebimento(ordem_servico_bp)
+
+from app.ordem_servico.custos_routes import registrar_rotas_custos
+registrar_rotas_custos(ordem_servico_bp)

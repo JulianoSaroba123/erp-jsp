@@ -1,0 +1,65 @@
+name: PR49 Custos internos (dados isolados)
+on:
+  pull_request:
+    paths:
+      - 'app/ordem_servico/**'
+      - 'app/colaborador/**'
+      - 'migrations/versions/20261028_01*'
+      - 'scripts_manutencao/testes/test_pr49*'
+      - '.github/workflows/pr49_custos.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sqlite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: sqlite:////tmp/erp_jsp_pr49_bootstrap.sqlite
+      FLASK_ENV: testing
+      RENDER: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt pytest
+      - run: >-
+          python -m pytest -q scripts_manutencao/testes/test_pr49_custos.py
+          scripts_manutencao/testes/test_pr49_migration.py
+          scripts_manutencao/testes/test_pr46_os_recebimento.py
+          scripts_manutencao/testes/test_atividade_financeira.py
+          scripts_manutencao/testes/test_os_gatilho_financeiro.py
+          scripts_manutencao/testes/test_proposta_os_financeiro.py
+          scripts_manutencao/testes/test_conciliacao_baixa_proposta.py
+  postgresql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: pr49_test
+          POSTGRES_PASSWORD: ephemeral_pr49_ci
+          POSTGRES_DB: erp_jsp_pr46_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pr49_test -d erp_jsp_pr46_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: sqlite:////tmp/erp_jsp_pr49_bootstrap.sqlite
+      PR46_POSTGRES_TEST_URL: postgresql+psycopg://pr49_test:ephemeral_pr49_ci@127.0.0.1:5432/erp_jsp_pr46_test
+      FLASK_ENV: testing
+      RENDER: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -r requirements.txt pytest
+      - run: >-
+          python -m pytest -q scripts_manutencao/testes/test_pr49_postgresql.py
+          scripts_manutencao/testes/test_pr49_migration.py
+          scripts_manutencao/testes/test_pr46_postgresql.py
+          scripts_manutencao/testes/test_atividade_postgresql.py
