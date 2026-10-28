@@ -402,3 +402,28 @@ def test_previa_interface_e_visibilidade_administrativa(caso_custos):
         html=re.sub(r'(name="csrf_custos" value=")[^"]+',r'\1TOKEN_DE_PREVIA',pagina.get_data(as_text=True))
         html=html.replace('SEGREDO_INTERNO_PR49_LUA','Instalação elétrica — Luã (teste)').replace('SEGREDO_INTERNO_PR49_FRAGA','Instalação elétrica — Fraga (teste)')
         destino.parent.mkdir(exist_ok=True);destino.write_text(html,encoding='utf-8')
+
+
+def test_tela_interna_separa_custos_da_rentabilidade_os(caso_custos):
+    app, ids = caso_custos
+    with app.app_context():
+        salvar(ids, '200', os_id=None, descricao='Custo interno isolado')
+        salvar(ids, '400', descricao='Custo exclusivo da OS')
+        db.session.commit()
+        antes = bancario(ids)
+    client = app.test_client()
+    login(client)
+    interna = client.get('/ordem_servico/custos-internos')
+    assert interna.status_code == 200
+    html = interna.get_data(as_text=True)
+    assert 'Resumo de custos internos' in html and 'R$ 200,00' in html
+    assert 'Custo interno isolado' in html and 'Custo exclusivo da OS' not in html
+    for texto in ('Receita contratada', 'Receita recebida registrada', 'Margem de contribuição', 'Rentabilidade incompleta', 'Fonte do recebimento', 'name="apontamento_id"', 'name="produto_os_id"'):
+        assert texto not in html
+    assert 'jsp-executive-suite-phase-f.css' in html
+    os_html = client.get(f"/ordem_servico/{ids['os']}/custos").get_data(as_text=True)
+    assert 'Receita contratada' in os_html and 'Margem de contribuição' in os_html
+    assert 'Custo exclusivo da OS' in os_html and 'Custo interno isolado' not in os_html
+    assert 'name="apontamento_id"' in os_html and 'name="produto_os_id"' in os_html
+    with app.app_context():
+        assert bancario(ids) == antes

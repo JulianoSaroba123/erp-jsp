@@ -7,9 +7,7 @@
 {% endblock %}
 
 {% block content %}
-{% if current_user.is_authenticated and current_user.tipo_usuario == 'admin' and custos_resumo %}
-  {% with resumo=custos_resumo %}{% include 'os/custos_resumo.html' %}{% endwith %}
-{% endif %}
+
 <!-- v3.1 - Cores JSP Ciano com Contraste Melhorado -->
 <style>
     /* Cores JSP Ciano - Atualizado */
@@ -178,6 +176,10 @@
             </div>
         </div>
     </div>
+
+{% if current_user.is_authenticated and current_user.tipo_usuario == 'admin' and custos_resumo %}
+  {% with resumo=custos_resumo %}{% include 'os/custos_resumo.html' %}{% endwith %}
+{% endif %}
 
     <div class="row">
         <!-- Coluna Única (100% da largura) -->
