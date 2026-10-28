@@ -1,13 +1,22 @@
 {% extends 'base.html' %}
+{% block title %}{{ 'Custos e Rentabilidade — ' ~ ordem.numero if ordem else 'Custos internos JSP' }} - ERP JSP{% endblock %}
+{% block head %}
+<link href="{{ url_for('static', filename='css/jsp-executive-suite-phase-f.css') }}?v={{ ASSET_VERSION }}" rel="stylesheet">
+{% endblock %}
 {% block content %}
 <div class="container-fluid py-3">
-<h1 class="h3">Custos e Rentabilidade — {{ ordem.numero if ordem else 'Serviços internos JSP' }}</h1>
-<p>Uso administrativo. Registrar custos ou vincular pagamentos não cria despesa, extrato, conciliação ou movimentação de saldo.</p>
-{% if ordem %}<a href="{{ url_for('ordem_servico.visualizar', id=ordem.id) }}">Voltar à OS</a>{% endif %}
+<header class="os-header p-4 mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div><h2 class="h4 mb-2"><i class="fas fa-chart-line me-2" aria-hidden="true"></i>{{ 'Custos e Rentabilidade — ' ~ ordem.numero if ordem else 'Custos internos JSP' }}</h2>
+    <p class="mb-0">{{ 'Acompanhe os custos de execução e o resultado operacional desta OS.' if ordem else 'Registre os custos de atividades internas, sem vínculo com uma OS.' }}</p></div>
+    <a class="btn btn-light" href="{{ url_for('ordem_servico.visualizar', id=ordem.id) if ordem else url_for('ordem_servico.listar') }}"><i class="fas fa-arrow-left me-2" aria-hidden="true"></i>{{ 'Voltar à OS' if ordem else 'Ordens de Serviço' }}</a>
+  </div>
+</header>
+<p class="text-muted">Uso administrativo. Registrar um custo não realiza pagamento. Vincule o pagamento existente quando houver.</p>
 {% include 'os/custos_resumo.html' %}
 {% if suspeitas %}<div class="alert alert-warning">Possíveis duplicidades para revisão (não foram alteradas automaticamente): {% for a,b in suspeitas %}#{{ a }} / #{{ b }} {% endfor %}</div>{% endif %}
 {% if sem_pagamento %}<div class="alert alert-warning">{{ sem_pagamento }} custo(s) realizado(s) sem pagamento vinculado. O pagamento não está comprovado neste painel. Para vincular um pagamento existente, edite a linha do custo.</div>{% endif %}
-<div class="card mb-4"><div class="card-header">{{ 'Editar custo #' ~ editar.id if editar else 'Adicionar custo ou rateio' }}</div><div class="card-body">
+<div class="card info-card mb-4"><div class="card-header">{{ 'Editar custo #' ~ editar.id if editar else 'Adicionar custo ou rateio' }}</div><div class="card-body">
 <form method="post" action="{{ destino }}" class="row g-3">
 <input type="hidden" name="csrf_custos" value="{{ csrf_custos }}"><input type="hidden" name="acao" value="salvar">
 <input type="hidden" name="chave_operacao" value="{{ chave_operacao }}">
@@ -20,8 +29,10 @@
 <div class="col-md-3"><label class="form-label">Valor total histórico (R$)</label><input name="valor" type="number" step="0.01" min="0" class="form-control" value="{{ editar.valor if editar and editar.valor is not none else '' }}"><small>Informe o total, não o valor por hora. Deixe vazio quando não informado.</small></div>
 <div class="col-md-3"><label class="form-label">Situação do custo</label><select name="situacao" class="form-select">{% for k,v in [('realizado','Realizado'),('estimado','Estimado'),('nao_informado','Não informado')] %}<option value="{{ k }}" {{ 'selected' if editar and editar.situacao == k else '' }}>{{ v }}</option>{% endfor %}</select></div>
 <div class="col-md-6"><label class="form-label">Colaborador cadastrado</label><select name="colaborador_id" class="form-select"><option value="">Não se aplica</option>{% for c in colaboradores %}<option value="{{ c.id }}" {{ 'selected' if editar and editar.colaborador_id == c.id else '' }}>{{ c.nome }}{{ ' (inativo)' if not c.ativo else '' }}</option>{% endfor %}</select></div>
+{% if ordem %}
 <div class="col-md-6"><label class="form-label">Apontamento existente da OS (opcional)</label><select name="apontamento_id" class="form-select"><option value="">Sem apontamento</option>{% for a in apontamentos %}<option value="{{ a.id }}" {{ 'selected' if editar and editar.apontamento_id == a.id else '' }}>#{{ a.id }} — {{ a.colaborador.nome }} — {{ a.data_trabalho }} — {{ a.total_horas }}h</option>{% endfor %}</select></div>
 <div class="col-md-6"><label class="form-label">Material utilizado na OS (opcional)</label><select name="produto_os_id" class="form-select"><option value="">Sem material vinculado</option>{% for p in materiais %}<option value="{{ p.id }}" {{ 'selected' if editar and editar.produto_os_id == p.id else '' }}>#{{ p.id }} — {{ p.descricao }}</option>{% endfor %}</select></div>
+{% endif %}
 <div class="col-md-6"><label class="form-label">Fonte do custo histórico / comprovante</label><input name="fonte_custo" maxlength="255" required class="form-control" value="{{ editar.fonte_custo if editar else '' }}"><small>Informe nota de compra, acordo de diária ou outro documento. O preço atual do produto não é usado como custo histórico.</small></div>
 <div class="col-12"><label class="form-label">Pagamento financeiro existente (opcional)</label><select name="lancamento_id" class="form-select"><option value="">Sem pagamento vinculado — situação de pagamento não comprovada</option>{% for p in pagamentos %}<option value="{{ p.id }}" {{ 'selected' if editar and editar.lancamento_id == p.id else '' }}>#{{ p.id }} — {{ p.descricao }} — total R$ {{ '%.2f'|format(p.valor)|replace('.', ',') }} — rateado R$ {{ '%.2f'|format(alocados.get(p.id, 0))|replace('.', ',') }} — {{ 'Possui conciliação (pode ser parcial)' if conciliados[p.id] else 'Sem conciliação identificada' }}</option>{% endfor %}</select><small>Para associar um custo já registrado, edite sua linha. Não adicione uma segunda linha para o mesmo custo.</small></div>
 <div class="col-12"><label class="form-label">Motivo da criação / alteração</label><input name="motivo" required maxlength="1000" class="form-control"></div>
@@ -29,9 +40,9 @@
 <div class="col-12"><button class="btn btn-primary">Salvar custo / rateio</button> {% if editar %}<a class="btn btn-secondary" href="{{ destino }}">Cancelar edição</a>{% endif %}</div>
 </form></div></div>
 <p>Exibir: {% for f in ['ativos','inativos','todos'] %}<a class="btn btn-sm btn-outline-secondary" href="{{ destino }}?atividade={{ f }}">{{ f|capitalize }}</a> {% endfor %}</p>
-<div class="table-responsive"><table class="table table-striped"><thead><tr><th>ID / atividade</th><th>Data / modalidade</th><th>Colaborador</th><th>Situação / total</th><th>Pagamento</th><th>Ações</th></tr></thead><tbody>
+<div class="table-responsive cc-os-table"><table class="table table-striped"><thead><tr><th>ID / atividade</th><th>Data / modalidade</th><th>Colaborador</th><th>Situação / total</th><th>Pagamento</th><th>Ações</th></tr></thead><tbody>
 {% for c in custos %}<tr><td>#{{ c.id }} — {{ c.descricao }}<br><small>{{ c.categoria }} — {{ 'Ativo' if c.ativo else 'Inativo' }}</small></td><td>{{ c.data_custo }}<br>{{ c.quantidade }} {{ c.modalidade }}</td><td>{{ c.colaborador.nome if c.colaborador else '—' }}</td><td>{{ c.situacao }}<br>{{ ('R$ ' ~ ('%.2f'|format(c.valor)|replace('.', ','))) if c.valor is not none else 'Não informado' }}</td><td>{% if c.lancamento_id %}#{{ c.lancamento_id }} — pago{% else %}Não comprovado / não vinculado{% endif %}</td><td>{% if c.ativo %}<a href="{{ destino }}?editar={{ c.id }}">Editar</a><form method="post" action="{{ destino }}"><input type="hidden" name="csrf_custos" value="{{ csrf_custos }}"><input type="hidden" name="acao" value="inativar"><input type="hidden" name="custo_id" value="{{ c.id }}"><input type="hidden" name="versao" value="{{ c.versao }}"><input name="motivo" required maxlength="1000" placeholder="Motivo da inativação" class="form-control form-control-sm"><label><input type="checkbox" required name="confirmar" value="sim"> Confirmo a inativação do custo, preservando o pagamento.</label><button class="btn btn-sm btn-outline-danger">Inativar custo</button></form>{% endif %}</td></tr>{% else %}<tr><td colspan="6">Nenhum custo nesta seleção.</td></tr>{% endfor %}
 </tbody></table></div>
-<details><summary>Histórico de auditoria</summary><table class="table"><thead><tr><th>Quando / usuário</th><th>Registro / operação</th><th>Motivo e estados</th></tr></thead><tbody>{% for e in eventos %}<tr><td>{{ e.criado_em }} / {{ e.usuario }}</td><td>{{ e.entidade }} #{{ e.registro_id }} / {{ e.operacao }}</td><td>{{ e.motivo }}<details><summary>Antes / depois</summary><pre>{{ e.anterior }}</pre><pre>{{ e.novo }}</pre></details></td></tr>{% endfor %}</tbody></table></details>
+<details class="card info-card p-3"><summary>Histórico de auditoria</summary><table class="table"><thead><tr><th>Quando / usuário</th><th>Registro / operação</th><th>Motivo e estados</th></tr></thead><tbody>{% for e in eventos %}<tr><td>{{ e.criado_em }} / {{ e.usuario }}</td><td>{{ e.entidade }} #{{ e.registro_id }} / {{ e.operacao }}</td><td>{{ e.motivo }}<details><summary>Antes / depois</summary><pre>{{ e.anterior }}</pre><pre>{{ e.novo }}</pre></details></td></tr>{% endfor %}</tbody></table></details>
 </div>
 {% endblock %}

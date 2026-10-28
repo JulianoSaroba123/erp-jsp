@@ -60,3 +60,12 @@ Use filtros **Ativos**, **Inativos** e **Todos** e abra **Histórico de auditori
 O PDF de fechamento de mão de obra exige administrador no servidor e é um documento separado, explicitamente interno. Sua referência horária não comprova pagamento. O PDF normal e o PDF do cliente com preços de mão de obra não contêm custos internos, rateios ou margens. Os registros novos não são inseridos em propostas, NFS-e, e-mails ou exportações comerciais.
 
 Não anexe documentos internos a uma área compartilhada com clientes: a segregação desta funcionalidade não reclassifica anexos históricos ou textos digitados manualmente pelo usuário.
+
+
+## Tela de serviços internos e padrão de navegação
+
+Em **Custos internos JSP**, registre somente atividades sem vínculo com OS. O resumo apresenta custos realizados, estimados, categorias e valores não informados; não apresenta receita contratada ou margem de uma OS. Os campos de apontamento e material da OS aparecem apenas dentro de uma OS.
+
+Para rentabilidade de um contrato: **Ordens de Serviço → visualizar OS → Custos e Rentabilidade → Gerenciar custos e rateios**. O cabeçalho da OS permanece acima do resumo administrativo. A tela de custos utiliza o mesmo tema Executive Suite das Ordens de Serviço.
+
+Para trabalho por hora, diária ou serviço fechado, selecione a modalidade e informe a quantidade e o **valor total histórico**. Exemplo fictício: duas diárias de R$ 120 correspondem à quantidade 2 e valor total R$ 240. Se o pagamento já existe, edite o custo e vincule esse pagamento; não registre o mesmo custo novamente. A associação não executa transferência bancária.
