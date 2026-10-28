@@ -7,6 +7,9 @@
 {% endblock %}
 
 {% block content %}
+{% if current_user.is_authenticated and current_user.tipo_usuario == 'admin' and custos_resumo %}
+  {% with resumo=custos_resumo %}{% include 'os/custos_resumo.html' %}{% endwith %}
+{% endif %}
 <!-- v3.1 - Cores JSP Ciano com Contraste Melhorado -->
 <style>
     /* Cores JSP Ciano - Atualizado */
@@ -497,7 +500,7 @@
                 <div class="card-header" style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;">
                     <h5 class="card-title mb-0 fw-bold" style="color: #92400e !important;">
                         <i class="fas fa-calculator me-2"></i>
-                        Custo de Mão de Obra
+                        Referência estimada de mão de obra (legado)
                         <span class="badge bg-danger ms-2" style="font-size: 0.7rem;">ADMIN</span>
                     </h5>
                 </div>
@@ -510,8 +513,8 @@
                                     <th class="text-end">Total de Horas</th>
                                     <th class="text-end text-success">Valor/h Cliente</th>
                                     <th class="text-end text-success fw-bold">Receita M.O.</th>
-                                    <th class="text-end text-danger">Custo Real/h<br><small class="fw-normal">(salário ÷ 22 ÷ 8.8h)</small></th>
-                                    <th class="text-end text-danger fw-bold">Custo Real M.O.</th>
+                                    <th class="text-end text-danger">Referência/h<br><small class="fw-normal">(salário atual ÷ 220h; não é pagamento real)</small></th>
+                                    <th class="text-end text-danger fw-bold">Estimativa M.O.</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -574,7 +577,7 @@
                                         R$ {{ "%.2f"|format(ns.total_receita)|replace('.', ',') }}
                                     </td>
                                     <td class="text-end fw-semibold text-danger">
-                                        <i class="fas fa-arrow-down me-1"></i>CUSTO TOTAL REAL:
+                                        <i class="fas fa-arrow-down me-1"></i>ESTIMATIVA TOTAL:
                                     </td>
                                     <td class="text-end fw-bold text-danger">
                                         R$ {{ "%.2f"|format(ns.total_custo_real)|replace('.', ',') }}
@@ -583,7 +586,7 @@
                                 {% if ns.total_receita > 0 or ns.total_custo_real > 0 %}
                                 <tr style="background: #d1fae5;">
                                     <td colspan="5" class="text-end fw-bold" style="color: #065f46;">
-                                        <i class="fas fa-chart-line me-2"></i>MARGEM M.O. (receita − custo):
+                                        <i class="fas fa-chart-line me-2"></i>DIFERENÇA ESTIMADA M.O.:
                                     </td>
                                     <td class="text-end fw-bold h6 mb-0" style="color: #065f46;">
                                         {% set margem = ns.total_receita - ns.total_custo_real %}

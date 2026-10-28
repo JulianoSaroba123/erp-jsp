@@ -52,6 +52,13 @@ class OrdemServico(BaseModel):
     
     __tablename__ = 'ordem_servico'
     
+    @property
+    def apontamentos_revisao(self):
+        """Versão do conjunto para detectar formulários antigos antes da edição."""
+        import hashlib
+        dados = '|'.join(f'{t.id}:{t.atualizado_em}:{t.ativo}' for t in sorted(self.colaboradores_trabalho, key=lambda x: x.id or 0))
+        return hashlib.sha256(dados.encode()).hexdigest()
+
     # Constantes da classe
     STATUS_CHOICES = STATUS_CHOICES
     PRIORIDADE_CHOICES = PRIORIDADE_CHOICES

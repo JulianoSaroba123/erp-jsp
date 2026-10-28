@@ -1,0 +1,5 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Fechamento interno {{ ordem.numero }}</title><style>body{font:12px Arial;margin:25px}table{width:100%;border-collapse:collapse}td,th{padding:8px;border:1px solid #aaa}h1{font-size:20px}</style></head><body>
+<h1>Fechamento de mão de obra — {{ ordem.numero }}</h1><p><strong>DOCUMENTO ADMINISTRATIVO — NÃO ENVIAR AO CLIENTE</strong></p>
+<p>Referência dos apontamentos históricos. Não comprova pagamento e não substitui os custos reais e rateios cadastrados no painel.</p>
+<table><thead><tr><th>Colaborador</th><th>Data</th><th>Horas</th><th>Custo/h de referência</th><th>Custo calculado</th></tr></thead><tbody>{% for t in ordem.colaboradores_trabalho if t.ativo %}<tr><td>{{ t.colaborador.nome }}</td><td>{{ t.data_trabalho }}</td><td>{{ t.total_horas }}</td><td>R$ {{ '%.2f'|format(t.valor_hora_custo or 0) }}</td><td>R$ {{ '%.2f'|format(t.total_custo) }}</td></tr>{% endfor %}</tbody></table>
+</body></html>

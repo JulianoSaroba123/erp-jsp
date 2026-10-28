@@ -277,6 +277,7 @@
                         </div>
                     </div>
                     
+                    <input type="hidden" name="apontamentos_revisao" value="{{ ordem.apontamentos_revisao if ordem else '' }}">
                     <div id="colaboradores_lista">
                         {% if ordem and ordem.colaboradores_trabalho %}
                             {% for colab_trabalho in ordem.colaboradores_trabalho %}
@@ -396,7 +397,7 @@
                                             </label>
                                             <input type="text" class="form-control bg-dark text-danger border-secondary colaborador-valor-custo" 
                                                    name="colaboradores[{{ loop.index0 }}][valor_custo_display]" 
-                                                   value="R$ {{ '%.2f'|format(colab_trabalho.valor_hora_custo|float) if colab_trabalho.valor_hora_custo else '0.00' }}" readonly>
+                                                   value="R$ {{ '%.2f'|format(colab_trabalho.valor_hora_custo|float) if current_user.tipo_usuario == 'admin' and colab_trabalho.valor_hora_custo else '0.00' }}" readonly>
                                         </div>
                                         <div class="col-md-2">
                                             <label class="form-label text-white">
@@ -412,8 +413,8 @@
                                             </label>
                                             <input type="text" class="form-control bg-dark border-secondary colaborador-margem" 
                                                    name="colaboradores[{{ loop.index0 }}][margem_display]" 
-                                                   value="R$ {{ '%.2f'|format((colab_trabalho.margem_contribuicao|float) if colab_trabalho.margem_contribuicao else 0.00) }}" 
-                                                   style="color: {{ 'var(--bs-success)' if colab_trabalho.margem_contribuicao and colab_trabalho.margem_contribuicao > 0 else 'var(--bs-danger)' }};" readonly>
+                                                   value="R$ {{ '%.2f'|format((colab_trabalho.margem_contribuicao|float) if current_user.tipo_usuario == 'admin' and colab_trabalho.margem_contribuicao else 0.00) }}"
+                                                   style="color: {{ 'var(--bs-success)' if current_user.tipo_usuario == 'admin' and colab_trabalho.margem_contribuicao and colab_trabalho.margem_contribuicao > 0 else 'var(--bs-danger)' }};" readonly>
                                         </div>
                                         <div class="col-12"><hr class="border-secondary my-2"></div>
                                         
@@ -690,6 +691,9 @@
                     {% if ordem and ordem.produtos_utilizados %}
                         {% for produto in ordem.produtos_utilizados %}
                             <div class="produto-item mb-3">
+                                <input type="hidden" name="produto_os_id[]" value="{{ produto.id }}">
+                                <input type="hidden" name="produto_id[]" value="{{ produto.produto_id or '' }}">
+                                <input type="hidden" name="produto_descricao_custom[]" value="">
                                 <div class="row g-2 align-items-center">
                                     <div class="col-md-4">
                                         <input type="text" class="form-control form-control-sm bg-dark text-white border-secondary" 
@@ -1911,6 +1915,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const div = document.createElement('div');
         div.className = 'produto-item mb-3';
         div.innerHTML = `
+            <input type="hidden" name="produto_os_id[]" value="">
+            <input type="hidden" name="produto_descricao[]" value="">
             <div class="row g-2 align-items-center">
                 <div class="col-md-4">
                     <select class="form-select form-select-sm bg-dark text-white border-secondary produto-select" 

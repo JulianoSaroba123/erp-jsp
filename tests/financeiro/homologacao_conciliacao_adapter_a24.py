@@ -114,6 +114,10 @@ class ParcelaProposta(BaseModel):
     __tablename__ = "parcelas_proposta"
 
 
+class Pedido(BaseModel):
+    __tablename__ = "pedidos"
+
+
 # Agora carregamos o model financeiro REAL da worktree.
 financeiro_model = importlib.import_module(
     "app.financeiro.financeiro_model"

@@ -10,7 +10,7 @@ Autor: JSP Soluções
 Data: 2025
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, make_response, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, make_response, current_app, abort
 from flask_login import current_user, login_required
 from app.extensoes import db
 from app.ordem_servico.ordem_servico_model import (
@@ -472,8 +472,13 @@ def extrair_colaboradores_form(form_data):
 
 def processar_colaboradores_os(ordem, form_data):
     """Salva os apontamentos de colaboradores da OS."""
-    for item in list(getattr(ordem, 'colaboradores_trabalho', []) or []):
-        db.session.delete(item)
+    from app.ordem_servico.custos_model import CustoOrdemServico
+    from app.ordem_servico.custos_service import snapshot, auditar
+    existentes = {item.id: item for item in (getattr(ordem, 'colaboradores_trabalho', []) or []) if item.id and item.ativo}
+    if existentes and form_data.get('apontamentos_revisao') != ordem.apontamentos_revisao:
+        raise ValueError('Apontamentos alterados ou formulário antigo. Recarregue a OS antes de editar.')
+    historico = []
+    utilizados = set()
 
     total_horas = Decimal('0')
     total_horas_normais = Decimal('0')
@@ -483,7 +488,7 @@ def processar_colaboradores_os(ordem, form_data):
     for colaborador_data in extrair_colaboradores_form(form_data):
         colaborador_id = safe_int_convert(colaborador_data.get('colaborador_id'))
         if not colaborador_id:
-            continue
+            raise ValueError('Colaborador inválido no apontamento.')
 
         data_trabalho = date.today()
         if colaborador_data.get('data_trabalho'):
@@ -517,7 +522,17 @@ def processar_colaboradores_os(ordem, form_data):
             except:
                 percentual_adicional_cobranca = None
 
-        trabalho = OrdemServicoColaborador(
+        trabalho_id_texto = colaborador_data.get('id', '')
+        trabalho_id = safe_int_convert(trabalho_id_texto) if trabalho_id_texto else None
+        if trabalho_id_texto and (not trabalho_id or trabalho_id not in existentes or trabalho_id in utilizados):
+            raise ValueError('Apontamento inválido ou repetido para esta ordem de serviço.')
+        if trabalho_id and existentes[trabalho_id].colaborador_id != colaborador_id:
+            raise ValueError('Para trocar o colaborador, remova o apontamento e adicione outro.')
+        trabalho = existentes[trabalho_id] if trabalho_id else OrdemServicoColaborador()
+        anterior = snapshot(trabalho) if trabalho_id else '{}'
+        if trabalho_id:
+            utilizados.add(trabalho_id)
+        valores = dict(
             ordem_servico_id=ordem.id,
             colaborador_id=colaborador_id,
             data_trabalho=data_trabalho,
@@ -535,13 +550,17 @@ def processar_colaboradores_os(ordem, form_data):
             observacoes=colaborador_data.get('observacoes', ''),
             percentual_adicional_cobranca=percentual_adicional_cobranca
         )
+        for campo, valor in valores.items():
+            setattr(trabalho, campo, valor)
 
         # Sempre calcular automaticamente a partir dos horários detalhados
         trabalho.calcular_horas_automatico()
         
         # Calcular valores com adicionais (custo e receita por hora)
         colaborador_obj = Colaborador.query.get(colaborador_id)
-        if colaborador_obj:
+        if not colaborador_obj or (not trabalho_id and not colaborador_obj.ativo):
+            raise ValueError('Colaborador inexistente ou inativo para novo apontamento.')
+        if colaborador_obj and not trabalho_id:
             salario = colaborador_obj.salario_mensal or Decimal('0')
             valor_hora = colaborador_obj.valor_hora or Decimal('0')
             if salario > 0 or valor_hora > 0:
@@ -552,6 +571,19 @@ def processar_colaboradores_os(ordem, form_data):
         total_horas_extras += Decimal(str(trabalho.horas_extras or 0))
         total_km += trabalho.km_total
         db.session.add(trabalho)
+        historico.append((trabalho, anterior, 'edicao' if trabalho_id else 'criacao'))
+
+    for trabalho_id, trabalho in existentes.items():
+        if trabalho_id not in utilizados:
+            if CustoOrdemServico.query.filter_by(apontamento_id=trabalho_id, ativo=True).first():
+                raise ValueError('Apontamento possui custo ativo. Revise/inative o custo antes de remover o apontamento.')
+            anterior = snapshot(trabalho)
+            trabalho.ativo = False
+            historico.append((trabalho, anterior, 'inativacao'))
+    db.session.flush()
+    for trabalho, anterior, operacao in historico:
+        if anterior != snapshot(trabalho):
+            auditar('apontamento', trabalho, anterior, str(current_user.id), operacao, 'Edição administrativa da OS')
 
     if ordem.tipo_os == 'operacional':
         if total_horas > 0:
@@ -577,6 +609,9 @@ import base64
 
 # Cria o blueprint
 ordem_servico_bp = Blueprint('ordem_servico', __name__, template_folder='templates')
+from app.ordem_servico.custos_routes import registrar_rotas_custos
+registrar_rotas_custos(ordem_servico_bp)
+
 
 
 @ordem_servico_bp.before_request
@@ -1640,6 +1675,10 @@ def visualizar(id):
         if documento.ordem_servico_parcela_id is None
     ]
 
+    custos_resumo = None
+    if usuario_eh_admin():
+        from app.ordem_servico.custos_service import resumo_custos
+        custos_resumo = resumo_custos(ordem.id)
     contas_recebimento = []
     csrf_os_recebimento = None
     if usuario_eh_admin():
@@ -1661,6 +1700,7 @@ def visualizar(id):
         nfse_legados=nfse_legados,
         contas_recebimento=contas_recebimento,
         csrf_os_recebimento=csrf_os_recebimento,
+        custos_resumo=custos_resumo,
     )
 
 
@@ -2343,7 +2383,10 @@ def apontamento_colaborador(id):
         return redirect(url_for('ordem_servico.visualizar', id=id))
 
     colaborador = colaborador_do_usuario_atual()
-    ordem = OrdemServico.query.filter_by(id=id, ativo=True).first()
+    query = OrdemServico.query.filter_by(id=id, ativo=True)
+    if request.method == 'POST':
+        query = query.with_for_update()
+    ordem = query.first()
     if (
         colaborador is None
         or ordem is None
@@ -2364,6 +2407,8 @@ def apontamento_colaborador(id):
 
     if request.method == 'POST':
         try:
+            from app.ordem_servico.custos_service import snapshot, auditar
+            anterior = snapshot(trabalho)
             data_texto = (request.form.get('data_trabalho') or '').strip()
             trabalho.data_trabalho = datetime.strptime(data_texto, '%Y-%m-%d').date() if data_texto else date.today()
             trabalho.hora_entrada_manha = _hora_apontamento(request.form.get('hora_entrada_manha'))
@@ -2385,6 +2430,9 @@ def apontamento_colaborador(id):
 
             trabalho.calcular_horas_automatico()
             _recalcular_resumo_apontamentos(ordem)
+            db.session.flush()
+            if snapshot(trabalho) != anterior:
+                auditar('apontamento', trabalho, anterior, str(current_user.id), 'edicao', 'Apontamento do próprio colaborador')
             db.session.commit()
             flash('Apontamento salvo com sucesso.', 'success')
             return redirect(url_for('ordem_servico.visualizar', id=ordem.id))
@@ -2412,10 +2460,13 @@ def editar(id):
     
     # Carregar OS com eager loading de parcelas e colaboradores
     from sqlalchemy.orm import joinedload
-    ordem = OrdemServico.query.options(
+    query_ordem = OrdemServico.query.options(
         joinedload(OrdemServico.parcelas),
         joinedload(OrdemServico.colaboradores_trabalho)
-    ).filter_by(id=id, ativo=True).first()
+    ).filter_by(id=id, ativo=True)
+    if request.method == 'POST':
+        query_ordem = query_ordem.with_for_update(of=OrdemServico)
+    ordem = query_ordem.first()
     
     if not ordem:
         print(f" DEBUG: Ordem com ID {id} não encontrada")
@@ -2781,14 +2832,9 @@ def editar(id):
                     print(f"  ➕ Adicionado serviço: {item.descricao} - {item.quantidade} {item.tipo_servico} = R$ {item.valor_total}")
                 print(f" {servicos_adicionados} serviços adicionados")
 
-                print(f"DEBUG: Removendo {len(ordem.produtos_utilizados)} produtos antigos via loop delete")
-                produtos_removidos = 0
-                for produto_existente in list(ordem.produtos_utilizados):
-                    print(f"  🗑️ Removendo produto: {produto_existente.descricao}")
-                    db.session.delete(produto_existente)
-                    produtos_removidos += 1
-                print(f" {produtos_removidos} produtos removidos")
-
+                produtos_existentes = {p.id: p for p in ordem.produtos_utilizados}
+                produtos_utilizados_ids = set()
+                produtos_os_ids = request.form.getlist('produto_os_id[]')
                 produtos_id = request.form.getlist('produto_id[]')
                 produtos_desc = request.form.getlist('produto_descricao[]')
                 produtos_desc_custom = request.form.getlist('produto_descricao_custom[]')
@@ -2828,18 +2874,27 @@ def editar(id):
                         qtd_value = produtos_qtd[i] if i < len(produtos_qtd) else ''
                         valor_value = produtos_valor[i] if i < len(produtos_valor) else ''
 
-                        produto = OrdemServicoProduto(
-                            ordem_servico_id=ordem.id,
-                            descricao=descricao,
-                            produto_id=produto_cadastrado_id,
-                            quantidade=safe_decimal_convert(qtd_value, 1),
-                            valor_unitario=safe_decimal_convert(valor_value, 0)
-                        )
+                        origem_texto = produtos_os_ids[i] if i < len(produtos_os_ids) else ''
+                        origem_id = safe_int_convert(origem_texto) if origem_texto else None
+                        if origem_texto and (not origem_id or origem_id not in produtos_existentes or origem_id in produtos_utilizados_ids):
+                            raise ValueError('Material inválido ou repetido para esta OS.')
+                        produto = produtos_existentes[origem_id] if origem_id else OrdemServicoProduto(ordem_servico_id=ordem.id)
+                        if origem_id:
+                            produtos_utilizados_ids.add(origem_id)
+                        produto.descricao = descricao
+                        produto.produto_id = produto_cadastrado_id
+                        produto.quantidade = safe_decimal_convert(qtd_value, 1)
+                        produto.valor_unitario = safe_decimal_convert(valor_value, 0)
                         produto.calcular_total()
                         db.session.add(produto)
                         produtos_adicionados += 1
                         print(f"  ➕ Adicionado produto: {descricao} (ID: {produto_cadastrado_id})")
-                print(f" {produtos_adicionados} produtos adicionados")
+                for origem_id, produto in produtos_existentes.items():
+                    if origem_id not in produtos_utilizados_ids:
+                        db.session.delete(produto)
+                db.session.flush()
+                db.session.expire(ordem, ['produtos_utilizados', 'servicos'])
+                print(f" {produtos_adicionados} produtos adicionados ou preservados")
 
                 ordem.valor_servico = ordem.valor_total_servicos
                 ordem.valor_pecas = ordem.valor_total_produtos
@@ -3798,6 +3853,7 @@ def api_equipamentos_cliente(cliente_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @ordem_servico_bp.route('/<int:id>/relatorio-pdf')
+@login_required
 def gerar_relatorio_pdf(id):
     """
     Gera relatório em PDF da ordem de serviço.
@@ -3809,6 +3865,10 @@ def gerar_relatorio_pdf(id):
     Returns:
         PDF file: Relatório da ordem de serviço em PDF
     """
+    if request.args.get('fechamento') == '1' and (
+        not current_user.is_authenticated or not usuario_eh_admin()
+    ):
+        abort(403)
     print(f"DEBUG PDF: Iniciando geração de PDF para OS ID: {id}")
     
     try:
@@ -3925,7 +3985,7 @@ def gerar_relatorio_pdf(id):
         
         # Renderiza o template HTML com timestamp para evitar cache
         html_content = render_template(
-            'os/pdf_ordem_servico.html',
+            'os/pdf_fechamento_interno.html' if fechamento else 'os/pdf_ordem_servico.html',
             ordem=ordem,
             now=dt.now,
             logo_base64=get_logo_base64(),  # Função para obter logo em base64

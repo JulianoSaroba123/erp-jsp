@@ -1,0 +1,22 @@
+<div class="card mb-4 border-warning" id="custos-rentabilidade">
+  <div class="card-header"><strong>Custos e Rentabilidade</strong> <span class="badge bg-warning text-dark">Exclusivo administrativo</span></div>
+  <div class="card-body">
+    <p>Indicadores operacionais por contrato. Recebimentos são apresentados separadamente e não geram reconhecimento por competência.</p>
+    <div class="row g-3">
+      {% for rotulo, valor in [('Receita contratada', resumo.contratada), ('Receita recebida registrada', resumo.recebida), ('Custos diretos realizados', resumo.realizados), ('Custos diretos estimados', resumo.estimados), ('Margem de contribuição sobre custos registrados', resumo.margem)] %}
+      <div class="col-md-4"><small>{{ rotulo }}</small><div class="fs-5">R$ {{ '%.2f'|format(valor)|replace('.', ',') }}</div></div>
+      {% endfor %}
+      <div class="col-md-4"><small>Margem percentual sobre receita contratada</small><div class="fs-5">{{ ('%.2f'|format(resumo.percentual)|replace('.', ',') ~ '%') if resumo.percentual is not none else 'Não calculável' }}</div></div>
+    </div>
+    <p class="mt-3 mb-1"><small>Fonte do recebimento: {{ resumo.fonte_recebida }}. Recebimentos e custos não representam reconhecimento de receita por competência.</small></p>
+    {% if resumo.recebimentos_revisar %}<div class="alert alert-warning">Há recebimentos legados sem vínculo à parcela. Eles não foram somados às parcelas para evitar dupla contagem; requerem revisão administrativa.</div>{% endif %}
+    <div class="table-responsive"><table class="table table-sm"><thead><tr><th>Custos realizados registrados</th><th class="text-end">Total</th></tr></thead><tbody>
+    {% for cat, titulo in [('mao_obra','Mão de obra'),('material','Materiais'),('deslocamento','Combustível / deslocamento'),('alimentacao','Alimentação'),('terceirizacao','Terceirizações'),('outros','Outros custos diretos'),('tributos','Tributos atribuídos (separados da margem de contribuição)')] %}<tr><td>{{ titulo }}</td><td class="text-end">R$ {{ '%.2f'|format(resumo.por_categoria[cat])|replace('.', ',') }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    <p class="mt-3 mb-1">Custos não informados identificados: <strong>{{ resumo.nao_informados }}</strong>. Ausência de um registro não significa custo zero.</p>
+    <div class="alert alert-warning mb-2">{{ 'Rentabilidade incompleta: há estimativas, valores pendentes ou nenhum custo registrado.' if resumo.incompleta else 'Resultado parcial com os custos informados; confirme se todos os custos foram registrados.' }} Esta margem não representa lucro líquido nem saldo bancário.</div>
+    {% if resumo.resultado_apos_tributos is not none %}<p>Resultado após tributos explicitamente atribuídos: R$ {{ '%.2f'|format(resumo.resultado_apos_tributos)|replace('.', ',') }}. Não representa lucro líquido.</p>{% else %}<p>Resultado após tributos e demais custos: dados insuficientes para apuração completa.</p>{% endif %}
+    {% if ordem %}<a class="btn btn-outline-warning" href="{{ url_for('ordem_servico.custos_os', id=ordem.id) }}">Gerenciar custos e rateios</a>{% endif %}
+    <a class="btn btn-outline-secondary" href="{{ url_for('ordem_servico.custos_internos') }}">Serviços internos</a>
+  </div>
+</div>
