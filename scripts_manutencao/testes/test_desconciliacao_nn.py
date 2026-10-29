@@ -83,6 +83,8 @@ def test_corrige_par_pendente_com_alocacao_fantasma(caso_jumirim_ficticio):
         assert not db.session.get(ConciliacaoBancariaItem, dados[3]).ativo
         assert "Valor atribuido" in db.session.get(
             ConciliacaoBancariaItem, dados[3]).observacoes
+        assert "Valor desfeito: R$ 24.50" in db.session.get(
+            ConciliacaoBancariaItem, dados[3]).observacoes
         assert not db.session.get(ExtratoBancario, dados[1]).conciliado
 
         executar_conciliacao_bancaria(
@@ -234,6 +236,8 @@ def test_reativacao_de_par_unico_preserva_motivo(
         assert registro.valor_conciliado == Decimal("35.00")
         assert "Vinculo substituido" in registro.observacoes
         assert "Reconciliado" in registro.observacoes
+        assert "Valor desfeito: R$ 35.00" in registro.observacoes
+        assert "Novo valor: R$ 35.00" in registro.observacoes
         assert "Nova conciliacao revisada" in registro.observacoes
 
 
@@ -341,6 +345,17 @@ def test_recebimento_automatico_nao_pode_ser_desfeito_sem_estorno_integrado(
         assert db.session.get(ConciliacaoBancariaItem, iid).ativo is True
         assert db.session.get(ExtratoBancario, eid).conciliado is True
         assert db.session.get(LancamentoFinanceiro, lid).status == "recebido"
+
+    client = app.test_client()
+    client.post("/auth/login", data={
+        "identificador": "admin_pr46", "senha": "SenhaPr46Teste!"
+    })
+    response = client.get(
+        f"/financeiro/conciliacao-bancaria/historico?conta_id={ids['conta']}"
+    )
+    assert response.status_code == 200
+    assert b"revers" in response.data.lower()
+    assert b"Desfazer v" not in response.data
 
 
 def test_nova_alocacao_parcial_preserva_anotacoes_preexistentes(
