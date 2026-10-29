@@ -141,7 +141,7 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if pode_desconciliar %}
+                                {% if pode_desconciliar and extrato.tipo_movimento == 'debito' %}
                                     {% if extrato.itens_ativos_historico %}
                                         {% for item in extrato.itens_ativos_historico %}
                                         <form method="POST"
@@ -178,6 +178,10 @@
                                             </button>
                                         </form>
                                     {% endif %}
+                                {% elif pode_desconciliar %}
+                                    <small class="text-muted">
+                                        Crédito: reversão financeira integrada obrigatória
+                                    </small>
                                 {% else %}
                                     <small class="text-muted">Somente administrador</small>
                                 {% endif %}
