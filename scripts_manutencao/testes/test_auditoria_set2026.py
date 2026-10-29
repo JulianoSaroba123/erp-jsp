@@ -183,6 +183,7 @@ def test_correcao_auditavel_sem_movimentar_banco(motor):
         assert sum(r["acao"] == "inativacao" for r in audits) == 4
         assert all(r["motivo"] and r["usuario"] == migration._AUTOR for r in audits)
         # Segunda execução idempotente, sem produzir novas linhas de auditoria.
+        con.commit()
         aplicar(con)
         assert con.execute(sa.select(sa.func.count()).select_from(hist)).scalar_one() == 7
 
