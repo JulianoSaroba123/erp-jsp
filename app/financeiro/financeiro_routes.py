@@ -2086,14 +2086,14 @@ def historico_conciliacao():
         )
 
         conta_id = request.args.get('conta_id', type=int)
-        ativos_nn = db.session.query(ConciliacaoBancariaItem.id).filter(
+        # Mostrar também vínculos N:N já desfeitos para consulta de auditoria.
+        tem_historico_nn = db.session.query(ConciliacaoBancariaItem.id).filter(
             ConciliacaoBancariaItem.extrato_id == ExtratoBancario.id,
-            ConciliacaoBancariaItem.ativo.is_(True),
         ).exists()
 
         query = ExtratoBancario.query.filter(
             ExtratoBancario.ativo.is_(True),
-            or_(ExtratoBancario.conciliado.is_(True), ativos_nn),
+            or_(ExtratoBancario.conciliado.is_(True), tem_historico_nn),
         )
         if conta_id:
             query = query.filter(ExtratoBancario.conta_bancaria_id == conta_id)
@@ -2110,7 +2110,6 @@ def historico_conciliacao():
                     ConciliacaoBancariaItem.extrato_id.in_(
                         [extrato.id for extrato in extratos]
                     ),
-                    ConciliacaoBancariaItem.ativo.is_(True),
                 )
                 .order_by(ConciliacaoBancariaItem.id)
                 .all()
@@ -2119,9 +2118,13 @@ def historico_conciliacao():
                 itens_por_extrato.setdefault(item.extrato_id, []).append(item)
 
         for extrato in extratos:
-            extrato.itens_ativos_historico = itens_por_extrato.get(
-                extrato.id, []
-            )
+            todos = itens_por_extrato.get(extrato.id, [])
+            extrato.itens_ativos_historico = [
+                item for item in todos if item.ativo
+            ]
+            extrato.itens_inativos_historico = [
+                item for item in todos if not item.ativo
+            ]
 
         contas = ContaBancaria.query.filter_by(ativo=True).all()
         token = session.setdefault(
