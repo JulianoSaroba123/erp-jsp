@@ -62,4 +62,4 @@ def test_rota_passa_somente_mapa_de_visibilidade_ao_template():
     assert "sugestoes_ocultas=sugestoes_ocultas" in segmento
     assert "lancamentos_pendentes.append(lancamento)" in segmento
     # Não alteramos as regras de elegibilidade ou baixa financeira.
-    assert "LançamentoFinanceiro.ativo.is_(True)" in segmento
+    assert "LancamentoFinanceiro.ativo.is_(True)" in segmento
