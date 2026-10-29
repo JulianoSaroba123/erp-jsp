@@ -123,7 +123,7 @@ def ambiente(motor="sqlite",popular=True):
             t["meta"].create_all(con)
             con.commit()
             if popular:
-                con.execute(sa.insert(t["os"]), [
+                for row in [
                     dict(id=618, numero="OS20260087", titulo="Reparo em Instalação Elétrica Predial",
                          cliente_id=51, status="concluida", status_pagamento="pago",
                          situacao_fiscal="PENDENTE", proposta_id=None,
@@ -137,8 +137,9 @@ def ambiente(motor="sqlite",popular=True):
                          cliente_id=51, status="concluida", status_pagamento="pago",
                          situacao_fiscal="PENDENTE", valor_total=Decimal("600.00"),
                          ativo=True),
-                ])
-                con.execute(sa.insert(t["fin"]), [
+                ]:
+                    con.execute(sa.insert(t["os"]).values(**row))
+                for row in [
                     dict(id=224, descricao="OS OS20260087 - Reparo em Instalação Elétrica Predial",
                          ordem_servico_id=618, origem="ORDEM_SERVICO",
                          cliente_id=51, conta_bancaria_id=1,
@@ -161,7 +162,8 @@ def ambiente(motor="sqlite",popular=True):
                          ordem_servico_id=None, origem="MANUAL", tipo="conta_pagar",
                          valor=Decimal("600.00"), status="pago", ativo=True,
                          sem_movimentacao_bancaria=False, data_pagamento=date(2026,9,11)),
-                ])
+                ]:
+                    con.execute(sa.insert(t["fin"]).values(**row))
                 con.execute(sa.insert(t["itens"]), [
                     dict(id=331,ordem_servico_id=618,descricao="Serviços de Instalação Predial",ativo=True),
                 ])
