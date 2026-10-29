@@ -286,3 +286,98 @@ def test_rota_desconciliacao_requer_admin_csrf_e_motivo(
             extrato_id=eid, lancamento_id=lid, ativo=True
         ).count() == 0
         assert db.session.get(ExtratoBancario, eid).conciliado is False
+
+
+
+def test_recebimento_automatico_nao_pode_ser_desfeito_sem_estorno_integrado(
+    caso_jumirim_ficticio,
+):
+    """Bloqueia crédito até existir estorno de baixa de proposta/OS."""
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        lanc = LancamentoFinanceiro(
+            descricao="Recebivel proposta ficticia",
+            tipo="conta_receber",
+            origem="PROPOSTA",
+            valor=Decimal("100.00"),
+            status="recebido",
+            data_pagamento=date(2026, 9, 26),
+            data_lancamento=date(2026, 9, 26),
+            conta_bancaria_id=ids["conta"],
+            ativo=True,
+        )
+        db.session.add(lanc)
+        db.session.flush()
+        extrato = ExtratoBancario(
+            conta_bancaria_id=ids["conta"],
+            data_movimento=date(2026, 9, 26),
+            descricao="Recebimento proposta",
+            valor=Decimal("100.00"),
+            tipo_movimento="credito",
+            conciliado=True,
+            lancamento_id=lanc.id,
+            ativo=True,
+        )
+        db.session.add(extrato)
+        db.session.flush()
+        item = _alocacao(extrato, lanc, "100.00")
+        db.session.commit()
+        eid, lid, iid = extrato.id, lanc.id, item.id
+        with pytest.raises(ConciliacaoInvalida, match="creditos"):
+            desfazer_conciliacao_bancaria(
+                eid, lancamento_id=lid,
+                motivo="Ajuste de credito de proposta ficticio.",
+                usuario="admin",
+            )
+        db.session.expire_all()
+        assert db.session.get(ConciliacaoBancariaItem, iid).ativo is True
+        assert db.session.get(ExtratoBancario, eid).conciliado is True
+        assert db.session.get(LancamentoFinanceiro, lid).status == "recebido"
+
+
+def test_nova_alocacao_parcial_preserva_anotacoes_preexistentes(
+    caso_jumirim_ficticio,
+):
+    """A conciliação incremental jamais deve apagar notas de auditoria."""
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        lanc = _lancamento(ids, "100.00")
+        extrato = _extrato(ids, "100.00")
+        item = _alocacao(extrato, lanc, "40.00")
+        item.observacoes = "Auditoria: conferir documento original."
+        db.session.commit()
+        eid, lid, iid = extrato.id, lanc.id, item.id
+        executar_conciliacao_bancaria(
+            extrato_id=eid,
+            alocacoes=[SolicitacaoAlocacao(
+                lancamento_id=lid, valor=Decimal("60.00"))],
+            usuario="admin",
+            observacoes="Complemento de valor confirmado.",
+        )
+        db.session.expire_all()
+        vinculo = db.session.get(ConciliacaoBancariaItem, iid)
+        assert vinculo.valor_conciliado == Decimal("100.00")
+        assert "Auditoria: conferir" in vinculo.observacoes
+        assert "Complemento de valor" in vinculo.observacoes
+        assert db.session.get(ExtratoBancario, eid).conciliado is True
+
+
+def test_falha_validacao_nao_altera_extrato_nem_item(
+    caso_jumirim_ficticio,
+):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        lanc = _lancamento(ids, "50.00")
+        extrato = _extrato(ids, "50.00", conciliado=True,
+                           lancamento_id=lanc.id)
+        item = _alocacao(extrato, lanc, "50.00")
+        db.session.commit()
+        eid, lid, iid = extrato.id, lanc.id, item.id
+        with pytest.raises(ConciliacaoInvalida, match="motivo"):
+            desfazer_conciliacao_bancaria(
+                eid, lancamento_id=lid, motivo=" ",
+            )
+        db.session.expire_all()
+        assert db.session.get(ExtratoBancario, eid).conciliado
+        assert db.session.get(ExtratoBancario, eid).lancamento_id == lid
+        assert db.session.get(ConciliacaoBancariaItem, iid).ativo
