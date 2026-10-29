@@ -10,13 +10,15 @@ Autor: JSP Soluções
 Data: 2025
 """
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file, abort
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, send_file, abort, session
 from flask_login import current_user
 from werkzeug.exceptions import HTTPException
 from datetime import datetime, date, timedelta
 from decimal import Decimal
 import io
 import logging
+import hmac
+import secrets
 from app.extensoes import db
 from app.financeiro.financeiro_compat import status_eh_pago
 
@@ -2021,48 +2023,123 @@ def conciliar_manual(extrato_id, lancamento_id):
 
 @bp_financeiro.route('/conciliacao-bancaria/desconciliar/<int:extrato_id>', methods=['POST'])
 def desconciliar(extrato_id):
-    """Desfazer conciliação de um extrato."""
+    """Desfaz somente o vinculo escolhido, inclusive N:N, com auditoria."""
+    if getattr(current_user, 'tipo_usuario', None) != 'admin':
+        abort(403)
+
+    recebido = request.form.get('csrf_desconciliacao', '')
+    esperado = session.get('_csrf_desconciliacao', '')
+    if (
+        not isinstance(recebido, str)
+        or not isinstance(esperado, str)
+        or not esperado
+        or not hmac.compare_digest(recebido, esperado)
+    ):
+        abort(400)
+
+    lancamento_bruto = request.form.get('lancamento_id')
+    if lancamento_bruto:
+        try:
+            lancamento_id = int(lancamento_bruto)
+            if lancamento_id <= 0:
+                abort(400)
+        except (ValueError, TypeError):
+            abort(400)
+    else:
+        lancamento_id = None
+
+    from app.financeiro.conciliacao_adapter import (
+        desfazer_conciliacao_bancaria,
+    )
+    from app.financeiro.conciliacao_service import ConciliacaoInvalida
+    from app.financeiro.financeiro_model import ExtratoBancario
+
+    extrato = db.session.get(ExtratoBancario, extrato_id)
+    if extrato is None:
+        abort(404)
+    conta_id = extrato.conta_bancaria_id
+
     try:
-        from app.financeiro.financeiro_model import ExtratoBancario
-        
-        extrato = ExtratoBancario.query.get_or_404(extrato_id)
-        conta_id = extrato.conta_bancaria_id
-        
-        # Desfazer conciliação
-        extrato.desconciliar()
-        
-        flash('Conciliação desfeita com sucesso!', 'success')
-        return redirect(url_for('financeiro.conciliacao_bancaria', conta_id=conta_id))
-    
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Erro ao desconciliar: {str(e)}', 'danger')
-        return redirect(url_for('financeiro.conciliacao_bancaria'))
+        desfazer_conciliacao_bancaria(
+            extrato_id=extrato_id,
+            lancamento_id=lancamento_id,
+            usuario=str(getattr(current_user, 'id', 'admin')),
+            motivo=request.form.get('motivo'),
+        )
+        flash('Vinculo de conciliacao desfeito e auditado.', 'success')
+    except ConciliacaoInvalida as exc:
+        flash(str(exc), 'warning')
+    except Exception:
+        logger.exception('Falha ao desconciliar extrato %s', extrato_id)
+        flash('Erro ao desfazer conciliação. Nenhum dado foi alterado.', 'danger')
+
+    return redirect(url_for('financeiro.historico_conciliacao', conta_id=conta_id))
 
 
 @bp_financeiro.route('/conciliacao-bancaria/historico')
 def historico_conciliacao():
-    """Histórico de conciliações realizadas."""
+    """Exibe vinculos legados e N:N ativos, mesmo em extratos parciais."""
     try:
-        from app.financeiro.financeiro_model import ExtratoBancario
-        
-        # Filtros
+        from sqlalchemy import or_
+        from app.financeiro.financeiro_model import (
+            ExtratoBancario, ConciliacaoBancariaItem,
+        )
+
         conta_id = request.args.get('conta_id', type=int)
-        
-        # Buscar extratos conciliados
-        query = ExtratoBancario.get_conciliados(conta_id)
-        extratos = query.limit(100).all()
-        
-        # Buscar contas para filtro
+        ativos_nn = db.session.query(ConciliacaoBancariaItem.id).filter(
+            ConciliacaoBancariaItem.extrato_id == ExtratoBancario.id,
+            ConciliacaoBancariaItem.ativo.is_(True),
+        ).exists()
+
+        query = ExtratoBancario.query.filter(
+            ExtratoBancario.ativo.is_(True),
+            or_(ExtratoBancario.conciliado.is_(True), ativos_nn),
+        )
+        if conta_id:
+            query = query.filter(ExtratoBancario.conta_bancaria_id == conta_id)
+        extratos = query.order_by(
+            ExtratoBancario.data_movimento.desc(),
+            ExtratoBancario.id.desc(),
+        ).limit(200).all()
+
+        itens_por_extrato = {}
+        if extratos:
+            itens = (
+                ConciliacaoBancariaItem.query
+                .filter(
+                    ConciliacaoBancariaItem.extrato_id.in_(
+                        [extrato.id for extrato in extratos]
+                    ),
+                    ConciliacaoBancariaItem.ativo.is_(True),
+                )
+                .order_by(ConciliacaoBancariaItem.id)
+                .all()
+            )
+            for item in itens:
+                itens_por_extrato.setdefault(item.extrato_id, []).append(item)
+
+        for extrato in extratos:
+            extrato.itens_ativos_historico = itens_por_extrato.get(
+                extrato.id, []
+            )
+
         contas = ContaBancaria.query.filter_by(ativo=True).all()
-        
-        return render_template('financeiro/conciliacao_bancaria/historico.html',
-                             extratos=extratos,
-                             contas=contas,
-                             conta_id=conta_id)
-    
-    except Exception as e:
-        flash(f'Erro ao carregar histórico: {str(e)}', 'danger')
+        token = session.setdefault(
+            '_csrf_desconciliacao', secrets.token_urlsafe(32)
+        )
+        return render_template(
+            'financeiro/conciliacao_bancaria/historico.html',
+            extratos=extratos,
+            contas=contas,
+            conta_id=conta_id,
+            csrf_desconciliacao=token,
+            pode_desconciliar=(
+                getattr(current_user, 'tipo_usuario', None) == 'admin'
+            ),
+        )
+    except Exception:
+        logger.exception('Erro ao carregar historico de conciliacoes')
+        flash('Erro ao carregar histórico de conciliações.', 'danger')
         return redirect(url_for('financeiro.dashboard'))
 
 
