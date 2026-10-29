@@ -1448,7 +1448,8 @@ def conciliacao_bancaria():
         conta_selecionada = None
         extratos_pendentes = []
         lancamentos_pendentes = []
-        
+        sugestoes_ocultas = {}  # Visibilidade apenas no cockpit; sem mutação financeira.
+
         if conta_id:
             conta_selecionada = ContaBancaria.query.get(conta_id)
             if conta_selecionada:
@@ -1621,11 +1622,22 @@ def conciliacao_bancaria():
 
                     lancamentos_pendentes.append(lancamento)
 
+                # Exceções de exibição por competência do movimento bancário.
+                # Todos os títulos permanecem ativos e elegíveis para conciliação
+                # quando o operador marca "Mostrar sugestões ocultas".
+                from app.financeiro.conciliacao_visibilidade import (
+                    sugestoes_ocultas_por_lancamento,
+                )
+                sugestoes_ocultas = sugestoes_ocultas_por_lancamento(
+                    conta_id, lancamentos_pendentes
+                )
+
         return render_template('financeiro/conciliacao_bancaria/conciliacao.html',
                              contas=contas,
                              conta_selecionada=conta_selecionada,
                              extratos_pendentes=extratos_pendentes,
-                             lancamentos_pendentes=lancamentos_pendentes)
+                             lancamentos_pendentes=lancamentos_pendentes,
+                             sugestoes_ocultas=sugestoes_ocultas)
     
     except Exception as e:
         flash(f'Erro ao carregar conciliação: {str(e)}', 'danger')

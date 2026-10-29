@@ -13,6 +13,7 @@ on:
       - 'scripts_manutencao/testes/test_auditoria_set2026.py'
       - 'migrations/versions/20261029_02_inativacao_os_eliana.py'
       - 'scripts_manutencao/testes/test_inativacao_os_eliana.py'
+      - 'scripts_manutencao/testes/test_conciliacao_visibilidade.py'
       - 'scripts_manutencao/testes/test_os_gatilho_financeiro.py'
       - '.github/workflows/pr46_os_financeiro.yml'
   workflow_dispatch:
@@ -60,7 +61,8 @@ jobs:
             scripts_manutencao/testes/test_conciliacao_baixa_proposta.py \
             scripts_manutencao/testes/test_desconciliacao_nn.py \
             scripts_manutencao/testes/test_auditoria_set2026.py \
-            scripts_manutencao/testes/test_inativacao_os_eliana.py
+            scripts_manutencao/testes/test_inativacao_os_eliana.py \
+            scripts_manutencao/testes/test_conciliacao_visibilidade.py
 
   concorrencia-postgresql:
     runs-on: ubuntu-latest
@@ -93,4 +95,4 @@ jobs:
       - name: Instalar dependências
         run: python -m pip install -r requirements.txt pytest
       - name: Concorrência e conciliação em PostgreSQL descartável
-        run: python -m pytest -q scripts_manutencao/testes/test_pr46_postgresql.py scripts_manutencao/testes/test_atividade_postgresql.py scripts_manutencao/testes/test_desconciliacao_nn.py scripts_manutencao/testes/test_auditoria_set2026.py scripts_manutencao/testes/test_inativacao_os_eliana.py
+        run: python -m pytest -q scripts_manutencao/testes/test_pr46_postgresql.py scripts_manutencao/testes/test_atividade_postgresql.py scripts_manutencao/testes/test_desconciliacao_nn.py scripts_manutencao/testes/test_auditoria_set2026.py scripts_manutencao/testes/test_inativacao_os_eliana.py scripts_manutencao/testes/test_conciliacao_visibilidade.py
