@@ -286,6 +286,14 @@ def test_rota_desconciliacao_requer_admin_csrf_e_motivo(
             extrato_id=eid, lancamento_id=lid, ativo=True
         ).count() == 0
         assert db.session.get(ExtratoBancario, eid).conciliado is False
+    # Mesmo inteiramente desfeito, o extrato permanece no histórico
+    # e exibe o motivo sem permitir uma segunda reversão do vínculo inativo.
+    tela_historico = client.get(
+        f"/financeiro/conciliacao-bancaria/historico?conta_id={ids['conta']}"
+    )
+    assert tela_historico.status_code == 200
+    assert b"Alocacao feita no extrato errado." in tela_historico.data
+    assert b"v\xc3\xadnculo(s) desfeito(s)" in tela_historico.data
 
 
 
