@@ -165,6 +165,7 @@ def test_correcao_auditavel_sem_movimentar_banco(motor):
     with ambiente(motor) as (con, (fin, ext, nn, hist)):
         extratos_antes = con.execute(sa.select(ext).order_by(ext.c.id)).mappings().all()
         nn_antes = con.execute(sa.select(nn).order_by(nn.c.id)).mappings().all()
+        con.commit()  # Leituras também iniciam transação no SQLAlchemy 2.
         aplicar(con)
         regs = {
             r.id: r for r in con.execute(sa.select(fin)).all()
