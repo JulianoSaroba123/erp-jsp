@@ -45,7 +45,7 @@
     <!-- Tabela de Histórico -->
     <div class="card">
         <div class="card-header bg-success text-white">
-            <h5 class="mb-0"><i class="fas fa-check-circle"></i> Conciliações Realizadas</h5>
+            <h5 class="mb-0"><i class="fas fa-check-circle"></i> Vínculos de Conciliação Ativos</h5>
         </div>
         <div class="card-body p-0">
             {% if extratos %}
@@ -78,11 +78,28 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if extrato.lancamento %}
-                                {{ extrato.lancamento.descricao }}
-                                <br><small class="text-muted">ID: {{ extrato.lancamento.id }}</small>
+                                {% if extrato.itens_ativos_historico %}
+                                    {% for item in extrato.itens_ativos_historico %}
+                                    <div class="mb-1">
+                                        {{ item.lancamento.descricao }}
+                                        <br><small class="text-muted">
+                                            Financeiro ID: {{ item.lancamento_id }} |
+                                            Alocação: R$ {{ item.valor_conciliado }}
+                                        </small>
+                                    </div>
+                                    {% endfor %}
+                                {% elif extrato.lancamento %}
+                                    {{ extrato.lancamento.descricao }}
+                                    <br><small class="text-muted">
+                                        Financeiro ID: {{ extrato.lancamento.id }} (legado)
+                                    </small>
                                 {% else %}
-                                <span class="text-muted">-</span>
+                                    <span class="text-muted">Sem vínculo</span>
+                                {% endif %}
+                                {% if not extrato.conciliado %}
+                                <br><span class="badge bg-warning text-dark">
+                                    Conciliação parcial / status inconsistente
+                                </span>
                                 {% endif %}
                             </td>
                             <td>
@@ -107,12 +124,46 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <form method="POST" action="{{ url_for('financeiro.desconciliar', extrato_id=extrato.id) }}" style="display: inline;">
-                                    <button type="submit" class="btn btn-sm btn-warning" 
-                                            onclick="return confirm('Deseja realmente desfazer esta conciliação?');">
-                                        <i class="fas fa-unlink"></i> Desfazer
-                                    </button>
-                                </form>
+                                {% if pode_desconciliar %}
+                                    {% if extrato.itens_ativos_historico %}
+                                        {% for item in extrato.itens_ativos_historico %}
+                                        <form method="POST"
+                                              action="{{ url_for('financeiro.desconciliar', extrato_id=extrato.id) }}"
+                                              class="mb-2">
+                                            <input type="hidden" name="csrf_desconciliacao"
+                                                   value="{{ csrf_desconciliacao }}">
+                                            <input type="hidden" name="lancamento_id"
+                                                   value="{{ item.lancamento_id }}">
+                                            <input type="text" name="motivo" required minlength="8"
+                                                   maxlength="1000" class="form-control form-control-sm mb-1"
+                                                   aria-label="Motivo para desvincular financeiro {{ item.lancamento_id }}"
+                                                   placeholder="Motivo (obrigatório)">
+                                            <button type="submit" class="btn btn-sm btn-warning"
+                                                    onclick="return confirm('Desfazer apenas o vínculo com o financeiro ID {{ item.lancamento_id }}? Nenhuma despesa será excluída.');">
+                                                <i class="fas fa-unlink"></i>
+                                                Desfazer vínculo ID {{ item.lancamento_id }}
+                                            </button>
+                                        </form>
+                                        {% endfor %}
+                                    {% elif extrato.lancamento %}
+                                        <form method="POST"
+                                              action="{{ url_for('financeiro.desconciliar', extrato_id=extrato.id) }}">
+                                            <input type="hidden" name="csrf_desconciliacao"
+                                                   value="{{ csrf_desconciliacao }}">
+                                            <input type="hidden" name="lancamento_id"
+                                                   value="{{ extrato.lancamento.id }}">
+                                            <input type="text" name="motivo" required minlength="8"
+                                                   maxlength="1000" class="form-control form-control-sm mb-1"
+                                                   placeholder="Motivo (obrigatório)">
+                                            <button type="submit" class="btn btn-sm btn-warning"
+                                                    onclick="return confirm('Desfazer vínculo legado? Nenhum lançamento será excluído.');">
+                                                <i class="fas fa-unlink"></i> Desfazer vínculo legado
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                {% else %}
+                                    <small class="text-muted">Somente administrador</small>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
