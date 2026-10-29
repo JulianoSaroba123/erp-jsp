@@ -295,8 +295,13 @@ def desfazer_conciliacao_bancaria(
             for item in selecionados:
                 item.ativo = False
                 anterior = str(item.observacoes or "").strip()
+                nota_item = (
+                    f"{anotacao} "
+                    f"Financeiro ID: {item.lancamento_id}. "
+                    f"Valor desfeito: R$ {Decimal(str(item.valor_conciliado)):.2f}."
+                )
                 item.observacoes = (
-                    f"{anterior}\n{anotacao}" if anterior else anotacao
+                    f"{anterior}\n{nota_item}" if anterior else nota_item
                 )
 
             restantes = [
@@ -334,8 +339,13 @@ def desfazer_conciliacao_bancaria(
         ):
             # Compativel com extratos 1:1 antigos sem alocacao N:N.
             anterior = str(extrato.observacoes or "").strip()
+            nota_legado = (
+                f"{anotacao} "
+                f"Financeiro ID: {extrato.lancamento_id}. "
+                f"Valor desfeito: R$ {abs(Decimal(str(extrato.valor))):.2f}."
+            )
             extrato.observacoes = (
-                f"{anterior}\n{anotacao}" if anterior else anotacao
+                f"{anterior}\n{nota_legado}" if anterior else nota_legado
             )
             extrato.conciliado = False
             extrato.lancamento_id = None
