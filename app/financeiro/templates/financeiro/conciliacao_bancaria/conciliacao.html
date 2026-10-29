@@ -359,6 +359,7 @@ document.addEventListener(
                 tipoExtratoSelecionado = null;
 
                 limparSelecaoLancamentos();
+                aplicarVisibilidadeSugestoes();
                 atualizarResumoConciliacao();
 
                 return;
@@ -991,6 +992,7 @@ document.addEventListener(
                                     data-extrato-valor-original="{{ extrato.valor }}"
                                     data-extrato-ja-conciliado="{{ extrato.valor_ja_conciliado_nn }}"
                                     data-extrato-tipo="{{ extrato.tipo_movimento }}"
+                                    data-extrato-competencia="{{ extrato.data_movimento.strftime('%Y-%m') if extrato.data_movimento else '' }}"
                                     data-extrato-descricao="{{ (extrato.descricao or '')|e }}"
                                     data-extrato-documento="{{ (extrato.documento or '')|e }}">
                                     <td>{{ extrato.data_movimento.strftime('%d/%m/%Y') if extrato.data_movimento else '—' }}</td>
@@ -1079,6 +1081,13 @@ document.addEventListener(
                         </select>
                     </div>
                 </div>
+                <div id="painel-sugestoes-ocultas" class="px-3 py-2 border-bottom bg-light" hidden>
+                    <label class="form-check-label small" for="mostrar-sugestoes-ocultas">
+                        <input class="form-check-input me-1" type="checkbox" id="mostrar-sugestoes-ocultas">
+                        Mostrar <strong id="numero-sugestoes-ocultas">0</strong> sugestões ocultas nesta competência
+                    </label>
+                    <small class="d-block text-muted">Filtro visual. Os lançamentos continuam ativos e podem ser exibidos novamente.</small>
+                </div>
                 <div class="card-body p-0">
 
                     {% if lancamentos_pendentes %}
@@ -1098,6 +1107,7 @@ document.addEventListener(
                                 <tr id="lancamento-{{ lanc.id }}"
                                     class="lancamento-row"
                                     data-lancamento-id="{{ lanc.id }}"
+                                    data-ocultar-competencias="{{ sugestoes_ocultas.get(lanc.id, '') }}"
                                     data-lancamento-valor="{{ lanc.valor }}"
                                     data-lancamento-tipo="{{ lanc.tipo }}"
                                     data-data-lancamento="{{ lanc.data_lancamento.isoformat() if lanc.data_lancamento else '' }}"
@@ -2567,6 +2577,56 @@ function limparSelecaoLancamentos() {
     });
 }
 
+/* Ocultação visual por mês do EXTRATO; nunca altera o financeiro ou os vínculos N:N. */
+function aplicarVisibilidadeSugestoes() {
+    const extrato = extratoSelecionado
+        ? document.getElementById('extrato-' + extratoSelecionado)
+        : null;
+    const competencia = extrato ? (extrato.dataset.extratoCompetencia || '') : '';
+    const revelar = Boolean(
+        document.getElementById('mostrar-sugestoes-ocultas')?.checked
+    );
+    let totalConfigurado = 0;
+
+    document.querySelectorAll('.lancamento-row').forEach(row => {
+        const meses = (row.dataset.ocultarCompetencias || '')
+            .split(',')
+            .filter(Boolean);
+        const configurado = competencia && meses.includes(competencia);
+        if (configurado) {
+            totalConfigurado += 1;
+        }
+        const ocultar = Boolean(configurado && !revelar);
+        row.hidden = ocultar;
+        row.style.display = ocultar ? 'none' : '';
+
+        const check = row.querySelector('.lancamento-checkbox');
+        if (!check) {
+            return;
+        }
+        const compativel = extratoSelecionado && lancamentoCompativel(
+            tipoExtratoSelecionado, check.dataset.tipo
+        );
+        if (ocultar) {
+            check.checked = false;
+            const input = obterInputValorConciliar(check);
+            if (input) {
+                input.disabled = true;
+            }
+        }
+        check.disabled = ocultar || !compativel;
+    });
+
+    const painel = document.getElementById('painel-sugestoes-ocultas');
+    if (painel) {
+        painel.hidden = totalConfigurado === 0;
+    }
+    const contador = document.getElementById('numero-sugestoes-ocultas');
+    if (contador) {
+        contador.textContent = String(totalConfigurado);
+    }
+}
+
 function selecionarExtrato(extratoId) {
     document.querySelectorAll('.extrato-row').forEach(row => {
         row.classList.remove('selected');
@@ -2612,6 +2672,7 @@ function selecionarExtrato(extratoId) {
         }
     });
 
+    aplicarVisibilidadeSugestoes();
     atualizarResumoConciliacao();
 }
 
@@ -2988,6 +3049,7 @@ async function conciliarSelecionados() {
                 )
                 .forEach(check => {
                     check.disabled =
+                        Boolean(check.closest('.lancamento-row')?.hidden) ||
                         !lancamentoCompativel(
                             tipoExtratoSelecionado,
                             check.dataset.tipo
@@ -3358,6 +3420,7 @@ function ordenarPorMelhorCorrespondencia() {
             );
 
             return (
+                !row.hidden &&
                 check &&
                 lancamentoCompativel(
                     tipoExtratoSelecionado,
@@ -3515,6 +3578,16 @@ function ordenarLancamentos(criterio) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    const mostrarOcultos = document.getElementById('mostrar-sugestoes-ocultas');
+    if (mostrarOcultos) {
+        mostrarOcultos.addEventListener('change', () => {
+            aplicarVisibilidadeSugestoes();
+            atualizarResumoConciliacao();
+            const criterio = document.getElementById('ordenar-lancamentos')?.value;
+            ordenarLancamentos(criterio || 'match');
+        });
+    }
+
     const ordenarSelect =
         document.getElementById('ordenar-lancamentos');
 
