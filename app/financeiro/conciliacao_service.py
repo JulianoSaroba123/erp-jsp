@@ -639,7 +639,8 @@ def executar_conciliacao_orm(
                 existente.data_conciliacao = datetime.utcnow()
                 auditoria = (
                     f"Reconciliado em {existente.data_conciliacao:%Y-%m-%d %H:%M:%S} "
-                    f"UTC por {usuario or 'usuario nao identificado'}."
+                    f"UTC por {usuario or 'usuario nao identificado'}. "
+                    f"Novo valor: R$ {alocacao.valor:.2f}."
                 )
                 anterior = str(existente.observacoes or "").strip()
                 existente.observacoes = (
