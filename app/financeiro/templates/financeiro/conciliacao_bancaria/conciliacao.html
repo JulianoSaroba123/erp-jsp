@@ -993,6 +993,7 @@ document.addEventListener(
                                     data-extrato-ja-conciliado="{{ extrato.valor_ja_conciliado_nn }}"
                                     data-extrato-tipo="{{ extrato.tipo_movimento }}"
                                     data-extrato-competencia="{{ extrato.data_movimento.strftime('%Y-%m') if extrato.data_movimento else '' }}"
+                                    data-extrato-data="{{ extrato.data_movimento.isoformat() if extrato.data_movimento else '' }}"
                                     data-extrato-descricao="{{ (extrato.descricao or '')|e }}"
                                     data-extrato-documento="{{ (extrato.documento or '')|e }}">
                                     <td>{{ extrato.data_movimento.strftime('%d/%m/%Y') if extrato.data_movimento else '—' }}</td>
@@ -1084,9 +1085,12 @@ document.addEventListener(
                 <div id="painel-sugestoes-ocultas" class="px-3 py-2 border-bottom bg-light" hidden>
                     <label class="form-check-label small" for="mostrar-sugestoes-ocultas">
                         <input class="form-check-input me-1" type="checkbox" id="mostrar-sugestoes-ocultas">
-                        Mostrar <strong id="numero-sugestoes-ocultas">0</strong> sugestões ocultas nesta competência
+                        Mostrar <strong id="numero-sugestoes-ocultas">0</strong> outros lançamentos para conferência
                     </label>
-                    <small class="d-block text-muted">Filtro visual. Os lançamentos continuam ativos e podem ser exibidos novamente.</small>
+                    <small class="d-block text-muted">Sugestões antigas ou sem indícios suficientes ficam recolhidas. É possível revelar e conciliar manualmente, inclusive em partes.</small>
+                </div>
+                <div id="aviso-correspondencias" class="px-3 py-2 small text-muted" role="status" hidden>
+                    Nenhuma correspondência suficientemente indicativa. Cadastre o pagamento ou mostre os outros lançamentos para conferir uma conciliação parcial.
                 </div>
                 <div class="card-body p-0">
 
@@ -1109,13 +1113,19 @@ document.addEventListener(
                                     data-lancamento-id="{{ lanc.id }}"
                                     data-ocultar-competencias="{{ sugestoes_ocultas.get(lanc.id, '') }}"
                                     data-lancamento-valor="{{ lanc.valor }}"
+                                    data-lancamento-descricao="{{ (lanc.descricao or '')|e }}"
+                                    data-lancamento-status="{{ lanc.status }}"
                                     data-lancamento-tipo="{{ lanc.tipo }}"
+                                    data-data-pagamento="{{ lanc.data_pagamento.isoformat() if lanc.data_pagamento else '' }}"
                                     data-data-lancamento="{{ lanc.data_lancamento.isoformat() if lanc.data_lancamento else '' }}"
                                     data-data-vencimento="{{ lanc.data_vencimento.isoformat() if lanc.data_vencimento else '' }}"
                                     data-cliente-nome="{{ ((lanc.cliente.nome or '') if lanc.cliente else '')|e }}"
                                     data-cliente-razao="{{ ((lanc.cliente.razao_social or '') if lanc.cliente else '')|e }}"
                                     data-cliente-fantasia="{{ ((lanc.cliente.nome_fantasia or '') if lanc.cliente else '')|e }}"
                                     data-cliente-documento="{{ ((lanc.cliente.cpf_cnpj or '') if lanc.cliente else '')|e }}"
+                                    data-fornecedor-nome="{{ ((lanc.fornecedor.nome or '') if lanc.fornecedor else '')|e }}"
+                                    data-fornecedor-fantasia="{{ ((lanc.fornecedor.nome_fantasia or '') if lanc.fornecedor else '')|e }}"
+                                    data-fornecedor-documento="{{ ((lanc.fornecedor.cnpj_cpf or '') if lanc.fornecedor else '')|e }}"
                                     data-lancamento-documento="{{ (lanc.numero_documento or '')|e }}">
                                     <td>{{ (lanc.data_vencimento or lanc.data_lancamento).strftime('%d/%m/%Y') if (lanc.data_vencimento or lanc.data_lancamento) else '—' }}</td>
                                     <td>
@@ -2525,6 +2535,7 @@ small:first-child {
 
 </style>
 
+<script src="{{ url_for('static', filename='js/conciliacao_match.js') }}"></script>
 <script>
 let extratoSelecionado = null;
 let valorExtratoSelecionado = 0;
@@ -2578,6 +2589,43 @@ function limparSelecaoLancamentos() {
 }
 
 /* Ocultação visual por mês do EXTRATO; nunca altera o financeiro ou os vínculos N:N. */
+function extratoParaAnalise() {
+    if (!extratoSelecionado) {
+        return null;
+    }
+    const row = document.getElementById('extrato-' + extratoSelecionado);
+    return row ? {
+        tipo: row.dataset.extratoTipo,
+        data: row.dataset.extratoData,
+        valor: numeroSeguro(row.dataset.extratoValor),
+        documento: row.dataset.extratoDocumento,
+        descricao: row.dataset.extratoDescricao
+    } : null;
+}
+
+function avaliarCorrespondenciaLancamento(row, extrato = extratoParaAnalise()) {
+    if (!extrato || !window.JSPConciliacaoMatch) {
+        return null;
+    }
+    const ds = row.dataset;
+    return window.JSPConciliacaoMatch.avaliar(extrato, {
+        tipo: ds.lancamentoTipo,
+        status: ds.lancamentoStatus,
+        valor: ds.valorDisponivel,
+        descricao: ds.lancamentoDescricao,
+        dataLancamento: ds.dataLancamento,
+        dataVencimento: ds.dataVencimento,
+        dataPagamento: ds.dataPagamento,
+        clienteNome: ds.clienteNome,
+        clienteRazao: ds.clienteRazao,
+        clienteFantasia: ds.clienteFantasia,
+        documentoCliente: ds.clienteDocumento,
+        fornecedorNome: ds.fornecedorNome,
+        fornecedorFantasia: ds.fornecedorFantasia,
+        documentoFornecedor: ds.fornecedorDocumento
+    });
+}
+
 function aplicarVisibilidadeSugestoes() {
     const extrato = extratoSelecionado
         ? document.getElementById('extrato-' + extratoSelecionado)
@@ -2587,26 +2635,36 @@ function aplicarVisibilidadeSugestoes() {
         document.getElementById('mostrar-sugestoes-ocultas')?.checked
     );
     let totalConfigurado = 0;
+    let totalCompativeis = 0;
 
     document.querySelectorAll('.lancamento-row').forEach(row => {
         const meses = (row.dataset.ocultarCompetencias || '')
             .split(',')
             .filter(Boolean);
-        const configurado = competencia && meses.includes(competencia);
-        if (configurado) {
-            totalConfigurado += 1;
-        }
-        const ocultar = Boolean(configurado && !revelar);
-        row.hidden = ocultar;
-        row.style.display = ocultar ? 'none' : '';
-
+        const configurado = Boolean(competencia && meses.includes(competencia));
+        const avaliacao = avaliarCorrespondenciaLancamento(row);
         const check = row.querySelector('.lancamento-checkbox');
         if (!check) {
             return;
         }
-        const compativel = extratoSelecionado && lancamentoCompativel(
+
+        const compativel = Boolean(extrato && lancamentoCompativel(
             tipoExtratoSelecionado, check.dataset.tipo
+        ));
+        // Naturezas incompatíveis jamais são oferecidas para seleção.
+        // As demais exclusões são somente visuais e reversíveis pelo controle.
+        const ocultavel = compativel && (
+            configurado || Boolean(avaliacao && avaliacao.ocultarPadrao)
         );
+        if (ocultavel) {
+            totalConfigurado += 1;
+        }
+        const ocultar = Boolean(extrato && (
+            !compativel || (ocultavel && !revelar)
+        ));
+        row.hidden = ocultar;
+        row.style.display = ocultar ? 'none' : '';
+
         if (ocultar) {
             check.checked = false;
             const input = obterInputValorConciliar(check);
@@ -2615,6 +2673,9 @@ function aplicarVisibilidadeSugestoes() {
             }
         }
         check.disabled = ocultar || !compativel;
+        if (compativel && !ocultar) {
+            totalCompativeis += 1;
+        }
     });
 
     const painel = document.getElementById('painel-sugestoes-ocultas');
@@ -2625,9 +2686,19 @@ function aplicarVisibilidadeSugestoes() {
     if (contador) {
         contador.textContent = String(totalConfigurado);
     }
+    const aviso = document.getElementById('aviso-correspondencias');
+    if (aviso) {
+        aviso.hidden = !extrato || totalCompativeis > 0;
+    }
 }
 
 function selecionarExtrato(extratoId) {
+    if (extratoSelecionado !== extratoId) {
+        const mostrar = document.getElementById('mostrar-sugestoes-ocultas');
+        if (mostrar) {
+            mostrar.checked = false;
+        }
+    }
     document.querySelectorAll('.extrato-row').forEach(row => {
         row.classList.remove('selected');
     });
@@ -3155,365 +3226,64 @@ function limparBadgesMatch() {
         });
 }
 
-function normalizarTextoMatch(valor) {
-    return String(valor ?? '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
-
-function somenteDigitosMatch(valor) {
-    return String(valor ?? '').replace(/\D+/g, '');
-}
-
-function tokensSignificativosMatch(valor) {
-    const ignorar = new Set([
-        'ltda', 'me', 'eireli', 'sa', 'cia',
-        'de', 'da', 'do', 'das', 'dos', 'e',
-        'pix', 'transf', 'transferencia',
-        'recebida', 'recebido', 'pagamento'
-    ]);
-
-    return normalizarTextoMatch(valor)
-        .split(' ')
-        .filter(token => (
-            token.length >= 3 &&
-            !ignorar.has(token)
-        ));
-}
-
-function pontuacaoEntidadeLancamento(row) {
-    if (!extratoSelecionado || !row) {
-        return 0;
-    }
-
-    const extratoRow = document.getElementById(
-        'extrato-' + extratoSelecionado
-    );
-
-    if (!extratoRow) {
-        return 0;
-    }
-
-    const textoExtrato = normalizarTextoMatch([
-        extratoRow.dataset.extratoDocumento || '',
-        extratoRow.dataset.extratoDescricao || ''
-    ].join(' '));
-
-    if (!textoExtrato) {
-        return 0;
-    }
-
-    const documentoExtrato = somenteDigitosMatch(
-        extratoRow.dataset.extratoDocumento
-    );
-
-    const documentoCliente = somenteDigitosMatch(
-        row.dataset.clienteDocumento
-    );
-
-    if (
-        documentoExtrato.length >= 8 &&
-        documentoCliente.length >= 8 &&
-        documentoExtrato === documentoCliente
-    ) {
-        return 350000;
-    }
-
-    const identidades = [
-        row.dataset.clienteNome || '',
-        row.dataset.clienteRazao || '',
-        row.dataset.clienteFantasia || '',
-        row.dataset.lancamentoDocumento || ''
-    ]
-        .map(normalizarTextoMatch)
-        .filter(valor => valor.length >= 4);
-
-    for (const identidade of identidades) {
-        if (
-            textoExtrato.includes(identidade) ||
-            identidade.includes(textoExtrato)
-        ) {
-            return 250000;
-        }
-    }
-
-    const tokensExtrato = new Set(
-        tokensSignificativosMatch(textoExtrato)
-    );
-
-    let maiorSobreposicao = 0;
-    let maiorToken = 0;
-
-    for (const identidade of identidades) {
-        const tokensIdentidade =
-            tokensSignificativosMatch(identidade);
-
-        let sobreposicao = 0;
-
-        for (const token of tokensIdentidade) {
-            if (tokensExtrato.has(token)) {
-                sobreposicao += 1;
-                maiorToken = Math.max(
-                    maiorToken,
-                    token.length
-                );
-            }
-        }
-
-        maiorSobreposicao = Math.max(
-            maiorSobreposicao,
-            sobreposicao
-        );
-    }
-
-    if (maiorSobreposicao >= 2) {
-        return 180000;
-    }
-
-    if (
-        maiorSobreposicao === 1 &&
-        maiorToken >= 5
-    ) {
-        return 50000;
-    }
-
-    return 0;
-}
-
+/* A classificação e a pontuação usam os mesmos indícios.
+ * Não existe "melhor candidato" se nenhum registro tiver indícios.
+ */
 function scoreLancamentoMatch(row) {
-    const check = row.querySelector(
-        '.lancamento-checkbox'
-    );
-
-    if (!check) {
+    if (row.hidden) {
         return -999999;
     }
-
-    /*
-     * Incompativel fica no fim.
-     */
-    const compativel =
-        !check.disabled ||
-        lancamentoCompativel(
-            tipoExtratoSelecionado,
-            check.dataset.tipo
-        );
-
-    if (!compativel) {
-        return -999999;
-    }
-
-    const valorLancamento = numeroSeguro(
-        check.dataset.valorDisponivel
-    );
-
-    const valorExtrato =
-        valorExtratoSelecionado;
-
-    const diferencaValor = Math.abs(
-        valorLancamento -
-        valorExtrato
-    );
-
-    const dataExtrato =
-        obterDataExtratoSelecionado();
-
-    const dataLancamento =
-        row.dataset.dataLancamento || '';
-
-    const dataVencimento =
-        row.dataset.dataVencimento || '';
-
-    const diasLancamento =
-        diferencaDias(
-            dataExtrato,
-            dataLancamento
-        );
-
-    const diasVencimento =
-        diferencaDias(
-            dataExtrato,
-            dataVencimento
-        );
-
-    const dias = Math.min(
-        diasLancamento,
-        diasVencimento
-    );
-
-    let score = 0;
-
-    /*
-     * Identidade do pagador/cliente e o sinal mais forte.
-     * Valor e data continuam relevantes, mas nao devem
-     * colocar outro cliente acima de um nome/documento
-     * claramente compativel com o extrato.
-     */
-    score += pontuacaoEntidadeLancamento(row);
-
-    /*
-     * Mesmo valor continua sendo um sinal forte.
-     */
-    if (diferencaValor <= 0.005) {
-        score += 100000;
-    } else {
-        /*
-         * Quanto menor a diferenca,
-         * melhor o candidato.
-         */
-        score += Math.max(
-            0,
-            20000 - diferencaValor * 10
-        );
-    }
-
-    /*
-     * Data proxima ajuda, mas nunca supera
-     * um casamento exato de valor.
-     */
-    score += Math.max(
-        0,
-        5000 - dias * 80
-    );
-
-    return score;
+    const avaliacao = avaliarCorrespondenciaLancamento(row);
+    return avaliacao && avaliacao.compativel
+        ? avaliacao.pontuacao
+        : -999999;
 }
 
 function ordenarPorMelhorCorrespondencia() {
     const linhas = Array.from(
-        document.querySelectorAll(
-            '.lancamento-row'
-        )
+        document.querySelectorAll('.lancamento-row')
     );
-
     if (!linhas.length) {
         return;
     }
 
     limparBadgesMatch();
+    const tbody = linhas[0].parentElement;
+    linhas.sort((a, b) => scoreLancamentoMatch(b) - scoreLancamentoMatch(a));
+    linhas.forEach(row => tbody.appendChild(row));
 
-    const tbody =
-        linhas[0].parentElement;
-
-    linhas.sort((a, b) => {
-        return (
-            scoreLancamentoMatch(b) -
-            scoreLancamentoMatch(a)
-        );
+    if (!extratoSelecionado) {
+        return;
+    }
+    const relevantes = linhas.filter(row => {
+        const check = row.querySelector('.lancamento-checkbox');
+        return !row.hidden && check &&
+            lancamentoCompativel(tipoExtratoSelecionado, check.dataset.tipo);
     });
 
-    linhas.forEach(
-        row => tbody.appendChild(row)
-    );
-
-    /*
-     * Marca visualmente os melhores.
-     */
-    const compativeis = linhas.filter(
-        row => {
-            const check = row.querySelector(
-                '.lancamento-checkbox'
-            );
-
-            return (
-                !row.hidden &&
-                check &&
-                lancamentoCompativel(
-                    tipoExtratoSelecionado,
-                    check.dataset.tipo
-                )
-            );
+    // Exibimos no máximo três evidências, não necessariamente três candidatos.
+    relevantes.filter(row => {
+        const avaliacao = avaliarCorrespondenciaLancamento(row);
+        return avaliacao && avaliacao.badge;
+    }).slice(0, 3).forEach(row => {
+        const avaliacao = avaliarCorrespondenciaLancamento(row);
+        const descricao = row.querySelector('td:nth-child(2)');
+        if (!descricao || !avaliacao || !avaliacao.badge) {
+            return;
         }
-    );
-
-    compativeis
-        .slice(0, 3)
-        .forEach((row, index) => {
-
-            const check = row.querySelector(
-                '.lancamento-checkbox'
-            );
-
-            const valor = numeroSeguro(
-                check.dataset.valorDisponivel
-            );
-
-            const diferenca = Math.abs(
-                valor -
-                valorExtratoSelecionado
-            );
-
-            const entidadeScore =
-                pontuacaoEntidadeLancamento(row);
-
-            const descricao =
-                row.querySelector(
-                    'td:nth-child(2)'
-                );
-
-            if (!descricao) {
-                return;
-            }
-
-            const badge =
-                document.createElement(
-                    'span'
-                );
-
-            badge.className =
-                'match-badge';
-
-            if (entidadeScore >= 180000) {
-                badge.classList.add(
-                    'entidade'
-                );
-
-                badge.textContent =
-                    'Cliente compatível';
-
-                row.classList.add(
-                    'match-entidade'
-                );
-
-            } else if (diferenca <= 0.005) {
-                badge.classList.add(
-                    'exato'
-                );
-
-                badge.textContent =
-                    'Valor igual';
-
-                row.classList.add(
-                    'match-exato'
-                );
-
-            } else if (index === 0) {
-                badge.classList.add(
-                    'proximo'
-                );
-
-                badge.textContent =
-                    'Melhor candidato';
-
-                row.classList.add(
-                    'match-top'
-                );
-
-            } else {
-                badge.textContent =
-                    'Sugestao';
-            }
-
-            descricao.appendChild(
-                badge
-            );
-        });
+        const badge = document.createElement('span');
+        badge.className = 'match-badge';
+        badge.textContent = avaliacao.badge;
+        if (avaliacao.classe === 'entidade') {
+            badge.classList.add('entidade');
+            row.classList.add('match-entidade');
+        } else if (avaliacao.classe === 'exato') {
+            badge.classList.add('exato');
+            row.classList.add('match-exato');
+        }
+        descricao.appendChild(badge);
+    });
 }
-
 
 function ordenarLancamentos(criterio) {
     if (criterio === 'match') {
