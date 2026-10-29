@@ -2611,7 +2611,7 @@ function avaliarCorrespondenciaLancamento(row, extrato = extratoParaAnalise()) {
     return window.JSPConciliacaoMatch.avaliar(extrato, {
         tipo: ds.lancamentoTipo,
         status: ds.lancamentoStatus,
-        valor: ds.valorDisponivel,
+        valor: row.querySelector('.lancamento-checkbox')?.dataset.valorDisponivel,
         descricao: ds.lancamentoDescricao,
         dataLancamento: ds.dataLancamento,
         dataVencimento: ds.dataVencimento,
