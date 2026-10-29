@@ -619,7 +619,8 @@ def executar_conciliacao_orm(
                 criados += 1
                 continue
 
-            if bool(existente.ativo):
+            estava_ativo = bool(existente.ativo)
+            if estava_ativo:
                 valor_atual = _valor_monetario(
                     existente.valor_conciliado,
                     "valor_conciliado_existente",
@@ -631,16 +632,33 @@ def executar_conciliacao_orm(
                 ).quantize(CENTAVO)
 
             else:
+                # Um par inativo pode ser usado novamente (UNIQUE extrato +
+                # lancamento), mas o historico de desvinculacao permanece.
                 existente.ativo = True
-                existente.valor_conciliado = (
-                    alocacao.valor
+                existente.valor_conciliado = alocacao.valor
+                existente.data_conciliacao = datetime.utcnow()
+                auditoria = (
+                    f"Reconciliado em {existente.data_conciliacao:%Y-%m-%d %H:%M:%S} "
+                    f"UTC por {usuario or 'usuario nao identificado'}. "
+                    f"Novo valor: R$ {alocacao.valor:.2f}."
+                )
+                anterior = str(existente.observacoes or "").strip()
+                existente.observacoes = (
+                    f"{anterior}\n{auditoria}" if anterior else auditoria
                 )
 
             if usuario is not None:
                 existente.usuario = usuario
 
             if observacoes is not None:
-                existente.observacoes = observacoes
+                nota_nova = str(observacoes).strip()
+                if nota_nova:
+                    # Nunca sobrescrever a trilha de desfazimento/reconciliacao.
+                    anterior = str(existente.observacoes or "").strip()
+                    existente.observacoes = (
+                        f"{anterior}\nNova observacao: {nota_nova}"
+                        if anterior else nota_nova
+                    )
 
             atualizados += 1
 
