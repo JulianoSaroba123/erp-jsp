@@ -650,10 +650,14 @@ def executar_conciliacao_orm(
                 existente.usuario = usuario
 
             if observacoes is not None:
-                if estava_ativo:
-                    existente.observacoes = observacoes
-                else:
-                    existente.observacoes += f"\nNova observacao: {observacoes}"
+                nota_nova = str(observacoes).strip()
+                if nota_nova:
+                    # Nunca sobrescrever a trilha de desfazimento/reconciliacao.
+                    anterior = str(existente.observacoes or "").strip()
+                    existente.observacoes = (
+                        f"{anterior}\nNova observacao: {nota_nova}"
+                        if anterior else nota_nova
+                    )
 
             atualizados += 1
 
