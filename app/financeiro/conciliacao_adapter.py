@@ -235,6 +235,36 @@ def desfazer_conciliacao_bancaria(
         if extrato is None:
             raise ConciliacaoInvalida("Extrato inexistente ou inativo.")
 
+        # O reconciliador atualiza receitas de propostas e pode refletir
+        # baixas de OS. Sem estorno integrado de cada origem, impedir que
+        # a reversao bancaria deixe o titulo como recebido sem lastro.
+        if extrato.tipo_movimento != "debito":
+            raise ConciliacaoInvalida(
+                "Desconciliacao de creditos exige reversao financeira "
+                "especifica. Nao foi alterado nenhum vinculo."
+            )
+
+        # Mesma ordem de locks do conciliador N:N: extrato, titulos e itens.
+        # Isso evita que outra conciliacao reutilize o saldo do titulo
+        # simultaneamente ao desfazer deste vinculo.
+        ids_vinculados = {
+            linha[0]
+            for linha in db.session.query(
+                ConciliacaoBancariaItem.lancamento_id
+            ).filter(
+                ConciliacaoBancariaItem.extrato_id == extrato_id
+            ).all()
+        }
+        if extrato.lancamento_id is not None:
+            ids_vinculados.add(extrato.lancamento_id)
+
+        if ids_vinculados:
+            db.session.query(LancamentoFinanceiro).filter(
+                LancamentoFinanceiro.id.in_(sorted(ids_vinculados))
+            ).order_by(
+                LancamentoFinanceiro.id
+            ).with_for_update().all()
+
         itens = (
             db.session.query(ConciliacaoBancariaItem)
             .filter(ConciliacaoBancariaItem.extrato_id == extrato_id)
