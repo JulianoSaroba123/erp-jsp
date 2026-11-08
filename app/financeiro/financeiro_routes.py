@@ -618,7 +618,13 @@ def atualizar_lancamento(id):
         
         if not lancamento.recorrente:
             lancamento.frequencia = None
-        
+
+        # Sincroniza a parcela vinculada na mesma transação da edição.
+        from app.ordem_servico.sincronizacao_financeira import (
+            sincronizar_parcela_os_recebida,
+        )
+        sincronizar_parcela_os_recebida(db.session, lancamento)
+
         db.session.commit()
         
         flash(f'Lançamento "{lancamento.descricao}" atualizado com sucesso!', 'success')
