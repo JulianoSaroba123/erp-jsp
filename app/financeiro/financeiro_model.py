@@ -418,6 +418,13 @@ class LancamentoFinanceiro(BaseModel):
                 elif self.tipo in ['despesa', 'conta_pagar']:
                     conta.atualizar_saldo(self.valor, 'subtrair')
         
+        # Ao quitar um recebível ligado à OS, atualizar a mesma parcela
+        # antes do commit. Nenhuma movimentação adicional é criada.
+        if self.ordem_servico_parcela_id and status_destino == 'recebido':
+            from app.ordem_servico.sincronizacao_financeira import (
+                sincronizar_parcela_os_recebida,
+            )
+            sincronizar_parcela_os_recebida(db.session, self)
         db.session.commit()
     
     def cancelar(self, usuario=None, motivo=None):
