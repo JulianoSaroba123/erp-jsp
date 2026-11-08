@@ -160,6 +160,57 @@ def _finalizar_baixas_proposta(
             )
 
 
+def _finalizar_baixas_os(
+    *,
+    session,
+    extrato,
+    lancamentos,
+    preparacao,
+    conciliado_por_lancamento,
+    usuario=None,
+):
+    """Recebíveis da OS: apenas alocação integral; sem novo crédito bancário."""
+    if extrato.tipo_movimento != "credito":
+        return
+
+    for alocacao in preparacao.alocacoes:
+        lancamento = lancamentos.get(alocacao.lancamento_id)
+        if (
+            lancamento is None
+            or not getattr(lancamento, "ordem_servico_parcela_id", None)
+            or str(getattr(lancamento, "origem", "") or "").upper() != "ORDEM_SERVICO"
+        ):
+            continue
+        if lancamento.tipo != "conta_receber":
+            continue
+        # Import apenas quando ha OS real. Testes legados usam models
+        # simplificados e nao devem carregar o mapeamento completo de OS.
+        from app.ordem_servico.sincronizacao_financeira import (
+            sincronizar_parcela_os_recebida,
+        )
+        total_depois = _dinheiro(
+            conciliado_por_lancamento.get(lancamento.id, 0)
+        ) + _dinheiro(alocacao.valor)
+        if total_depois != abs(_dinheiro(lancamento.valor)):
+            # Recebimento parcial não quita a parcela.
+            continue
+        if lancamento.status == "pendente":
+            # O crédito importado já existe: proibir segundo delta de saldo.
+            lancamento.sem_movimentacao_bancaria = True
+            lancamento.status = "recebido"
+            lancamento.data_pagamento = extrato.data_movimento
+            lancamento.conta_bancaria_id = extrato.conta_bancaria_id
+            if usuario:
+                lancamento.usuario_editor = str(usuario)
+        sincronizar_parcela_os_recebida(session, lancamento)
+
+
+def _finalizar_baixas_comerciais(**kwargs):
+    """Mantém rotina de propostas e acrescenta baixa de parcelas de OS."""
+    _finalizar_baixas_proposta(**kwargs)
+    _finalizar_baixas_os(**kwargs)
+
+
 def executar_conciliacao_bancaria(
     extrato_id,
     alocacoes,
@@ -170,8 +221,8 @@ def executar_conciliacao_bancaria(
     Executa a conciliacao bancaria usando os models e a sessao reais do ERP.
 
     Validacao e persistencia continuam centralizadas no motor N:N.
-    O adaptador acrescenta apenas a sincronizacao transacional
-    de recebiveis originados por PROPOSTA.
+    O adaptador sincroniza recebiveis originados por PROPOSTA e OS
+    na mesma transacao de conciliacao N:N.
     """
 
     return executar_conciliacao_orm(
@@ -184,7 +235,7 @@ def executar_conciliacao_bancaria(
         usuario=usuario,
         observacoes=observacoes,
         finalizador_transacional=(
-            _finalizar_baixas_proposta
+            _finalizar_baixas_comerciais
         ),
     )
 

@@ -508,3 +508,120 @@ def test_quitacao_total_preserva_status_operacional(caso_jumirim_ficticio, statu
         assert calcular_dre(titulos)['receita_bruta'] == Decimal('0.00')
         db.session.expire_all()
         assert db.session.get(ContaBancaria, ids['conta']).saldo_atual == Decimal('15000.00')
+
+
+# Sincronização bidirecional OS <-> Financeiro (nov/2026).
+def test_financeiro_recebido_sincroniza_parcela_e_status_os(caso_jumirim_ficticio):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        from app.ordem_servico.sincronizacao_financeira import (
+            sincronizar_parcela_os_recebida,
+        )
+        ordem = db.session.get(OrdemServico, ids["os"])
+        gerar_lancamento_ordem_servico(ordem)
+        titulo = LancamentoFinanceiro.query.filter_by(
+            ordem_servico_parcela_id=ids["parcelas"][0],
+        ).one()
+        titulo.status = "recebido"
+        titulo.data_pagamento = date(2026, 9, 17)
+        titulo.sem_movimentacao_bancaria = True
+        assert sincronizar_parcela_os_recebida(db.session, titulo) is True
+        assert sincronizar_parcela_os_recebida(db.session, titulo) is False
+        db.session.commit()
+        db.session.expire_all()
+        parcela = db.session.get(OrdemServicoParcela, ids["parcelas"][0])
+        assert parcela.pago is True
+        assert parcela.data_pagamento == date(2026, 9, 17)
+        assert db.session.get(OrdemServico, ids["os"]).status_pagamento == "parcial"
+
+
+def test_conciliacao_integral_recebe_os_sem_criar_segundo_credito(caso_jumirim_ficticio):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        from app.financeiro.conciliacao_adapter import executar_conciliacao_bancaria
+        from app.financeiro.conciliacao_service import SolicitacaoAlocacao
+        ordem = db.session.get(OrdemServico, ids["os"])
+        gerar_lancamento_ordem_servico(ordem)
+        titulo = LancamentoFinanceiro.query.filter_by(
+            ordem_servico_parcela_id=ids["parcelas"][0],
+        ).one()
+        assert titulo.status == "pendente"
+        resultado = executar_conciliacao_bancaria(
+            ids["extrato"],
+            [SolicitacaoAlocacao(
+                lancamento_id=titulo.id, valor=Decimal("15000.00"),
+            )],
+            usuario="teste-sincronizacao",
+        )
+        assert resultado.preparacao.status_final == "CONCILIADO"
+        db.session.expire_all()
+        titulo = db.session.get(LancamentoFinanceiro, titulo.id)
+        assert titulo.status == "recebido"
+        assert titulo.data_pagamento == date(2026, 9, 17)
+        assert titulo.sem_movimentacao_bancaria is True
+        assert db.session.get(OrdemServicoParcela, ids["parcelas"][0]).pago is True
+        assert db.session.get(OrdemServico, ids["os"]).status_pagamento == "parcial"
+        assert db.session.get(ContaBancaria, ids["conta"]).saldo_atual == Decimal("15000.00")
+
+
+def test_conciliacao_parcial_nao_quita_parcela(caso_jumirim_ficticio):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        from app.financeiro.conciliacao_adapter import executar_conciliacao_bancaria
+        from app.financeiro.conciliacao_service import SolicitacaoAlocacao
+        gerar_lancamento_ordem_servico(db.session.get(OrdemServico, ids["os"]))
+        titulo = LancamentoFinanceiro.query.filter_by(
+            ordem_servico_parcela_id=ids["parcelas"][0],
+        ).one()
+        resultado = executar_conciliacao_bancaria(
+            ids["extrato"],
+            [SolicitacaoAlocacao(
+                lancamento_id=titulo.id, valor=Decimal("5000.00"),
+            )],
+            usuario="teste-parcial",
+        )
+        assert resultado.preparacao.status_final == "PARCIAL"
+        db.session.expire_all()
+        assert db.session.get(LancamentoFinanceiro, titulo.id).status == "pendente"
+        assert db.session.get(OrdemServicoParcela, ids["parcelas"][0]).pago is False
+
+
+def test_bloqueia_divergencia_valor_sem_baixa(caso_jumirim_ficticio):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        from app.ordem_servico.sincronizacao_financeira import (
+            sincronizar_parcela_os_recebida, SincronizacaoParcelaInvalida,
+        )
+        ordem = db.session.get(OrdemServico, ids["os"])
+        gerar_lancamento_ordem_servico(ordem)
+        titulo = LancamentoFinanceiro.query.filter_by(
+            ordem_servico_parcela_id=ids["parcelas"][0],
+        ).one()
+        titulo.valor = Decimal("14000.00")
+        titulo.status = "recebido"
+        titulo.data_pagamento = date(2026, 9, 17)
+        with pytest.raises(SincronizacaoParcelaInvalida, match="Valor"):
+            sincronizar_parcela_os_recebida(db.session, titulo)
+        db.session.rollback()
+        assert db.session.get(OrdemServicoParcela, ids["parcelas"][0]).pago is False
+
+
+def test_bloqueia_data_conflitante_preservando_pagamento(caso_jumirim_ficticio):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        from app.ordem_servico.sincronizacao_financeira import (
+            sincronizar_parcela_os_recebida, SincronizacaoParcelaInvalida,
+        )
+        ordem = db.session.get(OrdemServico, ids["os"])
+        gerar_lancamento_ordem_servico(ordem)
+        titulo = LancamentoFinanceiro.query.filter_by(
+            ordem_servico_parcela_id=ids["parcelas"][0],
+        ).one()
+        parcela = db.session.get(OrdemServicoParcela, ids["parcelas"][0])
+        parcela.pago = True
+        parcela.data_pagamento = date(2026, 9, 16)
+        titulo.status = "recebido"
+        titulo.data_pagamento = date(2026, 9, 17)
+        with pytest.raises(SincronizacaoParcelaInvalida, match="data"):
+            sincronizar_parcela_os_recebida(db.session, titulo)
+        db.session.rollback()
