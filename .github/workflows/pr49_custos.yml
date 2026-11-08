@@ -104,7 +104,7 @@ jobs:
       - name: Compor árvore temporária com versão revisada da PR48 (sem merge)
         run: |
           git fetch origin bee214378a91c786111f86cc3cfbbe4edb03d416
-          git diff --binary 15a140a7e42da8ffbc60736a5c6fd35d72b0e798 FETCH_HEAD > /tmp/pr48.patch
+          git diff --binary 15a140a7e42da8ffbc60736a5c6fd35d72b0e798 FETCH_HEAD -- . ':!.github/workflows/pr46_os_financeiro.yml' > /tmp/pr48.patch
           git apply --3way /tmp/pr48.patch
       - run: python -m pip install -r requirements.txt pytest
       - name: Custos, etapas e migrações coexistem sem reconhecimento ou caixa duplicado
