@@ -173,10 +173,6 @@ def _finalizar_baixas_os(
     if extrato.tipo_movimento != "credito":
         return
 
-    from app.ordem_servico.sincronizacao_financeira import (
-        sincronizar_parcela_os_recebida,
-    )
-
     for alocacao in preparacao.alocacoes:
         lancamento = lancamentos.get(alocacao.lancamento_id)
         if (
@@ -187,6 +183,11 @@ def _finalizar_baixas_os(
             continue
         if lancamento.tipo != "conta_receber":
             continue
+        # Import apenas quando ha OS real. Testes legados usam models
+        # simplificados e nao devem carregar o mapeamento completo de OS.
+        from app.ordem_servico.sincronizacao_financeira import (
+            sincronizar_parcela_os_recebida,
+        )
         total_depois = _dinheiro(
             conciliado_por_lancamento.get(lancamento.id, 0)
         ) + _dinheiro(alocacao.valor)
