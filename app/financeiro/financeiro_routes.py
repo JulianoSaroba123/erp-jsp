@@ -2448,7 +2448,10 @@ def _dados_projecao_segura(conta_id=None, periodo='30'):
 
     # O banco Cora tem referência documental auditada. Nunca substituir pela
     # variação mensal ou somar pagamentos já realizados outra vez.
-    saldo_bancario = obter_saldo_extrato(db.session)
+    from sqlalchemy import inspect
+    saldo_bancario = (obter_saldo_extrato(db.session)
+                     if inspect(db.engine).has_table('saldo_bancario_referencias')
+                     else None)
     avisos = []
     if saldo_bancario is not None and saldo_bancario['conta_id'] == conta_escolhida.id:
         saldo_inicial = saldo_bancario['saldo_extrato']
