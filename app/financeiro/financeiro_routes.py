@@ -2423,220 +2423,158 @@ def gerar_lancamentos_mes():
 
 # ==================== ROTAS DE FLUXO DE CAIXA ====================
 
+def _dados_projecao_segura(conta_id=None, periodo='30'):
+    """Uma única fonte de dados para painel e Excel; sem escrita no ERP."""
+    from datetime import datetime, date, timedelta
+    from zoneinfo import ZoneInfo
+    from app.financeiro.financeiro_model import CustoFixo
+    from app.financeiro.projecao_recorrentes_service import gerar_previsao
+    from app.financeiro.saldo_extrato_service import obter_saldo_extrato
+
+    dias = int(periodo) if str(periodo) in ('30', '60', '90') else 30
+    hoje = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+    fim = hoje + timedelta(days=dias)
+    todas_contas = ContaBancaria.query.filter_by(ativo=True).order_by(ContaBancaria.id).all()
+    if not todas_contas:
+        raise ValueError("Nenhuma conta bancária ativa cadastrada.")
+    conta_escolhida = next((c for c in todas_contas if c.id == conta_id), None)
+    if conta_id is not None and conta_escolhida is None:
+        raise ValueError("Conta bancária informada não está ativa.")
+    if conta_escolhida is None:
+        conta_escolhida = next(
+            (c for c in todas_contas if 'cora' in (c.nome or '').lower()),
+            todas_contas[0],
+        )
+
+    # O banco Cora tem referência documental auditada. Nunca substituir pela
+    # variação mensal ou somar pagamentos já realizados outra vez.
+    saldo_bancario = obter_saldo_extrato(db.session)
+    avisos = []
+    if saldo_bancario is not None and saldo_bancario['conta_id'] == conta_escolhida.id:
+        saldo_inicial = saldo_bancario['saldo_extrato']
+        data_extrato = saldo_bancario['data_ultimo_extrato']
+        if saldo_bancario['pendentes']:
+            avisos.append(
+                f"{saldo_bancario['pendentes']} extrato(s) ainda sem conciliação; "
+                "o saldo já considera os movimentos bancários importados."
+            )
+        if saldo_bancario['diferenca_interna'] != 0:
+            avisos.append(
+                "Divergência entre saldo bancário por extrato e saldo interno armazenado: "
+                f"{saldo_bancario['diferenca_fmt']}. Revisar antes de decisões."
+            )
+    else:
+        saldo_inicial = conta_escolhida.saldo_atual
+        data_extrato = None
+        avisos.append(
+            "Esta conta não possui checkpoint bancário auditado. "
+            "O saldo inicial é o campo interno cadastrado; confira com o banco."
+        )
+
+    inicio_mes = date(hoje.year, hoje.month, 1)
+    titulos = LancamentoFinanceiro.query.filter(
+        LancamentoFinanceiro.ativo.is_(True),
+        db.or_(
+            db.and_(
+                LancamentoFinanceiro.data_vencimento >= inicio_mes,
+                LancamentoFinanceiro.data_vencimento <= fim,
+            ),
+            db.and_(
+                LancamentoFinanceiro.data_pagamento >= inicio_mes,
+                LancamentoFinanceiro.data_pagamento <= fim,
+            )
+        )
+    ).all()
+    custos = CustoFixo.query.filter(CustoFixo.ativo.is_(True)).all()
+    projecao = gerar_previsao(
+        hoje=hoje, dias=dias, saldo_inicial=saldo_inicial,
+        conta_id=conta_escolhida.id, custos=custos, lancamentos=titulos,
+    )
+    projecao.update({
+        'alertas': projecao['dias_saldo_negativo'],
+        'avisos_projecao': avisos + projecao['alertas'],
+        'data_extrato': data_extrato,
+        'contas': todas_contas,
+        'conta_id': conta_escolhida.id,
+        'periodo': str(dias),
+        'data_hoje': hoje,
+    })
+    return projecao
+
+
 @bp_financeiro.route('/fluxo-caixa')
 def fluxo_caixa():
-    """Dashboard de Fluxo de Caixa Projetado."""
+    """Projeção auditável 30/60/90 dias com títulos e custos fixos virtuais."""
     try:
-        from datetime import timedelta
-        from app.financeiro.financeiro_model import CustoFixo
-        
-        # Filtros
+        periodo = request.args.get('periodo', '30')
         conta_id = request.args.get('conta_id', type=int)
-        periodo = request.args.get('periodo', '30')  # 30, 60, 90 dias
-        
-        # Data inicial e final
-        data_hoje = date.today()
-        if periodo == '30':
-            data_fim = data_hoje + timedelta(days=30)
-        elif periodo == '60':
-            data_fim = data_hoje + timedelta(days=60)
-        elif periodo == '90':
-            data_fim = data_hoje + timedelta(days=90)
-        else:
-            data_fim = data_hoje + timedelta(days=30)
-        
-        # Saldo inicial (soma de todas as contas ou conta específica)
-        query_saldo = ContaBancaria.query.filter_by(ativo=True)
-        if conta_id:
-            query_saldo = query_saldo.filter_by(id=conta_id)
-        
-        contas = query_saldo.all()
-        saldo_inicial = sum(conta.saldo_atual for conta in contas)
-        
-        # Buscar lançamentos futuros
-        query_lancamentos = LancamentoFinanceiro.query.filter(
-            LancamentoFinanceiro.data_vencimento >= data_hoje,
-            LancamentoFinanceiro.data_vencimento <= data_fim,
-            LancamentoFinanceiro.ativo == True
-        )
-        
-        if conta_id:
-            query_lancamentos = query_lancamentos.filter_by(conta_bancaria_id=conta_id)
-        
-        lancamentos = query_lancamentos.order_by(LancamentoFinanceiro.data_vencimento).all()
-        
-        # Calcular projeção dia a dia
-        projecao = []
-        saldo_acumulado = saldo_inicial
-        data_atual = data_hoje
-        
-        while data_atual <= data_fim:
-            # Lançamentos do dia
-            lancamentos_dia = [l for l in lancamentos if l.data_vencimento == data_atual]
-            
-            receitas_dia = sum(l.valor for l in lancamentos_dia if l.tipo == 'RECEITA')
-            despesas_dia = sum(l.valor for l in lancamentos_dia if l.tipo == 'DESPESA')
-            saldo_dia = receitas_dia - despesas_dia
-            saldo_acumulado += saldo_dia
-            
-            projecao.append({
-                'data': data_atual,
-                'receitas': receitas_dia,
-                'despesas': despesas_dia,
-                'saldo_dia': saldo_dia,
-                'saldo_acumulado': saldo_acumulado,
-                'lancamentos': lancamentos_dia
-            })
-            
-            data_atual += timedelta(days=1)
-        
-        # Identificar períodos de saldo negativo
-        alertas = [p for p in projecao if p['saldo_acumulado'] < 0]
-        
-        # Totais do período
-        total_receitas = sum(p['receitas'] for p in projecao)
-        total_despesas = sum(p['despesas'] for p in projecao)
-        saldo_final = projecao[-1]['saldo_acumulado'] if projecao else saldo_inicial
-        
-        # Buscar todas as contas para filtro
-        todas_contas = ContaBancaria.query.filter_by(ativo=True).all()
-        
-        return render_template('financeiro/fluxo_caixa/dashboard.html',
-                             projecao=projecao,
-                             saldo_inicial=saldo_inicial,
-                             saldo_final=saldo_final,
-                             total_receitas=total_receitas,
-                             total_despesas=total_despesas,
-                             alertas=alertas,
-                             contas=todas_contas,
-                             conta_id=conta_id,
-                             periodo=periodo,
-                             data_hoje=data_hoje,
-                             data_fim=data_fim)
-    
+        contexto = _dados_projecao_segura(conta_id, periodo)
+        return render_template('financeiro/fluxo_caixa/dashboard.html', **contexto)
     except Exception as e:
+        logger.exception("Falha ao construir fluxo de caixa projetado")
         flash(f'Erro ao carregar fluxo de caixa: {str(e)}', 'danger')
         return redirect(url_for('financeiro.dashboard'))
 
 
 @bp_financeiro.route('/fluxo-caixa/exportar-excel')
 def exportar_fluxo_excel():
-    """Exportar fluxo de caixa para Excel."""
+    """Exporta exatamente a mesma projeção do painel, sem regras paralelas."""
     try:
-        from datetime import timedelta
+        from datetime import datetime
         from io import BytesIO
         from flask import send_file
         import openpyxl
         from openpyxl.styles import Font, Alignment, PatternFill
-        
-        # Filtros
-        conta_id = request.args.get('conta_id', type=int)
-        periodo = request.args.get('periodo', '30')
-        
-        # Data inicial e final
-        data_hoje = date.today()
-        if periodo == '30':
-            data_fim = data_hoje + timedelta(days=30)
-        elif periodo == '60':
-            data_fim = data_hoje + timedelta(days=60)
-        else:
-            data_fim = data_hoje + timedelta(days=90)
-        
-        # Saldo inicial
-        query_saldo = ContaBancaria.query.filter_by(ativo=True)
-        if conta_id:
-            query_saldo = query_saldo.filter_by(id=conta_id)
-        
-        contas = query_saldo.all()
-        saldo_inicial = sum(conta.saldo_atual for conta in contas)
-        
-        # Buscar lançamentos
-        query_lancamentos = LancamentoFinanceiro.query.filter(
-            LancamentoFinanceiro.data_vencimento >= data_hoje,
-            LancamentoFinanceiro.data_vencimento <= data_fim,
-            LancamentoFinanceiro.ativo == True
+
+        contexto = _dados_projecao_segura(
+            request.args.get('conta_id', type=int),
+            request.args.get('periodo', '30'),
         )
-        
-        if conta_id:
-            query_lancamentos = query_lancamentos.filter_by(conta_bancaria_id=conta_id)
-        
-        lancamentos = query_lancamentos.order_by(LancamentoFinanceiro.data_vencimento).all()
-        
-        # Criar Excel
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = "Fluxo de Caixa"
-        
-        # Cabeçalho
-        ws.append(['FLUXO DE CAIXA PROJETADO'])
-        ws.append([f'Período: {data_hoje.strftime("%d/%m/%Y")} a {data_fim.strftime("%d/%m/%Y")}'])
-        ws.append([f'Saldo Inicial: R$ {saldo_inicial:,.2f}'.replace(',', '_').replace('.', ',').replace('_', '.')])
+        ws.append(["PROJEÇÃO DE CAIXA DA JSP (ESTIMATIVA, NÃO LUCRO)"])
+        ws.append([
+            f"Período: {contexto['data_hoje']:%d/%m/%Y} a "
+            f"{contexto['data_fim']:%d/%m/%Y}"
+        ])
+        ws.append([f"Saldo inicial conforme extrato/importação: R$ {contexto['saldo_inicial']:.2f}"])
         ws.append([])
-        
-        # Títulos das colunas
-        ws.append(['Data', 'Receitas', 'Despesas', 'Saldo do Dia', 'Saldo Acumulado'])
-        
-        # Estilizar cabeçalho
-        for cell in ws[5]:
-            cell.font = Font(bold=True)
-            cell.fill = PatternFill(start_color='0066CC', end_color='0066CC', fill_type='solid')
-            cell.font = Font(color='FFFFFF', bold=True)
-            cell.alignment = Alignment(horizontal='center')
-        
-        # Dados
-        saldo_acumulado = saldo_inicial
-        data_atual = data_hoje
-        
-        while data_atual <= data_fim:
-            lancamentos_dia = [l for l in lancamentos if l.data_vencimento == data_atual]
-            
-            receitas_dia = sum(l.valor for l in lancamentos_dia if l.tipo == 'RECEITA')
-            despesas_dia = sum(l.valor for l in lancamentos_dia if l.tipo == 'DESPESA')
-            saldo_dia = receitas_dia - despesas_dia
-            saldo_acumulado += saldo_dia
-            
+        ws.append(['Data','Entradas Pendentes','Saídas Previstas','Variação Dia','Saldo Projetado','Itens (pagamentos não realizados)'])
+        for linha in contexto['projecao']:
             ws.append([
-                data_atual.strftime('%d/%m/%Y'),
-                float(receitas_dia),
-                float(despesas_dia),
-                float(saldo_dia),
-                float(saldo_acumulado)
+                linha['data'],
+                linha['receitas'],
+                linha['despesas'],
+                linha['saldo_dia'],
+                linha['saldo_acumulado'],
+                "; ".join(l.descricao for l in linha['lancamentos']),
             ])
-            
-            # Colorir linha se saldo negativo
-            if saldo_acumulado < 0:
-                for cell in ws[ws.max_row]:
-                    cell.fill = PatternFill(start_color='FFE6E6', end_color='FFE6E6', fill_type='solid')
-            
-            data_atual += timedelta(days=1)
-        
-        # Ajustar largura das colunas
-        ws.column_dimensions['A'].width = 15
-        ws.column_dimensions['B'].width = 15
-        ws.column_dimensions['C'].width = 15
-        ws.column_dimensions['D'].width = 15
-        ws.column_dimensions['E'].width = 18
-        
-        # Formatar números como moeda
-        for row in range(6, ws.max_row + 1):
-            for col in ['B', 'C', 'D', 'E']:
-                ws[f'{col}{row}'].number_format = 'R$ #,##0.00'
-        
-        # Salvar em memória
-        output = BytesIO()
-        wb.save(output)
-        output.seek(0)
-        
-        filename = f'fluxo_caixa_{data_hoje.strftime("%Y%m%d")}.xlsx'
-        
+        for cel in ws[5]:
+            cel.font = Font(bold=True, color='FFFFFF')
+            cel.fill = PatternFill(start_color='164A70', end_color='164A70', fill_type='solid')
+        for coluna, largura in {'A':15,'B':20,'C':20,'D':18,'E':20,'F':70}.items():
+            ws.column_dimensions[coluna].width = largura
+        for linha in ws.iter_rows(min_row=6):
+            linha[0].number_format = 'DD/MM/YYYY'
+            for cel in linha[1:5]:
+                cel.number_format = 'R$ #,##0.00'
+        ws.append([])
+        ws.append(['AVISOS:'])
+        for alerta in contexto['avisos_projecao']:
+            ws.append([alerta])
+        ws.freeze_panes = 'A6'
+        saida = BytesIO()
+        wb.save(saida)
+        saida.seek(0)
         return send_file(
-            output,
+            saida,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
-            download_name=filename
+            download_name=f"fluxo_caixa_jsp_{contexto['data_hoje']:%Y%m%d}.xlsx",
         )
-    
     except Exception as e:
+        logger.exception("Falha ao exportar fluxo de caixa projetado")
         flash(f'Erro ao exportar: {str(e)}', 'danger')
         return redirect(url_for('financeiro.fluxo_caixa'))
 
