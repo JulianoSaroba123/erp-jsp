@@ -8,7 +8,9 @@ on:
       - 'app/painel/**'
       - 'migrations/versions/20261109_01_checkpoint_saldo_cora.py'
       - 'scripts_manutencao/testes/test_saldo_extrato_checkpoint.py'
-      - 'scripts_manutencao/testes/test_checkpoint_saldo_cora_migration.py'
+      - 'scripts_manutencao/testes/test_projecao_recorrentes.py'
+      - 'scripts_manutencao/testes/test_provisao_recorrentes_orm.py'
+      - 'scripts_manutencao/testes/test_checkpoint_saldo_cora_migration.py scripts_manutencao/testes/test_provisao_recorrentes_orm.py'
       - 'migrations/versions/20261026_01_os_recebimento_saldo_externo.py'
       - 'scripts_manutencao/testes/test_pr46_*.py'
       - 'scripts_manutencao/testes/test_atividade_*.py'
@@ -75,7 +77,9 @@ jobs:
             scripts_manutencao/testes/test_inativacao_os_eliana.py \
             scripts_manutencao/testes/test_conciliacao_visibilidade.py \
             scripts_manutencao/testes/test_conciliacao_inteligente.py \
-            scripts_manutencao/testes/test_saldo_extrato_checkpoint.py
+            scripts_manutencao/testes/test_saldo_extrato_checkpoint.py \
+            scripts_manutencao/testes/test_projecao_recorrentes.py \
+            scripts_manutencao/testes/test_provisao_recorrentes_orm.py
 
   concorrencia-postgresql:
     runs-on: ubuntu-latest
