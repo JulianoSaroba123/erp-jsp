@@ -44,7 +44,7 @@ def obter_saldo_extrato(session, *, data_limite=None):
         "FROM extratos_bancarios WHERE ativo=true "
         "AND conta_bancaria_id=:conta_id "
         "AND data_movimento>:inicio "
-        "AND (:limite IS NULL OR data_movimento<=:limite)"
+        "AND data_movimento<=:limite"
     ), {"conta_id": linha["conta_bancaria_id"],
         "inicio": linha["data_referencia"], "limite": limite}).mappings().one()
 
