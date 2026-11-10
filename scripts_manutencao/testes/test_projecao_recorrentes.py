@@ -138,3 +138,57 @@ def test_celular_e_vivo_sao_contas_distintas_sem_falso_positivo():
     assert q['qtd_recorrencias_estimadas'] == 2
     assert q['total_despesas'] == 181.71
 
+
+
+def test_aluguel_369_pago_em_10nov_nao_cria_segunda_saida():
+    """Cenário auditado: aluguel lançado, pago e extrato só até 09/11."""
+    from app.financeiro.projecao_recorrentes_service import saldo_provisorio_pos_extrato
+
+    hoje = date(2026, 11, 10)
+    aluguel = custo(1, 'Dr. Adinho Imoveis', 1000, 10, categoria='Aluguel')
+    lancamento_369 = titulo(
+        369, 1000, 'conta_pagar', 'pago', hoje,
+        'Reembolso de aluguel empresarial, 50%, novembro/2026',
+        pago=hoje,
+    )
+    banco_provisorio, quantidade, variacao = saldo_provisorio_pos_extrato(
+        saldo_extrato=Decimal('8508.77'),
+        data_extrato=date(2026, 11, 9), data_atual=hoje,
+        conta_id=1, lancamentos=[lancamento_369]
+    )
+    assert banco_provisorio == Decimal('7508.77')
+    assert quantidade == 1
+    assert variacao == Decimal('-1000.00')
+    previsao = calcular_cenario(
+        hoje, 60, [aluguel], [lancamento_369], inicial=banco_provisorio
+    )
+    assert previsao['qtd_recorrencias_estimadas'] == 1
+    assert previsao['total_despesas'] == 1000
+    assert previsao['saldo_final'] == 6508.77
+    assert any('possivelmente correspondente' in a for a in previsao['alertas'])
+    # Após extrato de 10/11, o débito já está no saldo bancário: não recomputar.
+    saldo_reconciliado, qtd, delta = saldo_provisorio_pos_extrato(
+        saldo_extrato=Decimal('7508.77'),
+        data_extrato=hoje, data_atual=hoje, conta_id=1,
+        lancamentos=[lancamento_369]
+    )
+    assert (saldo_reconciliado, qtd, delta) == (
+        Decimal('7508.77'), 0, Decimal('0.00')
+    )
+
+
+def test_saldo_pos_extrato_filtra_lancamento_ficticio_e_outro_banco():
+    from app.financeiro.projecao_recorrentes_service import saldo_provisorio_pos_extrato
+    data = date(2026, 11, 10)
+    registros = [
+        titulo(1, 50, 'conta_pagar', 'pendente', data, 'Pendente', pago=data),
+        titulo(2, 150, 'conta_pagar', 'pago', data, 'Outro banco', pago=data, conta=2),
+        titulo(3, 25, 'conta_receber', 'recebido', data, 'Recebido após extrato', pago=data),
+        titulo(4, 100, 'conta_pagar', 'pago', date(2026,11,9), 'Dia anterior',
+               pago=date(2026,11,9)),
+    ]
+    resultado = saldo_provisorio_pos_extrato(
+        saldo_extrato=Decimal('200.00'), data_extrato=date(2026,11,9),
+        data_atual=data, conta_id=1, lancamentos=registros
+    )
+    assert resultado == (Decimal('225.00'), 1, Decimal('25.00'))
