@@ -625,7 +625,8 @@ def preparar_payload_nfse_com_dps(
     )
 
     caminho_xsd = obter_caminho_xsd_dps(
-        versao_layout
+        versao_layout,
+        ambiente=configuracao_fiscal.ambiente,
     )
 
     resultado_xsd = validar_xml_dps_xsd(
