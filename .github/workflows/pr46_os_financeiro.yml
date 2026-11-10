@@ -10,7 +10,7 @@ on:
       - 'scripts_manutencao/testes/test_saldo_extrato_checkpoint.py'
       - 'scripts_manutencao/testes/test_projecao_recorrentes.py'
       - 'scripts_manutencao/testes/test_provisao_recorrentes_orm.py'
-      - 'scripts_manutencao/testes/test_checkpoint_saldo_cora_migration.py scripts_manutencao/testes/test_provisao_recorrentes_orm.py'
+      - 'scripts_manutencao/testes/test_checkpoint_saldo_cora_migration.py'
       - 'migrations/versions/20261026_01_os_recebimento_saldo_externo.py'
       - 'scripts_manutencao/testes/test_pr46_*.py'
       - 'scripts_manutencao/testes/test_atividade_*.py'
