@@ -90,4 +90,4 @@ def test_fluxo_caixa_sem_checkpoint_usa_fallback_sinalizado(caso_jumirim_fictici
     resp=client.get(f'/financeiro/fluxo-caixa?conta_id={ids["conta"]}&periodo=30')
     assert resp.status_code == 200
     assert b'Fluxo de Caixa Projetado' in resp.data
-    assert b'checkpoint banc' in resp.data.lower() or b'nÃ£o possui' in resp.data.lower()
+    assert 'checkpoint banc' in resp.data.decode('utf-8').lower() or 'não possui' in resp.data.decode('utf-8').lower()
