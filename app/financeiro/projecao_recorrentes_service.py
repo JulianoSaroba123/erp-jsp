@@ -80,6 +80,41 @@ def _mesmo_item_manual(custo, lanc):
     nomes = marca.get(str(getattr(custo, "nome", "")), ())
     return any(token in descricao for token in nomes)
 
+
+def saldo_provisorio_pos_extrato(*, saldo_extrato, data_extrato, data_atual, conta_id, lancamentos):
+    """Calcula saldo GERENCIAL provisório para movimentações lançadas após extrato.
+
+    O extrato continua a verdade documental do banco. Esta função não importa,
+    reconcilia nem altera registros. Uma baixa posterior à última data importada
+    ainda afeta o caixa para fins de previsão, mas fica explicitamente NÃO
+    CONFERIDA até a importação. Não confundir projeção com saldo real.
+    """
+    if data_extrato is None:
+        return dinheiro(saldo_extrato), 0, Decimal("0.00")
+    delta = Decimal("0.00")
+    quantidade = 0
+    for registro in lancamentos:
+        if not bool(getattr(registro, "ativo", True)):
+            continue
+        if getattr(registro, "conta_bancaria_id", None) != conta_id:
+            continue
+        if bool(getattr(registro, "sem_movimentacao_bancaria", False)):
+            continue
+        if _texto(getattr(registro, "categoria", "")) == "transferencia bancaria":
+            continue
+        pagamento = getattr(registro, "data_pagamento", None)
+        if pagamento is None or not (data_extrato < pagamento <= data_atual):
+            continue
+        tipo = str(getattr(registro, "tipo", "") or "").lower().strip()
+        status = str(getattr(registro, "status", "") or "").lower().strip()
+        if (tipo in TIPOS_ENTRADA and status == "recebido") or (
+            tipo in TIPOS_SAIDA and status == "pago"
+        ):
+            delta += dinheiro(registro.valor) * (1 if tipo in TIPOS_ENTRADA else -1)
+            quantidade += 1
+    return dinheiro(saldo_extrato) + delta, quantidade, delta
+
+
 def gerar_previsao(*, hoje, dias, saldo_inicial, conta_id, custos, lancamentos):
     """Calcula 30/60/90 dias sem gravar linhas financeiras.
 
