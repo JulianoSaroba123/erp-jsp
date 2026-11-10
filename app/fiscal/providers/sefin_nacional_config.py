@@ -15,7 +15,7 @@ VERSAO_LAYOUT_DPS = "1.01"
 AMBIENTES_SEFIN_NACIONAL = {
     "HOMOLOGACAO": {
         "ambiente_externo": "PRODUCAO_RESTRITA",
-        "perfil_xsd": "PRODREST-v1.01-20260727",
+        "perfil_xsd": "PRODREST-v1.01-20261020",
         "servico_emissao": "SEFIN_NACIONAL",
         "servico_parametrizacao": "ADN_PARAMETRIZACAO",
     },
