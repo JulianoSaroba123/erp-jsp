@@ -2439,7 +2439,7 @@ def _dados_projecao_segura(conta_id=None, periodo='30'):
     from datetime import datetime, date, timedelta
     from zoneinfo import ZoneInfo
     from app.financeiro.financeiro_model import CustoFixo
-    from app.financeiro.projecao_recorrentes_service import gerar_previsao
+    from app.financeiro.projecao_recorrentes_service import gerar_previsao, saldo_provisorio_pos_extrato
     from app.financeiro.saldo_extrato_service import obter_saldo_extrato
 
     dias = int(periodo) if str(periodo) in ('30', '60', '90') else 30
@@ -2472,11 +2472,6 @@ def _dados_projecao_segura(conta_id=None, periodo='30'):
                 f"{saldo_bancario['pendentes']} extrato(s) ainda sem conciliação; "
                 "o saldo já considera os movimentos bancários importados."
             )
-        if saldo_bancario['diferenca_interna'] != 0:
-            avisos.append(
-                "Divergência entre saldo bancário por extrato e saldo interno armazenado: "
-                f"{saldo_bancario['diferenca_fmt']}. Revisar antes de decisões."
-            )
     else:
         saldo_inicial = conta_escolhida.saldo_atual
         data_extrato = None
@@ -2503,6 +2498,48 @@ def _dados_projecao_segura(conta_id=None, periodo='30'):
             )
         )
     ).all()
+    # Projeta a partir de saldo DOCUMENTAL do extrato mais pagamentos que o
+    # usuário já marcou após a última data importada. Nenhum lançamento entra
+    # duas vezes e a cifra resultante é apenas provisória, não saldo do banco.
+    saldo_documental = saldo_inicial
+    qtd_pos_extrato = 0
+    delta_pos_extrato = Decimal('0.00')
+    if saldo_bancario is not None and saldo_bancario['conta_id'] == conta_escolhida.id:
+        efetuados = LancamentoFinanceiro.query.filter(
+            LancamentoFinanceiro.ativo.is_(True),
+            LancamentoFinanceiro.conta_bancaria_id == conta_escolhida.id,
+            LancamentoFinanceiro.data_pagamento > data_extrato,
+            LancamentoFinanceiro.data_pagamento <= hoje,
+            db.func.lower(LancamentoFinanceiro.status).in_(('pago', 'recebido')),
+        ).all()
+        saldo_inicial, qtd_pos_extrato, delta_pos_extrato = saldo_provisorio_pos_extrato(
+            saldo_extrato=saldo_documental,
+            data_extrato=data_extrato,
+            data_atual=hoje,
+            conta_id=conta_escolhida.id,
+            lancamentos=efetuados,
+        )
+        if qtd_pos_extrato:
+            avisos.append(
+                f"{qtd_pos_extrato} baixa(s) registrada(s) após o extrato de "
+                f"{data_extrato:%d/%m/%Y}, com variação líquida de "
+                f"R$ {delta_pos_extrato:,.2f}. Saldo da projeção é PROVISÓRIO "
+                "e será confirmado com a próxima importação e conciliação."
+            )
+        if saldo_bancario['diferenca_interna'] != 0:
+            if saldo_bancario['diferenca_interna'] == delta_pos_extrato:
+                avisos.append(
+                    "Diferença entre saldo interno e extrato explicada pelas "
+                    "baixas posteriores ao último extrato. Conferir no próximo "
+                    "arquivo bancário; não ajustar saldo manualmente."
+                )
+            else:
+                avisos.append(
+                    "Diferença de saldo NÃO totalmente explicada por baixas "
+                    "posteriores ao extrato: " + saldo_bancario['diferenca_fmt'] +
+                    ". Investigar antes de decisões."
+                )
+
     custos = CustoFixo.query.filter(CustoFixo.ativo.is_(True)).all()
     projecao = gerar_previsao(
         hoje=hoje, dias=dias, saldo_inicial=saldo_inicial,
@@ -2512,6 +2549,8 @@ def _dados_projecao_segura(conta_id=None, periodo='30'):
         'alertas': projecao['dias_saldo_negativo'],
         'avisos_projecao': avisos + projecao['alertas'],
         'data_extrato': data_extrato,
+        'saldo_documental': float(saldo_documental),
+        'qtd_movimentos_pos_extrato': qtd_pos_extrato,
         'contas': todas_contas,
         'conta_id': conta_escolhida.id,
         'periodo': str(dias),
@@ -2556,7 +2595,8 @@ def exportar_fluxo_excel():
             f"Período: {contexto['data_hoje']:%d/%m/%Y} a "
             f"{contexto['data_fim']:%d/%m/%Y}"
         ])
-        ws.append([f"Saldo inicial conforme extrato/importação: R$ {contexto['saldo_inicial']:.2f}"])
+        ws.append([f"Saldo no último extrato importado: R$ {contexto['saldo_documental']:.2f}"])
+        ws.append([f"Saldo de partida da previsão (inclui baixas pós-extrato NÃO conferidas): R$ {contexto['saldo_inicial']:.2f}"])
         ws.append([])
         ws.append(['Data','Entradas Pendentes','Saídas Previstas','Variação Dia','Saldo Projetado','Itens (pagamentos não realizados)'])
         for linha in contexto['projecao']:
@@ -2568,12 +2608,12 @@ def exportar_fluxo_excel():
                 linha['saldo_acumulado'],
                 "; ".join(l.descricao for l in linha['lancamentos']),
             ])
-        for cel in ws[5]:
+        for cel in ws[6]:
             cel.font = Font(bold=True, color='FFFFFF')
             cel.fill = PatternFill(start_color='164A70', end_color='164A70', fill_type='solid')
         for coluna, largura in {'A':15,'B':20,'C':20,'D':18,'E':20,'F':70}.items():
             ws.column_dimensions[coluna].width = largura
-        for linha in ws.iter_rows(min_row=6):
+        for linha in ws.iter_rows(min_row=7):
             linha[0].number_format = 'DD/MM/YYYY'
             for cel in linha[1:5]:
                 cel.number_format = 'R$ #,##0.00'
@@ -2581,7 +2621,7 @@ def exportar_fluxo_excel():
         ws.append(['AVISOS:'])
         for alerta in contexto['avisos_projecao']:
             ws.append([alerta])
-        ws.freeze_panes = 'A6'
+        ws.freeze_panes = 'A7'
         saida = BytesIO()
         wb.save(saida)
         saida.seek(0)
