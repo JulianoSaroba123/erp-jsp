@@ -40,15 +40,15 @@
 <!-- Faixa executiva de indicadores -->
 <div class="cc-kpi-strip">
     <div class="cc-kpi-strip-item">
-        <span class="cc-kpi-strip-label">Receitas do mês</span>
+        <span class="cc-kpi-strip-label">Entradas do mês</span>
         <p class="cc-kpi-strip-value is-success">{{ stats.total_receitas_mes_fmt }}</p>
     </div>
     <div class="cc-kpi-strip-item">
-        <span class="cc-kpi-strip-label">Despesas do mês</span>
+        <span class="cc-kpi-strip-label">Saídas do mês</span>
         <p class="cc-kpi-strip-value is-danger">{{ stats.total_despesas_mes_fmt }}</p>
     </div>
     <div class="cc-kpi-strip-item">
-        <span class="cc-kpi-strip-label">Resultado</span>
+        <span class="cc-kpi-strip-label">Variação líquida do mês</span>
         <p class="cc-kpi-strip-value {% if stats.saldo_mes_cor == 'success' %}is-success{% else %}is-danger{% endif %}">
             {{ stats.saldo_mes_fmt }}
         </p>
@@ -62,6 +62,36 @@
         <p class="cc-kpi-strip-value {% if stats.produtos_estoque_baixo > 0 %}is-warning{% endif %}">{{ stats.produtos_estoque_baixo }}</p>
     </div>
 </div>
+
+{% if saldo_extrato %}
+<!-- Saldo conforme comprovante bancário e extratos importados, não o resultado mensal -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="cc-panel">
+            <div class="cc-panel-body">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div>
+                        <div class="cc-finance-label"><i class="fas fa-building-columns me-2"></i>Saldo bancário conforme extratos importados: {{ saldo_extrato.conta_nome }}</div>
+                        <small class="text-muted">
+                            Até {{ saldo_extrato.data_ultimo_extrato.strftime('%d/%m/%Y') }};
+                            referência bancária {{ saldo_extrato.referencia.strftime('%d/%m/%Y') }};
+                            {{ saldo_extrato.qtd_extratos }} movimentos posteriores importados.
+                            Não é lucro nem resultado mensal.
+                        </small>
+                    </div>
+                    <div class="cc-finance-value is-success" style="font-size:1.6rem">{{ saldo_extrato.saldo_extrato_fmt }}</div>
+                </div>
+                {% if saldo_extrato.pendentes > 0 %}
+                <p class="text-warning mt-2 mb-0"><i class="fas fa-exclamation-triangle me-1"></i>{{ saldo_extrato.pendentes }} movimento(s) ainda não conciliado(s). O saldo reflete o extrato importado, não o status financeiro.</p>
+                {% endif %}
+                {% if saldo_extrato.diferenca_interna != 0 %}
+                <p class="text-danger mt-2 mb-0"><i class="fas fa-triangle-exclamation me-1"></i>Alerta de auditoria: saldo interno armazenado {{ saldo_extrato.saldo_erp_fmt }}; divergência {{ saldo_extrato.diferenca_fmt }}. Não ajustar com receita ou despesa fictícia.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Resumo Operacional (cadastros) -->
 <div class="row mb-4">

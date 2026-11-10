@@ -110,6 +110,18 @@ def dashboard():
         stats['fluxo_caixa_fmt'] = formatar_valor_real(stats['fluxo_caixa'])
         stats['valor_estoque_fmt'] = formatar_valor_real(valor_total_estoque)
         
+        # Saldo bancário histórico por extratos; independente de resultado do mês.
+        # No bootstrap sem tabela de checkpoint, o cartão não é apresentado.
+        saldo_extrato = None
+        try:
+            from sqlalchemy import inspect
+            if inspect(db.engine).has_table('saldo_bancario_referencias'):
+                from app.financeiro.saldo_extrato_service import obter_saldo_extrato
+                saldo_extrato = obter_saldo_extrato(db.session)
+        except Exception as erro_saldo:
+            db.session.rollback()
+            print(f"⚠️ Saldo por extrato indisponível: {erro_saldo}")
+
         # === CORES PARA INDICADORES ===
         # Cor do saldo (verde se positivo, vermelho se negativo)
         stats['saldo_mes_cor'] = 'success' if stats['saldo_mes'] >= 0 else 'danger'
@@ -118,6 +130,7 @@ def dashboard():
         return render_template('painel/dashboard.html',
                              config=config,
                              stats=stats,
+                             saldo_extrato=saldo_extrato,
                              clientes_recentes=clientes_recentes,
                              produtos_estoque_baixo=produtos_estoque_baixo,
                              ordens_recentes=ordens_recentes)
@@ -148,6 +161,7 @@ def dashboard():
         return render_template('painel/dashboard.html',
                              config=None,
                              stats=stats,
+                             saldo_extrato=None,
                              clientes_recentes=[],
                              produtos_estoque_baixo=[],
                              ordens_recentes=[],

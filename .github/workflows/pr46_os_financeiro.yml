@@ -5,6 +5,10 @@ on:
     paths:
       - 'app/ordem_servico/**'
       - 'app/financeiro/**'
+      - 'app/painel/**'
+      - 'migrations/versions/20261109_01_checkpoint_saldo_cora.py'
+      - 'scripts_manutencao/testes/test_saldo_extrato_checkpoint.py'
+      - 'scripts_manutencao/testes/test_checkpoint_saldo_cora_migration.py'
       - 'migrations/versions/20261026_01_os_recebimento_saldo_externo.py'
       - 'scripts_manutencao/testes/test_pr46_*.py'
       - 'scripts_manutencao/testes/test_atividade_*.py'
@@ -70,7 +74,8 @@ jobs:
             scripts_manutencao/testes/test_auditoria_set2026.py \
             scripts_manutencao/testes/test_inativacao_os_eliana.py \
             scripts_manutencao/testes/test_conciliacao_visibilidade.py \
-            scripts_manutencao/testes/test_conciliacao_inteligente.py
+            scripts_manutencao/testes/test_conciliacao_inteligente.py \
+            scripts_manutencao/testes/test_saldo_extrato_checkpoint.py
 
   concorrencia-postgresql:
     runs-on: ubuntu-latest
@@ -103,4 +108,4 @@ jobs:
       - name: Instalar dependências
         run: python -m pip install -r requirements.txt pytest
       - name: Concorrência e conciliação em PostgreSQL descartável
-        run: python -m pytest -q scripts_manutencao/testes/test_pr46_postgresql.py scripts_manutencao/testes/test_atividade_postgresql.py scripts_manutencao/testes/test_desconciliacao_nn.py scripts_manutencao/testes/test_auditoria_set2026.py scripts_manutencao/testes/test_inativacao_os_eliana.py scripts_manutencao/testes/test_conciliacao_visibilidade.py scripts_manutencao/testes/test_conciliacao_inteligente.py scripts_manutencao/testes/test_reparo_os20260107_migration.py
+        run: python -m pytest -q scripts_manutencao/testes/test_pr46_postgresql.py scripts_manutencao/testes/test_atividade_postgresql.py scripts_manutencao/testes/test_desconciliacao_nn.py scripts_manutencao/testes/test_auditoria_set2026.py scripts_manutencao/testes/test_inativacao_os_eliana.py scripts_manutencao/testes/test_conciliacao_visibilidade.py scripts_manutencao/testes/test_conciliacao_inteligente.py scripts_manutencao/testes/test_reparo_os20260107_migration.py scripts_manutencao/testes/test_checkpoint_saldo_cora_migration.py
