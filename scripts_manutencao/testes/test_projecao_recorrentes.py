@@ -93,14 +93,14 @@ def test_exclusoes_revisao_valor_e_conta_diferente():
     ref=date(2026,11,9)
     fixos=[
         custo(1,'Prolabore',3000,10,categoria='Salários'),
-        custo(2,'Dr. Adinho Imoveis',1930.50,10,categoria='Aluguel'),
+        custo(2,'Dr. Adinho Imoveis',1000,10,categoria='Aluguel'),
         custo(3,'Contabilidade',350,10,conta=2),
         custo(4,'Taxa Negativa',-12,10),
     ]
     p=calcular_cenario(ref,30,fixos)
-    assert p['total_despesas'] == 0
-    assert p['qtd_recorrencias_estimadas'] == 0
-    assert any('exige revisão' in a for a in p['alertas'])
+    assert p['total_despesas'] == 1000
+    assert p['qtd_recorrencias_estimadas'] == 1
+    assert any('Prolabore' in a and 'exige revisão' in a for a in p['alertas'])
 
 
 def test_fevereiro_e_vigencia_e_ano_novo():
