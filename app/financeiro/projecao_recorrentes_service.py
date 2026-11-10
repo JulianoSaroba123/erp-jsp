@@ -21,7 +21,7 @@ TIPOS_SAIDA = {"despesa", "conta_pagar"}
 STATUS_QUITADOS = {"pago", "recebido"}
 STATUS_PENDENTES = {"pendente", "vencido", "atrasado"}
 # Exigir revisão antes de considerar como obrigação gerencial automática.
-REVISAR = {"Cartão de Crédito", "Auxiliar de Manutenção", "Prolabore", "Sem parar", "Celular"}
+REVISAR = {"Cartão de Crédito", "Auxiliar de Manutenção", "Prolabore", "Sem parar"}
 
 
 def dinheiro(value):
@@ -59,7 +59,12 @@ def _mesmo_item_manual(custo, lanc):
     """Sinal forte, não inferência por valor isolado. Pode omitir custo se houver dúvida."""
     descricao = _texto(getattr(lanc, "descricao", ""))
     nome = _texto(custo.nome)
-    categoria = _texto(custo.categoria)
+    # Celular e plano Vivo são duas despesas diferentes, confirmado pelo responsável.
+    # A expressão genérica "celular" num boleto Vivo não comprova identidade.
+    if nome == "celular":
+        return "vivo" not in descricao and (
+            "celular" in descricao or "aparelhos telefonicos" in descricao
+        )
     if nome and len(nome) >= 5 and nome in descricao:
         return True
     # O fornecedor identificado tem prioridade, para não confundir duas contas
