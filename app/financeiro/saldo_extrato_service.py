@@ -22,14 +22,15 @@ def obter_saldo_extrato(session, *, data_limite=None):
     modifica o banco. data_limite só permite reconstruir datas posteriores à
     referência. A data do saldo é a do último extrato, não o horário atual.
     """
+    limite = data_limite or date(9999, 12, 31)
     linha = session.execute(text(
         "SELECT r.conta_bancaria_id,r.data_referencia,r.saldo_referencia,"
         "r.fonte,c.nome,c.saldo_atual FROM saldo_bancario_referencias r "
         "JOIN contas_bancarias c ON c.id=r.conta_bancaria_id "
         "WHERE c.ativo=true AND c.ativa=true "
-        "AND (:limite IS NULL OR r.data_referencia<=:limite) "
+         "AND r.data_referencia<=:limite "
         "ORDER BY r.data_referencia DESC,r.id DESC LIMIT 1"
-    ), {"limite": data_limite}).mappings().first()
+    ), {"limite": limite}).mappings().first()
     if linha is None:
         return None
 
@@ -45,7 +46,7 @@ def obter_saldo_extrato(session, *, data_limite=None):
         "AND data_movimento>:inicio "
         "AND (:limite IS NULL OR data_movimento<=:limite)"
     ), {"conta_id": linha["conta_bancaria_id"],
-        "inicio": linha["data_referencia"], "limite": data_limite}).mappings().one()
+        "inicio": linha["data_referencia"], "limite": limite}).mappings().one()
 
     if resultado["outros_tipos"]:
         raise ValueError("Extrato possui tipo desconhecido: saldo não confiável.")
