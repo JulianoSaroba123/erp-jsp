@@ -117,3 +117,24 @@ def test_fevereiro_e_vigencia_e_ano_novo():
 def test_horizonte_invalido_abortado():
     with pytest.raises(ValueError,match='30, 60 ou 90'):
         calcular_cenario(date(2026,11,9),365)
+
+def test_celular_e_vivo_sao_contas_distintas_sem_falso_positivo():
+    ref = date(2026, 11, 9)
+    contas = [
+        custo(5,'Vivo - Telecomunicação',119,10,categoria='Telefone'),
+        custo(10,'Celular',62.71,10,categoria='Telefone')
+    ]
+    # Um pagamento manual do plano Vivo não quita nem cobre a conta Celular.
+    vivo_pago = titulo(290,63.97,'conta_pagar','pago',date(2026,11,10),
+                      'Plano Vivo Celular Empresarial - Novembro/2026',
+                      pago=date(2026,11,8))
+    p = calcular_cenario(ref, 30, contas, [vivo_pago])
+    assert p['qtd_recorrencias_estimadas'] == 1
+    assert p['total_despesas'] == 62.71
+    assert any('Celular (11/2026)' in x.descricao
+               for d in p['projecao'] for x in d['lancamentos'])
+    # Sem pagamento manual, as duas obrigações são estimadas individualmente.
+    q = calcular_cenario(ref, 30, contas)
+    assert q['qtd_recorrencias_estimadas'] == 2
+    assert q['total_despesas'] == 181.71
+
