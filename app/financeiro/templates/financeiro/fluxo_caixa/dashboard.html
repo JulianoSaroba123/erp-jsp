@@ -55,6 +55,11 @@
 
 <div class="alert alert-info" role="status">
     <strong>Previsão, não pagamento:</strong>
+    {% if qtd_movimentos_pos_extrato %}
+    <p class="mb-1">Saldo do último extrato: R$ {{ "{:,.2f}".format(saldo_documental).replace(',', '_').replace('.', ',').replace('_', '.') }}.
+    A base da projeção já desconta ou soma {{ qtd_movimentos_pos_extrato }} baixa(s) lançada(s) após esse extrato;
+    essas operações ainda precisam ser confirmadas no próximo extrato bancário.</p>
+    {% endif %}
     projeção gerencial baseada no último extrato importado, títulos pendentes e
     {{ qtd_recorrencias_estimadas }} mensalidade(s) estimada(s) que ainda não são títulos financeiros.
     Não representa lucro nem consulta bancária em tempo real.
@@ -73,7 +78,7 @@
     <div class="col-md-3">
         <div class="card bg-info text-white">
             <div class="card-body">
-                <h6 class="card-title">Saldo de Partida (Extrato)</h6>
+                <h6 class="card-title">Saldo Inicial da Projeção</h6>
                 <h3 class="mb-0">R$ {{ "{:,.2f}".format(saldo_inicial).replace(',', '_').replace('.', ',').replace('_', '.') }}</h3>
             </div>
         </div>
