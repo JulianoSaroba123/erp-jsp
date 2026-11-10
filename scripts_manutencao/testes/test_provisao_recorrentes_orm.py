@@ -91,3 +91,37 @@ def test_fluxo_caixa_sem_checkpoint_usa_fallback_sinalizado(caso_jumirim_fictici
     assert resp.status_code == 200
     assert b'Fluxo de Caixa Projetado' in resp.data
     assert 'checkpoint banc' in resp.data.decode('utf-8').lower() or 'não possui' in resp.data.decode('utf-8').lower()
+
+
+def test_aluguel_manual_pago_em_novembro_bloqueia_provisao_da_competencia(
+    caso_jumirim_ficticio
+):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        custo = criar_custo(
+            ids, nome='Dr. Adinho Imoveis', categoria='Aluguel', valor='1000.00'
+        )
+        antigo = LancamentoFinanceiro(
+            descricao='Reembolso de aluguel empresarial, 50%, novembro/2026',
+            valor=Decimal('1000.00'),
+            tipo='conta_pagar', status='pago',
+            categoria='Despesa Fixa', subcategoria='Aluguel',
+            data_lancamento=date(2026, 11, 10),
+            data_vencimento=date(2026, 11, 10),
+            data_pagamento=date(2026, 11, 10),
+            conta_bancaria_id=ids['conta'], origem='MANUAL', ativo=True
+        )
+        db.session.add(antigo)
+        db.session.commit()
+        id_antigo = antigo.id
+        antes = LancamentoFinanceiro.query.count()
+        assert custo.gerar_lancamento_mes(2026, 11) is None
+        assert LancamentoFinanceiro.query.count() == antes
+        assert db.session.get(LancamentoFinanceiro, id_antigo).status == 'pago'
+        # A mensalidade futura será independente, ainda pendente.
+        dezembro = custo.gerar_lancamento_mes(2026, 12)
+        assert dezembro is not None
+        assert dezembro.status == 'pendente'
+        assert dezembro.data_pagamento is None
+        assert dezembro.custo_fixo_id == custo.id
+
