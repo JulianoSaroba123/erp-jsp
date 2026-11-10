@@ -21,7 +21,7 @@ TIPOS_SAIDA = {"despesa", "conta_pagar"}
 STATUS_QUITADOS = {"pago", "recebido"}
 STATUS_PENDENTES = {"pendente", "vencido", "atrasado"}
 # Exigir revisão antes de considerar como obrigação gerencial automática.
-REVISAR = {"Cartão de Crédito", "Auxiliar de Manutenção", "Prolabore"}
+REVISAR = {"Cartão de Crédito", "Auxiliar de Manutenção", "Prolabore", "Dr. Adinho Imoveis", "Sem parar"}
 
 
 def dinheiro(value):
@@ -88,8 +88,6 @@ def gerar_previsao(*, hoje, dias, saldo_inicial, conta_id, custos, lancamentos):
     if dias not in (30, 60, 90):
         raise ValueError("Horizonte deve ser 30, 60 ou 90 dias")
     fim = hoje + timedelta(days=dias)
-    primeiro_mes = date(hoje.year, hoje.month, 1)
-    inicio_mes = chave_mes(primeiro_mes)
 
     todos = [l for l in lancamentos if getattr(l, "ativo", True)]
     coberturas = defaultdict(list)
