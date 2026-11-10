@@ -48,4 +48,14 @@
 - Exigir autorização específica para merge/deploy. O comando “pode seguir” autoriza a continuidade da revisão e desenvolvimento; não equivale a autorização para criar títulos reais em produção.
 - Após eventual deploy, verificar que o saldo Cora e 40/40 conciliações não mudaram; testar somente a **visualização** e exportação da projeção, **sem clicar provisionar** até aprovação dos valores.
 
+## Revisão complementar de 10/11/2026: aluguel já pago e extrato defasado
+
+- **Lançamento #369** já está `pago`: R$ 1.000,00, reembolso do aluguel empresarial de novembro, com data 10/11/2026, conta Cora, `origem=MANUAL`. **Não recriar**, não dar baixa novamente, não alterar o comprovante.
+- Último extrato Cora importado: **09/11/2026**. Saldo documental nessa data: **R$ 8.508,77**; saldo interno já registra #369 e está em **R$ 7.508,77**, diferença temporária de R$ 1.000,00.
+- Projeção precisa distinguir **saldo do extrato** de **saldo gerencial provisório**, aplicando de forma read-only apenas registros pagos/recebidos a partir do dia seguinte ao extrato, sem contar novamente após a próxima importação.
+- Com o aluguel já quitado, a projeção **não deve estimar novamente novembro**. Dezembro deve permanecer a próxima competência com possível título pendente, nunca quitado automaticamente.
+- Após importar e conciliar 10/11, a âncora bancária será atualizada pelo extrato, e o ajuste provisório se extinguirá automaticamente.
+- Testes puros e com ORM protegem o cenário #369. Não executar operação de baixa, ajuste de saldo ou criação em massa em produção durante este checkpoint.
+- O **rateio de custos por ordem de serviço** será tratado em uma frente separada, somente após finalizar a PR #59.
+
 **Atenção:** previsões podem conter despesas fora das categorias atuais do ERP ou contas vencidas antigas; sinalizar em alertas e não assumir quitação.
