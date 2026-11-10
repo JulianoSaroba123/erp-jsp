@@ -25,7 +25,7 @@ def titulo(id, valor, tipo, status, venc, descricao, *, custo_id=None,
              conta_bancaria_id=conta, ativo=True)
 
 
-def teste(hoje, dias, fixos=(), titulos=(), inicial=8508.77):
+def calcular_cenario(hoje, dias, fixos=(), titulos=(), inicial=8508.77):
     return gerar_previsao(hoje=hoje, dias=dias, saldo_inicial=Decimal(str(inicial)),
                          conta_id=1, custos=fixos, lancamentos=titulos)
 
@@ -33,14 +33,14 @@ def teste(hoje, dias, fixos=(), titulos=(), inicial=8508.77):
 def test_previsao_30_60_90_mensal_sem_escrever():
     ref = date(2026, 11, 9)
     custos = [custo(8, 'Contabilidade', 350, 10)]
-    p30 = teste(ref, 30, custos)
+    p30 = calcular_cenario(ref, 30, custos)
     assert p30['qtd_recorrencias_estimadas'] == 1
     assert p30['total_despesas'] == 350
     assert p30['saldo_final'] == 8158.77
-    p60 = teste(ref, 60, custos)
+    p60 = calcular_cenario(ref, 60, custos)
     assert p60['qtd_recorrencias_estimadas'] == 2
     assert p60['total_despesas'] == 700
-    p90 = teste(ref, 90, custos)
+    p90 = calcular_cenario(ref, 90, custos)
     assert p90['qtd_recorrencias_estimadas'] == 3
     assert p90['total_despesas'] == 1050
     assert len(p90['projecao']) == 91
@@ -53,12 +53,12 @@ def test_ja_quitado_no_mes_ou_ja_pendente_nao_duplicar():
     fixos = [custo(8,'Contabilidade',350,10)]
     coberto = titulo(1,350,'conta_pagar','pago',date(2026,11,10),
                      'Contabilidade - 2026-11',custo_id=8,pago=date(2026,11,7))
-    p = teste(ref, 60, fixos, [coberto])
+    p = calcular_cenario(ref, 60, fixos, [coberto])
     assert p['total_despesas'] == 350  # só dezembro
     assert p['qtd_recorrencias_estimadas'] == 1
     pendente = titulo(2,355,'conta_pagar','pendente',date(2026,12,10),
                      'Contabilidade - 2026-12',custo_id=8)
-    q = teste(ref,60,fixos,[coberto,pendente])
+    q = calcular_cenario(ref,60,fixos,[coberto,pendente])
     assert q['total_despesas'] == 355
     assert q['qtd_recorrencias_estimadas'] == 0
 
@@ -68,7 +68,7 @@ def test_manual_pago_correspondente_bloqueia_previsao_e_avisa():
     custos = [custo(2,'Energia Elétrica',400,19,categoria='Energia')]
     pago = titulo(3,415.34,'conta_pagar','pago',date(2026,11,19),
                   'Pagamento CPFL de energia elétrica da JSP',pago=date(2026,11,8))
-    p = teste(ref,30,custos,[pago])
+    p = calcular_cenario(ref,30,custos,[pago])
     assert p['total_despesas'] == 0
     assert p['qtd_recorrencias_estimadas'] == 0
     assert any('possivelmente correspondente' in a for a in p['alertas'])
@@ -81,7 +81,7 @@ def test_titulos_pendentes_separados_de_quitados_e_passado_vence_hoje():
         titulo(2,120,'conta_pagar','pendente',date(2026,11,5),'Internet'),
         titulo(3,30,'conta_pagar','pago',date(2026,11,11),'Pago',pago=date(2026,11,8)),
     ]
-    p = teste(ref,30,[],contas)
+    p = calcular_cenario(ref,30,[],contas)
     assert p['total_receitas'] == 3500
     assert p['total_despesas'] == 120
     assert p['saldo_final'] == 11888.77
@@ -97,14 +97,14 @@ def test_exclusoes_revisao_valor_e_conta_diferente():
         custo(3,'Contabilidade',350,10,conta=2),
         custo(4,'Taxa Negativa',-12,10),
     ]
-    p=teste(ref,30,fixos)
+    p=calcular_cenario(ref,30,fixos)
     assert p['total_despesas'] == 0
     assert p['qtd_recorrencias_estimadas'] == 0
     assert any('exige revisão' in a for a in p['alertas'])
 
 
 def test_fevereiro_e_vigencia_e_ano_novo():
-    p=teste(date(2027,1,1),90,[
+    p=calcular_cenario(date(2027,1,1),90,[
         custo(6,'Contabilidade',100,31,fim=date(2027,2,28)),
     ])
     datas=[l.vencimento_original for d in p['projecao'] for l in d['lancamentos']]
@@ -116,4 +116,4 @@ def test_fevereiro_e_vigencia_e_ano_novo():
 
 def test_horizonte_invalido_abortado():
     with pytest.raises(ValueError,match='30, 60 ou 90'):
-        teste(date(2026,11,9),365)
+        calcular_cenario(date(2026,11,9),365)
