@@ -2390,11 +2390,16 @@ def dashboard_custos_fixos():
                 totais_categoria[custo.categoria] = Decimal('0.00')
             totais_categoria[custo.categoria] += custo.valor_mensal
         
+        token_gerar = session.get('_csrf_gerar_custos_fixos_v1')
+        if not token_gerar:
+            token_gerar = secrets.token_urlsafe(32)
+            session['_csrf_gerar_custos_fixos_v1'] = token_gerar
         return render_template('financeiro/custos_fixos/dashboard.html',
                              custos=custos,
                              total_mensal=total_mensal,
                              proximos_vencimentos=proximos_vencimentos,
-                             totais_categoria=totais_categoria)
+                             totais_categoria=totais_categoria,
+                             csrf_gerar_custos_fixos=token_gerar)
     
     except Exception as e:
         flash(f'Erro ao carregar dashboard: {str(e)}', 'danger')
@@ -2403,16 +2408,22 @@ def dashboard_custos_fixos():
 
 @bp_financeiro.route('/custos-fixos/gerar-lancamentos', methods=['POST'])
 def gerar_lancamentos_mes():
-    """Gera lançamentos automáticos para o mês atual."""
+    """Provisiona somente o próximo mês após autorização explícita."""
+    if getattr(current_user, 'tipo_usuario', None) != 'admin':
+        abort(403)
+    token = request.form.get('csrf_gerar_custos_fixos', '')
+    original = session.get('_csrf_gerar_custos_fixos_v1', '')
+    if not original or not token or not hmac.compare_digest(str(token), str(original)):
+        abort(400)
     try:
         from app.financeiro.financeiro_model import CustoFixo
         
         lancamentos = CustoFixo.gerar_lancamentos_automaticos()
         
         if lancamentos:
-            flash(f'{len(lancamentos)} lançamento(s) gerado(s) com sucesso!', 'success')
+            flash(f'{len(lancamentos)} conta(s) a pagar do próximo mês provisionada(s), todas pendentes. Confira cada vencimento.', 'success')
         else:
-            flash('Nenhum lançamento novo para gerar.', 'info')
+            flash('Nenhuma conta provisionada: já existente, possível duplicidade ou cadastro pendente de revisão.', 'info')
     
     except Exception as e:
         db.session.rollback()
@@ -2478,6 +2489,10 @@ def _dados_projecao_segura(conta_id=None, periodo='30'):
     titulos = LancamentoFinanceiro.query.filter(
         LancamentoFinanceiro.ativo.is_(True),
         db.or_(
+            db.and_(
+                db.func.lower(LancamentoFinanceiro.status).in_(('pendente','vencido','atrasado')),
+                LancamentoFinanceiro.data_vencimento <= fim,
+            ),
             db.and_(
                 LancamentoFinanceiro.data_vencimento >= inicio_mes,
                 LancamentoFinanceiro.data_vencimento <= fim,
