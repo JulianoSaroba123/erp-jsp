@@ -1,5 +1,5 @@
 # CHECKPOINT DE HOMOLOGAÇÃO | ERP JSP | Projeção de Caixa 30/60/90 dias
-**Data:** 10/11/2026 (America/Sao_Paulo)  
+**Data:** 10/11/2026 (America/Sao_Paulo), revisado após confirmação do responsável  
 **Branch:** `feat/jsp-projecao-recorrencias-90d-20261109`  
 **PR:** #59 (rascunho; não fazer merge ou deploy sem checkpoint final de aprovação)
 **Origem:** inspeção read-only de `custos_fixos`, `lancamentos_financeiros`, `extratos_bancarios` do Render e revisão da regra do ERP.
@@ -24,11 +24,11 @@
 | 7 | Pró-labore | R$ 3.000,00 | 10 | **REVISAR**: referência informada R$ 2.800; separar remuneração do sócio de gasto comum |
 | 8 | Contabilidade | R$ 350,00 | 10 | Projetar, valor cadastral consistente com referência informada |
 | 9 | Cartão de crédito | R$ 341,31 | 10 | **REVISAR**: cartão é meio de pagamento; parcelas/fatura e compras já lançadas podem ser duplicadas |
-| 10 | Celular | R$ 62,71 | 10 | **REVISAR**: verificar se já está contido na despesa Vivo |
+| 10 | Celular | R$ 62,71 | 10 | **CONFIRMADO PELO RESPONSÁVEL:** despesa distinta de Vivo; projetar separadamente como estimativa |
 | 11 | Sem Parar | R$ 220,00 | 10 | **REVISAR**: valor varia com uso de veículo; classificar orçamento variável |
 | 12 | Auxiliar de manutenção | R$ 2.200,00 | 10 | **REVISAR**: auxiliares diaristas em custo direto; estimativa habitual 15 x R$120 = R$1.800, evitar misturar com salário fixo |
 
-**Subtotal usado na simulação de contas fixas após separar os 5 cadastros em revisão:** R$ **2.119,76/mês**, antes de pró-labore, diaristas e outros compromissos. *Não representa o orçamento total da JSP*.
+**Subtotal usado na simulação de contas fixas após separar os 4 cadastros ainda em revisão:** R$ **2.182,47/mês**, antes de pró-labore, diaristas e outros compromissos. *Não representa o orçamento total da JSP*.
 
 ## Regras de proteção implementadas na PR #59
 
