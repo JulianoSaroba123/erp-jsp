@@ -104,7 +104,7 @@ def test_exclusoes_revisao_valor_e_conta_diferente():
 
 
 def test_fevereiro_e_vigencia_e_ano_novo():
-    p=teste(date(2026,12,30),90,[
+    p=teste(date(2027,1,1),90,[
         custo(6,'Contabilidade',100,31,fim=date(2027,2,28)),
     ])
     datas=[l.vencimento_original for d in p['projecao'] for l in d['lancamentos']]
