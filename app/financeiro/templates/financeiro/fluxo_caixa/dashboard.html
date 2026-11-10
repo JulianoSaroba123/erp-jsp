@@ -25,7 +25,7 @@
             <div class="col-md-4">
                 <label class="form-label">Conta Bancária</label>
                 <select name="conta_id" class="form-select">
-                    <option value="">Todas as Contas</option>
+                    <option value="">Selecionar conta</option>
                     {% for conta in contas %}
                     <option value="{{ conta.id }}" {% if conta_id == conta.id %}selected{% endif %}>
                         {{ conta.nome }} - {{ conta.banco }}
@@ -53,12 +53,32 @@
     </div>
 </div>
 
+<div class="alert alert-info" role="status">
+    <strong>Previsão, não pagamento:</strong>
+    {% if qtd_movimentos_pos_extrato %}
+    <p class="mb-1">Saldo do último extrato: R$ {{ "{:,.2f}".format(saldo_documental).replace(',', '_').replace('.', ',').replace('_', '.') }}.
+    A base da projeção já desconta ou soma {{ qtd_movimentos_pos_extrato }} baixa(s) lançada(s) após esse extrato;
+    essas operações ainda precisam ser confirmadas no próximo extrato bancário.</p>
+    {% endif %}
+    projeção gerencial baseada no último extrato importado, títulos pendentes e
+    {{ qtd_recorrencias_estimadas }} mensalidade(s) estimada(s) que ainda não são títulos financeiros.
+    Não representa lucro nem consulta bancária em tempo real.
+    {% if data_extrato %}Último movimento importado: {{ data_extrato.strftime('%d/%m/%Y') }}.{% endif %}
+    <a href="{{ url_for('financeiro.listar_custos_fixos') }}" class="alert-link">Revisar custos fixos</a>
+</div>
+{% if avisos_projecao %}
+<div class="alert alert-warning">
+    <strong>Itens a conferir antes de decidir:</strong>
+    <ul class="mb-0">{% for aviso in avisos_projecao %}<li>{{ aviso }}</li>{% endfor %}</ul>
+</div>
+{% endif %}
+
 <!-- Cards de Resumo -->
 <div class="row mb-4">
     <div class="col-md-3">
         <div class="card bg-info text-white">
             <div class="card-body">
-                <h6 class="card-title">Saldo Inicial</h6>
+                <h6 class="card-title">Saldo Inicial da Projeção</h6>
                 <h3 class="mb-0">R$ {{ "{:,.2f}".format(saldo_inicial).replace(',', '_').replace('.', ',').replace('_', '.') }}</h3>
             </div>
         </div>
@@ -66,7 +86,7 @@
     <div class="col-md-3">
         <div class="card bg-success text-white">
             <div class="card-body">
-                <h6 class="card-title">Receitas Previstas</h6>
+                <h6 class="card-title">Entradas Pendentes Previstas</h6>
                 <h3 class="mb-0">R$ {{ "{:,.2f}".format(total_receitas).replace(',', '_').replace('.', ',').replace('_', '.') }}</h3>
             </div>
         </div>
@@ -74,7 +94,7 @@
     <div class="col-md-3">
         <div class="card bg-danger text-white">
             <div class="card-body">
-                <h6 class="card-title">Despesas Previstas</h6>
+                <h6 class="card-title">Saídas Pendentes e Estimadas</h6>
                 <h3 class="mb-0">R$ {{ "{:,.2f}".format(total_despesas).replace(',', '_').replace('.', ',').replace('_', '.') }}</h3>
             </div>
         </div>
@@ -82,7 +102,7 @@
     <div class="col-md-3">
         <div class="card {% if saldo_final >= 0 %}bg-primary{% else %}bg-danger{% endif %} text-white">
             <div class="card-body">
-                <h6 class="card-title">Saldo Final Projetado</h6>
+                <h6 class="card-title">Saldo Final Estimado</h6>
                 <h3 class="mb-0">R$ {{ "{:,.2f}".format(saldo_final).replace(',', '_').replace('.', ',').replace('_', '.') }}</h3>
             </div>
         </div>

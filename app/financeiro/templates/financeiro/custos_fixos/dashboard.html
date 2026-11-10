@@ -13,11 +13,15 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-chart-pie text-primary"></i> Dashboard - Custos Fixos</h2>
     <div>
+        {% if current_user.tipo_usuario == 'admin' %}
         <form method="POST" action="{{ url_for('financeiro.gerar_lancamentos_mes') }}" style="display:inline;">
-            <button type="submit" class="btn btn-success" onclick="return confirm('Gerar lançamentos automáticos do mês atual?');">
-                <i class="fas fa-magic"></i> Gerar Lançamentos do Mês
+            <input type="hidden" name="csrf_gerar_custos_fixos" value="{{ csrf_gerar_custos_fixos }}">
+            <button type="submit" class="btn btn-success" onclick="return confirm('Provisionar como contas a pagar pendentes as despesas do próximo mês? Revise valores e duplicidades antes de confirmar.');">
+                <i class="fas fa-magic"></i> Provisionar Próximo Mês
             </button>
         </form>
+        {% endif %}
+        <a href="{{ url_for('financeiro.fluxo_caixa') }}" class="btn btn-outline-primary"><i class="fas fa-chart-line"></i> Projeção 30/60/90 dias</a>
         <a href="{{ url_for('financeiro.listar_custos_fixos') }}" class="btn btn-secondary">
             <i class="fas fa-list"></i> Listar Todos
         </a>

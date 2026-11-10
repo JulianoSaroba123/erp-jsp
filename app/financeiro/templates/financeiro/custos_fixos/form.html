@@ -30,7 +30,7 @@
                         <li>💻 Softwares e assinaturas (SaaS)</li>
                     </ul>
                     <div class="bg-white bg-opacity-50 p-3 rounded mt-3">
-                        <strong>✅ Vantagens:</strong> O sistema gera automaticamente os lançamentos financeiros todo mês no dia configurado,
+                        <strong>✅ Vantagens:</strong> O ERP inclui esses custos na projeção de 30, 60 e 90 dias. O provisionamento real do próximo mês exige acionamento explícito, após revisar os cadastros,
                         economizando tempo e evitando esquecimentos!
                     </div>
                     <hr class="my-2">
@@ -165,11 +165,10 @@
                                    id="gerar_auto" value="1" 
                                    {% if not custo or custo.gerar_automaticamente %}checked{% endif %}>
                             <label class="form-check-label" for="gerar_auto">
-                                <strong>Gerar lançamento automaticamente todo mês</strong>
+                                <strong>Incluir no planejamento e habilitar provisionamento futuro</strong>
                                 <br>
                                 <small class="text-muted">
-                                    Se marcado, o sistema irá criar automaticamente um lançamento a pagar/receber 
-                                    todo mês na data de vencimento configurada.
+                                    Se marcado, a despesa integra as previsões e pode ser provisionada como pendente no próximo mês pelo botão do painel. Nenhum pagamento é realizado automaticamente.
                                 </small>
                             </label>
                         </div>
