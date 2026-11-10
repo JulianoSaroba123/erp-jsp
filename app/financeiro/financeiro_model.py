@@ -952,40 +952,100 @@ class CustoFixo(BaseModel):
         return proxima_data
     
     def gerar_lancamento_mes(self, ano, mes):
-        """Gera lançamento financeiro para o mês especificado."""
+        """Provisiona a competência sem duplicar histórico nem movimentar banco.
+
+        Protege o registro de custo fixo com lock transacional, procura qualquer
+        título ativo já vinculado à mesma competência e bloqueia correspondências
+        manuais reconhecíveis. Cadastros de revisão obrigatória não são gerados.
+        """
         from datetime import date
         from calendar import monthrange
-        
-        # Verificar se já foi gerado
-        mes_key = f"{ano}-{mes:02d}"
-        if self.ultimo_mes_gerado == mes_key:
-            return None
-        
-        # Criar lançamento
-        ultimo_dia_mes = monthrange(ano, mes)[1]
-        dia = min(self.dia_vencimento, ultimo_dia_mes)
-        data_vencimento = date(ano, mes, dia)
-        
-        lancamento = LancamentoFinanceiro(
-            descricao=f"{self.nome} - {mes_key}",
-            valor=self.valor_mensal,
-            tipo=self.tipo,
-            data_lancamento=data_vencimento,
-            data_vencimento=data_vencimento,
-            categoria=self.categoria,
-            status='PENDENTE',
-            conta_bancaria_id=self.conta_bancaria_id,
-            centro_custo_id=self.centro_custo_id,
-            origem='CUSTO_FIXO',
-            custo_fixo_id=self.id  # Vincula ao custo fixo que gerou
+        from app.financeiro.projecao_recorrentes_service import (
+            dia_vencimento, _mesmo_item_manual, REVISAR, TIPOS_SAIDA
         )
-        
-        db.session.add(lancamento)
-        self.ultimo_mes_gerado = mes_key
-        db.session.commit()
-        
-        return lancamento
-    
+        if not self.id or not self.ativo or not self.gerar_automaticamente:
+            return None
+        if self.nome in REVISAR:
+            return None
+        if str(self.tipo or '').strip().lower() != 'despesa':
+            return None
+        mes_key = f"{ano}-{mes:02d}"
+        vencimento = dia_vencimento(self, ano, mes)
+        if (self.data_inicio and vencimento < self.data_inicio) or (
+            self.data_fim and vencimento > self.data_fim
+        ):
+            return None
+
+        inicio = date(ano, mes, 1)
+        fim = date(ano, mes, monthrange(ano, mes)[1])
+        try:
+            # Serializa concorrência de dois pedidos na mesma mensalidade.
+            custo_travado = db.session.query(CustoFixo).filter(
+                CustoFixo.id == self.id,
+                CustoFixo.ativo.is_(True),
+            ).with_for_update().one_or_none()
+            if custo_travado is None:
+                return None
+            ja_existe = LancamentoFinanceiro.query.filter(
+                LancamentoFinanceiro.custo_fixo_id == self.id,
+                LancamentoFinanceiro.ativo.is_(True),
+                LancamentoFinanceiro.data_vencimento >= inicio,
+                LancamentoFinanceiro.data_vencimento <= fim,
+            ).first()
+            if ja_existe is not None:
+                # Não reativar nem recriar títulos gerados anteriormente.
+                return None
+
+            # Um pagamento manual com identidade compatível pode já representar
+            # este boleto. Na dúvida, NÃO criar um segundo título.
+            existentes = LancamentoFinanceiro.query.filter(
+                LancamentoFinanceiro.ativo.is_(True),
+                LancamentoFinanceiro.custo_fixo_id.is_(None),
+                db.or_(
+                    db.and_(LancamentoFinanceiro.data_vencimento >= inicio,
+                            LancamentoFinanceiro.data_vencimento <= fim),
+                    db.and_(LancamentoFinanceiro.data_pagamento >= inicio,
+                            LancamentoFinanceiro.data_pagamento <= fim),
+                )
+            ).all()
+            if any(
+                str(l.tipo or '').strip().lower() in TIPOS_SAIDA
+                and (self.conta_bancaria_id is None or
+                     l.conta_bancaria_id in (None, self.conta_bancaria_id))
+                and _mesmo_item_manual(self, l)
+                for l in existentes
+            ):
+                return None
+
+            valor = Decimal(str(self.valor_mensal or 0))
+            if valor <= 0:
+                return None
+            lancamento = LancamentoFinanceiro(
+                descricao=f"Previsão de despesa mensal: {self.nome} - {mes_key}",
+                valor=valor,
+                tipo='conta_pagar',
+                status='pendente',
+                data_lancamento=date.today(),
+                data_vencimento=vencimento,
+                data_pagamento=None,
+                categoria=self.categoria,
+                conta_bancaria_id=self.conta_bancaria_id,
+                centro_custo_id=self.centro_custo_id,
+                origem='CUSTO_FIXO',
+                custo_fixo_id=self.id,
+                observacoes=(
+                    "Título provisionado com base no custo mensal cadastrado; "
+                    "valor estimado, sujeito à conferência da fatura antes da baixa."
+                ),
+            )
+            db.session.add(lancamento)
+            custo_travado.ultimo_mes_gerado = mes_key
+            db.session.commit()
+            return lancamento
+        except Exception:
+            db.session.rollback()
+            raise
+
     @classmethod
     def get_custos_ativos(cls):
         """Retorna todos os custos fixos ativos."""
@@ -1014,20 +1074,24 @@ class CustoFixo(BaseModel):
     
     @classmethod
     def gerar_lancamentos_automaticos(cls):
-        """Gera lançamentos para todos os custos fixos do mês atual."""
-        from datetime import date
-        
-        hoje = date.today()
-        custos = cls.get_custos_ativos()
-        lancamentos_gerados = []
-        
+        """Provisionamento ANTECIPADO do próximo mês por comando explícito.
+
+        Nunca executado ao abrir tela; sem agendamento cron em produção.
+        A projeção virtual mensal permanece disponível sem qualquer escrita.
+        """
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        hoje = datetime.now(ZoneInfo('America/Sao_Paulo')).date()
+        ano, mes = (hoje.year + 1, 1) if hoje.month == 12 else (hoje.year, hoje.month + 1)
+        custos = cls.query.filter(cls.ativo.is_(True)).order_by(cls.id).all()
+        gerados = []
         for custo in custos:
-            if custo.gerar_automaticamente:
-                lancamento = custo.gerar_lancamento_mes(hoje.year, hoje.month)
-                if lancamento:
-                    lancamentos_gerados.append(lancamento)
-        
-        return lancamentos_gerados
+            if not custo.gerar_automaticamente:
+                continue
+            registro = custo.gerar_lancamento_mes(ano, mes)
+            if registro is not None:
+                gerados.append(registro)
+        return gerados
 
 
 # ============================================================
