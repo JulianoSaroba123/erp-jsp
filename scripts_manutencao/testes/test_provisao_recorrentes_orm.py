@@ -73,8 +73,8 @@ def test_pagamento_manual_custo_fixo_nao_duplica_titulo(caso_jumirim_ficticio):
 def test_cadastros_sem_validacao_nao_viram_divida_real(caso_jumirim_ficticio):
     app, ids = caso_jumirim_ficticio
     with app.app_context():
-        custo = criar_custo(ids, nome='Dr. Adinho Imoveis',
-                            categoria='Aluguel',valor='1930.50')
+        custo = criar_custo(ids, nome='Prolabore',
+                            categoria='Salários',valor='3000.00')
         antes = LancamentoFinanceiro.query.count()
         assert custo.gerar_lancamento_mes(2026, 12) is None
         assert LancamentoFinanceiro.query.count() == antes
