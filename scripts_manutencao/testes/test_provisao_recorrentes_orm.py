@@ -125,3 +125,36 @@ def test_aluguel_manual_pago_em_novembro_bloqueia_provisao_da_competencia(
         assert dezembro.data_pagamento is None
         assert dezembro.custo_fixo_id == custo.id
 
+
+
+def test_http_provisionamento_exige_admin_csrf_e_e_idempotente(caso_jumirim_ficticio):
+    app, ids = caso_jumirim_ficticio
+    with app.app_context():
+        custo = criar_custo(ids, nome='Contabilidade', categoria='Contabilidade')
+        assert custo.id is not None
+    client = app.test_client()
+    rota = '/financeiro/custos-fixos/gerar-lancamentos'
+    # Não aceitar POST anônimo.
+    assert client.post(rota).status_code == 302
+    client.post('/auth/login', data={
+        'identificador': 'admin_pr46', 'senha': 'SenhaPr46Teste!'
+    })
+    # Admin sem CSRF também deve ser rejeitado.
+    assert client.post(rota).status_code == 400
+    pagina = client.get('/financeiro/custos-fixos/dashboard')
+    assert pagina.status_code == 200
+    with client.session_transaction() as sess:
+        token = sess['_csrf_gerar_custos_fixos_v1']
+    assert client.post(rota, data={'csrf_gerar_custos_fixos': 'invalido'}).status_code == 400
+    correto = client.post(rota, data={'csrf_gerar_custos_fixos': token})
+    assert correto.status_code == 302
+    repetido = client.post(rota, data={'csrf_gerar_custos_fixos': token})
+    assert repetido.status_code == 302
+    with app.app_context():
+        itens = LancamentoFinanceiro.query.filter_by(origem='CUSTO_FIXO').all()
+        assert len(itens) == 1
+        assert itens[0].tipo == 'conta_pagar'
+        assert itens[0].status == 'pendente'
+        assert itens[0].data_pagamento is None
+        assert itens[0].valor == Decimal('350.00')
+        assert itens[0].conta_bancaria_id == ids['conta']
