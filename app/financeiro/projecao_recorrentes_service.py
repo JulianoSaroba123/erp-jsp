@@ -21,7 +21,7 @@ TIPOS_SAIDA = {"despesa", "conta_pagar"}
 STATUS_QUITADOS = {"pago", "recebido"}
 STATUS_PENDENTES = {"pendente", "vencido", "atrasado"}
 # Exigir revisão antes de considerar como obrigação gerencial automática.
-REVISAR = {"Cartão de Crédito", "Auxiliar de Manutenção", "Prolabore", "Dr. Adinho Imoveis", "Sem parar"}
+REVISAR = {"Cartão de Crédito", "Auxiliar de Manutenção", "Prolabore", "Sem parar", "Celular"}
 
 
 def dinheiro(value):
@@ -62,15 +62,18 @@ def _mesmo_item_manual(custo, lanc):
     categoria = _texto(custo.categoria)
     if nome and len(nome) >= 5 and nome in descricao:
         return True
-    aliases = {
-        "aluguel": ("aluguel",),
-        "energia": ("energia eletrica", "conta de luz", "cpfl"),
-        "agua": ("samae", "conta de agua"),
-        "contabilidade": ("contador", "contabilidade", "honorarios contabeis"),
-        "internet": ("internet", "tvac"),
+    # O fornecedor identificado tem prioridade, para não confundir duas contas
+    # do mesmo grupo (por exemplo, TVAC e Vivo/Celular).
+    marca = {
+        "TVAC-Telecomunicações": ("tvac",),
+        "Vivo - Telecomunicação": ("vivo",),
+        "Samae-Tietê": ("samae",),
+        "Dr. Adinho Imoveis": ("adinho", "aluguel"),
+        "Energia Elétrica": ("elektro", "neoenergia", "cpfl", "energia eletrica", "conta de luz"),
+        "Contabilidade": ("contador", "honorarios contabeis", "contabilidade"),
     }
-    return any(palavra in descricao for palavra in aliases.get(categoria, ()))
-
+    nomes = marca.get(str(getattr(custo, "nome", "")), ())
+    return any(token in descricao for token in nomes)
 
 def gerar_previsao(*, hoje, dias, saldo_inicial, conta_id, custos, lancamentos):
     """Calcula 30/60/90 dias sem gravar linhas financeiras.
