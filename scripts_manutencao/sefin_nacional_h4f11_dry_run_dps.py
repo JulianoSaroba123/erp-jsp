@@ -191,14 +191,18 @@ def _montar_dps(
     *,
     agora: datetime,
     percentual_tot_trib_sn: str,
+    serie: str = SERIE_DRY_RUN,
+    numero_dps: str = NUMERO_DPS_DRY_RUN,
+    descricao: str = DESCRICAO_DRY_RUN,
+    versao_aplicativo: str = "ERP-JSP-H4F11",
 ):
     return dps_model.montar_dps_canonica(
         ambiente="HOMOLOGACAO",
         versao_layout="1.01",
         data_emissao=agora,
-        versao_aplicativo="ERP-JSP-H4F11",
-        serie=SERIE_DRY_RUN,
-        numero_dps=NUMERO_DPS_DRY_RUN,
+        versao_aplicativo=versao_aplicativo,
+        serie=serie,
+        numero_dps=numero_dps,
         competencia=agora.date(),
         tipo_emitente="1",
         municipio_emissao_ibge=MUNICIPIO_TIETE,
@@ -224,7 +228,7 @@ def _montar_dps(
             ),
             "codigo_tributacao_municipal": None,
             "nbs": CODIGO_NBS,
-            "descricao": DESCRICAO_DRY_RUN,
+            "descricao": descricao,
             "municipio_incidencia_ibge": MUNICIPIO_TIETE,
             "municipio_prestacao_ibge": MUNICIPIO_QUADRA,
         },
@@ -312,6 +316,10 @@ def executar_dry_run(
     agora: datetime | None = None,
     material_a1=None,
     percentual_tot_trib_sn: str | None = None,
+    serie: str = SERIE_DRY_RUN,
+    numero_dps: str = NUMERO_DPS_DRY_RUN,
+    descricao: str = DESCRICAO_DRY_RUN,
+    versao_aplicativo: str = "ERP-JSP-H4F11",
 ) -> ResultadoDryRun:
     """Executa toda a pre-emissao em memoria, sem rede."""
 
@@ -338,6 +346,10 @@ def executar_dry_run(
     dps = _montar_dps(
         agora=momento,
         percentual_tot_trib_sn=percentual,
+        serie=serie,
+        numero_dps=numero_dps,
+        descricao=descricao,
+        versao_aplicativo=versao_aplicativo,
     )
 
     xml_nao_assinado = (
