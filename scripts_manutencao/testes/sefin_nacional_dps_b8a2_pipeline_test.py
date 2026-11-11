@@ -17,7 +17,9 @@ def _kwargs(*, material_certificado=None):
     return {
         "documento": SimpleNamespace(),
         "ordem_servico": SimpleNamespace(),
-        "configuracao_fiscal": SimpleNamespace(),
+        "configuracao_fiscal": SimpleNamespace(
+            ambiente="HOMOLOGACAO",
+        ),
         "configuracao_institucional": SimpleNamespace(),
         "versao_layout": "1.01",
         "tipo_emitente": 1,
@@ -57,7 +59,7 @@ def _mock_base(monkeypatch):
     monkeypatch.setattr(
         service,
         "obter_caminho_xsd_dps",
-        lambda versao: "DPS_v1.01.xsd",
+        lambda versao, *, ambiente=None: "DPS_v1.01.xsd",
     )
 
 
