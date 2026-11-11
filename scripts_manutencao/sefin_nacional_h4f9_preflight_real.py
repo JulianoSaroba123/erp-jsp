@@ -19,8 +19,19 @@ Seguranca:
 from __future__ import annotations
 
 import os
+from pathlib import Path
 import sys
 from types import SimpleNamespace
+
+
+RAIZ_REPOSITORIO = Path(__file__).resolve().parents[1]
+
+if str(RAIZ_REPOSITORIO) not in sys.path:
+    sys.path.insert(
+        0,
+        str(RAIZ_REPOSITORIO),
+    )
+
 
 from app.fiscal.certificado_a1 import CertificadoA1Invalido
 from app.fiscal.providers.sefin_nacional_endpoints import (
