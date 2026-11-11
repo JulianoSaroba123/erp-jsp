@@ -224,3 +224,78 @@ def test_b8a3a4_009_bloqueia_status_nao_documentado():
                 _sucesso()
             ),
         )
+
+
+def test_b8a3a4_010_normaliza_casing_real_sefin_160():
+    dados = {
+        "tipoAmbiente": 2,
+        "versaoAplicativo": "SefinNacional_1.6.0",
+        "dataHoraProcessamento": "2026-11-11T17:50:00-03:00",
+        "idDPS": "DPS123",
+        "erros": [
+            {
+                "Codigo": "E0712",
+                "Descricao": (
+                    "Para ME/EPP o indicador de informacao de valor "
+                    "total de tributos nao pode ser informado."
+                ),
+                "Complemento": None,
+            }
+        ],
+    }
+
+    resposta = normalizar_resposta_emissao_sefin(
+        status_code=400,
+        conteudo=_json_bytes(
+            dados
+        ),
+    )
+
+    assert resposta.sucesso is False
+    assert resposta.id_dps == "DPS123"
+    assert len(
+        resposta.erros
+    ) == 1
+
+    erro = resposta.erros[
+        0
+    ]
+
+    assert erro.codigo == "E0712"
+    assert (
+        erro.descricao
+        == "Para ME/EPP o indicador de informacao de valor "
+        "total de tributos nao pode ser informado."
+    )
+    assert erro.complemento is None
+
+
+def test_b8a3a4_011_preserva_compatibilidade_casing_lowercase():
+    dados = {
+        "tipoAmbiente": 2,
+        "versaoAplicativo": "SEFIN-TESTE",
+        "dataHoraProcessamento": "2026-11-11T17:50:00-03:00",
+        "idDps": "DPS123",
+        "erros": [
+            {
+                "codigo": "E001",
+                "descricao": "Descricao antiga",
+                "complemento": "Detalhe",
+            }
+        ],
+    }
+
+    resposta = normalizar_resposta_emissao_sefin(
+        status_code=400,
+        conteudo=_json_bytes(
+            dados
+        ),
+    )
+
+    assert resposta.id_dps == "DPS123"
+    assert resposta.erros[
+        0
+    ].codigo == "E001"
+    assert resposta.erros[
+        0
+    ].descricao == "Descricao antiga"
