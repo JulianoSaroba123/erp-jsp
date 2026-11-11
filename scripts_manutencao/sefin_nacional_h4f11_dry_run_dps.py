@@ -13,6 +13,7 @@ import gzip
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 from types import SimpleNamespace
@@ -57,11 +58,13 @@ ARQUIVO_VALIDATOR = (
 CNPJ_PRESTADOR = "66298788000172"
 IM_PRESTADOR = "14180"
 MUNICIPIO_TIETE = "3554508"
+MUNICIPIO_QUADRA = "3541653"
 SERIE_DRY_RUN = "9999"
 NUMERO_DPS_DRY_RUN = "999999999999999"
-CODIGO_TRIBUTACAO_NACIONAL = "140601"
-ALIQUOTA_ISS = "2.31"
+CODIGO_TRIBUTACAO_NACIONAL = "140101"
+CODIGO_NBS = "101061900"
 VALOR_CONTROLADO = "1.00"
+ENV_PTOTTRIBSN = "NFSE_H4F11_PTOTTRIBSN"
 
 DESCRICAO_DRY_RUN = (
     "HOMOLOGACAO CONTROLADA H4-F11 - "
@@ -165,9 +168,29 @@ def _agora_homologacao() -> datetime:
     )
 
 
+def _percentual_tot_trib_sn() -> str:
+    valor = str(
+        os.environ.get(
+            ENV_PTOTTRIBSN,
+            "",
+        )
+        or ""
+    ).strip()
+
+    if not valor:
+        raise DryRunDpsInvalido(
+            "Percentual pTotTribSN nao informado. "
+            "Defina NFSE_H4F11_PTOTTRIBSN com a aliquota nominal "
+            "vigente e confirmada do Simples Nacional."
+        )
+
+    return valor
+
+
 def _montar_dps(
     *,
     agora: datetime,
+    percentual_tot_trib_sn: str,
 ):
     return dps_model.montar_dps_canonica(
         ambiente="HOMOLOGACAO",
@@ -197,10 +220,10 @@ def _montar_dps(
                 CODIGO_TRIBUTACAO_NACIONAL
             ),
             "codigo_tributacao_municipal": None,
-            "nbs": None,
+            "nbs": CODIGO_NBS,
             "descricao": DESCRICAO_DRY_RUN,
             "municipio_incidencia_ibge": MUNICIPIO_TIETE,
-            "municipio_prestacao_ibge": MUNICIPIO_TIETE,
+            "municipio_prestacao_ibge": MUNICIPIO_QUADRA,
         },
         valores={
             "valor_servicos": VALOR_CONTROLADO,
@@ -212,10 +235,10 @@ def _montar_dps(
         iss={
             "tributacao_issqn": "1",
             "tipo_retencao": "1",
-            "aliquota": ALIQUOTA_ISS,
+            "aliquota": None,
         },
         totais_tributos={
-            "indicador": "0",
+            "percentual_simples": percentual_tot_trib_sn,
         },
         ibs_cbs=None,
     )
@@ -285,6 +308,7 @@ def executar_dry_run(
     *,
     agora: datetime | None = None,
     material_a1=None,
+    percentual_tot_trib_sn: str | None = None,
 ) -> ResultadoDryRun:
     """Executa toda a pre-emissao em memoria, sem rede."""
 
@@ -302,8 +326,15 @@ def executar_dry_run(
             "Data/hora do dry-run deve possuir timezone."
         )
 
+    percentual = (
+        percentual_tot_trib_sn
+        if percentual_tot_trib_sn is not None
+        else _percentual_tot_trib_sn()
+    )
+
     dps = _montar_dps(
-        agora=momento
+        agora=momento,
+        percentual_tot_trib_sn=percentual,
     )
 
     xml_nao_assinado = (
@@ -437,6 +468,14 @@ def executar() -> int:
             ".",
             ",",
         )
+    )
+    print(
+        "PTOTTRIBSN: "
+        + _percentual_tot_trib_sn().replace(
+            ".",
+            ",",
+        )
+        + "%"
     )
     print(
         "XSD ANTES ASSINATURA: "
