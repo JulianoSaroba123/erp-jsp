@@ -53,7 +53,7 @@ def _mock_base(monkeypatch):
     monkeypatch.setattr(
         service,
         "montar_xml_dps_serializado",
-        lambda dps: b"<DPS>ORIGINAL</DPS>",
+        lambda dps, **kwargs: b"<DPS>ORIGINAL</DPS>",
     )
 
     monkeypatch.setattr(
