@@ -1,11 +1,16 @@
 """H4-F16 - contrato da comparação read-only do convênio de Tietê."""
 
+from datetime import datetime, timedelta, timezone
 import importlib.util
 import json
 from pathlib import Path
 import sys
 from types import SimpleNamespace
 
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.x509.oid import NameOID
 import pytest
 import requests
 
@@ -32,6 +37,80 @@ def _modulo():
         modulo
     )
     return modulo
+
+
+def _material():
+    chave = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
+
+    agora = datetime.now(
+        timezone.utc
+    )
+
+    nome = x509.Name(
+        [
+            x509.NameAttribute(
+                NameOID.COUNTRY_NAME,
+                "BR",
+            ),
+            x509.NameAttribute(
+                NameOID.ORGANIZATION_NAME,
+                "ERP JSP H4-F16 TESTE",
+            ),
+            x509.NameAttribute(
+                NameOID.COMMON_NAME,
+                "H4-F16",
+            ),
+        ]
+    )
+
+    certificado = (
+        x509.CertificateBuilder()
+        .subject_name(
+            nome
+        )
+        .issuer_name(
+            nome
+        )
+        .public_key(
+            chave.public_key()
+        )
+        .serial_number(
+            x509.random_serial_number()
+        )
+        .not_valid_before(
+            (
+                agora
+                - timedelta(
+                    days=1
+                )
+            ).replace(
+                tzinfo=None
+            )
+        )
+        .not_valid_after(
+            (
+                agora
+                + timedelta(
+                    days=30
+                )
+            ).replace(
+                tzinfo=None
+            )
+        )
+        .sign(
+            chave,
+            hashes.SHA256(),
+        )
+    )
+
+    return SimpleNamespace(
+        chave_privada=chave,
+        certificado=certificado,
+        cadeia=(),
+    )
 
 
 def _resp(
@@ -105,6 +184,7 @@ def test_h4f16_003_compara_200_200():
     resultado = modulo.executar_comparacao(
         session_prodrest=SessaoProdRest(),
         session_producao=SessaoProducao(),
+        material_a1=_material(),
     )
 
     assert resultado[
@@ -193,6 +273,7 @@ def test_h4f16_006_request_nao_envia_corpo():
         url=modulo.URL_PRODREST,
         ambiente="PRODUCAO_RESTRITA",
         session=Sessao(),
+        material_a1=_material(),
     )
 
     assert len(
@@ -214,6 +295,9 @@ def test_h4f16_006_request_nao_envia_corpo():
     assert chamada[
         "allow_redirects"
     ] is False
+    assert chamada[
+        "cert"
+    ]
 
 
 def test_h4f16_007_timeout_e_controlado():
@@ -233,6 +317,7 @@ def test_h4f16_007_timeout_e_controlado():
             url=modulo.URL_PRODREST,
             ambiente="PRODUCAO_RESTRITA",
             session=Sessao(),
+            material_a1=_material(),
         )
 
 
