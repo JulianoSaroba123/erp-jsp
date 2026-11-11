@@ -31,6 +31,9 @@ from app.fiscal.providers.sefin_nacional_config import (
 from app.fiscal.providers.sefin_nacional_emissao import (
     executar_emissao_nfse_http,
 )
+from app.fiscal.providers.sefin_nacional_parametrizacao import (
+    executar_consulta_convenio_http,
+)
 from app.fiscal.providers.sefin_nacional_resposta import (
     RespostaEmissaoSefinInvalida,
     normalizar_resposta_emissao_sefin,
@@ -412,6 +415,18 @@ class SefinNacionalProvider(NfseProvider):
 
         material_certificado = (
             carregar_certificado_a1_do_ambiente()
+        )
+
+        metadados = obter_configuracao_sefin(
+            ambiente
+        )
+
+        executar_consulta_convenio_http(
+            ambiente=ambiente,
+            codigo_municipio=metadados[
+                "codigo_municipio"
+            ],
+            material_certificado=material_certificado,
         )
 
         try:
