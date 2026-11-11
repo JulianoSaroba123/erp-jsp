@@ -144,10 +144,11 @@ def _json_400():
             )[:45],
             "erros": [
                 {
-                    "codigo": "TESTE",
-                    "descricao": (
+                    "Codigo": "TESTE",
+                    "Descricao": (
                         "Rejeicao de negocio controlada"
                     ),
+                    "Complemento": None,
                 }
             ],
         },
