@@ -79,7 +79,7 @@ def _xml():
     return (
         b'<?xml version="1.0" encoding="UTF-8"?>'
         b'<DPS xmlns="http://www.sped.fazenda.gov.br/nfse" versao="1.01">'
-        b'<infDPS Id="ID355450800000000000000000000000000000000001">'
+        b'<infDPS Id="DPS355450820000000000000100001000000000000001">'
         b'<tpAmb>2</tpAmb>'
         b'<serie>1</serie>'
         b'<nDPS>1</nDPS>'
@@ -175,7 +175,7 @@ def test_b8a2_003_algoritmos_e_reference_corretos():
         == RSA_SHA1_URI
     )
 
-    assert reference.get("URI").startswith("#ID")
+    assert reference.get("URI").startswith("#DPS")
 
     assert [
         item.get("Algorithm")
@@ -269,7 +269,7 @@ def test_b8a2_006_rejeita_assinatura_duplicada():
 
 def test_b8a2_007_rejeita_id_ausente():
     xml = _xml().replace(
-        b' Id="ID355450800000000000000000000000000000000001"',
+        b' Id="DPS355450820000000000000100001000000000000001"',
         b"",
     )
 
