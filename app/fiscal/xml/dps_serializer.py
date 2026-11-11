@@ -583,8 +583,34 @@ def _valor_monetario_nao_zero(
     return valor
 
 
-def _adicionar_valores_basicos(inf_dps, valores):
-    """Serializa o bloco inicial TCInfoValores da DPS 1.01."""
+def _normalizar_ambiente_serializacao(ambiente):
+    """Normaliza o perfil de XML sem alterar o default legado."""
+
+    if ambiente is None:
+        return "PRODUCAO"
+
+    ambiente_normalizado = str(
+        ambiente or ""
+    ).strip().upper()
+
+    if ambiente_normalizado not in {
+        "PRODUCAO",
+        "HOMOLOGACAO",
+    }:
+        raise SerializacaoDpsInvalida(
+            "Ambiente de serializacao da DPS nao suportado."
+        )
+
+    return ambiente_normalizado
+
+
+def _adicionar_valores_basicos(
+    inf_dps,
+    valores,
+    *,
+    ambiente="PRODUCAO",
+):
+    """Serializa TCInfoValores conforme o perfil XSD do ambiente."""
 
     if not isinstance(valores, dict):
         raise SerializacaoDpsInvalida(
@@ -654,16 +680,32 @@ def _adicionar_valores_basicos(inf_dps, valores):
     )
 
     if deducoes is not None:
-        deducoes_xml = etree.SubElement(
-            valores_xml,
-            _qname("vDedRed"),
+        ambiente_normalizado = _normalizar_ambiente_serializacao(
+            ambiente
         )
 
-        adicionar_elemento_nfse(
-            deducoes_xml,
-            "vDR",
-            deducoes,
-        )
+        if ambiente_normalizado == "HOMOLOGACAO":
+            ajuste_xml = etree.SubElement(
+                valores_xml,
+                _qname("vAjusteBC"),
+            )
+
+            adicionar_elemento_nfse(
+                ajuste_xml,
+                "vAjusteBCISSQN",
+                deducoes,
+            )
+        else:
+            deducoes_xml = etree.SubElement(
+                valores_xml,
+                _qname("vDedRed"),
+            )
+
+            adicionar_elemento_nfse(
+                deducoes_xml,
+                "vDR",
+                deducoes,
+            )
 
     return valores_xml
 
@@ -770,8 +812,10 @@ def _adicionar_tributacao_municipal(
 def _adicionar_ibs_cbs(
     inf_dps,
     ibs_cbs,
+    *,
+    ambiente="PRODUCAO",
 ):
-    """Serializa o grupo declaratorio IBS/CBS da DPS 1.01."""
+    """Serializa IBS/CBS conforme o perfil XSD do ambiente."""
 
     if ibs_cbs is None or ibs_cbs == {}:
         return None
@@ -781,20 +825,25 @@ def _adicionar_ibs_cbs(
             "Grupo ibs_cbs da DPS canonica invalido."
         )
 
+    ambiente_normalizado = _normalizar_ambiente_serializacao(
+        ambiente
+    )
+
     ibs_xml = etree.SubElement(
         inf_dps,
         _qname("IBSCBS"),
     )
 
-    adicionar_elemento_nfse(
-        ibs_xml,
-        "finNFSe",
-        _valor_obrigatorio(
-            ibs_cbs,
-            "fin_nfse",
-            grupo="ibs_cbs",
-        ),
-    )
+    if ambiente_normalizado == "PRODUCAO":
+        adicionar_elemento_nfse(
+            ibs_xml,
+            "finNFSe",
+            _valor_obrigatorio(
+                ibs_cbs,
+                "fin_nfse",
+                grupo="ibs_cbs",
+            ),
+        )
 
     ind_final = _valor_opcional(
         ibs_cbs,
@@ -838,13 +887,16 @@ def _adicionar_ibs_cbs(
         _qname("trib"),
     )
 
-    g_ibs_cbs = etree.SubElement(
-        trib_xml,
-        _qname("gIBSCBS"),
-    )
+    destino_cst = trib_xml
+
+    if ambiente_normalizado == "PRODUCAO":
+        destino_cst = etree.SubElement(
+            trib_xml,
+            _qname("gIBSCBS"),
+        )
 
     adicionar_elemento_nfse(
-        g_ibs_cbs,
+        destino_cst,
         "CST",
         _valor_obrigatorio(
             ibs_cbs,
@@ -854,7 +906,7 @@ def _adicionar_ibs_cbs(
     )
 
     adicionar_elemento_nfse(
-        g_ibs_cbs,
+        destino_cst,
         "cClassTrib",
         _valor_obrigatorio(
             ibs_cbs,
@@ -865,9 +917,16 @@ def _adicionar_ibs_cbs(
 
     return ibs_xml
 
+def montar_xml_dps(
+    dps_canonica: dict,
+    *,
+    ambiente="PRODUCAO",
+):
+    """Monta a DPS conforme o perfil XSD selecionado."""
 
-def montar_xml_dps(dps_canonica: dict):
-    """Monta a estrutura XML inicial DPS/infDPS conforme layout 1.01."""
+    ambiente_serializacao = _normalizar_ambiente_serializacao(
+        ambiente
+    )
 
     if not isinstance(dps_canonica, dict):
         raise SerializacaoDpsInvalida(
@@ -950,6 +1009,7 @@ def montar_xml_dps(dps_canonica: dict):
     valores_xml = _adicionar_valores_basicos(
         inf_dps,
         dps_canonica.get("valores"),
+        ambiente=ambiente_serializacao,
     )
 
     _adicionar_tributacao_municipal(
@@ -961,6 +1021,7 @@ def montar_xml_dps(dps_canonica: dict):
     _adicionar_ibs_cbs(
         inf_dps,
         dps_canonica.get("ibs_cbs"),
+        ambiente=ambiente_serializacao,
     )
 
     return raiz
@@ -969,11 +1030,14 @@ def montar_xml_dps(dps_canonica: dict):
 
 def montar_xml_dps_serializado(
     dps_canonica: dict,
+    *,
+    ambiente="PRODUCAO",
 ) -> bytes:
-    """Monta e serializa a DPS canonica em bytes UTF-8 estaveis."""
+    """Monta e serializa a DPS no perfil XSD selecionado."""
 
     raiz = montar_xml_dps(
-        dps_canonica
+        dps_canonica,
+        ambiente=ambiente,
     )
 
     validar_estrutura_xml_dps(
