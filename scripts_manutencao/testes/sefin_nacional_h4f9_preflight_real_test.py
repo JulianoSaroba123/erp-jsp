@@ -222,14 +222,17 @@ def test_h4f9_006_xsd_prodrest_compila_sem_app():
     modulo._validar_xsd()
 
 
-def test_h4f9_007_http_e_bloqueado():
+def test_h4f9_007_http_e_bloqueado(
+    monkeypatch,
+):
     modulo = _modulo()
 
-    os.environ[
-        modulo.ENV_ENDPOINT
-    ] = (
-        "http://sefin.producaorestrita.nfse.gov.br"
-        "/API/SefinNacional"
+    monkeypatch.setenv(
+        modulo.ENV_ENDPOINT,
+        (
+            "http://sefin.producaorestrita.nfse.gov.br"
+            "/API/SefinNacional"
+        ),
     )
 
     try:
