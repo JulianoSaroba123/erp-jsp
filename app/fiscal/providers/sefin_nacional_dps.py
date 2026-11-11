@@ -836,7 +836,7 @@ def montar_iss_canonico(iss=None, configuracao_fiscal=None):
 def montar_totais_tributos_canonico(
     totais_tributos=None,
 ):
-    """Monta a declaracao canonica de totais tributarios da DPS."""
+    """Monta uma das escolhas oficiais do grupo totTrib."""
 
     dados = dict(
         totais_tributos or {}
@@ -848,18 +848,69 @@ def montar_totais_tributos_canonico(
     indicador = _texto(
         dados.get("indicador"),
         campo="totais_tributos.indicador",
-        obrigatorio=True,
     )
 
-    # B5.4D suporta somente a declaracao explicita
-    # correspondente ao indTotTrib=0 do layout DPS 1.01.
-    if indicador != "0":
+    percentual_simples = dados.get(
+        "percentual_simples"
+    )
+
+    escolhas = sum(
+        valor not in (
+            None,
+            "",
+        )
+        for valor in (
+            indicador,
+            percentual_simples,
+        )
+    )
+
+    if escolhas != 1:
         raise DpsCanonicaInvalida(
-            "Indicador de totais tributarios deve ser 0 neste contrato."
+            "Totais tributarios devem informar exatamente uma escolha "
+            "entre indicador e percentual_simples."
+        )
+
+    if indicador is not None:
+        if indicador != "0":
+            raise DpsCanonicaInvalida(
+                "Indicador de totais tributarios deve ser 0."
+            )
+
+        return {
+            "indicador": indicador,
+        }
+
+    try:
+        percentual = Decimal(
+            str(
+                percentual_simples
+            ).strip().replace(
+                ",",
+                ".",
+            )
+        )
+    except (
+        InvalidOperation,
+        ValueError,
+        TypeError,
+    ) as exc:
+        raise DpsCanonicaInvalida(
+            "Percentual total do Simples Nacional invalido."
+        ) from exc
+
+    if not Decimal("0") <= percentual <= Decimal("100"):
+        raise DpsCanonicaInvalida(
+            "Percentual total do Simples Nacional deve estar entre 0 e 100."
         )
 
     return {
-        "indicador": indicador,
+        "percentual_simples": format(
+            percentual.quantize(
+                Decimal("0.01")
+            ),
+            "f",
+        ),
     }
 
 
