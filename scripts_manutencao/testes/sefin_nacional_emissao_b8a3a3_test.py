@@ -43,6 +43,23 @@ def _assinatura_valida(monkeypatch):
     )
 
 
+def _xsd_valido(monkeypatch):
+    monkeypatch.setattr(
+        emissao,
+        "obter_caminho_xsd_dps",
+        lambda versao, *, ambiente=None: "DPS_v1.01.xsd",
+    )
+
+    monkeypatch.setattr(
+        emissao,
+        "validar_xml_dps_xsd",
+        lambda xml, caminho: SimpleNamespace(
+            valido=True,
+            erros=(),
+        ),
+    )
+
+
 def test_b8a3a3_001_monta_json_gzip_base64(monkeypatch):
     _assinatura_valida(monkeypatch)
 
@@ -109,6 +126,7 @@ def test_b8a3a3_003_bloqueia_xml_sem_assinatura_valida(
 
 def test_b8a3a3_004_executa_post_homologacao(monkeypatch):
     _assinatura_valida(monkeypatch)
+    _xsd_valido(monkeypatch)
 
     monkeypatch.setenv(
         "NFSE_SEFIN_BASE_URL_HOMOLOGACAO",
