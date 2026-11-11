@@ -28,6 +28,19 @@ def _configuracao(
     )
 
 
+def _convenio_ativo(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        modulo,
+        "executar_consulta_convenio_http",
+        lambda **kwargs: SimpleNamespace(
+            ativo=True,
+            bloqueio_ambiental=False,
+        ),
+    )
+
+
 def _payload(
     *,
     ambiente="HOMOLOGACAO",
@@ -153,6 +166,10 @@ def test_b8a3a5b_001_disjuntor_bloqueia_antes_do_certificado(
 def test_b8a3a5b_002_sucesso_201_vira_aceita(
     monkeypatch,
 ):
+    _convenio_ativo(
+        monkeypatch
+    )
+
     provider = SefinNacionalProvider()
     material = object()
 
@@ -207,6 +224,10 @@ def test_b8a3a5b_002_sucesso_201_vira_aceita(
 def test_b8a3a5b_003_http_400_vira_rejeitada(
     monkeypatch,
 ):
+    _convenio_ativo(
+        monkeypatch
+    )
+
     provider = SefinNacionalProvider()
 
     monkeypatch.setattr(
@@ -255,6 +276,10 @@ def test_b8a3a5b_003_http_400_vira_rejeitada(
 def test_b8a3a5b_004_403_continua_erro_tecnico(
     monkeypatch,
 ):
+    _convenio_ativo(
+        monkeypatch
+    )
+
     provider = SefinNacionalProvider()
 
     monkeypatch.setattr(
@@ -367,6 +392,10 @@ def test_b8a3a5b_007_exige_conteudo_assinado_em_bytes():
 def test_b8a3a5b_008_sucesso_sem_nnfse_e_bloqueado(
     monkeypatch,
 ):
+    _convenio_ativo(
+        monkeypatch
+    )
+
     provider = SefinNacionalProvider()
 
     monkeypatch.setattr(
