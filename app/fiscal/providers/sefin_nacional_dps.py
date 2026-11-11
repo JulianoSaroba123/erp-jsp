@@ -481,6 +481,18 @@ def montar_dps_canonica(
             "Municipio de prestacao invalido."
         )
 
+    nome_prestador = None
+
+    if tipo_emitente in {
+        "2",
+        "3",
+    }:
+        nome_prestador = _texto(
+            prestador.get("nome"),
+            campo="prestador.nome",
+            obrigatorio=True,
+        )
+
     tomador_canonico = None
 
     if tomador:
@@ -574,10 +586,10 @@ def montar_dps_canonica(
                 campo="prestador.inscricao_municipal",
             ),
             "municipio_ibge": municipio_prestador,
-            "nome": _texto(
-                prestador.get("nome"),
-                campo="prestador.nome",
-            ),
+            # Regra nacional E0121/E0122:
+            # quando o proprio prestador emite (tpEmit=1),
+            # xNome deve ser omitido e sera recuperado do cadastro nacional.
+            "nome": nome_prestador,
             "regime_tributario": {
                 "op_simp_nac": op_simp_nac,
                 "reg_ap_trib_sn": _texto(
