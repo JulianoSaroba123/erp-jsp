@@ -113,6 +113,52 @@ def test_h4f5_002_homologacao_usa_vajustebc():
     ).text == "100.00"
 
 
+def test_h4f5_002b_ordem_cnbs_por_ambiente():
+    dados = _dados_completos()
+
+    producao = montar_xml_dps(
+        dados,
+        ambiente="PRODUCAO",
+    )
+
+    homologacao = montar_xml_dps(
+        dados,
+        ambiente="HOMOLOGACAO",
+    )
+
+    c_serv_producao = _filho(
+        _filho(
+            _inf_dps(producao),
+            "serv",
+        ),
+        "cServ",
+    )
+
+    c_serv_homologacao = _filho(
+        _filho(
+            _inf_dps(homologacao),
+            "serv",
+        ),
+        "cServ",
+    )
+
+    assert [
+        _localname(elemento)
+        for elemento in c_serv_producao
+    ][-2:] == [
+        "xDescServ",
+        "cNBS",
+    ]
+
+    assert [
+        _localname(elemento)
+        for elemento in c_serv_homologacao
+    ][-2:] == [
+        "cNBS",
+        "xDescServ",
+    ]
+
+
 def test_h4f5_003_producao_preserva_ibscbs_legado():
     raiz = montar_xml_dps(
         _dados_completos(),
