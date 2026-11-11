@@ -1,11 +1,16 @@
 """H4-F8 - preflight local de HOMOLOGACAO sem rede."""
 
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import runpy
 from types import SimpleNamespace
 
 import pytest
 import requests
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.x509.oid import NameOID
 
 from app.fiscal.providers import sefin_nacional_preflight as preflight
 from app.fiscal.providers.sefin_nacional_preflight import (
@@ -252,3 +257,110 @@ def test_h4f8_008_carrega_certificado_sem_expor_segredo(
         resultado,
         "chave_privada",
     )
+
+
+def test_h4f8_009_endpoint_ausente_e_bloqueado(
+    monkeypatch,
+):
+    monkeypatch.delenv(
+        "NFSE_SEFIN_BASE_URL_HOMOLOGACAO",
+        raising=False,
+    )
+
+    with pytest.raises(
+        PreflightSefinInvalido,
+        match="Endpoint operacional invalido",
+    ):
+        executar_preflight_local_sefin(
+            configuracao_fiscal=_configuracao(),
+            material_certificado=_material(),
+        )
+
+
+def test_h4f8_010_chave_divergente_do_certificado_e_bloqueada(
+    monkeypatch,
+):
+    _base(monkeypatch)
+
+    primeiro = _material()
+    segundo = _material()
+
+    material_divergente = SimpleNamespace(
+        chave_privada=primeiro.chave_privada,
+        certificado=segundo.certificado,
+        cadeia=(),
+    )
+
+    with pytest.raises(
+        PreflightSefinInvalido,
+        match="nao corresponde",
+    ):
+        executar_preflight_local_sefin(
+            configuracao_fiscal=_configuracao(),
+            material_certificado=material_divergente,
+        )
+
+
+def test_h4f8_011_certificado_vencido_e_bloqueado(
+    monkeypatch,
+):
+    _base(monkeypatch)
+
+    chave = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+    )
+
+    nome = x509.Name(
+        [
+            x509.NameAttribute(
+                NameOID.COUNTRY_NAME,
+                "BR",
+            ),
+            x509.NameAttribute(
+                NameOID.COMMON_NAME,
+                "H4-F8 VENCIDO",
+            ),
+        ]
+    )
+
+    agora = datetime.now(
+        timezone.utc
+    )
+
+    certificado = (
+        x509.CertificateBuilder()
+        .subject_name(nome)
+        .issuer_name(nome)
+        .public_key(chave.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(
+            (agora - timedelta(days=30)).replace(
+                tzinfo=None
+            )
+        )
+        .not_valid_after(
+            (agora - timedelta(days=1)).replace(
+                tzinfo=None
+            )
+        )
+        .sign(
+            chave,
+            hashes.SHA256(),
+        )
+    )
+
+    material = SimpleNamespace(
+        chave_privada=chave,
+        certificado=certificado,
+        cadeia=(),
+    )
+
+    with pytest.raises(
+        PreflightSefinInvalido,
+        match="fora do periodo de validade",
+    ):
+        executar_preflight_local_sefin(
+            configuracao_fiscal=_configuracao(),
+            material_certificado=material,
+        )
