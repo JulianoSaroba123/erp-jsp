@@ -105,6 +105,19 @@ def _tipo_ambiente(
     return valor
 
 
+def _primeiro_campo(
+    dados: dict,
+    *chaves: str,
+):
+    """Retorna o primeiro campo presente, preservando compatibilidade de casing."""
+
+    for chave in chaves:
+        if chave in dados:
+            return dados.get(chave)
+
+    return None
+
+
 def _mensagem(
     valor,
 ) -> MensagemProcessamentoSefin:
@@ -115,20 +128,36 @@ def _mensagem(
 
     return MensagemProcessamentoSefin(
         mensagem=_texto_opcional(
-            valor.get("mensagem"),
-            campo="mensagem",
+            _primeiro_campo(
+                valor,
+                "mensagem",
+                "Mensagem",
+            ),
+            campo="mensagem/Mensagem",
         ),
         codigo=_texto_opcional(
-            valor.get("codigo"),
-            campo="codigo",
+            _primeiro_campo(
+                valor,
+                "codigo",
+                "Codigo",
+            ),
+            campo="codigo/Codigo",
         ),
         descricao=_texto_opcional(
-            valor.get("descricao"),
-            campo="descricao",
+            _primeiro_campo(
+                valor,
+                "descricao",
+                "Descricao",
+            ),
+            campo="descricao/Descricao",
         ),
         complemento=_texto_opcional(
-            valor.get("complemento"),
-            campo="complemento",
+            _primeiro_campo(
+                valor,
+                "complemento",
+                "Complemento",
+            ),
+            campo="complemento/Complemento",
         ),
     )
 
@@ -321,10 +350,12 @@ def normalizar_resposta_emissao_sefin(
     )
 
     id_dps = _texto_opcional(
-        dados.get(
-            "idDPS"
+        _primeiro_campo(
+            dados,
+            "idDPS",
+            "idDps",
         ),
-        campo="idDPS",
+        campo="idDPS/idDps",
     )
 
     return RespostaEmissaoSefin(
