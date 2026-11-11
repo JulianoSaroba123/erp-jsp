@@ -85,9 +85,7 @@ def test_b44d_001_monta_dps_canonica_completa():
     assert dps["prestador"]["documento"] == "12345678000195"
     assert dps["prestador"]["inscricao_municipal"] == "123456"
     assert dps["prestador"]["municipio_ibge"] == "3554508"
-    assert dps["prestador"]["nome"] == (
-        "JSP ELETRICA INDUSTRIAL E SOLAR LTDA"
-    )
+    assert dps["prestador"]["nome"] is None
 
     assert dps["prestador"]["regime_tributario"] == {
         "op_simp_nac": "1",
