@@ -1,4 +1,4 @@
-"""H4-F9 - teste do script operacional de preflight real local."""
+"""H4-F9 - testes do preflight real standalone e sem banco."""
 
 import importlib.util
 import os
@@ -28,13 +28,17 @@ def _modulo():
     return modulo
 
 
-def test_h4f9_001_nao_carrega_dotenv_automaticamente():
+def test_h4f9_001_nao_importa_app_flask_nem_dotenv():
     texto = SCRIPT.read_text(
         encoding="utf-8"
     )
 
+    assert "from app" not in texto
+    assert "import app" not in texto
     assert "load_dotenv" not in texto
     assert "dotenv" not in texto.lower()
+    assert "create_app" not in texto
+    assert "sqlalchemy" not in texto.lower()
 
 
 def test_h4f9_002_exige_endpoint_e_certificado(
@@ -55,7 +59,7 @@ def test_h4f9_002_exige_endpoint_e_certificado(
 
     try:
         modulo._validar_variaveis_minimas()
-    except modulo.PreflightSefinInvalido as exc:
+    except modulo.PreflightStandaloneInvalido as exc:
         mensagem = str(
             exc
         )
@@ -78,7 +82,10 @@ def test_h4f9_003_saida_nao_expoe_segredos(
 
     monkeypatch.setenv(
         modulo.ENV_ENDPOINT,
-        "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional",
+        (
+            "https://sefin.producaorestrita.nfse.gov.br"
+            "/API/SefinNacional"
+        ),
     )
     monkeypatch.setenv(
         modulo.ENV_PFX,
@@ -91,22 +98,40 @@ def test_h4f9_003_saida_nao_expoe_segredos(
 
     monkeypatch.setattr(
         modulo,
-        "executar_preflight_local_sefin",
-        lambda **kwargs: SimpleNamespace(
-            ambiente="HOMOLOGACAO",
-            ambiente_externo="PRODUCAO_RESTRITA",
-            perfil_xsd="PRODREST-v1.01-20261020",
-            endpoint_emissao=(
-                "https://sefin.producaorestrita.nfse.gov.br"
-                "/API/SefinNacional/nfse"
+        "_validar_xsd",
+        lambda: None,
+    )
+    monkeypatch.setattr(
+        modulo,
+        "_carregar_material_a1",
+        lambda: (
+            object(),
+            SimpleNamespace(
+                fingerprint=lambda algoritmo: bytes.fromhex(
+                    "AA" * 32
+                )
             ),
-            certificado_sha256=(
-                "A" * 64
-            ),
-            mtls_ok=True,
-            integracao_ativa=False,
-            rede_utilizada=False,
+            (),
+            "PFX_PATH",
         ),
+    )
+
+    class ContextoFake:
+        def __enter__(self):
+            return None
+
+        def __exit__(
+            self,
+            exc_type,
+            exc,
+            tb,
+        ):
+            return False
+
+    monkeypatch.setattr(
+        modulo,
+        "_materializar_mtls",
+        lambda *args, **kwargs: ContextoFake(),
     )
 
     assert modulo.executar() == 0
@@ -114,86 +139,50 @@ def test_h4f9_003_saida_nao_expoe_segredos(
     saida = capsys.readouterr().out
 
     assert "STATUS: OK" in saida
+    assert "BANCO ACESSADO: False" in saida
+    assert "FLASK INICIALIZADO: False" in saida
     assert "TRANSMISSAO: NAO EXECUTADA" in saida
-    assert "REDE UTILIZADA: False" in saida
     assert "SENHA-SUPER-SECRETA" not in saida
     assert "certificado-real.pfx" not in saida
-    assert "C:\\segredo" not in saida
+    assert r"C:\segredo" not in saida
     assert "AAAAAAAAAAAAAAAA" not in saida
 
 
-def test_h4f9_004_configuracao_sintetica_mantem_disjuntor_off(
+def test_h4f9_004_endpoint_homologacao_e_fixo(
     monkeypatch,
 ):
     modulo = _modulo()
 
+    base = (
+        "https://sefin.producaorestrita.nfse.gov.br"
+        "/API/SefinNacional"
+    )
+
     monkeypatch.setenv(
         modulo.ENV_ENDPOINT,
-        "https://sefin.producaorestrita.nfse.gov.br/API/SefinNacional",
-    )
-    monkeypatch.setenv(
-        modulo.ENV_PFX_B64,
-        r"C:\segredo\certificado.b64",
+        base,
     )
 
-    capturado = {}
-
-    def preflight(**kwargs):
-        capturado.update(
-            kwargs
-        )
-        return SimpleNamespace(
-            ambiente="HOMOLOGACAO",
-            ambiente_externo="PRODUCAO_RESTRITA",
-            perfil_xsd="PRODREST-v1.01-20261020",
-            endpoint_emissao=(
-                "https://sefin.producaorestrita.nfse.gov.br"
-                "/API/SefinNacional/nfse"
-            ),
-            certificado_sha256="B" * 64,
-            mtls_ok=True,
-            integracao_ativa=False,
-            rede_utilizada=False,
-        )
-
-    monkeypatch.setattr(
-        modulo,
-        "executar_preflight_local_sefin",
-        preflight,
+    assert modulo._validar_endpoint() == (
+        base + "/nfse"
     )
 
-    assert modulo.executar() == 0
 
-    configuracao = capturado[
-        "configuracao_fiscal"
-    ]
-
-    assert configuracao.provider == "SEFIN_NACIONAL"
-    assert configuracao.ambiente == "HOMOLOGACAO"
-    assert configuracao.integracao_ativa is False
-
-
-def test_h4f9_005_execucao_direta_encontra_pacote_app():
+def test_h4f9_005_execucao_direta_nao_inicializa_erp():
     ambiente = dict(
         os.environ
     )
 
-    ambiente.pop(
+    for nome in (
         "NFSE_SEFIN_BASE_URL_HOMOLOGACAO",
-        None,
-    )
-    ambiente.pop(
         "NFSE_CERTIFICADO_PFX_PATH",
-        None,
-    )
-    ambiente.pop(
         "NFSE_CERTIFICADO_PFX_B64_PATH",
-        None,
-    )
-    ambiente.pop(
         "NFSE_CERTIFICADO_PFX_PASSWORD",
-        None,
-    )
+    ):
+        ambiente.pop(
+            nome,
+            None,
+        )
 
     processo = subprocess.run(
         [
@@ -220,3 +209,34 @@ def test_h4f9_005_execucao_direta_encontra_pacote_app():
     assert "STATUS: FALHA" in saida
     assert "Variaveis obrigatorias ausentes" in saida
     assert "ModuleNotFoundError" not in saida
+    assert "ERP JSP iniciado com sucesso" not in saida
+    assert "Executando migrações automáticas" not in saida
+    assert "Tabelas do banco de dados" not in saida
+    assert "BANCO ACESSADO: False" in saida
+    assert "FLASK INICIALIZADO: False" in saida
+
+
+def test_h4f9_006_xsd_prodrest_compila_sem_app():
+    modulo = _modulo()
+
+    modulo._validar_xsd()
+
+
+def test_h4f9_007_http_e_bloqueado():
+    modulo = _modulo()
+
+    os.environ[
+        modulo.ENV_ENDPOINT
+    ] = (
+        "http://sefin.producaorestrita.nfse.gov.br"
+        "/API/SefinNacional"
+    )
+
+    try:
+        modulo._validar_endpoint()
+    except modulo.PreflightStandaloneInvalido as exc:
+        assert "HTTPS" in str(exc)
+    else:
+        raise AssertionError(
+            "HTTP deveria ser bloqueado."
+        )
