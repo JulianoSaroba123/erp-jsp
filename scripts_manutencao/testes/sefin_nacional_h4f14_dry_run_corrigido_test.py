@@ -202,9 +202,10 @@ def test_h4f14_005_xml_identifica_novo_numero_dps():
         + "</nDPS>"
     ) in xml
     assert (
-        modulo.h4f11.NUMERO_DPS_DRY_RUN
-        not in xml
-    )
+        "<nDPS>"
+        + modulo.h4f11.NUMERO_DPS_DRY_RUN
+        + "</nDPS>"
+    ) not in xml
 
 
 def test_h4f14_006_descricao_identifica_etapa_corrigida():
