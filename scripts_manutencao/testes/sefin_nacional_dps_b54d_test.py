@@ -320,3 +320,79 @@ def test_b54d_011_provider_nao_fabrica_totais_tributos():
     )
 
     assert "totais_tributos" not in dps
+
+
+
+def test_b54d_012_serializa_percentual_total_simples_nacional():
+    dados = _dados_base()
+
+    dados["iss"] = {
+        "tributacao_issqn": "1",
+        "tipo_retencao": "1",
+        "aliquota": None,
+    }
+
+    dados["totais_tributos"] = {
+        "percentual_simples": "6.00",
+    }
+
+    valores = _valores(
+        dados
+    )
+
+    trib = _filho(
+        valores,
+        "trib",
+    )
+
+    trib_mun = _filho(
+        trib,
+        "tribMun",
+    )
+
+    assert [
+        _localname(elemento)
+        for elemento in trib_mun
+    ] == [
+        "tribISSQN",
+        "tpRetISSQN",
+    ]
+
+    tot_trib = _filho(
+        trib,
+        "totTrib",
+    )
+
+    assert [
+        _localname(elemento)
+        for elemento in tot_trib
+    ] == [
+        "pTotTribSN",
+    ]
+
+    assert tot_trib[
+        0
+    ].text == "6.00"
+
+
+def test_b54d_013_contrato_canonico_percentual_simples():
+    assert montar_totais_tributos_canonico(
+        {
+            "percentual_simples": "6,15",
+        }
+    ) == {
+        "percentual_simples": "6.15",
+    }
+
+
+def test_b54d_014_rejeita_duas_escolhas_totais_tributos():
+    with pytest.raises(
+        DpsCanonicaInvalida,
+        match="exatamente uma escolha",
+    ):
+        montar_totais_tributos_canonico(
+            {
+                "indicador": "0",
+                "percentual_simples": "6.00",
+            }
+        )
