@@ -166,9 +166,9 @@ def _obter_inf_dps(
             "Atributo Id de infDPS obrigatorio."
         )
 
-    if not identificador.startswith("ID"):
+    if not identificador.startswith("DPS"):
         raise AssinaturaXmlDpsInvalida(
-            "Id de infDPS deve iniciar com ID."
+            "Id de infDPS deve iniciar com DPS."
         )
 
     return inf_dps, identificador
