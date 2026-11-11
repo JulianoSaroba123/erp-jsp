@@ -334,15 +334,15 @@ def consultar_nfse(
                 allow_redirects=False,
                 cert=caminhos,
             )
-    except requests.SSLError as exc:
+    except requests.exceptions.SSLError as exc:
         raise ConsultaNfseProducaoInvalida(
             "Falha TLS/mTLS na consulta de Produção."
         ) from exc
-    except requests.Timeout as exc:
+    except requests.exceptions.Timeout as exc:
         raise ConsultaNfseProducaoInvalida(
             "Timeout na consulta de Produção."
         ) from exc
-    except requests.RequestException as exc:
+    except requests.exceptions.RequestException as exc:
         raise ConsultaNfseProducaoInvalida(
             "Falha HTTP na consulta de Produção."
         ) from exc
