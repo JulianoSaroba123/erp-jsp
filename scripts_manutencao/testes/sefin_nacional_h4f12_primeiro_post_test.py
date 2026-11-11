@@ -297,6 +297,24 @@ def test_h4f12_002_executa_um_unico_post_sem_retry(
     assert dados[
         "retry_automatico"
     ] is False
+    assert dados[
+        "resposta_erro"
+    ][
+        "erros"
+    ][
+        0
+    ][
+        "Codigo"
+    ] == "TESTE"
+    assert dados[
+        "resposta_erro"
+    ][
+        "erros"
+    ][
+        0
+    ][
+        "Descricao"
+    ] == "Rejeicao de negocio controlada"
 
 
 def test_h4f12_003_segunda_execucao_mesmo_marcador_e_bloqueada(
