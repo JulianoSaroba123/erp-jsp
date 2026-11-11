@@ -18,6 +18,7 @@ def _objetos_base():
     configuracao_fiscal = SimpleNamespace(
         id=1,
         proximo_rps=321,
+        ambiente="HOMOLOGACAO",
     )
 
     configuracao_institucional = SimpleNamespace(
@@ -80,7 +81,7 @@ def _executar(
     monkeypatch.setattr(
         service,
         "obter_caminho_xsd_dps",
-        lambda versao: (
+        lambda versao, *, ambiente=None: (
             eventos.append("xsd")
             or "DPS_v1.01.xsd"
         ),
@@ -172,7 +173,7 @@ def test_b7a3_002_xsd_invalido_nao_publica_conteudo(
     monkeypatch.setattr(
         service,
         "obter_caminho_xsd_dps",
-        lambda versao: "DPS_v1.01.xsd",
+        lambda versao, *, ambiente=None: "DPS_v1.01.xsd",
     )
 
     monkeypatch.setattr(
