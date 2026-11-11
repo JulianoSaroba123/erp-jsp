@@ -13,10 +13,19 @@ Objetivo: diagnosticar E0037 do H4-F15.
 
 from __future__ import annotations
 
+import importlib.util
 import json
+from pathlib import Path
+import sys
 
 import requests
 
+
+PASTA = Path(__file__).resolve().parent
+SCRIPT_H4F9 = (
+    PASTA
+    / "sefin_nacional_h4f9_preflight_real.py"
+)
 
 CODIGO_MUNICIPIO = "3554508"
 
@@ -42,6 +51,33 @@ TIMEOUT = (
 
 class ComparacaoConvenioInvalida(RuntimeError):
     """Falha controlada na comparação dos convênios."""
+
+
+def _carregar_h4f9():
+    nome = "h4f9_preflight_real_h4f16"
+    spec = importlib.util.spec_from_file_location(
+        nome,
+        SCRIPT_H4F9,
+    )
+
+    if spec is None or spec.loader is None:
+        raise ComparacaoConvenioInvalida(
+            "Nao foi possivel carregar utilitarios A1 do H4-F9."
+        )
+
+    modulo = importlib.util.module_from_spec(
+        spec
+    )
+    sys.modules[
+        nome
+    ] = modulo
+    spec.loader.exec_module(
+        modulo
+    )
+    return modulo
+
+
+h4f9 = _carregar_h4f9()
 
 
 def _resumo_resposta(
@@ -137,6 +173,7 @@ def _consultar(
     url: str,
     ambiente: str,
     session=None,
+    material_a1=None,
 ) -> dict:
     cliente = (
         session
@@ -144,17 +181,46 @@ def _consultar(
         else requests.Session()
     )
 
-    try:
-        resposta = cliente.request(
-            method="GET",
-            url=url,
-            headers={
-                "Accept": "application/json",
-            },
-            timeout=TIMEOUT,
-            verify=True,
-            allow_redirects=False,
+    (
+        chave_privada,
+        certificado,
+        cadeia,
+        _,
+    ) = (
+        h4f9._carregar_material_a1()
+        if material_a1 is None
+        else (
+            material_a1.chave_privada,
+            material_a1.certificado,
+            tuple(
+                getattr(
+                    material_a1,
+                    "cadeia",
+                    (),
+                )
+                or ()
+            ),
+            "MATERIAL_INJETADO",
         )
+    )
+
+    try:
+        with h4f9._materializar_mtls(
+            chave_privada,
+            certificado,
+            cadeia,
+        ) as caminhos:
+            resposta = cliente.request(
+                method="GET",
+                url=url,
+                headers={
+                    "Accept": "application/json",
+                },
+                timeout=TIMEOUT,
+                verify=True,
+                allow_redirects=False,
+                cert=caminhos,
+            )
     except requests.exceptions.Timeout as exc:
         raise ComparacaoConvenioInvalida(
             f"{ambiente}: timeout na consulta."
@@ -174,17 +240,20 @@ def executar_comparacao(
     *,
     session_prodrest=None,
     session_producao=None,
+    material_a1=None,
 ) -> dict:
     prodrest = _consultar(
         url=URL_PRODREST,
         ambiente="PRODUCAO_RESTRITA",
         session=session_prodrest,
+        material_a1=material_a1,
     )
 
     producao = _consultar(
         url=URL_PRODUCAO,
         ambiente="PRODUCAO",
         session=session_producao,
+        material_a1=material_a1,
     )
 
     if (
@@ -358,7 +427,10 @@ def executar() -> int:
 def main() -> int:
     try:
         return executar()
-    except ComparacaoConvenioInvalida as exc:
+    except (
+        ComparacaoConvenioInvalida,
+        h4f9.PreflightStandaloneInvalido,
+    ) as exc:
         print(
             "=== H4-F16 | COMPARA CONVENIO TIETE ==="
         )
