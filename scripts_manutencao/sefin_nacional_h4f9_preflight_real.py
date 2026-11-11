@@ -315,7 +315,10 @@ def _materializar_mtls(
                 "Material mTLS temporario nao foi criado corretamente."
             )
 
-        yield
+        yield (
+            str(cert_path),
+            str(key_path),
+        )
 
 
 def executar() -> int:
