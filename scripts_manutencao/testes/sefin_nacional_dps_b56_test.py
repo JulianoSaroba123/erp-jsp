@@ -310,13 +310,21 @@ def test_b56_013_serializer_executa_validacao_estrutural(
         serializer.validar_estrutura_xml_dps
     )
 
-    def espiao(raiz):
+    def espiao(
+        raiz,
+        *,
+        ambiente="PRODUCAO",
+    ):
         chamadas.append(
-            raiz
+            (
+                raiz,
+                ambiente,
+            )
         )
 
         return original(
-            raiz
+            raiz,
+            ambiente=ambiente,
         )
 
     monkeypatch.setattr(
@@ -336,7 +344,9 @@ def test_b56_013_serializer_executa_validacao_estrutural(
 
     assert len(chamadas) == 1
 
-    raiz_validada = chamadas[0]
+    raiz_validada, ambiente_validado = chamadas[0]
+
+    assert ambiente_validado == "PRODUCAO"
 
     assert (
         etree.QName(
