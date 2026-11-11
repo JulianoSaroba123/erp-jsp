@@ -486,8 +486,17 @@ def _adicionar_tomador(inf_dps, tomador):
 
 
 
-def _adicionar_servico(inf_dps, servico):
-    """Serializa TCServ conforme DPS 1.01."""
+def _adicionar_servico(
+    inf_dps,
+    servico,
+    *,
+    ambiente="PRODUCAO",
+):
+    """Serializa TCServ conforme o perfil XSD do ambiente."""
+
+    ambiente_normalizado = _normalizar_ambiente_serializacao(
+        ambiente
+    )
 
     if not isinstance(servico, dict):
         raise SerializacaoDpsInvalida(
@@ -541,6 +550,21 @@ def _adicionar_servico(inf_dps, servico):
             codigo_municipal,
         )
 
+    nbs = _valor_opcional(
+        servico,
+        "nbs",
+    )
+
+    if (
+        ambiente_normalizado == "HOMOLOGACAO"
+        and nbs is not None
+    ):
+        adicionar_elemento_nfse(
+            c_serv,
+            "cNBS",
+            nbs,
+        )
+
     adicionar_elemento_nfse(
         c_serv,
         "xDescServ",
@@ -551,12 +575,10 @@ def _adicionar_servico(inf_dps, servico):
         ),
     )
 
-    nbs = _valor_opcional(
-        servico,
-        "nbs",
-    )
-
-    if nbs is not None:
+    if (
+        ambiente_normalizado == "PRODUCAO"
+        and nbs is not None
+    ):
         adicionar_elemento_nfse(
             c_serv,
             "cNBS",
@@ -1055,6 +1077,7 @@ def montar_xml_dps(
     _adicionar_servico(
         inf_dps,
         dps_canonica.get("servico"),
+        ambiente=ambiente_serializacao,
     )
 
     valores_xml = _adicionar_valores_basicos(
