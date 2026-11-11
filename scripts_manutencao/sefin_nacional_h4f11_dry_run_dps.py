@@ -205,9 +205,12 @@ def _montar_dps(
         prestador={
             "tipo_documento": "CNPJ",
             "documento": CNPJ_PRESTADOR,
-            "inscricao_municipal": IM_PRESTADOR,
+            # A NFS-e Nacional ja aceita da JSP nao exibiu IM.
+            # Evita E0120 quando nao ha registro complementar no CNC.
+            "inscricao_municipal": None,
             "municipio_ibge": MUNICIPIO_TIETE,
-            "nome": "SAROBA SOLAR LTDA",
+            # tpEmit=1: xNome deve ser omitido (E0121).
+            "nome": None,
             "regime_tributario": {
                 "op_simp_nac": "3",
                 "reg_ap_trib_sn": "1",
