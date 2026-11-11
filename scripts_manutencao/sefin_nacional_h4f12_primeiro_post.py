@@ -259,6 +259,7 @@ def _atualizar_marcador(
     resposta_sha256=None,
     classificacao=None,
     detalhe=None,
+    resposta_erro=None,
 ) -> None:
     try:
         dados = json.loads(
@@ -280,6 +281,7 @@ def _atualizar_marcador(
             "resposta_sha256": resposta_sha256,
             "classificacao": classificacao,
             "detalhe": detalhe,
+            "resposta_erro": resposta_erro,
             "atualizado_em_utc": (
                 datetime.now(
                     timezone.utc
@@ -325,6 +327,52 @@ def _classificar_status(
         return "SUCESSO_HTTP_FORA_DO_CONTRATO"
 
     return "STATUS_HTTP_INESPERADO"
+
+
+def _extrair_resposta_erro_segura(
+    *,
+    status_code: int,
+    conteudo: bytes,
+):
+    if status_code < 400 or status_code > 599:
+        return None
+
+    try:
+        dados = json.loads(
+            bytes(
+                conteudo
+            ).decode(
+                "utf-8"
+            )
+        )
+    except (
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+        TypeError,
+        ValueError,
+    ):
+        return None
+
+    if not isinstance(
+        dados,
+        dict,
+    ):
+        return None
+
+    permitidos = {
+        "tipoAmbiente",
+        "versaoAplicativo",
+        "dataHoraProcessamento",
+        "idDPS",
+        "idDps",
+        "erros",
+    }
+
+    return {
+        chave: valor
+        for chave, valor in dados.items()
+        if chave in permitidos
+    }
 
 
 def _normalizar_quando_suportado(
@@ -515,12 +563,18 @@ def executar_post_unico(
         conteudo=conteudo,
     )
 
+    resposta_erro = _extrair_resposta_erro_segura(
+        status_code=status_code,
+        conteudo=conteudo,
+    )
+
     _atualizar_marcador(
         caminho=marcador,
         fase="RESPOSTA_RECEBIDA",
         status_code=status_code,
         resposta_sha256=resposta_sha256,
         classificacao=classificacao,
+        resposta_erro=resposta_erro,
     )
 
     return ResultadoPrimeiroPost(
