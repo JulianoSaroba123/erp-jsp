@@ -28,10 +28,12 @@ from app.fiscal.providers.sefin_nacional_http import (
 from app.fiscal.providers.sefin_nacional_mtls import (
     materializar_mtls_sefin,
 )
+from app.fiscal.xsd import obter_caminho_xsd_dps
 from app.fiscal.xml.dps_signer import (
     AssinaturaXmlDpsInvalida,
     validar_assinatura_xml_dps,
 )
+from app.fiscal.xml.dps_xsd_validator import validar_xml_dps_xsd
 
 
 class PreparacaoEmissaoSefinInvalida(ValueError):
@@ -40,8 +42,14 @@ class PreparacaoEmissaoSefinInvalida(ValueError):
 
 def montar_corpo_emissao_nfse(
     xml_dps_assinado,
+    *,
+    caminho_xsd=None,
 ) -> bytes:
-    """Monta JSON oficial contendo DPS GZip/Base64."""
+    """Monta JSON oficial contendo DPS GZip/Base64.
+
+    Quando um XSD e informado, a DPS assinada precisa ser valida
+    perante esse schema antes de qualquer empacotamento.
+    """
 
     if not isinstance(
         xml_dps_assinado,
@@ -68,6 +76,30 @@ def montar_corpo_emissao_nfse(
         raise PreparacaoEmissaoSefinInvalida(
             "XML da DPS nao possui assinatura XMLDSIG valida."
         ) from exc
+
+    if caminho_xsd is not None:
+        resultado_xsd = validar_xml_dps_xsd(
+            xml,
+            caminho_xsd,
+        )
+
+        if not resultado_xsd.valido:
+            erros = "; ".join(
+                str(erro)
+                for erro in resultado_xsd.erros
+            )
+
+            mensagem = (
+                "XML assinado da DPS invalido perante o XSD "
+                "antes da transmissao."
+            )
+
+            if erros:
+                mensagem = f"{mensagem} {erros}"
+
+            raise PreparacaoEmissaoSefinInvalida(
+                mensagem
+            )
 
     # mtime=0 torna a compactacao deterministica.
     comprimido = gzip.compress(
@@ -131,8 +163,14 @@ def executar_emissao_nfse_http(
         rota=rota["rota"],
     )
 
+    caminho_xsd = obter_caminho_xsd_dps(
+        metadados["layout_dps"],
+        ambiente=ambiente_normalizado,
+    )
+
     corpo = montar_corpo_emissao_nfse(
-        xml_dps_assinado
+        xml_dps_assinado,
+        caminho_xsd=caminho_xsd,
     )
 
     cliente = (
