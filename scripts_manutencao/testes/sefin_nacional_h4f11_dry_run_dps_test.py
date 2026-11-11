@@ -149,7 +149,8 @@ def test_h4f11_002_dados_controlados_usam_identidade_fiscal_jsp():
     modulo = _modulo()
 
     dps = modulo._montar_dps(
-        agora=_agora()
+        agora=_agora(),
+        percentual_tot_trib_sn="6.00",
     )
 
     assert dps[
@@ -184,7 +185,7 @@ def test_h4f11_002_dados_controlados_usam_identidade_fiscal_jsp():
         "servico"
     ][
         "codigo_lista_nacional"
-    ] == "140601"
+    ] == "140101"
 
     assert dps[
         "servico"
@@ -196,7 +197,13 @@ def test_h4f11_002_dados_controlados_usam_identidade_fiscal_jsp():
         "servico"
     ][
         "nbs"
-    ] is None
+    ] == "101061900"
+
+    assert dps[
+        "servico"
+    ][
+        "municipio_prestacao_ibge"
+    ] == "3541653"
 
     assert dps[
         "valores"
@@ -209,7 +216,13 @@ def test_h4f11_002_dados_controlados_usam_identidade_fiscal_jsp():
     ] == {
         "tributacao_issqn": "1",
         "tipo_retencao": "1",
-        "aliquota": "2.31",
+        "aliquota": None,
+    }
+
+    assert dps[
+        "totais_tributos"
+    ] == {
+        "percentual_simples": "6.00",
     }
 
     assert dps[
@@ -225,7 +238,8 @@ def test_h4f11_003_id_dps_controlado_e_valido():
     modulo = _modulo()
 
     dps = modulo._montar_dps(
-        agora=_agora()
+        agora=_agora(),
+        percentual_tot_trib_sn="6.00",
     )
 
     identificador = dps[
@@ -259,6 +273,7 @@ def test_h4f11_004_dry_run_completo_valida_xsd_e_assinatura():
     resultado = modulo.executar_dry_run(
         agora=_agora(),
         material_a1=material,
+        percentual_tot_trib_sn="6.00",
     )
 
     assert resultado.xsd_antes_ok is True
@@ -290,6 +305,7 @@ def test_h4f11_005_envelope_json_recupera_xml_assinado_exato():
     resultado = modulo.executar_dry_run(
         agora=_agora(),
         material_a1=_material(),
+        percentual_tot_trib_sn="6.00",
     )
 
     corpo = json.loads(
@@ -324,6 +340,7 @@ def test_h4f11_006_corpo_gzip_e_deterministico_para_mesmo_xml():
     resultado = modulo.executar_dry_run(
         agora=_agora(),
         material_a1=material,
+        percentual_tot_trib_sn="6.00",
     )
 
     primeiro = modulo._montar_corpo_json(
@@ -369,3 +386,52 @@ def test_h4f11_008_dry_run_rejeita_datetime_sem_timezone():
         raise AssertionError(
             "Datetime sem timezone deveria ser bloqueado."
         )
+
+
+
+def test_h4f11_009_script_exige_percentual_simples_confirmado(
+    monkeypatch,
+):
+    modulo = _modulo()
+
+    monkeypatch.delenv(
+        modulo.ENV_PTOTTRIBSN,
+        raising=False,
+    )
+
+    try:
+        modulo._percentual_tot_trib_sn()
+    except modulo.DryRunDpsInvalido as exc:
+        mensagem = str(
+            exc
+        )
+    else:
+        raise AssertionError(
+            "pTotTribSN ausente deveria bloquear o dry-run."
+        )
+
+    assert "pTotTribSN" in mensagem
+    assert modulo.ENV_PTOTTRIBSN in mensagem
+
+
+def test_h4f11_010_xml_usa_ptottribsn_e_omite_paliq():
+    modulo = _modulo()
+
+    dps = modulo._montar_dps(
+        agora=_agora(),
+        percentual_tot_trib_sn="6.00",
+    )
+
+    xml = modulo.serializer.montar_xml_dps_serializado(
+        dps,
+        ambiente="HOMOLOGACAO",
+    ).decode(
+        "utf-8"
+    )
+
+    assert "<pTotTribSN>6.00</pTotTribSN>" in xml
+    assert "<indTotTrib>" not in xml
+    assert "<pAliq>" not in xml
+    assert "<cTribNac>140101</cTribNac>" in xml
+    assert "<cNBS>101061900</cNBS>" in xml
+    assert "<cLocPrestacao>3541653</cLocPrestacao>" in xml
