@@ -116,7 +116,7 @@ def test_b43c_002_prestador_canonico_tem_prioridade_sobre_legado(
     assert dps["prestador"]["documento"] == "12345678000195"
     assert dps["prestador"]["inscricao_municipal"] == "987654"
     assert dps["prestador"]["municipio_ibge"] == "3554508"
-    assert dps["prestador"]["nome"] == "EMPRESA CANONICA LTDA"
+    assert dps["prestador"]["nome"] is None
 
     assert dps["prestador"]["regime_tributario"] == {
         "op_simp_nac": "1",
@@ -157,3 +157,39 @@ def test_b43c_005_fonte_fiscal_parcial_nao_cai_no_legado():
         match="Configuracao fiscal do prestador nao informada",
     ):
         dps_mod.montar_dps_canonica(**dados)
+
+
+
+def test_b43c_006_tpemit_tomador_exige_nome_prestador():
+    dados = _carregar_dados_base()
+    dados["tipo_emitente"] = "2"
+    dados["prestador"].pop(
+        "nome",
+        None,
+    )
+
+    with pytest.raises(
+        dps_mod.DpsCanonicaInvalida,
+        match="prestador.nome",
+    ):
+        dps_mod.montar_dps_canonica(
+            **dados
+        )
+
+
+def test_b43c_007_tpemit_tomador_preserva_nome_prestador():
+    dados = _carregar_dados_base()
+    dados["tipo_emitente"] = "2"
+    dados["prestador"][
+        "nome"
+    ] = "PRESTADOR INFORMADO"
+
+    dps = dps_mod.montar_dps_canonica(
+        **dados
+    )
+
+    assert dps[
+        "prestador"
+    ][
+        "nome"
+    ] == "PRESTADOR INFORMADO"
