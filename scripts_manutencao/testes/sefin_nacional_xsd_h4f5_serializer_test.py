@@ -161,8 +161,28 @@ def test_h4f5_004_homologacao_reposiciona_ibscbs():
         ambiente="HOMOLOGACAO",
     )
 
+    inf_dps = _inf_dps(raiz)
+
+    nomes_inf_dps = [
+        _localname(elemento)
+        for elemento in inf_dps
+    ]
+
+    assert nomes_inf_dps[
+        nomes_inf_dps.index("tpEmit") + 1
+    ] == "finNFSe"
+
+    assert nomes_inf_dps[
+        nomes_inf_dps.index("finNFSe") + 1
+    ] == "cLocEmi"
+
+    assert _filho(
+        inf_dps,
+        "finNFSe",
+    ).text == "0"
+
     ibs = _filho(
-        _inf_dps(raiz),
+        inf_dps,
         "IBSCBS",
     )
 
