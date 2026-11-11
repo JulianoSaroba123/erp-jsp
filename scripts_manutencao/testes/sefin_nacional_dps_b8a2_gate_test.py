@@ -77,7 +77,7 @@ def _xml():
         b'<DPS xmlns="http://www.sped.fazenda.gov.br/nfse" '
         b'versao="1.01">'
         b'<infDPS '
-        b'Id="ID355450800000000000000000000000000000000001">'
+        b'Id="DPS355450820000000000000100001000000000000001">'
         b'<tpAmb>2</tpAmb>'
         b'<teste>ORIGINAL</teste>'
         b'</infDPS>'
