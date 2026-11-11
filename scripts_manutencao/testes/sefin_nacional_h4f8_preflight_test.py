@@ -148,16 +148,26 @@ def test_h4f8_004_provider_divergente_e_bloqueado(
 
 
 @pytest.mark.parametrize(
-    "base",
+    ("base", "mensagem_esperada"),
     [
-        "https://sefin.nfse.gov.br/SefinNacional",
-        "https://exemplo.invalid/API/SefinNacional",
-        "http://sefin.producaorestrita.nfse.gov.br/API/SefinNacional",
+        (
+            "https://sefin.nfse.gov.br/SefinNacional",
+            "Producao Restrita oficial",
+        ),
+        (
+            "https://exemplo.invalid/API/SefinNacional",
+            "Producao Restrita oficial",
+        ),
+        (
+            "http://sefin.producaorestrita.nfse.gov.br/API/SefinNacional",
+            "deve usar HTTPS",
+        ),
     ],
 )
 def test_h4f8_005_endpoint_nao_oficial_e_bloqueado(
     monkeypatch,
     base,
+    mensagem_esperada,
 ):
     monkeypatch.setenv(
         "NFSE_SEFIN_BASE_URL_HOMOLOGACAO",
@@ -166,7 +176,7 @@ def test_h4f8_005_endpoint_nao_oficial_e_bloqueado(
 
     with pytest.raises(
         PreflightSefinInvalido,
-        match="Producao Restrita oficial",
+        match=mensagem_esperada,
     ):
         executar_preflight_local_sefin(
             configuracao_fiscal=_configuracao(),
