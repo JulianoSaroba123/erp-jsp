@@ -105,8 +105,16 @@ def _nomes_filhos_nfse(elemento, *, contexto):
     return nomes
 
 
-def validar_estrutura_xml_dps(raiz) -> None:
-    """Valida invariantes internas da DPS antes da validacao XSD."""
+def validar_estrutura_xml_dps(
+    raiz,
+    *,
+    ambiente="PRODUCAO",
+) -> None:
+    """Valida invariantes internas conforme o perfil XSD selecionado."""
+
+    ambiente_normalizado = _normalizar_ambiente_serializacao(
+        ambiente
+    )
 
     qname_raiz = _qname_elemento(
         raiz,
@@ -162,8 +170,16 @@ def validar_estrutura_xml_dps(raiz) -> None:
         "nDPS",
         "dCompet",
         "tpEmit",
-        "cLocEmi",
     ]
+
+    if ambiente_normalizado == "HOMOLOGACAO":
+        identificacao_esperada.append(
+            "finNFSe"
+        )
+
+    identificacao_esperada.append(
+        "cLocEmi"
+    )
 
     if nomes[:len(identificacao_esperada)] != identificacao_esperada:
         raise EstruturaXmlDpsInvalida(
@@ -978,7 +994,6 @@ def montar_xml_dps(
         ("nDPS", "numero_dps"),
         ("dCompet", "competencia"),
         ("tpEmit", "tipo_emitente"),
-        ("cLocEmi", "municipio_emissao_ibge"),
     )
 
     for tag_xml, chave_canonica in campos:
@@ -990,6 +1005,42 @@ def montar_xml_dps(
                 chave_canonica,
             ),
         )
+
+    if ambiente_serializacao == "HOMOLOGACAO":
+        finalidade_nfse = _valor_opcional(
+            identificacao,
+            "finalidade_nfse",
+        )
+
+        if finalidade_nfse is None:
+            finalidade_nfse = _valor_opcional(
+                dps_canonica.get("ibs_cbs"),
+                "fin_nfse",
+            )
+
+        if finalidade_nfse is None:
+            finalidade_nfse = "0"
+
+        if finalidade_nfse != "0":
+            raise SerializacaoDpsInvalida(
+                "Finalidade da NFS-e deve ser 0 no perfil "
+                "PRODREST-v1.01-20261020."
+            )
+
+        adicionar_elemento_nfse(
+            inf_dps,
+            "finNFSe",
+            finalidade_nfse,
+        )
+
+    adicionar_elemento_nfse(
+        inf_dps,
+        "cLocEmi",
+        _valor_obrigatorio(
+            identificacao,
+            "municipio_emissao_ibge",
+        ),
+    )
 
     _adicionar_prestador(
         inf_dps,
@@ -1041,7 +1092,8 @@ def montar_xml_dps_serializado(
     )
 
     validar_estrutura_xml_dps(
-        raiz
+        raiz,
+        ambiente=ambiente,
     )
 
     return serializar_xml(
