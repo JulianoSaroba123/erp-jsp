@@ -169,7 +169,13 @@ def test_h4f11_002_dados_controlados_usam_identidade_fiscal_jsp():
         "prestador"
     ][
         "inscricao_municipal"
-    ] == "14180"
+    ] is None
+
+    assert dps[
+        "prestador"
+    ][
+        "nome"
+    ] is None
 
     assert dps[
         "prestador"
@@ -432,6 +438,8 @@ def test_h4f11_010_xml_usa_ptottribsn_e_omite_paliq():
     assert "<pTotTribSN>6.00</pTotTribSN>" in xml
     assert "<indTotTrib>" not in xml
     assert "<pAliq>" not in xml
+    assert "<IM>" not in xml
+    assert "<xNome>" not in xml
     assert "<cTribNac>140101</cTribNac>" in xml
     assert "<cNBS>101061900</cNBS>" in xml
     assert "<cLocPrestacao>3541653</cLocPrestacao>" in xml
