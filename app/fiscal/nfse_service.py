@@ -621,7 +621,8 @@ def preparar_payload_nfse_com_dps(
     )
 
     xml_dps = montar_xml_dps_serializado(
-        dps_canonica
+        dps_canonica,
+        ambiente=configuracao_fiscal.ambiente,
     )
 
     caminho_xsd = obter_caminho_xsd_dps(
