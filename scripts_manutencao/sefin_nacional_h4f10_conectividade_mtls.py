@@ -6,7 +6,6 @@ Não envia DPS, não usa POST, não emite NFS-e e não acessa banco.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import importlib.util
 import os
 from pathlib import Path
@@ -62,17 +61,39 @@ class ConectividadeSefinInvalida(RuntimeError):
     """Falha na conectividade real segura com a SEFIN."""
 
 
-@dataclass(frozen=True)
 class ResultadoConectividade:
-    sucesso: bool
-    http_status: int
-    classificacao: str
-    metodo: str
-    servidor_alcancado: bool
-    certificado_cliente_enviado: bool
-    autenticacao_rejeitada: bool
-    rede_utilizada: bool
-    transmissao_executada: bool
+    def __init__(
+        self,
+        *,
+        sucesso,
+        http_status,
+        classificacao,
+        metodo,
+        servidor_alcancado,
+        certificado_cliente_enviado,
+        autenticacao_rejeitada,
+        rede_utilizada,
+        transmissao_executada,
+    ):
+        self.sucesso = bool(sucesso)
+        self.http_status = int(http_status)
+        self.classificacao = str(classificacao)
+        self.metodo = str(metodo)
+        self.servidor_alcancado = bool(
+            servidor_alcancado
+        )
+        self.certificado_cliente_enviado = bool(
+            certificado_cliente_enviado
+        )
+        self.autenticacao_rejeitada = bool(
+            autenticacao_rejeitada
+        )
+        self.rede_utilizada = bool(
+            rede_utilizada
+        )
+        self.transmissao_executada = bool(
+            transmissao_executada
+        )
 
 
 def _validar_id_sintetico() -> None:
