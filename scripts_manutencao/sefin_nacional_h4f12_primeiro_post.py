@@ -406,6 +406,7 @@ def executar_post_unico(
     caminho_marcador: Path | None = None,
     agora=None,
     material_a1=None,
+    percentual_tot_trib_sn: str | None = None,
 ) -> ResultadoPrimeiroPost:
     """Executa exatamente uma chamada POST /nfse sem retry."""
 
@@ -419,6 +420,7 @@ def executar_post_unico(
     dry_run = h4f11.executar_dry_run(
         agora=agora,
         material_a1=material_a1,
+        percentual_tot_trib_sn=percentual_tot_trib_sn,
     )
 
     endpoint = (
