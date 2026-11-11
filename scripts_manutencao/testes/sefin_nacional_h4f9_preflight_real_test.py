@@ -1,7 +1,10 @@
 """H4-F9 - teste do script operacional de preflight real local."""
 
 import importlib.util
+import os
 from pathlib import Path
+import subprocess
+import sys
 from types import SimpleNamespace
 
 
@@ -168,3 +171,52 @@ def test_h4f9_004_configuracao_sintetica_mantem_disjuntor_off(
     assert configuracao.provider == "SEFIN_NACIONAL"
     assert configuracao.ambiente == "HOMOLOGACAO"
     assert configuracao.integracao_ativa is False
+
+
+def test_h4f9_005_execucao_direta_encontra_pacote_app():
+    ambiente = dict(
+        os.environ
+    )
+
+    ambiente.pop(
+        "NFSE_SEFIN_BASE_URL_HOMOLOGACAO",
+        None,
+    )
+    ambiente.pop(
+        "NFSE_CERTIFICADO_PFX_PATH",
+        None,
+    )
+    ambiente.pop(
+        "NFSE_CERTIFICADO_PFX_B64_PATH",
+        None,
+    )
+    ambiente.pop(
+        "NFSE_CERTIFICADO_PFX_PASSWORD",
+        None,
+    )
+
+    processo = subprocess.run(
+        [
+            sys.executable,
+            "-X",
+            "utf8",
+            str(SCRIPT),
+        ],
+        cwd=str(
+            SCRIPT.parents[1]
+        ),
+        env=ambiente,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    saida = (
+        processo.stdout
+        + processo.stderr
+    )
+
+    assert processo.returncode == 1
+    assert "STATUS: FALHA" in saida
+    assert "Variaveis obrigatorias ausentes" in saida
+    assert "ModuleNotFoundError" not in saida
