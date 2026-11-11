@@ -821,16 +821,27 @@ def _adicionar_tributacao_municipal(
             aliquota,
         )
 
-    indicador = _valor_obrigatorio(
+    indicador = _valor_opcional(
         totais_tributos,
         "indicador",
-        grupo="totais_tributos",
+    )
+    percentual_simples = _valor_opcional(
+        totais_tributos,
+        "percentual_simples",
     )
 
-    if indicador != "0":
+    escolhas = sum(
+        valor is not None
+        for valor in (
+            indicador,
+            percentual_simples,
+        )
+    )
+
+    if escolhas != 1:
         raise SerializacaoDpsInvalida(
-            "Indicador de totais tributarios incompativel "
-            "com o contrato XML atual."
+            "Grupo totais_tributos deve informar exatamente "
+            "uma escolha XML."
         )
 
     tot_trib = etree.SubElement(
@@ -838,11 +849,24 @@ def _adicionar_tributacao_municipal(
         _qname("totTrib"),
     )
 
-    adicionar_elemento_nfse(
-        tot_trib,
-        "indTotTrib",
-        indicador,
-    )
+    if indicador is not None:
+        if indicador != "0":
+            raise SerializacaoDpsInvalida(
+                "Indicador de totais tributarios incompativel "
+                "com o contrato XML atual."
+            )
+
+        adicionar_elemento_nfse(
+            tot_trib,
+            "indTotTrib",
+            indicador,
+        )
+    else:
+        adicionar_elemento_nfse(
+            tot_trib,
+            "pTotTribSN",
+            percentual_simples,
+        )
 
     return trib_xml
 
