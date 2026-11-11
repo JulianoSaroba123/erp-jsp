@@ -72,7 +72,7 @@ def _executar(
     monkeypatch.setattr(
         service,
         "montar_xml_dps_serializado",
-        lambda dps: (
+        lambda dps, **kwargs: (
             eventos.append("xml")
             or b"<DPS>TESTE</DPS>"
         ),
@@ -167,7 +167,7 @@ def test_b7a3_002_xsd_invalido_nao_publica_conteudo(
     monkeypatch.setattr(
         service,
         "montar_xml_dps_serializado",
-        lambda dps: b"<DPS>INVALIDA</DPS>",
+        lambda dps, **kwargs: b"<DPS>INVALIDA</DPS>",
     )
 
     monkeypatch.setattr(
