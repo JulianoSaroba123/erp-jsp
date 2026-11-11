@@ -211,6 +211,7 @@ def test_h4f12_001_exige_confirmacao_exata(
             ),
             agora=_agora(),
             material_a1=_material(),
+            percentual_tot_trib_sn="6.00",
         )
 
 
@@ -242,6 +243,7 @@ def test_h4f12_002_executa_um_unico_post_sem_retry(
         caminho_marcador=marcador,
         agora=_agora(),
         material_a1=_material(),
+        percentual_tot_trib_sn="6.00",
     )
 
     assert len(
@@ -345,6 +347,7 @@ def test_h4f12_003_segunda_execucao_mesmo_marcador_e_bloqueada(
         "caminho_marcador": marcador,
         "agora": _agora(),
         "material_a1": _material(),
+        "percentual_tot_trib_sn": "6.00",
     }
 
     modulo.executar_post_unico(
@@ -395,6 +398,7 @@ def test_h4f12_004_timeout_nao_repete_e_marca_ambiguo(
             caminho_marcador=marcador,
             agora=_agora(),
             material_a1=_material(),
+            percentual_tot_trib_sn="6.00",
         )
 
     assert len(
@@ -436,6 +440,7 @@ def test_h4f12_005_201_e_normalizado_com_nfse(
         ),
         agora=_agora(),
         material_a1=_material(),
+        percentual_tot_trib_sn="6.00",
     )
 
     assert resultado.status_code == 201
@@ -471,6 +476,7 @@ def test_h4f12_006_400_e_normalizado_com_erros(
         ),
         agora=_agora(),
         material_a1=_material(),
+        percentual_tot_trib_sn="6.00",
     )
 
     normalizada = (
@@ -574,4 +580,5 @@ def test_h4f12_009_marcador_e_criado_antes_da_rede(
         caminho_marcador=marcador,
         agora=_agora(),
         material_a1=_material(),
+        percentual_tot_trib_sn="6.00",
     )
