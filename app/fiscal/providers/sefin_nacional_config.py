@@ -52,7 +52,7 @@ ROTAS_SEFIN_NACIONAL = {
         "servico": "PARAMETRIZACAO",
         "metodo": "GET",
         "rota": (
-            "/parametros_municipais/"
+            "/parametrizacao/"
             "{codigo_municipio}/convenio"
         ),
     },
