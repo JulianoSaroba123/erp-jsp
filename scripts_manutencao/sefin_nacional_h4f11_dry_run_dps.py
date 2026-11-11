@@ -180,8 +180,8 @@ def _percentual_tot_trib_sn() -> str:
     if not valor:
         raise DryRunDpsInvalido(
             "Percentual pTotTribSN nao informado. "
-            "Defina NFSE_H4F11_PTOTTRIBSN com a aliquota nominal "
-            "vigente e confirmada do Simples Nacional."
+            "Defina NFSE_H4F11_PTOTTRIBSN somente com o percentual "
+            "vigente e confirmado para a empresa."
         )
 
     return valor
