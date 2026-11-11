@@ -11,10 +11,13 @@ H4-F8:
 """
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
+from cryptography import x509
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 from app.fiscal.certificado_a1 import (
     carregar_certificado_a1_do_ambiente,
@@ -23,6 +26,7 @@ from app.fiscal.providers.sefin_nacional_config import (
     obter_configuracao_sefin,
 )
 from app.fiscal.providers.sefin_nacional_endpoints import (
+    ConfiguracaoEndpointSefinInvalida,
     compor_url,
     obter_base_url,
 )
@@ -127,10 +131,15 @@ def _validar_endpoint_prodrest(
             "Rota de emissao SEFIN deve utilizar POST."
         )
 
-    base_url = obter_base_url(
-        ambiente=ambiente,
-        servico=rota["servico"],
-    )
+    try:
+        base_url = obter_base_url(
+            ambiente=ambiente,
+            servico=rota["servico"],
+        )
+    except ConfiguracaoEndpointSefinInvalida as exc:
+        raise PreflightSefinInvalido(
+            f"Endpoint operacional invalido: {exc}"
+        ) from exc
 
     partes = urlparse(
         base_url
@@ -155,11 +164,16 @@ def _validar_endpoint_prodrest(
             "deve terminar em /API/SefinNacional."
         )
 
-    endpoint = compor_url(
-        ambiente=ambiente,
-        servico=rota["servico"],
-        rota=rota["rota"],
-    )
+    try:
+        endpoint = compor_url(
+            ambiente=ambiente,
+            servico=rota["servico"],
+            rota=rota["rota"],
+        )
+    except ConfiguracaoEndpointSefinInvalida as exc:
+        raise PreflightSefinInvalido(
+            f"Endpoint de emissao invalido: {exc}"
+        ) from exc
 
     return (
         base_url,
@@ -228,10 +242,56 @@ def executar_preflight_local_sefin(
         "certificado",
         None,
     )
+    chave_privada = getattr(
+        material,
+        "chave_privada",
+        None,
+    )
 
-    if certificado is None:
+    if not isinstance(
+        certificado,
+        x509.Certificate,
+    ):
         raise PreflightSefinInvalido(
-            "Material A1 nao possui certificado."
+            "Material A1 nao possui certificado X.509 valido."
+        )
+
+    if not isinstance(
+        chave_privada,
+        rsa.RSAPrivateKey,
+    ):
+        raise PreflightSefinInvalido(
+            "Chave privada do A1 deve ser RSA."
+        )
+
+    chave_publica = certificado.public_key()
+
+    if not isinstance(
+        chave_publica,
+        rsa.RSAPublicKey,
+    ):
+        raise PreflightSefinInvalido(
+            "Certificado A1 deve possuir chave publica RSA."
+        )
+
+    if (
+        chave_privada.public_key().public_numbers()
+        != chave_publica.public_numbers()
+    ):
+        raise PreflightSefinInvalido(
+            "Chave privada do A1 nao corresponde ao certificado."
+        )
+
+    agora = datetime.now(
+        timezone.utc
+    )
+
+    if (
+        agora < certificado.not_valid_before_utc
+        or agora > certificado.not_valid_after_utc
+    ):
+        raise PreflightSefinInvalido(
+            "Certificado A1 fora do periodo de validade."
         )
 
     try:
