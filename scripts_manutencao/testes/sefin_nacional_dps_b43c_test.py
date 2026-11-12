@@ -51,6 +51,8 @@ def test_b43c_001_dps_chama_adaptador_canonico(monkeypatch):
     def fake_montar_prestador_canonico(
         configuracao,
         configuracao_fiscal,
+        *,
+        tipo_emitente=None,
     ):
         chamadas.append(
             (
@@ -103,7 +105,7 @@ def test_b43c_002_prestador_canonico_tem_prioridade_sobre_legado(
     monkeypatch.setattr(
         dps_mod,
         "montar_prestador_canonico",
-        lambda configuracao, configuracao_fiscal:
+        lambda configuracao, configuracao_fiscal, **kwargs:
             _prestador_canonico_teste(),
     )
 
