@@ -234,6 +234,56 @@
                                        value="{{ configuracao_fiscal.municipio_ibge or '' }}">
                             </div>
                         </div>
+
+                        <div class="row g-3 mt-1">
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    opSimpNac
+                                </label>
+                                <input type="text"
+                                       name="op_simp_nac"
+                                       class="form-control"
+                                       maxlength="1"
+                                       inputmode="numeric"
+                                       placeholder="Ex.: 3"
+                                       value="{{ configuracao_fiscal.op_simp_nac or '' }}">
+                                <div class="form-text">
+                                    Regime do Simples no leiaute Nacional.
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    regApTribSN
+                                </label>
+                                <input type="text"
+                                       name="reg_ap_trib_sn"
+                                       class="form-control"
+                                       maxlength="1"
+                                       inputmode="numeric"
+                                       placeholder="Ex.: 1"
+                                       value="{{ configuracao_fiscal.reg_ap_trib_sn or '' }}">
+                                <div class="form-text">
+                                    Regime de apura&ccedil;&atilde;o tribut&aacute;ria do SN.
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    regEspTrib
+                                </label>
+                                <input type="text"
+                                       name="reg_esp_trib"
+                                       class="form-control"
+                                       maxlength="1"
+                                       inputmode="numeric"
+                                       placeholder="Ex.: 0"
+                                       value="{{ configuracao_fiscal.reg_esp_trib or '' }}">
+                                <div class="form-text">
+                                    Regime especial de tributa&ccedil;&atilde;o Nacional.
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-section">
