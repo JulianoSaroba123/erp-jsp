@@ -326,6 +326,7 @@ def montar_dps_canonica(
         prestador = montar_prestador_canonico(
             configuracao=configuracao,
             configuracao_fiscal=configuracao_fiscal,
+            tipo_emitente=tipo_emitente,
         )
     elif prestador is None:
         raise DpsCanonicaInvalida(
@@ -670,7 +671,12 @@ def montar_dps_canonica(
     }
 
 
-def montar_prestador_canonico(configuracao, configuracao_fiscal):
+def montar_prestador_canonico(
+    configuracao,
+    configuracao_fiscal,
+    *,
+    tipo_emitente=None,
+):
     """Monta o prestador canonico da DPS a partir dos cadastros oficiais."""
 
     if configuracao is None:
@@ -732,7 +738,17 @@ def montar_prestador_canonico(configuracao, configuracao_fiscal):
         getattr(configuracao_fiscal, "inscricao_municipal", None) or ""
     ).strip()
 
-    if not inscricao_municipal:
+    tipo_emitente_normalizado = str(
+        tipo_emitente or ""
+    ).strip()
+
+    if tipo_emitente_normalizado == "1":
+        # Emissao pelo proprio prestador: a SEFIN recupera
+        # a identificacao complementar pelo cadastro nacional.
+        # H4-F13/H4-F15 confirmaram que a DPS aceita da JSP
+        # deve omitir IM neste cenario.
+        inscricao_municipal = None
+    elif not inscricao_municipal:
         raise DpsCanonicaInvalida(
             "Inscricao municipal do prestador nao informada."
         )
@@ -805,17 +821,19 @@ def montar_iss_canonico(iss=None, configuracao_fiscal=None):
             "Tipo de retencao do ISSQN deve possuir codigo entre 1 e 3."
         )
 
-    aliquota = dados.get("aliquota")
-
-    if (
-        aliquota in (None, "")
-        and configuracao_fiscal is not None
-    ):
+    if "aliquota" in dados:
+        # None explicito significa omitir pAliq.
+        aliquota = dados.get(
+            "aliquota"
+        )
+    elif configuracao_fiscal is not None:
         aliquota = getattr(
             configuracao_fiscal,
             "aliquota_iss_padrao",
             None,
         )
+    else:
+        aliquota = None
 
     aliquota_canonica = None
 
