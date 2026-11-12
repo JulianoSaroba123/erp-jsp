@@ -175,6 +175,9 @@ def montar_servico_da_os(
     *,
     municipio_incidencia_ibge,
     municipio_prestacao_ibge=None,
+    codigo_tributacao_nacional=None,
+    codigo_nbs=None,
+    codigo_tributacao_municipal=None,
 ):
     """Monta os dados de servico sem fabricar incidencia fiscal."""
 
@@ -188,36 +191,44 @@ def montar_servico_da_os(
             "Descricao do servico nao informada."
         )
 
-    codigo_lista = _texto(
-        getattr(
-            configuracao_fiscal,
-            "codigo_lc116",
-            None,
+    codigo_lista = (
+        _texto(
+            codigo_tributacao_nacional
+        )
+        or _texto(
+            getattr(
+                configuracao_fiscal,
+                "codigo_lc116",
+                None,
+            )
         )
     )
 
     if codigo_lista is None:
         raise AdaptacaoDpsErpInvalida(
-            "Codigo LC116 nao informado na configuracao fiscal."
+            "Codigo de tributacao nacional nao informado."
         )
 
-    codigo_municipal = _texto(
-        getattr(
-            configuracao_fiscal,
-            "codigo_servico_municipal",
-            None,
+    codigo_municipal = (
+        _texto(
+            codigo_tributacao_municipal
+        )
+        if codigo_tributacao_municipal is not None
+        else _texto(
+            getattr(
+                configuracao_fiscal,
+                "codigo_servico_municipal",
+                None,
+            )
         )
     )
-
-    if codigo_municipal is None:
-        raise AdaptacaoDpsErpInvalida(
-            "Codigo de servico municipal nao informado."
-        )
 
     servico = {
         "codigo_lista_nacional": codigo_lista,
         "codigo_tributacao_municipal": codigo_municipal,
-        "nbs": None,
+        "nbs": _texto(
+            codigo_nbs
+        ),
         "descricao": descricao,
         "municipio_incidencia_ibge": _municipio_ibge(
             municipio_incidencia_ibge,
@@ -236,15 +247,29 @@ def montar_servico_da_os(
     return servico
 
 
-def montar_valores_da_os(ordem_servico):
-    """Usa somente os servicos da OS na base da NFS-e."""
+def montar_valores_da_os(
+    ordem_servico,
+    *,
+    valor_servicos_fiscal=None,
+):
+    """Usa o valor fiscal congelado quando informado.
 
-    valor_servicos = _decimal(
-        getattr(
+    Sem override, preserva a compatibilidade com o total de servicos
+    da OS usado pelas etapas anteriores.
+    """
+
+    origem_valor = (
+        valor_servicos_fiscal
+        if valor_servicos_fiscal is not None
+        else getattr(
             ordem_servico,
             "valor_total_servicos",
             0,
-        ),
+        )
+    )
+
+    valor_servicos = _decimal(
+        origem_valor,
         campo="Valor total dos servicos",
     )
 
@@ -293,6 +318,10 @@ def montar_dps_canonica_da_os(
     ibs_cbs=None,
     data_emissao=None,
     versao_aplicativo="ERP-JSP",
+    codigo_tributacao_nacional=None,
+    codigo_nbs=None,
+    codigo_tributacao_municipal=None,
+    valor_servicos_fiscal=None,
 ):
     """Transforma uma OS existente em DPS canonica validada.
 
@@ -427,9 +456,19 @@ def montar_dps_canonica_da_os(
             municipio_prestacao_ibge=(
                 municipio_prestacao_ibge
             ),
+            codigo_tributacao_nacional=(
+                codigo_tributacao_nacional
+            ),
+            codigo_nbs=codigo_nbs,
+            codigo_tributacao_municipal=(
+                codigo_tributacao_municipal
+            ),
         ),
         valores=montar_valores_da_os(
-            ordem_servico
+            ordem_servico,
+            valor_servicos_fiscal=(
+                valor_servicos_fiscal
+            ),
         ),
         iss=iss,
         totais_tributos=totais_tributos,
