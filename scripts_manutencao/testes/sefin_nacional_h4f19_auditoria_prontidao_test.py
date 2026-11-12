@@ -53,7 +53,7 @@ def test_h4f19_002_fundacao_sefin_esta_pronta():
     )
 
 
-def test_h4f19_003_detecta_precheck_geisweb_na_rota():
+def test_h4f19_003_precheck_geisweb_foi_neutralizado():
     modulo = _modulo()
 
     resultado = modulo.executar_auditoria()
@@ -62,11 +62,17 @@ def test_h4f19_003_detecta_precheck_geisweb_na_rota():
         "acoplamentos_legados"
     ][
         "precheck_rota_geisweb"
+    ] is False
+
+    assert resultado[
+        "protecoes"
+    ][
+        "precheck_rota_generica"
     ] is True
 
     assert (
         "PRECHECK_ROUTE_GEISWEB"
-        in resultado[
+        not in resultado[
             "bloqueios"
         ]
     )
