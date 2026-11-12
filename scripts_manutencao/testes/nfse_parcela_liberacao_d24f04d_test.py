@@ -43,7 +43,7 @@ def test_rota_usa_gate_sem_transmitir():
     bloco = fonte[inicio:fim]
 
     assert (
-        "liberar_documento_nfse_geisweb_para_envio("
+        "liberar_documento_nfse_para_envio("
         in bloco
     )
 
