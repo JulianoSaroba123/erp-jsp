@@ -219,7 +219,7 @@ def test_b44b_014_dps_usa_aliquota_fiscal_padrao(monkeypatch):
     monkeypatch.setattr(
         dps_mod,
         "montar_prestador_canonico",
-        lambda configuracao, configuracao_fiscal: prestador_base,
+        lambda configuracao, configuracao_fiscal, **kwargs: prestador_base,
     )
 
     dps = dps_mod.montar_dps_canonica(**dados)
