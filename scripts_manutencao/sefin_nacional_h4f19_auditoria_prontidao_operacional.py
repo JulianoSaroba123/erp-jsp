@@ -139,6 +139,10 @@ def executar_auditoria() -> dict:
     }
 
     protecoes = {
+        "precheck_rota_generica": (
+            "precheck_transmissao_nfse"
+            in routes
+        ),
         "integracao_desativada_ao_salvar": (
             "config_fiscal.integracao_ativa = False"
             in config_routes
