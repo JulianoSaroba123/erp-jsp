@@ -2932,6 +2932,8 @@ def preparar_nfse_parcela_sefin(
         codigo_nbs=nbs,
         codigo_tributacao_municipal=(
             codigo_municipal
+            if codigo_municipal is not None
+            else ""
         ),
         valor_servicos_fiscal=(
             valor_documento
