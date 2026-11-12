@@ -1822,6 +1822,7 @@ def preparar_nfse_parcela_xml(id, parcela_id):
     from app.fiscal.nfse_service import (
         PreparacaoNfseInvalida,
         preparar_nfse_parcela_geisweb,
+        preparar_nfse_parcela_sefin,
     )
 
     documento = NfseDocumento.query.filter_by(
@@ -1844,50 +1845,93 @@ def preparar_nfse_parcela_xml(id, parcela_id):
         )
 
     try:
-        documento, _payload = preparar_nfse_parcela_geisweb(
-            documento_id=documento.id,
-            ordem_servico_id=id,
-            parcela_id=parcela_id,
-            c_class_trib=request.form.get(
-                'c_class_trib'
-            ),
-            c_class_trib_reg=request.form.get(
-                'c_class_trib_reg'
-            ),
-            ibs=request.form.get(
-                'ibs'
-            ),
-            cbs=request.form.get(
-                'cbs'
-            ),
-            pis=request.form.get(
-                'pis',
-                '0.00',
-            ),
-            cofins=request.form.get(
-                'cofins',
-                '0.00',
-            ),
-            csll=request.form.get(
-                'csll',
-                '0.00',
-            ),
-            irrf=request.form.get(
-                'irrf',
-                '0.00',
-            ),
-            inss=request.form.get(
-                'inss',
-                '0.00',
-            ),
-        )
+        provider = str(
+            documento.provider or ''
+        ).strip().upper()
+
+        if provider == 'GEISWEB_TIETE':
+            documento, _payload = preparar_nfse_parcela_geisweb(
+                documento_id=documento.id,
+                ordem_servico_id=id,
+                parcela_id=parcela_id,
+                c_class_trib=request.form.get(
+                    'c_class_trib'
+                ),
+                c_class_trib_reg=request.form.get(
+                    'c_class_trib_reg'
+                ),
+                ibs=request.form.get(
+                    'ibs'
+                ),
+                cbs=request.form.get(
+                    'cbs'
+                ),
+                pis=request.form.get(
+                    'pis',
+                    '0.00',
+                ),
+                cofins=request.form.get(
+                    'cofins',
+                    '0.00',
+                ),
+                csll=request.form.get(
+                    'csll',
+                    '0.00',
+                ),
+                irrf=request.form.get(
+                    'irrf',
+                    '0.00',
+                ),
+                inss=request.form.get(
+                    'inss',
+                    '0.00',
+                ),
+            )
+
+        elif provider == 'SEFIN_NACIONAL':
+            documento, _payload = preparar_nfse_parcela_sefin(
+                documento_id=documento.id,
+                ordem_servico_id=id,
+                parcela_id=parcela_id,
+                codigo_tributacao_nacional=request.form.get(
+                    'codigo_tributacao_nacional'
+                ),
+                codigo_nbs=request.form.get(
+                    'codigo_nbs'
+                ),
+                codigo_tributacao_municipal=request.form.get(
+                    'codigo_tributacao_municipal'
+                ),
+                municipio_incidencia_ibge=request.form.get(
+                    'municipio_incidencia_ibge'
+                ),
+                municipio_prestacao_ibge=request.form.get(
+                    'municipio_prestacao_ibge'
+                ),
+                percentual_tot_trib_sn=request.form.get(
+                    'percentual_tot_trib_sn'
+                ),
+                tributacao_issqn=request.form.get(
+                    'tributacao_issqn',
+                    '1',
+                ),
+                tipo_retencao_issqn=request.form.get(
+                    'tipo_retencao_issqn',
+                    '1',
+                ),
+            )
+
+        else:
+            raise PreparacaoNfseInvalida(
+                'Provider fiscal nao suportado na preparacao da parcela.'
+            )
 
         flash(
             (
-                f'NFS-e da parcela preparada localmente. '
-                f'RPS {documento.serie_rps}/'
+                f'NFS-e da parcela preparada localmente ({provider}). '
+                f'RPS/DPS {documento.serie_rps}/'
                 f'{documento.numero_rps}. '
-                'XML validado e persistido. '
+                'XML validado, assinado quando aplicavel e persistido. '
                 'Nenhuma NFS-e foi transmitida.'
             ),
             'success',
