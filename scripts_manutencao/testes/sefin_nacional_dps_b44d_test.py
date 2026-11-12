@@ -83,7 +83,7 @@ def test_b44d_001_monta_dps_canonica_completa():
     # --------------------------------------------------------
     assert dps["prestador"]["tipo_documento"] == "CNPJ"
     assert dps["prestador"]["documento"] == "12345678000195"
-    assert dps["prestador"]["inscricao_municipal"] == "123456"
+    assert dps["prestador"]["inscricao_municipal"] is None
     assert dps["prestador"]["municipio_ibge"] == "3554508"
     assert dps["prestador"]["nome"] is None
 
