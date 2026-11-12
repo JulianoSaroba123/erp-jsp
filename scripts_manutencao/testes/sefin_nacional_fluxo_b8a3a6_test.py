@@ -49,6 +49,19 @@ def _payload():
     }
 
 
+def _convenio_ativo(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        modulo_sefin,
+        "executar_consulta_convenio_http",
+        lambda **kwargs: SimpleNamespace(
+            ativo=True,
+            bloqueio_ambiental=False,
+        ),
+    )
+
+
 def _xml_nfse(
     numero="98765",
 ):
@@ -125,6 +138,10 @@ def _corpo_400():
 def test_b8a3a6_001_fluxo_201_autoriza_documento(
     monkeypatch,
 ):
+    _convenio_ativo(
+        monkeypatch
+    )
+
     documento = _documento()
     material = object()
 
@@ -180,6 +197,10 @@ def test_b8a3a6_001_fluxo_201_autoriza_documento(
 def test_b8a3a6_002_fluxo_400_rejeita_documento(
     monkeypatch,
 ):
+    _convenio_ativo(
+        monkeypatch
+    )
+
     documento = _documento()
 
     monkeypatch.setattr(
@@ -225,6 +246,10 @@ def test_b8a3a6_002_fluxo_400_rejeita_documento(
 def test_b8a3a6_003_erro_403_nao_muta_documento(
     monkeypatch,
 ):
+    _convenio_ativo(
+        monkeypatch
+    )
+
     documento = _documento()
 
     monkeypatch.setattr(
@@ -291,6 +316,12 @@ def test_b8a3a6_004_disjuntor_impede_certificado_e_http(
         http_proibido,
     )
 
+    monkeypatch.setattr(
+        modulo_sefin,
+        "executar_consulta_convenio_http",
+        http_proibido,
+    )
+
     with pytest.raises(
         IntegracaoFiscalDesativada,
     ):
@@ -333,6 +364,12 @@ def test_b8a3a6_005_estado_invalido_bloqueia_antes_da_rede(
     monkeypatch.setattr(
         modulo_sefin,
         "executar_emissao_nfse_http",
+        http_proibido,
+    )
+
+    monkeypatch.setattr(
+        modulo_sefin,
+        "executar_consulta_convenio_http",
         http_proibido,
     )
 
