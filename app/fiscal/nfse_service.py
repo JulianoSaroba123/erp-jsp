@@ -11,6 +11,7 @@ import hashlib
 import os
 from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
+from zoneinfo import ZoneInfo
 
 from app.extensoes import db
 from app.fiscal.configuracao_fiscal_model import ConfiguracaoFiscal
@@ -55,6 +56,9 @@ from app.fiscal.providers.geisweb_tiete_config import (
 from app.fiscal.providers.sefin_nacional_mtls import (
     MaterialMtlsSefinInvalido,
     materializar_mtls_sefin,
+)
+from app.fiscal.providers.sefin_nacional_config import (
+    obter_configuracao_sefin,
 )
 
 
@@ -588,6 +592,10 @@ def preparar_payload_nfse_com_dps(
     data_emissao=None,
     versao_aplicativo="ERP-JSP",
     material_certificado=None,
+    codigo_tributacao_nacional=None,
+    codigo_nbs=None,
+    codigo_tributacao_municipal=None,
+    valor_servicos_fiscal=None,
 ) -> dict:
     """Integra ERP -> DPS -> XML -> XSD ao payload tecnico NFS-e.
 
@@ -622,6 +630,16 @@ def preparar_payload_nfse_com_dps(
         ibs_cbs=ibs_cbs,
         data_emissao=data_emissao,
         versao_aplicativo=versao_aplicativo,
+        codigo_tributacao_nacional=(
+            codigo_tributacao_nacional
+        ),
+        codigo_nbs=codigo_nbs,
+        codigo_tributacao_municipal=(
+            codigo_tributacao_municipal
+        ),
+        valor_servicos_fiscal=(
+            valor_servicos_fiscal
+        ),
     )
 
     xml_dps = montar_xml_dps_serializado(
@@ -720,6 +738,10 @@ def preparar_documento_nfse_com_dps(
     data_emissao=None,
     versao_aplicativo="ERP-JSP",
     material_certificado=None,
+    codigo_tributacao_nacional=None,
+    codigo_nbs=None,
+    codigo_tributacao_municipal=None,
+    valor_servicos_fiscal=None,
 ) -> tuple[NfseDocumento, dict]:
     """Orquestra a preparacao fiscal local completa da DPS.
 
@@ -760,6 +782,16 @@ def preparar_documento_nfse_com_dps(
             data_emissao=data_emissao,
             versao_aplicativo=versao_aplicativo,
             material_certificado=material_certificado,
+            codigo_tributacao_nacional=(
+                codigo_tributacao_nacional
+            ),
+            codigo_nbs=codigo_nbs,
+            codigo_tributacao_municipal=(
+                codigo_tributacao_municipal
+            ),
+            valor_servicos_fiscal=(
+                valor_servicos_fiscal
+            ),
         )
 
         conteudo = payload.get("conteudo")
@@ -2557,6 +2589,354 @@ def preparar_nfse_da_parcela(
         )
 
         return existente, False
+
+
+def preparar_nfse_parcela_sefin(
+    *,
+    documento_id: int,
+    ordem_servico_id: int,
+    parcela_id: int,
+    codigo_tributacao_nacional,
+    codigo_nbs,
+    municipio_incidencia_ibge,
+    municipio_prestacao_ibge,
+    percentual_tot_trib_sn,
+    tributacao_issqn="1",
+    tipo_retencao_issqn="1",
+    codigo_tributacao_municipal=None,
+) -> tuple[NfseDocumento, dict]:
+    """Prepara e assina localmente a DPS SEFIN de uma parcela.
+
+    H4-F21:
+    - usa o valor fiscal congelado da parcela;
+    - exige classificacao nacional explicita;
+    - exige municipios IBGE explicitos;
+    - usa regime nacional persistido na configuracao fiscal;
+    - assina com A1 localmente;
+    - persiste XML assinado e SHA-256;
+    - nao realiza HTTP;
+    - nao transmite NFS-e.
+    """
+
+    from app.configuracao.configuracao_model import Configuracao
+
+    documento = db.session.get(
+        NfseDocumento,
+        documento_id,
+    )
+
+    ordem = db.session.get(
+        OrdemServico,
+        ordem_servico_id,
+    )
+
+    parcela = OrdemServicoParcela.query.filter_by(
+        id=parcela_id,
+        ordem_servico_id=ordem_servico_id,
+        ativo=True,
+    ).first()
+
+    if documento is None:
+        raise PreparacaoNfseInvalida(
+            "Documento fiscal nao encontrado."
+        )
+
+    if ordem is None:
+        raise PreparacaoNfseInvalida(
+            "Ordem de servico nao encontrada."
+        )
+
+    if parcela is None:
+        raise PreparacaoNfseInvalida(
+            "Parcela nao encontrada ou nao pertence a OS."
+        )
+
+    if documento.status != "RASCUNHO":
+        raise PreparacaoNfseInvalida(
+            "Somente documento RASCUNHO pode ser preparado."
+        )
+
+    if documento.ordem_servico_id != ordem.id:
+        raise PreparacaoNfseInvalida(
+            "Documento fiscal nao pertence a OS."
+        )
+
+    if documento.ordem_servico_parcela_id != parcela.id:
+        raise PreparacaoNfseInvalida(
+            "Documento fiscal nao pertence a parcela."
+        )
+
+    valor_documento = Decimal(
+        str(
+            documento.valor_servicos
+            or "0"
+        )
+    ).quantize(
+        Decimal("0.01")
+    )
+
+    valor_parcela = Decimal(
+        str(
+            parcela.valor
+            or "0"
+        )
+    ).quantize(
+        Decimal("0.01")
+    )
+
+    if (
+        valor_documento <= Decimal("0")
+        or valor_documento != valor_parcela
+    ):
+        raise PreparacaoNfseInvalida(
+            "Valor fiscal do documento diverge do valor da parcela."
+        )
+
+    configuracoes = ConfiguracaoFiscal.query.filter_by(
+        ativo=True
+    ).all()
+
+    if len(
+        configuracoes
+    ) != 1:
+        raise PreparacaoNfseInvalida(
+            "Deve existir exatamente uma configuracao fiscal ativa."
+        )
+
+    configuracao_fiscal = configuracoes[
+        0
+    ]
+
+    if (
+        documento.configuracao_fiscal_id
+        != configuracao_fiscal.id
+    ):
+        raise PreparacaoNfseInvalida(
+            "Documento pertence a outra configuracao fiscal."
+        )
+
+    provider = normalizar_codigo_provider(
+        configuracao_fiscal.provider
+    )
+
+    if provider != "SEFIN_NACIONAL":
+        raise PreparacaoNfseInvalida(
+            "Preparacao SEFIN exige provider SEFIN_NACIONAL."
+        )
+
+    ambiente = str(
+        configuracao_fiscal.ambiente
+        or ""
+    ).strip().upper()
+
+    if ambiente not in AMBIENTES_NFSE:
+        raise PreparacaoNfseInvalida(
+            "Ambiente fiscal invalido para SEFIN Nacional."
+        )
+
+    configuracao_institucional = db.session.get(
+        Configuracao,
+        configuracao_fiscal.configuracao_id,
+    )
+
+    if configuracao_institucional is None:
+        raise PreparacaoNfseInvalida(
+            "Configuracao institucional nao encontrada."
+        )
+
+    for campo, valor in (
+        (
+            "opSimpNac",
+            configuracao_fiscal.op_simp_nac,
+        ),
+        (
+            "regEspTrib",
+            configuracao_fiscal.reg_esp_trib,
+        ),
+    ):
+        if not str(
+            valor or ""
+        ).strip():
+            raise PreparacaoNfseInvalida(
+                f"{campo} nao configurado no cadastro fiscal."
+            )
+
+    def digitos(
+        valor,
+        *,
+        campo,
+        tamanho,
+        opcional=False,
+    ):
+        texto = str(
+            valor or ""
+        ).strip()
+
+        if opcional and not texto:
+            return None
+
+        if (
+            not texto.isdigit()
+            or len(
+                texto
+            ) != tamanho
+        ):
+            raise PreparacaoNfseInvalida(
+                f"{campo} deve possuir exatamente {tamanho} digitos."
+            )
+
+        return texto
+
+    codigo_nacional = digitos(
+        codigo_tributacao_nacional,
+        campo="cTribNac",
+        tamanho=6,
+    )
+
+    nbs = digitos(
+        codigo_nbs,
+        campo="cNBS",
+        tamanho=9,
+    )
+
+    codigo_municipal = digitos(
+        codigo_tributacao_municipal,
+        campo="cTribMun",
+        tamanho=3,
+        opcional=True,
+    )
+
+    municipio_incidencia = digitos(
+        municipio_incidencia_ibge,
+        campo="Municipio de incidencia IBGE",
+        tamanho=7,
+    )
+
+    municipio_prestacao = digitos(
+        municipio_prestacao_ibge,
+        campo="Municipio de prestacao IBGE",
+        tamanho=7,
+    )
+
+    tributacao = str(
+        tributacao_issqn
+        or ""
+    ).strip()
+
+    if tributacao not in {
+        "1",
+        "2",
+        "3",
+        "4",
+    }:
+        raise PreparacaoNfseInvalida(
+            "Tributacao ISSQN invalida."
+        )
+
+    retencao = str(
+        tipo_retencao_issqn
+        or ""
+    ).strip()
+
+    if retencao not in {
+        "1",
+        "2",
+        "3",
+    }:
+        raise PreparacaoNfseInvalida(
+            "Tipo de retencao ISSQN invalido."
+        )
+
+    try:
+        percentual = Decimal(
+            str(
+                percentual_tot_trib_sn
+            ).strip().replace(
+                ",",
+                ".",
+            )
+        ).quantize(
+            Decimal("0.01")
+        )
+    except (
+        InvalidOperation,
+        TypeError,
+        ValueError,
+    ) as exc:
+        raise PreparacaoNfseInvalida(
+            "pTotTribSN invalido."
+        ) from exc
+
+    if not Decimal(
+        "0"
+    ) <= percentual <= Decimal(
+        "100"
+    ):
+        raise PreparacaoNfseInvalida(
+            "pTotTribSN deve estar entre 0 e 100."
+        )
+
+    try:
+        material = carregar_certificado_a1_do_ambiente()
+    except CertificadoA1Invalido as exc:
+        raise PreparacaoNfseInvalida(
+            f"Certificado A1 indisponivel ou invalido: {exc}"
+        ) from exc
+
+    metadados = obter_configuracao_sefin(
+        ambiente
+    )
+
+    return preparar_documento_nfse_com_dps(
+        documento=documento,
+        ordem_servico=ordem,
+        configuracao_fiscal=configuracao_fiscal,
+        configuracao_institucional=(
+            configuracao_institucional
+        ),
+        versao_layout=metadados[
+            "layout_dps"
+        ],
+        tipo_emitente="1",
+        municipio_incidencia_ibge=(
+            municipio_incidencia
+        ),
+        municipio_prestacao_ibge=(
+            municipio_prestacao
+        ),
+        iss={
+            "tributacao_issqn": tributacao,
+            "tipo_retencao": retencao,
+            # None explicito: nao fabricar pAliq.
+            "aliquota": None,
+        },
+        totais_tributos={
+            "percentual_simples": format(
+                percentual,
+                "f",
+            ),
+        },
+        ibs_cbs=None,
+        data_emissao=datetime.now(
+            ZoneInfo(
+                "America/Sao_Paulo"
+            )
+        ).replace(
+            microsecond=0
+        ),
+        versao_aplicativo="ERP-JSP-H4F21",
+        material_certificado=material,
+        codigo_tributacao_nacional=(
+            codigo_nacional
+        ),
+        codigo_nbs=nbs,
+        codigo_tributacao_municipal=(
+            codigo_municipal
+        ),
+        valor_servicos_fiscal=(
+            valor_documento
+        ),
+    )
 
 
 def preparar_nfse_parcela_geisweb(
