@@ -175,17 +175,210 @@
 
                                 {% if documento.status == 'RASCUNHO' %}
 
-                                {% if documento.provider != 'GEISWEB_TIETE' %}
+                                {% set valor_fiscal =
+                                    documento.valor_servicos|float %}
 
-                                <div class="alert alert-info py-2 px-2 mt-2 small text-start">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    A prepara&ccedil;&atilde;o pela interface ainda
-                                    n&atilde;o est&aacute; habilitada para
-                                    <strong>{{ documento.provider }}</strong>.
-                                    Nenhuma NFS-e ser&aacute; transmitida.
+                                {% if documento.provider == 'SEFIN_NACIONAL' %}
+
+                                <div class="small text-primary mt-1 mb-2">
+                                    Pronto para preparar DPS Nacional
                                 </div>
 
-                                {% else %}
+                                <details class="text-start mt-2">
+
+                                    <summary class="btn btn-outline-primary btn-sm">
+                                        Preparar DPS Nacional
+                                    </summary>
+
+                                    <form
+                                        method="POST"
+                                        class="border rounded p-3 mt-2 bg-light"
+                                        action="{{ url_for(
+                                            'ordem_servico.preparar_nfse_parcela_xml',
+                                            id=ordem.id,
+                                            parcela_id=parcela.id
+                                        ) }}">
+
+                                        <div class="alert alert-warning py-2 small">
+
+                                            <strong>
+                                                Confer&ecirc;ncia fiscal obrigat&oacute;ria.
+                                            </strong>
+
+                                            A DPS ser&aacute; montada, assinada com o A1,
+                                            validada no XSD e persistida localmente.
+
+                                            <strong>
+                                                Nenhuma NFS-e ser&aacute; transmitida.
+                                            </strong>
+
+                                        </div>
+
+                                        <div class="row g-2">
+
+                                            <div class="col-md-4">
+                                                <label class="form-label small">
+                                                    cTribNac
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control form-control-sm"
+                                                    name="codigo_tributacao_nacional"
+                                                    value="140101"
+                                                    minlength="6"
+                                                    maxlength="6"
+                                                    pattern="[0-9]{6}"
+                                                    required>
+                                                <div class="form-text">
+                                                    Sugest&atilde;o confirmada na NFS-e Nacional da JSP.
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="form-label small">
+                                                    cTribMun
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control form-control-sm"
+                                                    name="codigo_tributacao_municipal"
+                                                    minlength="3"
+                                                    maxlength="3"
+                                                    pattern="[0-9]{3}"
+                                                    placeholder="Opcional">
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="form-label small">
+                                                    cNBS
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control form-control-sm"
+                                                    name="codigo_nbs"
+                                                    value="101061900"
+                                                    minlength="9"
+                                                    maxlength="9"
+                                                    pattern="[0-9]{9}"
+                                                    required>
+                                                <div class="form-text">
+                                                    Sugest&atilde;o confirmada na NFS-e Nacional da JSP.
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label small">
+                                                    Munic&iacute;pio de incid&ecirc;ncia IBGE
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control form-control-sm"
+                                                    name="municipio_incidencia_ibge"
+                                                    value="3554508"
+                                                    minlength="7"
+                                                    maxlength="7"
+                                                    pattern="[0-9]{7}"
+                                                    required>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <label class="form-label small">
+                                                    Munic&iacute;pio da presta&ccedil;&atilde;o IBGE
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control form-control-sm"
+                                                    name="municipio_prestacao_ibge"
+                                                    minlength="7"
+                                                    maxlength="7"
+                                                    pattern="[0-9]{7}"
+                                                    placeholder="7 d&iacute;gitos"
+                                                    required>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="form-label small">
+                                                    pTotTribSN (%)
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    class="form-control form-control-sm"
+                                                    name="percentual_tot_trib_sn"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.01"
+                                                    value="2.31"
+                                                    required>
+                                                <div class="form-text">
+                                                    Percentual confirmado na NFS-e Nacional aceita.
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="form-label small">
+                                                    tribISSQN
+                                                </label>
+                                                <select
+                                                    name="tributacao_issqn"
+                                                    class="form-select form-select-sm"
+                                                    required>
+                                                    <option value="1" selected>1 - Tribut&aacute;vel</option>
+                                                    <option value="2">2</option>
+                                                    <option value="3">3</option>
+                                                    <option value="4">4</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="col-md-4">
+                                                <label class="form-label small">
+                                                    tpRetISSQN
+                                                </label>
+                                                <select
+                                                    name="tipo_retencao_issqn"
+                                                    class="form-select form-select-sm"
+                                                    required>
+                                                    <option value="1" selected>1 - N&atilde;o retido</option>
+                                                    <option value="2">2</option>
+                                                    <option value="3">3</option>
+                                                </select>
+                                            </div>
+
+                                        </div>
+
+                                        <div class="small text-muted mt-2 mb-3">
+                                            Valor fiscal congelado desta parcela:
+                                            <strong>
+                                                R$
+                                                {{
+                                                    "{:,.2f}".format(
+                                                        valor_fiscal
+                                                    )
+                                                    .replace(",", "X")
+                                                    .replace(".", ",")
+                                                    .replace("X", ".")
+                                                }}
+                                            </strong>.
+                                            A al&iacute;quota ISS da configura&ccedil;&atilde;o
+                                            n&atilde;o ser&aacute; enviada como pAliq neste fluxo.
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            class="btn btn-primary w-100"
+                                            onclick="return confirm(
+                                                'Confirmar reserva da DPS e preparacao local do XML Nacional? Nenhuma NFS-e sera transmitida.'
+                                            );">
+
+                                            <i class="fas fa-file-signature me-2"></i>
+                                            Confirmar DPS Nacional
+
+                                        </button>
+
+                                    </form>
+
+                                </details>
+
+                                {% elif documento.provider == 'GEISWEB_TIETE' %}
 
                                 <div class="small text-primary mt-1 mb-2">
                                     Pronto para preparar RPS/XML
@@ -368,6 +561,16 @@
                                     </form>
 
                                 </details>
+
+
+
+                                {% else %}
+
+                                <div class="alert alert-info py-2 px-2 mt-2 small text-start">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Provider fiscal n&atilde;o suportado para prepara&ccedil;&atilde;o:
+                                    <strong>{{ documento.provider }}</strong>.
+                                </div>
 
                                 {% endif %}
 
