@@ -1962,7 +1962,7 @@ def liberar_nfse_parcela_para_envio(id, parcela_id):
     from app.fiscal.nfse_service import (
         TransicaoStatusNfseInvalida,
         TransmissaoNfseInvalida,
-        liberar_documento_nfse_geisweb_para_envio,
+        liberar_documento_nfse_para_envio,
     )
 
     ordem = OrdemServico.query.filter_by(
@@ -2017,7 +2017,7 @@ def liberar_nfse_parcela_para_envio(id, parcela_id):
         )
 
     try:
-        liberar_documento_nfse_geisweb_para_envio(
+        liberar_documento_nfse_para_envio(
             documento=documento,
             ordem_servico=ordem,
             configuracao=configuracao,
@@ -2099,7 +2099,7 @@ def precheck_nfse_parcela_transmissao(id, parcela_id):
     from app.fiscal.nfse_service import (
         TransicaoStatusNfseInvalida,
         TransmissaoNfseInvalida,
-        precheck_transmissao_geisweb,
+        precheck_transmissao_nfse,
     )
 
     ordem = OrdemServico.query.filter_by(
@@ -2143,7 +2143,7 @@ def precheck_nfse_parcela_transmissao(id, parcela_id):
         )
 
     try:
-        resultado = precheck_transmissao_geisweb(
+        resultado = precheck_transmissao_nfse(
             documento=documento,
             ordem_servico=ordem,
             configuracao=configuracao,
@@ -2155,7 +2155,7 @@ def precheck_nfse_parcela_transmissao(id, parcela_id):
 
         flash(
             (
-                'PRE-CHECK GEISWEB OK. '
+                f'PRE-CHECK NFS-E OK ({resultado["provider"]}). '
                 f'RPS {documento.serie_rps}/'
                 f'{documento.numero_rps}. '
                 f'Certificado A1 valido ate {validade}. '
@@ -2172,13 +2172,13 @@ def precheck_nfse_parcela_transmissao(id, parcela_id):
     ) as exc:
 
         flash(
-            f'PRE-CHECK GEISWEB BLOQUEADO: {exc}',
+            f'PRE-CHECK NFS-E BLOQUEADO: {exc}',
             'danger',
         )
 
     except Exception:
         current_app.logger.exception(
-            'Erro inesperado no pre-check GeisWeb '
+            'Erro inesperado no pre-check NFS-e '
             'da parcela %s da OS %s',
             parcela_id,
             id,
@@ -2186,7 +2186,7 @@ def precheck_nfse_parcela_transmissao(id, parcela_id):
 
         flash(
             (
-                'Erro inesperado no pre-check GeisWeb. '
+                'Erro inesperado no pre-check NFS-e. '
                 'Nenhuma NFS-e foi transmitida.'
             ),
             'danger',
