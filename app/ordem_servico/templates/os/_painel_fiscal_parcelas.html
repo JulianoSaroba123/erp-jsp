@@ -175,6 +175,18 @@
 
                                 {% if documento.status == 'RASCUNHO' %}
 
+                                {% if documento.provider != 'GEISWEB_TIETE' %}
+
+                                <div class="alert alert-info py-2 px-2 mt-2 small text-start">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    A prepara&ccedil;&atilde;o pela interface ainda
+                                    n&atilde;o est&aacute; habilitada para
+                                    <strong>{{ documento.provider }}</strong>.
+                                    Nenhuma NFS-e ser&aacute; transmitida.
+                                </div>
+
+                                {% else %}
+
                                 <div class="small text-primary mt-1 mb-2">
                                     Pronto para preparar RPS/XML
                                 </div>
@@ -359,6 +371,8 @@
 
                                 {% endif %}
 
+                                {% endif %}
+
                                 {% if documento.status == 'PREPARADA' %}
 
                                 <div class="mt-2">
@@ -430,7 +444,7 @@
                                         type="submit"
                                         class="btn btn-outline-warning btn-sm"
                                         onclick="return confirm(
-                                            'Executar somente o pre-check do certificado A1 e mTLS? Nenhuma requisicao sera enviada ao GeisWeb.'
+                                            'Executar somente o pre-check local do certificado A1, XML e mTLS? Nenhuma NFS-e sera transmitida.'
                                         );">
 
                                         <i class="fas fa-shield-alt me-2"></i>
@@ -440,7 +454,8 @@
 
                                 </form>
 
-                                {% if documento.ambiente == 'HOMOLOGACAO' %}
+                                {% if documento.provider == 'GEISWEB_TIETE'
+                                      and documento.ambiente == 'HOMOLOGACAO' %}
 
                                 <div class="border border-danger rounded p-2 mt-3 text-start">
 
@@ -494,6 +509,16 @@
 
                                     </form>
 
+                                </div>
+
+                                {% elif documento.provider == 'SEFIN_NACIONAL' %}
+
+                                <div class="alert alert-info py-2 px-2 mt-3 small text-start">
+                                    <i class="fas fa-lock me-1"></i>
+                                    Transmiss&atilde;o SEFIN Nacional ainda
+                                    n&atilde;o est&aacute; habilitada nesta interface.
+                                    O disjuntor de Produ&ccedil;&atilde;o permanece
+                                    fechado e nenhum POST ser&aacute; executado.
                                 </div>
 
                                 {% endif %}
