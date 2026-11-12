@@ -445,7 +445,8 @@ def test_h4f21_004_prepara_dps_real_local_por_parcela(
         assert b"<cNBS>101061900</cNBS>" in xml
         assert b"<cLocPrestacao>3541653</cLocPrestacao>" in xml
         assert b"<pTotTribSN>2.31</pTotTribSN>" in xml
-        assert b"<vServPrest>250.00</vServPrest>" in xml
+        assert b"<vServPrest>" in xml
+        assert b"<vServ>250.00</vServ>" in xml
 
         assert b"<IM>" not in xml
         assert b"<pAliq>" not in xml
