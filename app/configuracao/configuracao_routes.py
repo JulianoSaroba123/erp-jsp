@@ -180,6 +180,18 @@ def fiscal():
             request.form.get('municipio_ibge') or ''
         ).strip() or None
 
+        op_simp_nac = (
+            request.form.get('op_simp_nac') or ''
+        ).strip() or None
+
+        reg_ap_trib_sn = (
+            request.form.get('reg_ap_trib_sn') or ''
+        ).strip() or None
+
+        reg_esp_trib = (
+            request.form.get('reg_esp_trib') or ''
+        ).strip() or None
+
         ambiente = (
             request.form.get('ambiente') or 'HOMOLOGACAO'
         ).strip().upper()
@@ -219,6 +231,21 @@ def fiscal():
             if not municipio_ibge.isdigit() or len(municipio_ibge) != 7:
                 flash(
                     'O codigo IBGE do municipio deve possuir 7 digitos.',
+                    'danger',
+                )
+                return redirect(url_for('configuracao.fiscal'))
+
+        for campo, valor in (
+            ('opSimpNac', op_simp_nac),
+            ('regApTribSN', reg_ap_trib_sn),
+            ('regEspTrib', reg_esp_trib),
+        ):
+            if valor is not None and (
+                len(valor) != 1
+                or not valor.isdigit()
+            ):
+                flash(
+                    f'{campo} deve possuir exatamente 1 digito.',
                     'danger',
                 )
                 return redirect(url_for('configuracao.fiscal'))
@@ -283,6 +310,9 @@ def fiscal():
             config_fiscal.codigo_lc116 = codigo_lc116
             config_fiscal.aliquota_iss_padrao = aliquota_iss_padrao
             config_fiscal.municipio_ibge = municipio_ibge
+            config_fiscal.op_simp_nac = op_simp_nac
+            config_fiscal.reg_ap_trib_sn = reg_ap_trib_sn
+            config_fiscal.reg_esp_trib = reg_esp_trib
 
             config_fiscal.ambiente = ambiente
             config_fiscal.provider = provider
