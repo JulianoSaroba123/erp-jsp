@@ -52,6 +52,10 @@ from app.fiscal.providers.geisweb_tiete_mtls import (
 from app.fiscal.providers.geisweb_tiete_config import (
     ENDPOINT_HOMOLOGACAO,
 )
+from app.fiscal.providers.sefin_nacional_mtls import (
+    MaterialMtlsSefinInvalido,
+    materializar_mtls_sefin,
+)
 
 
 from app.fiscal.providers.base import STATUS_TRANSMISSAO_NFSE_VALIDOS
@@ -758,6 +762,29 @@ def preparar_documento_nfse_com_dps(
             material_certificado=material_certificado,
         )
 
+        conteudo = payload.get("conteudo")
+
+        if not isinstance(
+            conteudo,
+            (bytes, bytearray),
+        ) or not conteudo:
+            raise PreparacaoNfseInvalida(
+                "Payload SEFIN nao possui XML valido "
+                "para persistencia."
+            )
+
+        xml_envio = bytes(
+            conteudo
+        )
+
+        documento_reservado.xml_envio = xml_envio
+        documento_reservado.xml_envio_sha256 = hashlib.sha256(
+            xml_envio
+        ).hexdigest()
+        documento_reservado.preparado_em = datetime.now(
+            timezone.utc
+        )
+
         documento_reservado.status = "PREPARADA"
         if material_certificado is None:
             documento_reservado.mensagem_status = (
@@ -1068,6 +1095,252 @@ def aplicar_resultado_transmissao_nfse(
 
 
 
+def reconstruir_payload_sefin_para_envio(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao: ConfiguracaoFiscal,
+) -> dict:
+    """Reconstrói o payload SEFIN usando somente o XML persistido.
+
+    H4-F20:
+    - aceita PREPARADA ou PENDENTE_ENVIO;
+    - exige provider SEFIN_NACIONAL no documento e configuração;
+    - valida ambiente, SHA-256, XMLDSIG e XSD;
+    - não gera nova DPS;
+    - não reserva nova numeração;
+    - não carrega certificado;
+    - não realiza HTTP;
+    - não executa commit.
+    """
+
+    if documento is None:
+        raise TransmissaoNfseInvalida(
+            "Documento NFS-e nao informado."
+        )
+
+    if ordem_servico is None:
+        raise TransmissaoNfseInvalida(
+            "Ordem de servico nao informada."
+        )
+
+    if configuracao is None:
+        raise TransmissaoNfseInvalida(
+            "Configuracao fiscal nao informada."
+        )
+
+    status_atual = str(
+        getattr(
+            documento,
+            "status",
+            "",
+        )
+        or ""
+    ).strip().upper()
+
+    if status_atual not in {
+        "PREPARADA",
+        "PENDENTE_ENVIO",
+    }:
+        raise TransicaoStatusNfseInvalida(
+            "Documento NFS-e em estado "
+            f"{status_atual or '<VAZIO>'} nao possui "
+            "artefato SEFIN liberado para envio."
+        )
+
+    provider_documento = normalizar_codigo_provider(
+        getattr(
+            documento,
+            "provider",
+            None,
+        )
+    )
+
+    provider_configuracao = normalizar_codigo_provider(
+        getattr(
+            configuracao,
+            "provider",
+            None,
+        )
+    )
+
+    if provider_documento != "SEFIN_NACIONAL":
+        raise TransmissaoNfseInvalida(
+            "Documento nao pertence ao provider SEFIN_NACIONAL."
+        )
+
+    if provider_configuracao != provider_documento:
+        raise TransmissaoNfseInvalida(
+            "Provider atual diverge do provider do documento preparado."
+        )
+
+    ambiente_documento = str(
+        getattr(
+            documento,
+            "ambiente",
+            "",
+        )
+        or ""
+    ).strip().upper()
+
+    ambiente_configuracao = str(
+        getattr(
+            configuracao,
+            "ambiente",
+            "",
+        )
+        or ""
+    ).strip().upper()
+
+    if (
+        ambiente_documento not in AMBIENTES_NFSE
+        or ambiente_documento != ambiente_configuracao
+    ):
+        raise TransmissaoNfseInvalida(
+            "Ambiente fiscal atual diverge do documento SEFIN preparado."
+        )
+
+    conteudo = getattr(
+        documento,
+        "xml_envio",
+        None,
+    )
+
+    if not isinstance(
+        conteudo,
+        (bytes, bytearray),
+    ) or not conteudo:
+        raise TransmissaoNfseInvalida(
+            "Documento SEFIN nao possui XML de envio persistido."
+        )
+
+    xml_envio = bytes(
+        conteudo
+    )
+
+    hash_persistido = str(
+        getattr(
+            documento,
+            "xml_envio_sha256",
+            "",
+        )
+        or ""
+    ).strip().lower()
+
+    hash_calculado = hashlib.sha256(
+        xml_envio
+    ).hexdigest()
+
+    if (
+        len(
+            hash_persistido
+        ) != 64
+        or hash_persistido != hash_calculado
+    ):
+        raise TransmissaoNfseInvalida(
+            "Integridade do XML SEFIN persistido nao confere."
+        )
+
+    try:
+        validar_assinatura_xml_dps(
+            xml_envio
+        )
+    except AssinaturaXmlDpsInvalida as exc:
+        raise TransmissaoNfseInvalida(
+            "XML SEFIN persistido possui assinatura XMLDSIG invalida."
+        ) from exc
+
+    provider = resolver_provider_nfse(
+        configuracao
+    )
+
+    payload = provider.preparar_payload(
+        documento=documento,
+        ordem_servico=ordem_servico,
+        configuracao=configuracao,
+    )
+
+    if not isinstance(
+        payload,
+        dict,
+    ):
+        raise TransmissaoNfseInvalida(
+            "Provider SEFIN retornou payload tecnico invalido."
+        )
+
+    if normalizar_codigo_provider(
+        payload.get(
+            "provider"
+        )
+    ) != "SEFIN_NACIONAL":
+        raise TransmissaoNfseInvalida(
+            "Payload reconstruido pertence a outro provider."
+        )
+
+    layout = payload.get(
+        "layout"
+    )
+
+    if not isinstance(
+        layout,
+        dict,
+    ):
+        raise TransmissaoNfseInvalida(
+            "Payload SEFIN nao informa layout DPS."
+        )
+
+    versao_layout = str(
+        layout.get(
+            "versao"
+        )
+        or ""
+    ).strip()
+
+    if not versao_layout:
+        raise TransmissaoNfseInvalida(
+            "Payload SEFIN nao informa versao do layout DPS."
+        )
+
+    caminho_xsd = obter_caminho_xsd_dps(
+        versao_layout,
+        ambiente=ambiente_configuracao,
+    )
+
+    resultado_xsd = validar_xml_dps_xsd(
+        xml_envio,
+        caminho_xsd,
+    )
+
+    if not resultado_xsd.valido:
+        erros = "; ".join(
+            str(
+                erro
+            )
+            for erro in resultado_xsd.erros
+        )
+
+        mensagem = (
+            "XML SEFIN persistido nao e mais valido perante o XSD."
+        )
+
+        if erros:
+            mensagem = (
+                mensagem
+                + " "
+                + erros
+            )
+
+        raise TransmissaoNfseInvalida(
+            mensagem
+        )
+
+    payload[
+        "conteudo"
+    ] = xml_envio
+
+    return payload
+
+
 def reconstruir_payload_geisweb_para_envio(
     *,
     documento: NfseDocumento,
@@ -1266,6 +1539,46 @@ def liberar_documento_nfse_geisweb_para_envio(
     )
 
 
+def liberar_documento_nfse_para_envio(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao: ConfiguracaoFiscal,
+) -> NfseDocumento:
+    """Libera artefato fiscal persistido conforme o provider."""
+
+    provider = normalizar_codigo_provider(
+        getattr(
+            configuracao,
+            "provider",
+            None,
+        )
+    )
+
+    if provider == "GEISWEB_TIETE":
+        return liberar_documento_nfse_geisweb_para_envio(
+            documento=documento,
+            ordem_servico=ordem_servico,
+            configuracao=configuracao,
+        )
+
+    if provider == "SEFIN_NACIONAL":
+        payload = reconstruir_payload_sefin_para_envio(
+            documento=documento,
+            ordem_servico=ordem_servico,
+            configuracao=configuracao,
+        )
+
+        return preparar_nfse_para_envio(
+            documento=documento,
+            payload=payload,
+        )
+
+    raise TransmissaoNfseInvalida(
+        "Provider fiscal nao suportado para liberacao de envio."
+    )
+
+
 def preparar_nfse_para_envio(
     *,
     documento: NfseDocumento,
@@ -1370,6 +1683,150 @@ def preparar_nfse_para_envio(
     )
 
     return documento
+
+
+def precheck_transmissao_sefin(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao: ConfiguracaoFiscal,
+) -> dict:
+    """Pré-check local SEFIN, sem rede e sem transmissão."""
+
+    status = str(
+        getattr(
+            documento,
+            "status",
+            "",
+        )
+        or ""
+    ).strip().upper()
+
+    if status != "PENDENTE_ENVIO":
+        raise TransicaoStatusNfseInvalida(
+            "Documento NFS-e nao esta em PENDENTE_ENVIO."
+        )
+
+    payload = reconstruir_payload_sefin_para_envio(
+        documento=documento,
+        ordem_servico=ordem_servico,
+        configuracao=configuracao,
+    )
+
+    try:
+        material = carregar_certificado_a1_do_ambiente()
+    except CertificadoA1Invalido as exc:
+        raise TransmissaoNfseInvalida(
+            f"Certificado A1 indisponivel ou invalido: {exc}"
+        ) from exc
+
+    try:
+        with materializar_mtls_sefin(
+            material
+        ) as caminhos:
+            if (
+                not isinstance(
+                    caminhos,
+                    tuple,
+                )
+                or len(
+                    caminhos
+                ) != 2
+                or not all(
+                    caminhos
+                )
+            ):
+                raise TransmissaoNfseInvalida(
+                    "Infraestrutura mTLS SEFIN nao foi materializada."
+                )
+    except MaterialMtlsSefinInvalido as exc:
+        raise TransmissaoNfseInvalida(
+            "Infraestrutura mTLS SEFIN nao pode ser criada."
+        ) from exc
+
+    certificado = material.certificado
+
+    validade_inicio = (
+        certificado.not_valid_before_utc
+    )
+
+    validade_fim = (
+        certificado.not_valid_after_utc
+    )
+
+    return {
+        "ok": True,
+        "provider": "SEFIN_NACIONAL",
+        "ambiente": str(
+            getattr(
+                configuracao,
+                "ambiente",
+                "",
+            )
+            or ""
+        ).strip().upper(),
+        "certificado_valido_de": validade_inicio.isoformat(),
+        "certificado_valido_ate": validade_fim.isoformat(),
+        "mtls_pronto": True,
+        "integracao_ativa": (
+            getattr(
+                configuracao,
+                "integracao_ativa",
+                False,
+            )
+            is True
+        ),
+        "numero_rps": getattr(
+            documento,
+            "numero_rps",
+            None,
+        ),
+        "serie_rps": getattr(
+            documento,
+            "serie_rps",
+            None,
+        ),
+        "xml_bytes": len(
+            payload[
+                "conteudo"
+            ]
+        ),
+    }
+
+
+def precheck_transmissao_nfse(
+    *,
+    documento: NfseDocumento,
+    ordem_servico: OrdemServico,
+    configuracao: ConfiguracaoFiscal,
+) -> dict:
+    """Executa pré-check local conforme o provider configurado."""
+
+    provider = normalizar_codigo_provider(
+        getattr(
+            configuracao,
+            "provider",
+            None,
+        )
+    )
+
+    if provider == "GEISWEB_TIETE":
+        return precheck_transmissao_geisweb(
+            documento=documento,
+            ordem_servico=ordem_servico,
+            configuracao=configuracao,
+        )
+
+    if provider == "SEFIN_NACIONAL":
+        return precheck_transmissao_sefin(
+            documento=documento,
+            ordem_servico=ordem_servico,
+            configuracao=configuracao,
+        )
+
+    raise TransmissaoNfseInvalida(
+        "Provider fiscal nao suportado no pre-check."
+    )
 
 
 def precheck_transmissao_geisweb(
